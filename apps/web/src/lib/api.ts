@@ -54,7 +54,15 @@ function buildUrl(endpoint: string, params?: Record<string, string | number | bo
 // Get auth token from storage
 function getAuthToken(): string | null {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('auth_token');
+    const storedTokens = localStorage.getItem('auth_tokens');
+    if (storedTokens) {
+      try {
+        const parsed = JSON.parse(storedTokens);
+        return parsed.accessToken || null;
+      } catch {
+        return null;
+      }
+    }
   }
   return null;
 }
@@ -396,6 +404,9 @@ export const authApi = {
     
   resetPassword: (token: string, password: string) =>
     api.post<void>('/auth/reset-password', { token, password }),
+    
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.post<void>('/auth/change-password', { currentPassword, newPassword }),
     
   getProfile: () =>
     api.get<User>('/auth/profile'),

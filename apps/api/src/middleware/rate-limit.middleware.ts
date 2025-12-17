@@ -44,10 +44,11 @@ export const authRateLimiter = rateLimit({
 /**
  * Login specific rate limiter
  * Combines IP + email to prevent distributed attacks
+ * NOTE: In production, max should be 5. See plan.md TODO.
  */
 export const loginRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5,
+  max: process.env.NODE_ENV === 'production' ? 5 : 100, // 5 in production, 100 in development
   message: {
     message: 'Too many login attempts. Please try again in 15 minutes.',
     code: 'LOGIN_RATE_LIMIT_EXCEEDED',
