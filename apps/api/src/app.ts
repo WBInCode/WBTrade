@@ -63,6 +63,25 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Root endpoint - API info
+app.get('/', (req, res) => {
+  res.status(200).json({
+    name: 'WBTrade API',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      auth: '/api/auth',
+      products: '/api/products',
+      search: '/api/search',
+      orders: '/api/orders',
+      cart: '/api/cart',
+      inventory: '/api/inventory',
+      health: '/health',
+    },
+    documentation: 'https://github.com/wbtrade/docs',
+  });
+});
+
 // API Routes - Auth with enhanced security
 app.use('/api/auth', authSecureRoutes);
 app.use('/api/products', productsRoutes);

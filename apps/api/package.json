@@ -49,5 +49,8 @@
     "e-commerce"
   ],
   "author": "WBTrade Team",
-  "license": "MIT"
+  "license": "MIT",
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  }
 }
