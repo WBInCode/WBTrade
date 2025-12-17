@@ -10,6 +10,7 @@ import authSecureRoutes from './routes/auth.secure';
 import inventoryRoutes from './routes/inventory';
 import addressesRoutes from './routes/addresses';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
+import { initializeMeilisearch } from './lib/meilisearch';
 
 // Load environment variables
 dotenv.config();
@@ -108,7 +109,10 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 });
 
 // Start the server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
   console.log(`📦 Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Initialize Meilisearch
+  await initializeMeilisearch();
 });
