@@ -8,6 +8,7 @@ import ordersRoutes from './routes/orders';
 import cartRoutes from './routes/cart';
 import authSecureRoutes from './routes/auth.secure';
 import inventoryRoutes from './routes/inventory';
+import addressesRoutes from './routes/addresses';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
 
 // Load environment variables
@@ -76,6 +77,7 @@ app.get('/', (req, res) => {
       orders: '/api/orders',
       cart: '/api/cart',
       inventory: '/api/inventory',
+      addresses: '/api/addresses',
       health: '/health',
     },
     documentation: 'https://github.com/wbtrade/docs',
@@ -89,6 +91,7 @@ app.use('/api/search', searchRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/addresses', addressesRoutes);
 
 // 404 handler
 app.use((req, res) => {
