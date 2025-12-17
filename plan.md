@@ -199,21 +199,22 @@
 - [x] **3.11** Walidacja formularzy (RFC 5322 email, hasło, telefon) ✅
 - [x] **3.12** Social login buttons - POMINIĘTE (wymaga OAuth)
 
-#### Panel klienta (`apps/web/src/app/account/`)
+#### Panel klienta (`apps/web/src/app/account/`) ✅ UKOŃCZONY
 
 - [x] **3.13** Dashboard klienta (`page.tsx`) ✅ (Full user dashboard with stats, orders, recommendations)
-- [ ] **3.14** Historia zamówień (`orders/page.tsx`)
-- [ ] **3.15** Szczegóły zamówienia (`orders/[id]/page.tsx`)
-- [ ] **3.16** Dane osobowe (`profile/page.tsx`)
-- [ ] **3.17** Adresy (`addresses/page.tsx`)
-- [ ] **3.18** Zmiana hasła (`password/page.tsx`)
+- [x] **3.14** Historia zamówień (`orders/page.tsx`) ✅ (Filtering, search, pagination, status badges)
+- [x] **3.15** Szczegóły zamówienia (`orders/[id]/page.tsx`) ✅ (Timeline, tracking, products, addresses)
+- [x] **3.16** Dane osobowe (`profile/page.tsx`) ✅ (Editable fields, validation, click-to-edit)
+- [x] **3.17** Adresy (`addresses/page.tsx`) ✅ (CRUD modal, shipping/billing, set default)
+- [x] **3.18** Zmiana hasła (`password/page.tsx`) ✅ (Strength indicator, requirements, API integration)
+- [x] **3.19** Ustawienia (`settings/page.tsx`) ✅ (Notifications, privacy, preferences)
 
 #### Strona zamówienia (`apps/web/src/app/order/[id]/page.tsx`)
 
-- [ ] **3.19** Status zamówienia (timeline)
-- [ ] **3.20** Tracking przesyłki
-- [ ] **3.21** Pobranie faktury PDF
-- [ ] **3.22** Kontakt ws. zamówienia
+- [ ] **3.20** Status zamówienia (timeline)
+- [ ] **3.21** Tracking przesyłki
+- [ ] **3.22** Pobranie faktury PDF
+- [ ] **3.23** Kontakt ws. zamówienia
 
 ---
 ## Etap 4: Baza danych – schemat Prisma (2-3 dni) ✅ UKOŃCZONY
@@ -547,7 +548,7 @@
 - [ ] **PROD-1** Wygenerować silne JWT sekrety (64+ znaków każdy)
 - [ ] **PROD-2** Skonfigurować Redis z hasłem (AUTH)
 - [ ] **PROD-3** Włączyć HTTPS (SSL/TLS) - bez tego tokeny mogą być przechwycone!
-- [ ] **PROD-4** Ustawić `NODE_ENV=production` - wyłącza dev fallbacki
+- [ ] **PROD-4** Ustawić `NODE_ENV=production` - wyłącza dev fallbacki (WAŻNE: automatycznie zmniejszy rate limit logowania z 100 do 5 prób/15min)
 - [ ] **PROD-5** Skonfigurować CORS tylko dla produkcyjnego frontendu
 - [ ] **PROD-6** Usunąć tokeny weryfikacji/resetu z odpowiedzi API (wysyłać tylko emailem)
 
