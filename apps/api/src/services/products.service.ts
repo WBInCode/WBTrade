@@ -1,5 +1,7 @@
 import { prisma } from '../db';
 import { Prisma } from '@prisma/client';
+import { getProductsIndex } from '../lib/meilisearch';
+import { MeiliProduct } from './search.service';
 
 interface ProductFilters {
   page?: number;
@@ -74,6 +76,11 @@ export class ProductsService {
       status = 'ACTIVE',
     } = filters;
 
+    // If search is provided, use Meilisearch for better results
+    if (search && search.trim()) {
+      return this.searchWithMeilisearch(filters);
+    }
+
     const skip = (page - 1) * limit;
 
     // Build where clause
@@ -102,14 +109,6 @@ export class ProductsService {
       where.price = {};
       if (minPrice) where.price.gte = minPrice;
       if (maxPrice) where.price.lte = maxPrice;
-    }
-
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { sku: { contains: search, mode: 'insensitive' } },
-      ];
     }
 
     // Build orderBy clause
@@ -149,6 +148,201 @@ export class ProductsService {
               inventory: true,
             },
           },
+        },
+      }),
+      prisma.product.count({ where }),
+    ]);
+
+    return {
+      products,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * Search products using Meilisearch for better full-text search
+   */
+  private async searchWithMeilisearch(filters: ProductFilters): Promise<ProductsListResult> {
+    const {
+      page = 1,
+      limit = 20,
+      category,
+      minPrice,
+      maxPrice,
+      search,
+      sort = 'newest',
+      status = 'ACTIVE',
+    } = filters;
+
+    try {
+      const index = getProductsIndex();
+
+      // Build filter array
+      const meiliFilters: string[] = [`status = "${status}"`];
+      
+      if (category) {
+        const categoryIds = await this.getAllCategoryIds(category);
+        if (categoryIds.length > 0) {
+          meiliFilters.push(`categoryId IN [${categoryIds.map(id => `"${id}"`).join(', ')}]`);
+        }
+      }
+      
+      if (minPrice !== undefined) {
+        meiliFilters.push(`price >= ${minPrice}`);
+      }
+      if (maxPrice !== undefined) {
+        meiliFilters.push(`price <= ${maxPrice}`);
+      }
+
+      // Build sort
+      let meiliSort: string[] = [];
+      switch (sort) {
+        case 'price_asc':
+          meiliSort = ['price:asc'];
+          break;
+        case 'price_desc':
+          meiliSort = ['price:desc'];
+          break;
+        case 'name_asc':
+          meiliSort = ['name:asc'];
+          break;
+        case 'name_desc':
+          meiliSort = ['name:desc'];
+          break;
+        case 'newest':
+        default:
+          meiliSort = ['createdAt:desc'];
+      }
+
+      const results = await index.search<MeiliProduct>(search || '', {
+        limit,
+        offset: (page - 1) * limit,
+        filter: meiliFilters.join(' AND '),
+        sort: meiliSort,
+      });
+
+      // Get full product data from Prisma for the found IDs
+      const productIds = results.hits.map(hit => hit.id);
+      
+      if (productIds.length === 0) {
+        return {
+          products: [],
+          total: 0,
+          page,
+          limit,
+          totalPages: 0,
+        };
+      }
+
+      const products = await prisma.product.findMany({
+        where: {
+          id: { in: productIds },
+        },
+        include: {
+          images: {
+            orderBy: { order: 'asc' },
+          },
+          category: true,
+          variants: {
+            include: {
+              inventory: true,
+            },
+          },
+        },
+      });
+
+      // Sort products to match Meilisearch order
+      const sortedProducts = productIds.map(id => 
+        products.find(p => p.id === id)
+      ).filter(Boolean);
+
+      const total = results.estimatedTotalHits || results.hits.length;
+
+      return {
+        products: sortedProducts,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
+    } catch (error) {
+      console.error('Meilisearch search error, falling back to Prisma:', error);
+      // Fallback to Prisma search
+      return this.searchWithPrismaFallback(filters);
+    }
+  }
+
+  /**
+   * Fallback search using Prisma when Meilisearch is unavailable
+   */
+  private async searchWithPrismaFallback(filters: ProductFilters): Promise<ProductsListResult> {
+    const {
+      page = 1,
+      limit = 20,
+      category,
+      minPrice,
+      maxPrice,
+      search,
+      sort = 'newest',
+      status = 'ACTIVE',
+    } = filters;
+
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.ProductWhereInput = {
+      status: status as Prisma.EnumProductStatusFilter,
+    };
+
+    if (category) {
+      const categoryIds = await this.getAllCategoryIds(category);
+      if (categoryIds.length > 0) {
+        where.categoryId = { in: categoryIds };
+      }
+    }
+
+    if (minPrice || maxPrice) {
+      where.price = {};
+      if (minPrice) where.price.gte = minPrice;
+      if (maxPrice) where.price.lte = maxPrice;
+    }
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { sku: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };
+    switch (sort) {
+      case 'price_asc':
+        orderBy = { price: 'asc' };
+        break;
+      case 'price_desc':
+        orderBy = { price: 'desc' };
+        break;
+      case 'name_asc':
+        orderBy = { name: 'asc' };
+        break;
+      case 'name_desc':
+        orderBy = { name: 'desc' };
+        break;
+    }
+
+    const [products, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy,
+        include: {
+          images: { orderBy: { order: 'asc' } },
+          category: true,
+          variants: { include: { inventory: true } },
         },
       }),
       prisma.product.count({ where }),
