@@ -5,13 +5,17 @@ import {
   getProductBySlug,
   createProduct, 
   updateProduct, 
-  deleteProduct 
+  deleteProduct,
+  getFilters
 } from '../controllers/products.controller';
 
 const router = Router();
 
 // Route to get all products (with filters & pagination)
 router.get('/', getProducts);
+
+// Route to get available filters for products
+router.get('/filters', getFilters);
 
 // Route to get a specific product by slug (SEO-friendly)
 router.get('/slug/:slug', getProductBySlug);

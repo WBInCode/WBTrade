@@ -8,7 +8,7 @@ import { useCart } from '../../contexts/CartContext';
 import { productsApi, Product } from '../../lib/api';
 
 export default function CartPage() {
-  const { cart, loading, error, updateQuantity, removeFromCart, clearCart, applyCoupon, removeCoupon } = useCart();
+  const { cart, loading, error, updateQuantity, removeFromCart, clearCart, applyCoupon, removeCoupon, addToCart } = useCart();
   const [couponInput, setCouponInput] = useState('');
   const [couponError, setCouponError] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
@@ -240,8 +240,11 @@ export default function CartPage() {
                       <button
                         onClick={() => handleRemoveItem(item.id)}
                         disabled={isUpdating}
-                        className="text-sm text-gray-400 hover:text-red-500 transition-colors mt-2"
+                        className="flex items-center gap-1 text-sm text-red-500 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors mt-2"
                       >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
                         Usuń
                       </button>
                     </div>
@@ -387,29 +390,30 @@ export default function CartPage() {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
               {suggestedProducts.slice(0, 5).map((product) => (
-                <Link
+                <div
                   key={product.id}
-                  href={`/products/${product.id}`}
                   className="bg-gray-50 rounded-xl p-4 hover:shadow-lg transition-all hover:-translate-y-1 group"
                 >
-                  <div className="aspect-square rounded-lg overflow-hidden bg-white mb-4">
-                    {product.images?.[0] ? (
-                      <img
-                        src={product.images[0].url}
-                        alt={product.images[0].alt || product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400">
-                        <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-                  <h3 className="text-base font-medium text-gray-900 line-clamp-2 group-hover:text-orange-500 transition-colors mb-3 min-h-[48px]">
-                    {product.name}
-                  </h3>
+                  <Link href={`/products/${product.id}`}>
+                    <div className="aspect-square rounded-lg overflow-hidden bg-white mb-4">
+                      {product.images?.[0] ? (
+                        <img
+                          src={product.images[0].url}
+                          alt={product.images[0].alt || product.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="text-base font-medium text-gray-900 line-clamp-2 group-hover:text-orange-500 transition-colors mb-3 min-h-[48px]">
+                      {product.name}
+                    </h3>
+                  </Link>
                   <div className="flex items-baseline gap-2 flex-wrap">
                     <span className="text-lg font-bold text-gray-900">
                       {Number(product.price).toFixed(2)} zł
@@ -420,10 +424,17 @@ export default function CartPage() {
                       </span>
                     )}
                   </div>
-                  <button className="w-full mt-4 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium py-2.5 rounded-lg transition-colors">
+                  <button 
+                    onClick={() => {
+                      if (product.variants?.[0]?.id) {
+                        addToCart(product.variants[0].id, 1);
+                      }
+                    }}
+                    className="w-full mt-4 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium py-2.5 rounded-lg transition-colors"
+                  >
                     Do koszyka
                   </button>
-                </Link>
+                </div>
               ))}
             </div>
           </div>
