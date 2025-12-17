@@ -61,11 +61,11 @@ export class CartController {
         data: updatedCart,
         message: 'Produkt dodany do koszyka',
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Add to cart error:', error);
       res.status(500).json({
         success: false,
-        message: 'Błąd podczas dodawania do koszyka',
+        message: error.message || 'Błąd podczas dodawania do koszyka',
       });
     }
   }

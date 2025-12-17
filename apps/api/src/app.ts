@@ -9,6 +9,8 @@ import cartRoutes from './routes/cart';
 import authSecureRoutes from './routes/auth.secure';
 import inventoryRoutes from './routes/inventory';
 import addressesRoutes from './routes/addresses';
+import wishlistRoutes from './routes/wishlist';
+import categoriesRoutes from './routes/categories';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
 import { initializeMeilisearch } from './lib/meilisearch';
 
@@ -74,11 +76,13 @@ app.get('/', (req, res) => {
     endpoints: {
       auth: '/api/auth',
       products: '/api/products',
+      categories: '/api/categories',
       search: '/api/search',
       orders: '/api/orders',
       cart: '/api/cart',
       inventory: '/api/inventory',
       addresses: '/api/addresses',
+      wishlist: '/api/wishlist',
       health: '/health',
     },
     documentation: 'https://github.com/wbtrade/docs',
@@ -88,11 +92,13 @@ app.get('/', (req, res) => {
 // API Routes - Auth with enhanced security
 app.use('/api/auth', authSecureRoutes);
 app.use('/api/products', productsRoutes);
+app.use('/api/categories', categoriesRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/addresses', addressesRoutes);
+app.use('/api/wishlist', wishlistRoutes);
 
 // 404 handler
 app.use((req, res) => {

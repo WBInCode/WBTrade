@@ -3,19 +3,20 @@ import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
 import HeroBanner from '../components/HeroBanner';
 import CountdownTimer from '../components/CountdownTimer';
+import Newsletter from '../components/Newsletter';
 import { productsApi, Product } from '../lib/api';
 import Link from 'next/link';
 
 // Category icons data
 const categoryIcons = [
-  { name: 'Telefony', icon: '📱', href: '/products?category=phones' },
-  { name: 'Moda', icon: '👕', href: '/products?category=fashion' },
-  { name: 'Dom', icon: '🏠', href: '/products?category=home' },
-  { name: 'Sport', icon: '⚽', href: '/products?category=sport' },
-  { name: 'Dziecko', icon: '👶', href: '/products?category=kids' },
-  { name: 'Auto', icon: '🚗', href: '/products?category=auto' },
-  { name: 'Zwierzęta', icon: '🐕', href: '/products?category=pets' },
-  { name: 'Narzędzia', icon: '🔧', href: '/products?category=tools' },
+  { name: 'Telefony', icon: '📱', href: '/products?category=Elektronika' },
+  { name: 'Moda', icon: '👕', href: '/products?category=Moda' },
+  { name: 'Dom', icon: '🏠', href: '/products?category=Dom%20i%20Ogr%C3%B3d' },
+  { name: 'Sport', icon: '⚽', href: '/products?category=Sport' },
+  { name: 'Dziecko', icon: '👶', href: '/products?category=Dziecko' },
+  { name: 'Auto', icon: '🚗', href: '/products?category=Motoryzacja' },
+  { name: 'Zwierzęta', icon: '🐕', href: '/products?category=Zwierz%C4%99ta' },
+  { name: 'Narzędzia', icon: '🔧', href: '/products?category=Narz%C4%99dzia' },
 ];
 
 // Brand logos
@@ -231,6 +232,9 @@ export default async function HomePage() {
             </Link>
           </div>
         </section>
+
+        {/* Newsletter Section */}
+        <Newsletter />
       </main>
 
       <Footer />

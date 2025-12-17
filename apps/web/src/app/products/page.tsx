@@ -1,153 +1,145 @@
+'use client';
+
+import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import ProductListCard from '../../components/ProductListCard';
 import ProductListHeader from '../../components/ProductListHeader';
 import Pagination from '../../components/Pagination';
 import Breadcrumb from '../../components/Breadcrumb';
-import { CategoryFilter, DeliveryFilter, PriceFilter, BrandFilter, RamFilter } from '../../components/filters';
-import { productsApi, Product } from '../../lib/api';
+import { CategoryFilter, DeliveryFilter, PriceFilter, BrandFilter, SpecificationFilter } from '../../components/filters';
+import { Product, productsApi, ProductFiltersResponse, categoriesApi } from '../../lib/api';
 
-// Demo categories
-const categories = [
-  { 
-    name: 'Laptopy', 
-    slug: 'laptops',
-    children: [
-      { name: 'Laptopy gamingowe', slug: 'gaming-laptops' },
-      { name: 'Ultrabooki', slug: 'ultrabooks' },
-      { name: '2 w 1', slug: '2-in-1s' },
-      { name: 'Laptopy biznesowe', slug: 'business-laptops' },
-    ]
-  }
-];
+const ITEMS_PER_PAGE = 12;
 
-// Demo products for product list
-const demoProducts: Product[] = [
-  {
-    id: 'laptop-1',
-    name: 'Lenovo Legion 5 Pro 16ACH6H Ryzen 7 5800H 16GB 1TB...',
-    price: '1399',
-    compareAtPrice: '1599',
-    images: [{ id: 'laptop-1-img-1', url: 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=400', alt: 'Laptop', order: 0 }],
-    status: 'active',
-    badge: 'super-price',
-    rating: '4.5',
-    reviewCount: 128,
-    storeName: 'TechStore',
-    hasSmart: true,
-    deliveryInfo: 'dostawa jutro',
-  },
-  {
-    id: 'laptop-2',
-    name: 'Dell XPS 15 9520 i7-12700H 32GB 1TB SSD RTX3050Ti...',
-    price: '2199',
-    compareAtPrice: '2499',
-    images: [{ id: 'laptop-2-img-1', url: 'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=400', alt: 'Dell XPS', order: 0 }],
-    status: 'active',
-    rating: '4.7',
-    reviewCount: 45,
-    storeName: 'OfficialDell',
-    hasSmart: true,
-    deliveryInfo: 'dostawa za 2 dni',
-  },
-  {
-    id: 'laptop-3',
-    name: 'Apple iPad Pro 12.9 M2 Wi-Fi 256GB Gwiezdna szarość',
-    price: '1099',
-    images: [{ id: 'laptop-3-img-1', url: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400', alt: 'iPad Pro', order: 0 }],
-    status: 'active',
-    badge: 'bestseller',
-    rating: '4.9',
-    reviewCount: 850,
-    storeName: 'AppleStore',
-    hasSmart: false,
-    deliveryInfo: 'Darmowa dostawa',
-  },
-  {
-    id: 'laptop-4',
-    name: 'Razer BlackWidow V3 Green Switch klawiatura mechaniczna',
-    price: '89',
-    compareAtPrice: '129',
-    images: [{ id: 'laptop-4-img-1', url: 'https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=400', alt: 'Klawiatura', order: 0 }],
-    status: 'active',
-    badge: 'outlet',
-    rating: '4.2',
-    reviewCount: 42,
-    storeName: 'GamingGear',
-    hasSmart: true,
-    deliveryInfo: 'dostawa jutro',
-  },
-  {
-    id: 'laptop-5',
-    name: 'Logitech G Pro X Superlight mysz bezprzewodowa gaming',
-    price: '149',
-    images: [{ id: 'laptop-5-img-1', url: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400', alt: 'Mysz', order: 0 }],
-    status: 'active',
-    rating: '4.6',
-    reviewCount: 2180,
-    storeName: 'LogitechOfficial',
-    hasSmart: true,
-    deliveryInfo: 'dostawa jutro',
-  },
-  {
-    id: 'laptop-6',
-    name: 'ASUS ROG Zephyrus G14 GA401QM Ryzen 9 5900HS',
-    price: '1450',
-    images: [{ id: 'laptop-6-img-1', url: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=400', alt: 'ASUS ROG', order: 0 }],
-    status: 'active',
-    badge: 'bestseller',
-    rating: '4.8',
-    reviewCount: 84,
-    storeName: 'ASUSStore',
-    hasSmart: true,
-    deliveryInfo: 'dostawa za 3 dni',
-  },
-  {
-    id: 'laptop-7',
-    name: 'LG UltraGear 27GP850-B NanoIPS 165Hz 1ms',
-    price: '399',
-    images: [{ id: 'laptop-7-img-1', url: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=400', alt: 'Monitor', order: 0 }],
-    status: 'active',
-    rating: '4.4',
-    reviewCount: 341,
-    storeName: 'LGOfficial',
-    hasSmart: true,
-    deliveryInfo: 'dostawa jutro',
-  },
-  {
-    id: 'laptop-8',
-    name: 'Sony WH-1000XM4 słuchawki bezprzewodowe ANC...',
-    price: '278',
-    images: [{ id: 'laptop-8-img-1', url: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=400', alt: 'Słuchawki', order: 0 }],
-    status: 'active',
-    rating: '4.9',
-    reviewCount: 3289,
-    storeName: 'SonyStore',
-    hasSmart: false,
-    deliveryInfo: 'darmowa dostawa',
-  },
-];
+// Spec labels in Polish
+const specLabels: Record<string, { label: string; unit?: string }> = {
+  ram: { label: 'Pamięć RAM', unit: 'GB' },
+  storage: { label: 'Dysk', unit: 'GB' },
+  processor: { label: 'Procesor' },
+  screenSize: { label: 'Przekątna ekranu', unit: '"' },
+  graphicsCard: { label: 'Karta graficzna' },
+  resolution: { label: 'Rozdzielczość' },
+  panelType: { label: 'Typ matrycy' },
+  batteryCapacity: { label: 'Bateria', unit: 'mAh' },
+  type: { label: 'Typ' },
+  connectivity: { label: 'Łączność' },
+  noiseCancellation: { label: 'Redukcja szumów' },
+  size: { label: 'Rozmiar' },
+  material: { label: 'Materiał' },
+  color: { label: 'Kolor' },
+  powerConsumption: { label: 'Pobór mocy', unit: 'W' },
+  energyClass: { label: 'Klasa energetyczna' },
+  capacity: { label: 'Pojemność', unit: 'L' },
+};
 
-const breadcrumbItems = [
-  { label: 'Strona główna', href: '/' },
-  { label: 'Elektronika', href: '/products?category=electronics' },
-  { label: 'Laptopy', href: '/products?category=laptops' },
-  { label: 'Laptopy gamingowe' },
-];
+function ProductsContent() {
+  const searchParams = useSearchParams();
+  const currentPage = parseInt(searchParams.get('page') || '1', 10);
+  const searchQuery = searchParams.get('search') || '';
+  const currentCategorySlug = searchParams.get('category') || '';
+  const minPrice = searchParams.get('minPrice');
+  const maxPrice = searchParams.get('maxPrice');
+  const brand = searchParams.get('brand');
+  const sort = searchParams.get('sort') || 'newest';
 
-export default async function ProductsPage() {
-  let products: Product[] = [];
+  // State for products and filters
+  const [products, setProducts] = useState<Product[]>([]);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState<ProductFiltersResponse | null>(null);
+  const [categoryPath, setCategoryPath] = useState<{ id: string; name: string; slug: string }[]>([]);
 
-  try {
-    const response = await productsApi.getAll();
-    products = response.products;
-  } catch (err) {
-    // Use demo products on error
-  }
+  // Fetch filters when category changes
+  useEffect(() => {
+    async function fetchFilters() {
+      try {
+        const response = await productsApi.getFilters(currentCategorySlug || undefined);
+        setFilters(response);
+      } catch (error) {
+        console.error('Failed to fetch filters:', error);
+      }
+    }
+    fetchFilters();
+  }, [currentCategorySlug]);
 
-  // Use demo products if API returns empty
-  const displayProducts = products.length > 0 ? products : demoProducts;
-  const totalProducts = 1240; // Demo total
+  // Fetch category path for breadcrumb
+  useEffect(() => {
+    async function fetchCategoryPath() {
+      if (currentCategorySlug) {
+        try {
+          const response = await categoriesApi.getPath(currentCategorySlug);
+          setCategoryPath(response.path);
+        } catch (error) {
+          console.error('Failed to fetch category path:', error);
+          setCategoryPath([]);
+        }
+      } else {
+        setCategoryPath([]);
+      }
+    }
+    fetchCategoryPath();
+  }, [currentCategorySlug]);
+
+  // Fetch products when filters change
+  useEffect(() => {
+    async function fetchProducts() {
+      setLoading(true);
+      try {
+        const response = await productsApi.getAll({
+          page: currentPage,
+          limit: ITEMS_PER_PAGE,
+          category: currentCategorySlug || undefined,
+          minPrice: minPrice ? parseFloat(minPrice) : undefined,
+          maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+          search: searchQuery || undefined,
+          sort: sort as 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'newest',
+          brand: brand || undefined,
+        });
+        setProducts(response.products);
+        setTotalProducts(response.total);
+        setTotalPages(response.totalPages);
+      } catch (error) {
+        console.error('Failed to fetch products:', error);
+        setProducts([]);
+        setTotalProducts(0);
+        setTotalPages(1);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchProducts();
+  }, [currentPage, currentCategorySlug, minPrice, maxPrice, searchQuery, sort, brand]);
+
+  // Build breadcrumb dynamically based on category path
+  const breadcrumbItems = useMemo(() => {
+    const items: { label: string; href?: string }[] = [
+      { label: 'Strona główna', href: '/' },
+    ];
+    
+    if (categoryPath.length > 0) {
+      categoryPath.forEach((cat, index) => {
+        if (index === categoryPath.length - 1) {
+          items.push({ label: cat.name });
+        } else {
+          items.push({ label: cat.name, href: `/products?category=${cat.slug}` });
+        }
+      });
+    } else if (searchQuery) {
+      items.push({ label: `Wyniki dla "${searchQuery}"` });
+    } else {
+      items.push({ label: 'Wszystkie produkty' });
+    }
+    
+    return items;
+  }, [categoryPath, searchQuery]);
+
+  // Get current category name for title
+  const currentCategoryName = categoryPath.length > 0 
+    ? categoryPath[categoryPath.length - 1].name 
+    : null;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -160,10 +152,21 @@ export default async function ProductsPage() {
         {/* Page Title */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-secondary-900">
-            Laptopy gamingowe{' '}
-            <span className="text-secondary-400 font-normal text-lg">
-              ({totalProducts.toLocaleString()} ofert)
-            </span>
+            {searchQuery ? (
+              <>
+                Wyniki dla "{searchQuery}"{' '}
+                <span className="text-secondary-400 font-normal text-lg">
+                  ({totalProducts.toLocaleString()} {totalProducts === 1 ? 'oferta' : totalProducts < 5 ? 'oferty' : 'ofert'})
+                </span>
+              </>
+            ) : (
+              <>
+                {currentCategoryName || 'Wszystkie produkty'}{' '}
+                <span className="text-secondary-400 font-normal text-lg">
+                  ({totalProducts.toLocaleString()} ofert)
+                </span>
+              </>
+            )}
           </h1>
         </div>
 
@@ -171,11 +174,24 @@ export default async function ProductsPage() {
           {/* Sidebar Filters */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <div className="bg-white rounded-lg border border-gray-200 p-4 sticky top-24">
-              <CategoryFilter categories={categories} currentCategory="gaming-laptops" />
+              <CategoryFilter />
               <DeliveryFilter />
-              <PriceFilter />
-              <BrandFilter />
-              <RamFilter />
+              <PriceFilter priceRange={filters?.priceRange} />
+              <BrandFilter brands={filters?.brands || []} />
+              
+              {/* Dynamic specification filters */}
+              {filters?.specifications && Object.entries(filters.specifications).map(([specKey, options]) => {
+                const config = specLabels[specKey] || { label: specKey };
+                return (
+                  <SpecificationFilter
+                    key={specKey}
+                    specKey={specKey}
+                    label={config.label}
+                    options={options}
+                    unit={config.unit}
+                  />
+                );
+              })}
             </div>
           </aside>
 
@@ -184,20 +200,64 @@ export default async function ProductsPage() {
             {/* Header with Tabs, Sort, View Toggle */}
             <ProductListHeader totalProducts={totalProducts} />
 
-            {/* Product Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-              {displayProducts.map((product) => (
-                <ProductListCard key={product.id} product={product} />
-              ))}
-            </div>
+            {/* Loading State */}
+            {loading ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="bg-white rounded-lg border border-gray-200 p-4 animate-pulse">
+                    <div className="bg-gray-200 h-48 rounded-lg mb-4"></div>
+                    <div className="bg-gray-200 h-4 rounded w-3/4 mb-2"></div>
+                    <div className="bg-gray-200 h-4 rounded w-1/2 mb-2"></div>
+                    <div className="bg-gray-200 h-6 rounded w-1/3"></div>
+                  </div>
+                ))}
+              </div>
+            ) : products.length === 0 ? (
+              <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+                <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Brak wyników</h3>
+                <p className="text-gray-500 mb-4">Nie znaleziono produktów pasujących do Twojego wyszukiwania.</p>
+                <a href="/products" className="text-primary-500 hover:text-primary-600 font-medium">
+                  Zobacz wszystkie produkty →
+                </a>
+              </div>
+            ) : (
+              <>
+                {/* Product Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {products.map((product) => (
+                    <ProductListCard key={product.id} product={product} />
+                  ))}
+                </div>
 
-            {/* Pagination */}
-            <Pagination currentPage={1} totalPages={15} />
+                {/* Pagination */}
+                <Pagination 
+                  currentPage={currentPage} 
+                  totalPages={totalPages} 
+                  totalItems={totalProducts}
+                  itemsPerPage={ITEMS_PER_PAGE}
+                />
+              </>
+            )}
           </div>
         </div>
       </main>
 
       <Footer />
     </div>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+      </div>
+    }>
+      <ProductsContent />
+    </Suspense>
   );
 }
