@@ -3,6 +3,7 @@ import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
 import HeroBanner from '../components/HeroBanner';
 import CountdownTimer from '../components/CountdownTimer';
+import Newsletter from '../components/Newsletter';
 import { productsApi, Product } from '../lib/api';
 import Link from 'next/link';
 
@@ -231,6 +232,9 @@ export default async function HomePage() {
             </Link>
           </div>
         </section>
+
+        {/* Newsletter Section */}
+        <Newsletter />
       </main>
 
       <Footer />
