@@ -220,6 +220,18 @@ export interface ProductFilters {
   search?: string;
   sort?: 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'newest';
   status?: 'active' | 'draft' | 'archived';
+  brand?: string;
+  [key: string]: string | number | boolean | undefined; // Allow dynamic specification filters
+}
+
+export interface ProductFiltersResponse {
+  priceRange: {
+    min: number;
+    max: number;
+  };
+  brands: { name: string; count: number }[];
+  specifications: Record<string, { value: string; count: number }[]>;
+  totalProducts: number;
 }
 
 export const productsApi = {
@@ -231,6 +243,9 @@ export const productsApi = {
     
   getBySlug: (slug: string) =>
     api.get<Product>(`/products/slug/${slug}`),
+  
+  getFilters: (category?: string) =>
+    api.get<ProductFiltersResponse>('/products/filters', category ? { category } : undefined),
     
   create: (product: Partial<Product>) =>
     api.post<Product>('/products', product),
@@ -246,19 +261,46 @@ export const productsApi = {
 // CATEGORIES API
 // ============================================
 
+export interface CategoryWithChildren {
+  id: string;
+  name: string;
+  slug: string;
+  parentId: string | null;
+  image: string | null;
+  order: number;
+  isActive: boolean;
+  children?: CategoryWithChildren[];
+  productCount?: number;
+}
+
 export interface CategoriesListResponse {
-  categories: Category[];
+  categories: CategoryWithChildren[];
+}
+
+export interface CategoryResponse {
+  category: CategoryWithChildren;
+}
+
+export interface CategoryPathResponse {
+  path: { id: string; name: string; slug: string }[];
 }
 
 export const categoriesApi = {
+  // Get all categories in tree structure
   getAll: () =>
     api.get<CategoriesListResponse>('/categories'),
+  
+  // Get main (root) categories only  
+  getMain: () =>
+    api.get<CategoriesListResponse>('/categories/main'),
     
-  getById: (id: string) =>
-    api.get<Category>(`/categories/${id}`),
-    
+  // Get category by slug with children
   getBySlug: (slug: string) =>
-    api.get<Category>(`/categories/slug/${slug}`),
+    api.get<CategoryResponse>(`/categories/${slug}`),
+    
+  // Get category breadcrumb path
+  getPath: (slug: string) =>
+    api.get<CategoryPathResponse>(`/categories/${slug}/path`),
 };
 
 // ============================================
@@ -582,6 +624,62 @@ export const cartApi = {
       method: 'POST',
       body: JSON.stringify({ sessionId }),
     }),
+};
+
+// ============================================
+// WISHLIST API
+// ============================================
+
+export interface WishlistItem {
+  id: string;
+  productId: string;
+  variantId: string | null;
+  createdAt: string;
+  product: {
+    id: string;
+    name: string;
+    slug: string;
+    price: number;
+    compareAtPrice: number | null;
+    images: { url: string; alt: string | null }[];
+  };
+  variant?: {
+    id: string;
+    name: string;
+    price: number;
+    compareAtPrice: number | null;
+  } | null;
+}
+
+export interface WishlistResponse {
+  items: WishlistItem[];
+  count: number;
+}
+
+export const wishlistApi = {
+  // Get user's wishlist
+  getWishlist: () =>
+    api.get<WishlistResponse>('/wishlist'),
+  
+  // Add product to wishlist
+  addToWishlist: (productId: string, variantId?: string) =>
+    api.post<WishlistItem>('/wishlist', { productId, variantId }),
+  
+  // Remove product from wishlist
+  removeFromWishlist: (productId: string) =>
+    api.delete<void>(`/wishlist/${productId}`),
+  
+  // Check if product is in wishlist
+  checkWishlist: (productId: string) =>
+    api.get<{ inWishlist: boolean }>(`/wishlist/check/${productId}`),
+  
+  // Clear wishlist
+  clearWishlist: () =>
+    api.delete<void>('/wishlist'),
+  
+  // Merge local wishlist with user's wishlist (after login)
+  mergeWishlist: (items: { productId: string; variantId?: string }[]) =>
+    api.post<WishlistResponse>('/wishlist/merge', { items }),
 };
 
 export default api;

@@ -107,6 +107,15 @@ async function main() {
     },
   });
 
+  // Podkategorie smartfonów
+  await prisma.category.createMany({
+    data: [
+      { name: 'iPhone', slug: 'iphone', parentId: smartfony.id, order: 1 },
+      { name: 'Samsung', slug: 'samsung', parentId: smartfony.id, order: 2 },
+      { name: 'Xiaomi', slug: 'xiaomi', parentId: smartfony.id, order: 3 },
+    ],
+  });
+
   const laptopy = await prisma.category.create({
     data: {
       name: 'Laptopy',
@@ -115,6 +124,16 @@ async function main() {
       image: '/images/categories/laptopy.jpg',
       order: 2,
     },
+  });
+
+  // Podkategorie laptopów
+  await prisma.category.createMany({
+    data: [
+      { name: 'Laptopy gamingowe', slug: 'laptopy-gamingowe', parentId: laptopy.id, order: 1 },
+      { name: 'Ultrabooki', slug: 'ultrabooki', parentId: laptopy.id, order: 2 },
+      { name: 'Laptopy 2w1', slug: 'laptopy-2w1', parentId: laptopy.id, order: 3 },
+      { name: 'Laptopy biznesowe', slug: 'laptopy-biznesowe', parentId: laptopy.id, order: 4 },
+    ],
   });
 
   const akcesoria = await prisma.category.create({
@@ -127,12 +146,135 @@ async function main() {
     },
   });
 
+  const telewizory = await prisma.category.create({
+    data: {
+      name: 'Telewizory',
+      slug: 'telewizory',
+      parentId: elektronika.id,
+      order: 4,
+    },
+  });
+
+  const sluchawki = await prisma.category.create({
+    data: {
+      name: 'Słuchawki',
+      slug: 'sluchawki',
+      parentId: elektronika.id,
+      order: 5,
+    },
+  });
+
+  // MODA
+  const moda = await prisma.category.create({
+    data: {
+      name: 'Moda',
+      slug: 'moda',
+      order: 2,
+    },
+  });
+
+  await prisma.category.createMany({
+    data: [
+      { name: 'Odzież damska', slug: 'odziez-damska', parentId: moda.id, order: 1 },
+      { name: 'Odzież męska', slug: 'odziez-meska', parentId: moda.id, order: 2 },
+      { name: 'Buty', slug: 'buty', parentId: moda.id, order: 3 },
+      { name: 'Akcesoria modowe', slug: 'akcesoria-moda', parentId: moda.id, order: 4 },
+    ],
+  });
+
+  // DOM I OGRÓD
+  const domIOgrod = await prisma.category.create({
+    data: {
+      name: 'Dom i Ogród',
+      slug: 'dom-i-ogrod',
+      order: 3,
+    },
+  });
+
+  await prisma.category.createMany({
+    data: [
+      { name: 'Meble', slug: 'meble', parentId: domIOgrod.id, order: 1 },
+      { name: 'Dekoracje', slug: 'dekoracje', parentId: domIOgrod.id, order: 2 },
+      { name: 'Ogród', slug: 'ogrod', parentId: domIOgrod.id, order: 3 },
+      { name: 'Narzędzia', slug: 'narzedzia', parentId: domIOgrod.id, order: 4 },
+    ],
+  });
+
+  // SUPERMARKET
+  const supermarket = await prisma.category.create({
+    data: {
+      name: 'Supermarket',
+      slug: 'supermarket',
+      order: 4,
+    },
+  });
+
+  await prisma.category.createMany({
+    data: [
+      { name: 'Żywność', slug: 'zywnosc', parentId: supermarket.id, order: 1 },
+      { name: 'Napoje', slug: 'napoje', parentId: supermarket.id, order: 2 },
+      { name: 'Chemia domowa', slug: 'chemia-domowa', parentId: supermarket.id, order: 3 },
+    ],
+  });
+
+  // DZIECKO
+  const dziecko = await prisma.category.create({
+    data: {
+      name: 'Dziecko',
+      slug: 'dziecko',
+      order: 5,
+    },
+  });
+
+  await prisma.category.createMany({
+    data: [
+      { name: 'Zabawki', slug: 'zabawki', parentId: dziecko.id, order: 1 },
+      { name: 'Ubranka', slug: 'ubranka', parentId: dziecko.id, order: 2 },
+      { name: 'Wózki', slug: 'wozki', parentId: dziecko.id, order: 3 },
+    ],
+  });
+
+  // URODA
+  const uroda = await prisma.category.create({
+    data: {
+      name: 'Uroda',
+      slug: 'uroda',
+      order: 6,
+    },
+  });
+
+  await prisma.category.createMany({
+    data: [
+      { name: 'Pielęgnacja', slug: 'pielegnacja', parentId: uroda.id, order: 1 },
+      { name: 'Makijaż', slug: 'makijaz', parentId: uroda.id, order: 2 },
+      { name: 'Perfumy', slug: 'perfumy', parentId: uroda.id, order: 3 },
+    ],
+  });
+
+  // MOTORYZACJA
+  const motoryzacja = await prisma.category.create({
+    data: {
+      name: 'Motoryzacja',
+      slug: 'motoryzacja',
+      order: 7,
+    },
+  });
+
+  await prisma.category.createMany({
+    data: [
+      { name: 'Części samochodowe', slug: 'czesci-samochodowe', parentId: motoryzacja.id, order: 1 },
+      { name: 'Akcesoria samochodowe', slug: 'akcesoria-moto', parentId: motoryzacja.id, order: 2 },
+      { name: 'Opony', slug: 'opony', parentId: motoryzacja.id, order: 3 },
+    ],
+  });
+
+  // AGD (stare, zachowuję)
   const agd = await prisma.category.create({
     data: {
       name: 'AGD',
       slug: 'agd',
       image: '/images/categories/agd.jpg',
-      order: 2,
+      order: 8,
     },
   });
 
