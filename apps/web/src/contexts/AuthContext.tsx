@@ -42,6 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [tokens, setTokens] = useState<AuthTokens | null>(null);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
 
   // Load tokens from localStorage on mount
   useEffect(() => {
@@ -52,23 +53,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setTokens(parsed);
       } catch {
         localStorage.removeItem('auth_tokens');
+        setIsLoading(false);
       }
+    } else {
+      setIsLoading(false);
     }
-    setIsLoading(false);
+    setInitialLoadDone(true);
   }, []);
 
   // Fetch user profile when tokens change
   useEffect(() => {
+    if (!initialLoadDone) return;
+    
     if (tokens?.accessToken) {
       fetchProfile();
     } else {
       setUser(null);
+      setIsLoading(false);
     }
-  }, [tokens?.accessToken]);
+  }, [tokens?.accessToken, initialLoadDone]);
 
   const fetchProfile = async () => {
-    if (!tokens?.accessToken) return;
+    if (!tokens?.accessToken) {
+      setIsLoading(false);
+      return;
+    }
 
+    setIsLoading(true);
     try {
       const response = await fetch(`${API_URL}/auth/me`, {
         headers: {
@@ -88,6 +99,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       console.error('Failed to fetch profile:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
