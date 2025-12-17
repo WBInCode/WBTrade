@@ -81,6 +81,15 @@ export class CartService {
     variantId: string,
     quantity: number = 1
   ): Promise<CartWithItems> {
+    // First, verify the variant exists
+    const variant = await prisma.productVariant.findUnique({
+      where: { id: variantId },
+    });
+
+    if (!variant) {
+      throw new Error(`Wariant o ID ${variantId} nie został znaleziony`);
+    }
+
     // Check if item already exists in cart
     const existingItem = await prisma.cartItem.findUnique({
       where: {
@@ -301,6 +310,7 @@ export class CartService {
    */
   private cartInclude = {
     items: {
+      orderBy: { createdAt: 'asc' as const },
       include: {
         variant: {
           include: {

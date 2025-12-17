@@ -22,6 +22,44 @@ interface ProductsListResult {
 
 export class ProductsService {
   /**
+   * Get all descendant category IDs for a given category slug (including the category itself)
+   */
+  private async getAllCategoryIds(categorySlug: string): Promise<string[]> {
+    // Find the category by slug
+    const category = await prisma.category.findUnique({
+      where: { slug: categorySlug },
+      select: { id: true },
+    });
+
+    if (!category) {
+      return [];
+    }
+
+    const categoryIds: string[] = [category.id];
+
+    // Recursively get all descendant categories
+    const getDescendants = async (parentIds: string[]): Promise<void> => {
+      const children = await prisma.category.findMany({
+        where: {
+          parentId: { in: parentIds },
+          isActive: true,
+        },
+        select: { id: true },
+      });
+
+      if (children.length > 0) {
+        const childIds = children.map(c => c.id);
+        categoryIds.push(...childIds);
+        await getDescendants(childIds);
+      }
+    };
+
+    await getDescendants([category.id]);
+
+    return categoryIds;
+  }
+
+  /**
    * Get all products with filters and pagination
    */
   async getAll(filters: ProductFilters = {}): Promise<ProductsListResult> {
@@ -43,8 +81,21 @@ export class ProductsService {
       status: status as Prisma.EnumProductStatusFilter,
     };
 
+    // If category is specified, get all subcategory IDs and filter by them
     if (category) {
-      where.category = { slug: category };
+      const categoryIds = await this.getAllCategoryIds(category);
+      if (categoryIds.length > 0) {
+        where.categoryId = { in: categoryIds };
+      } else {
+        // Category not found, return empty results
+        return {
+          products: [],
+          total: 0,
+          page,
+          limit,
+          totalPages: 0,
+        };
+      }
     }
 
     if (minPrice || maxPrice) {
@@ -200,6 +251,184 @@ export class ProductsService {
         prisma.product.create({ data: product })
       )
     );
+  }
+
+  /**
+   * Get available filters for products based on category
+   */
+  async getFilters(categorySlug?: string) {
+    // Build where clause
+    const where: Prisma.ProductWhereInput = {
+      status: 'ACTIVE',
+    };
+
+    // If category specified, get all subcategory IDs as well
+    let categoryIds: string[] = [];
+    if (categorySlug) {
+      const category = await prisma.category.findUnique({
+        where: { slug: categorySlug },
+        include: {
+          children: {
+            include: {
+              children: true,
+            },
+          },
+        },
+      });
+
+      if (category) {
+        categoryIds = [category.id];
+        // Add children
+        category.children.forEach((child) => {
+          categoryIds.push(child.id);
+          // Add grandchildren
+          child.children.forEach((grandchild) => {
+            categoryIds.push(grandchild.id);
+          });
+        });
+        where.categoryId = { in: categoryIds };
+      }
+    }
+
+    // Get all products matching criteria
+    const products = await prisma.product.findMany({
+      where,
+      select: {
+        id: true,
+        price: true,
+        specifications: true,
+        category: {
+          select: {
+            slug: true,
+            parent: {
+              select: {
+                slug: true,
+                parent: {
+                  select: { slug: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Extract brands from specifications
+    const brandCounts: Record<string, number> = {};
+    const specificationKeys: Set<string> = new Set();
+    const specificationValues: Record<string, Record<string, number>> = {};
+    let minPrice = Infinity;
+    let maxPrice = 0;
+
+    products.forEach((product) => {
+      // Price range
+      const price = Number(product.price);
+      if (price < minPrice) minPrice = price;
+      if (price > maxPrice) maxPrice = price;
+
+      // Specifications
+      const specs = product.specifications as Record<string, any> | null;
+      if (specs) {
+        // Brand
+        if (specs.brand) {
+          brandCounts[specs.brand] = (brandCounts[specs.brand] || 0) + 1;
+        }
+
+        // Other specs
+        Object.entries(specs).forEach(([key, value]) => {
+          if (key !== 'brand' && value !== null && value !== undefined) {
+            specificationKeys.add(key);
+            if (!specificationValues[key]) {
+              specificationValues[key] = {};
+            }
+            const strValue = String(value);
+            specificationValues[key][strValue] = (specificationValues[key][strValue] || 0) + 1;
+          }
+        });
+      }
+    });
+
+    // Determine which spec filters to show based on category
+    const categoryPath = categorySlug ? await this.getCategoryPath(categorySlug) : [];
+    const relevantSpecs = this.getRelevantSpecsForCategory(categoryPath);
+
+    // Format brands
+    const brands = Object.entries(brandCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    // Format specifications - only include relevant ones
+    const specifications: Record<string, { value: string; count: number }[]> = {};
+    relevantSpecs.forEach((specKey) => {
+      if (specificationValues[specKey]) {
+        specifications[specKey] = Object.entries(specificationValues[specKey])
+          .map(([value, count]) => ({ value, count }))
+          .sort((a, b) => {
+            // Sort numerically if possible
+            const numA = parseFloat(a.value);
+            const numB = parseFloat(b.value);
+            if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+            return a.value.localeCompare(b.value);
+          });
+      }
+    });
+
+    return {
+      priceRange: {
+        min: minPrice === Infinity ? 0 : Math.floor(minPrice),
+        max: maxPrice === 0 ? 10000 : Math.ceil(maxPrice),
+      },
+      brands,
+      specifications,
+      totalProducts: products.length,
+    };
+  }
+
+  private async getCategoryPath(slug: string): Promise<string[]> {
+    const category = await prisma.category.findUnique({
+      where: { slug },
+      include: {
+        parent: {
+          include: {
+            parent: true,
+          },
+        },
+      },
+    });
+
+    if (!category) return [];
+
+    const path = [category.slug];
+    if (category.parent) {
+      path.unshift(category.parent.slug);
+      if (category.parent.parent) {
+        path.unshift(category.parent.parent.slug);
+      }
+    }
+    return path;
+  }
+
+  private getRelevantSpecsForCategory(categoryPath: string[]): string[] {
+    // Define which specs are relevant for which categories
+    const specsByCategory: Record<string, string[]> = {
+      'elektronika': ['brand'],
+      'laptopy': ['ram', 'processor', 'storage', 'screenSize', 'graphicsCard'],
+      'smartfony': ['ram', 'storage', 'screenSize', 'batteryCapacity'],
+      'telewizory': ['screenSize', 'resolution', 'panelType'],
+      'sluchawki': ['type', 'connectivity', 'noiseCancellation'],
+      'moda': ['size', 'material', 'color'],
+      'agd': ['powerConsumption', 'energyClass', 'capacity'],
+    };
+
+    const specs = new Set<string>();
+    categoryPath.forEach((slug) => {
+      const categorySpecs = specsByCategory[slug];
+      if (categorySpecs) {
+        categorySpecs.forEach((spec) => specs.add(spec));
+      }
+    });
+
+    return Array.from(specs);
   }
 }
 
