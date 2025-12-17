@@ -71,7 +71,7 @@ const initialPayment: PaymentData = {
 export default function CheckoutPage() {
   const router = useRouter();
   const { cart, itemCount, isLoading: cartLoading } = useCart();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [checkoutData, setCheckoutData] = useState<CheckoutData>({
@@ -183,7 +183,8 @@ export default function CheckoutPage() {
     }
   };
 
-  if (cartLoading) {
+  // Show loading while checking auth or cart
+  if (cartLoading || authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
@@ -211,6 +212,53 @@ export default function CheckoutPage() {
           >
             Przeglądaj produkty
           </Link>
+        </main>
+      </div>
+    );
+  }
+
+  // Check if user is logged in - required for checkout
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <Link href="/" className="text-2xl font-bold text-orange-500">
+              WBTrade
+            </Link>
+          </div>
+        </header>
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="max-w-md mx-auto bg-white rounded-xl shadow-sm p-8 text-center">
+            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-3">Zaloguj się, aby złożyć zamówienie</h1>
+            <p className="text-gray-600 mb-8">
+              Aby kontynuować składanie zamówienia, musisz być zalogowany na swoje konto. Dzięki temu możesz śledzić status zamówienia i mieć dostęp do historii zakupów.
+            </p>
+            <div className="space-y-3">
+              <Link
+                href="/login?redirect=/checkout"
+                className="block w-full px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-medium transition-colors"
+              >
+                Zaloguj się
+              </Link>
+              <Link
+                href="/register?redirect=/checkout"
+                className="block w-full px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+              >
+                Utwórz konto
+              </Link>
+            </div>
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <Link href="/cart" className="text-sm text-gray-500 hover:text-orange-500">
+                ← Wróć do koszyka
+              </Link>
+            </div>
+          </div>
         </main>
       </div>
     );
