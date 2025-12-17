@@ -1,26 +1,84 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useSearchParams, usePathname } from 'next/navigation';
 import SearchBar from './SearchBar';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
-
-const categories = [
-  'Elektronika',
-  'Moda',
-  'Dom i Ogród',
-  'Supermarket',
-  'Dziecko',
-  'Uroda',
-  'Motoryzacja',
-];
+import { useWishlist } from '../contexts/WishlistContext';
+import { categoriesApi, CategoryWithChildren } from '../lib/api';
 
 export default function Header() {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [categories, setCategories] = useState<CategoryWithChildren[]>([]);
+  const [categoryPath, setCategoryPath] = useState<{ id: string; name: string; slug: string }[]>([]);
   const { itemCount } = useCart();
   const { user, isAuthenticated, logout } = useAuth();
+  const { itemCount: wishlistCount } = useWishlist();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  
+  // Get current category from URL
+  const currentCategorySlug = searchParams.get('category');
+  const isOnProductsPage = pathname === '/products';
+  
+  // Fetch main categories
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const response = await categoriesApi.getMain();
+        setCategories(response.categories);
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+      }
+    }
+    fetchCategories();
+  }, []);
+
+  // Fetch category path when slug changes
+  useEffect(() => {
+    async function fetchPath() {
+      if (currentCategorySlug) {
+        try {
+          const response = await categoriesApi.getPath(currentCategorySlug);
+          setCategoryPath(response.path);
+        } catch (error) {
+          console.error('Failed to fetch category path:', error);
+          setCategoryPath([]);
+        }
+      } else {
+        setCategoryPath([]);
+      }
+    }
+    fetchPath();
+  }, [currentCategorySlug]);
+
+  // Get current main category from path
+  const currentMainCategory = categoryPath.length > 0 ? categoryPath[0] : null;
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
+        setIsCategoryOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Close dropdowns on route change
+  useEffect(() => {
+    setIsCategoryOpen(false);
+    setIsUserMenuOpen(false);
+  }, [pathname, searchParams]);
 
   return (
     <header className="bg-white sticky top-0 z-50 shadow-sm">
@@ -40,29 +98,51 @@ export default function Header() {
               </span>
             </Link>
 
-            {/* Category Dropdown */}
-            <div className="hidden lg:block relative">
+            {/* Category Dropdown - only shows main categories */}
+            <div className="hidden lg:block relative" ref={categoryDropdownRef}>
               <button
                 onClick={() => setIsCategoryOpen(!isCategoryOpen)}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-secondary-700 hover:bg-gray-50 rounded-lg border border-gray-200"
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                  isOnProductsPage && currentMainCategory
+                    ? 'text-primary-600 border-primary-300 bg-primary-50'
+                    : 'text-secondary-700 border-gray-200 hover:bg-gray-50'
+                }`}
               >
-                Wszystkie kategorie
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {isOnProductsPage && currentMainCategory ? currentMainCategory.name : 'Wszystkie kategorie'}
+                <svg className={`w-4 h-4 transition-transform ${isCategoryOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
               {isCategoryOpen && (
-                <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-50">
-                  {categories.map((category) => (
-                    <Link
-                      key={category}
-                      href={`/products?category=${encodeURIComponent(category)}`}
-                      className="block px-4 py-2 text-sm text-secondary-700 hover:bg-gray-50"
-                      onClick={() => setIsCategoryOpen(false)}
-                    >
-                      {category}
-                    </Link>
-                  ))}
+                <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-50">
+                  {categories.map((category) => {
+                    const isActive = currentMainCategory?.slug === category.slug;
+                    return (
+                      <Link
+                        key={category.slug}
+                        href={`/products?category=${category.slug}`}
+                        className={`block px-4 py-2.5 text-sm transition-colors ${
+                          isActive
+                            ? 'text-primary-600 bg-primary-50 font-medium'
+                            : 'text-secondary-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span>{category.name}</span>
+                          {isActive && (
+                            <svg className="w-4 h-4 text-primary-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                          {category.children && category.children.length > 0 && !isActive && (
+                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          )}
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -75,15 +155,22 @@ export default function Header() {
             {/* Right Icons */}
             <div className="flex items-center gap-1 sm:gap-4">
               {/* Favorites */}
-              <Link href="/favorites" className="flex flex-col items-center p-2 text-secondary-600 hover:text-primary-500 transition-colors">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
+              <Link href="/wishlist" className="flex flex-col items-center p-2 text-secondary-600 hover:text-primary-500 transition-colors relative">
+                <div className="relative">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                  {wishlistCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium">
+                      {wishlistCount > 99 ? '99+' : wishlistCount}
+                    </span>
+                  )}
+                </div>
                 <span className="text-xs mt-0.5 hidden sm:block">Ulubione</span>
               </Link>
 
               {/* Account */}
-              <div className="relative">
+              <div className="relative" ref={userMenuRef}>
                 {isAuthenticated ? (
                   <>
                     <button
@@ -175,32 +262,34 @@ export default function Header() {
               {/* Deals Link - Highlighted */}
               <Link
                 href="/deals"
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-orange-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg whitespace-nowrap transition-colors"
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg whitespace-nowrap transition-colors ${
+                  pathname === '/deals'
+                    ? 'text-orange-600 bg-orange-50'
+                    : 'text-orange-500 hover:text-orange-600 hover:bg-orange-50'
+                }`}
               >
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M5 2a2 2 0 00-2 2v14l3.5-2 3.5 2 3.5-2 3.5 2V4a2 2 0 00-2-2H5zm2.5 3a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm6.207.293a1 1 0 00-1.414 0l-6 6a1 1 0 101.414 1.414l6-6a1 1 0 000-1.414zM12.5 10a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" clipRule="evenodd" />
                 </svg>
                 Promocje
               </Link>
-              {categories.map((category) => (
-                <Link
-                  key={category}
-                  href={`/products?category=${encodeURIComponent(category)}`}
-                  className="px-3 py-2 text-sm text-secondary-600 hover:text-secondary-900 hover:bg-gray-50 rounded-lg whitespace-nowrap transition-colors"
-                >
-                  {category}
-                </Link>
-              ))}
+              {categories.map((category) => {
+                const isActive = isOnProductsPage && currentMainCategory?.slug === category.slug;
+                return (
+                  <Link
+                    key={category.slug}
+                    href={`/products?category=${category.slug}`}
+                    className={`px-3 py-2 text-sm rounded-lg whitespace-nowrap transition-colors ${
+                      isActive
+                        ? 'text-primary-600 bg-primary-50 font-medium'
+                        : 'text-secondary-600 hover:text-secondary-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    {category.name}
+                  </Link>
+                );
+              })}
             </nav>
-            <Link
-              href="/sell"
-              className="hidden md:flex items-center gap-1 px-4 py-2 text-sm font-medium text-primary-500 hover:text-primary-600 whitespace-nowrap"
-            >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-              </svg>
-              Sprzedawaj
-            </Link>
           </div>
         </div>
       </div>
