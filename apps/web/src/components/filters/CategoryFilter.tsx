@@ -1,22 +1,54 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { categoriesApi, CategoryWithChildren } from '../../lib/api';
 
-interface Category {
-  name: string;
-  slug: string;
-  count?: number;
-  children?: Category[];
-}
+export default function CategoryFilter() {
+  const searchParams = useSearchParams();
+  const currentCategorySlug = searchParams.get('category') || '';
+  
+  const [categories, setCategories] = useState<CategoryWithChildren[]>([]);
+  const [categoryPath, setCategoryPath] = useState<{ id: string; name: string; slug: string }[]>([]);
+  const [expanded, setExpanded] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
-interface CategoryFilterProps {
-  categories: Category[];
-  currentCategory?: string;
-}
+  // Fetch categories
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const response = await categoriesApi.getAll();
+        setCategories(response.categories);
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchCategories();
+  }, []);
 
-export default function CategoryFilter({ categories, currentCategory }: CategoryFilterProps) {
-  const [expanded, setExpanded] = useState<string[]>(['laptops']);
+  // Fetch category path when slug changes
+  useEffect(() => {
+    async function fetchPath() {
+      if (currentCategorySlug) {
+        try {
+          const response = await categoriesApi.getPath(currentCategorySlug);
+          setCategoryPath(response.path);
+          // Auto-expand parent categories
+          setExpanded(response.path.map(cat => cat.slug));
+        } catch (error) {
+          console.error('Failed to fetch category path:', error);
+          setCategoryPath([]);
+        }
+      } else {
+        setCategoryPath([]);
+        setExpanded([]);
+      }
+    }
+    fetchPath();
+  }, [currentCategorySlug]);
 
   const toggleExpand = (slug: string) => {
     setExpanded(prev => 
@@ -26,10 +58,34 @@ export default function CategoryFilter({ categories, currentCategory }: Category
     );
   };
 
-  const renderCategory = (category: Category, level: number = 0) => {
+  // Helper to find category in tree
+  const findCategory = (slug: string, cats: CategoryWithChildren[]): CategoryWithChildren | null => {
+    for (const cat of cats) {
+      if (cat.slug === slug) return cat;
+      if (cat.children) {
+        const found = findCategory(slug, cat.children);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  // Check if slug is a main (root) category
+  const isMainCategory = (slug: string) => categories.some(cat => cat.slug === slug);
+
+  // Get parent category from path
+  const getParentFromPath = () => {
+    if (categoryPath.length >= 2) {
+      return categoryPath[categoryPath.length - 2];
+    }
+    return null;
+  };
+
+  const renderCategory = (category: CategoryWithChildren, level: number = 0) => {
     const hasChildren = category.children && category.children.length > 0;
     const isExpanded = expanded.includes(category.slug);
-    const isActive = category.slug === currentCategory;
+    const isActive = category.slug === currentCategorySlug;
+    const isInPath = categoryPath.some(cat => cat.slug === category.slug);
 
     return (
       <div key={category.slug}>
@@ -38,15 +94,25 @@ export default function CategoryFilter({ categories, currentCategory }: Category
         >
           <Link
             href={`/products?category=${category.slug}`}
-            className={`text-sm hover:text-primary-500 transition-colors ${
-              isActive ? 'text-primary-500 font-medium' : 'text-secondary-700'
+            className={`text-sm transition-colors flex-1 ${
+              isActive 
+                ? 'text-primary-500 font-medium' 
+                : isInPath 
+                  ? 'text-primary-400'
+                  : 'text-secondary-700 hover:text-primary-500'
             }`}
           >
             {category.name}
+            {category.productCount !== undefined && category.productCount > 0 && (
+              <span className="text-gray-400 text-xs ml-1">({category.productCount})</span>
+            )}
           </Link>
           {hasChildren && (
             <button 
-              onClick={() => toggleExpand(category.slug)}
+              onClick={(e) => {
+                e.preventDefault();
+                toggleExpand(category.slug);
+              }}
               className="p-1 hover:bg-gray-100 rounded"
             >
               <svg 
@@ -69,19 +135,44 @@ export default function CategoryFilter({ categories, currentCategory }: Category
     );
   };
 
+  // Determine what to show
+  const showAllMainCategories = !currentCategorySlug || isMainCategory(currentCategorySlug);
+  const parentCategory = getParentFromPath();
+
+  if (loading) {
+    return (
+      <div className="mb-6">
+        <h3 className="font-semibold text-secondary-900 mb-3">Kategorie</h3>
+        <div className="animate-pulse space-y-2">
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="h-6 bg-gray-200 rounded w-3/4"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mb-6">
       <h3 className="font-semibold text-secondary-900 mb-3">Kategorie</h3>
-      <Link 
-        href="/products?category=electronics" 
-        className="flex items-center gap-2 text-sm text-primary-500 mb-2"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-        All Electronics
-      </Link>
-      {categories.map(cat => renderCategory(cat))}
+      
+      {/* Back link when in subcategory */}
+      {!showAllMainCategories && (
+        <Link 
+          href={parentCategory ? `/products?category=${parentCategory.slug}` : '/products'}
+          className="flex items-center gap-2 text-sm text-primary-500 mb-3 hover:text-primary-600"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          {parentCategory ? parentCategory.name : 'Wszystkie kategorie'}
+        </Link>
+      )}
+      
+      {/* Category tree */}
+      <div className="space-y-0.5">
+        {categories.map(cat => renderCategory(cat))}
+      </div>
     </div>
   );
 }

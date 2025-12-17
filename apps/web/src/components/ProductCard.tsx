@@ -23,8 +23,11 @@ export default function ProductCard({ product, showDelivery = false, showWishlis
   const handleWishlistClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    // Get the first variant ID if available
+    const firstVariant = product.variants?.[0];
     toggleWishlist({
       id: product.id,
+      variantId: firstVariant?.id,
       name: product.name,
       price: product.price,
       compareAtPrice: product.compareAtPrice,
