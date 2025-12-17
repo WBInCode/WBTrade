@@ -1,7 +1,7 @@
 'use client';
 
 import { notFound } from 'next/navigation';
-import { useState, use, useEffect, useMemo } from 'react';
+import { useState, use, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
@@ -37,6 +37,35 @@ const mockProduct: Product = {
     { id: '5', url: 'https://images.unsplash.com/photo-1541558869434-2840d308329a?w=400', alt: 'Chair in office', order: 4 },
   ],
   category: { id: '1', name: 'Ergonomic Chairs', slug: 'ergonomic-chairs' },
+  variants: [
+    {
+      id: 'v1',
+      productId: '1',
+      name: 'Czarny / Standard',
+      sku: 'CHAIR-ERG-001-BLK-STD',
+      price: 149.99,
+      stock: 25,
+      attributes: { Color: 'Czarny', Size: 'Standard' },
+    },
+    {
+      id: 'v2',
+      productId: '1',
+      name: 'Szary / Standard',
+      sku: 'CHAIR-ERG-001-GRY-STD',
+      price: 149.99,
+      stock: 12,
+      attributes: { Color: 'Szary', Size: 'Standard' },
+    },
+    {
+      id: 'v3',
+      productId: '1',
+      name: 'Czarny / XL',
+      sku: 'CHAIR-ERG-001-BLK-XL',
+      price: 159.99,
+      stock: 6,
+      attributes: { Color: 'Czarny', Size: 'XL' },
+    },
+  ],
 };
 
 const mockReviews = [
@@ -76,15 +105,98 @@ export default function ProductPage({ params }: ProductPageProps) {
   const [loading, setLoading] = useState(true);
   const [useMock, setUseMock] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
+  const [quantity, setQuantity] = useState(1);
   const { addToCart } = useCart();
 
-  const handleAddToCart = async () => {
+  const variantAttributes = useMemo(() => {
+    const variants = product?.variants || [];
+    const keys = new Set<string>();
+    for (const variant of variants) {
+      Object.keys(variant.attributes || {}).forEach((key) => keys.add(key));
+    }
+    return Array.from(keys);
+  }, [product?.variants]);
+
+  const attributeOptions = useMemo(() => {
+    const variants = product?.variants || [];
+    const options: Record<string, string[]> = {};
+    for (const key of variantAttributes) {
+      const values = new Set<string>();
+      for (const variant of variants) {
+        const value = variant.attributes?.[key];
+        if (value) values.add(value);
+      }
+      options[key] = Array.from(values);
+    }
+    return options;
+  }, [product?.variants, variantAttributes]);
+
+  const selectedVariant = useMemo(() => {
+    const variants = product?.variants || [];
+    if (!variants.length) return null;
+
+    // If we don't have all keys selected yet, treat as not selected.
+    if (variantAttributes.some((key) => !selectedAttributes[key])) return null;
+
+    return (
+      variants.find((variant) =>
+        variantAttributes.every((key) => variant.attributes?.[key] === selectedAttributes[key])
+      ) || null
+    );
+  }, [product?.variants, selectedAttributes, variantAttributes]);
+
+  useEffect(() => {
     if (!product?.variants?.length) return;
+
+    // Initialize selection to first in-stock variant, falling back to first variant
+    const initial = product.variants.find((v) => v.stock > 0) || product.variants[0];
+    const nextAttrs: Record<string, string> = {};
+    for (const key of Object.keys(initial.attributes || {})) {
+      nextAttrs[key] = initial.attributes[key];
+    }
+    setSelectedAttributes(nextAttrs);
+    setQuantity(1);
+  }, [product?.variants]);
+
+  const handleAttributeChange = (key: string, value: string) => {
+    const variants = product?.variants || [];
+    const next = { ...selectedAttributes, [key]: value };
+
+    // Try to keep other selections if possible; if not, fall back to any variant with this value.
+    const exact = variants.find((v) => variantAttributes.every((k) => next[k] && v.attributes?.[k] === next[k]));
+    if (exact) {
+      setSelectedAttributes(next);
+      return;
+    }
+
+    const fallback = variants.find((v) => v.attributes?.[key] === value);
+    if (fallback) {
+      const filled: Record<string, string> = { ...next };
+      for (const k of Object.keys(fallback.attributes || {})) {
+        filled[k] = fallback.attributes[k];
+      }
+      setSelectedAttributes(filled);
+      return;
+    }
+
+    setSelectedAttributes(next);
+  };
+
+  const clampQuantity = useCallback(
+    (next: number) => {
+      const max = selectedVariant?.stock ?? 999;
+      return Math.max(1, Math.min(max, next));
+    },
+    [selectedVariant?.stock]
+  );
+
+  const handleAddToCart = async () => {
+    if (!selectedVariant) return;
     
     setAddingToCart(true);
     try {
-      // Use first variant for now (in real app, user would select variant)
-      await addToCart(product.variants[0].id);
+      await addToCart(selectedVariant.id, quantity);
       // Could show a toast notification here
     } catch (err) {
       console.error('Failed to add to cart:', err);
@@ -186,9 +298,10 @@ export default function ProductPage({ params }: ProductPageProps) {
   // Use product images or fallback to mock images
   const images = product.images?.length ? product.images : mockProduct.images;
   const mainImage = images?.[selectedImage]?.url || '/placeholder.jpg';
-  const hasDiscount = product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price);
+  const effectivePrice = selectedVariant?.price ?? Number(product.price);
+  const hasDiscount = product.compareAtPrice && Number(product.compareAtPrice) > Number(effectivePrice);
   const discountPercent = hasDiscount 
-    ? Math.round((1 - Number(product.price) / Number(product.compareAtPrice)) * 100)
+    ? Math.round((1 - Number(effectivePrice) / Number(product.compareAtPrice)) * 100)
     : 0;
 
   // Use real category if available
@@ -305,7 +418,7 @@ export default function ProductPage({ params }: ProductPageProps) {
               {/* Price */}
               <div className="flex items-baseline gap-3 mb-1">
                 <span className="text-3xl font-bold text-gray-900">
-                  ${Number(product.price).toFixed(2)}
+                  ${Number(effectivePrice).toFixed(2)}
                 </span>
                 {hasDiscount && (
                   <>
@@ -333,6 +446,72 @@ export default function ProductPage({ params }: ProductPageProps) {
                 <button className="text-orange-500 hover:underline">Oblicz</button>
               </div>
 
+              {/* Variants */}
+              {product.variants?.length ? (
+                <div className="mb-4 space-y-3">
+                  {variantAttributes.map((key) => (
+                    <div key={key}>
+                      <label className="block text-sm font-medium text-gray-900 mb-1">
+                        {key}
+                      </label>
+                      <select
+                        value={selectedAttributes[key] || ''}
+                        onChange={(e) => handleAttributeChange(key, e.target.value)}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200"
+                      >
+                        <option value="" disabled>
+                          Wybierz
+                        </option>
+                        {(attributeOptions[key] || []).map((value) => (
+                          <option key={value} value={value}>
+                            {value}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+
+                  {/* Quantity */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 mb-1">Ilość</label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setQuantity((q) => clampQuantity(q - 1))}
+                        disabled={quantity <= 1}
+                        className="w-10 h-10 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="Zmniejsz ilość"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min={1}
+                        max={selectedVariant?.stock ?? undefined}
+                        value={quantity}
+                        onChange={(e) => setQuantity(clampQuantity(Number(e.target.value || 1)))}
+                        className="w-20 h-10 text-center rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setQuantity((q) => clampQuantity(q + 1))}
+                        disabled={!!selectedVariant && quantity >= selectedVariant.stock}
+                        className="w-10 h-10 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="Zwiększ ilość"
+                      >
+                        +
+                      </button>
+                      {selectedVariant && (
+                        <span className="text-xs text-gray-500 ml-1">Dostępne: {selectedVariant.stock}</span>
+                      )}
+                    </div>
+                    {variantAttributes.length > 0 && !selectedVariant && (
+                      <p className="text-xs text-red-600 mt-1">Wybierz wariant produktu</p>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+
               {/* Buy Now Button */}
               <button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-lg mb-3 transition-colors">
                 Kup teraz
@@ -341,7 +520,7 @@ export default function ProductPage({ params }: ProductPageProps) {
               {/* Add to Cart Button */}
               <button 
                 onClick={handleAddToCart}
-                disabled={addingToCart || !product?.variants?.length}
+                disabled={addingToCart || !selectedVariant}
                 className="w-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 font-semibold py-3 rounded-lg mb-4 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {addingToCart ? (
