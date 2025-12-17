@@ -181,23 +181,23 @@
 
 ### TODO
 
-#### Checkout (`apps/web/src/app/checkout/page.tsx`)
+#### Checkout (`apps/web/src/app/checkout/page.tsx`) ✅ UKOŃCZONY
 
-- [ ] **3.1** Multi-step form (adres → dostawa → płatność → podsumowanie)
-- [ ] **3.2** Formularz adresu (walidacja)
-- [ ] **3.3** Wybór dostawy (InPost, kurier, odbiór)
-- [ ] **3.4** Wybór płatności (karta, BLIK, przelew)
-- [ ] **3.5** Podsumowanie zamówienia
-- [ ] **3.6** Checkbox regulamin + RODO
-- [ ] **3.7** Przycisk "Zamawiam i płacę"
+- [x] **3.1** Multi-step form (adres → dostawa → płatność → podsumowanie) ✅
+- [x] **3.2** Formularz adresu (walidacja) ✅
+- [x] **3.3** Wybór dostawy (InPost, kurier, odbiór) ✅
+- [x] **3.4** Wybór płatności (karta, BLIK, przelew) ✅
+- [x] **3.5** Podsumowanie zamówienia ✅
+- [x] **3.6** Checkbox regulamin + RODO ✅
+- [x] **3.7** Przycisk "Zamawiam i płacę" ✅
 
-#### Auth (`apps/web/src/app/auth/`)
+#### Auth (`apps/web/src/app/auth/`) ✅ UKOŃCZONY
 
-- [ ] **3.8** Strona logowania (`login/page.tsx`)
-- [ ] **3.9** Strona rejestracji (`register/page.tsx`)
-- [ ] **3.10** Reset hasła (`forgot-password/page.tsx`)
-- [ ] **3.11** Walidacja formularzy (react-hook-form + zod)
-- [ ] **3.12** Social login buttons (Google, Facebook - opcjonalnie)
+- [x] **3.8** Strona logowania (`login/page.tsx`) ✅
+- [x] **3.9** Strona rejestracji (`register/page.tsx`) ✅
+- [x] **3.10** Reset hasła (`forgot-password/page.tsx` + `reset-password/page.tsx`) ✅
+- [x] **3.11** Walidacja formularzy (RFC 5322 email, hasło, telefon) ✅
+- [x] **3.12** Social login buttons - POMINIĘTE (wymaga OAuth)
 
 #### Panel klienta (`apps/web/src/app/account/`)
 
@@ -663,3 +663,16 @@ EMAIL_FROM="noreply@wbtrade.pl"
 - [ ] Google Analytics 4
 - [ ] Facebook Pixel
 - [ ] Własne dashboardy (konwersje, koszyki porzucone)
+
+---
+
+## 📝 Notatki techniczne (TODO na produkcję)
+
+### Checkout - Paczkomaty InPost
+> ⚠️ **Prowizoryczne rozwiązanie**: Obecnie wybór paczkomatów jest zaimplementowany w uproszczony sposób (statyczna lista lub ręczne wpisywanie kodu). 
+> 
+> **Na produkcję wymagane:**
+> - [ ] Integracja z InPost Geowidget API (mapa z paczkomatami)
+> - [ ] Wyszukiwanie paczkomatów po lokalizacji użytkownika
+> - [ ] Walidacja kodu paczkomatu przez API InPost
+> - [ ] Dokumentacja: https://dokumentacja-inpost.atlassian.net/wiki/spaces/PL/pages/18579457/Geowidget+v5
