@@ -54,6 +54,15 @@ export async function initializeMeilisearch(): Promise<void> {
       'exactness',
     ]);
 
+    // Configure typo tolerance for better search results
+    await meiliClient.index(PRODUCTS_INDEX).updateTypoTolerance({
+      enabled: true,
+      minWordSizeForTypos: {
+        oneTypo: 3,
+        twoTypos: 6,
+      },
+    });
+
     console.log('✓ Meilisearch initialized successfully');
   } catch (error) {
     console.error('Failed to initialize Meilisearch:', error);
