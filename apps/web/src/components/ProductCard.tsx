@@ -1,20 +1,66 @@
+'use client';
+
 import Link from 'next/link';
 import { Product } from '../lib/api';
+import { useWishlist } from '../contexts/WishlistContext';
 
 export interface ProductCardProps {
   product: Product;
   showDelivery?: boolean;
+  showWishlist?: boolean;
 }
 
-export default function ProductCard({ product, showDelivery = false }: ProductCardProps) {
+export default function ProductCard({ product, showDelivery = false, showWishlist = true }: ProductCardProps) {
   const mainImage = product.images?.[0]?.url || '/placeholder.jpg';
   const hasDiscount = product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price);
   const discountPercent = hasDiscount 
     ? Math.round((1 - Number(product.price) / Number(product.compareAtPrice)) * 100)
     : 0;
 
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  const inWishlist = isInWishlist(product.id);
+
+  const handleWishlistClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleWishlist({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      compareAtPrice: product.compareAtPrice,
+      image: mainImage,
+    });
+  };
+
   return (
-    <div className="group bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow duration-200">
+    <div className="group bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow duration-200 relative">
+      {/* Wishlist button */}
+      {showWishlist && (
+        <button
+          onClick={handleWishlistClick}
+          className={`absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200
+            ${inWishlist 
+              ? 'bg-red-50 text-red-500' 
+              : 'bg-white/80 text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-50'
+            }`}
+          title={inWishlist ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'}
+        >
+          <svg 
+            className="w-5 h-5" 
+            fill={inWishlist ? 'currentColor' : 'none'} 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              strokeWidth={2} 
+              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
+            />
+          </svg>
+        </button>
+      )}
+
       <Link href={`/products/${product.id}`}>
         {/* Image */}
         <div className="relative aspect-square overflow-hidden rounded-t-lg bg-gray-50">
@@ -50,11 +96,11 @@ export default function ProductCard({ product, showDelivery = false }: ProductCa
           {/* Price */}
           <div className="flex items-baseline gap-2">
             <span className="text-lg font-bold text-secondary-900">
-              {Number(product.price).toFixed(2)} $
+              {Number(product.price).toFixed(2)} zł
             </span>
             {hasDiscount && (
               <span className="text-sm text-gray-400 line-through">
-                {Number(product.compareAtPrice).toFixed(2)} $
+                {Number(product.compareAtPrice).toFixed(2)} zł
               </span>
             )}
           </div>

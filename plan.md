@@ -90,7 +90,7 @@
 - [x] **2.1** Hero section z CTA ✅ (HeroBanner.tsx)
 - [x] **2.2** Sekcja kategorii (grid/carousel) ✅ (Category icons)
 - [x] **2.3** Bestsellery / Polecane produkty ✅ (Super Price + Recommended)
-- [ ] **2.4** Newsletter signup
+- [x] **2.4** Newsletter signup ✅ (Newsletter.tsx z walidacją, loading, success state)
 - [x] **2.5** Footer z linkami ✅ (Footer.tsx)
 
 #### Listing produktów (`apps/web/src/app/products/page.tsx`)
@@ -98,8 +98,8 @@
 - [x] **2.6** Grid produktów (responsywny) ✅ (Homepage grid)
 - [x] **2.7** Filtry boczne (kategoria, cena, atrybuty) ✅ (Deals page sidebar)
 - [x] **2.8** Sortowanie (cena, nazwa, popularność) ✅ (Deals page)
-- [ ] **2.9** Paginacja / Infinite scroll
-- [ ] **2.10** Skeleton loading
+- [x] **2.9** Paginacja / Infinite scroll ✅ (URL-based, SEO friendly, 36 products, quick jump)
+- [x] **2.10** Skeleton loading ✅ (ProductCardSkeleton, ProductGridSkeleton, ProductsPageSkeleton)
 
 #### Karta produktu (`apps/web/src/components/ProductCard.tsx`)
 
@@ -107,7 +107,7 @@
 - [x] **2.12** Nazwa, cena, stara cena (przekreślona) ✅
 - [x] **2.13** Badge (nowość, promocja, wyprzedane) ✅ (Discount badge)
 - [x] **2.14** Quick add to cart button ✅ (na stronie produktu)
-- [ ] **2.15** Wishlist icon
+- [x] **2.15** Wishlist icon ✅ (Heart icon z WishlistContext, localStorage persist)
 
 #### Strona produktu (`apps/web/src/app/products/[id]/page.tsx`)
 
@@ -140,13 +140,13 @@
 - [x] **2.34** Mobile menu (hamburger) ✅ (Categories mobile)
 - [x] **2.35** Link do strony Deals w nawigacji ✅ (Orange highlighted link)
 
-#### SearchBar (`apps/web/src/components/SearchBar.tsx`)
+#### SearchBar (`apps/web/src/components/SearchBar.tsx`) ✅ UKOŃCZONY
 
 - [x] **2.35** Input z ikoną ✅
-- [ ] **2.36** Autocomplete dropdown
-- [ ] **2.37** Debounce (300ms)
-- [ ] **2.38** Ostatnie wyszukiwania
-- [ ] **2.39** Popularne produkty w dropdown
+- [x] **2.36** Autocomplete dropdown ✅ (Product results with images, prices, categories)
+- [x] **2.37** Debounce (300ms) ✅ (Delays API calls, shows loading state)
+- [x] **2.38** Ostatnie wyszukiwania ✅ (LocalStorage, max 5, clear button)
+- [x] **2.39** Popularne produkty w dropdown ✅ (Popular searches section)
 
 #### Strona Deals/Promocje (`apps/web/src/app/deals/page.tsx`) - NOWA ✅
 
@@ -211,10 +211,10 @@
 
 #### Strona zamówienia (`apps/web/src/app/order/[id]/page.tsx`)
 
-- [ ] **3.20** Status zamówienia (timeline)
-- [ ] **3.21** Tracking przesyłki
-- [ ] **3.22** Pobranie faktury PDF
-- [ ] **3.23** Kontakt ws. zamówienia
+- [x] **3.20** Status zamówienia (timeline) ✅ (Full timeline with colored dots, dates, descriptions)
+- [x] **3.21** Tracking przesyłki ✅ (Tracking number, link, estimated delivery)
+- [x] **3.22** Pobranie faktury PDF ✅ (Download button with icon)
+- [x] **3.23** Kontakt ws. zamówienia ✅ (Report problem, cancel order buttons)
 
 ---
 ## Etap 4: Baza danych – schemat Prisma (2-3 dni) ✅ UKOŃCZONY
