@@ -81,13 +81,23 @@ export default function AddressForm({ initialData, onSubmit }: AddressFormProps)
     }
     if (!formData.email.trim()) {
       newErrors.email = 'Email jest wymagany';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Nieprawidłowy format email';
+    } else {
+      // RFC 5322 compliant email regex
+      const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+      if (!emailRegex.test(formData.email) || formData.email.length > 254) {
+        newErrors.email = 'Podaj prawidłowy adres email';
+      }
     }
     if (!formData.phone.trim()) {
       newErrors.phone = 'Telefon jest wymagany';
-    } else if (!/^[\d\s\+\-]{9,15}$/.test(formData.phone.replace(/\s/g, ''))) {
-      newErrors.phone = 'Nieprawidłowy numer telefonu';
+    } else {
+      // Wyciągnij tylko cyfry z numeru telefonu (bez kierunkowego)
+      const digitsOnly = phoneNumber.replace(/\D/g, '');
+      if (digitsOnly.length < 9) {
+        newErrors.phone = 'Numer telefonu musi mieć minimum 9 cyfr';
+      } else if (digitsOnly.length > 12) {
+        newErrors.phone = 'Numer telefonu jest za długi';
+      }
     }
     if (!formData.street.trim()) {
       newErrors.street = 'Ulica jest wymagana';
