@@ -91,12 +91,12 @@ const recommendedProducts: Product[] = [
 
 // Sidebar navigation items
 const sidebarItems = [
-  { id: 'overview', label: 'Przegląd', icon: 'grid' },
-  { id: 'purchases', label: 'Moje zakupy', icon: 'shopping-bag' },
-  { id: 'messages', label: 'Wiadomości', icon: 'message', badge: 5 },
-  { id: 'returns', label: 'Zwroty', icon: 'return' },
-  { id: 'smart', label: 'WBTrade Smart!', icon: 'smart' },
-  { id: 'settings', label: 'Ustawienia', icon: 'settings' },
+  { id: 'overview', label: 'Przegląd', icon: 'grid', href: '/account' },
+  { id: 'orders', label: 'Moje zamówienia', icon: 'shopping-bag', href: '/account/orders' },
+  { id: 'profile', label: 'Dane osobowe', icon: 'user', href: '/account/profile' },
+  { id: 'addresses', label: 'Adresy', icon: 'location', href: '/account/addresses' },
+  { id: 'password', label: 'Zmiana hasła', icon: 'lock', href: '/account/password' },
+  { id: 'settings', label: 'Ustawienia', icon: 'settings', href: '/account/settings' },
 ];
 
 function getGreeting() {
@@ -120,22 +120,23 @@ function SidebarIcon({ icon }: { icon: string }) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
         </svg>
       );
-    case 'message':
+    case 'user':
       return (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
         </svg>
       );
-    case 'return':
+    case 'location':
       return (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       );
-    case 'smart':
+    case 'lock':
       return (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
         </svg>
       );
     case 'settings':
@@ -195,7 +196,6 @@ function getStatusColor(status: string) {
 }
 
 export default function AccountPage() {
-  const [activeTab, setActiveTab] = useState('overview');
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -287,29 +287,18 @@ export default function AccountPage() {
               {/* Navigation */}
               <nav className="p-3">
                 {sidebarItems.map((item) => (
-                  <button
+                  <Link
                     key={item.id}
-                    onClick={() => setActiveTab(item.id)}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                      activeTab === item.id
+                    href={item.href}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                      item.id === 'overview'
                         ? 'bg-orange-500 text-white'
                         : 'text-gray-600 hover:bg-gray-50'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <SidebarIcon icon={item.icon} />
-                      {item.label}
-                    </div>
-                    {item.badge && (
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        activeTab === item.id
-                          ? 'bg-white/20 text-white'
-                          : 'bg-orange-100 text-orange-600'
-                      }`}>
-                        {item.badge}
-                      </span>
-                    )}
-                  </button>
+                    <SidebarIcon icon={item.icon} />
+                    {item.label}
+                  </Link>
                 ))}
               </nav>
 
