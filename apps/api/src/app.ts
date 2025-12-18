@@ -12,6 +12,7 @@ import addressesRoutes from './routes/addresses';
 import wishlistRoutes from './routes/wishlist';
 import categoriesRoutes from './routes/categories';
 import checkoutRoutes from './routes/checkout';
+import dashboardRoutes from './routes/dashboard';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
 import { initializeMeilisearch } from './lib/meilisearch';
 
@@ -84,6 +85,7 @@ app.get('/', (req, res) => {
       inventory: '/api/inventory',
       addresses: '/api/addresses',
       wishlist: '/api/wishlist',
+      dashboard: '/api/dashboard',
       health: '/health',
     },
     documentation: 'https://github.com/wbtrade/docs',
@@ -101,6 +103,7 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/addresses', addressesRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/checkout', checkoutRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/webhooks', checkoutRoutes); // Webhook routes
 
 // 404 handler

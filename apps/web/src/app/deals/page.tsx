@@ -36,7 +36,6 @@ const topDiscounts = [
     rating: 4.8,
     reviewCount: 1200,
     image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300',
-    hasSmart: true,
   },
   {
     id: '2',
@@ -47,7 +46,6 @@ const topDiscounts = [
     rating: 4.9,
     reviewCount: 560,
     image: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=300',
-    hasSmart: true,
   },
   {
     id: '3',
@@ -58,7 +56,6 @@ const topDiscounts = [
     rating: 4.5,
     reviewCount: 89,
     image: 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=300',
-    hasSmart: true,
   },
   {
     id: '4',
@@ -69,7 +66,6 @@ const topDiscounts = [
     rating: 4.7,
     reviewCount: 320,
     image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300',
-    hasSmart: true,
   },
   {
     id: '5',
@@ -80,7 +76,6 @@ const topDiscounts = [
     rating: 4.6,
     reviewCount: 230,
     image: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=300',
-    hasSmart: true,
   },
   {
     id: '6',
@@ -91,7 +86,6 @@ const topDiscounts = [
     rating: 4.3,
     reviewCount: 112,
     image: 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=300',
-    hasSmart: true,
   },
 ];
 
@@ -104,7 +98,6 @@ const trendingProducts = [
     compareAtPrice: '799.00',
     image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400',
     badge: 'super-price',
-    hasSmart: true,
   },
   {
     id: '11',
@@ -113,7 +106,6 @@ const trendingProducts = [
     compareAtPrice: '1349.00',
     discount: 15,
     image: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=400',
-    hasSmart: true,
   },
   {
     id: '12',
@@ -121,7 +113,6 @@ const trendingProducts = [
     price: '489.00',
     compareAtPrice: '599.00',
     image: 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=400',
-    hasSmart: true,
   },
   {
     id: '13',
@@ -131,7 +122,6 @@ const trendingProducts = [
     image: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=400',
     badge: 'bestseller',
     deliveryInfo: 'WYSYŁKA W 3 DNI',
-    hasSmart: true,
   },
   {
     id: '14',
@@ -139,7 +129,6 @@ const trendingProducts = [
     price: '2399.00',
     compareAtPrice: '2799.00',
     image: 'https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6?w=400',
-    hasSmart: true,
   },
   {
     id: '15',
@@ -148,7 +137,6 @@ const trendingProducts = [
     compareAtPrice: '599.00',
     discount: 30,
     image: 'https://images.unsplash.com/photo-1575311373937-040b8e1fd5b6?w=400',
-    hasSmart: true,
   },
   {
     id: '16',
@@ -156,7 +144,6 @@ const trendingProducts = [
     price: '239.00',
     compareAtPrice: '359.00',
     image: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=400',
-    hasSmart: true,
   },
   {
     id: '17',
@@ -165,7 +152,6 @@ const trendingProducts = [
     compareAtPrice: '3999.00',
     discount: 10,
     image: 'https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?w=400',
-    hasSmart: true,
   },
 ];
 
@@ -233,8 +219,6 @@ export default function DealsPage() {
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
-  const [smartFree, setSmartFree] = useState(true);
-  const [tomorrowDelivery, setTomorrowDelivery] = useState(false);
   const [sortBy, setSortBy] = useState('relevance');
 
   return (
@@ -380,14 +364,6 @@ export default function DealsPage() {
                     </div>
                     <div className="text-xs text-gray-400 line-through">${product.compareAtPrice}</div>
                     <div className="text-base font-bold text-orange-500">${product.price}</div>
-                    {product.hasSmart && (
-                      <div className="flex items-center gap-1 mt-2 text-orange-500 text-xs">
-                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                        <span className="font-medium">DARMOWA SMART!</span>
-                      </div>
-                    )}
                   </div>
                 </div>
               </Link>
@@ -449,36 +425,6 @@ export default function DealsPage() {
                 Zastosuj
               </button>
             </div>
-
-            {/* Delivery Options */}
-            <div className="bg-white rounded-xl border border-gray-100 p-5">
-              <h3 className="font-semibold text-gray-900 mb-4">Opcje dostawy</h3>
-              <div className="space-y-3">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={smartFree}
-                    onChange={(e) => setSmartFree(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
-                  />
-                  <span className="text-sm text-orange-500 font-medium flex items-center gap-1">
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    Darmowa Smart!
-                  </span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={tomorrowDelivery}
-                    onChange={(e) => setTomorrowDelivery(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
-                  />
-                  <span className="text-sm text-gray-600">Dostawa jutro</span>
-                </label>
-              </div>
-            </div>
           </aside>
 
           {/* Trending Products */}
@@ -534,14 +480,6 @@ export default function DealsPage() {
                       <div className="text-lg font-bold text-orange-500">${product.price}</div>
                       {product.deliveryInfo && (
                         <div className="text-[10px] text-gray-500 mt-1 uppercase">{product.deliveryInfo}</div>
-                      )}
-                      {product.hasSmart && (
-                        <div className="flex items-center gap-1 mt-2 text-orange-500 text-xs">
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-                          </svg>
-                          <span className="font-medium">DARMOWA SMART!</span>
-                        </div>
                       )}
                     </div>
                   </div>

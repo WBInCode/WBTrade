@@ -7,7 +7,7 @@ export const addressesController = {
    */
   async getAll(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.userId;
       
       if (!userId) {
         return res.status(401).json({ error: 'Unauthorized' });
@@ -25,7 +25,7 @@ export const addressesController = {
    */
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.userId;
       const { id } = req.params;
       
       if (!userId) {
@@ -49,7 +49,7 @@ export const addressesController = {
    */
   async getDefault(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.userId;
       
       if (!userId) {
         return res.status(401).json({ error: 'Unauthorized' });
@@ -67,13 +67,13 @@ export const addressesController = {
    */
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.userId;
       
       if (!userId) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      const { firstName, lastName, street, city, postalCode, country, phone, isDefault } = req.body;
+      const { label, type, firstName, lastName, street, city, postalCode, country, phone, isDefault } = req.body;
 
       // Validation
       if (!firstName || !lastName || !street || !city || !postalCode) {
@@ -84,6 +84,8 @@ export const addressesController = {
 
       const address = await addressesService.create({
         userId,
+        label,
+        type,
         firstName,
         lastName,
         street,
@@ -105,16 +107,18 @@ export const addressesController = {
    */
   async update(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.userId;
       const { id } = req.params;
       
       if (!userId) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      const { firstName, lastName, street, city, postalCode, country, phone, isDefault } = req.body;
+      const { label, type, firstName, lastName, street, city, postalCode, country, phone, isDefault } = req.body;
 
       const address = await addressesService.update(id, userId, {
+        label,
+        type,
         firstName,
         lastName,
         street,
@@ -139,7 +143,7 @@ export const addressesController = {
    */
   async delete(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.userId;
       const { id } = req.params;
       
       if (!userId) {
@@ -161,7 +165,7 @@ export const addressesController = {
    */
   async setDefault(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.userId;
       const { id } = req.params;
       
       if (!userId) {

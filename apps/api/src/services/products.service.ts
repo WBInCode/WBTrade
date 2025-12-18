@@ -195,7 +195,6 @@ export class ProductsService {
     ]);
 
     return {
-<<<<<<< HEAD
       products: transformProducts(products),
       total,
       page,
@@ -267,7 +266,7 @@ export class ProductsService {
       });
 
       // Get full product data from Prisma for the found IDs
-      const productIds = results.hits.map(hit => hit.id);
+      const productIds = results.hits.map((hit: MeiliProduct) => hit.id);
       
       if (productIds.length === 0) {
         return {
@@ -297,7 +296,7 @@ export class ProductsService {
       });
 
       // Sort products to match Meilisearch order
-      const sortedProducts = productIds.map(id => 
+      const sortedProducts = productIds.map((id: string) => 
         products.find(p => p.id === id)
       ).filter(Boolean);
 
@@ -392,9 +391,6 @@ export class ProductsService {
 
     return {
       products: transformProducts(products),
-=======
-      products: products.map(transformProduct),
->>>>>>> origin/main
       total,
       page,
       limit,
