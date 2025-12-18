@@ -1,7 +1,10 @@
 import prisma from '../db';
+import { AddressType } from '@prisma/client';
 
 interface CreateAddressData {
   userId: string;
+  label?: string;
+  type?: AddressType;
   firstName: string;
   lastName: string;
   street: string;
@@ -12,7 +15,37 @@ interface CreateAddressData {
   isDefault?: boolean;
 }
 
+/**
+ * Normalize address field for comparison
+ * - Trims whitespace
+ * - Converts to lowercase
+ * - Normalizes multiple spaces to single space
+ */
+function normalizeField(value: string | null | undefined): string {
+  if (!value) return '';
+  return value.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+/**
+ * Check if two addresses are the same (ignoring case and extra whitespace)
+ */
+function areAddressesEqual(
+  addr1: { firstName: string; lastName: string; street: string; city: string; postalCode: string; country: string },
+  addr2: { firstName: string; lastName: string; street: string; city: string; postalCode: string; country: string }
+): boolean {
+  return (
+    normalizeField(addr1.firstName) === normalizeField(addr2.firstName) &&
+    normalizeField(addr1.lastName) === normalizeField(addr2.lastName) &&
+    normalizeField(addr1.street) === normalizeField(addr2.street) &&
+    normalizeField(addr1.city) === normalizeField(addr2.city) &&
+    normalizeField(addr1.postalCode) === normalizeField(addr2.postalCode) &&
+    normalizeField(addr1.country) === normalizeField(addr2.country)
+  );
+}
+
 interface UpdateAddressData {
+  label?: string;
+  type?: AddressType;
   firstName?: string;
   lastName?: string;
   street?: string;
@@ -27,10 +60,14 @@ export const addressesService = {
   /**
    * Get all addresses for a user
    */
-  async getUserAddresses(userId: string) {
+  async getUserAddresses(userId: string, type?: AddressType) {
     return prisma.address.findMany({
-      where: { userId },
+      where: { 
+        userId,
+        ...(type && { type }),
+      },
       orderBy: [
+        { type: 'asc' },
         { isDefault: 'desc' },
         { createdAt: 'desc' }
       ],
@@ -47,11 +84,11 @@ export const addressesService = {
   },
 
   /**
-   * Get default address for a user
+   * Get default address for a user by type
    */
-  async getDefaultAddress(userId: string) {
+  async getDefaultAddress(userId: string, type: AddressType = 'SHIPPING') {
     return prisma.address.findFirst({
-      where: { userId, isDefault: true },
+      where: { userId, isDefault: true, type },
     });
   },
 
@@ -59,25 +96,81 @@ export const addressesService = {
    * Create a new address
    */
   async create(data: CreateAddressData) {
-    // If this is the first address or marked as default, handle default logic
+    const addressType = data.type || 'SHIPPING';
+    const country = data.country || 'PL';
+    
+    // Get all existing addresses of this type for the user
+    const existingAddresses = await prisma.address.findMany({
+      where: {
+        userId: data.userId,
+        type: addressType,
+      },
+    });
+
+    // Check if identical address already exists (with normalization)
+    const existingAddress = existingAddresses.find(addr => 
+      areAddressesEqual(
+        { firstName: data.firstName, lastName: data.lastName, street: data.street, city: data.city, postalCode: data.postalCode, country },
+        { firstName: addr.firstName, lastName: addr.lastName, street: addr.street, city: addr.city, postalCode: addr.postalCode, country: addr.country }
+      )
+    );
+
+    // If identical address exists, return it instead of creating duplicate
+    if (existingAddress) {
+      // Update phone if provided and different
+      const updateData: { isDefault?: boolean; label?: string; phone?: string } = {};
+      
+      if (data.isDefault && !existingAddress.isDefault) {
+        await prisma.address.updateMany({
+          where: { userId: data.userId, type: addressType, isDefault: true },
+          data: { isDefault: false },
+        });
+        updateData.isDefault = true;
+      }
+      
+      if (data.label && data.label !== existingAddress.label) {
+        updateData.label = data.label;
+      }
+      
+      if (data.phone && data.phone !== existingAddress.phone) {
+        updateData.phone = data.phone;
+      }
+      
+      if (Object.keys(updateData).length > 0) {
+        return prisma.address.update({
+          where: { id: existingAddress.id },
+          data: updateData,
+        });
+      }
+      
+      return existingAddress;
+    }
+
+    // If this is the first address of this type or marked as default, handle default logic
     if (data.isDefault) {
-      // Remove default from other addresses
+      // Remove default from other addresses of same type
       await prisma.address.updateMany({
-        where: { userId: data.userId, isDefault: true },
+        where: { userId: data.userId, type: addressType, isDefault: true },
         data: { isDefault: false },
       });
     }
 
-    // Check if this is the first address for the user
-    const addressCount = await prisma.address.count({
-      where: { userId: data.userId },
-    });
+    // Use already fetched addresses count to determine if this is the first
+    const addressCount = existingAddresses.length;
 
     return prisma.address.create({
       data: {
-        ...data,
-        country: data.country || 'PL',
-        // First address is always default
+        userId: data.userId,
+        label: data.label,
+        type: addressType,
+        firstName: data.firstName.trim(),
+        lastName: data.lastName.trim(),
+        street: data.street.trim(),
+        city: data.city.trim(),
+        postalCode: data.postalCode.trim(),
+        country: country,
+        phone: data.phone?.trim(),
+        // First address of this type is always default
         isDefault: addressCount === 0 ? true : data.isDefault || false,
       },
     });
@@ -96,10 +189,12 @@ export const addressesService = {
       throw new Error('Address not found');
     }
 
-    // If setting as default, remove default from other addresses
+    const addressType = data.type || address.type;
+
+    // If setting as default, remove default from other addresses of same type
     if (data.isDefault) {
       await prisma.address.updateMany({
-        where: { userId, isDefault: true, id: { not: id } },
+        where: { userId, type: addressType, isDefault: true, id: { not: id } },
         data: { isDefault: false },
       });
     }
@@ -127,10 +222,10 @@ export const addressesService = {
       where: { id },
     });
 
-    // If deleted address was default, set another as default
+    // If deleted address was default, set another of same type as default
     if (address.isDefault) {
       const firstAddress = await prisma.address.findFirst({
-        where: { userId },
+        where: { userId, type: address.type },
         orderBy: { createdAt: 'asc' },
       });
 
@@ -158,9 +253,9 @@ export const addressesService = {
       throw new Error('Address not found');
     }
 
-    // Remove default from all other addresses
+    // Remove default from all other addresses of same type
     await prisma.address.updateMany({
-      where: { userId, isDefault: true },
+      where: { userId, type: address.type, isDefault: true },
       data: { isDefault: false },
     });
 

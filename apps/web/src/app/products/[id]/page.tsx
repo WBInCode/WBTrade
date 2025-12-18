@@ -27,7 +27,6 @@ const mockProduct: Product = {
   rating: '4.8',
   reviewCount: 1240,
   storeName: 'OfficeWorld Official',
-  hasSmart: true,
   deliveryInfo: 'Dostawa jutro',
   images: [
     { id: '1', url: 'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=800', alt: 'Ergonomic chair front view', order: 0 },
@@ -608,14 +607,13 @@ export default function ProductPage({ params }: ProductPageProps) {
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center mt-0.5">
+                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center mt-0.5">
                     <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">WBTrade Smart!</p>
-                    <p className="text-xs text-gray-500">Darmowa dostawa i zwroty</p>
+                    <p className="text-sm font-medium text-gray-900">Darmowa dostawa i zwroty</p>
                   </div>
                 </div>
               </div>

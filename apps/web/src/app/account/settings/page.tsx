@@ -124,7 +124,6 @@ export default function SettingsPage() {
   const userData = {
     name: user?.firstName || 'Użytkownik',
     fullName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim(),
-    memberType: 'CZŁONEK SMART!',
     avatar: `${user?.firstName?.[0] || 'U'}${user?.lastName?.[0] || ''}`,
   };
 
@@ -191,12 +190,6 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">{userData.fullName}</h3>
-                    <span className="inline-flex items-center gap-1 text-xs text-orange-500 font-medium">
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                      {userData.memberType}
-                    </span>
                   </div>
                 </div>
               </div>
