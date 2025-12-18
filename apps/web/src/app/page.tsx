@@ -4,6 +4,7 @@ import ProductCard from '../components/ProductCard';
 import HeroBanner from '../components/HeroBanner';
 import CountdownTimer from '../components/CountdownTimer';
 import Newsletter from '../components/Newsletter';
+import RecommendedProducts from '../components/RecommendedProducts';
 import { productsApi, Product } from '../lib/api';
 import Link from 'next/link';
 
@@ -200,38 +201,17 @@ export default async function HomePage() {
         </section>
 
         {/* Recommended For You Section */}
-        <section className="mb-10">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-secondary-900">Polecane dla Ciebie</h2>
-            <div className="hidden sm:flex items-center gap-2">
-              <button className="px-4 py-2 text-sm font-medium text-secondary-900 bg-gray-100 rounded-lg">
-                Wszystkie
-              </button>
-              <button className="px-4 py-2 text-sm text-secondary-500 hover:bg-gray-50 rounded-lg">
-                Bestsellery
-              </button>
-              <button className="px-4 py-2 text-sm text-secondary-500 hover:bg-gray-50 rounded-lg">
-                Nowości
-              </button>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {displayProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-          
-          {/* Show More Button */}
-          <div className="flex justify-center mt-8">
-            <Link 
-              href="/products"
-              className="px-8 py-3 border border-secondary-300 rounded-lg text-secondary-700 font-medium hover:bg-gray-50 transition-colors"
-            >
-              Pokaż więcej produktów
-            </Link>
-          </div>
-        </section>
+        <RecommendedProducts initialProducts={displayProducts} />
+
+        {/* Show More Button */}
+        <div className="flex justify-center mb-10">
+          <Link 
+            href="/products"
+            className="px-8 py-3 border border-secondary-300 rounded-lg text-secondary-700 font-medium hover:bg-gray-50 transition-colors"
+          >
+            Pokaż więcej produktów
+          </Link>
+        </div>
 
         {/* Newsletter Section */}
         <Newsletter />

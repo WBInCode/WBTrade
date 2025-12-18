@@ -8,11 +8,12 @@ import { incrementRateLimit } from '../lib/redis';
 
 /**
  * General API rate limiter
- * 100 requests per 15 minutes per IP
+ * 100 requests per 15 minutes per IP in production
+ * 1000 requests per 15 minutes per IP in development
  */
 export const generalRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+  max: process.env.NODE_ENV === 'production' ? 100 : 1000,
   message: {
     message: 'Too many requests, please try again later',
     code: 'RATE_LIMIT_EXCEEDED',
