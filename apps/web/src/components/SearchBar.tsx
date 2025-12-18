@@ -4,21 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-// Mock data - w przyszłości zastąpione API
-const mockProducts = [
-  { id: '1', name: 'iPhone 15 Pro Max 256GB', slug: 'iphone-15-pro-max', price: 5999, image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=100', category: 'Smartfony' },
-  { id: '2', name: 'iPhone 15 Pro 128GB', slug: 'iphone-15-pro', price: 5199, image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=100', category: 'Smartfony' },
-  { id: '3', name: 'iPhone 14 128GB', slug: 'iphone-14', price: 3999, image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=100', category: 'Smartfony' },
-  { id: '4', name: 'Samsung Galaxy S24 Ultra', slug: 'samsung-galaxy-s24-ultra', price: 5499, image: 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=100', category: 'Smartfony' },
-  { id: '5', name: 'MacBook Pro 14" M3', slug: 'macbook-pro-14-m3', price: 8999, image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=100', category: 'Laptopy' },
-  { id: '6', name: 'MacBook Air 13" M2', slug: 'macbook-air-13-m2', price: 5499, image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=100', category: 'Laptopy' },
-  { id: '7', name: 'AirPods Pro 2', slug: 'airpods-pro-2', price: 1199, image: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=100', category: 'Słuchawki' },
-  { id: '8', name: 'Sony WH-1000XM5', slug: 'sony-wh-1000xm5', price: 1599, image: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=100', category: 'Słuchawki' },
-  { id: '9', name: 'Apple Watch Series 9', slug: 'apple-watch-series-9', price: 1999, image: 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=100', category: 'Smartwatche' },
-  { id: '10', name: 'iPad Pro 12.9" M2', slug: 'ipad-pro-12-9-m2', price: 5999, image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=100', category: 'Tablety' },
-  { id: '11', name: 'Dell XPS 15', slug: 'dell-xps-15', price: 7499, image: 'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=100', category: 'Laptopy' },
-  { id: '12', name: 'Słuchawki gamingowe Razer', slug: 'razer-headset', price: 499, image: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=100', category: 'Słuchawki' },
-];
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 const popularSearches = [
   'iPhone 15',
@@ -31,12 +17,35 @@ const popularSearches = [
 const RECENT_SEARCHES_KEY = 'wbtrade_recent_searches';
 const MAX_RECENT_SEARCHES = 5;
 
+interface SearchProduct {
+  id: string;
+  name: string;
+  slug: string;
+  price: number;
+  image: string | null;
+  categoryName: string | null;
+  type: 'product';
+}
+
+interface SearchCategory {
+  id: string;
+  name: string;
+  slug: string;
+  type: 'category';
+}
+
+interface SuggestResponse {
+  products: SearchProduct[];
+  categories: SearchCategory[];
+  processingTimeMs?: number;
+}
+
 interface SearchResult {
   id: string;
   name: string;
   slug: string;
   price: number;
-  image: string;
+  image: string | null;
   category: string;
 }
 
@@ -84,8 +93,8 @@ export default function SearchBar() {
     localStorage.removeItem(RECENT_SEARCHES_KEY);
   }, []);
 
-  // Search function with debounce
-  const searchProducts = useCallback((searchQuery: string) => {
+  // Search function using Meilisearch API
+  const searchProducts = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       setResults([]);
       setIsLoading(false);
@@ -94,17 +103,33 @@ export default function SearchBar() {
 
     setIsLoading(true);
     
-    // Simulate API delay
-    setTimeout(() => {
-      const query = searchQuery.toLowerCase();
-      const filtered = mockProducts.filter(product => 
-        product.name.toLowerCase().includes(query) ||
-        product.category.toLowerCase().includes(query)
-      ).slice(0, 6);
+    try {
+      const response = await fetch(
+        `${API_URL}/search/suggest?query=${encodeURIComponent(searchQuery.trim())}`
+      );
       
-      setResults(filtered);
+      if (!response.ok) {
+        throw new Error('Search failed');
+      }
+      
+      const data: SuggestResponse = await response.json();
+      
+      const mapped: SearchResult[] = data.products.map((p) => ({
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        price: p.price,
+        image: p.image,
+        category: p.categoryName || '',
+      }));
+      
+      setResults(mapped);
+    } catch (error) {
+      console.error('Search error:', error);
+      setResults([]);
+    } finally {
       setIsLoading(false);
-    }, 150);
+    }
   }, []);
 
   // Debounced search
@@ -278,11 +303,19 @@ export default function SearchBar() {
                   }`}
                 >
                   <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                    <img 
-                      src={product.image} 
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                    />
+                    {product.image ? (
+                      <img 
+                        src={product.image} 
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
