@@ -161,7 +161,7 @@ export default function Header() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                   </svg>
                   {wishlistCount > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium">
+                    <span className={`absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs h-5 rounded-full flex items-center justify-center font-medium ${wishlistCount > 99 ? 'w-7 px-1' : 'w-5'}`}>
                       {wishlistCount > 99 ? '99+' : wishlistCount}
                     </span>
                   )}
@@ -183,10 +183,10 @@ export default function Header() {
                       <span className="text-xs mt-0.5 hidden sm:block">{user?.firstName}</span>
                     </button>
                     {isUserMenuOpen && (
-                      <div className="absolute top-full right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-50">
+                      <div className="absolute top-full right-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-50">
                         <div className="px-4 py-2 border-b border-gray-100">
-                          <p className="text-sm font-medium text-gray-900">{user?.firstName} {user?.lastName}</p>
-                          <p className="text-xs text-gray-500">{user?.email}</p>
+                          <p className="text-sm font-medium text-gray-900 truncate">{user?.firstName} {user?.lastName}</p>
+                          <p className="text-xs text-gray-500 truncate" title={user?.email}>{user?.email}</p>
                         </div>
                         <Link
                           href="/account"
@@ -228,7 +228,7 @@ export default function Header() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                   {itemCount > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 bg-primary-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium">
+                    <span className={`absolute -top-1.5 -right-1.5 bg-primary-500 text-white text-xs h-5 rounded-full flex items-center justify-center font-medium ${itemCount > 99 ? 'w-7 px-1' : 'w-5'}`}>
                       {itemCount > 99 ? '99+' : itemCount}
                     </span>
                   )}

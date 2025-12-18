@@ -89,13 +89,7 @@ const mockReviews = [
   },
 ];
 
-const relatedProducts: Product[] = [
-  { id: '2', name: 'Fotel ergonomiczny Pro z zagłówkiem - szary', price: '159.00', compareAtPrice: '189.00', status: 'active', images: [{ id: '1', url: 'https://images.unsplash.com/photo-1580480055273-228ff5388ef8?w=400', alt: '', order: 0 }] },
-  { id: '3', name: 'Fotel wykonawczy skóra wysokie oparcie', price: '249.00', compareAtPrice: '329.00', status: 'active', images: [{ id: '1', url: 'https://images.unsplash.com/photo-1541558869434-2840d308329a?w=400', alt: '', order: 0 }] },
-  { id: '4', name: 'Minimalistyczne krzesło biurowe - białe', price: '89.99', status: 'active', images: [{ id: '1', url: 'https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=400', alt: '', order: 0 }] },
-  { id: '5', name: 'Fotel gamingowy Racer - czerwono-czarny', price: '179.99', compareAtPrice: '229.00', status: 'active', images: [{ id: '1', url: 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=400', alt: '', order: 0 }] },
-  { id: '6', name: 'Podkładka na biurko premium - orzech', price: '24.99', status: 'active', images: [{ id: '1', url: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=400', alt: '', order: 0 }] },
-];
+
 
 export default function ProductPage({ params }: ProductPageProps) {
   const { id } = use(params);
@@ -107,6 +101,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   const [addingToCart, setAddingToCart] = useState(false);
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState(1);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const { addToCart } = useCart();
 
   const variantAttributes = useMemo(() => {
@@ -231,6 +226,30 @@ export default function ProductPage({ params }: ProductPageProps) {
     fetchProduct();
   }, [id]);
 
+  // Fetch related products
+  useEffect(() => {
+    async function fetchRelatedProducts() {
+      try {
+        // Fetch products from the same category, or just random products if no category
+        const categorySlug = product?.category?.slug;
+        const response = await productsApi.getAll({
+          category: categorySlug,
+          limit: 5,
+        });
+        // Filter out current product and take up to 5
+        const filtered = response.products
+          .filter((p) => p.id !== id)
+          .slice(0, 5);
+        setRelatedProducts(filtered);
+      } catch (error) {
+        console.error('Failed to fetch related products:', error);
+      }
+    }
+    if (product) {
+      fetchRelatedProducts();
+    }
+  }, [product, id]);
+
   // Parse specifications from product data - must be called before any conditional returns
   const specifications = useMemo(() => {
     if (product?.specifications && typeof product.specifications === 'object') {
@@ -306,9 +325,10 @@ export default function ProductPage({ params }: ProductPageProps) {
 
   // Use real category if available
   const categoryName = product.category?.name || 'Produkty';
+  const categorySlug = product.category?.slug || '';
   const breadcrumbItems = [
     { label: 'Strona główna', href: '/' },
-    { label: categoryName, href: `/products?category=${encodeURIComponent(categoryName)}` },
+    { label: categoryName, href: categorySlug ? `/products?category=${categorySlug}` : '/products' },
     { label: product.name },
   ];
 
@@ -345,9 +365,9 @@ export default function ProductPage({ params }: ProductPageProps) {
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg p-4 relative">
               {/* Badge */}
-              {(product.badge || mockProduct.badge) && (
+              {product.badge && (
                 <span className="absolute top-6 left-6 bg-orange-500 text-white text-xs font-bold px-3 py-1.5 rounded z-10 uppercase">
-                  {product.badge || mockProduct.badge}
+                  {product.badge}
                 </span>
               )}
               
@@ -816,29 +836,31 @@ export default function ProductPage({ params }: ProductPageProps) {
         </div>
 
         {/* Customers Also Viewed */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Inni klienci oglądali</h2>
-            <div className="flex gap-2">
-              <button className="w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors">
-                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <button className="w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors">
-                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
+        {relatedProducts.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">Inni klienci oglądali</h2>
+              <div className="flex gap-2">
+                <button className="w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors">
+                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <button className="w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors">
+                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {relatedProducts.map((relatedProduct) => (
+                <ProductCard key={relatedProduct.id} product={relatedProduct} />
+              ))}
             </div>
           </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {relatedProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </div>
+        )}
       </main>
 
       <Footer />
