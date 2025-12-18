@@ -112,7 +112,9 @@ export async function getPaymentMethods(req: Request, res: Response): Promise<vo
  */
 export async function createCheckout(req: Request, res: Response): Promise<void> {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.userId;
+    const sessionId = req.headers['x-session-id'] as string | undefined;
+    
     if (!userId) {
       res.status(401).json({ message: 'Authentication required' });
       return;
@@ -136,8 +138,20 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       return;
     }
 
-    // Get user's cart
-    const cart = await cartService.getOrCreateCart(userId);
+    // Get user's cart - try both userId and sessionId
+    // First try by userId, then by sessionId if user has session cart
+    let cart = await cartService.getOrCreateCart(userId);
+    
+    // If cart by userId is empty but we have sessionId, try to merge or get session cart
+    if ((!cart || !cart.items.length) && sessionId) {
+      // Try to get cart by sessionId
+      const sessionCart = await cartService.getOrCreateCart(undefined, sessionId);
+      if (sessionCart && sessionCart.items.length > 0) {
+        // Merge session cart to user cart
+        cart = await cartService.mergeCarts(userId, sessionId);
+      }
+    }
+    
     if (!cart || !cart.items.length) {
       res.status(400).json({ message: 'Cart is empty' });
       return;
@@ -206,33 +220,49 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
         redirectUrl: `/order/${order.id}/confirmation`,
       });
     } else {
-      // Create payment session
-      const paymentRequest: CreatePaymentRequest = {
-        orderId: order.id,
-        amount: total,
-        currency: 'PLN',
-        paymentMethod: paymentMethod as PaymentMethodType,
-        customer: {
-          email: (req as any).user.email,
-          firstName: (req as any).user.firstName,
-          lastName: (req as any).user.lastName,
-        },
-        description: `Zamówienie ${order.orderNumber}`,
-        returnUrl: `${process.env.FRONTEND_URL}/order/${order.id}/confirmation`,
-        cancelUrl: `${process.env.FRONTEND_URL}/checkout?orderId=${order.id}&cancelled=true`,
-        notifyUrl: `${process.env.API_URL}/api/webhooks/payment`,
-      };
+      // In development mode, redirect to local payment simulation page
+      const isDevelopment = process.env.NODE_ENV !== 'production';
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      
+      if (isDevelopment) {
+        // Use local payment simulation
+        res.json({
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          status: 'pending_payment',
+          paymentUrl: `${frontendUrl}/order/${order.id}/payment`,
+          sessionId: `sim_${order.id}`,
+          total,
+        });
+      } else {
+        // Create real payment session for production
+        const paymentRequest: CreatePaymentRequest = {
+          orderId: order.id,
+          amount: total,
+          currency: 'PLN',
+          paymentMethod: paymentMethod as PaymentMethodType,
+          customer: {
+            email: req.user?.email || '',
+            firstName: '',
+            lastName: '',
+          },
+          description: `Zamówienie ${order.orderNumber}`,
+          returnUrl: `${frontendUrl}/order/${order.id}/confirmation`,
+          cancelUrl: `${frontendUrl}/checkout?orderId=${order.id}&cancelled=true`,
+          notifyUrl: `${process.env.API_URL}/api/webhooks/payment`,
+        };
 
-      const paymentSession = await paymentService.createPayment(paymentRequest);
+        const paymentSession = await paymentService.createPayment(paymentRequest);
 
-      res.json({
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        status: 'pending_payment',
-        paymentUrl: paymentSession.paymentUrl,
-        sessionId: paymentSession.sessionId,
-        total,
-      });
+        res.json({
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          status: 'pending_payment',
+          paymentUrl: paymentSession.paymentUrl,
+          sessionId: paymentSession.sessionId,
+          total,
+        });
+      }
     }
   } catch (error) {
     console.error('Error creating checkout:', error);

@@ -8,7 +8,7 @@ import ProductListCard from '../../components/ProductListCard';
 import ProductListHeader from '../../components/ProductListHeader';
 import Pagination from '../../components/Pagination';
 import Breadcrumb from '../../components/Breadcrumb';
-import { CategoryFilter, DeliveryFilter, PriceFilter, BrandFilter, SpecificationFilter } from '../../components/filters';
+import { CategoryFilter, PriceFilter, BrandFilter, SpecificationFilter } from '../../components/filters';
 import { Product, productsApi, ProductFiltersResponse, categoriesApi } from '../../lib/api';
 
 const ITEMS_PER_PAGE = 12;
@@ -246,7 +246,6 @@ function ProductsContent() {
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <div className="bg-white rounded-lg border border-gray-200 p-4 sticky top-24">
               <CategoryFilter />
-              <DeliveryFilter />
               <PriceFilter priceRange={filters?.priceRange} />
               <BrandFilter brands={filters?.brands || []} />
               

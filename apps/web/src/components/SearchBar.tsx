@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { dashboardApi } from '../lib/api';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 const popularSearches = [
   'iPhone 15',
@@ -197,6 +198,10 @@ export default function SearchBar() {
     event.preventDefault();
     if (query.trim()) {
       saveRecentSearch(query);
+      // Record search for personalized recommendations
+      dashboardApi.recordSearch(query.trim(), undefined, results.length).catch(() => {
+        // Silently ignore errors - this is optional functionality
+      });
       setIsOpen(false);
       router.push(`/products?search=${encodeURIComponent(query.trim())}`);
     }
@@ -212,6 +217,8 @@ export default function SearchBar() {
   const handleRecentSearchClick = (search: string) => {
     setQuery(search);
     saveRecentSearch(search);
+    // Record search for personalized recommendations
+    dashboardApi.recordSearch(search).catch(() => {});
     setIsOpen(false);
     router.push(`/products?search=${encodeURIComponent(search)}`);
   };
@@ -219,6 +226,8 @@ export default function SearchBar() {
   const handlePopularSearchClick = (search: string) => {
     setQuery(search);
     saveRecentSearch(search);
+    // Record search for personalized recommendations
+    dashboardApi.recordSearch(search).catch(() => {});
     setIsOpen(false);
     router.push(`/products?search=${encodeURIComponent(search)}`);
   };

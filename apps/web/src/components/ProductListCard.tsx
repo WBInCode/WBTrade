@@ -29,7 +29,6 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
   const reviewCount = product.reviewCount || Math.floor(Math.random() * 500) + 10;
   const storeName = product.storeName || 'TopStore';
   const badge = product.badge as BadgeType | undefined;
-  const hasSmart = product.hasSmart !== false;
   const deliveryInfo = product.deliveryInfo || 'dostawa jutro';
 
   const { isInWishlist, toggleWishlist } = useWishlist();
@@ -135,11 +134,6 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
 
             {/* Delivery Info */}
             <div className="flex items-center gap-2 mt-auto">
-              {hasSmart && (
-                <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">
-                  SMART!
-                </span>
-              )}
               <span className="text-sm text-green-600">{deliveryInfo}</span>
               <span className="text-sm text-gray-400">• {storeName}</span>
             </div>
@@ -235,11 +229,7 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
 
           {/* Delivery Info */}
           <div className="flex items-center gap-2 mb-2 mt-auto">
-            {hasSmart && (
-              <span className="bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
-                SMART!
-              </span>
-            )}
+
             <span className="text-xs text-green-600">{deliveryInfo}</span>
           </div>
 

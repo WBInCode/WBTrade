@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { checkoutApi, addressesApi } from '@/lib/api';
 import CheckoutSteps from './components/CheckoutSteps';
 import AddressForm from './components/AddressForm';
 import ShippingMethod from './components/ShippingMethod';
@@ -158,26 +159,44 @@ export default function CheckoutPage() {
     setError('');
 
     try {
-      // TODO: API call to create order
-      const response = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...checkoutData,
-          cartId: cart?.id,
-        }),
+      // First, create or get shipping address
+      const addressData = {
+        firstName: checkoutData.address.firstName,
+        lastName: checkoutData.address.lastName,
+        street: checkoutData.address.street + (checkoutData.address.apartment ? ` ${checkoutData.address.apartment}` : ''),
+        city: checkoutData.address.city,
+        postalCode: checkoutData.address.postalCode,
+        country: 'PL',
+        phone: checkoutData.address.phone,
+        isDefault: false,
+        label: 'Zamówienie',
+        type: 'SHIPPING' as const,
+      };
+
+      // Create address
+      const shippingAddress = await addressesApi.create(addressData);
+
+      // Create checkout/order
+      const checkoutResponse = await checkoutApi.createCheckout({
+        shippingAddressId: shippingAddress.id,
+        shippingMethod: checkoutData.shipping.method,
+        pickupPointCode: checkoutData.shipping.paczkomatCode,
+        paymentMethod: checkoutData.payment.method,
+        customerNotes: '',
+        acceptTerms: checkoutData.acceptTerms,
       });
 
-      if (!response.ok) {
-        throw new Error('Błąd podczas składania zamówienia');
+      // If payment URL is provided, redirect to payment gateway
+      if (checkoutResponse.paymentUrl) {
+        window.location.href = checkoutResponse.paymentUrl;
+        return;
       }
 
-      const order = await response.json();
-      
-      // Redirect to payment or confirmation
-      router.push(`/order/${order.id}/confirmation`);
+      // Otherwise redirect to order confirmation
+      router.push(`/order/${checkoutResponse.orderId}/confirmation`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Wystąpił błąd');
+      console.error('Checkout error:', err);
+      setError(err instanceof Error ? err.message : 'Wystąpił błąd podczas składania zamówienia');
     } finally {
       setIsSubmitting(false);
     }
