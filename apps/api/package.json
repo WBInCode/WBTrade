@@ -12,7 +12,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "db:seed": "ts-node prisma/seed.ts",
-    "db:seed-products": "ts-node prisma/seed-products.ts"
+    "db:seed-products": "ts-node prisma/seed-products.ts",
+    "meilisearch:sync": "ts-node prisma/sync-meilisearch.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.7.0",

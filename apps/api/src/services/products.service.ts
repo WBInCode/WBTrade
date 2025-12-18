@@ -22,6 +22,48 @@ interface ProductsListResult {
   totalPages: number;
 }
 
+/**
+ * Transform a product from database format to API response format.
+ * Parses JSON attributes and calculates stock from inventory.
+ */
+function transformProduct(product: any): any {
+  if (!product) return product;
+  
+  return {
+    ...product,
+    variants: product.variants?.map((variant: any) => {
+      // Parse attributes if it's a string
+      let attributes = variant.attributes;
+      if (typeof attributes === 'string') {
+        try {
+          attributes = JSON.parse(attributes);
+        } catch {
+          attributes = {};
+        }
+      }
+      
+      // Calculate stock from inventory
+      const stock = variant.inventory?.reduce(
+        (sum: number, inv: any) => sum + (inv.quantity - inv.reserved),
+        0
+      ) ?? 0;
+      
+      return {
+        ...variant,
+        attributes,
+        stock,
+      };
+    }),
+  };
+}
+
+/**
+ * Transform an array of products
+ */
+function transformProducts(products: any[]): any[] {
+  return products.map(transformProduct);
+}
+
 export class ProductsService {
   /**
    * Get all descendant category IDs for a given category slug (including the category itself)
@@ -154,7 +196,7 @@ export class ProductsService {
     ]);
 
     return {
-      products,
+      products: transformProducts(products),
       total,
       page,
       limit,
@@ -262,7 +304,7 @@ export class ProductsService {
       const total = results.estimatedTotalHits || results.hits.length;
 
       return {
-        products: sortedProducts,
+        products: transformProducts(sortedProducts as any[]),
         total,
         page,
         limit,
@@ -349,7 +391,7 @@ export class ProductsService {
     ]);
 
     return {
-      products,
+      products: transformProducts(products),
       total,
       page,
       limit,
@@ -361,7 +403,7 @@ export class ProductsService {
    * Get a single product by ID
    */
   async getById(id: string) {
-    return prisma.product.findUnique({
+    const product = await prisma.product.findUnique({
       where: { id },
       include: {
         images: {
@@ -375,13 +417,14 @@ export class ProductsService {
         },
       },
     });
+    return transformProduct(product);
   }
 
   /**
    * Get a single product by slug
    */
   async getBySlug(slug: string) {
-    return prisma.product.findUnique({
+    const product = await prisma.product.findUnique({
       where: { slug },
       include: {
         images: {
@@ -395,6 +438,7 @@ export class ProductsService {
         },
       },
     });
+    return transformProduct(product);
   }
 
   /**
