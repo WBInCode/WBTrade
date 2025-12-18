@@ -1,7 +1,7 @@
 module.exports = {
     reactStrictMode: true,
     images: {
-        domains: ['images.unsplash.com'],
+        domains: ['images.unsplash.com', 'img.logo.dev'],
     },
     env: {
         API_URL: process.env.API_URL || 'http://localhost:3000/api',

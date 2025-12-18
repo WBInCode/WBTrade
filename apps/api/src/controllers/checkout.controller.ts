@@ -125,6 +125,7 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       billingAddressId,
       shippingMethod,
       pickupPointCode,
+      pickupPointAddress,
       paymentMethod,
       customerNotes,
       acceptTerms,
@@ -201,6 +202,8 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       paymentMethod,
       items,
       customerNotes,
+      paczkomatCode: pickupPointCode,
+      paczkomatAddress: pickupPointAddress,
     });
 
     // Clear cart after order creation
