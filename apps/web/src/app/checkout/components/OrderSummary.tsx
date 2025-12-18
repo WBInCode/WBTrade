@@ -112,13 +112,23 @@ export default function OrderSummary({
         <div className="flex justify-between items-start p-4 border rounded-lg">
           <div>
             <h4 className="font-medium text-gray-900 mb-1">📍 Adres dostawy</h4>
-            <p className="text-sm text-gray-600">
-              {formatAddress(address)}
-            </p>
+            {shipping.method === 'inpost_paczkomat' && shipping.paczkomatCode ? (
+              <div className="text-sm text-gray-600">
+                <p className="font-medium text-gray-900">Paczkomat InPost</p>
+                <p className="text-orange-600 font-semibold">{shipping.paczkomatCode}</p>
+                {shipping.paczkomatAddress && (
+                  <p className="mt-1">{shipping.paczkomatAddress}</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-600">
+                {formatAddress(address)}
+              </p>
+            )}
           </div>
           <button
             type="button"
-            onClick={() => onEditStep(1)}
+            onClick={() => onEditStep(shipping.method === 'inpost_paczkomat' ? 2 : 1)}
             className="text-sm text-orange-500 hover:text-orange-600 font-medium"
           >
             Zmień
@@ -147,15 +157,9 @@ export default function OrderSummary({
         {/* Shipping method */}
         <div className="flex justify-between items-start p-4 border rounded-lg">
           <div>
-            <h4 className="font-medium text-gray-900 mb-1">🚚 Dostawa</h4>
+            <h4 className="font-medium text-gray-900 mb-1">🚚 Metoda dostawy</h4>
             <p className="text-sm text-gray-600">
               {shippingMethodNames[shipping.method]}
-              {shipping.paczkomatCode && (
-                <>
-                  <br />
-                  Paczkomat: {shipping.paczkomatCode}
-                </>
-              )}
             </p>
             <p className="text-sm font-medium mt-1">
               {shipping.price === 0 ? (

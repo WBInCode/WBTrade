@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Header from '../../../components/Header';
+import Footer from '../../../components/Footer';
 import { useAuth } from '../../../contexts/AuthContext';
 import { ordersApi, Order } from '../../../lib/api';
 
@@ -518,19 +519,7 @@ export default function OrdersPage() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-200 mt-12 bg-white">
-        <div className="container-custom py-6">
-          <div className="flex items-center justify-between text-sm text-gray-500">
-            <span>© 2023 WBTrade. Wszelkie prawa zastrzeżone.</span>
-            <div className="flex items-center gap-6">
-              <Link href="/privacy" className="hover:text-gray-700">Polityka prywatności</Link>
-              <Link href="/terms" className="hover:text-gray-700">Regulamin</Link>
-              <button className="hover:text-gray-700">Ustawienia cookies</button>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer hideTrustBadges />
     </div>
   );
 }

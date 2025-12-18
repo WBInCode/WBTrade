@@ -437,6 +437,8 @@ export interface Order {
   billingAddress?: OrderAddress;
   shippingMethod: string;
   paymentMethod: string;
+  paczkomatCode?: string;
+  paczkomatAddress?: string;
   subtotal: number;
   discount: number;
   shipping: number;
@@ -859,6 +861,7 @@ export interface CheckoutRequest {
   billingAddressId?: string;
   shippingMethod: string;
   pickupPointCode?: string;
+  pickupPointAddress?: string;
   paymentMethod: string;
   customerNotes?: string;
   acceptTerms: boolean;
@@ -1019,6 +1022,87 @@ export const dashboardApi = {
   // Simulate payment completion for an order
   simulatePayment: (orderId: string, action: 'pay' | 'fail' = 'pay') =>
     api.post<SimulatePaymentResponse>(`/dashboard/orders/${orderId}/simulate-payment`, { action }),
+};
+
+// Types for Reviews API
+export interface Review {
+  id: string;
+  userId: string;
+  productId: string;
+  orderId: string | null;
+  rating: number;
+  title: string | null;
+  content: string;
+  isVerifiedPurchase: boolean;
+  isApproved: boolean;
+  helpfulCount: number;
+  notHelpfulCount: number;
+  createdAt: string;
+  updatedAt: string;
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  images?: {
+    id: string;
+    imageUrl: string;
+    altText: string | null;
+  }[];
+}
+
+export interface ReviewStats {
+  averageRating: number;
+  totalReviews: number;
+  distribution: { rating: number; count: number }[];
+}
+
+export interface CanReviewResult {
+  canReview: boolean;
+  hasPurchased: boolean;
+  hasReviewed: boolean;
+  isVerifiedPurchase: boolean;
+  reason?: string;
+}
+
+export interface ReviewsListResponse {
+  reviews: Review[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export const reviewsApi = {
+  // Get reviews for a product
+  getProductReviews: (productId: string, options?: { page?: number; limit?: number; sort?: 'newest' | 'oldest' | 'highest' | 'lowest' | 'helpful' }) =>
+    api.get<ReviewsListResponse>(`/products/${productId}/reviews`, options),
+
+  // Get review statistics for a product
+  getProductStats: (productId: string) =>
+    api.get<ReviewStats>(`/products/${productId}/reviews/stats`),
+
+  // Check if user can review a product
+  canReview: (productId: string) =>
+    api.get<CanReviewResult>(`/products/${productId}/reviews/can-review`),
+
+  // Create a new review
+  create: (data: { productId: string; rating: number; title?: string; content: string }) =>
+    api.post<Review>('/reviews', data),
+
+  // Update a review
+  update: (reviewId: string, data: { rating?: number; title?: string; content?: string }) =>
+    api.put<Review>(`/reviews/${reviewId}`, data),
+
+  // Delete a review
+  delete: (reviewId: string) =>
+    api.delete<{ success: boolean; message: string }>(`/reviews/${reviewId}`),
+
+  // Mark a review as helpful or not helpful
+  markHelpful: (reviewId: string, helpful: boolean) =>
+    api.post<Review>(`/reviews/${reviewId}/helpful`, { helpful }),
 };
 
 export default api;
