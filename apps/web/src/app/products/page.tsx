@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import ProductListCard from '../../components/ProductListCard';
@@ -36,6 +36,7 @@ const specLabels: Record<string, { label: string; unit?: string }> = {
 
 function ProductsContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
   const searchQuery = searchParams.get('search') || '';
   const currentCategorySlug = searchParams.get('category') || '';
@@ -51,6 +52,8 @@ function ProductsContent() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<ProductFiltersResponse | null>(null);
   const [categoryPath, setCategoryPath] = useState<{ id: string; name: string; slug: string }[]>([]);
+  const [activeTab, setActiveTab] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   // Fetch filters when category changes
   useEffect(() => {
@@ -83,24 +86,54 @@ function ProductsContent() {
     fetchCategoryPath();
   }, [currentCategorySlug]);
 
-  // Fetch products when filters change
+  // Fetch products when filters or tab change
   useEffect(() => {
     async function fetchProducts() {
       setLoading(true);
       try {
-        const response = await productsApi.getAll({
-          page: currentPage,
-          limit: ITEMS_PER_PAGE,
-          category: currentCategorySlug || undefined,
-          minPrice: minPrice ? parseFloat(minPrice) : undefined,
-          maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
-          search: searchQuery || undefined,
-          sort: sort as 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'newest',
-          brand: brand || undefined,
-        });
-        setProducts(response.products);
-        setTotalProducts(response.total);
-        setTotalPages(response.totalPages);
+        // For discounted tab, we need to fetch more and filter client-side
+        if (activeTab === 'discounted') {
+          const response = await productsApi.getAll({
+            page: 1,
+            limit: 100,
+            category: currentCategorySlug || undefined,
+            minPrice: minPrice ? parseFloat(minPrice) : undefined,
+            maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+            search: searchQuery || undefined,
+            sort: sort as 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'newest',
+            brand: brand || undefined,
+          });
+          
+          // Filter only discounted products
+          const discountedProducts = response.products.filter(
+            (p) => p.compareAtPrice && Number(p.compareAtPrice) > Number(p.price)
+          );
+          
+          // Apply pagination client-side
+          const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+          const paginatedProducts = discountedProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+          
+          setProducts(paginatedProducts);
+          setTotalProducts(discountedProducts.length);
+          setTotalPages(Math.ceil(discountedProducts.length / ITEMS_PER_PAGE));
+        } else {
+          // Use the sort value from URL params directly (already in API format)
+          const sortValue = sort as 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'newest';
+          
+          const response = await productsApi.getAll({
+            page: currentPage,
+            limit: ITEMS_PER_PAGE,
+            category: currentCategorySlug || undefined,
+            minPrice: minPrice ? parseFloat(minPrice) : undefined,
+            maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+            search: searchQuery || undefined,
+            sort: sortValue,
+            brand: brand || undefined,
+          });
+          setProducts(response.products);
+          setTotalProducts(response.total);
+          setTotalPages(response.totalPages);
+        }
       } catch (error) {
         console.error('Failed to fetch products:', error);
         setProducts([]);
@@ -111,7 +144,45 @@ function ProductsContent() {
       }
     }
     fetchProducts();
-  }, [currentPage, currentCategorySlug, minPrice, maxPrice, searchQuery, sort, brand]);
+  }, [currentPage, currentCategorySlug, minPrice, maxPrice, searchQuery, sort, brand, activeTab]);
+
+  // Handle tab change
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+  };
+
+  // Handle sort change
+  const handleSortChange = (value: string) => {
+    // Map UI sort values to API sort values
+    const sortMapping: Record<string, string> = {
+      'relevance': 'newest',
+      'price-asc': 'price_asc',
+      'price-desc': 'price_desc',
+      'newest': 'newest',
+      'rating': 'newest', // API doesn't support rating sort, fallback to newest
+    };
+    const apiSort = sortMapping[value] || 'newest';
+    
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('sort', apiSort);
+    params.set('page', '1'); // Reset to first page when sorting changes
+    router.push(`?${params.toString()}`);
+  };
+
+  // Handle view change
+  const handleViewChange = (view: 'grid' | 'list') => {
+    setViewMode(view);
+  };
+
+  // Map API sort values back to UI sort values for dropdown display
+  const apiToUiSortMapping: Record<string, string> = {
+    'newest': 'newest',
+    'price_asc': 'price-asc',
+    'price_desc': 'price-desc',
+    'name_asc': 'relevance',
+    'name_desc': 'relevance',
+  };
+  const uiSort = apiToUiSortMapping[sort] || 'newest';
 
   // Build breadcrumb dynamically based on category path
   const breadcrumbItems = useMemo(() => {
@@ -198,7 +269,15 @@ function ProductsContent() {
           {/* Main Content */}
           <div className="flex-1">
             {/* Header with Tabs, Sort, View Toggle */}
-            <ProductListHeader totalProducts={totalProducts} />
+            <ProductListHeader 
+              totalProducts={totalProducts} 
+              activeTab={activeTab}
+              onTabChange={handleTabChange}
+              onSortChange={handleSortChange}
+              onViewChange={handleViewChange}
+              currentSort={uiSort}
+              currentView={viewMode}
+            />
 
             {/* Loading State */}
             {loading ? (
@@ -225,10 +304,13 @@ function ProductsContent() {
               </div>
             ) : (
               <>
-                {/* Product Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                {/* Product Grid/List */}
+                <div className={viewMode === 'grid' 
+                  ? "grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"
+                  : "flex flex-col gap-4"
+                }>
                   {products.map((product) => (
-                    <ProductListCard key={product.id} product={product} />
+                    <ProductListCard key={product.id} product={product} viewMode={viewMode} />
                   ))}
                 </div>
 

@@ -20,6 +20,40 @@ interface ProductsListResult {
   totalPages: number;
 }
 
+/**
+ * Safely parse JSON fields that might already be objects or strings
+ */
+function parseJsonField(value: unknown): Record<string, unknown> | null {
+  if (!value) return null;
+  if (typeof value === 'object') return value as Record<string, unknown>;
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+/**
+ * Transform product to ensure JSON fields are properly parsed
+ */
+function transformProduct(product: any): any {
+  if (!product) return product;
+  
+  return {
+    ...product,
+    specifications: parseJsonField(product.specifications),
+    variants: product.variants?.map((variant: any) => ({
+      ...variant,
+      attributes: parseJsonField(variant.attributes) || {},
+      // Calculate stock from inventory if available
+      stock: variant.inventory?.reduce((sum: number, inv: any) => sum + (inv.quantity - inv.reserved), 0) ?? 0,
+    })),
+  };
+}
+
 export class ProductsService {
   /**
    * Get all descendant category IDs for a given category slug (including the category itself)
@@ -155,7 +189,7 @@ export class ProductsService {
     ]);
 
     return {
-      products,
+      products: products.map(transformProduct),
       total,
       page,
       limit,
@@ -167,7 +201,7 @@ export class ProductsService {
    * Get a single product by ID
    */
   async getById(id: string) {
-    return prisma.product.findUnique({
+    const product = await prisma.product.findUnique({
       where: { id },
       include: {
         images: {
@@ -181,13 +215,14 @@ export class ProductsService {
         },
       },
     });
+    return transformProduct(product);
   }
 
   /**
    * Get a single product by slug
    */
   async getBySlug(slug: string) {
-    return prisma.product.findUnique({
+    const product = await prisma.product.findUnique({
       where: { slug },
       include: {
         images: {
@@ -201,6 +236,7 @@ export class ProductsService {
         },
       },
     });
+    return transformProduct(product);
   }
 
   /**
