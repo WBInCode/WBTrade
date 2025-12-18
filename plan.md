@@ -16,9 +16,9 @@
 4. [Etap 3: Frontend – formularze i flow](#etap-3-frontend--formularze-i-flow-2-3-dni)
 5. [Etap 4: Baza danych – schemat Prisma](#etap-4-baza-danych--schemat-prisma-2-3-dni)
 6. [Etap 5: Backend – CRUD i logika](#etap-5-backend--crud-i-logika-5-7-dni)
-7. [Etap 6: Integracje zewnętrzne](#etap-6-integracje-zewnętrzne-3-5-dni)
-8. [Etap 7: Panel Admin + WMS](#etap-7-panel-admin--wms-5-7-dni)
-9. [Etap 8: Optymalizacja i skala](#etap-8-optymalizacja-i-skala-3-5-dni)
+7. [Etap 6: Panel Admin + WMS](#etap-6-panel-admin--wms-5-7-dni)
+8. [Etap 7: Optymalizacja i skala](#etap-7-optymalizacja-i-skala-3-5-dni)
+9. [Etap 8: Integracje zewnętrzne (PRE-PROD)](#etap-8-integracje-zewnętrzne-pre-prod-3-5-dni)
 10. [Rozszerzenia opcjonalne](#-rozszerzenia-opcjonalne)
 
 ---
@@ -333,54 +333,7 @@
 - [x] **5.46** SECURITY.md documentation ✅
 
 ---
-## Etap 6: Integracje zewnętrzne (3-5 dni)
-
-> 🔗 **Cel**: Płatności, wysyłki, powiadomienia
-
-### TODO
-
-#### Płatności
-
-- [ ] **6.1** Integracja Stripe / PayU / Przelewy24
-- [ ] **6.2** Endpoint webhook dla statusów płatności
-- [ ] **6.3** Obsługa statusów: `pending`, `paid`, `failed`, `refunded`
-- [ ] **6.4** Aktualizacja zamówienia po płatności
-
-#### Kurierzy
-
-- [ ] **6.5** Integracja InPost API (Paczkomaty + Kurier)
-- [ ] **6.6** Integracja DPD / DHL (opcjonalnie)
-- [ ] **6.7** Generowanie etykiet (label PDF)
-- [ ] **6.8** Pobieranie statusu tracking
-- [ ] **6.9** Webhook dla aktualizacji statusu
-
-#### Meilisearch
-
-- [ ] **6.10** Konfiguracja indeksu produktów
-- [ ] **6.11** Ustawienie facetów (kategoria, cena, atrybuty)
-- [ ] **6.12** BullMQ job do synchronizacji produktów
-- [ ] **6.13** Synonimy i stop words (PL)
-
-#### Email
-
-- [ ] **6.14** Konfiguracja Nodemailer / Resend
-- [ ] **6.15** Szablony email (HTML):
-  - Potwierdzenie rejestracji
-  - Reset hasła
-  - Potwierdzenie zamówienia
-  - Zmiana statusu zamówienia
-  - Faktura (załącznik PDF)
-- [ ] **6.16** BullMQ job do wysyłki emaili
-
-#### Storage (pliki)
-
-- [ ] **6.17** Konfiguracja S3 / Cloudflare R2
-- [ ] **6.18** Upload zdjęć produktów
-- [ ] **6.19** Generowanie thumbnails (sharp)
-- [ ] **6.20** CDN dla zdjęć
-
----
-## Etap 7: Panel Admin + WMS (5-7 dni)
+## Etap 6: Panel Admin + WMS (5-7 dni)
 
 > 👨‍💼 **Cel**: Zarządzanie sklepem i magazynem
 
@@ -388,74 +341,74 @@
 
 #### Setup (`apps/admin/`)
 
-- [ ] **7.1** Nowa aplikacja Next.js w monorepo
-- [ ] **7.2** Layout z sidebar navigation
-- [ ] **7.3** Auth (login admin) + RBAC middleware
-- [ ] **7.4** Współdzielone komponenty z `packages/ui`
+- [ ] **6.1** Nowa aplikacja Next.js w monorepo
+- [ ] **6.2** Layout z sidebar navigation
+- [ ] **6.3** Auth (login admin) + RBAC middleware
+- [ ] **6.4** Współdzielone komponenty z `packages/ui`
 
 #### Dashboard (`apps/admin/src/app/page.tsx`)
 
-- [ ] **7.5** KPI cards (zamówienia dziś, przychód, nowi klienci)
-- [ ] **7.6** Wykres sprzedaży (ostatnie 30 dni)
-- [ ] **7.7** Ostatnie zamówienia
-- [ ] **7.8** Produkty z niskim stanem
-- [ ] **7.9** Alerty (zamówienia do realizacji, braki)
+- [ ] **6.5** KPI cards (zamówienia dziś, przychód, nowi klienci)
+- [ ] **6.6** Wykres sprzedaży (ostatnie 30 dni)
+- [ ] **6.7** Ostatnie zamówienia
+- [ ] **6.8** Produkty z niskim stanem
+- [ ] **6.9** Alerty (zamówienia do realizacji, braki)
 
 #### Produkty (`apps/admin/src/app/products/`)
 
-- [ ] **7.10** Lista produktów (tabela z filtrami, sortowaniem)
-- [ ] **7.11** Dodawanie produktu (formularz multi-step)
-- [ ] **7.12** Edycja produktu
-- [ ] **7.13** Zarządzanie wariantami
-- [ ] **7.14** Upload zdjęć (drag & drop)
-- [ ] **7.15** Import CSV/XLSX
-- [ ] **7.16** Eksport do CSV
-- [ ] **7.17** Bulk actions (aktywuj, deaktywuj, usuń)
+- [ ] **6.10** Lista produktów (tabela z filtrami, sortowaniem)
+- [ ] **6.11** Dodawanie produktu (formularz multi-step)
+- [ ] **6.12** Edycja produktu
+- [ ] **6.13** Zarządzanie wariantami
+- [ ] **6.14** Upload zdjęć (drag & drop)
+- [ ] **6.15** Import CSV/XLSX
+- [ ] **6.16** Eksport do CSV
+- [ ] **6.17** Bulk actions (aktywuj, deaktywuj, usuń)
 
 #### Kategorie (`apps/admin/src/app/categories/`)
 
-- [ ] **7.18** Drzewo kategorii
-- [ ] **7.19** Dodawanie/edycja kategorii
-- [ ] **7.20** Przypisywanie produktów
+- [ ] **6.18** Drzewo kategorii
+- [ ] **6.19** Dodawanie/edycja kategorii
+- [ ] **6.20** Przypisywanie produktów
 
 #### Zamówienia (`apps/admin/src/app/orders/`)
 
-- [ ] **7.21** Lista zamówień (tabela z filtrami)
-- [ ] **7.22** Szczegóły zamówienia
-- [ ] **7.23** Zmiana statusu
-- [ ] **7.24** Drukowanie etykiety kurierskiej
-- [ ] **7.25** Drukowanie faktury
-- [ ] **7.26** Anulowanie / zwrot
+- [ ] **6.21** Lista zamówień (tabela z filtrami)
+- [ ] **6.22** Szczegóły zamówienia
+- [ ] **6.23** Zmiana statusu
+- [ ] **6.24** Drukowanie etykiety kurierskiej
+- [ ] **6.25** Drukowanie faktury
+- [ ] **6.26** Anulowanie / zwrot
 
 #### Magazyn (WMS) (`apps/admin/src/app/warehouse/`)
 
-- [ ] **7.27** Stany magazynowe (tabela)
-- [ ] **7.28** Przyjęcie towaru (PZ) - formularz
-- [ ] **7.29** Wydanie towaru (WZ) - formularz
-- [ ] **7.30** Przesunięcia między lokalizacjami
-- [ ] **7.31** Inwentaryzacja
-- [ ] **7.32** Historia ruchów
-- [ ] **7.33** Lokalizacje (regały, półki)
-- [ ] **7.34** Alerty niskich stanów
+- [ ] **6.27** Stany magazynowe (tabela)
+- [ ] **6.28** Przyjęcie towaru (PZ) - formularz
+- [ ] **6.29** Wydanie towaru (WZ) - formularz
+- [ ] **6.30** Przesunięcia między lokalizacjami
+- [ ] **6.31** Inwentaryzacja
+- [ ] **6.32** Historia ruchów
+- [ ] **6.33** Lokalizacje (regały, półki)
+- [ ] **6.34** Alerty niskich stanów
 
 #### Użytkownicy (`apps/admin/src/app/users/`)
 
-- [ ] **7.35** Lista użytkowników
-- [ ] **7.36** Dodawanie/edycja użytkownika
-- [ ] **7.37** Role i uprawnienia (Admin, Magazynier, Obsługa)
-- [ ] **7.38** Blokowanie/odblokowywanie
+- [ ] **6.35** Lista użytkowników
+- [ ] **6.36** Dodawanie/edycja użytkownika
+- [ ] **6.37** Role i uprawnienia (Admin, Magazynier, Obsługa)
+- [ ] **6.38** Blokowanie/odblokowywanie
 
 #### Ustawienia (`apps/admin/src/app/settings/`)
 
-- [ ] **7.39** Dane firmy
-- [ ] **7.40** Metody dostawy
-- [ ] **7.41** Metody płatności
-- [ ] **7.42** Podatki (stawki VAT)
-- [ ] **7.43** Szablony email
-- [ ] **7.44** Integracje (API keys)
+- [ ] **6.39** Dane firmy
+- [ ] **6.40** Metody dostawy
+- [ ] **6.41** Metody płatności
+- [ ] **6.42** Podatki (stawki VAT)
+- [ ] **6.43** Szablony email
+- [ ] **6.44** Integracje (API keys)
 
 ---
-## Etap 8: Optymalizacja i skala (3-5 dni)
+## Etap 7: Optymalizacja i skala (3-5 dni)
 
 > 🚀 **Cel**: Wydajność przy 500-5000 zamówień/dzień
 
@@ -463,67 +416,116 @@
 
 #### Cache (Redis)
 
-- [ ] **8.1** Cache katalogu produktów (TTL 5-15 min)
-- [ ] **8.2** Cache stanów magazynowych (TTL 1 min)
-- [ ] **8.3** Cache sesji użytkowników
-- [ ] **8.4** Rate limiting (API)
-- [ ] **8.5** Distributed locks (rezerwacje)
+- [ ] **7.1** Cache katalogu produktów (TTL 5-15 min)
+- [ ] **7.2** Cache stanów magazynowych (TTL 1 min)
+- [ ] **7.3** Cache sesji użytkowników
+- [ ] **7.4** Rate limiting (API)
+- [ ] **7.5** Distributed locks (rezerwacje)
 
 #### ISR + Optymalizacja Frontend (⚠️ PRIORYTET WYSOKI - 100k produktów!)
 
 > 🎯 **Cel**: Szybkie ładowanie przy 100,000 produktów bez budowania wszystkich stron
 
-- [ ] **8.6** ISR dla stron produktów (`/products/[id]`) - revalidate co 60s
-- [ ] **8.7** Pre-build tylko TOP 100-500 bestsellerów (`generateStaticParams`)
-- [ ] **8.8** On-demand revalidation API (`/api/revalidate?path=...`)
+- [ ] **7.6** ISR dla stron produktów (`/products/[id]`) - revalidate co 60s
+- [ ] **7.7** Pre-build tylko TOP 100-500 bestsellerów (`generateStaticParams`)
+- [ ] **7.8** On-demand revalidation API (`/api/revalidate?path=...`)
   - Wywołanie przy update produktu/ceny w admin
-- [ ] **8.9** Paginacja API produktów (50 items/page, cursor-based)
-- [ ] **8.10** Indeksy w bazie danych (category, price, sku, createdAt)
-- [ ] **8.11** Lazy loading obrazów + Next.js Image optimization
-- [ ] **8.12** CDN dla obrazów produktów (Cloudflare R2 / S3 + CloudFront)
-- [ ] **8.13** Virtual scrolling dla długich list (react-window / tanstack-virtual)
+- [ ] **7.9** Paginacja API produktów (50 items/page, cursor-based)
+- [ ] **7.10** Indeksy w bazie danych (category, price, sku, createdAt)
+- [ ] **7.11** Lazy loading obrazów + Next.js Image optimization
+- [ ] **7.12** CDN dla obrazów produktów (Cloudflare R2 / S3 + CloudFront)
+- [ ] **7.13** Virtual scrolling dla długich list (react-window / tanstack-virtual)
 
 #### Kolejki (BullMQ)
 
-- [ ] **8.14** Queue: `email` - wysyłka maili
-- [ ] **8.15** Queue: `search-index` - indeksowanie produktów
-- [ ] **8.16** Queue: `import` - importy CSV/XLSX
-- [ ] **8.17** Queue: `export` - eksporty raportów
-- [ ] **8.18** Queue: `inventory-sync` - synchronizacja stanów
-- [ ] **8.19** Queue: `shipping` - generowanie etykiet
-- [ ] **8.20** Dashboard kolejek (Bull Board)
+- [ ] **7.14** Queue: `email` - wysyłka maili
+- [ ] **7.15** Queue: `search-index` - indeksowanie produktów
+- [ ] **7.16** Queue: `import` - importy CSV/XLSX
+- [ ] **7.17** Queue: `export` - eksporty raportów
+- [ ] **7.18** Queue: `inventory-sync` - synchronizacja stanów
+- [ ] **7.19** Queue: `shipping` - generowanie etykiet
+- [ ] **7.20** Dashboard kolejek (Bull Board)
 
 #### Rezerwacje stanów (krytyczne!)
 
-- [ ] **8.21** Optimistic locking na `Inventory`
-- [ ] **8.22** Timeout rezerwacji (np. 15 min)
-- [ ] **8.23** Job do czyszczenia wygasłych rezerwacji
-- [ ] **8.24** Transakcje DB przy tworzeniu zamówień
+- [ ] **7.21** Optimistic locking na `Inventory`
+- [ ] **7.22** Timeout rezerwacji (np. 15 min)
+- [ ] **7.23** Job do czyszczenia wygasłych rezerwacji
+- [ ] **7.24** Transakcje DB przy tworzeniu zamówień
 
 #### Monitoring
 
-- [ ] **8.25** Sentry - error tracking (frontend + backend)
-- [ ] **8.26** Prometheus - metryki
-- [ ] **8.27** Grafana - dashboardy
-- [ ] **8.28** Alerty (błędy, wydajność, stany)
-- [ ] **8.29** Health check endpoints
+- [ ] **7.25** Sentry - error tracking (frontend + backend)
+- [ ] **7.26** Prometheus - metryki
+- [ ] **7.27** Grafana - dashboardy
+- [ ] **7.28** Alerty (błędy, wydajność, stany)
+- [ ] **7.29** Health check endpoints
 
 #### Testy
 
-- [ ] **8.30** Unit testy - serwisy (Jest)
-- [ ] **8.31** Integration testy - API (supertest)
-- [ ] **8.32** E2E testy - flow zakupowy (Playwright)
-- [ ] **8.33** Load testy (k6 / Artillery)
+- [ ] **7.30** Unit testy - serwisy (Jest)
+- [ ] **7.31** Integration testy - API (supertest)
+- [ ] **7.32** E2E testy - flow zakupowy (Playwright)
+- [ ] **7.33** Load testy (k6 / Artillery)
 
 #### CI/CD
 
-- [ ] **8.34** GitHub Actions workflow:
+- [ ] **7.34** GitHub Actions workflow:
   - Lint + TypeScript check
   - Unit testy
   - Build
   - Deploy (staging → production)
-- [ ] **8.35** Automatyczne migracje DB
-- [ ] **8.36** Rollback strategy
+- [ ] **7.35** Automatyczne migracje DB
+- [ ] **7.36** Rollback strategy
+
+---
+## Etap 8: Integracje zewnętrzne (PRE-PROD) (3-5 dni)
+
+> 🔗 **Cel**: Płatności, wysyłki, powiadomienia - wykonać PRZED wdrożeniem produkcyjnym
+> 
+> ⚠️ **UWAGA**: Na środowisku developerskim używamy mocków. Ten etap realizujemy dopiero przed produkcją!
+
+### TODO
+
+#### Płatności
+
+- [ ] **8.1** Integracja Stripe / PayU / Przelewy24
+- [ ] **8.2** Endpoint webhook dla statusów płatności
+- [ ] **8.3** Obsługa statusów: `pending`, `paid`, `failed`, `refunded`
+- [ ] **8.4** Aktualizacja zamówienia po płatności
+
+#### Kurierzy
+
+- [ ] **8.5** Integracja InPost API (Paczkomaty + Kurier)
+- [ ] **8.6** Integracja DPD / DHL (opcjonalnie)
+- [ ] **8.7** Generowanie etykiet (label PDF)
+- [ ] **8.8** Pobieranie statusu tracking
+- [ ] **8.9** Webhook dla aktualizacji statusu
+
+#### Meilisearch
+
+- [ ] **8.10** Konfiguracja indeksu produktów
+- [ ] **8.11** Ustawienie facetów (kategoria, cena, atrybuty)
+- [ ] **8.12** BullMQ job do synchronizacji produktów
+- [ ] **8.13** Synonimy i stop words (PL)
+
+#### Email
+
+- [ ] **8.14** Konfiguracja Nodemailer / Resend
+- [ ] **8.15** Szablony email (HTML):
+  - Potwierdzenie rejestracji
+  - Reset hasła
+  - Potwierdzenie zamówienia
+  - Zmiana statusu zamówienia
+  - Faktura (załącznik PDF)
+- [ ] **8.16** BullMQ job do wysyłki emaili
+
+#### Storage (pliki)
+
+- [ ] **8.17** Konfiguracja S3 / Cloudflare R2
+- [ ] **8.18** Upload zdjęć produktów
+- [ ] **8.19** Generowanie thumbnails (sharp)
+- [ ] **8.20** CDN dla zdjęć
 
 ---
 
