@@ -12,10 +12,10 @@ interface RecommendedProductsProps {
 type TabType = 'all' | 'bestsellers' | 'discounted' | 'new';
 
 const tabs = [
-  { id: 'all' as TabType, label: 'Wszystkie' },
-  { id: 'bestsellers' as TabType, label: 'Bestsellery' },
-  { id: 'discounted' as TabType, label: 'Przecenione' },
-  { id: 'new' as TabType, label: 'Nowości' },
+  { id: 'all' as TabType, label: 'Wszystkie', icon: '📦' },
+  { id: 'bestsellers' as TabType, label: 'Bestsellery', icon: '🏆' },
+  { id: 'discounted' as TabType, label: 'Przecenione', icon: '💰' },
+  { id: 'new' as TabType, label: 'Nowości', icon: '✨' },
 ];
 
 export default function RecommendedProducts({ initialProducts }: RecommendedProductsProps) {
@@ -81,25 +81,65 @@ export default function RecommendedProducts({ initialProducts }: RecommendedProd
 
   return (
     <section className="mb-10">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <h2 className="text-xl font-bold text-secondary-900">Polecane dla Ciebie</h2>
-        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                activeTab === tab.id
-                  ? 'bg-white text-secondary-900 shadow-sm'
-                  : 'text-secondary-500 hover:text-secondary-700'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+      {/* Professional Header */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          {/* Title with icon */}
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-orange-500 rounded-xl flex items-center justify-center shadow-md">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Polecane dla Ciebie</h2>
+              <p className="text-sm text-gray-500">Produkty dobrane specjalnie dla Ciebie</p>
+            </div>
+          </div>
+          
+          {/* Tab Navigation */}
+          <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-1.5">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                  activeTab === tab.id
+                    ? 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <span className="text-base">{tab.icon}</span>
+                <span className="hidden sm:inline">{tab.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        {/* Stats bar */}
+        <div className="flex items-center gap-6 mt-4 pt-4 border-t border-gray-100">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span>Darmowa dostawa od 200 zł</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+            </svg>
+            <span>30 dni na zwrot</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <svg className="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+            <span>Zaufane opinie klientów</span>
+          </div>
         </div>
       </div>
 
+      {/* Products Grid */}
       {loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {[...Array(6)].map((_, i) => (
@@ -113,8 +153,14 @@ export default function RecommendedProducts({ initialProducts }: RecommendedProd
           ))}
         </div>
       ) : (
-        <div className="text-center py-12 text-secondary-500">
-          <p>Brak produktów w tej kategorii</p>
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-12 text-center">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Brak produktów</h3>
+          <p className="text-gray-500">W tej kategorii nie ma jeszcze produktów</p>
         </div>
       )}
     </section>

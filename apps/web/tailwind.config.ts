@@ -36,11 +36,6 @@ const config: Config = {
           900: '#0f172a',
           950: '#020617',
         },
-        // Green for Smart delivery badge
-        smart: {
-          500: '#22c55e',
-          600: '#16a34a',
-        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
