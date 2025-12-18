@@ -1,0 +1,36 @@
+{
+  "name": "wbtrade",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w wbtrade-web\" \"npm run dev -w wbtrade-api\"",
+    "dev:all": "concurrently \"npm run dev -w wbtrade-web\" \"npm run dev -w wbtrade-api\" \"npm run dev -w wbtrade-admin\"",
+    "dev:web": "npm run dev -w wbtrade-web",
+    "dev:api": "npm run dev -w wbtrade-api",
+    "dev:admin": "npm run dev -w wbtrade-admin",
+    "build": "npm run build -w wbtrade-web && npm run build -w wbtrade-api",
+    "build:web": "npm run build -w wbtrade-web",
+    "build:api": "npm run build -w wbtrade-api",
+    "start": "npm run start -w wbtrade-web",
+    "lint": "eslint . --ext .ts,.tsx",
+    "test": "jest",
+    "prisma:generate": "npm run prisma:generate -w wbtrade-api",
+    "prisma:migrate": "npm run prisma:migrate -w wbtrade-api",
+    "prisma:studio": "npm run prisma:studio -w wbtrade-api",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
