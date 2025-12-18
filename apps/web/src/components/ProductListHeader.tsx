@@ -1,7 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-
 interface SortOption {
   value: string;
   label: string;
@@ -21,6 +19,8 @@ interface ProductListHeaderProps {
   onViewChange?: (view: 'grid' | 'list') => void;
   activeTab?: string;
   onTabChange?: (tab: string) => void;
+  currentSort?: string;
+  currentView?: 'grid' | 'list';
 }
 
 export default function ProductListHeader({ 
@@ -28,22 +28,20 @@ export default function ProductListHeader({
   onSortChange,
   onViewChange,
   activeTab = 'all',
-  onTabChange
+  onTabChange,
+  currentSort = 'relevance',
+  currentView = 'grid'
 }: ProductListHeaderProps) {
-  const [sortBy, setSortBy] = useState('relevance');
-  const [view, setView] = useState<'grid' | 'list'>('grid');
-
   const handleSortChange = (value: string) => {
-    setSortBy(value);
     onSortChange?.(value);
   };
 
   const handleViewChange = (newView: 'grid' | 'list') => {
-    setView(newView);
     onViewChange?.(newView);
   };
 
   const tabs = [
+    { id: 'all', label: 'Wszystkie' },
     { id: 'bestsellers', label: 'Bestsellery' },
     { id: 'discounted', label: 'Przecenione' },
     { id: 'new', label: 'Nowości' },
@@ -74,7 +72,7 @@ export default function ProductListHeader({
         <div className="flex items-center gap-2">
           <span className="text-sm text-secondary-500">Sortuj:</span>
           <select
-            value={sortBy}
+            value={currentSort}
             onChange={(e) => handleSortChange(e.target.value)}
             className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           >
@@ -91,7 +89,7 @@ export default function ProductListHeader({
           <button
             onClick={() => handleViewChange('grid')}
             className={`p-2 transition-colors ${
-              view === 'grid' ? 'bg-primary-500 text-white' : 'bg-white text-secondary-500 hover:bg-gray-50'
+              currentView === 'grid' ? 'bg-primary-500 text-white' : 'bg-white text-secondary-500 hover:bg-gray-50'
             }`}
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -101,7 +99,7 @@ export default function ProductListHeader({
           <button
             onClick={() => handleViewChange('list')}
             className={`p-2 transition-colors ${
-              view === 'list' ? 'bg-primary-500 text-white' : 'bg-white text-secondary-500 hover:bg-gray-50'
+              currentView === 'list' ? 'bg-primary-500 text-white' : 'bg-white text-secondary-500 hover:bg-gray-50'
             }`}
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
