@@ -13,6 +13,7 @@ import wishlistRoutes from './routes/wishlist';
 import categoriesRoutes from './routes/categories';
 import checkoutRoutes from './routes/checkout';
 import dashboardRoutes from './routes/dashboard';
+import reviewsRoutes from './routes/reviews';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
 import { initializeMeilisearch } from './lib/meilisearch';
 import { startSearchIndexWorker } from './workers/search-index.worker';
@@ -105,6 +106,7 @@ app.use('/api/addresses', addressesRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/checkout', checkoutRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/reviews', reviewsRoutes);
 app.use('/api/webhooks', checkoutRoutes); // Webhook routes
 
 // 404 handler

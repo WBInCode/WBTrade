@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '../../components/Header';
+import Footer from '../../components/Footer';
 import ProductCard from '../../components/ProductCard';
 import { Product, dashboardApi, DashboardStats, DashboardOrder, RecommendedProduct } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -322,24 +323,7 @@ export default function AccountPage() {
                 ))}
               </nav>
 
-              {/* Promo Banner */}
-              <div className="m-3 mt-4">
-                <div className="relative bg-gradient-to-r from-gray-900 to-gray-700 rounded-xl p-4 overflow-hidden">
-                  <div className="absolute top-2 right-2 bg-white/20 text-white text-[10px] px-2 py-0.5 rounded">
-                    AD
-                  </div>
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">BLACK FRIDAY</span>
-                  </div>
-                  <div className="flex gap-1 mb-2">
-                    <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full font-semibold">-50%</span>
-                    <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full font-semibold">70</span>
-                    <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full font-semibold">90%</span>
-                  </div>
-                  <h4 className="text-white font-bold text-sm mb-1">Super okazje cenowe!</h4>
-                  <p className="text-white/70 text-xs">Sprawdź najlepsze oferty dnia</p>
-                </div>
-              </div>
+
             </div>
           </aside>
 
@@ -496,14 +480,14 @@ export default function AccountPage() {
                         )}
                         {order.status === 'SHIPPED' && (
                           <Link
-                            href={`/order/${order.id}/tracking`}
+                            href={`/account/orders/${order.id}`}
                             className="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors bg-orange-500 text-white hover:bg-orange-600 text-center"
                           >
                             Śledź przesyłkę
                           </Link>
                         )}
                         <Link
-                          href={`/order/${order.id}`}
+                          href={`/account/orders/${order.id}`}
                           className="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors border border-gray-300 text-gray-700 hover:bg-gray-50 text-center"
                         >
                           Szczegóły
@@ -594,19 +578,7 @@ export default function AccountPage() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-200 mt-12 bg-white">
-        <div className="container-custom py-6">
-          <div className="flex items-center justify-between text-sm text-gray-500">
-            <span>© 2023 WBTrade. Wszelkie prawa zastrzeżone.</span>
-            <div className="flex items-center gap-6">
-              <Link href="/privacy" className="hover:text-gray-700">Polityka prywatności</Link>
-              <Link href="/terms" className="hover:text-gray-700">Regulamin</Link>
-              <button className="hover:text-gray-700">Ustawienia cookies</button>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer hideTrustBadges />
     </div>
   );
 }

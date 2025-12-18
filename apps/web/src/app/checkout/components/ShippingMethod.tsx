@@ -90,6 +90,7 @@ export default function ShippingMethod({ initialData, onSubmit, onBack }: Shippi
     onSubmit({
       method: selectedMethod as ShippingData['method'],
       paczkomatCode: selectedMethod === 'inpost_paczkomat' ? paczkomatCode : undefined,
+      paczkomatAddress: selectedMethod === 'inpost_paczkomat' ? paczkomatAddress : undefined,
       price: selectedProvider?.price || 0,
     });
   };

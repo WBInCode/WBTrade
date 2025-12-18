@@ -33,7 +33,7 @@ export default function Newsletter() {
   };
 
   return (
-    <section className="bg-gradient-to-r from-primary-500 to-primary-600 py-12 mb-10 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+    <section className="bg-gradient-to-r from-primary-500 to-primary-600 py-12 mb-10 mx-4 sm:mx-6 lg:mx-8 rounded-3xl">
       <div className="max-w-4xl mx-auto text-center">
         {/* Icon */}
         <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
