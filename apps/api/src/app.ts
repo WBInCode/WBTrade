@@ -11,6 +11,7 @@ import inventoryRoutes from './routes/inventory';
 import addressesRoutes from './routes/addresses';
 import wishlistRoutes from './routes/wishlist';
 import categoriesRoutes from './routes/categories';
+import checkoutRoutes from './routes/checkout';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
 import { initializeMeilisearch } from './lib/meilisearch';
 
@@ -99,6 +100,8 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/addresses', addressesRoutes);
 app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/checkout', checkoutRoutes);
+app.use('/api/webhooks', checkoutRoutes); // Webhook routes
 
 // 404 handler
 app.use((req, res) => {
