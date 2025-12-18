@@ -279,6 +279,20 @@ export class SearchService {
   }
 
   /**
+   * Alias for removeProductFromIndex (used by queue worker)
+   */
+  async deleteProduct(productId: string): Promise<void> {
+    return this.removeProductFromIndex(productId);
+  }
+
+  /**
+   * Alias for reindexAllProducts (used by queue worker)
+   */
+  async indexAllProducts(): Promise<{ indexed: number; taskUid: number }> {
+    return this.reindexAllProducts();
+  }
+
+  /**
    * Get Meilisearch index stats
    */
   async getIndexStats() {

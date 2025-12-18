@@ -203,8 +203,26 @@ export default function ProductPage({ params }: ProductPageProps) {
   useEffect(() => {
     async function fetchProduct() {
       try {
-        console.log('Fetching product with ID:', id);
-        const data = await productsApi.getById(id);
+        console.log('Fetching product with ID/Slug:', id);
+        let data: Product | null = null;
+        
+        // Check if id looks like a UUID (contains dashes) or is a slug
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+        
+        if (isUuid) {
+          // Try fetching by ID first
+          data = await productsApi.getById(id);
+        } else {
+          // Try fetching by slug
+          try {
+            data = await productsApi.getBySlug(id);
+          } catch (slugError) {
+            console.log('Slug lookup failed, trying as ID:', slugError);
+            // Fallback to ID lookup
+            data = await productsApi.getById(id);
+          }
+        }
+        
         console.log('Received product data:', data);
         if (data && data.id) {
           setProduct(data);
