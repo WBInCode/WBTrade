@@ -2,6 +2,7 @@ import { prisma } from '../db';
 import { Prisma } from '@prisma/client';
 import { getProductsIndex } from '../lib/meilisearch';
 import { MeiliProduct } from './search.service';
+import { queueProductIndex, queueProductDelete } from '../lib/queue';
 
 interface ProductFilters {
   page?: number;
@@ -444,7 +445,7 @@ export class ProductsService {
    * Create a new product
    */
   async create(data: Prisma.ProductCreateInput) {
-    return prisma.product.create({
+    const product = await prisma.product.create({
       data,
       include: {
         images: true,
@@ -452,13 +453,20 @@ export class ProductsService {
         variants: true,
       },
     });
+    
+    // Queue product for Meilisearch indexing
+    await queueProductIndex(product.id).catch(err => 
+      console.error('Failed to queue product index:', err)
+    );
+    
+    return product;
   }
 
   /**
    * Update an existing product
    */
   async update(id: string, data: Prisma.ProductUpdateInput) {
-    return prisma.product.update({
+    const product = await prisma.product.update({
       where: { id },
       data,
       include: {
@@ -467,16 +475,30 @@ export class ProductsService {
         variants: true,
       },
     });
+    
+    // Queue product for Meilisearch reindexing
+    await queueProductIndex(product.id).catch(err => 
+      console.error('Failed to queue product reindex:', err)
+    );
+    
+    return product;
   }
 
   /**
    * Soft delete a product (set status to ARCHIVED)
    */
   async delete(id: string) {
-    return prisma.product.update({
+    const product = await prisma.product.update({
       where: { id },
       data: { status: 'ARCHIVED' },
     });
+    
+    // Queue product for removal from Meilisearch
+    await queueProductDelete(id).catch(err => 
+      console.error('Failed to queue product delete:', err)
+    );
+    
+    return product;
   }
 
   /**

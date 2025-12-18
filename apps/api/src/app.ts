@@ -15,6 +15,7 @@ import checkoutRoutes from './routes/checkout';
 import dashboardRoutes from './routes/dashboard';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
 import { initializeMeilisearch } from './lib/meilisearch';
+import { startSearchIndexWorker } from './workers/search-index.worker';
 
 // Load environment variables
 dotenv.config();
@@ -127,4 +128,7 @@ app.listen(PORT, async () => {
   
   // Initialize Meilisearch
   await initializeMeilisearch();
+  
+  // Start background workers
+  startSearchIndexWorker();
 });
