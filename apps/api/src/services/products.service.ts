@@ -23,37 +23,36 @@ interface ProductsListResult {
 }
 
 /**
- * Transform a product from database format to API response format.
- * Parses JSON attributes and calculates stock from inventory.
+ * Safely parse JSON fields that might already be objects or strings
+ */
+function parseJsonField(value: unknown): Record<string, unknown> | null {
+  if (!value) return null;
+  if (typeof value === 'object') return value as Record<string, unknown>;
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+/**
+ * Transform product to ensure JSON fields are properly parsed
  */
 function transformProduct(product: any): any {
   if (!product) return product;
   
   return {
     ...product,
-    variants: product.variants?.map((variant: any) => {
-      // Parse attributes if it's a string
-      let attributes = variant.attributes;
-      if (typeof attributes === 'string') {
-        try {
-          attributes = JSON.parse(attributes);
-        } catch {
-          attributes = {};
-        }
-      }
-      
-      // Calculate stock from inventory
-      const stock = variant.inventory?.reduce(
-        (sum: number, inv: any) => sum + (inv.quantity - inv.reserved),
-        0
-      ) ?? 0;
-      
-      return {
-        ...variant,
-        attributes,
-        stock,
-      };
-    }),
+    specifications: parseJsonField(product.specifications),
+    variants: product.variants?.map((variant: any) => ({
+      ...variant,
+      attributes: parseJsonField(variant.attributes) || {},
+      // Calculate stock from inventory if available
+      stock: variant.inventory?.reduce((sum: number, inv: any) => sum + (inv.quantity - inv.reserved), 0) ?? 0,
+    })),
   };
 }
 
@@ -196,6 +195,7 @@ export class ProductsService {
     ]);
 
     return {
+<<<<<<< HEAD
       products: transformProducts(products),
       total,
       page,
@@ -392,6 +392,9 @@ export class ProductsService {
 
     return {
       products: transformProducts(products),
+=======
+      products: products.map(transformProduct),
+>>>>>>> origin/main
       total,
       page,
       limit,

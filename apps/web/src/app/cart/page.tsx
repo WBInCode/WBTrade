@@ -13,6 +13,7 @@ export default function CartPage() {
   const [couponError, setCouponError] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
   const [suggestedProducts, setSuggestedProducts] = useState<Product[]>([]);
+  const [quantityInputs, setQuantityInputs] = useState<Record<string, string>>({});
 
   // Fetch suggested products
   useEffect(() => {
@@ -180,17 +181,6 @@ export default function CartPage() {
                         </h3>
                       </Link>
                       <p className="text-sm text-gray-500 mt-1">{item.variant.name}</p>
-                      
-                      {/* Variant Attributes */}
-                      {Object.keys(item.variant.attributes).length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {Object.entries(item.variant.attributes).map(([key, value]) => (
-                            <span key={key} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                              {key}: {value}
-                            </span>
-                          ))}
-                        </div>
-                      )}
 
                       {/* Stock Info */}
                       <p className={`text-xs mt-2 ${availableStock > 0 ? 'text-green-600' : 'text-red-500'}`}>
@@ -224,7 +214,37 @@ export default function CartPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
                           </svg>
                         </button>
-                        <span className="w-12 text-center font-medium">{item.quantity}</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={availableStock}
+                          value={quantityInputs[item.id] ?? item.quantity}
+                          onChange={(e) => {
+                            setQuantityInputs(prev => ({ ...prev, [item.id]: e.target.value }));
+                          }}
+                          onBlur={(e) => {
+                            const value = parseInt(e.target.value, 10);
+                            if (isNaN(value) || value < 1) {
+                              setQuantityInputs(prev => ({ ...prev, [item.id]: '1' }));
+                              if (item.quantity !== 1) {
+                                handleQuantityChange(item.id, 1);
+                              }
+                            } else {
+                              const clampedValue = Math.min(value, availableStock);
+                              setQuantityInputs(prev => ({ ...prev, [item.id]: String(clampedValue) }));
+                              if (clampedValue !== item.quantity) {
+                                handleQuantityChange(item.id, clampedValue);
+                              }
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              (e.target as HTMLInputElement).blur();
+                            }
+                          }}
+                          disabled={isUpdating}
+                          className="w-14 text-center font-medium border border-gray-300 rounded-lg py-1 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
                         <button
                           onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
                           disabled={item.quantity >= availableStock || isUpdating}
