@@ -682,4 +682,119 @@ export const wishlistApi = {
     api.post<WishlistResponse>('/wishlist/merge', { items }),
 };
 
+// ============================================
+// CHECKOUT API
+// ============================================
+
+export interface ShippingMethod {
+  id: string;
+  serviceType: string;
+  name: string;
+  price: number;
+  currency: string;
+  estimatedDelivery: string;
+  pickupPointRequired: boolean;
+}
+
+export interface PickupPoint {
+  id: string;
+  code: string;
+  name: string;
+  type: 'paczkomat' | 'punkt' | 'pop';
+  address: {
+    street: string;
+    city: string;
+    postalCode: string;
+    country: string;
+  };
+  location: {
+    latitude: number;
+    longitude: number;
+  };
+}
+
+export interface PaymentMethod {
+  id: string;
+  type: string;
+  name: string;
+  fee: number;
+  feeType: 'fixed' | 'percentage';
+  description?: string;
+}
+
+export interface CheckoutRequest {
+  shippingAddressId: string;
+  billingAddressId?: string;
+  shippingMethod: string;
+  pickupPointCode?: string;
+  paymentMethod: string;
+  customerNotes?: string;
+  acceptTerms: boolean;
+}
+
+export interface CheckoutResponse {
+  orderId: string;
+  orderNumber: string;
+  status: string;
+  paymentUrl?: string;
+  sessionId?: string;
+  paymentMethod: string;
+  total: number;
+  redirectUrl?: string;
+}
+
+export interface PaymentVerifyResponse {
+  status: string;
+  orderId: string;
+  transactionId?: string;
+  paidAt?: string;
+}
+
+export interface TrackingEvent {
+  timestamp: string;
+  status: string;
+  description: string;
+  location?: string;
+}
+
+export interface TrackingResponse {
+  trackingNumber: string;
+  status: string;
+  estimatedDelivery?: string;
+  events: TrackingEvent[];
+}
+
+export const checkoutApi = {
+  // Get available shipping methods
+  getShippingMethods: (postalCode: string, city?: string) =>
+    api.get<{ shippingMethods: ShippingMethod[] }>('/checkout/shipping/methods', { 
+      postalCode, 
+      city 
+    }),
+  
+  // Get pickup points (Paczkomaty)
+  getPickupPoints: (postalCode: string, city?: string, limit?: number) =>
+    api.get<{ pickupPoints: PickupPoint[] }>('/checkout/shipping/pickup-points', { 
+      postalCode, 
+      city, 
+      limit 
+    }),
+  
+  // Get available payment methods
+  getPaymentMethods: () =>
+    api.get<{ paymentMethods: PaymentMethod[] }>('/checkout/payment/methods'),
+  
+  // Create checkout and initiate payment
+  createCheckout: (data: CheckoutRequest) =>
+    api.post<CheckoutResponse>('/checkout', data),
+  
+  // Verify payment after redirect
+  verifyPayment: (sessionId: string) =>
+    api.get<PaymentVerifyResponse>(`/checkout/payment/verify/${sessionId}`),
+  
+  // Get order tracking info
+  getTracking: (orderId: string) =>
+    api.get<TrackingResponse>(`/checkout/tracking/${orderId}`),
+};
+
 export default api;
