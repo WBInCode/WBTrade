@@ -13,6 +13,8 @@ interface CreateOrderData {
     unitPrice: number;
   }[];
   customerNotes?: string;
+  paczkomatCode?: string;
+  paczkomatAddress?: string;
 }
 
 function generateOrderNumber(): string {
@@ -50,6 +52,8 @@ export class OrdersService {
           billingAddressId: data.billingAddressId,
           shippingMethod: data.shippingMethod,
           paymentMethod: data.paymentMethod,
+          paczkomatCode: data.paczkomatCode,
+          paczkomatAddress: data.paczkomatAddress,
           subtotal,
           shipping,
           tax,
@@ -109,7 +113,19 @@ export class OrdersService {
     return prisma.order.findUnique({
       where: { id },
       include: {
-        items: true,
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: {
+                  include: {
+                    images: { orderBy: { order: 'asc' }, take: 1 },
+                  },
+                },
+              },
+            },
+          },
+        },
         statusHistory: { orderBy: { createdAt: 'desc' } },
         shippingAddress: true,
         billingAddress: true,

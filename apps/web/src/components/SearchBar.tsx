@@ -11,8 +11,8 @@ const popularSearches = [
   'iPhone 15',
   'Laptopy gamingowe',
   'Słuchawki bezprzewodowe',
-  'Black Friday',
   'Apple Watch',
+  'PlayStation 5',
 ];
 
 const RECENT_SEARCHES_KEY = 'wbtrade_recent_searches';
