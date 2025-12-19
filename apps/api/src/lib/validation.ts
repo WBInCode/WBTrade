@@ -109,7 +109,8 @@ export const registerSchema = z.object({
   phone: phoneSchema,
   acceptTerms: z
     .boolean()
-    .refine((val) => val === true, 'You must accept the terms and conditions'),
+    .optional()
+    .refine((val) => val === undefined || val === true, 'You must accept the terms and conditions'),
 });
 
 /**
