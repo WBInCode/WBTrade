@@ -1,8 +1,70 @@
 import { Request, Response } from 'express';
+import { z } from 'zod';
 import { OrdersService } from '../services/orders.service';
 import { OrderStatus } from '@prisma/client';
 
 const ordersService = new OrdersService();
+
+// ============================================
+// VALIDATION SCHEMAS
+// ============================================
+
+/**
+ * Helper to sanitize text
+ */
+const sanitizeText = (text: string): string => {
+  return text.replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim();
+};
+
+/**
+ * Order item schema
+ */
+const orderItemSchema = z.object({
+  variantId: z.string().uuid('Invalid variant ID'),
+  quantity: z.number().int().positive().max(100),
+  unitPrice: z.number().positive().max(9999999),
+});
+
+/**
+ * Create order validation schema
+ */
+const createOrderSchema = z.object({
+  userId: z.string().uuid('Invalid user ID'),
+  shippingAddressId: z.string().uuid('Invalid shipping address ID'),
+  billingAddressId: z.string().uuid('Invalid billing address ID').optional(),
+  shippingMethod: z.string().min(1).max(50),
+  shippingCost: z.number().min(0).max(999999),
+  paymentMethod: z.string().min(1).max(50),
+  paymentFee: z.number().min(0).max(999999).optional().default(0),
+  subtotal: z.number().positive().max(99999999),
+  total: z.number().positive().max(99999999),
+  customerNotes: z.string().max(1000).optional().transform((val) => val ? sanitizeText(val) : undefined),
+  pickupPointCode: z.string().max(50).optional(),
+  pickupPointAddress: z.string().max(500).optional().transform((val) => val ? sanitizeText(val) : undefined),
+  items: z.array(orderItemSchema).min(1, 'Order must have at least one item'),
+});
+
+/**
+ * Update order status schema
+ */
+const updateOrderStatusSchema = z.object({
+  status: z.enum(['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED']),
+  note: z.string().max(500).optional().transform((val) => val ? sanitizeText(val) : undefined),
+});
+
+/**
+ * Query params for orders list
+ */
+const ordersQuerySchema = z.object({
+  page: z.string().optional().transform((val) => {
+    const num = parseInt(val || '1', 10);
+    return isNaN(num) || num < 1 ? 1 : Math.min(num, 1000);
+  }),
+  limit: z.string().optional().transform((val) => {
+    const num = parseInt(val || '10', 10);
+    return isNaN(num) || num < 1 ? 10 : Math.min(num, 100);
+  }),
+});
 
 /**
  * Get all orders (admin)
@@ -43,12 +105,21 @@ export async function getAllOrders(req: Request, res: Response): Promise<void> {
  */
 export async function createOrder(req: Request, res: Response): Promise<void> {
   try {
-    const orderData = req.body;
-    const order = await ordersService.create(orderData);
+    const validation = createOrderSchema.safeParse(req.body);
+    
+    if (!validation.success) {
+      res.status(400).json({
+        message: 'Validation error',
+        errors: validation.error.flatten().fieldErrors,
+      });
+      return;
+    }
+
+    const order = await ordersService.create(validation.data);
     res.status(201).json(order);
   } catch (error) {
     console.error('Error creating order:', error);
-    res.status(500).json({ message: 'Error creating order', error });
+    res.status(500).json({ message: 'Error creating order' });
   }
 }
 
@@ -58,6 +129,14 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
 export async function getOrder(req: Request, res: Response): Promise<void> {
   try {
     const { id } = req.params;
+    
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      res.status(400).json({ message: 'Invalid order ID format' });
+      return;
+    }
+    
     const order = await ordersService.getById(id);
     
     if (!order) {
@@ -68,7 +147,7 @@ export async function getOrder(req: Request, res: Response): Promise<void> {
     res.status(200).json(order);
   } catch (error) {
     console.error('Error fetching order:', error);
-    res.status(500).json({ message: 'Error fetching order', error });
+    res.status(500).json({ message: 'Error fetching order' });
   }
 }
 
@@ -84,18 +163,24 @@ export async function getUserOrders(req: Request, res: Response): Promise<void> 
       return;
     }
     
-    const { page = '1', limit = '10' } = req.query;
+    const validation = ordersQuerySchema.safeParse(req.query);
     
-    const result = await ordersService.getUserOrders(
-      userId,
-      parseInt(page as string, 10),
-      parseInt(limit as string, 10)
-    );
+    if (!validation.success) {
+      res.status(400).json({
+        message: 'Invalid query parameters',
+        errors: validation.error.flatten().fieldErrors,
+      });
+      return;
+    }
+
+    const { page, limit } = validation.data;
+    
+    const result = await ordersService.getUserOrders(userId, page, limit);
     
     res.status(200).json(result);
   } catch (error) {
     console.error('Error fetching orders:', error);
-    res.status(500).json({ message: 'Error fetching orders', error });
+    res.status(500).json({ message: 'Error fetching orders' });
   }
 }
 
@@ -105,9 +190,25 @@ export async function getUserOrders(req: Request, res: Response): Promise<void> 
 export async function updateOrder(req: Request, res: Response): Promise<void> {
   try {
     const { id } = req.params;
-    const updateData = req.body;
     
-    const order = await ordersService.updateStatus(id, updateData.status, updateData.note);
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      res.status(400).json({ message: 'Invalid order ID format' });
+      return;
+    }
+    
+    const validation = updateOrderStatusSchema.safeParse(req.body);
+    
+    if (!validation.success) {
+      res.status(400).json({
+        message: 'Validation error',
+        errors: validation.error.flatten().fieldErrors,
+      });
+      return;
+    }
+    
+    const order = await ordersService.updateStatus(id, validation.data.status, validation.data.note);
     
     if (!order) {
       res.status(404).json({ message: 'Order not found' });
@@ -117,7 +218,7 @@ export async function updateOrder(req: Request, res: Response): Promise<void> {
     res.status(200).json(order);
   } catch (error) {
     console.error('Error updating order:', error);
-    res.status(500).json({ message: 'Error updating order', error });
+    res.status(500).json({ message: 'Error updating order' });
   }
 }
 
@@ -127,6 +228,14 @@ export async function updateOrder(req: Request, res: Response): Promise<void> {
 export async function deleteOrder(req: Request, res: Response): Promise<void> {
   try {
     const { id } = req.params;
+    
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      res.status(400).json({ message: 'Invalid order ID format' });
+      return;
+    }
+    
     const order = await ordersService.cancel(id);
     
     if (!order) {
