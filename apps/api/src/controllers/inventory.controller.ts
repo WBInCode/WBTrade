@@ -344,3 +344,41 @@ export async function setMinimumStock(req: Request, res: Response): Promise<void
     res.status(500).json({ message: 'Failed to set minimum stock' });
   }
 }
+
+/**
+ * Get all inventory with filters
+ * GET /api/inventory/all
+ */
+export async function getAllInventory(req: Request, res: Response): Promise<void> {
+  try {
+    const { page = '1', limit = '50', search, locationId, filter } = req.query;
+
+    const result = await inventoryService.getAllInventory({
+      page: parseInt(page as string, 10),
+      limit: parseInt(limit as string, 10),
+      search: search as string,
+      locationId: locationId as string,
+      filter: filter as 'all' | 'low' | 'out'
+    });
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('Error getting all inventory:', error);
+    res.status(500).json({ message: 'Failed to get inventory' });
+  }
+}
+
+/**
+ * Get variants for inventory forms
+ * GET /api/inventory/variants
+ */
+export async function getVariantsForInventory(req: Request, res: Response): Promise<void> {
+  try {
+    const { search } = req.query;
+    const variants = await inventoryService.getVariantsForInventory(search as string);
+    res.status(200).json(variants);
+  } catch (error) {
+    console.error('Error getting variants:', error);
+    res.status(500).json({ message: 'Failed to get variants' });
+  }
+}

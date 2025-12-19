@@ -12,6 +12,9 @@ import addressesRoutes from './routes/addresses';
 import wishlistRoutes from './routes/wishlist';
 import categoriesRoutes from './routes/categories';
 import checkoutRoutes from './routes/checkout';
+import dashboardRoutes from './routes/dashboard';
+import locationsRoutes from './routes/locations';
+import usersRoutes from './routes/users';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
 import { initializeMeilisearch } from './lib/meilisearch';
 import { startSearchIndexWorker } from './workers/search-index.worker';
@@ -44,13 +47,20 @@ app.use(helmet({
 }));
 
 // CORS configuration
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3002',
+];
+
+// Parse FRONTEND_URL if it's a comma-separated string
+if (process.env.FRONTEND_URL) {
+  const frontendUrls = process.env.FRONTEND_URL.split(',').map(url => url.trim());
+  allowedOrigins.push(...frontendUrls);
+}
+
 const corsOptions = {
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://localhost:3002',
-    process.env.FRONTEND_URL || 'http://localhost:3000'
-  ],
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-User-Id', 'X-Session-Id', 'X-CSRF-Token'],
@@ -103,6 +113,9 @@ app.use('/api/addresses', addressesRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/checkout', checkoutRoutes);
 app.use('/api/webhooks', checkoutRoutes); // Webhook routes
+app.use('/api/admin/dashboard', dashboardRoutes); // Admin dashboard
+app.use('/api/locations', locationsRoutes); // Warehouse locations
+app.use('/api/users', usersRoutes); // Users management
 
 // 404 handler
 app.use((req, res) => {
