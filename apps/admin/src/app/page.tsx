@@ -30,6 +30,7 @@ import {
   Area,
 } from 'recharts';
 import { dashboardApi, DashboardSummary } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Status colors
 const statusColors: Record<string, string> = {
@@ -65,6 +66,7 @@ const alertColors = {
 };
 
 export default function DashboardPage() {
+  const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,12 +87,15 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
+    // Czekaj aż auth się załaduje i user będzie zalogowany
+    if (authLoading || !user) return;
+    
     loadData();
     
     // Auto-refresh co 60 sekund
     const interval = setInterval(loadData, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [authLoading, user]);
 
   async function handleRefresh() {
     setRefreshing(true);

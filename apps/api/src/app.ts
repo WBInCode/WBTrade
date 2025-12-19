@@ -24,9 +24,15 @@ import adminDashboardRoutes from './routes/admin-dashboard';
 import locationsRoutes from './routes/locations';
 import usersRoutes from './routes/users';
 import reviewsRoutes from './routes/reviews';
+import healthRoutes from './routes/health';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
 import { initializeMeilisearch } from './lib/meilisearch';
 import { startSearchIndexWorker } from './workers/search-index.worker';
+import { startEmailWorker } from './workers/email.worker';
+import { startInventorySyncWorker } from './workers/inventory-sync.worker';
+import { startImportWorker, startExportWorker } from './workers/import-export.worker';
+import { startShippingWorker } from './workers/shipping.worker';
+import { scheduleReservationCleanup } from './lib/queue';
 
 const app = express();
 const PORT = process.env.APP_PORT || 5000;
@@ -80,10 +86,13 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 // Apply general rate limiting to all routes
 app.use(generalRateLimiter);
 
-// Health check endpoint
+// Health check endpoint (simple)
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// Detailed health checks
+app.use('/api/health', healthRoutes);
 
 // Root endpoint - API info
 app.get('/', (req, res) => {
@@ -149,5 +158,17 @@ app.listen(PORT, async () => {
   await initializeMeilisearch();
   
   // Start background workers
+  console.log('⚙️  Starting background workers...');
   startSearchIndexWorker();
+  startEmailWorker();
+  startInventorySyncWorker();
+  startImportWorker();
+  startExportWorker();
+  startShippingWorker();
+  
+  // Schedule recurring jobs
+  await scheduleReservationCleanup();
+  console.log('✅ Reservation cleanup scheduled (every 5 minutes)');
+  
+  console.log('✅ All workers started successfully');
 });

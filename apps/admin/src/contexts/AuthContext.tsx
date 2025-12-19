@@ -114,14 +114,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('Brak uprawnień do panelu administracyjnego');
     }
 
-    // Zapisz tokeny
+    // Zapisz tokeny (API zwraca tokens.accessToken, tokens.refreshToken)
+    const accessToken = data.tokens?.accessToken || data.accessToken;
+    const refreshToken = data.tokens?.refreshToken || data.refreshToken;
+    
     localStorage.setItem('admin_auth_tokens', JSON.stringify({
-      accessToken: data.accessToken,
-      refreshToken: data.refreshToken,
+      accessToken,
+      refreshToken,
     }));
 
     setUser(data.user);
-    setToken(data.accessToken);
+    setToken(accessToken);
     router.push('/');
   }
 
