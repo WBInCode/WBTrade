@@ -223,49 +223,43 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
         redirectUrl: `/order/${order.id}/confirmation`,
       });
     } else {
-      // In development mode, redirect to local payment simulation page
-      const isDevelopment = process.env.NODE_ENV !== 'production';
+      // Create payment session with PayU
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       
-      if (isDevelopment) {
-        // Use local payment simulation
-        res.json({
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          status: 'pending_payment',
-          paymentUrl: `${frontendUrl}/order/${order.id}/payment`,
-          sessionId: `sim_${order.id}`,
-          total,
-        });
-      } else {
-        // Create real payment session for production
-        const paymentRequest: CreatePaymentRequest = {
-          orderId: order.id,
-          amount: total,
-          currency: 'PLN',
-          paymentMethod: paymentMethod as PaymentMethodType,
-          customer: {
-            email: req.user?.email || '',
-            firstName: '',
-            lastName: '',
-          },
-          description: `Zamówienie ${order.orderNumber}`,
-          returnUrl: `${frontendUrl}/order/${order.id}/confirmation`,
-          cancelUrl: `${frontendUrl}/checkout?orderId=${order.id}&cancelled=true`,
-          notifyUrl: `${process.env.API_URL}/api/webhooks/payment`,
-        };
+      const paymentRequest: CreatePaymentRequest = {
+        orderId: order.id,
+        amount: total,
+        currency: 'PLN',
+        paymentMethod: paymentMethod as PaymentMethodType,
+        providerId: 'payu' as PaymentProviderId, // Force PayU for testing
+        customer: {
+          email: req.user?.email || '',
+          firstName: '',
+          lastName: '',
+        },
+        description: `Zamówienie ${order.orderNumber}`,
+        returnUrl: `${frontendUrl}/order/${order.id}/confirmation`,
+        cancelUrl: `${frontendUrl}/checkout?orderId=${order.id}&cancelled=true`,
+        notifyUrl: `${process.env.API_URL || 'http://localhost:3001'}/api/webhooks/payu`,
+        metadata: {
+          customerIp: req.ip || req.socket.remoteAddress || '127.0.0.1',
+        },
+      };
 
-        const paymentSession = await paymentService.createPayment(paymentRequest);
+      console.log('Creating PayU payment request:', paymentRequest);
 
-        res.json({
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          status: 'pending_payment',
-          paymentUrl: paymentSession.paymentUrl,
-          sessionId: paymentSession.sessionId,
-          total,
-        });
-      }
+      const paymentSession = await paymentService.createPayment(paymentRequest);
+
+      console.log('PayU payment session created:', paymentSession);
+
+      res.json({
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        status: 'pending_payment',
+        paymentUrl: paymentSession.paymentUrl,
+        sessionId: paymentSession.sessionId,
+        total,
+      });
     }
   } catch (error) {
     console.error('Error creating checkout:', error);
@@ -299,7 +293,7 @@ export async function verifyPayment(req: Request, res: Response): Promise<void> 
  */
 export async function paymentWebhook(req: Request, res: Response): Promise<void> {
   try {
-    const providerId = req.params.provider as PaymentProviderId || 'przelewy24';
+    const providerId = req.params.provider as PaymentProviderId || 'payu';
     const signature = req.headers['x-signature'] as string || '';
     const payload = JSON.stringify(req.body);
 
@@ -308,6 +302,32 @@ export async function paymentWebhook(req: Request, res: Response): Promise<void>
     res.json({ status: 'ok' });
   } catch (error) {
     console.error('Error processing payment webhook:', error);
+    res.status(400).json({ message: 'Webhook processing failed' });
+  }
+}
+
+/**
+ * Handle PayU payment webhook
+ * PayU sends signature in OpenPayU-Signature header
+ */
+export async function payuWebhook(req: Request, res: Response): Promise<void> {
+  try {
+    // PayU signature format: signature=<md5>;algorithm=MD5;sender=checkout
+    const signature = req.headers['openpayu-signature'] as string || '';
+    const payload = JSON.stringify(req.body);
+
+    console.log('PayU webhook received:', {
+      signature,
+      body: req.body,
+    });
+
+    const result = await paymentService.processWebhook('payu', payload, signature);
+
+    console.log('PayU webhook processed:', result);
+
+    res.json({ status: 'ok' });
+  } catch (error) {
+    console.error('Error processing PayU webhook:', error);
     res.status(400).json({ message: 'Webhook processing failed' });
   }
 }
