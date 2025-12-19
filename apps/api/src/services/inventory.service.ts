@@ -78,49 +78,82 @@ export class InventoryService {
   }
 
   /**
-   * Reserve stock for an order
+   * Reserve stock for an order with optimistic locking
    */
   async reserve(data: MovementData): Promise<void> {
     const { variantId, quantity, toLocationId, reference, notes, createdBy } = data;
 
-    await prisma.$transaction(async (tx) => {
-      // Find inventory with enough available stock
-      const inventory = await tx.inventory.findFirst({
-        where: {
-          variantId,
-          ...(toLocationId && { locationId: toLocationId }),
-        },
-        orderBy: { quantity: 'desc' }, // Prefer location with most stock
-      });
+    const MAX_RETRIES = 3;
+    let retries = 0;
 
-      if (!inventory) {
-        throw new Error(`No inventory found for variant ${variantId}`);
+    while (retries < MAX_RETRIES) {
+      try {
+        await prisma.$transaction(async (tx) => {
+          // Find inventory with enough available stock
+          const inventory = await tx.inventory.findFirst({
+            where: {
+              variantId,
+              ...(toLocationId && { locationId: toLocationId }),
+            },
+            orderBy: { quantity: 'desc' }, // Prefer location with most stock
+          });
+
+          if (!inventory) {
+            throw new Error(`No inventory found for variant ${variantId}`);
+          }
+
+          const available = inventory.quantity - inventory.reserved;
+          if (available < quantity) {
+            throw new Error(`Insufficient stock. Available: ${available}, Requested: ${quantity}`);
+          }
+
+          // Optimistic locking: update only if version matches
+          const updated = await tx.inventory.updateMany({
+            where: {
+              id: inventory.id,
+              version: inventory.version, // Optimistic lock check
+            },
+            data: {
+              reserved: { increment: quantity },
+              version: { increment: 1 }, // Increment version
+            },
+          });
+
+          if (updated.count === 0) {
+            // Version mismatch - another transaction modified this record
+            throw new Error('OPTIMISTIC_LOCK_CONFLICT');
+          }
+
+          // Create stock movement record
+          await tx.stockMovement.create({
+            data: {
+              variantId,
+              type: StockMovementType.RESERVE,
+              quantity: -quantity, // Negative to indicate reservation
+              toLocationId: inventory.locationId,
+              reference,
+              notes,
+              createdBy,
+            },
+          });
+        });
+
+        // Success - exit retry loop
+        return;
+      } catch (error) {
+        if (error instanceof Error && error.message === 'OPTIMISTIC_LOCK_CONFLICT') {
+          retries++;
+          if (retries >= MAX_RETRIES) {
+            throw new Error(`Failed to reserve stock after ${MAX_RETRIES} retries due to concurrent modifications`);
+          }
+          // Small delay before retry
+          await new Promise(resolve => setTimeout(resolve, 50 * retries));
+        } else {
+          // Re-throw non-conflict errors
+          throw error;
+        }
       }
-
-      const available = inventory.quantity - inventory.reserved;
-      if (available < quantity) {
-        throw new Error(`Insufficient stock. Available: ${available}, Requested: ${quantity}`);
-      }
-
-      // Update reserved quantity
-      await tx.inventory.update({
-        where: { id: inventory.id },
-        data: { reserved: { increment: quantity } },
-      });
-
-      // Create stock movement record
-      await tx.stockMovement.create({
-        data: {
-          variantId,
-          type: StockMovementType.RESERVE,
-          quantity: -quantity, // Negative to indicate reservation
-          toLocationId: inventory.locationId,
-          reference,
-          notes,
-          createdBy,
-        },
-      });
-    });
+    }
   }
 
   /**
