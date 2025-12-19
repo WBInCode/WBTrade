@@ -341,62 +341,62 @@
 
 #### Setup (`apps/admin/`)
 
-- [ ] **6.1** Nowa aplikacja Next.js w monorepo
-- [ ] **6.2** Layout z sidebar navigation
-- [ ] **6.3** Auth (login admin) + RBAC middleware
-- [ ] **6.4** Współdzielone komponenty z `packages/ui`
+- [x] **6.1** Nowa aplikacja Next.js w monorepo ✅
+- [x] **6.2** Layout z sidebar navigation ✅
+- [x] **6.3** Auth (login admin) + RBAC middleware ✅
+- [x] **6.4** Współdzielone komponenty z `packages/ui` ✅
 
 #### Dashboard (`apps/admin/src/app/page.tsx`)
 
-- [ ] **6.5** KPI cards (zamówienia dziś, przychód, nowi klienci)
-- [ ] **6.6** Wykres sprzedaży (ostatnie 30 dni)
-- [ ] **6.7** Ostatnie zamówienia
-- [ ] **6.8** Produkty z niskim stanem
-- [ ] **6.9** Alerty (zamówienia do realizacji, braki)
+- [x] **6.5** KPI cards (zamówienia dziś, przychód, nowi klienci) ✅
+- [x] **6.6** Wykres sprzedaży (ostatnie 30 dni) ✅
+- [x] **6.7** Ostatnie zamówienia ✅
+- [x] **6.8** Produkty z niskim stanem ✅
+- [x] **6.9** Alerty (zamówienia do realizacji, braki) ✅
 
 #### Produkty (`apps/admin/src/app/products/`)
 
-- [ ] **6.10** Lista produktów (tabela z filtrami, sortowaniem)
-- [ ] **6.11** Dodawanie produktu (formularz multi-step)
-- [ ] **6.12** Edycja produktu
-- [ ] **6.13** Zarządzanie wariantami
-- [ ] **6.14** Upload zdjęć (drag & drop)
-- [ ] **6.15** Import CSV/XLSX
-- [ ] **6.16** Eksport do CSV
-- [ ] **6.17** Bulk actions (aktywuj, deaktywuj, usuń)
+- [x] **6.10** Lista produktów (tabela z filtrami, sortowaniem) ✅
+- [x] **6.11** Dodawanie produktu (formularz multi-step) ✅
+- [x] **6.12** Edycja produktu ✅
+- [x] **6.13** Zarządzanie wariantami ✅
+- [x] **6.14** Upload zdjęć (drag & drop) ✅
+- [x] **6.15** Import CSV/XLSX ✅
+- [x] **6.16** Eksport do CSV ✅
+- [x] **6.17** Bulk actions (aktywuj, deaktywuj, usuń) ✅
 
 #### Kategorie (`apps/admin/src/app/categories/`)
 
-- [ ] **6.18** Drzewo kategorii
-- [ ] **6.19** Dodawanie/edycja kategorii
-- [ ] **6.20** Przypisywanie produktów
+- [x] **6.18** Drzewo kategorii ✅
+- [x] **6.19** Dodawanie/edycja kategorii ✅
+- [x] **6.20** Przypisywanie produktów ✅
 
 #### Zamówienia (`apps/admin/src/app/orders/`)
 
-- [ ] **6.21** Lista zamówień (tabela z filtrami)
-- [ ] **6.22** Szczegóły zamówienia
-- [ ] **6.23** Zmiana statusu
-- [ ] **6.24** Drukowanie etykiety kurierskiej
-- [ ] **6.25** Drukowanie faktury
-- [ ] **6.26** Anulowanie / zwrot
+- [x] **6.21** Lista zamówień (tabela z filtrami) ✅
+- [x] **6.22** Szczegóły zamówienia ✅
+- [x] **6.23** Zmiana statusu ✅
+- [x] **6.24** Drukowanie etykiety kurierskiej ✅
+- [x] **6.25** Drukowanie faktury ✅
+- [x] **6.26** Anulowanie / zwrot ✅
 
 #### Magazyn (WMS) (`apps/admin/src/app/warehouse/`)
 
-- [ ] **6.27** Stany magazynowe (tabela)
-- [ ] **6.28** Przyjęcie towaru (PZ) - formularz
-- [ ] **6.29** Wydanie towaru (WZ) - formularz
-- [ ] **6.30** Przesunięcia między lokalizacjami
-- [ ] **6.31** Inwentaryzacja
-- [ ] **6.32** Historia ruchów
-- [ ] **6.33** Lokalizacje (regały, półki)
-- [ ] **6.34** Alerty niskich stanów
+- [x] **6.27** Stany magazynowe (tabela) ✅
+- [x] **6.28** Przyjęcie towaru (PZ) - formularz ✅
+- [x] **6.29** Wydanie towaru (WZ) - formularz ✅
+- [x] **6.30** Przesunięcia między lokalizacjami ✅
+- [x] **6.31** Inwentaryzacja ✅
+- [x] **6.32** Historia ruchów ✅
+- [x] **6.33** Lokalizacje (regały, półki) ✅
+- [x] **6.34** Alerty niskich stanów ✅
 
 #### Użytkownicy (`apps/admin/src/app/users/`)
 
-- [ ] **6.35** Lista użytkowników
-- [ ] **6.36** Dodawanie/edycja użytkownika
-- [ ] **6.37** Role i uprawnienia (Admin, Magazynier, Obsługa)
-- [ ] **6.38** Blokowanie/odblokowywanie
+- [x] **6.35** Lista użytkowników ✅
+- [x] **6.36** Dodawanie/edycja użytkownika ✅
+- [x] **6.37** Role i uprawnienia (Admin, Magazynier, Obsługa) ✅
+- [x] **6.38** Blokowanie/odblokowywanie ✅
 
 #### Ustawienia (`apps/admin/src/app/settings/`)
 
@@ -435,7 +435,7 @@
 - [x] **7.10** Indeksy w bazie danych (category, price, sku, createdAt) ✅ (Prisma schema indexes)
 - [x] **7.11** Lazy loading obrazów + Next.js Image optimization ✅ (next.config.js - deviceSizes, formats)
 - [x] **7.12** CDN dla obrazów produktów (Cloudflare R2 / S3 + CloudFront) ✅ (next.config.js - remotePatterns)
-- [ ] **7.13** Virtual scrolling dla długich list (react-window / tanstack-virtual)
+- [x] **7.13** Virtual scrolling dla długich list (react-window / tanstack-virtual) ✅
 
 #### Kolejki (BullMQ) ✅ UKOŃCZONY
 
@@ -445,7 +445,7 @@
 - [x] **7.17** Queue: `export` - eksporty raportów ✅ (import-export.worker.ts)
 - [x] **7.18** Queue: `inventory-sync` - synchronizacja stanów ✅ (inventory-sync.worker.ts)
 - [x] **7.19** Queue: `shipping` - generowanie etykiet ✅ (shipping.worker.ts)
-- [ ] **7.20** Dashboard kolejek (Bull Board)
+- [x] **7.20** Dashboard kolejek (Bull Board) ✅
 
 #### Rezerwacje stanów (krytyczne!) ✅ UKOŃCZONY
 
@@ -456,18 +456,18 @@
 
 #### Monitoring ✅ UKOŃCZONY
 
-- [ ] **7.25** Sentry - error tracking (frontend + backend)
+- [x] **7.25** Sentry - error tracking (frontend + backend) ✅
 - [x] **7.26** Prometheus - metryki ✅ (health.controller.ts - prometheusMetrics endpoint)
-- [ ] **7.27** Grafana - dashboardy
-- [ ] **7.28** Alerty (błędy, wydajność, stany)
+- [x] **7.27** Grafana - dashboardy ✅
+- [x] **7.28** Alerty (błędy, wydajność, stany) ✅
 - [x] **7.29** Health check endpoints ✅ (health.controller.ts - /api/health, /health/live, /health/ready, /health/metrics)
 
 #### Testy ✅ UKOŃCZONY
 
 - [x] **7.30** Unit testy - serwisy (Jest) ✅ (jest.config.js, inventory.service.test.ts, cache.test.ts)
-- [ ] **7.31** Integration testy - API (supertest)
-- [ ] **7.32** E2E testy - flow zakupowy (Playwright)
-- [ ] **7.33** Load testy (k6 / Artillery)
+- [x] **7.31** Integration testy - API (supertest) ✅
+- [x] **7.32** E2E testy - flow zakupowy (Playwright) ✅
+- [x] **7.33** Load testy (k6 / Artillery) ✅
 
 #### CI/CD ✅ UKOŃCZONY
 
