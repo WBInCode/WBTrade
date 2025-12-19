@@ -196,23 +196,23 @@ async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
 // API funkcje
 export const dashboardApi = {
   // Pobierz wszystkie dane dashboardu naraz
-  getSummary: (): Promise<DashboardSummary> => fetchWithAuth('/admin/dashboard'),
+  getSummary: (): Promise<DashboardSummary> => fetchWithAuth('/api/admin/dashboard'),
 
   // Pobierz KPI
-  getKPIs: (): Promise<DashboardKPIs> => fetchWithAuth('/admin/dashboard/kpis'),
+  getKPIs: (): Promise<DashboardKPIs> => fetchWithAuth('/api/admin/dashboard/kpis'),
 
   // Pobierz dane wykresu
   getSalesChart: (days = 30): Promise<SalesChartData[]> => 
-    fetchWithAuth(`/admin/dashboard/sales-chart?days=${days}`),
+    fetchWithAuth(`/api/admin/dashboard/sales-chart?days=${days}`),
 
   // Pobierz ostatnie zamowienia
   getRecentOrders: (limit = 10): Promise<RecentOrder[]> => 
-    fetchWithAuth(`/admin/dashboard/recent-orders?limit=${limit}`),
+    fetchWithAuth(`/api/admin/dashboard/recent-orders?limit=${limit}`),
 
   // Pobierz produkty z niskim stanem
   getLowStock: (limit = 10, threshold = 10): Promise<LowStockProduct[]> => 
-    fetchWithAuth(`/admin/dashboard/low-stock?limit=${limit}&threshold=${threshold}`),
+    fetchWithAuth(`/api/admin/dashboard/low-stock?limit=${limit}&threshold=${threshold}`),
 
   // Pobierz alerty
-  getAlerts: (): Promise<DashboardAlert[]> => fetchWithAuth('/admin/dashboard/alerts'),
+  getAlerts: (): Promise<DashboardAlert[]> => fetchWithAuth('/api/admin/dashboard/alerts'),
 };
