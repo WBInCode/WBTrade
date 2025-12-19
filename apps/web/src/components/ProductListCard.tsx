@@ -42,8 +42,8 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
       id: product.id,
       variantId: firstVariant?.id,
       name: product.name,
-      price: product.price,
-      compareAtPrice: product.compareAtPrice,
+      price: String(product.price),
+      compareAtPrice: product.compareAtPrice ? String(product.compareAtPrice) : undefined,
       image: mainImage,
     });
   };
