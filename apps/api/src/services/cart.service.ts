@@ -79,7 +79,7 @@ export class CartService {
   async addItem(
     cartId: string,
     variantId: string,
-    quantity: number = 1
+    quantity = 1
   ): Promise<CartWithItems> {
     // First, verify the variant exists
     const variant = await prisma.productVariant.findUnique({
@@ -363,7 +363,7 @@ export class CartService {
       0
     );
 
-    let discount = 0;
+    const discount = 0;
     // TODO: Calculate discount based on coupon
 
     const total = subtotal - discount;

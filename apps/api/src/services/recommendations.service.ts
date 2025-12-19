@@ -26,7 +26,7 @@ export class RecommendationsService {
     userId: string,
     query: string,
     categoryId?: string | null,
-    resultsCount: number = 0
+    resultsCount = 0
   ) {
     // Only record non-empty searches
     if (!query.trim()) return;
@@ -60,7 +60,7 @@ export class RecommendationsService {
   /**
    * Get personalized recommendations for a user
    */
-  async getRecommendations(userId: string, limit: number = 8): Promise<RecommendedProduct[]> {
+  async getRecommendations(userId: string, limit = 8): Promise<RecommendedProduct[]> {
     const recommendations: RecommendedProduct[] = [];
     const addedProductIds = new Set<string>();
 
@@ -257,7 +257,7 @@ export class RecommendationsService {
   /**
    * Get user's search history
    */
-  async getSearchHistory(userId: string, limit: number = 10) {
+  async getSearchHistory(userId: string, limit = 10) {
     return prisma.searchHistory.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
