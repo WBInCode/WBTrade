@@ -117,7 +117,7 @@ export class PayUProvider implements IPaymentProvider {
     method: string,
     endpoint: string,
     body?: any,
-    followRedirect: boolean = false
+    followRedirect = false
   ): Promise<T> {
     const token = await this.getAccessToken();
 
