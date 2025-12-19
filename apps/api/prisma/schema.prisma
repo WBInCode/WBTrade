@@ -314,6 +314,9 @@ model Inventory {
   reserved   Int @default(0)  // Reserved for orders
   minimum    Int @default(0)  // Minimum stock level for alerts
   
+  // Optimistic locking version
+  version    Int @default(1)
+  
   updatedAt DateTime @updatedAt @map("updated_at")
   
   // Relations

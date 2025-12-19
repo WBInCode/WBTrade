@@ -341,62 +341,62 @@
 
 #### Setup (`apps/admin/`)
 
-- [x] **6.1** Nowa aplikacja Next.js w monorepo
-- [x] **6.2** Layout z sidebar navigation
-- [x] **6.3** Auth (login admin) + RBAC middleware
-- [x] **6.4** Współdzielone komponenty z `packages/ui`
+- [ ] **6.1** Nowa aplikacja Next.js w monorepo
+- [ ] **6.2** Layout z sidebar navigation
+- [ ] **6.3** Auth (login admin) + RBAC middleware
+- [ ] **6.4** Współdzielone komponenty z `packages/ui`
 
 #### Dashboard (`apps/admin/src/app/page.tsx`)
 
-- [x] **6.5** KPI cards (zamówienia dziś, przychód, nowi klienci)
-- [x] **6.6** Wykres sprzedaży (ostatnie 30 dni)
-- [x] **6.7** Ostatnie zamówienia
-- [x] **6.8** Produkty z niskim stanem
-- [x] **6.9** Alerty (zamówienia do realizacji, braki)
+- [ ] **6.5** KPI cards (zamówienia dziś, przychód, nowi klienci)
+- [ ] **6.6** Wykres sprzedaży (ostatnie 30 dni)
+- [ ] **6.7** Ostatnie zamówienia
+- [ ] **6.8** Produkty z niskim stanem
+- [ ] **6.9** Alerty (zamówienia do realizacji, braki)
 
 #### Produkty (`apps/admin/src/app/products/`)
 
-- [x] **6.10** Lista produktów (tabela z filtrami, sortowaniem)
-- [x] **6.11** Dodawanie produktu (formularz multi-step)
-- [x] **6.12** Edycja produktu
-- [x] **6.13** Zarządzanie wariantami
-- [x] **6.14** Upload zdjęć (drag & drop)
-- [x] **6.15** Import CSV/XLSX
-- [x] **6.16** Eksport do CSV
-- [x] **6.17** Bulk actions (aktywuj, deaktywuj, usuń)
+- [ ] **6.10** Lista produktów (tabela z filtrami, sortowaniem)
+- [ ] **6.11** Dodawanie produktu (formularz multi-step)
+- [ ] **6.12** Edycja produktu
+- [ ] **6.13** Zarządzanie wariantami
+- [ ] **6.14** Upload zdjęć (drag & drop)
+- [ ] **6.15** Import CSV/XLSX
+- [ ] **6.16** Eksport do CSV
+- [ ] **6.17** Bulk actions (aktywuj, deaktywuj, usuń)
 
 #### Kategorie (`apps/admin/src/app/categories/`)
 
-- [x] **6.18** Drzewo kategorii
-- [x] **6.19** Dodawanie/edycja kategorii
-- [x] **6.20** Przypisywanie produktów
+- [ ] **6.18** Drzewo kategorii
+- [ ] **6.19** Dodawanie/edycja kategorii
+- [ ] **6.20** Przypisywanie produktów
 
 #### Zamówienia (`apps/admin/src/app/orders/`)
 
-- [x] **6.21** Lista zamówień (tabela z filtrami)
-- [x] **6.22** Szczegóły zamówienia
-- [x] **6.23** Zmiana statusu
-- [x] **6.24** Drukowanie etykiety kurierskiej
-- [x] **6.25** Drukowanie faktury
-- [x] **6.26** Anulowanie / zwrot
+- [ ] **6.21** Lista zamówień (tabela z filtrami)
+- [ ] **6.22** Szczegóły zamówienia
+- [ ] **6.23** Zmiana statusu
+- [ ] **6.24** Drukowanie etykiety kurierskiej
+- [ ] **6.25** Drukowanie faktury
+- [ ] **6.26** Anulowanie / zwrot
 
 #### Magazyn (WMS) (`apps/admin/src/app/warehouse/`)
 
-- [x] **6.27** Stany magazynowe (tabela)
-- [x] **6.28** Przyjęcie towaru (PZ) - formularz
-- [x] **6.29** Wydanie towaru (WZ) - formularz
-- [x] **6.30** Przesunięcia między lokalizacjami
-- [x] **6.31** Inwentaryzacja
-- [x] **6.32** Historia ruchów
-- [x] **6.33** Lokalizacje (regały, półki)
-- [x] **6.34** Alerty niskich stanów
+- [ ] **6.27** Stany magazynowe (tabela)
+- [ ] **6.28** Przyjęcie towaru (PZ) - formularz
+- [ ] **6.29** Wydanie towaru (WZ) - formularz
+- [ ] **6.30** Przesunięcia między lokalizacjami
+- [ ] **6.31** Inwentaryzacja
+- [ ] **6.32** Historia ruchów
+- [ ] **6.33** Lokalizacje (regały, półki)
+- [ ] **6.34** Alerty niskich stanów
 
 #### Użytkownicy (`apps/admin/src/app/users/`)
 
-- [x] **6.35** Lista użytkowników
-- [x] **6.36** Dodawanie/edycja użytkownika
-- [x] **6.37** Role i uprawnienia (Admin, Magazynier, Obsługa)
-- [x] **6.38** Blokowanie/odblokowywanie
+- [ ] **6.35** Lista użytkowników
+- [ ] **6.36** Dodawanie/edycja użytkownika
+- [ ] **6.37** Role i uprawnienia (Admin, Magazynier, Obsługa)
+- [ ] **6.38** Blokowanie/odblokowywanie
 
 #### Ustawienia (`apps/admin/src/app/settings/`)
 
@@ -408,75 +408,76 @@
 - [ ] **6.44** Integracje (API keys)
 
 ---
-## Etap 7: Optymalizacja i skala (3-5 dni)
+## Etap 7: Optymalizacja i skala (3-5 dni) ✅ UKOŃCZONY
 
 > 🚀 **Cel**: Wydajność przy 500-5000 zamówień/dzień
+> ✅ **Status**: UKOŃCZONY - 19 grudnia 2025
 
 ### TODO
 
-#### Cache (Redis)
+#### Cache (Redis) ✅ UKOŃCZONY
 
-- [ ] **7.1** Cache katalogu produktów (TTL 5-15 min)
-- [ ] **7.2** Cache stanów magazynowych (TTL 1 min)
-- [ ] **7.3** Cache sesji użytkowników
-- [ ] **7.4** Rate limiting (API)
-- [ ] **7.5** Distributed locks (rezerwacje)
+- [x] **7.1** Cache katalogu produktów (TTL 5-15 min) ✅ (cache.ts - getCachedProduct, setCachedProduct, getCachedProductList)
+- [x] **7.2** Cache stanów magazynowych (TTL 1 min) ✅ (cache.ts - getCachedInventory, setCachedInventory)
+- [x] **7.3** Cache sesji użytkowników ✅ (redis.ts - storeSession, getSession)
+- [x] **7.4** Rate limiting (API) ✅ (redis.ts - incrementRateLimit, rate-limit.middleware.ts)
+- [x] **7.5** Distributed locks (rezerwacje) ✅ (cache.ts - acquireLock, releaseLock, withLock)
 
-#### ISR + Optymalizacja Frontend (⚠️ PRIORYTET WYSOKI - 100k produktów!)
+#### ISR + Optymalizacja Frontend ✅ UKOŃCZONY
 
 > 🎯 **Cel**: Szybkie ładowanie przy 100,000 produktów bez budowania wszystkich stron
 
-- [ ] **7.6** ISR dla stron produktów (`/products/[id]`) - revalidate co 60s
-- [ ] **7.7** Pre-build tylko TOP 100-500 bestsellerów (`generateStaticParams`)
-- [ ] **7.8** On-demand revalidation API (`/api/revalidate?path=...`)
+- [x] **7.6** ISR dla stron produktów (`/products/[id]`) - revalidate co 60s ✅ (server-api.ts z REVALIDATE constants)
+- [x] **7.7** Pre-build tylko TOP 100-500 bestsellerów (`generateStaticParams`) ✅ (getProductIdsForStaticGeneration)
+- [x] **7.8** On-demand revalidation API (`/api/revalidate?path=...`) ✅ (api/revalidate/route.ts)
   - Wywołanie przy update produktu/ceny w admin
-- [ ] **7.9** Paginacja API produktów (50 items/page, cursor-based)
-- [ ] **7.10** Indeksy w bazie danych (category, price, sku, createdAt)
-- [ ] **7.11** Lazy loading obrazów + Next.js Image optimization
-- [ ] **7.12** CDN dla obrazów produktów (Cloudflare R2 / S3 + CloudFront)
-- [ ] **7.13** Virtual scrolling dla długich list (react-window / tanstack-virtual)
+- [x] **7.9** Paginacja API produktów (50 items/page, cursor-based) ✅ (Już zaimplementowane)
+- [x] **7.10** Indeksy w bazie danych (category, price, sku, createdAt) ✅ (Prisma schema indexes)
+- [x] **7.11** Lazy loading obrazów + Next.js Image optimization ✅ (next.config.js - deviceSizes, formats)
+- [x] **7.12** CDN dla obrazów produktów (Cloudflare R2 / S3 + CloudFront) ✅ (next.config.js - remotePatterns)
+- [x] **7.13** Virtual scrolling dla długich list (react-window / tanstack-virtual) ✅
 
-#### Kolejki (BullMQ)
+#### Kolejki (BullMQ) ✅ UKOŃCZONY
 
-- [ ] **7.14** Queue: `email` - wysyłka maili
-- [ ] **7.15** Queue: `search-index` - indeksowanie produktów
-- [ ] **7.16** Queue: `import` - importy CSV/XLSX
-- [ ] **7.17** Queue: `export` - eksporty raportów
-- [ ] **7.18** Queue: `inventory-sync` - synchronizacja stanów
-- [ ] **7.19** Queue: `shipping` - generowanie etykiet
-- [ ] **7.20** Dashboard kolejek (Bull Board)
+- [x] **7.14** Queue: `email` - wysyłka maili ✅ (email.worker.ts)
+- [x] **7.15** Queue: `search-index` - indeksowanie produktów ✅ (search-index.worker.ts)
+- [x] **7.16** Queue: `import` - importy CSV/XLSX ✅ (import-export.worker.ts)
+- [x] **7.17** Queue: `export` - eksporty raportów ✅ (import-export.worker.ts)
+- [x] **7.18** Queue: `inventory-sync` - synchronizacja stanów ✅ (inventory-sync.worker.ts)
+- [x] **7.19** Queue: `shipping` - generowanie etykiet ✅ (shipping.worker.ts)
+- [x] **7.20** Dashboard kolejek (Bull Board) ✅
 
-#### Rezerwacje stanów (krytyczne!)
+#### Rezerwacje stanów (krytyczne!) ✅ UKOŃCZONY
 
-- [ ] **7.21** Optimistic locking na `Inventory`
-- [ ] **7.22** Timeout rezerwacji (np. 15 min)
-- [ ] **7.23** Job do czyszczenia wygasłych rezerwacji
-- [ ] **7.24** Transakcje DB przy tworzeniu zamówień
+- [x] **7.21** Optimistic locking na `Inventory` ✅ (version field + updateMany with version check)
+- [x] **7.22** Timeout rezerwacji (np. 15 min) ✅ (RESERVATION_TIMEOUT_MINUTES = 15)
+- [x] **7.23** Job do czyszczenia wygasłych rezerwacji ✅ (inventory-sync.worker.ts - cleanupExpiredReservations)
+- [x] **7.24** Transakcje DB przy tworzeniu zamówień ✅ (prisma.$transaction w inventory.service.ts)
 
-#### Monitoring
+#### Monitoring ✅ UKOŃCZONY
 
-- [ ] **7.25** Sentry - error tracking (frontend + backend)
-- [ ] **7.26** Prometheus - metryki
-- [ ] **7.27** Grafana - dashboardy
-- [ ] **7.28** Alerty (błędy, wydajność, stany)
-- [ ] **7.29** Health check endpoints
+- [x] **7.25** Sentry - error tracking (frontend + backend) ✅
+- [x] **7.26** Prometheus - metryki ✅ (health.controller.ts - prometheusMetrics endpoint)
+- [x] **7.27** Grafana - dashboardy ✅
+- [x] **7.28** Alerty (błędy, wydajność, stany) ✅
+- [x] **7.29** Health check endpoints ✅ (health.controller.ts - /api/health, /health/live, /health/ready, /health/metrics)
 
-#### Testy
+#### Testy ✅ UKOŃCZONY
 
-- [ ] **7.30** Unit testy - serwisy (Jest)
-- [ ] **7.31** Integration testy - API (supertest)
-- [ ] **7.32** E2E testy - flow zakupowy (Playwright)
-- [ ] **7.33** Load testy (k6 / Artillery)
+- [x] **7.30** Unit testy - serwisy (Jest) ✅ (jest.config.js, inventory.service.test.ts, cache.test.ts)
+- [x] **7.31** Integration testy - API (supertest) ✅
+- [x] **7.32** E2E testy - flow zakupowy (Playwright) ✅
+- [x] **7.33** Load testy (k6 / Artillery) ✅
 
-#### CI/CD
+#### CI/CD ✅ UKOŃCZONY
 
-- [ ] **7.34** GitHub Actions workflow:
+- [x] **7.34** GitHub Actions workflow: ✅ (.github/workflows/ci-cd.yml)
   - Lint + TypeScript check
   - Unit testy
   - Build
   - Deploy (staging → production)
-- [ ] **7.35** Automatyczne migracje DB
-- [ ] **7.36** Rollback strategy
+- [x] **7.35** Automatyczne migracje DB ✅ (prisma migrate deploy w CI/CD)
+- [x] **7.36** Rollback strategy ✅ (Manual rollback job w CI/CD)
 
 ---
 ## Etap 8: Integracje zewnętrzne (PRE-PROD) (3-5 dni)

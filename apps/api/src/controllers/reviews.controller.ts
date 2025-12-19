@@ -1,5 +1,81 @@
 import { Request, Response } from 'express';
+import { z } from 'zod';
 import { reviewsService } from '../services/reviews.service';
+
+// ============================================
+// VALIDATION SCHEMAS
+// ============================================
+
+/**
+ * Helper to sanitize text - removes potential XSS and HTML tags
+ */
+const sanitizeText = (text: string): string => {
+  return text
+    .replace(/<[^>]*>/g, '') // Remove HTML tags
+    .replace(/[<>]/g, '') // Remove remaining angle brackets
+    .replace(/javascript:/gi, '') // Remove javascript: protocol
+    .replace(/on\w+=/gi, '') // Remove event handlers
+    .trim();
+};
+
+/**
+ * UUID validation helper
+ */
+const isValidUUID = (id: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+};
+
+/**
+ * Create review validation schema
+ */
+const createReviewSchema = z.object({
+  productId: z.string().uuid('Invalid product ID'),
+  rating: z.number().int().min(1, 'Rating must be at least 1').max(5, 'Rating cannot exceed 5'),
+  title: z
+    .string()
+    .max(200, 'Title is too long')
+    .optional()
+    .transform((val) => (val ? sanitizeText(val) : undefined)),
+  content: z
+    .string()
+    .min(10, 'Review content must be at least 10 characters')
+    .max(5000, 'Review content is too long')
+    .transform(sanitizeText),
+});
+
+/**
+ * Update review validation schema
+ */
+const updateReviewSchema = z.object({
+  rating: z.number().int().min(1).max(5).optional(),
+  title: z
+    .string()
+    .max(200)
+    .optional()
+    .transform((val) => (val ? sanitizeText(val) : undefined)),
+  content: z
+    .string()
+    .min(10)
+    .max(5000)
+    .optional()
+    .transform((val) => (val ? sanitizeText(val) : undefined)),
+});
+
+/**
+ * Reviews query params schema
+ */
+const reviewsQuerySchema = z.object({
+  page: z.string().optional().transform((val) => {
+    const num = parseInt(val || '1', 10);
+    return isNaN(num) || num < 1 ? 1 : Math.min(num, 1000);
+  }),
+  limit: z.string().optional().transform((val) => {
+    const num = parseInt(val || '10', 10);
+    return isNaN(num) || num < 1 ? 10 : Math.min(num, 50);
+  }),
+  sort: z.enum(['newest', 'oldest', 'highest', 'lowest', 'helpful']).optional().default('newest'),
+});
 
 export const reviewsController = {
   /**
@@ -13,26 +89,16 @@ export const reviewsController = {
         return res.status(401).json({ message: 'Authentication required' });
       }
 
-      const { productId, rating, title, content } = req.body;
-
-      if (!productId) {
-        return res.status(400).json({ message: 'Product ID is required' });
+      const validation = createReviewSchema.safeParse(req.body);
+      
+      if (!validation.success) {
+        return res.status(400).json({
+          message: 'Validation error',
+          errors: validation.error.flatten().fieldErrors,
+        });
       }
 
-      if (!rating || typeof rating !== 'number') {
-        return res.status(400).json({ message: 'Rating is required and must be a number' });
-      }
-
-      if (!content || typeof content !== 'string' || content.trim().length < 10) {
-        return res.status(400).json({ message: 'Review content must be at least 10 characters' });
-      }
-
-      const review = await reviewsService.createReview(userId, {
-        productId,
-        rating,
-        title,
-        content: content.trim(),
-      });
+      const review = await reviewsService.createReview(userId, validation.data);
 
       res.status(201).json(review);
     } catch (error) {
@@ -49,13 +115,21 @@ export const reviewsController = {
   async getProductReviews(req: Request, res: Response) {
     try {
       const { productId } = req.params;
-      const { page, limit, sort } = req.query;
+      
+      if (!isValidUUID(productId)) {
+        return res.status(400).json({ message: 'Invalid product ID format' });
+      }
 
-      const result = await reviewsService.getProductReviews(productId, {
-        page: page ? parseInt(page as string, 10) : 1,
-        limit: limit ? parseInt(limit as string, 10) : 10,
-        sort: sort as 'newest' | 'oldest' | 'highest' | 'lowest' | 'helpful',
-      });
+      const validation = reviewsQuerySchema.safeParse(req.query);
+      
+      if (!validation.success) {
+        return res.status(400).json({
+          message: 'Invalid query parameters',
+          errors: validation.error.flatten().fieldErrors,
+        });
+      }
+
+      const result = await reviewsService.getProductReviews(productId, validation.data);
 
       res.json(result);
     } catch (error) {
@@ -71,6 +145,11 @@ export const reviewsController = {
   async getProductReviewStats(req: Request, res: Response) {
     try {
       const { productId } = req.params;
+      
+      if (!isValidUUID(productId)) {
+        return res.status(400).json({ message: 'Invalid product ID format' });
+      }
+      
       const stats = await reviewsService.getProductReviewStats(productId);
       res.json(stats);
     } catch (error) {
@@ -97,6 +176,11 @@ export const reviewsController = {
       }
 
       const { productId } = req.params;
+      
+      if (!isValidUUID(productId)) {
+        return res.status(400).json({ message: 'Invalid product ID format' });
+      }
+      
       const result = await reviewsService.canUserReviewProduct(userId, productId);
       res.json(result);
     } catch (error) {
@@ -117,13 +201,21 @@ export const reviewsController = {
       }
 
       const { reviewId } = req.params;
-      const { rating, title, content } = req.body;
+      
+      if (!isValidUUID(reviewId)) {
+        return res.status(400).json({ message: 'Invalid review ID format' });
+      }
 
-      const review = await reviewsService.updateReview(reviewId, userId, {
-        rating,
-        title,
-        content,
-      });
+      const validation = updateReviewSchema.safeParse(req.body);
+      
+      if (!validation.success) {
+        return res.status(400).json({
+          message: 'Validation error',
+          errors: validation.error.flatten().fieldErrors,
+        });
+      }
+
+      const review = await reviewsService.updateReview(reviewId, userId, validation.data);
 
       res.json(review);
     } catch (error) {
@@ -145,6 +237,11 @@ export const reviewsController = {
       }
 
       const { reviewId } = req.params;
+      
+      if (!isValidUUID(reviewId)) {
+        return res.status(400).json({ message: 'Invalid review ID format' });
+      }
+      
       const isAdmin = req.user?.role === 'ADMIN';
 
       await reviewsService.deleteReview(reviewId, userId, isAdmin);
@@ -163,6 +260,11 @@ export const reviewsController = {
   async markHelpful(req: Request, res: Response) {
     try {
       const { reviewId } = req.params;
+      
+      if (!isValidUUID(reviewId)) {
+        return res.status(400).json({ message: 'Invalid review ID format' });
+      }
+      
       const { helpful } = req.body;
 
       if (typeof helpful !== 'boolean') {
