@@ -1,9 +1,26 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
+
+function buildApiUrl(endpoint: string): string {
+  // Allow absolute URLs (rare, but keeps helper flexible)
+  if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) return endpoint;
+
+  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+
+  // If base already includes /api and endpoint also starts with /api, avoid /api/api
+  if (
+    API_URL.endsWith('/api') &&
+    (normalizedEndpoint === '/api' || normalizedEndpoint.startsWith('/api/'))
+  ) {
+    return `${API_URL}${normalizedEndpoint.slice(4)}`;
+  }
+
+  return `${API_URL}${normalizedEndpoint}`;
+}
 
 // Generic API helper - returns Response (for backward compatibility)
 export const api = {
   get: async (endpoint: string, token?: string): Promise<Response> => {
-    return fetch(`${API_URL}${endpoint}`, {
+    return fetch(buildApiUrl(endpoint), {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -13,7 +30,7 @@ export const api = {
   },
   
   post: async (endpoint: string, data: any, token?: string): Promise<Response> => {
-    return fetch(`${API_URL}${endpoint}`, {
+    return fetch(buildApiUrl(endpoint), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -24,7 +41,7 @@ export const api = {
   },
   
   put: async (endpoint: string, data: any, token?: string): Promise<Response> => {
-    return fetch(`${API_URL}${endpoint}`, {
+    return fetch(buildApiUrl(endpoint), {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -35,7 +52,7 @@ export const api = {
   },
   
   patch: async (endpoint: string, data: any, token?: string): Promise<Response> => {
-    return fetch(`${API_URL}${endpoint}`, {
+    return fetch(buildApiUrl(endpoint), {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -46,7 +63,7 @@ export const api = {
   },
   
   delete: async (endpoint: string, token?: string): Promise<Response> => {
-    return fetch(`${API_URL}${endpoint}`, {
+    return fetch(buildApiUrl(endpoint), {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -177,7 +194,7 @@ function getAuthToken(): string | null {
 async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
   const token = getAuthToken();
   
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  const response = await fetch(buildApiUrl(endpoint), {
     ...options,
     headers: {
       'Content-Type': 'application/json',
