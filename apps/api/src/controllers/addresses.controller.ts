@@ -1,5 +1,125 @@
 import { Request, Response, NextFunction } from 'express';
+import { z } from 'zod';
 import { addressesService } from '../services/addresses.service';
+
+// ============================================
+// VALIDATION SCHEMAS
+// ============================================
+
+/**
+ * Helper to sanitize text - removes potential XSS
+ */
+const sanitizeText = (text: string): string => {
+  return text.replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim();
+};
+
+/**
+ * Name validation - only allows letters, spaces, hyphens, apostrophes
+ */
+const nameSchema = z
+  .string()
+  .min(1, 'Name is required')
+  .max(100, 'Name is too long')
+  .transform(sanitizeText)
+  .refine(
+    (name) => /^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s\-']+$/.test(name),
+    'Name contains invalid characters'
+  );
+
+/**
+ * Street validation
+ */
+const streetSchema = z
+  .string()
+  .min(1, 'Street is required')
+  .max(200, 'Street is too long')
+  .transform(sanitizeText);
+
+/**
+ * City validation
+ */
+const citySchema = z
+  .string()
+  .min(1, 'City is required')
+  .max(100, 'City is too long')
+  .transform(sanitizeText)
+  .refine(
+    (city) => /^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s-]+$/.test(city),
+    'City contains invalid characters'
+  );
+
+/**
+ * Postal code validation (Polish format)
+ */
+const postalCodeSchema = z
+  .string()
+  .min(1, 'Postal code is required')
+  .max(10, 'Postal code is too long')
+  .refine(
+    (code) => /^[0-9]{2}-[0-9]{3}$/.test(code) || /^[0-9]{5}$/.test(code),
+    'Invalid postal code format (expected XX-XXX)'
+  );
+
+/**
+ * Phone validation (Polish format)
+ */
+const phoneSchema = z
+  .string()
+  .optional()
+  .nullable()
+  .transform((val) => val || undefined)
+  .refine(
+    (phone) => {
+      if (!phone) return true;
+      const cleaned = phone.replace(/[\s()+-]/g, '');
+      return /^(\+48)?[0-9]{9}$/.test(cleaned);
+    },
+    'Invalid phone number format'
+  );
+
+/**
+ * Country code validation
+ */
+const countrySchema = z
+  .string()
+  .length(2, 'Country must be 2-letter code')
+  .toUpperCase()
+  .optional()
+  .default('PL');
+
+/**
+ * Address type validation (matches Prisma AddressType enum)
+ */
+const addressTypeSchema = z.enum(['SHIPPING', 'BILLING']).optional();
+
+/**
+ * Create address validation schema
+ */
+const createAddressSchema = z.object({
+  label: z.string().max(50).optional().transform((val) => val ? sanitizeText(val) : undefined),
+  type: addressTypeSchema,
+  firstName: nameSchema,
+  lastName: nameSchema,
+  street: streetSchema,
+  city: citySchema,
+  postalCode: postalCodeSchema,
+  country: countrySchema,
+  phone: phoneSchema,
+  isDefault: z.boolean().optional().default(false),
+});
+
+/**
+ * Update address validation schema (all fields optional)
+ */
+const updateAddressSchema = createAddressSchema.partial();
+
+/**
+ * UUID validation helper
+ */
+const isValidUUID = (id: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+};
 
 export const addressesController = {
   /**
@@ -30,6 +150,10 @@ export const addressesController = {
       
       if (!userId) {
         return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      if (!isValidUUID(id)) {
+        return res.status(400).json({ error: 'Invalid address ID format' });
       }
 
       const address = await addressesService.getById(id, userId);
@@ -73,28 +197,20 @@ export const addressesController = {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      const { label, type, firstName, lastName, street, city, postalCode, country, phone, isDefault } = req.body;
-
-      // Validation
-      if (!firstName || !lastName || !street || !city || !postalCode) {
-        return res.status(400).json({ 
-          error: 'Missing required fields: firstName, lastName, street, city, postalCode' 
+      const validation = createAddressSchema.safeParse(req.body);
+      
+      if (!validation.success) {
+        return res.status(400).json({
+          error: 'Validation error',
+          errors: validation.error.flatten().fieldErrors,
         });
       }
 
+      // Data is validated by Zod, safe to pass to service
       const address = await addressesService.create({
         userId,
-        label,
-        type,
-        firstName,
-        lastName,
-        street,
-        city,
-        postalCode,
-        country,
-        phone,
-        isDefault,
-      });
+        ...validation.data,
+      } as any);
 
       res.status(201).json(address);
     } catch (error) {
@@ -114,20 +230,21 @@ export const addressesController = {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      const { label, type, firstName, lastName, street, city, postalCode, country, phone, isDefault } = req.body;
+      if (!isValidUUID(id)) {
+        return res.status(400).json({ error: 'Invalid address ID format' });
+      }
 
-      const address = await addressesService.update(id, userId, {
-        label,
-        type,
-        firstName,
-        lastName,
-        street,
-        city,
-        postalCode,
-        country,
-        phone,
-        isDefault,
-      });
+      const validation = updateAddressSchema.safeParse(req.body);
+      
+      if (!validation.success) {
+        return res.status(400).json({
+          error: 'Validation error',
+          errors: validation.error.flatten().fieldErrors,
+        });
+      }
+
+      // Data is validated by Zod, safe to pass to service
+      const address = await addressesService.update(id, userId, validation.data as any);
 
       res.json(address);
     } catch (error: any) {
@@ -150,6 +267,10 @@ export const addressesController = {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
+      if (!isValidUUID(id)) {
+        return res.status(400).json({ error: 'Invalid address ID format' });
+      }
+
       await addressesService.delete(id, userId);
       res.json({ success: true, message: 'Address deleted' });
     } catch (error: any) {
@@ -170,6 +291,10 @@ export const addressesController = {
       
       if (!userId) {
         return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      if (!isValidUUID(id)) {
+        return res.status(400).json({ error: 'Invalid address ID format' });
       }
 
       const address = await addressesService.setDefault(id, userId);

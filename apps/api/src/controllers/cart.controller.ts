@@ -1,5 +1,51 @@
 import { Request, Response } from 'express';
+import { z } from 'zod';
 import { cartService } from '../services/cart.service';
+
+// ============================================
+// VALIDATION SCHEMAS
+// ============================================
+
+/**
+ * UUID validation helper
+ */
+const isValidUUID = (id: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+};
+
+/**
+ * Add item to cart schema
+ */
+const addItemSchema = z.object({
+  variantId: z.string().uuid('Invalid variant ID'),
+  quantity: z.number().int().positive().max(100).optional().default(1),
+});
+
+/**
+ * Update item quantity schema
+ */
+const updateItemSchema = z.object({
+  quantity: z.number().int().min(0, 'Quantity cannot be negative').max(100, 'Maximum quantity is 100'),
+});
+
+/**
+ * Apply coupon schema
+ */
+const applyCouponSchema = z.object({
+  code: z
+    .string()
+    .min(1, 'Coupon code is required')
+    .max(50, 'Coupon code is too long')
+    .transform((val) => val.toUpperCase().trim()),
+});
+
+/**
+ * Merge carts schema
+ */
+const mergeCartsSchema = z.object({
+  sessionId: z.string().min(1, 'Session ID is required').max(100),
+});
 
 export class CartController {
   /**
@@ -15,6 +61,14 @@ export class CartController {
         return res.status(400).json({
           success: false,
           message: 'Wymagany userId lub sessionId',
+        });
+      }
+
+      // Validate user ID if provided
+      if (userId && !isValidUUID(userId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid user ID format',
         });
       }
 
@@ -41,14 +95,25 @@ export class CartController {
     try {
       const userId = req.headers['x-user-id'] as string | undefined;
       const sessionId = req.headers['x-session-id'] as string | undefined;
-      const { variantId, quantity = 1 } = req.body;
 
-      if (!variantId) {
+      if (userId && !isValidUUID(userId)) {
         return res.status(400).json({
           success: false,
-          message: 'Wymagany variantId',
+          message: 'Invalid user ID format',
         });
       }
+
+      const validation = addItemSchema.safeParse(req.body);
+      
+      if (!validation.success) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation error',
+          errors: validation.error.flatten().fieldErrors,
+        });
+      }
+
+      const { variantId, quantity } = validation.data;
 
       // Get or create cart
       const cart = await cartService.getOrCreateCart(userId, sessionId);
@@ -79,17 +144,26 @@ export class CartController {
       const userId = req.headers['x-user-id'] as string | undefined;
       const sessionId = req.headers['x-session-id'] as string | undefined;
       const { itemId } = req.params;
-      const { quantity } = req.body;
 
-      if (quantity === undefined) {
+      if (!isValidUUID(itemId)) {
         return res.status(400).json({
           success: false,
-          message: 'Wymagana ilość (quantity)',
+          message: 'Invalid item ID format',
+        });
+      }
+
+      const validation = updateItemSchema.safeParse(req.body);
+      
+      if (!validation.success) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation error',
+          errors: validation.error.flatten().fieldErrors,
         });
       }
 
       const cart = await cartService.getOrCreateCart(userId, sessionId);
-      const updatedCart = await cartService.updateItemQuantity(cart.id, itemId, quantity);
+      const updatedCart = await cartService.updateItemQuantity(cart.id, itemId, validation.data.quantity);
 
       res.json({
         success: true,
@@ -113,6 +187,13 @@ export class CartController {
       const userId = req.headers['x-user-id'] as string | undefined;
       const sessionId = req.headers['x-session-id'] as string | undefined;
       const { itemId } = req.params;
+
+      if (!isValidUUID(itemId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid item ID format',
+        });
+      }
 
       const cart = await cartService.getOrCreateCart(userId, sessionId);
       const updatedCart = await cartService.removeItem(cart.id, itemId);
@@ -165,17 +246,19 @@ export class CartController {
     try {
       const userId = req.headers['x-user-id'] as string | undefined;
       const sessionId = req.headers['x-session-id'] as string | undefined;
-      const { code } = req.body;
 
-      if (!code) {
+      const validation = applyCouponSchema.safeParse(req.body);
+      
+      if (!validation.success) {
         return res.status(400).json({
           success: false,
-          message: 'Wymagany kod kuponu',
+          message: 'Validation error',
+          errors: validation.error.flatten().fieldErrors,
         });
       }
 
       const cart = await cartService.getOrCreateCart(userId, sessionId);
-      const updatedCart = await cartService.applyCoupon(cart.id, code);
+      const updatedCart = await cartService.applyCoupon(cart.id, validation.data.code);
 
       res.json({
         success: true,
@@ -224,7 +307,6 @@ export class CartController {
   async mergeCarts(req: Request, res: Response) {
     try {
       const userId = req.headers['x-user-id'] as string;
-      const { sessionId } = req.body;
 
       if (!userId) {
         return res.status(401).json({
@@ -233,14 +315,24 @@ export class CartController {
         });
       }
 
-      if (!sessionId) {
+      if (!isValidUUID(userId)) {
         return res.status(400).json({
           success: false,
-          message: 'Wymagany sessionId',
+          message: 'Invalid user ID format',
         });
       }
 
-      const cart = await cartService.mergeCarts(userId, sessionId);
+      const validation = mergeCartsSchema.safeParse(req.body);
+      
+      if (!validation.success) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation error',
+          errors: validation.error.flatten().fieldErrors,
+        });
+      }
+
+      const cart = await cartService.mergeCarts(userId, validation.data.sessionId);
 
       res.json({
         success: true,

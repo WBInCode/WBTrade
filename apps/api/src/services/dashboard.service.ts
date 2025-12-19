@@ -155,7 +155,7 @@ export class DashboardService {
   /**
    * Pobiera dane do wykresu sprzedaży (ostatnie 30 dni)
    */
-  async getSalesChart(days: number = 30): Promise<SalesChartData[]> {
+  async getSalesChart(days = 30): Promise<SalesChartData[]> {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
     startDate.setHours(0, 0, 0, 0);
@@ -203,7 +203,7 @@ export class DashboardService {
   /**
    * Pobiera ostatnie zamówienia
    */
-  async getRecentOrders(limit: number = 10): Promise<RecentOrder[]> {
+  async getRecentOrders(limit = 10): Promise<RecentOrder[]> {
     const orders = await prisma.order.findMany({
       take: limit,
       orderBy: { createdAt: 'desc' },
@@ -237,7 +237,7 @@ export class DashboardService {
   /**
    * Pobiera produkty z niskim stanem magazynowym
    */
-  async getLowStockProducts(limit: number = 10, threshold: number = 10): Promise<LowStockProduct[]> {
+  async getLowStockProducts(limit = 10, threshold = 10): Promise<LowStockProduct[]> {
     const inventory = await prisma.inventory.findMany({
       where: {
         quantity: { lt: threshold }

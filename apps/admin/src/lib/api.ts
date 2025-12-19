@@ -193,6 +193,7 @@ function getAuthToken(): string | null {
 // Fetch z autoryzacja
 async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
   const token = getAuthToken();
+  console.log('fetchWithAuth:', endpoint, 'token:', token ? 'exists' : 'null');
   
   const response = await fetch(buildApiUrl(endpoint), {
     ...options,

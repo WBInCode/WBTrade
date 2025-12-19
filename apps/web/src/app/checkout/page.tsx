@@ -73,7 +73,7 @@ const initialPayment: PaymentData = {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart, itemCount, isLoading: cartLoading, removeFromCart, updateQuantity } = useCart();
+  const { cart, itemCount, loading: cartLoading, removeFromCart, updateQuantity } = useCart();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   
   const [currentStep, setCurrentStep] = useState(1);

@@ -29,6 +29,7 @@ export const passwordSchema = z
     'Password must contain at least one number'
   )
   .refine(
+    // eslint-disable-next-line no-useless-escape
     (password) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
     'Password must contain at least one special character (!@#$%^&*()_+-=[]{};\':"|,.<>/?)'
   );
@@ -88,7 +89,7 @@ export const phoneSchema = z
     (phone) => {
       if (!phone) return true;
       // Polish phone number formats
-      const cleaned = phone.replace(/[\s\-\(\)]/g, '');
+      const cleaned = phone.replace(/[\s()+-]/g, '');
       return /^(\+48)?[0-9]{9}$/.test(cleaned);
     },
     'Invalid phone number format'
@@ -109,7 +110,8 @@ export const registerSchema = z.object({
   phone: phoneSchema,
   acceptTerms: z
     .boolean()
-    .refine((val) => val === true, 'You must accept the terms and conditions'),
+    .optional()
+    .refine((val) => val === undefined || val === true, 'You must accept the terms and conditions'),
 });
 
 /**
@@ -204,6 +206,7 @@ export function getPasswordStrength(password: string): {
   if (/[0-9]/.test(password)) score += 10;
   else suggestions.push('Add numbers');
   
+  // eslint-disable-next-line no-useless-escape
   if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) score += 15;
   else suggestions.push('Add special characters');
 
@@ -212,6 +215,7 @@ export function getPasswordStrength(password: string): {
     /[a-z]/.test(password),
     /[A-Z]/.test(password),
     /[0-9]/.test(password),
+    // eslint-disable-next-line no-useless-escape
     /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
   ].filter(Boolean).length;
   
