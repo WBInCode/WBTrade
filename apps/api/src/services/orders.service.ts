@@ -1,5 +1,5 @@
 import { prisma } from '../db';
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus, Prisma } from '@prisma/client';
 
 interface CreateOrderData {
   userId?: string;
@@ -15,6 +15,17 @@ interface CreateOrderData {
   customerNotes?: string;
 }
 
+interface GetAllOrdersParams {
+  page?: number;
+  limit?: number;
+  status?: OrderStatus;
+  search?: string;
+  dateFrom?: Date;
+  dateTo?: Date;
+  sortBy?: 'createdAt' | 'total' | 'orderNumber';
+  sortOrder?: 'asc' | 'desc';
+}
+
 function generateOrderNumber(): string {
   const timestamp = Date.now().toString(36).toUpperCase();
   const random = Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -22,6 +33,70 @@ function generateOrderNumber(): string {
 }
 
 export class OrdersService {
+  /**
+   * Get all orders (admin)
+   */
+  async getAll(params: GetAllOrdersParams = {}) {
+    const {
+      page = 1,
+      limit = 20,
+      status,
+      search,
+      dateFrom,
+      dateTo,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = params;
+
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.OrderWhereInput = {};
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (search) {
+      where.OR = [
+        { orderNumber: { contains: search, mode: 'insensitive' } },
+        { user: { email: { contains: search, mode: 'insensitive' } } },
+        { user: { firstName: { contains: search, mode: 'insensitive' } } },
+        { user: { lastName: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+
+    if (dateFrom || dateTo) {
+      where.createdAt = {};
+      if (dateFrom) where.createdAt.gte = dateFrom;
+      if (dateTo) where.createdAt.lte = dateTo;
+    }
+
+    const [orders, total] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { [sortBy]: sortOrder },
+        include: {
+          items: true,
+          user: { select: { id: true, email: true, firstName: true, lastName: true } },
+          shippingAddress: true,
+        },
+      }),
+      prisma.order.count({ where }),
+    ]);
+
+    return {
+      orders,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
   /**
    * Create a new order
    */
@@ -207,6 +282,105 @@ export class OrdersService {
       });
 
       return cancelledOrder;
+    });
+  }
+
+  /**
+   * Process refund for an order
+   */
+  async refund(id: string, reason?: string) {
+    return prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id },
+        include: { items: true },
+      });
+
+      if (!order) return null;
+
+      // Only allow refund for delivered or shipped orders
+      if (!['DELIVERED', 'SHIPPED'].includes(order.status)) {
+        throw new Error('Order cannot be refunded in current status');
+      }
+
+      // Return inventory (add back to stock)
+      for (const item of order.items) {
+        await tx.inventory.updateMany({
+          where: { variantId: item.variantId },
+          data: {
+            quantity: { increment: item.quantity },
+          },
+        });
+      }
+
+      // Update order status
+      const refundedOrder = await tx.order.update({
+        where: { id },
+        data: { status: 'REFUNDED' },
+      });
+
+      // Add to status history
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: id,
+          status: 'REFUNDED',
+          note: reason || 'Order refunded',
+        },
+      });
+
+      return refundedOrder;
+    });
+  }
+
+  /**
+   * Restore cancelled/refunded order
+   */
+  async restore(id: string) {
+    return prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id },
+        include: { items: true },
+      });
+
+      if (!order) return null;
+
+      if (!['CANCELLED', 'REFUNDED'].includes(order.status)) {
+        throw new Error('Order is not cancelled or refunded');
+      }
+
+      // Reserve inventory again
+      for (const item of order.items) {
+        const inventory = await tx.inventory.findFirst({
+          where: { variantId: item.variantId },
+        });
+
+        if (inventory && inventory.quantity - inventory.reserved < item.quantity) {
+          throw new Error(`Insufficient stock for ${item.productName}`);
+        }
+
+        await tx.inventory.updateMany({
+          where: { variantId: item.variantId },
+          data: {
+            reserved: { increment: item.quantity },
+          },
+        });
+      }
+
+      // Update order status back to PENDING
+      const restoredOrder = await tx.order.update({
+        where: { id },
+        data: { status: 'PENDING' },
+      });
+
+      // Add to status history
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: id,
+          status: 'PENDING',
+          note: 'Order restored',
+        },
+      });
+
+      return restoredOrder;
     });
   }
 }

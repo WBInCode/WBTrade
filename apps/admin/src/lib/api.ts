@@ -177,7 +177,7 @@ function getAuthToken(): string | null {
 async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
   const token = getAuthToken();
   
-  const response = await fetch(`${API_URL}/api${endpoint}`, {
+  const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',

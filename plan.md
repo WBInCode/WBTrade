@@ -16,9 +16,9 @@
 4. [Etap 3: Frontend – formularze i flow](#etap-3-frontend--formularze-i-flow-2-3-dni)
 5. [Etap 4: Baza danych – schemat Prisma](#etap-4-baza-danych--schemat-prisma-2-3-dni)
 6. [Etap 5: Backend – CRUD i logika](#etap-5-backend--crud-i-logika-5-7-dni)
-7. [Etap 6: Integracje zewnętrzne](#etap-6-integracje-zewnętrzne-3-5-dni)
-8. [Etap 7: Panel Admin + WMS](#etap-7-panel-admin--wms-5-7-dni)
-9. [Etap 8: Optymalizacja i skala](#etap-8-optymalizacja-i-skala-3-5-dni)
+7. [Etap 6: Panel Admin + WMS](#etap-6-panel-admin--wms-5-7-dni)
+8. [Etap 7: Optymalizacja i skala](#etap-7-optymalizacja-i-skala-3-5-dni)
+9. [Etap 8: Integracje zewnętrzne (PRE-PROD)](#etap-8-integracje-zewnętrzne-pre-prod-3-5-dni)
 10. [Rozszerzenia opcjonalne](#-rozszerzenia-opcjonalne)
 
 ---
@@ -90,7 +90,7 @@
 - [x] **2.1** Hero section z CTA ✅ (HeroBanner.tsx)
 - [x] **2.2** Sekcja kategorii (grid/carousel) ✅ (Category icons)
 - [x] **2.3** Bestsellery / Polecane produkty ✅ (Super Price + Recommended)
-- [ ] **2.4** Newsletter signup
+- [x] **2.4** Newsletter signup ✅ (Newsletter.tsx z walidacją, loading, success state)
 - [x] **2.5** Footer z linkami ✅ (Footer.tsx)
 
 #### Listing produktów (`apps/web/src/app/products/page.tsx`)
@@ -98,8 +98,8 @@
 - [x] **2.6** Grid produktów (responsywny) ✅ (Homepage grid)
 - [x] **2.7** Filtry boczne (kategoria, cena, atrybuty) ✅ (Deals page sidebar)
 - [x] **2.8** Sortowanie (cena, nazwa, popularność) ✅ (Deals page)
-- [ ] **2.9** Paginacja / Infinite scroll
-- [ ] **2.10** Skeleton loading
+- [x] **2.9** Paginacja / Infinite scroll ✅ (URL-based, SEO friendly, 36 products, quick jump)
+- [x] **2.10** Skeleton loading ✅ (ProductCardSkeleton, ProductGridSkeleton, ProductsPageSkeleton)
 
 #### Karta produktu (`apps/web/src/components/ProductCard.tsx`)
 
@@ -107,14 +107,14 @@
 - [x] **2.12** Nazwa, cena, stara cena (przekreślona) ✅
 - [x] **2.13** Badge (nowość, promocja, wyprzedane) ✅ (Discount badge)
 - [x] **2.14** Quick add to cart button ✅ (na stronie produktu)
-- [ ] **2.15** Wishlist icon
+- [x] **2.15** Wishlist icon ✅ (Heart icon z WishlistContext, localStorage persist)
 
 #### Strona produktu (`apps/web/src/app/products/[id]/page.tsx`)
 
 - [x] **2.16** Galeria zdjęć (thumbnails + lightbox) ✅ (Image gallery with thumbnails)
-- [ ] **2.17** Wybór wariantów (rozmiar, kolor)
+- [x] **2.17** Wybór wariantów (rozmiar, kolor) ✅ (Dynamic variant selector with Color/Size dropdowns)
 - [x] **2.18** Stan magazynowy (dostępność) ✅ (Stock status indicator)
-- [ ] **2.19** Quantity selector
+- [x] **2.19** Quantity selector ✅ (Input + buttons with stock limit validation)
 - [x] **2.20** Przycisk "Dodaj do koszyka" ✅ (Add to Cart + Buy Now buttons)
 - [x] **2.21** Opis produktu (tabs: opis, specyfikacja, opinie) ✅ (Full tabbed interface)
 - [x] **2.22** Produkty powiązane ✅ (Customers also viewed carousel)
@@ -140,13 +140,13 @@
 - [x] **2.34** Mobile menu (hamburger) ✅ (Categories mobile)
 - [x] **2.35** Link do strony Deals w nawigacji ✅ (Orange highlighted link)
 
-#### SearchBar (`apps/web/src/components/SearchBar.tsx`)
+#### SearchBar (`apps/web/src/components/SearchBar.tsx`) ✅ UKOŃCZONY
 
 - [x] **2.35** Input z ikoną ✅
-- [ ] **2.36** Autocomplete dropdown
-- [ ] **2.37** Debounce (300ms)
-- [ ] **2.38** Ostatnie wyszukiwania
-- [ ] **2.39** Popularne produkty w dropdown
+- [x] **2.36** Autocomplete dropdown ✅ (Product results with images, prices, categories)
+- [x] **2.37** Debounce (300ms) ✅ (Delays API calls, shows loading state)
+- [x] **2.38** Ostatnie wyszukiwania ✅ (LocalStorage, max 5, clear button)
+- [x] **2.39** Popularne produkty w dropdown ✅ (Popular searches section)
 
 #### Strona Deals/Promocje (`apps/web/src/app/deals/page.tsx`) - NOWA ✅
 
@@ -181,39 +181,40 @@
 
 ### TODO
 
-#### Checkout (`apps/web/src/app/checkout/page.tsx`)
+#### Checkout (`apps/web/src/app/checkout/page.tsx`) ✅ UKOŃCZONY
 
-- [ ] **3.1** Multi-step form (adres → dostawa → płatność → podsumowanie)
-- [ ] **3.2** Formularz adresu (walidacja)
-- [ ] **3.3** Wybór dostawy (InPost, kurier, odbiór)
-- [ ] **3.4** Wybór płatności (karta, BLIK, przelew)
-- [ ] **3.5** Podsumowanie zamówienia
-- [ ] **3.6** Checkbox regulamin + RODO
-- [ ] **3.7** Przycisk "Zamawiam i płacę"
+- [x] **3.1** Multi-step form (adres → dostawa → płatność → podsumowanie) ✅
+- [x] **3.2** Formularz adresu (walidacja) ✅
+- [x] **3.3** Wybór dostawy (InPost, kurier, odbiór) ✅
+- [x] **3.4** Wybór płatności (karta, BLIK, przelew) ✅
+- [x] **3.5** Podsumowanie zamówienia ✅
+- [x] **3.6** Checkbox regulamin + RODO ✅
+- [x] **3.7** Przycisk "Zamawiam i płacę" ✅
 
-#### Auth (`apps/web/src/app/auth/`)
+#### Auth (`apps/web/src/app/auth/`) ✅ UKOŃCZONY
 
-- [ ] **3.8** Strona logowania (`login/page.tsx`)
-- [ ] **3.9** Strona rejestracji (`register/page.tsx`)
-- [ ] **3.10** Reset hasła (`forgot-password/page.tsx`)
-- [ ] **3.11** Walidacja formularzy (react-hook-form + zod)
-- [ ] **3.12** Social login buttons (Google, Facebook - opcjonalnie)
+- [x] **3.8** Strona logowania (`login/page.tsx`) ✅
+- [x] **3.9** Strona rejestracji (`register/page.tsx`) ✅
+- [x] **3.10** Reset hasła (`forgot-password/page.tsx` + `reset-password/page.tsx`) ✅
+- [x] **3.11** Walidacja formularzy (RFC 5322 email, hasło, telefon) ✅
+- [x] **3.12** Social login buttons - POMINIĘTE (wymaga OAuth)
 
-#### Panel klienta (`apps/web/src/app/account/`)
+#### Panel klienta (`apps/web/src/app/account/`) ✅ UKOŃCZONY
 
 - [x] **3.13** Dashboard klienta (`page.tsx`) ✅ (Full user dashboard with stats, orders, recommendations)
-- [ ] **3.14** Historia zamówień (`orders/page.tsx`)
-- [ ] **3.15** Szczegóły zamówienia (`orders/[id]/page.tsx`)
-- [ ] **3.16** Dane osobowe (`profile/page.tsx`)
-- [ ] **3.17** Adresy (`addresses/page.tsx`)
-- [ ] **3.18** Zmiana hasła (`password/page.tsx`)
+- [x] **3.14** Historia zamówień (`orders/page.tsx`) ✅ (Filtering, search, pagination, status badges)
+- [x] **3.15** Szczegóły zamówienia (`orders/[id]/page.tsx`) ✅ (Timeline, tracking, products, addresses)
+- [x] **3.16** Dane osobowe (`profile/page.tsx`) ✅ (Editable fields, validation, click-to-edit)
+- [x] **3.17** Adresy (`addresses/page.tsx`) ✅ (CRUD modal, shipping/billing, set default)
+- [x] **3.18** Zmiana hasła (`password/page.tsx`) ✅ (Strength indicator, requirements, API integration)
+- [x] **3.19** Ustawienia (`settings/page.tsx`) ✅ (Notifications, privacy, preferences)
 
 #### Strona zamówienia (`apps/web/src/app/order/[id]/page.tsx`)
 
-- [ ] **3.19** Status zamówienia (timeline)
-- [ ] **3.20** Tracking przesyłki
-- [ ] **3.21** Pobranie faktury PDF
-- [ ] **3.22** Kontakt ws. zamówienia
+- [x] **3.20** Status zamówienia (timeline) ✅ (Full timeline with colored dots, dates, descriptions)
+- [x] **3.21** Tracking przesyłki ✅ (Tracking number, link, estimated delivery)
+- [x] **3.22** Pobranie faktury PDF ✅ (Download button with icon)
+- [x] **3.23** Kontakt ws. zamówienia ✅ (Report problem, cancel order buttons)
 
 ---
 ## Etap 4: Baza danych – schemat Prisma (2-3 dni) ✅ UKOŃCZONY
@@ -332,54 +333,7 @@
 - [x] **5.46** SECURITY.md documentation ✅
 
 ---
-## Etap 6: Integracje zewnętrzne (3-5 dni)
-
-> 🔗 **Cel**: Płatności, wysyłki, powiadomienia
-
-### TODO
-
-#### Płatności
-
-- [ ] **6.1** Integracja Stripe / PayU / Przelewy24
-- [ ] **6.2** Endpoint webhook dla statusów płatności
-- [ ] **6.3** Obsługa statusów: `pending`, `paid`, `failed`, `refunded`
-- [ ] **6.4** Aktualizacja zamówienia po płatności
-
-#### Kurierzy
-
-- [ ] **6.5** Integracja InPost API (Paczkomaty + Kurier)
-- [ ] **6.6** Integracja DPD / DHL (opcjonalnie)
-- [ ] **6.7** Generowanie etykiet (label PDF)
-- [ ] **6.8** Pobieranie statusu tracking
-- [ ] **6.9** Webhook dla aktualizacji statusu
-
-#### Meilisearch
-
-- [ ] **6.10** Konfiguracja indeksu produktów
-- [ ] **6.11** Ustawienie facetów (kategoria, cena, atrybuty)
-- [ ] **6.12** BullMQ job do synchronizacji produktów
-- [ ] **6.13** Synonimy i stop words (PL)
-
-#### Email
-
-- [ ] **6.14** Konfiguracja Nodemailer / Resend
-- [ ] **6.15** Szablony email (HTML):
-  - Potwierdzenie rejestracji
-  - Reset hasła
-  - Potwierdzenie zamówienia
-  - Zmiana statusu zamówienia
-  - Faktura (załącznik PDF)
-- [ ] **6.16** BullMQ job do wysyłki emaili
-
-#### Storage (pliki)
-
-- [ ] **6.17** Konfiguracja S3 / Cloudflare R2
-- [ ] **6.18** Upload zdjęć produktów
-- [ ] **6.19** Generowanie thumbnails (sharp)
-- [ ] **6.20** CDN dla zdjęć
-
----
-## Etap 7: Panel Admin + WMS (5-7 dni)
+## Etap 6: Panel Admin + WMS (5-7 dni)
 
 > 👨‍💼 **Cel**: Zarządzanie sklepem i magazynem
 
@@ -387,74 +341,74 @@
 
 #### Setup (`apps/admin/`)
 
-- [ ] **7.1** Nowa aplikacja Next.js w monorepo
-- [ ] **7.2** Layout z sidebar navigation
-- [ ] **7.3** Auth (login admin) + RBAC middleware
-- [ ] **7.4** Współdzielone komponenty z `packages/ui`
+- [ ] **6.1** Nowa aplikacja Next.js w monorepo
+- [ ] **6.2** Layout z sidebar navigation
+- [ ] **6.3** Auth (login admin) + RBAC middleware
+- [ ] **6.4** Współdzielone komponenty z `packages/ui`
 
 #### Dashboard (`apps/admin/src/app/page.tsx`)
 
-- [ ] **7.5** KPI cards (zamówienia dziś, przychód, nowi klienci)
-- [ ] **7.6** Wykres sprzedaży (ostatnie 30 dni)
-- [ ] **7.7** Ostatnie zamówienia
-- [ ] **7.8** Produkty z niskim stanem
-- [ ] **7.9** Alerty (zamówienia do realizacji, braki)
+- [ ] **6.5** KPI cards (zamówienia dziś, przychód, nowi klienci)
+- [ ] **6.6** Wykres sprzedaży (ostatnie 30 dni)
+- [ ] **6.7** Ostatnie zamówienia
+- [ ] **6.8** Produkty z niskim stanem
+- [ ] **6.9** Alerty (zamówienia do realizacji, braki)
 
 #### Produkty (`apps/admin/src/app/products/`)
 
-- [ ] **7.10** Lista produktów (tabela z filtrami, sortowaniem)
-- [ ] **7.11** Dodawanie produktu (formularz multi-step)
-- [ ] **7.12** Edycja produktu
-- [ ] **7.13** Zarządzanie wariantami
-- [ ] **7.14** Upload zdjęć (drag & drop)
-- [ ] **7.15** Import CSV/XLSX
-- [ ] **7.16** Eksport do CSV
-- [ ] **7.17** Bulk actions (aktywuj, deaktywuj, usuń)
+- [ ] **6.10** Lista produktów (tabela z filtrami, sortowaniem)
+- [ ] **6.11** Dodawanie produktu (formularz multi-step)
+- [ ] **6.12** Edycja produktu
+- [ ] **6.13** Zarządzanie wariantami
+- [ ] **6.14** Upload zdjęć (drag & drop)
+- [ ] **6.15** Import CSV/XLSX
+- [ ] **6.16** Eksport do CSV
+- [ ] **6.17** Bulk actions (aktywuj, deaktywuj, usuń)
 
 #### Kategorie (`apps/admin/src/app/categories/`)
 
-- [ ] **7.18** Drzewo kategorii
-- [ ] **7.19** Dodawanie/edycja kategorii
-- [ ] **7.20** Przypisywanie produktów
+- [ ] **6.18** Drzewo kategorii
+- [ ] **6.19** Dodawanie/edycja kategorii
+- [ ] **6.20** Przypisywanie produktów
 
 #### Zamówienia (`apps/admin/src/app/orders/`)
 
-- [ ] **7.21** Lista zamówień (tabela z filtrami)
-- [ ] **7.22** Szczegóły zamówienia
-- [ ] **7.23** Zmiana statusu
-- [ ] **7.24** Drukowanie etykiety kurierskiej
-- [ ] **7.25** Drukowanie faktury
-- [ ] **7.26** Anulowanie / zwrot
+- [ ] **6.21** Lista zamówień (tabela z filtrami)
+- [ ] **6.22** Szczegóły zamówienia
+- [ ] **6.23** Zmiana statusu
+- [ ] **6.24** Drukowanie etykiety kurierskiej
+- [ ] **6.25** Drukowanie faktury
+- [ ] **6.26** Anulowanie / zwrot
 
 #### Magazyn (WMS) (`apps/admin/src/app/warehouse/`)
 
-- [ ] **7.27** Stany magazynowe (tabela)
-- [ ] **7.28** Przyjęcie towaru (PZ) - formularz
-- [ ] **7.29** Wydanie towaru (WZ) - formularz
-- [ ] **7.30** Przesunięcia między lokalizacjami
-- [ ] **7.31** Inwentaryzacja
-- [ ] **7.32** Historia ruchów
-- [ ] **7.33** Lokalizacje (regały, półki)
-- [ ] **7.34** Alerty niskich stanów
+- [ ] **6.27** Stany magazynowe (tabela)
+- [ ] **6.28** Przyjęcie towaru (PZ) - formularz
+- [ ] **6.29** Wydanie towaru (WZ) - formularz
+- [ ] **6.30** Przesunięcia między lokalizacjami
+- [ ] **6.31** Inwentaryzacja
+- [ ] **6.32** Historia ruchów
+- [ ] **6.33** Lokalizacje (regały, półki)
+- [ ] **6.34** Alerty niskich stanów
 
 #### Użytkownicy (`apps/admin/src/app/users/`)
 
-- [ ] **7.35** Lista użytkowników
-- [ ] **7.36** Dodawanie/edycja użytkownika
-- [ ] **7.37** Role i uprawnienia (Admin, Magazynier, Obsługa)
-- [ ] **7.38** Blokowanie/odblokowywanie
+- [ ] **6.35** Lista użytkowników
+- [ ] **6.36** Dodawanie/edycja użytkownika
+- [ ] **6.37** Role i uprawnienia (Admin, Magazynier, Obsługa)
+- [ ] **6.38** Blokowanie/odblokowywanie
 
 #### Ustawienia (`apps/admin/src/app/settings/`)
 
-- [ ] **7.39** Dane firmy
-- [ ] **7.40** Metody dostawy
-- [ ] **7.41** Metody płatności
-- [ ] **7.42** Podatki (stawki VAT)
-- [ ] **7.43** Szablony email
-- [ ] **7.44** Integracje (API keys)
+- [ ] **6.39** Dane firmy
+- [ ] **6.40** Metody dostawy
+- [ ] **6.41** Metody płatności
+- [ ] **6.42** Podatki (stawki VAT)
+- [ ] **6.43** Szablony email
+- [ ] **6.44** Integracje (API keys)
 
 ---
-## Etap 8: Optymalizacja i skala (3-5 dni)
+## Etap 7: Optymalizacja i skala (3-5 dni)
 
 > 🚀 **Cel**: Wydajność przy 500-5000 zamówień/dzień
 
@@ -462,67 +416,116 @@
 
 #### Cache (Redis)
 
-- [ ] **8.1** Cache katalogu produktów (TTL 5-15 min)
-- [ ] **8.2** Cache stanów magazynowych (TTL 1 min)
-- [ ] **8.3** Cache sesji użytkowników
-- [ ] **8.4** Rate limiting (API)
-- [ ] **8.5** Distributed locks (rezerwacje)
+- [ ] **7.1** Cache katalogu produktów (TTL 5-15 min)
+- [ ] **7.2** Cache stanów magazynowych (TTL 1 min)
+- [ ] **7.3** Cache sesji użytkowników
+- [ ] **7.4** Rate limiting (API)
+- [ ] **7.5** Distributed locks (rezerwacje)
 
 #### ISR + Optymalizacja Frontend (⚠️ PRIORYTET WYSOKI - 100k produktów!)
 
 > 🎯 **Cel**: Szybkie ładowanie przy 100,000 produktów bez budowania wszystkich stron
 
-- [ ] **8.6** ISR dla stron produktów (`/products/[id]`) - revalidate co 60s
-- [ ] **8.7** Pre-build tylko TOP 100-500 bestsellerów (`generateStaticParams`)
-- [ ] **8.8** On-demand revalidation API (`/api/revalidate?path=...`)
+- [ ] **7.6** ISR dla stron produktów (`/products/[id]`) - revalidate co 60s
+- [ ] **7.7** Pre-build tylko TOP 100-500 bestsellerów (`generateStaticParams`)
+- [ ] **7.8** On-demand revalidation API (`/api/revalidate?path=...`)
   - Wywołanie przy update produktu/ceny w admin
-- [ ] **8.9** Paginacja API produktów (50 items/page, cursor-based)
-- [ ] **8.10** Indeksy w bazie danych (category, price, sku, createdAt)
-- [ ] **8.11** Lazy loading obrazów + Next.js Image optimization
-- [ ] **8.12** CDN dla obrazów produktów (Cloudflare R2 / S3 + CloudFront)
-- [ ] **8.13** Virtual scrolling dla długich list (react-window / tanstack-virtual)
+- [ ] **7.9** Paginacja API produktów (50 items/page, cursor-based)
+- [ ] **7.10** Indeksy w bazie danych (category, price, sku, createdAt)
+- [ ] **7.11** Lazy loading obrazów + Next.js Image optimization
+- [ ] **7.12** CDN dla obrazów produktów (Cloudflare R2 / S3 + CloudFront)
+- [ ] **7.13** Virtual scrolling dla długich list (react-window / tanstack-virtual)
 
 #### Kolejki (BullMQ)
 
-- [ ] **8.14** Queue: `email` - wysyłka maili
-- [ ] **8.15** Queue: `search-index` - indeksowanie produktów
-- [ ] **8.16** Queue: `import` - importy CSV/XLSX
-- [ ] **8.17** Queue: `export` - eksporty raportów
-- [ ] **8.18** Queue: `inventory-sync` - synchronizacja stanów
-- [ ] **8.19** Queue: `shipping` - generowanie etykiet
-- [ ] **8.20** Dashboard kolejek (Bull Board)
+- [ ] **7.14** Queue: `email` - wysyłka maili
+- [ ] **7.15** Queue: `search-index` - indeksowanie produktów
+- [ ] **7.16** Queue: `import` - importy CSV/XLSX
+- [ ] **7.17** Queue: `export` - eksporty raportów
+- [ ] **7.18** Queue: `inventory-sync` - synchronizacja stanów
+- [ ] **7.19** Queue: `shipping` - generowanie etykiet
+- [ ] **7.20** Dashboard kolejek (Bull Board)
 
 #### Rezerwacje stanów (krytyczne!)
 
-- [ ] **8.21** Optimistic locking na `Inventory`
-- [ ] **8.22** Timeout rezerwacji (np. 15 min)
-- [ ] **8.23** Job do czyszczenia wygasłych rezerwacji
-- [ ] **8.24** Transakcje DB przy tworzeniu zamówień
+- [ ] **7.21** Optimistic locking na `Inventory`
+- [ ] **7.22** Timeout rezerwacji (np. 15 min)
+- [ ] **7.23** Job do czyszczenia wygasłych rezerwacji
+- [ ] **7.24** Transakcje DB przy tworzeniu zamówień
 
 #### Monitoring
 
-- [ ] **8.25** Sentry - error tracking (frontend + backend)
-- [ ] **8.26** Prometheus - metryki
-- [ ] **8.27** Grafana - dashboardy
-- [ ] **8.28** Alerty (błędy, wydajność, stany)
-- [ ] **8.29** Health check endpoints
+- [ ] **7.25** Sentry - error tracking (frontend + backend)
+- [ ] **7.26** Prometheus - metryki
+- [ ] **7.27** Grafana - dashboardy
+- [ ] **7.28** Alerty (błędy, wydajność, stany)
+- [ ] **7.29** Health check endpoints
 
 #### Testy
 
-- [ ] **8.30** Unit testy - serwisy (Jest)
-- [ ] **8.31** Integration testy - API (supertest)
-- [ ] **8.32** E2E testy - flow zakupowy (Playwright)
-- [ ] **8.33** Load testy (k6 / Artillery)
+- [ ] **7.30** Unit testy - serwisy (Jest)
+- [ ] **7.31** Integration testy - API (supertest)
+- [ ] **7.32** E2E testy - flow zakupowy (Playwright)
+- [ ] **7.33** Load testy (k6 / Artillery)
 
 #### CI/CD
 
-- [ ] **8.34** GitHub Actions workflow:
+- [ ] **7.34** GitHub Actions workflow:
   - Lint + TypeScript check
   - Unit testy
   - Build
   - Deploy (staging → production)
-- [ ] **8.35** Automatyczne migracje DB
-- [ ] **8.36** Rollback strategy
+- [ ] **7.35** Automatyczne migracje DB
+- [ ] **7.36** Rollback strategy
+
+---
+## Etap 8: Integracje zewnętrzne (PRE-PROD) (3-5 dni)
+
+> 🔗 **Cel**: Płatności, wysyłki, powiadomienia - wykonać PRZED wdrożeniem produkcyjnym
+> 
+> ⚠️ **UWAGA**: Na środowisku developerskim używamy mocków. Ten etap realizujemy dopiero przed produkcją!
+
+### TODO
+
+#### Płatności
+
+- [ ] **8.1** Integracja Stripe / PayU / Przelewy24
+- [ ] **8.2** Endpoint webhook dla statusów płatności
+- [ ] **8.3** Obsługa statusów: `pending`, `paid`, `failed`, `refunded`
+- [ ] **8.4** Aktualizacja zamówienia po płatności
+
+#### Kurierzy
+
+- [ ] **8.5** Integracja InPost API (Paczkomaty + Kurier)
+- [ ] **8.6** Integracja DPD / DHL (opcjonalnie)
+- [ ] **8.7** Generowanie etykiet (label PDF)
+- [ ] **8.8** Pobieranie statusu tracking
+- [ ] **8.9** Webhook dla aktualizacji statusu
+
+#### Meilisearch
+
+- [ ] **8.10** Konfiguracja indeksu produktów
+- [ ] **8.11** Ustawienie facetów (kategoria, cena, atrybuty)
+- [ ] **8.12** BullMQ job do synchronizacji produktów
+- [ ] **8.13** Synonimy i stop words (PL)
+
+#### Email
+
+- [ ] **8.14** Konfiguracja Nodemailer / Resend
+- [ ] **8.15** Szablony email (HTML):
+  - Potwierdzenie rejestracji
+  - Reset hasła
+  - Potwierdzenie zamówienia
+  - Zmiana statusu zamówienia
+  - Faktura (załącznik PDF)
+- [ ] **8.16** BullMQ job do wysyłki emaili
+
+#### Storage (pliki)
+
+- [ ] **8.17** Konfiguracja S3 / Cloudflare R2
+- [ ] **8.18** Upload zdjęć produktów
+- [ ] **8.19** Generowanie thumbnails (sharp)
+- [ ] **8.20** CDN dla zdjęć
 
 ---
 
@@ -547,7 +550,7 @@
 - [ ] **PROD-1** Wygenerować silne JWT sekrety (64+ znaków każdy)
 - [ ] **PROD-2** Skonfigurować Redis z hasłem (AUTH)
 - [ ] **PROD-3** Włączyć HTTPS (SSL/TLS) - bez tego tokeny mogą być przechwycone!
-- [ ] **PROD-4** Ustawić `NODE_ENV=production` - wyłącza dev fallbacki
+- [ ] **PROD-4** Ustawić `NODE_ENV=production` - wyłącza dev fallbacki (WAŻNE: automatycznie zmniejszy rate limit logowania z 100 do 5 prób/15min)
 - [ ] **PROD-5** Skonfigurować CORS tylko dla produkcyjnego frontendu
 - [ ] **PROD-6** Usunąć tokeny weryfikacji/resetu z odpowiedzi API (wysyłać tylko emailem)
 
@@ -663,3 +666,16 @@ EMAIL_FROM="noreply@wbtrade.pl"
 - [ ] Google Analytics 4
 - [ ] Facebook Pixel
 - [ ] Własne dashboardy (konwersje, koszyki porzucone)
+
+---
+
+## 📝 Notatki techniczne (TODO na produkcję)
+
+### Checkout - Paczkomaty InPost
+> ⚠️ **Prowizoryczne rozwiązanie**: Obecnie wybór paczkomatów jest zaimplementowany w uproszczony sposób (statyczna lista lub ręczne wpisywanie kodu). 
+> 
+> **Na produkcję wymagane:**
+> - [ ] Integracja z InPost Geowidget API (mapa z paczkomatami)
+> - [ ] Wyszukiwanie paczkomatów po lokalizacji użytkownika
+> - [ ] Walidacja kodu paczkomatu przez API InPost
+> - [ ] Dokumentacja: https://dokumentacja-inpost.atlassian.net/wiki/spaces/PL/pages/18579457/Geowidget+v5

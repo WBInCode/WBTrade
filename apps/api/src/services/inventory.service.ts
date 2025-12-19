@@ -482,6 +482,168 @@ export class InventoryService {
       },
     });
   }
+
+  /**
+   * Get all inventory with filters
+   */
+  async getAllInventory(options: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    locationId?: string;
+    filter?: 'all' | 'low' | 'out';
+  }) {
+    const { page = 1, limit = 50, search, locationId, filter = 'all' } = options;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+
+    if (locationId) {
+      where.locationId = locationId;
+    }
+
+    if (filter === 'low') {
+      where.AND = [
+        { quantity: { gt: 0 } },
+        {
+          OR: [
+            { minimum: { gt: 0 }, quantity: { lte: prisma.inventory.fields.minimum } },
+            { quantity: { lte: 5 } }
+          ]
+        }
+      ];
+    } else if (filter === 'out') {
+      where.quantity = { lte: 0 };
+    }
+
+    // Count total
+    const [inventory, total] = await Promise.all([
+      prisma.inventory.findMany({
+        where,
+        include: {
+          variant: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  images: true,
+                }
+              }
+            }
+          },
+          location: true
+        },
+        orderBy: [
+          { quantity: 'asc' },
+          { location: { name: 'asc' } }
+        ],
+        skip,
+        take: limit
+      }),
+      prisma.inventory.count({ where })
+    ]);
+
+    // If search term, filter client-side for variant SKU or product name
+    let filteredInventory = inventory;
+    if (search) {
+      const searchLower = search.toLowerCase();
+      filteredInventory = inventory.filter(inv => 
+        inv.variant.sku.toLowerCase().includes(searchLower) ||
+        inv.variant.product.name.toLowerCase().includes(searchLower) ||
+        inv.variant.name?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return {
+      data: filteredInventory.map(inv => ({
+        id: inv.id,
+        variantId: inv.variantId,
+        locationId: inv.locationId,
+        quantity: inv.quantity,
+        reserved: inv.reserved,
+        minimum: inv.minimum,
+        available: inv.quantity - inv.reserved,
+        variant: {
+          id: inv.variant.id,
+          sku: inv.variant.sku,
+          name: inv.variant.name,
+          price: inv.variant.price
+        },
+        product: {
+          id: inv.variant.product.id,
+          name: inv.variant.product.name,
+          image: inv.variant.product.images?.[0] || null
+        },
+        location: {
+          id: inv.location.id,
+          name: inv.location.name,
+          code: inv.location.code,
+          type: inv.location.type
+        }
+      })),
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    };
+  }
+
+  /**
+   * Get all variants for selection (for PZ/WZ forms)
+   */
+  async getVariantsForInventory(search?: string) {
+    const where: any = {};
+    
+    if (search) {
+      where.OR = [
+        { sku: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { product: { name: { contains: search, mode: 'insensitive' } } }
+      ];
+    }
+
+    const variants = await prisma.productVariant.findMany({
+      where,
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            images: true
+          }
+        },
+        inventory: {
+          include: { location: true }
+        }
+      },
+      take: 50,
+      orderBy: { sku: 'asc' }
+    });
+
+    return variants.map(v => ({
+      id: v.id,
+      sku: v.sku,
+      name: v.name,
+      price: v.price,
+      product: {
+        id: v.product.id,
+        name: v.product.name,
+        image: v.product.images?.[0]
+      },
+      totalStock: v.inventory.reduce((sum, inv) => sum + inv.quantity - inv.reserved, 0),
+      locations: v.inventory.map(inv => ({
+        locationId: inv.locationId,
+        locationName: inv.location.name,
+        locationCode: inv.location.code,
+        quantity: inv.quantity,
+        reserved: inv.reserved,
+        available: inv.quantity - inv.reserved
+      }))
+    }));
+  }
 }
 
 // Export singleton instance
