@@ -16,6 +16,7 @@ import {
 } from '../types/payment.types';
 import { IPaymentProvider } from '../providers/payment/payment-provider.interface';
 import { Przelewy24Provider } from '../providers/payment/przelewy24.provider';
+import { PayUProvider } from '../providers/payment/payu.provider';
 import { prisma } from '../db';
 
 // Provider configurations from environment
@@ -53,7 +54,7 @@ const providerConfigs: Record<PaymentProviderId, Partial<PaymentProviderConfig>>
 };
 
 // Default provider to use
-const DEFAULT_PROVIDER: PaymentProviderId = 'przelewy24';
+const DEFAULT_PROVIDER: PaymentProviderId = 'payu';
 
 export class PaymentService {
   private providers: Map<PaymentProviderId, IPaymentProvider> = new Map();
@@ -66,17 +67,20 @@ export class PaymentService {
    * Initialize available payment providers
    */
   private initializeProviders() {
-    // Initialize Przelewy24 provider
-    const p24Config = providerConfigs.przelewy24;
-    if (p24Config.merchantId || process.env.NODE_ENV !== 'production') {
-      this.providers.set('przelewy24', new Przelewy24Provider(p24Config));
+    // Initialize Przelewy24 provider - DISABLED FOR TESTING
+    // const p24Config = providerConfigs.przelewy24;
+    // if (p24Config.merchantId || process.env.NODE_ENV !== 'production') {
+    //   this.providers.set('przelewy24', new Przelewy24Provider(p24Config));
+    // }
+
+    // Initialize PayU provider (PRIMARY for testing)
+    const payuConfig = providerConfigs.payu;
+    if (payuConfig.merchantId || process.env.PAYU_POS_ID) {
+      this.providers.set('payu', new PayUProvider(payuConfig));
+      console.log('PayU provider initialized (sandbox:', payuConfig.sandbox, ')');
     }
 
-    // TODO: Initialize other providers
-    // Example:
-    // if (providerConfigs.stripe.apiKey) {
-    //   this.providers.set('stripe', new StripeProvider(providerConfigs.stripe));
-    // }
+    // TODO: Initialize other providers (Stripe, TPay)
   }
 
   /**
@@ -125,7 +129,7 @@ export class PaymentService {
       id: 'cod',
       type: 'cod',
       name: 'Płatność przy odbiorze',
-      providerId: 'przelewy24', // Not actually used
+      providerId: 'payu', // Not actually used
       fee: 5.00,
       feeType: 'fixed',
       description: 'Zapłać kurierowi przy odbiorze',
