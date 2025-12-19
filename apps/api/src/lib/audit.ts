@@ -232,7 +232,7 @@ export async function logSuspiciousActivity(
  */
 export async function getUserAuditLogs(
   userId: string,
-  limit: number = 50
+  limit = 50
 ): Promise<Array<{
   action: string;
   ipAddress: string | null;

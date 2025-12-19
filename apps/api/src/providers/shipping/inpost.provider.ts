@@ -5,6 +5,7 @@
  * API Documentation: https://dokumentacja-inpost.atlassian.net/wiki/spaces/PL/overview
  */
 
+import crypto from 'crypto';
 import { IShippingProvider } from './shipping-provider.interface';
 import {
   ShippingProviderConfig,
@@ -242,7 +243,7 @@ export class InPostProvider implements IShippingProvider {
   async getPickupPoints(
     postalCode: string,
     city?: string,
-    limit: number = 10
+    limit = 10
   ): Promise<PickupPoint[]> {
     if (this.config.sandbox) {
       return this.getMockPickupPoints(postalCode);
@@ -328,7 +329,6 @@ export class InPostProvider implements IShippingProvider {
       return false;
     }
 
-    const crypto = require('crypto');
     const expectedSignature = crypto
       .createHmac('sha256', this.config.webhookSecret)
       .update(payload)
