@@ -243,7 +243,7 @@ export class InPostProvider implements IShippingProvider {
   async getPickupPoints(
     postalCode: string,
     city?: string,
-    limit: number = 10
+    limit = 10
   ): Promise<PickupPoint[]> {
     if (this.config.sandbox) {
       return this.getMockPickupPoints(postalCode);
