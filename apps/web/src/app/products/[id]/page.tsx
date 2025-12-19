@@ -1,12 +1,12 @@
 'use client';
 
-import { notFound } from 'next/navigation';
+import { notFound, useRouter } from 'next/navigation';
 import { useState, use, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import Breadcrumb from '../../../components/Breadcrumb';
-import { productsApi, Product } from '../../../lib/api';
+import { productsApi, reviewsApi, Product, Review, ReviewStats, CanReviewResult } from '../../../lib/api';
 import ProductCard from '../../../components/ProductCard';
 import { useCart } from '../../../contexts/CartContext';
 
@@ -27,7 +27,6 @@ const mockProduct: Product = {
   rating: '4.8',
   reviewCount: 1240,
   storeName: 'OfficeWorld Official',
-  hasSmart: true,
   deliveryInfo: 'Dostawa jutro',
   images: [
     { id: '1', url: 'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=800', alt: 'Ergonomic chair front view', order: 0 },
@@ -68,26 +67,7 @@ const mockProduct: Product = {
   ],
 };
 
-const mockReviews = [
-  {
-    id: '1',
-    author: 'Michał K.',
-    avatar: 'MK',
-    rating: 5,
-    date: '2 dni temu',
-    content: 'Absolutnie kocham ten fotel! Podparcie lędźwiowe to prawdziwa rewolucja dla moich plećw. Montaż był prosty i zajął około 20 minut. Gorąco polecam każdemu pracującemu z domu.',
-    hasImage: true,
-  },
-  {
-    id: '2',
-    author: 'Anna L.',
-    avatar: 'AL',
-    rating: 4,
-    date: '1 tydzień temu',
-    content: 'Dobry fotel za tę cenę. Siatka jest oddychająca, co jest świetne latem. Szkoda tylko, że podłokietniki nie idą trochę wyżej.',
-    hasImage: false,
-  },
-];
+
 
 
 
@@ -99,10 +79,27 @@ export default function ProductPage({ params }: ProductPageProps) {
   const [loading, setLoading] = useState(true);
   const [useMock, setUseMock] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [buyingNow, setBuyingNow] = useState(false);
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState(1);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const { addToCart } = useCart();
+  const router = useRouter();
+
+  // Reviews state
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null);
+  const [canReviewInfo, setCanReviewInfo] = useState<CanReviewResult | null>(null);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsPage, setReviewsPage] = useState(1);
+  const [reviewsTotalPages, setReviewsTotalPages] = useState(1);
+  const [reviewsSortBy, setReviewsSortBy] = useState<'newest' | 'oldest' | 'highest' | 'lowest' | 'helpful'>('newest');
+  
+  // Review form state
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewFormData, setReviewFormData] = useState({ rating: 5, title: '', content: '' });
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewError, setReviewError] = useState('');
 
   const variantAttributes = useMemo(() => {
     const variants = product?.variants || [];
@@ -200,6 +197,19 @@ export default function ProductPage({ params }: ProductPageProps) {
     }
   };
 
+  const handleBuyNow = async () => {
+    if (!selectedVariant) return;
+    
+    setBuyingNow(true);
+    try {
+      await addToCart(selectedVariant.id, quantity);
+      router.push('/checkout');
+    } catch (err) {
+      console.error('Failed to buy now:', err);
+      setBuyingNow(false);
+    }
+  };
+
   useEffect(() => {
     async function fetchProduct() {
       try {
@@ -267,6 +277,84 @@ export default function ProductPage({ params }: ProductPageProps) {
       fetchRelatedProducts();
     }
   }, [product, id]);
+
+  // Fetch reviews, stats, and can-review status
+  useEffect(() => {
+    async function fetchReviews() {
+      if (!product?.id) return;
+      setReviewsLoading(true);
+      try {
+        const [reviewsResponse, statsResponse, canReviewResponse] = await Promise.all([
+          reviewsApi.getProductReviews(product.id, { page: reviewsPage, limit: 5, sort: reviewsSortBy }),
+          reviewsApi.getProductStats(product.id),
+          reviewsApi.canReview(product.id),
+        ]);
+        setReviews(reviewsResponse?.reviews || []);
+        setReviewsTotalPages(reviewsResponse?.pagination?.totalPages || 1);
+        setReviewStats(statsResponse || null);
+        setCanReviewInfo(canReviewResponse || null);
+      } catch (error) {
+        console.error('Failed to fetch reviews:', error);
+      } finally {
+        setReviewsLoading(false);
+      }
+    }
+    fetchReviews();
+  }, [product?.id, reviewsPage, reviewsSortBy]);
+
+  // Handle review submission
+  const handleSubmitReview = async () => {
+    if (!product?.id) return;
+    if (reviewFormData.content.trim().length < 10) {
+      setReviewError('Opinia musi zawierać co najmniej 10 znaków');
+      return;
+    }
+    
+    setSubmittingReview(true);
+    setReviewError('');
+    try {
+      await reviewsApi.create({
+        productId: product.id,
+        rating: reviewFormData.rating,
+        title: reviewFormData.title || undefined,
+        content: reviewFormData.content.trim(),
+      });
+      // Reset form and refresh reviews
+      setReviewFormData({ rating: 5, title: '', content: '' });
+      setShowReviewForm(false);
+      // Refetch reviews
+      const [reviewsResponse, statsResponse, canReviewResponse] = await Promise.all([
+        reviewsApi.getProductReviews(product.id, { page: 1, limit: 5, sort: reviewsSortBy }),
+        reviewsApi.getProductStats(product.id),
+        reviewsApi.canReview(product.id),
+      ]);
+      setReviews(reviewsResponse?.reviews || []);
+      setReviewsTotalPages(reviewsResponse?.pagination?.totalPages || 1);
+      setReviewsPage(1);
+      setReviewStats(statsResponse || null);
+      setCanReviewInfo(canReviewResponse || null);
+    } catch (error) {
+      console.error('Failed to submit review:', error);
+      setReviewError(error instanceof Error ? error.message : 'Nie udało się dodać opinii');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  // Mark review as helpful
+  const handleMarkHelpful = async (reviewId: string, helpful: boolean) => {
+    try {
+      await reviewsApi.markHelpful(reviewId, helpful);
+      // Update the review in local state
+      setReviews(prev => prev.map(r => 
+        r.id === reviewId 
+          ? { ...r, helpfulCount: helpful ? r.helpfulCount + 1 : r.helpfulCount, notHelpfulCount: !helpful ? r.notHelpfulCount + 1 : r.notHelpfulCount }
+          : r
+      ));
+    } catch (error) {
+      console.error('Failed to mark review:', error);
+    }
+  };
 
   // Parse specifications from product data - must be called before any conditional returns
   const specifications = useMemo(() => {
@@ -357,16 +445,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   const tabs = [
     { id: 'description', label: 'Opis produktu' },
     { id: 'parameters', label: 'Parametry' },
-    { id: 'reviews', label: `Opinie (${reviewCount})` },
-    { id: 'qa', label: 'Pytania' },
-  ];
-
-  const ratingDistribution = [
-    { stars: 5, percent: 85 },
-    { stars: 4, percent: 10 },
-    { stars: 3, percent: 5 },
-    { stars: 2, percent: 0 },
-    { stars: 1, percent: 0 },
+    { id: 'reviews', label: 'Opinie' },
   ];
 
   return (
@@ -551,8 +630,22 @@ export default function ProductPage({ params }: ProductPageProps) {
               ) : null}
 
               {/* Buy Now Button */}
-              <button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-lg mb-3 transition-colors">
-                Kup teraz
+              <button 
+                onClick={handleBuyNow}
+                disabled={buyingNow || !selectedVariant}
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-lg mb-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {buyingNow ? (
+                  <>
+                    <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Przekierowuję...
+                  </>
+                ) : (
+                  'Kup teraz'
+                )}
               </button>
 
               {/* Add to Cart Button */}
@@ -608,14 +701,13 @@ export default function ProductPage({ params }: ProductPageProps) {
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center mt-0.5">
+                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center mt-0.5">
                     <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">WBTrade Smart!</p>
-                    <p className="text-xs text-gray-500">Darmowa dostawa i zwroty</p>
+                    <p className="text-sm font-medium text-gray-900">Darmowa dostawa i zwroty</p>
                   </div>
                 </div>
               </div>
@@ -742,73 +834,27 @@ export default function ProductPage({ params }: ProductPageProps) {
             )}
 
             {activeTab === 'reviews' && (
-              <div>
-                {/* Rating Overview */}
-                <div className="flex items-start gap-8 mb-8 pb-8 border-b">
-                  {/* Average Rating */}
-                  <div className="text-center">
-                    <div className="text-5xl font-bold text-gray-900 mb-2">
-                      {product.rating || mockProduct.rating}
-                    </div>
-                    <div className="flex items-center justify-center mb-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <svg
-                          key={star}
-                          className={`w-5 h-5 ${
-                            star <= Math.floor(Number(product.rating || mockProduct.rating))
-                              ? 'text-orange-400'
-                              : 'text-gray-300'
-                          }`}
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      ))}
-                    </div>
-                    <p className="text-sm text-gray-500">{product.reviewCount || mockProduct.reviewCount} ocen</p>
+              <div className="max-w-4xl">
+                {reviewsLoading ? (
+                  <div className="text-center py-12">
+                    <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                    <p className="text-gray-500 mt-4">Ładowanie opinii...</p>
                   </div>
-
-                  {/* Rating Distribution */}
-                  <div className="flex-1 max-w-sm">
-                    {ratingDistribution.map((item) => (
-                      <div key={item.stars} className="flex items-center gap-2 mb-1">
-                        <span className="text-sm text-gray-600 w-4">{item.stars}</span>
-                        <svg className="w-4 h-4 text-orange-400" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                        <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-orange-400 rounded-full"
-                            style={{ width: `${item.percent}%` }}
-                          />
-                        </div>
-                        <span className="text-sm text-gray-500 w-10 text-right">{item.percent}%</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Individual Reviews */}
-                <div className="space-y-6">
-                  {mockReviews.map((review) => (
-                    <div key={review.id} className="pb-6 border-b last:border-0">
-                      <div className="flex items-start gap-3 mb-3">
-                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-sm font-medium text-gray-600">
-                          {review.avatar}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium text-gray-900">{review.author}</span>
-                            <span className="text-sm text-gray-500">{review.date}</span>
+                ) : (
+                  <>
+                    {/* Reviews Header with Stats */}
+                    <div className="flex flex-col md:flex-row gap-8 mb-8">
+                      {/* Stats Summary */}
+                      <div className="flex-shrink-0">
+                        <div className="text-center md:text-left">
+                          <div className="text-5xl font-bold text-gray-900 mb-1">
+                            {reviewStats?.averageRating?.toFixed(1) || '0.0'}
                           </div>
-                          <div className="flex items-center mt-1">
+                          <div className="flex items-center justify-center md:justify-start gap-1 mb-2">
                             {[1, 2, 3, 4, 5].map((star) => (
                               <svg
                                 key={star}
-                                className={`w-4 h-4 ${
-                                  star <= review.rating ? 'text-orange-400' : 'text-gray-300'
-                                }`}
+                                className={`w-5 h-5 ${star <= Math.round(reviewStats?.averageRating || 0) ? 'text-yellow-400' : 'text-gray-300'}`}
                                 fill="currentColor"
                                 viewBox="0 0 20 20"
                               >
@@ -816,38 +862,266 @@ export default function ProductPage({ params }: ProductPageProps) {
                               </svg>
                             ))}
                           </div>
+                          <p className="text-sm text-gray-500">
+                            {reviewStats?.totalReviews || 0} {(reviewStats?.totalReviews || 0) === 1 ? 'opinia' : 'opinii'}
+                          </p>
                         </div>
                       </div>
-                      <p className="text-gray-600 ml-13 pl-[52px]">{review.content}</p>
-                      {review.hasImage && (
-                        <div className="mt-3 pl-[52px]">
-                          <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden">
-                            <img
-                              src="https://images.unsplash.com/photo-1592078615290-033ee584e267?w=100"
-                              alt="Review attachment"
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
+
+                      {/* Rating Distribution */}
+                      {reviewStats && reviewStats.distribution && reviewStats.distribution.length > 0 && (
+                        <div className="flex-grow">
+                          {[5, 4, 3, 2, 1].map((rating) => {
+                            const dist = reviewStats.distribution.find(d => d.rating === rating);
+                            const count = dist?.count || 0;
+                            const percentage = reviewStats.totalReviews > 0 ? (count / reviewStats.totalReviews) * 100 : 0;
+                            return (
+                              <div key={rating} className="flex items-center gap-2 mb-1">
+                                <span className="text-sm text-gray-600 w-12">{rating} gw.</span>
+                                <div className="flex-grow bg-gray-200 rounded-full h-2">
+                                  <div
+                                    className="bg-yellow-400 h-2 rounded-full transition-all"
+                                    style={{ width: `${percentage}%` }}
+                                  />
+                                </div>
+                                <span className="text-sm text-gray-500 w-8">{count}</span>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
-                  ))}
-                </div>
 
-                {/* Show All Reviews Button */}
-                <button className="w-full mt-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors">
-                  Pokaż wszystkie opinie
-                </button>
-              </div>
-            )}
+                    {/* Add Review Button / Form */}
+                    {canReviewInfo?.canReview && !showReviewForm && (
+                      <button
+                        onClick={() => setShowReviewForm(true)}
+                        className="mb-6 bg-orange-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-orange-600 transition-colors"
+                      >
+                        Napisz opinię
+                      </button>
+                    )}
 
-            {activeTab === 'qa' && (
-              <div className="max-w-3xl">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Pytania i odpowiedzi</h2>
-                <p className="text-gray-500">Nikt jeszcze nie zadał pytania. Bądź pierwszy!</p>
-                <button className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
-                  Zadaj pytanie
-                </button>
+                    {showReviewForm && (
+                      <div className="bg-gray-50 rounded-lg p-6 mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Twoja opinia</h3>
+                        
+                        {/* Rating Selection */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Ocena</label>
+                          <div className="flex gap-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                type="button"
+                                onClick={() => setReviewFormData(prev => ({ ...prev, rating: star }))}
+                                className="focus:outline-none"
+                              >
+                                <svg
+                                  className={`w-8 h-8 ${star <= reviewFormData.rating ? 'text-yellow-400' : 'text-gray-300'} hover:text-yellow-400 transition-colors`}
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Title (optional) */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Tytuł (opcjonalnie)</label>
+                          <input
+                            type="text"
+                            value={reviewFormData.title}
+                            onChange={(e) => setReviewFormData(prev => ({ ...prev, title: e.target.value }))}
+                            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                            placeholder="Krótkie podsumowanie opinii"
+                          />
+                        </div>
+
+                        {/* Content */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Treść opinii</label>
+                          <textarea
+                            value={reviewFormData.content}
+                            onChange={(e) => setReviewFormData(prev => ({ ...prev, content: e.target.value }))}
+                            rows={4}
+                            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+                            placeholder="Podziel się swoją opinią o produkcie (min. 10 znaków)"
+                          />
+                        </div>
+
+                        {reviewError && (
+                          <p className="text-red-500 text-sm mb-4">{reviewError}</p>
+                        )}
+
+                        <div className="flex gap-3">
+                          <button
+                            onClick={handleSubmitReview}
+                            disabled={submittingReview}
+                            className="bg-orange-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-orange-600 transition-colors disabled:opacity-50"
+                          >
+                            {submittingReview ? 'Wysyłanie...' : 'Dodaj opinię'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowReviewForm(false);
+                              setReviewError('');
+                            }}
+                            className="text-gray-600 px-6 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors"
+                          >
+                            Anuluj
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Sort and Filters */}
+                    {reviews.length > 0 && (
+                      <div className="flex justify-between items-center mb-6">
+                        <div className="flex gap-2">
+                          <select
+                            value={reviewsSortBy}
+                            onChange={(e) => setReviewsSortBy(e.target.value as typeof reviewsSortBy)}
+                            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                          >
+                            <option value="newest">Najnowsze</option>
+                            <option value="oldest">Najstarsze</option>
+                            <option value="highest">Najwyższa ocena</option>
+                            <option value="lowest">Najniższa ocena</option>
+                            <option value="helpful">Najbardziej pomocne</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Reviews List */}
+                    {reviews.length > 0 ? (
+                      <div className="space-y-6">
+                        {reviews.map((review) => (
+                          <div key={review.id} className="border-b border-gray-200 pb-6 last:border-0">
+                            <div className="flex items-start justify-between mb-3">
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <div className="flex">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                      <svg
+                                        key={star}
+                                        className={`w-4 h-4 ${star <= review.rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                                        fill="currentColor"
+                                        viewBox="0 0 20 20"
+                                      >
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                      </svg>
+                                    ))}
+                                  </div>
+                                  {review.isVerifiedPurchase && (
+                                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                      </svg>
+                                      Zweryfikowany zakup
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-sm text-gray-600">
+                                  {review.user.firstName} {review.user.lastName.charAt(0)}.
+                                  <span className="text-gray-400 mx-2">•</span>
+                                  {new Date(review.createdAt).toLocaleDateString('pl-PL')}
+                                </p>
+                              </div>
+                            </div>
+
+                            {review.title && (
+                              <h4 className="font-semibold text-gray-900 mb-2">{review.title}</h4>
+                            )}
+                            <p className="text-gray-700 mb-4">{review.content}</p>
+
+                            {/* Review Images */}
+                            {review.images && review.images.length > 0 && (
+                              <div className="flex gap-2 mb-4">
+                                {review.images.map((img) => (
+                                  <img
+                                    key={img.id}
+                                    src={img.imageUrl}
+                                    alt={img.altText || 'Review image'}
+                                    className="w-20 h-20 object-cover rounded-lg"
+                                  />
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Helpful Buttons */}
+                            <div className="flex items-center gap-4 text-sm text-gray-500">
+                              <span>Czy ta opinia była pomocna?</span>
+                              <button
+                                onClick={() => handleMarkHelpful(review.id, true)}
+                                className="flex items-center gap-1 hover:text-green-600 transition-colors"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                                </svg>
+                                Tak ({review.helpfulCount})
+                              </button>
+                              <button
+                                onClick={() => handleMarkHelpful(review.id, false)}
+                                className="flex items-center gap-1 hover:text-red-600 transition-colors"
+                              >
+                                <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                                </svg>
+                                Nie ({review.notHelpfulCount})
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* Pagination */}
+                        {reviewsTotalPages > 1 && (
+                          <div className="flex justify-center gap-2 pt-6">
+                            <button
+                              onClick={() => setReviewsPage(p => Math.max(1, p - 1))}
+                              disabled={reviewsPage === 1}
+                              className="px-4 py-2 border border-gray-300 rounded-lg text-sm disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                            >
+                              Poprzednia
+                            </button>
+                            <span className="px-4 py-2 text-sm text-gray-600">
+                              Strona {reviewsPage} z {reviewsTotalPages}
+                            </span>
+                            <button
+                              onClick={() => setReviewsPage(p => Math.min(reviewsTotalPages, p + 1))}
+                              disabled={reviewsPage === reviewsTotalPages}
+                              className="px-4 py-2 border border-gray-300 rounded-lg text-sm disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                            >
+                              Następna
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      /* Empty State */
+                      <div className="text-center py-12">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                          </svg>
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Brak opinii</h3>
+                        <p className="text-gray-500 mb-6 max-w-sm mx-auto">
+                          Ten produkt nie ma jeszcze żadnych opinii. Bądź pierwszą osobą, która podzieli się swoją opinią!
+                        </p>
+                        {!canReviewInfo?.canReview && (
+                          <p className="text-sm text-gray-400">
+                            Opinie mogą dodawać tylko klienci, którzy zakupili ten produkt.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
           </div>

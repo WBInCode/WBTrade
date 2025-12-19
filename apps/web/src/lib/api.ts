@@ -67,10 +67,78 @@ function getAuthToken(): string | null {
   return null;
 }
 
+// Get refresh token from storage
+function getRefreshToken(): string | null {
+  if (typeof window !== 'undefined') {
+    const storedTokens = localStorage.getItem('auth_tokens');
+    if (storedTokens) {
+      try {
+        const parsed = JSON.parse(storedTokens);
+        return parsed.refreshToken || null;
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
+// Attempt to refresh the access token
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
+
+async function tryRefreshToken(): Promise<boolean> {
+  // Prevent multiple simultaneous refresh attempts
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise;
+  }
+
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) {
+    return false;
+  }
+
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Save new tokens with timestamp for proper expiry tracking
+        const tokensWithTimestamp = {
+          ...data.tokens,
+          issuedAt: Date.now(),
+        };
+        localStorage.setItem('auth_tokens', JSON.stringify(tokensWithTimestamp));
+        return true;
+      }
+      
+      // Refresh failed - clear tokens
+      localStorage.removeItem('auth_tokens');
+      return false;
+    } catch {
+      return false;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
 // Base fetch wrapper with error handling
 async function fetchApi<T>(
   endpoint: string,
-  config: RequestConfig = {}
+  config: RequestConfig = {},
+  retryAfterRefresh = true
 ): Promise<T> {
   const { params, ...fetchConfig } = config;
   const url = buildUrl(endpoint, params);
@@ -84,6 +152,14 @@ async function fetchApi<T>(
   
   if (token) {
     (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+  }
+  
+  // Add session ID for checkout operations (cart merging)
+  if (typeof window !== 'undefined') {
+    const sessionId = localStorage.getItem('cart_session_id');
+    if (sessionId) {
+      (headers as Record<string, string>)['X-Session-Id'] = sessionId;
+    }
   }
   
   try {
@@ -100,6 +176,19 @@ async function fetchApi<T>(
     const data = await response.json();
     
     if (!response.ok) {
+      // If 401 and we have a refresh token, try to refresh and retry
+      if (response.status === 401 && retryAfterRefresh && data.code === 'TOKEN_EXPIRED') {
+        const refreshed = await tryRefreshToken();
+        if (refreshed) {
+          // Retry the original request with new token
+          return fetchApi<T>(endpoint, config, false);
+        }
+        // Refresh failed, redirect to login
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login?expired=true';
+        }
+      }
+      
       throw new ApiClientError(
         data.message || 'An error occurred',
         response.status,
@@ -174,7 +263,6 @@ export interface Product {
   rating?: string | number;
   reviewCount?: number;
   storeName?: string;
-  hasSmart?: boolean;
   deliveryInfo?: string;
 }
 
@@ -318,15 +406,39 @@ export interface OrderAddress {
   country: string;
 }
 
+export interface OrderItem {
+  id: string;
+  variantId: string;
+  productName: string;
+  variantName: string;
+  sku: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+  variant?: {
+    id: string;
+    name: string;
+    product: {
+      id: string;
+      name: string;
+      slug: string;
+      images: { url: string; alt: string | null }[];
+    };
+  };
+}
+
 export interface Order {
   id: string;
   orderNumber: string;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  items: CartItem[];
-  shippingAddress: OrderAddress;
-  billingAddress: OrderAddress;
+  status: 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
+  paymentStatus?: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+  items: OrderItem[];
+  shippingAddress?: OrderAddress;
+  billingAddress?: OrderAddress;
   shippingMethod: string;
   paymentMethod: string;
+  paczkomatCode?: string;
+  paczkomatAddress?: string;
   subtotal: number;
   discount: number;
   shipping: number;
@@ -461,9 +573,13 @@ export const authApi = {
 // USER ADDRESSES API
 // ============================================
 
+export type AddressType = 'SHIPPING' | 'BILLING';
+
 export interface Address {
   id: string;
   userId: string;
+  label?: string;
+  type: AddressType;
   firstName: string;
   lastName: string;
   street: string;
@@ -472,16 +588,34 @@ export interface Address {
   country: string;
   phone?: string;
   isDefault: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateAddressData {
+  label?: string;
+  type?: AddressType;
+  firstName: string;
+  lastName: string;
+  street: string;
+  city: string;
+  postalCode: string;
+  country?: string;
+  phone?: string;
+  isDefault?: boolean;
 }
 
 export const addressesApi = {
   getAll: () =>
     api.get<Address[]>('/addresses'),
+  
+  getByType: (type: AddressType) =>
+    api.get<Address[]>(`/addresses?type=${type}`),
     
-  create: (address: Omit<Address, 'id' | 'userId'>) =>
+  create: (address: CreateAddressData) =>
     api.post<Address>('/addresses', address),
     
-  update: (id: string, address: Partial<Address>) =>
+  update: (id: string, address: Partial<CreateAddressData>) =>
     api.put<Address>(`/addresses/${id}`, address),
     
   delete: (id: string) =>
@@ -727,6 +861,7 @@ export interface CheckoutRequest {
   billingAddressId?: string;
   shippingMethod: string;
   pickupPointCode?: string;
+  pickupPointAddress?: string;
   paymentMethod: string;
   customerNotes?: string;
   acceptTerms: boolean;
@@ -795,6 +930,179 @@ export const checkoutApi = {
   // Get order tracking info
   getTracking: (orderId: string) =>
     api.get<TrackingResponse>(`/checkout/tracking/${orderId}`),
+};
+
+// ============================================
+// DASHBOARD API
+// ============================================
+
+export interface DashboardStats {
+  unpaidOrders: number;
+  inTransitOrders: number;
+  unreadMessages: number;
+  loyaltyPoints: number;
+}
+
+export interface DashboardOrder {
+  id: string;
+  orderNumber: string;
+  name: string;
+  image: string | null;
+  itemsCount: number;
+  orderDate: string;
+  status: string;
+  paymentStatus: string;
+  trackingNumber: string | null;
+  total: number;
+  currency: string;
+}
+
+export interface DashboardOverviewResponse {
+  stats: DashboardStats;
+  recentOrders: DashboardOrder[];
+}
+
+export interface RecommendedProduct {
+  id: string;
+  name: string;
+  slug: string;
+  price: number;
+  compareAtPrice: number | null;
+  images: { url: string; alt: string | null }[];
+  category: { id: string; name: string } | null;
+  reason: 'search' | 'category' | 'popular' | 'similar';
+}
+
+export interface RecommendationsResponse {
+  recommendations: RecommendedProduct[];
+}
+
+export interface SimulatePaymentResponse {
+  success: boolean;
+  order: {
+    id: string;
+    orderNumber: string;
+    status: string;
+    paymentStatus: string;
+    total: number;
+  };
+  message: string;
+}
+
+export interface SearchHistoryItem {
+  id: string;
+  query: string;
+  categoryId: string | null;
+  resultsCount: number;
+  createdAt: string;
+  category: { id: string; name: string; slug: string } | null;
+}
+
+export const dashboardApi = {
+  // Get dashboard overview with stats and recent orders
+  getOverview: () =>
+    api.get<DashboardOverviewResponse>('/dashboard'),
+  
+  // Get personalized product recommendations
+  getRecommendations: (limit?: number) =>
+    api.get<RecommendationsResponse>('/dashboard/recommendations', limit ? { limit } : undefined),
+  
+  // Record a search query for recommendations
+  recordSearch: (query: string, categoryId?: string, resultsCount?: number) =>
+    api.post<{ recorded: boolean }>('/dashboard/search', { query, categoryId, resultsCount }),
+  
+  // Get user's search history
+  getSearchHistory: (limit?: number) =>
+    api.get<{ searchHistory: SearchHistoryItem[] }>('/dashboard/search-history', limit ? { limit } : undefined),
+  
+  // Clear user's search history
+  clearSearchHistory: () =>
+    api.delete<{ success: boolean }>('/dashboard/search-history'),
+  
+  // Simulate payment completion for an order
+  simulatePayment: (orderId: string, action: 'pay' | 'fail' = 'pay') =>
+    api.post<SimulatePaymentResponse>(`/dashboard/orders/${orderId}/simulate-payment`, { action }),
+};
+
+// Types for Reviews API
+export interface Review {
+  id: string;
+  userId: string;
+  productId: string;
+  orderId: string | null;
+  rating: number;
+  title: string | null;
+  content: string;
+  isVerifiedPurchase: boolean;
+  isApproved: boolean;
+  helpfulCount: number;
+  notHelpfulCount: number;
+  createdAt: string;
+  updatedAt: string;
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  images?: {
+    id: string;
+    imageUrl: string;
+    altText: string | null;
+  }[];
+}
+
+export interface ReviewStats {
+  averageRating: number;
+  totalReviews: number;
+  distribution: { rating: number; count: number }[];
+}
+
+export interface CanReviewResult {
+  canReview: boolean;
+  hasPurchased: boolean;
+  hasReviewed: boolean;
+  isVerifiedPurchase: boolean;
+  reason?: string;
+}
+
+export interface ReviewsListResponse {
+  reviews: Review[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export const reviewsApi = {
+  // Get reviews for a product
+  getProductReviews: (productId: string, options?: { page?: number; limit?: number; sort?: 'newest' | 'oldest' | 'highest' | 'lowest' | 'helpful' }) =>
+    api.get<ReviewsListResponse>(`/products/${productId}/reviews`, options),
+
+  // Get review statistics for a product
+  getProductStats: (productId: string) =>
+    api.get<ReviewStats>(`/products/${productId}/reviews/stats`),
+
+  // Check if user can review a product
+  canReview: (productId: string) =>
+    api.get<CanReviewResult>(`/products/${productId}/reviews/can-review`),
+
+  // Create a new review
+  create: (data: { productId: string; rating: number; title?: string; content: string }) =>
+    api.post<Review>('/reviews', data),
+
+  // Update a review
+  update: (reviewId: string, data: { rating?: number; title?: string; content?: string }) =>
+    api.put<Review>(`/reviews/${reviewId}`, data),
+
+  // Delete a review
+  delete: (reviewId: string) =>
+    api.delete<{ success: boolean; message: string }>(`/reviews/${reviewId}`),
+
+  // Mark a review as helpful or not helpful
+  markHelpful: (reviewId: string, helpful: boolean) =>
+    api.post<Review>(`/reviews/${reviewId}/helpful`, { helpful }),
 };
 
 export default api;

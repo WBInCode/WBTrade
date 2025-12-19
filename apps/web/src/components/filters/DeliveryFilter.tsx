@@ -10,7 +10,6 @@ interface DeliveryOption {
 
 export default function DeliveryFilter() {
   const [options, setOptions] = useState<DeliveryOption[]>([
-    { id: 'smart', label: 'WBTrade Smart!', checked: true },
     { id: 'free', label: 'Darmowa dostawa', checked: false },
     { id: 'tomorrow', label: 'Dostawa jutro', checked: false },
   ]);

@@ -13,6 +13,8 @@ interface CreateOrderData {
     unitPrice: number;
   }[];
   customerNotes?: string;
+  paczkomatCode?: string;
+  paczkomatAddress?: string;
 }
 
 interface GetAllOrdersParams {
@@ -104,13 +106,16 @@ export class OrdersService {
     const orderNumber = generateOrderNumber();
     
     // Calculate totals
+    // Note: Product prices are already gross (including VAT) in Poland
     const subtotal = data.items.reduce(
       (sum, item) => sum + item.unitPrice * item.quantity,
       0
     );
     const shipping = 0; // TODO: Calculate based on shipping method
-    const tax = subtotal * 0.23; // 23% VAT
-    const total = subtotal + shipping + tax;
+    // VAT is already included in product prices (Polish prices are gross)
+    // We calculate VAT for display purposes only (23% is already in the price)
+    const tax = 0; // VAT already included in prices
+    const total = subtotal + shipping;
 
     return prisma.$transaction(async (tx) => {
       // Create order
@@ -122,6 +127,8 @@ export class OrdersService {
           billingAddressId: data.billingAddressId,
           shippingMethod: data.shippingMethod,
           paymentMethod: data.paymentMethod,
+          paczkomatCode: data.paczkomatCode,
+          paczkomatAddress: data.paczkomatAddress,
           subtotal,
           shipping,
           tax,
@@ -181,7 +188,19 @@ export class OrdersService {
     return prisma.order.findUnique({
       where: { id },
       include: {
-        items: true,
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: {
+                  include: {
+                    images: { orderBy: { order: 'asc' }, take: 1 },
+                  },
+                },
+              },
+            },
+          },
+        },
         statusHistory: { orderBy: { createdAt: 'desc' } },
         shippingAddress: true,
         billingAddress: true,
@@ -203,7 +222,19 @@ export class OrdersService {
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          items: true,
+          items: {
+            include: {
+              variant: {
+                include: {
+                  product: {
+                    include: {
+                      images: { orderBy: { order: 'asc' }, take: 1 },
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
       }),
       prisma.order.count({ where: { userId } }),

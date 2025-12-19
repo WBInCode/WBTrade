@@ -1,92 +1,300 @@
+/**
+ * Dashboard Controller
+ * Handles user dashboard data including orders, stats, and recommendations
+ */
+
 import { Request, Response } from 'express';
-import { dashboardService } from '../services/dashboard.service';
+import { prisma } from '../db';
+import { OrdersService } from '../services/orders.service';
+import { RecommendationsService } from '../services/recommendations.service';
 
-export const dashboardController = {
-  /**
-   * GET /api/admin/dashboard
-   * Pobiera wszystkie dane dashboardu naraz
-   */
-  async getSummary(req: Request, res: Response) {
-    try {
-      const summary = await dashboardService.getDashboardSummary();
-      res.json(summary);
-    } catch (error) {
-      console.error('Dashboard summary error:', error);
-      res.status(500).json({ message: 'Blad pobierania danych dashboardu' });
-    }
-  },
+const ordersService = new OrdersService();
+const recommendationsService = new RecommendationsService();
 
-  /**
-   * GET /api/admin/dashboard/kpis
-   * Pobiera KPI cards
-   */
-  async getKPIs(req: Request, res: Response) {
-    try {
-      const kpis = await dashboardService.getKPIs();
-      res.json(kpis);
-    } catch (error) {
-      console.error('Dashboard KPIs error:', error);
-      res.status(500).json({ message: 'Blad pobierania KPI' });
-    }
-  },
+/**
+ * Get dashboard overview with stats and recent orders
+ */
+export async function getDashboardOverview(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = req.user?.userId;
 
-  /**
-   * GET /api/admin/dashboard/sales-chart
-   * Pobiera dane do wykresu sprzedazy
-   */
-  async getSalesChart(req: Request, res: Response) {
-    try {
-      const days = parseInt(req.query.days as string) || 30;
-      const salesChart = await dashboardService.getSalesChart(days);
-      res.json(salesChart);
-    } catch (error) {
-      console.error('Dashboard sales chart error:', error);
-      res.status(500).json({ message: 'Blad pobierania danych wykresu' });
+    if (!userId) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
     }
-  },
 
-  /**
-   * GET /api/admin/dashboard/recent-orders
-   * Pobiera ostatnie zamowienia
-   */
-  async getRecentOrders(req: Request, res: Response) {
-    try {
-      const limit = parseInt(req.query.limit as string) || 10;
-      const orders = await dashboardService.getRecentOrders(limit);
-      res.json(orders);
-    } catch (error) {
-      console.error('Dashboard recent orders error:', error);
-      res.status(500).json({ message: 'Blad pobierania zamowien' });
-    }
-  },
+    // Get order stats
+    const [
+      unpaidCount,
+      inTransitCount,
+      recentOrdersData,
+      loyaltyPoints, // Simulated for now
+    ] = await Promise.all([
+      // Count unpaid orders
+      prisma.order.count({
+        where: {
+          userId,
+          paymentStatus: 'PENDING',
+          status: { notIn: ['CANCELLED', 'REFUNDED'] },
+        },
+      }),
+      // Count in transit orders
+      prisma.order.count({
+        where: {
+          userId,
+          status: 'SHIPPED',
+        },
+      }),
+      // Get recent orders with items
+      prisma.order.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        include: {
+          items: {
+            include: {
+              variant: {
+                include: {
+                  product: {
+                    include: {
+                      images: { orderBy: { order: 'asc' }, take: 1 },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+      // Simulated loyalty points (could be calculated from order history)
+      Promise.resolve(350),
+    ]);
 
-  /**
-   * GET /api/admin/dashboard/low-stock
-   * Pobiera produkty z niskim stanem
-   */
-  async getLowStock(req: Request, res: Response) {
-    try {
-      const limit = parseInt(req.query.limit as string) || 10;
-      const threshold = parseInt(req.query.threshold as string) || 10;
-      const products = await dashboardService.getLowStockProducts(limit, threshold);
-      res.json(products);
-    } catch (error) {
-      console.error('Dashboard low stock error:', error);
-      res.status(500).json({ message: 'Blad pobierania produktow' });
-    }
-  },
+    // Format recent orders for frontend
+    const recentOrders = recentOrdersData.map((order) => {
+      const firstItem = order.items[0];
+      const productImage = firstItem?.variant?.product?.images?.[0]?.url;
 
-  /**
-   * GET /api/admin/dashboard/alerts
-   * Pobiera alerty
-   */
-  async getAlerts(req: Request, res: Response) {
-    try {
-      const alerts = await dashboardService.getAlerts();
-      res.json(alerts);
-    } catch (error) {
-      console.error('Dashboard alerts error:', error);
-      res.status(500).json({ message: 'Blad pobierania alertow' });
-    }
+      return {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        name: firstItem?.productName || 'Unknown Product',
+        image: productImage || null,
+        itemsCount: order.items.length,
+        orderDate: order.createdAt.toISOString(),
+        status: order.status,
+        paymentStatus: order.paymentStatus,
+        trackingNumber: order.trackingNumber,
+        total: Number(order.total),
+        currency: 'PLN',
+      };
+    });
+
+    res.json({
+      stats: {
+        unpaidOrders: unpaidCount,
+        inTransitOrders: inTransitCount,
+        unreadMessages: 5, // Placeholder - would come from messaging system
+        loyaltyPoints,
+      },
+      recentOrders,
+    });
+  } catch (error) {
+    console.error('Error getting dashboard overview:', error);
+    res.status(500).json({ message: 'Failed to get dashboard data' });
   }
-};
+}
+
+/**
+ * Get personalized recommendations for user
+ */
+export async function getRecommendations(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = req.user?.userId;
+    const limit = parseInt(req.query.limit as string) || 8;
+
+    if (!userId) {
+      // Return popular products for non-authenticated users
+      const popularProducts = await prisma.product.findMany({
+        where: { status: 'ACTIVE' },
+        include: {
+          images: { orderBy: { order: 'asc' }, take: 1 },
+          category: true,
+        },
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      });
+
+      res.json({
+        recommendations: popularProducts.map((p) => ({
+          id: p.id,
+          name: p.name,
+          slug: p.slug,
+          price: Number(p.price),
+          compareAtPrice: p.compareAtPrice ? Number(p.compareAtPrice) : null,
+          images: p.images.map((img) => ({ url: img.url, alt: img.alt })),
+          category: p.category ? { id: p.category.id, name: p.category.name } : null,
+          reason: 'popular',
+        })),
+      });
+      return;
+    }
+
+    const recommendations = await recommendationsService.getRecommendations(userId, limit);
+    res.json({ recommendations });
+  } catch (error) {
+    console.error('Error getting recommendations:', error);
+    res.status(500).json({ message: 'Failed to get recommendations' });
+  }
+}
+
+/**
+ * Record a search query for recommendations
+ */
+export async function recordSearch(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = req.user?.userId;
+    const { query, categoryId, resultsCount } = req.body;
+
+    if (!userId) {
+      res.status(200).json({ recorded: false, reason: 'not_authenticated' });
+      return;
+    }
+
+    if (!query || typeof query !== 'string') {
+      res.status(400).json({ message: 'Query is required' });
+      return;
+    }
+
+    await recommendationsService.recordSearch(userId, query, categoryId, resultsCount || 0);
+    res.status(200).json({ recorded: true });
+  } catch (error) {
+    console.error('Error recording search:', error);
+    res.status(500).json({ message: 'Failed to record search' });
+  }
+}
+
+/**
+ * Simulate payment completion for testing
+ */
+export async function simulatePayment(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = req.user?.userId;
+    const { orderId } = req.params;
+    const { action = 'pay' } = req.body; // 'pay' | 'fail'
+
+    console.log('simulatePayment called:', { userId, orderId, action, body: req.body });
+
+    if (!userId) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+
+    // Verify order belongs to user
+    const order = await prisma.order.findFirst({
+      where: {
+        id: orderId,
+        userId,
+      },
+      include: { items: true },
+    });
+
+    console.log('Order found:', order ? { id: order.id, paymentStatus: order.paymentStatus, status: order.status } : null);
+
+    if (!order) {
+      res.status(404).json({ message: 'Order not found' });
+      return;
+    }
+
+    if (order.paymentStatus !== 'PENDING') {
+      res.status(400).json({ message: 'Order payment is not pending' });
+      return;
+    }
+
+    const newPaymentStatus = action === 'pay' ? 'PAID' : 'FAILED';
+    const newOrderStatus = action === 'pay' ? 'CONFIRMED' : order.status;
+
+    // Update order with simulated payment result
+    const updatedOrder = await prisma.$transaction(async (tx) => {
+      const updated = await tx.order.update({
+        where: { id: orderId },
+        data: {
+          paymentStatus: newPaymentStatus,
+          status: newOrderStatus,
+        },
+      });
+
+      // Add status history entry
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: orderId,
+          status: newOrderStatus,
+          note: action === 'pay' 
+            ? 'Payment completed (simulated)' 
+            : 'Payment failed (simulated)',
+          createdBy: userId,
+        },
+      });
+
+      return updated;
+    });
+
+    res.json({
+      success: true,
+      order: {
+        id: updatedOrder.id,
+        orderNumber: updatedOrder.orderNumber,
+        status: updatedOrder.status,
+        paymentStatus: updatedOrder.paymentStatus,
+        total: Number(updatedOrder.total),
+      },
+      message: action === 'pay' 
+        ? 'Payment simulation successful' 
+        : 'Payment simulation failed',
+    });
+  } catch (error) {
+    console.error('Error simulating payment:', error);
+    res.status(500).json({ message: 'Failed to simulate payment' });
+  }
+}
+
+/**
+ * Get user's search history
+ */
+export async function getSearchHistory(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = req.user?.userId;
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    if (!userId) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+
+    const history = await recommendationsService.getSearchHistory(userId, limit);
+    res.json({ searchHistory: history });
+  } catch (error) {
+    console.error('Error getting search history:', error);
+    res.status(500).json({ message: 'Failed to get search history' });
+  }
+}
+
+/**
+ * Clear user's search history
+ */
+export async function clearSearchHistory(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+
+    await recommendationsService.clearSearchHistory(userId);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error clearing search history:', error);
+    res.status(500).json({ message: 'Failed to clear search history' });
+  }
+}

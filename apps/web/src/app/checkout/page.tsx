@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { checkoutApi, addressesApi } from '@/lib/api';
 import CheckoutSteps from './components/CheckoutSteps';
 import AddressForm from './components/AddressForm';
 import ShippingMethod from './components/ShippingMethod';
 import PaymentMethod from './components/PaymentMethod';
 import OrderSummary from './components/OrderSummary';
+import { useRouter as useNextRouter } from 'next/navigation';
 
 export interface AddressData {
   firstName: string;
@@ -30,6 +32,7 @@ export interface AddressData {
 export interface ShippingData {
   method: 'inpost_paczkomat' | 'inpost_kurier' | 'dpd' | 'pocztex' | 'dhl' | 'gls';
   paczkomatCode?: string;
+  paczkomatAddress?: string;
   price: number;
 }
 
@@ -70,10 +73,11 @@ const initialPayment: PaymentData = {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart, itemCount, isLoading: cartLoading } = useCart();
+  const { cart, itemCount, isLoading: cartLoading, removeFromCart, updateQuantity } = useCart();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   
   const [currentStep, setCurrentStep] = useState(1);
+  const [removingItemId, setRemovingItemId] = useState<string | null>(null);
   const [checkoutData, setCheckoutData] = useState<CheckoutData>({
     address: initialAddress,
     shipping: initialShipping,
@@ -126,6 +130,17 @@ export default function CheckoutPage() {
     window.scrollTo(0, 0);
   };
 
+  const handleRemoveItem = async (itemId: string) => {
+    setRemovingItemId(itemId);
+    try {
+      await removeFromCart(itemId);
+    } catch (err) {
+      console.error('Failed to remove item:', err);
+    } finally {
+      setRemovingItemId(null);
+    }
+  };
+
   const handleEditStep = (step: number) => {
     setCurrentStep(step);
     window.scrollTo(0, 0);
@@ -158,26 +173,45 @@ export default function CheckoutPage() {
     setError('');
 
     try {
-      // TODO: API call to create order
-      const response = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...checkoutData,
-          cartId: cart?.id,
-        }),
+      // First, create or get shipping address
+      const addressData = {
+        firstName: checkoutData.address.firstName,
+        lastName: checkoutData.address.lastName,
+        street: checkoutData.address.street + (checkoutData.address.apartment ? ` ${checkoutData.address.apartment}` : ''),
+        city: checkoutData.address.city,
+        postalCode: checkoutData.address.postalCode,
+        country: 'PL',
+        phone: checkoutData.address.phone,
+        isDefault: false,
+        label: 'Zamówienie',
+        type: 'SHIPPING' as const,
+      };
+
+      // Create address
+      const shippingAddress = await addressesApi.create(addressData);
+
+      // Create checkout/order
+      const checkoutResponse = await checkoutApi.createCheckout({
+        shippingAddressId: shippingAddress.id,
+        shippingMethod: checkoutData.shipping.method,
+        pickupPointCode: checkoutData.shipping.paczkomatCode,
+        pickupPointAddress: checkoutData.shipping.paczkomatAddress,
+        paymentMethod: checkoutData.payment.method,
+        customerNotes: '',
+        acceptTerms: checkoutData.acceptTerms,
       });
 
-      if (!response.ok) {
-        throw new Error('Błąd podczas składania zamówienia');
+      // If payment URL is provided, redirect to payment gateway
+      if (checkoutResponse.paymentUrl) {
+        window.location.href = checkoutResponse.paymentUrl;
+        return;
       }
 
-      const order = await response.json();
-      
-      // Redirect to payment or confirmation
-      router.push(`/order/${order.id}/confirmation`);
+      // Otherwise redirect to order confirmation
+      router.push(`/order/${checkoutResponse.orderId}/confirmation`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Wystąpił błąd');
+      console.error('Checkout error:', err);
+      setError(err instanceof Error ? err.message : 'Wystąpił błąd podczas składania zamówienia');
     } finally {
       setIsSubmitting(false);
     }
@@ -348,8 +382,8 @@ export default function CheckoutPage() {
               
               <div className="space-y-3 mb-4">
                 {displayCart?.items?.map((item: any) => (
-                  <div key={item.id} className="flex gap-3">
-                    <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0">
+                  <div key={item.id} className="flex gap-3 group relative">
+                    <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0 relative">
                       {item.variant?.product?.images?.[0] && (
                         <img
                           src={item.variant.product.images[0].url}
@@ -359,7 +393,7 @@ export default function CheckoutPage() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
+                      <p className="text-sm font-medium truncate pr-6">
                         {item.variant?.product?.name}
                       </p>
                       <p className="text-xs text-gray-500">
@@ -369,9 +403,35 @@ export default function CheckoutPage() {
                         {(item.variant?.price * item.quantity).toFixed(2)} zł
                       </p>
                     </div>
+                    <button
+                      onClick={() => handleRemoveItem(item.id)}
+                      disabled={removingItemId === item.id}
+                      className="absolute top-0 right-0 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                      title="Usuń z koszyka"
+                    >
+                      {removingItemId === item.id ? (
+                        <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      )}
+                    </button>
                   </div>
                 ))}
               </div>
+
+              {isCartEmpty && (
+                <div className="text-center py-4">
+                  <p className="text-gray-500 text-sm mb-3">Twój koszyk jest pusty</p>
+                  <Link href="/" className="text-orange-500 hover:text-orange-600 text-sm font-medium">
+                    Kontynuuj zakupy
+                  </Link>
+                </div>
+              )}
 
               <div className="border-t pt-4 space-y-2">
                 <div className="flex justify-between text-sm">

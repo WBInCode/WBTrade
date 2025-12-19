@@ -11,6 +11,7 @@ import {
   createCheckout,
   verifyPayment,
   paymentWebhook,
+  payuWebhook,
   shippingWebhook,
   getOrderTracking,
 } from '../controllers/checkout.controller';
@@ -80,6 +81,13 @@ router.get('/tracking/:orderId', authGuard, getOrderTracking);
 // ============================================
 // WEBHOOK ENDPOINTS
 // ============================================
+
+/**
+ * POST /api/webhooks/payu
+ * Handle PayU payment webhooks
+ * PayU sends signature in OpenPayU-Signature header
+ */
+router.post('/webhooks/payu', payuWebhook);
 
 /**
  * POST /api/webhooks/payment/:provider?

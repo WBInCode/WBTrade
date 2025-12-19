@@ -102,13 +102,18 @@ export default function Header() {
             <div className="hidden lg:block relative" ref={categoryDropdownRef}>
               <button
                 onClick={() => setIsCategoryOpen(!isCategoryOpen)}
-                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
-                  isOnProductsPage && currentMainCategory
-                    ? 'text-primary-600 border-primary-300 bg-primary-50'
-                    : 'text-secondary-700 border-gray-200 hover:bg-gray-50'
+                className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg border-2 transition-all shadow-sm hover:shadow ${
+                  isCategoryOpen
+                    ? 'text-white bg-primary-500 border-primary-500'
+                    : isOnProductsPage && currentMainCategory
+                    ? 'text-primary-600 border-primary-400 bg-primary-50 hover:bg-primary-100'
+                    : 'text-secondary-800 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400'
                 }`}
               >
-                {isOnProductsPage && currentMainCategory ? currentMainCategory.name : 'Wszystkie kategorie'}
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+                {isOnProductsPage && currentMainCategory ? currentMainCategory.name : 'Wybierz kategorię'}
                 <svg className={`w-4 h-4 transition-transform ${isCategoryOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -153,20 +158,20 @@ export default function Header() {
             </div>
 
             {/* Right Icons */}
-            <div className="flex items-center gap-1 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-6">
               {/* Favorites */}
-              <Link href="/wishlist" className="flex flex-col items-center p-2 text-secondary-600 hover:text-primary-500 transition-colors relative">
+              <Link href="/wishlist" className="flex flex-col items-center p-2 text-secondary-700 hover:text-primary-500 transition-colors relative group">
                 <div className="relative">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  <svg className="w-7 h-7 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                   </svg>
                   {wishlistCount > 0 && (
-                    <span className={`absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs h-5 rounded-full flex items-center justify-center font-medium ${wishlistCount > 99 ? 'w-7 px-1' : 'w-5'}`}>
+                    <span className={`absolute -top-1 -right-1 bg-red-500 text-white text-xs h-5 rounded-full flex items-center justify-center font-bold shadow-sm ${wishlistCount > 99 ? 'w-7 px-1' : 'w-5'}`}>
                       {wishlistCount > 99 ? '99+' : wishlistCount}
                     </span>
                   )}
                 </div>
-                <span className="text-xs mt-0.5 hidden sm:block">Ulubione</span>
+                <span className="text-xs font-medium mt-1 hidden sm:block">Ulubione</span>
               </Link>
 
               {/* Account */}
@@ -175,12 +180,12 @@ export default function Header() {
                   <>
                     <button
                       onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                      className="flex flex-col items-center p-2 text-secondary-600 hover:text-primary-500 transition-colors"
+                      className="flex flex-col items-center p-2 text-secondary-700 hover:text-primary-500 transition-colors group"
                     >
-                      <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                      <div className="w-7 h-7 bg-primary-500 rounded-full flex items-center justify-center text-white text-sm font-bold group-hover:scale-110 transition-transform shadow-sm">
                         {user?.firstName?.[0]}{user?.lastName?.[0]}
                       </div>
-                      <span className="text-xs mt-0.5 hidden sm:block">{user?.firstName}</span>
+                      <span className="text-xs font-medium mt-1 hidden sm:block">{user?.firstName}</span>
                     </button>
                     {isUserMenuOpen && (
                       <div className="absolute top-full right-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-50">
@@ -212,28 +217,28 @@ export default function Header() {
                     )}
                   </>
                 ) : (
-                  <Link href="/login" className="flex flex-col items-center p-2 text-secondary-600 hover:text-primary-500 transition-colors">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  <Link href="/login" className="flex flex-col items-center p-2 text-secondary-700 hover:text-primary-500 transition-colors group">
+                    <svg className="w-7 h-7 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
-                    <span className="text-xs mt-0.5 hidden sm:block">Zaloguj</span>
+                    <span className="text-xs font-medium mt-1 hidden sm:block">Zaloguj</span>
                   </Link>
                 )}
               </div>
 
               {/* Cart */}
-              <Link href="/cart" className="flex flex-col items-center p-2 text-secondary-600 hover:text-primary-500 transition-colors relative">
+              <Link href="/cart" className="flex flex-col items-center p-2 text-secondary-700 hover:text-primary-500 transition-colors relative group">
                 <div className="relative">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  <svg className="w-7 h-7 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                   {itemCount > 0 && (
-                    <span className={`absolute -top-1.5 -right-1.5 bg-primary-500 text-white text-xs h-5 rounded-full flex items-center justify-center font-medium ${itemCount > 99 ? 'w-7 px-1' : 'w-5'}`}>
+                    <span className={`absolute -top-2 -right-2 bg-primary-500 text-white text-xs h-5 rounded-full flex items-center justify-center font-bold shadow-sm ${itemCount > 99 ? 'w-7 px-1' : 'w-5'}`}>
                       {itemCount > 99 ? '99+' : itemCount}
                     </span>
                   )}
                 </div>
-                <span className="text-xs mt-0.5 hidden sm:block">Koszyk</span>
+                <span className="text-xs font-medium mt-1 hidden sm:block">Koszyk</span>
               </Link>
             </div>
           </div>
@@ -246,13 +251,13 @@ export default function Header() {
       </div>
 
       {/* Category Navigation Bar */}
-      <div className="border-b border-gray-100 bg-white">
+      <div className="border-b border-gray-200 bg-primary-500">
         <div className="container-custom">
           <div className="flex items-center justify-between">
             <nav className="flex items-center gap-1 overflow-x-auto scrollbar-hide py-2">
               <button
                 onClick={() => setIsCategoryOpen(!isCategoryOpen)}
-                className="lg:hidden flex items-center gap-2 px-3 py-2 text-sm font-medium text-secondary-700 hover:bg-gray-50 rounded-lg whitespace-nowrap"
+                className="lg:hidden flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 rounded-lg whitespace-nowrap transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -262,10 +267,10 @@ export default function Header() {
               {/* Deals Link - Highlighted */}
               <Link
                 href="/deals"
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg whitespace-nowrap transition-colors ${
+                className={`flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-lg whitespace-nowrap transition-colors ${
                   pathname === '/deals'
-                    ? 'text-orange-600 bg-orange-50'
-                    : 'text-orange-500 hover:text-orange-600 hover:bg-orange-50'
+                    ? 'text-primary-500 bg-white'
+                    : 'text-white hover:bg-primary-600'
                 }`}
               >
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -279,10 +284,10 @@ export default function Header() {
                   <Link
                     key={category.slug}
                     href={`/products?category=${category.slug}`}
-                    className={`px-3 py-2 text-sm rounded-lg whitespace-nowrap transition-colors ${
+                    className={`px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors ${
                       isActive
-                        ? 'text-primary-600 bg-primary-50 font-medium'
-                        : 'text-secondary-600 hover:text-secondary-900 hover:bg-gray-50'
+                        ? 'text-primary-500 bg-white'
+                        : 'text-white hover:bg-primary-600'
                     }`}
                   >
                     {category.name}

@@ -112,7 +112,9 @@ export async function getPaymentMethods(req: Request, res: Response): Promise<vo
  */
 export async function createCheckout(req: Request, res: Response): Promise<void> {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.userId;
+    const sessionId = req.headers['x-session-id'] as string | undefined;
+    
     if (!userId) {
       res.status(401).json({ message: 'Authentication required' });
       return;
@@ -123,6 +125,7 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       billingAddressId,
       shippingMethod,
       pickupPointCode,
+      pickupPointAddress,
       paymentMethod,
       customerNotes,
       acceptTerms,
@@ -136,8 +139,20 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       return;
     }
 
-    // Get user's cart
-    const cart = await cartService.getOrCreateCart(userId);
+    // Get user's cart - try both userId and sessionId
+    // First try by userId, then by sessionId if user has session cart
+    let cart = await cartService.getOrCreateCart(userId);
+    
+    // If cart by userId is empty but we have sessionId, try to merge or get session cart
+    if ((!cart || !cart.items.length) && sessionId) {
+      // Try to get cart by sessionId
+      const sessionCart = await cartService.getOrCreateCart(undefined, sessionId);
+      if (sessionCart && sessionCart.items.length > 0) {
+        // Merge session cart to user cart
+        cart = await cartService.mergeCarts(userId, sessionId);
+      }
+    }
+    
     if (!cart || !cart.items.length) {
       res.status(400).json({ message: 'Cart is empty' });
       return;
@@ -187,6 +202,8 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       paymentMethod,
       items,
       customerNotes,
+      paczkomatCode: pickupPointCode,
+      paczkomatAddress: pickupPointAddress,
     });
 
     // Clear cart after order creation
@@ -206,24 +223,34 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
         redirectUrl: `/order/${order.id}/confirmation`,
       });
     } else {
-      // Create payment session
+      // Create payment session with PayU
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      
       const paymentRequest: CreatePaymentRequest = {
         orderId: order.id,
         amount: total,
         currency: 'PLN',
         paymentMethod: paymentMethod as PaymentMethodType,
+        providerId: 'payu' as PaymentProviderId, // Force PayU for testing
         customer: {
-          email: (req as any).user.email,
-          firstName: (req as any).user.firstName,
-          lastName: (req as any).user.lastName,
+          email: req.user?.email || '',
+          firstName: '',
+          lastName: '',
         },
         description: `Zamówienie ${order.orderNumber}`,
-        returnUrl: `${process.env.FRONTEND_URL}/order/${order.id}/confirmation`,
-        cancelUrl: `${process.env.FRONTEND_URL}/checkout?orderId=${order.id}&cancelled=true`,
-        notifyUrl: `${process.env.API_URL}/api/webhooks/payment`,
+        returnUrl: `${frontendUrl}/order/${order.id}/confirmation`,
+        cancelUrl: `${frontendUrl}/checkout?orderId=${order.id}&cancelled=true`,
+        notifyUrl: `${process.env.API_URL || 'http://localhost:3001'}/api/webhooks/payu`,
+        metadata: {
+          customerIp: req.ip || req.socket.remoteAddress || '127.0.0.1',
+        },
       };
 
+      console.log('Creating PayU payment request:', paymentRequest);
+
       const paymentSession = await paymentService.createPayment(paymentRequest);
+
+      console.log('PayU payment session created:', paymentSession);
 
       res.json({
         orderId: order.id,
@@ -266,7 +293,7 @@ export async function verifyPayment(req: Request, res: Response): Promise<void> 
  */
 export async function paymentWebhook(req: Request, res: Response): Promise<void> {
   try {
-    const providerId = req.params.provider as PaymentProviderId || 'przelewy24';
+    const providerId = req.params.provider as PaymentProviderId || 'payu';
     const signature = req.headers['x-signature'] as string || '';
     const payload = JSON.stringify(req.body);
 
@@ -275,6 +302,32 @@ export async function paymentWebhook(req: Request, res: Response): Promise<void>
     res.json({ status: 'ok' });
   } catch (error) {
     console.error('Error processing payment webhook:', error);
+    res.status(400).json({ message: 'Webhook processing failed' });
+  }
+}
+
+/**
+ * Handle PayU payment webhook
+ * PayU sends signature in OpenPayU-Signature header
+ */
+export async function payuWebhook(req: Request, res: Response): Promise<void> {
+  try {
+    // PayU signature format: signature=<md5>;algorithm=MD5;sender=checkout
+    const signature = req.headers['openpayu-signature'] as string || '';
+    const payload = JSON.stringify(req.body);
+
+    console.log('PayU webhook received:', {
+      signature,
+      body: req.body,
+    });
+
+    const result = await paymentService.processWebhook('payu', payload, signature);
+
+    console.log('PayU webhook processed:', result);
+
+    res.json({ status: 'ok' });
+  } catch (error) {
+    console.error('Error processing PayU webhook:', error);
     res.status(400).json({ message: 'Webhook processing failed' });
   }
 }

@@ -44,6 +44,8 @@ model User {
   cart          Cart?
   auditLogs     SecurityAuditLog[]
   wishlistItems WishlistItem[]
+  searchHistory SearchHistory[]
+  reviews       Review[]
   
   @@map("users")
 }
@@ -54,17 +56,24 @@ enum UserRole {
   WAREHOUSE
 }
 
+enum AddressType {
+  SHIPPING
+  BILLING
+}
+
 model Address {
-  id         String  @id @default(cuid())
-  userId     String  @map("user_id")
-  firstName  String  @map("first_name")
-  lastName   String  @map("last_name")
+  id         String      @id @default(cuid())
+  userId     String      @map("user_id")
+  label      String?     // e.g., "Dom", "Praca", "Firma"
+  type       AddressType @default(SHIPPING)
+  firstName  String      @map("first_name")
+  lastName   String      @map("last_name")
   street     String
   city       String
-  postalCode String  @map("postal_code")
-  country    String  @default("PL")
+  postalCode String      @map("postal_code")
+  country    String      @default("PL")
   phone      String?
-  isDefault  Boolean @default(false) @map("is_default")
+  isDefault  Boolean     @default(false) @map("is_default")
   
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -77,6 +86,7 @@ model Address {
   billingOrders  Order[] @relation("BillingAddress")
   
   @@index([userId])
+  @@index([userId, type])
   @@map("addresses")
 }
 
@@ -102,6 +112,9 @@ model Category {
   
   // Products relation
   products Product[]
+  
+  // Search history relation
+  searchHistory SearchHistory[]
   
   @@index([slug])
   @@index([parentId])
@@ -140,6 +153,7 @@ model Product {
   images        ProductImage[]
   variants      ProductVariant[]
   wishlistItems WishlistItem[]
+  reviews       Review[]
   
   @@index([slug])
   @@index([sku])
@@ -152,6 +166,61 @@ enum ProductStatus {
   DRAFT
   ACTIVE
   ARCHIVED
+}
+
+// ============================================
+// REVIEWS
+// ============================================
+
+model Review {
+  id        String @id @default(cuid())
+  userId    String @map("user_id")
+  productId String @map("product_id")
+  orderId   String? @map("order_id") // Link to the order where product was purchased
+  
+  rating    Int    // 1-5 stars
+  title     String?
+  content   String @db.Text
+  
+  // Review status
+  isVerifiedPurchase Boolean @default(false) @map("is_verified_purchase")
+  isApproved         Boolean @default(true) @map("is_approved")
+  
+  // Helpful votes
+  helpfulCount    Int @default(0) @map("helpful_count")
+  notHelpfulCount Int @default(0) @map("not_helpful_count")
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  images  ReviewImage[]
+  
+  // User can only review a product once
+  @@unique([userId, productId])
+  @@index([productId])
+  @@index([userId])
+  @@index([rating])
+  @@index([createdAt])
+  @@map("reviews")
+}
+
+model ReviewImage {
+  id       String @id @default(cuid())
+  reviewId String @map("review_id")
+  url      String
+  alt      String?
+  order    Int    @default(0)
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  
+  @@index([reviewId])
+  @@map("review_images")
 }
 
 model ProductImage {
@@ -348,9 +417,11 @@ model Order {
   billingAddressId  String? @map("billing_address_id")
   
   // Shipping & Payment
-  shippingMethod String  @map("shipping_method")
-  paymentMethod  String  @map("payment_method")
-  paymentStatus  PaymentStatus @default(PENDING) @map("payment_status")
+  shippingMethod    String  @map("shipping_method")
+  paczkomatCode     String? @map("paczkomat_code")
+  paczkomatAddress  String? @map("paczkomat_address")
+  paymentMethod     String  @map("payment_method")
+  paymentStatus     PaymentStatus @default(PENDING) @map("payment_status")
   
   // Amounts
   subtotal Decimal @db.Decimal(10, 2)
@@ -559,4 +630,27 @@ model WishlistItem {
   @@index([userId])
   @@index([productId])
   @@map("wishlist_items")
+}
+
+// ============================================
+// SEARCH HISTORY (for personalized recommendations)
+// ============================================
+
+model SearchHistory {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  query     String
+  categoryId String?  @map("category_id")
+  resultsCount Int    @default(0) @map("results_count")
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  
+  @@index([userId])
+  @@index([query])
+  @@index([createdAt])
+  @@map("search_history")
 }
