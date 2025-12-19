@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import crypto from 'crypto';
 
 // Singleton Redis instance
 let redisClient: Redis | null = null;
@@ -281,6 +282,5 @@ export async function deleteAllUserSessions(userId: string): Promise<void> {
 
 // Helper: Hash token for storage (don't store raw tokens)
 function hashToken(token: string): string {
-  const crypto = require('crypto');
   return crypto.createHash('sha256').update(token).digest('hex');
 }
