@@ -1,7 +1,14 @@
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load environment variables from root .env first
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+// Also try local .env as fallback
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import dotenv from 'dotenv';
 import productsRoutes from './routes/products';
 import searchRoutes from './routes/search';
 import ordersRoutes from './routes/orders';
@@ -17,9 +24,6 @@ import reviewsRoutes from './routes/reviews';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
 import { initializeMeilisearch } from './lib/meilisearch';
 import { startSearchIndexWorker } from './workers/search-index.worker';
-
-// Load environment variables
-dotenv.config();
 
 const app = express();
 const PORT = process.env.APP_PORT || 5000;
