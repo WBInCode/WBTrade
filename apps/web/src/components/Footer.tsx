@@ -2,6 +2,21 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getLogoUrl, PAYMENT_LOGOS, SOCIAL_LOGOS } from '@/lib/logo-dev';
 
+// Helper component for conditional logo rendering
+function LogoImage({ src, alt, width, height, className }: { src: string | null; alt: string; width: number; height: number; className?: string }) {
+  if (!src) {
+    return (
+      <div 
+        className={`bg-secondary-200 rounded flex items-center justify-center text-secondary-500 text-xs ${className || ''}`}
+        style={{ width, height }}
+      >
+        {alt.charAt(0)}
+      </div>
+    );
+  }
+  return <Image src={src} alt={alt} width={width} height={height} className={className} />;
+}
+
 interface FooterProps {
   hideTrustBadges?: boolean;
 }
@@ -83,16 +98,16 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
             {/* Social Media */}
             <div className="flex items-center gap-4">
               <a href="#" className="hover:opacity-70 transition-opacity">
-                <Image src={getLogoUrl(SOCIAL_LOGOS.facebook) || ''} alt="Facebook" width={28} height={28} className="object-contain" />
+                <LogoImage src={getLogoUrl(SOCIAL_LOGOS.facebook)} alt="Facebook" width={28} height={28} className="object-contain" />
               </a>
               <a href="#" className="hover:opacity-70 transition-opacity">
-                <Image src={getLogoUrl(SOCIAL_LOGOS.instagram) || ''} alt="Instagram" width={28} height={28} className="object-contain" />
+                <LogoImage src={getLogoUrl(SOCIAL_LOGOS.instagram)} alt="Instagram" width={28} height={28} className="object-contain" />
               </a>
               <a href="#" className="hover:opacity-70 transition-opacity">
-                <Image src={getLogoUrl(SOCIAL_LOGOS.twitter) || ''} alt="X" width={28} height={28} className="object-contain" />
+                <LogoImage src={getLogoUrl(SOCIAL_LOGOS.twitter)} alt="X" width={28} height={28} className="object-contain" />
               </a>
               <a href="#" className="hover:opacity-70 transition-opacity">
-                <Image src={getLogoUrl(SOCIAL_LOGOS.linkedin) || ''} alt="LinkedIn" width={28} height={28} className="object-contain" />
+                <LogoImage src={getLogoUrl(SOCIAL_LOGOS.linkedin)} alt="LinkedIn" width={28} height={28} className="object-contain" />
               </a>
             </div>
           </div>
@@ -152,9 +167,9 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-secondary-500">Akceptowane metody płatności</p>
             <div className="flex items-center gap-4">
-              <Image src={getLogoUrl(PAYMENT_LOGOS.visa) || ''} alt="Visa" width={40} height={28} className="object-contain rounded-md" />
-              <Image src={getLogoUrl(PAYMENT_LOGOS.blik) || ''} alt="BLIK" width={40} height={28} className="object-contain rounded-md" />
-              <Image src={getLogoUrl(PAYMENT_LOGOS.przelewy24) || ''} alt="Przelewy24" width={40} height={28} className="object-contain rounded-md" />
+              <LogoImage src={getLogoUrl(PAYMENT_LOGOS.visa)} alt="Visa" width={40} height={28} className="object-contain rounded-md" />
+              <LogoImage src={getLogoUrl(PAYMENT_LOGOS.blik)} alt="BLIK" width={40} height={28} className="object-contain rounded-md" />
+              <LogoImage src={getLogoUrl(PAYMENT_LOGOS.przelewy24)} alt="Przelewy24" width={40} height={28} className="object-contain rounded-md" />
             </div>
           </div>
         </div>

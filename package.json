@@ -8,8 +8,10 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev -w wbtrade-web\" \"npm run dev -w wbtrade-api\"",
+    "dev:all": "concurrently \"npm run dev -w wbtrade-web\" \"npm run dev -w wbtrade-api\" \"npm run dev -w wbtrade-admin\"",
     "dev:web": "npm run dev -w wbtrade-web",
     "dev:api": "npm run dev -w wbtrade-api",
+    "dev:admin": "npm run dev -w wbtrade-admin",
     "build": "npm run build -w wbtrade-web && npm run build -w wbtrade-api",
     "build:web": "npm run build -w wbtrade-web",
     "build:api": "npm run build -w wbtrade-api",
