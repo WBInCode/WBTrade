@@ -363,7 +363,7 @@ export class CartService {
       0
     );
 
-    let discount = 0;
+    const discount = 0;
     // TODO: Calculate discount based on coupon
 
     const total = subtotal - discount;

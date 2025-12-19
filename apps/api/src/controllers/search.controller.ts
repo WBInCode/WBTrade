@@ -15,6 +15,7 @@ const sanitizeSearchQuery = (query: string): string => {
   return query
     .replace(/<[^>]*>/g, '') // Remove HTML tags
     .replace(/[<>]/g, '') // Remove remaining angle brackets
+    // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x1F\x7F]/g, '') // Remove control characters
     .trim()
     .slice(0, 200); // Max 200 characters

@@ -44,7 +44,7 @@ const citySchema = z
   .max(100, 'City is too long')
   .transform(sanitizeText)
   .refine(
-    (city) => /^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s\-]+$/.test(city),
+    (city) => /^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s-]+$/.test(city),
     'City contains invalid characters'
   );
 
@@ -71,7 +71,7 @@ const phoneSchema = z
   .refine(
     (phone) => {
       if (!phone) return true;
-      const cleaned = phone.replace(/[\s\-\(\)]/g, '');
+      const cleaned = phone.replace(/[\s()+-]/g, '');
       return /^(\+48)?[0-9]{9}$/.test(cleaned);
     },
     'Invalid phone number format'
