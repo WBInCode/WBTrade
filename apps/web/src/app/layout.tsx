@@ -1,10 +1,7 @@
 import '../styles/globals.css';
-import { Inter } from 'next/font/google';
 import { CartProvider } from '../contexts/CartContext';
 import { AuthProvider } from '../contexts/AuthContext';
 import { WishlistProvider } from '../contexts/WishlistContext';
-
-const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
   title: 'WBTrade - Shop Everything',
@@ -18,7 +15,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pl">
-      <body className={inter.className}>
+      <body className="font-sans">
         <AuthProvider>
           <CartProvider>
             <WishlistProvider>

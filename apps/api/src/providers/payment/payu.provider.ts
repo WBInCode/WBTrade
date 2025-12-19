@@ -245,9 +245,12 @@ export class PayUProvider implements IPaymentProvider {
     
     const extOrderId = `${request.orderId}_${Date.now()}`;
     
+    // Get first URL from FRONTEND_URL (may be comma-separated)
+    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').split(',')[0].trim();
+    
     const orderRequest = {
       notifyUrl: request.notifyUrl || `${process.env.APP_URL}/api/webhooks/payu`,
-      continueUrl: request.returnUrl || `${process.env.FRONTEND_URL}/checkout/success`,
+      continueUrl: request.returnUrl || `${frontendUrl}/order/${request.orderId}/confirmation`,
       customerIp: request.metadata?.customerIp || '127.0.0.1',
       merchantPosId: this.payuConfig.posId,
       description: request.description || `Zamówienie ${request.orderId}`,

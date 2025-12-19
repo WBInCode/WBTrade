@@ -11,17 +11,21 @@ import {
   getLowStock,
   getMovementHistory,
   setMinimumStock,
+  getAllInventory,
+  getVariantsForInventory,
 } from '../controllers/inventory.controller';
 import { authGuard, warehouseAccess, optionalAuth } from '../middleware/auth.middleware';
 
 const router = Router();
 
+// Protected routes - must come before parameterized routes
+router.get('/all', authGuard, warehouseAccess, getAllInventory);
+router.get('/variants', authGuard, warehouseAccess, getVariantsForInventory);
+router.get('/alerts/low-stock', authGuard, warehouseAccess, getLowStock);
+
 // Public routes (check stock availability)
 router.get('/:variantId', optionalAuth, getStock);
 router.get('/:variantId/available', getAvailableStock);
-
-// Protected routes (warehouse operations)
-router.get('/alerts/low-stock', authGuard, warehouseAccess, getLowStock);
 router.get('/:variantId/movements', authGuard, warehouseAccess, getMovementHistory);
 
 // Stock operations (require warehouse access)
