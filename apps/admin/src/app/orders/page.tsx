@@ -8,6 +8,18 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+// Get auth token from localStorage
+function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  const tokens = localStorage.getItem('admin_auth_tokens');
+  if (!tokens) return null;
+  try {
+    return JSON.parse(tokens).accessToken;
+  } catch {
+    return null;
+  }
+}
+
 interface Order {
   id: string;
   orderNumber: string;
@@ -92,6 +104,7 @@ export default function OrdersPage() {
   const loadOrders = useCallback(async () => {
     try {
       setLoading(true);
+      const token = getAuthToken();
       const params = new URLSearchParams({
         page: page.toString(),
         limit: '20',
@@ -101,7 +114,12 @@ export default function OrdersPage() {
         ...(dateTo && { dateTo }),
       });
       
-      const response = await fetch(`http://localhost:5000/api/orders?${params}`);
+      const response = await fetch(`http://localhost:5000/api/orders/admin/all?${params}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
       const data = await response.json();
       
       setOrders(data.orders || []);
@@ -158,8 +176,13 @@ export default function OrdersPage() {
     if (!confirm('Czy na pewno chcesz anulować to zamówienie?')) return;
     
     try {
+      const token = getAuthToken();
       await fetch(`http://localhost:5000/api/orders/${orderId}`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
       });
       loadOrders();
     } catch (error) {

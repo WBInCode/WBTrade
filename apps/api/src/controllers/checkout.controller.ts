@@ -224,7 +224,8 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       });
     } else {
       // Create payment session with PayU
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      // Get first URL from FRONTEND_URL (may be comma-separated)
+      const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').split(',')[0].trim();
       
       const paymentRequest: CreatePaymentRequest = {
         orderId: order.id,
