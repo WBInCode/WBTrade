@@ -188,6 +188,7 @@ export default function AddressForm({ initialData, onSubmit }: AddressFormProps)
 
   const handleSelectSavedAddress = (address: SavedAddress) => {
     setSelectedSavedAddress(address.id);
+    setSaveAddress(false); // Reset save checkbox when selecting existing address
     const country = countries.find(c => c.code === address.country) || countries[0];
     setSelectedCountry(country);
     const phone = address.phone || '';
@@ -202,6 +203,22 @@ export default function AddressForm({ initialData, onSubmit }: AddressFormProps)
       postalCode: address.postalCode,
       phone: phone,
     }));
+  };
+
+  const handleEnterNewAddress = () => {
+    setSelectedSavedAddress(null);
+    // Reset form to initial empty state
+    setFormData({
+      ...initialData,
+      firstName: '',
+      lastName: '',
+      street: '',
+      apartment: '',
+      city: '',
+      postalCode: '',
+      phone: '',
+    });
+    setPhoneNumber('');
   };
 
   // Walidacja pojedynczego pola
@@ -343,8 +360,8 @@ export default function AddressForm({ initialData, onSubmit }: AddressFormProps)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      // Save address if checkbox is checked
-      if (saveAddress && isLoggedIn) {
+      // Save address if checkbox is checked and not using an existing saved address
+      if (saveAddress && isLoggedIn && !selectedSavedAddress) {
         const storedTokens = localStorage.getItem('auth_tokens');
         if (storedTokens) {
           try {
@@ -356,14 +373,16 @@ export default function AddressForm({ initialData, onSubmit }: AddressFormProps)
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                firstName: formData.firstName,
-                lastName: formData.lastName,
-                street: formData.street,
-                city: formData.city,
-                postalCode: formData.postalCode,
+                firstName: formData.firstName.trim(),
+                lastName: formData.lastName.trim(),
+                street: formData.street.trim(),
+                city: formData.city.trim(),
+                postalCode: formData.postalCode.trim(),
                 country: selectedCountry.code,
-                phone: formData.phone,
+                phone: formData.phone?.trim(),
                 isDefault: savedAddresses.length === 0,
+                label: 'Adres dostawy',
+                type: 'SHIPPING',
               }),
             });
           } catch (error) {
@@ -446,7 +465,13 @@ export default function AddressForm({ initialData, onSubmit }: AddressFormProps)
                 <div className="w-full border-t border-gray-200"></div>
               </div>
               <div className="relative flex justify-center">
-                <span className="px-3 bg-white text-xs text-gray-500">lub wprowadź nowy adres</span>
+                <button
+                  type="button"
+                  onClick={handleEnterNewAddress}
+                  className="px-3 bg-white text-xs text-orange-500 hover:text-orange-600 cursor-pointer"
+                >
+                  lub wprowadź nowy adres
+                </button>
               </div>
             </div>
           </div>
@@ -647,7 +672,7 @@ export default function AddressForm({ initialData, onSubmit }: AddressFormProps)
 
         {/* Options */}
         <div className="px-6 py-4 border-b space-y-3">
-          {isLoggedIn && (
+          {isLoggedIn && !selectedSavedAddress && (
             <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"

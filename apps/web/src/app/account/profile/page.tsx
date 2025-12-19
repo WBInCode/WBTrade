@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Header from '../../../components/Header';
+import Footer from '../../../components/Footer';
 import { useAuth } from '../../../contexts/AuthContext';
 
 // Sidebar navigation items
@@ -137,7 +138,6 @@ export default function ProfilePage() {
   const userData = {
     name: user?.firstName || 'Użytkownik',
     fullName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim(),
-    memberType: 'CZŁONEK SMART!',
     avatar: `${user?.firstName?.[0] || 'U'}${user?.lastName?.[0] || ''}`,
     emailVerified: user?.emailVerified,
   };
@@ -249,12 +249,6 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">{userData.fullName}</h3>
-                    <span className="inline-flex items-center gap-1 text-xs text-orange-500 font-medium">
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                      {userData.memberType}
-                    </span>
                   </div>
                 </div>
               </div>
@@ -705,19 +699,7 @@ export default function ProfilePage() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-200 mt-12 bg-white">
-        <div className="container-custom py-6">
-          <div className="flex items-center justify-between text-sm text-gray-500">
-            <span>© 2023 WBTrade. Wszelkie prawa zastrzeżone.</span>
-            <div className="flex items-center gap-6">
-              <Link href="/privacy" className="hover:text-gray-700">Polityka prywatności</Link>
-              <Link href="/terms" className="hover:text-gray-700">Regulamin</Link>
-              <button className="hover:text-gray-700">Ustawienia cookies</button>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer hideTrustBadges />
     </div>
   );
 }

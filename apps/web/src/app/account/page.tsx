@@ -4,90 +4,10 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '../../components/Header';
+import Footer from '../../components/Footer';
 import ProductCard from '../../components/ProductCard';
-import { Product } from '../../lib/api';
+import { Product, dashboardApi, DashboardStats, DashboardOrder, RecommendedProduct } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
-
-// Stats data
-const statsData = [
-  { label: 'Nieopłacone', value: 1, icon: 'package', color: 'orange' },
-  { label: 'W drodze', value: 2, icon: 'truck', color: 'orange' },
-  { label: 'Nieprzeczytane', value: 5, icon: 'message', color: 'orange' },
-  { label: 'Punkty lojalnościowe', value: 350, icon: 'coin', color: 'yellow' },
-];
-
-// Recent orders data
-const recentOrders = [
-  {
-    id: '882910',
-    name: 'Apple Watch Series 9 GPS 41mm',
-    image: 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=100',
-    orderDate: '24 paź 2023',
-    status: 'W drodze',
-    statusColor: 'blue',
-    deliveryInfo: 'Dostawa w czwartek',
-    price: 399.00,
-    actions: ['Śledź przesyłkę', 'Szczegóły'],
-  },
-  {
-    id: '882855',
-    name: 'Sony WH-1000XM5 Słuchawki z ANC',
-    image: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=100',
-    orderDate: '20 paź 2023',
-    status: 'Dostarczono',
-    statusColor: 'green',
-    deliveryInfo: null,
-    price: 348.00,
-    actions: ['Kup ponownie', 'Faktura'],
-  },
-  {
-    id: '881302',
-    name: 'Minimalistyczny zegarek analogowy - biało-złoty',
-    image: 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=100',
-    orderDate: '15 paź 2023',
-    status: 'Oczekuje na płatność',
-    statusColor: 'orange',
-    deliveryInfo: null,
-    price: 120.00,
-    actions: ['Zapłać teraz'],
-  },
-];
-
-// Recommended products
-const recommendedProducts: Product[] = [
-  {
-    id: '101',
-    name: 'Dell XPS 13 Laptop 13.4" FHD+, Intel Core i7',
-    price: '999.00',
-    compareAtPrice: '1199.00',
-    status: 'active',
-    badge: 'super-price',
-    images: [{ id: '1', url: 'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=400', alt: 'Dell XPS Laptop', order: 0 }],
-  },
-  {
-    id: '102',
-    name: 'Modern Yellow Armchair - Scandi Style',
-    price: '159.00',
-    status: 'active',
-    images: [{ id: '1', url: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400', alt: 'Yellow Armchair', order: 0 }],
-  },
-  {
-    id: '103',
-    name: 'Polaroid Now I-Type Instant Camera',
-    price: '95.20',
-    compareAtPrice: '119.00',
-    status: 'active',
-    images: [{ id: '1', url: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400', alt: 'Polaroid Camera', order: 0 }],
-  },
-  {
-    id: '104',
-    name: 'Nike Air Zoom Pegasus 39 Men\'s Road Running Shoes',
-    price: '89.99',
-    status: 'active',
-    badge: 'super-price',
-    images: [{ id: '1', url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400', alt: 'Nike Shoes', order: 0 }],
-  },
-];
 
 // Sidebar navigation items
 const sidebarItems = [
@@ -184,15 +104,55 @@ function StatIcon({ icon }: { icon: string }) {
 
 function getStatusColor(status: string) {
   switch (status) {
-    case 'W drodze':
+    case 'SHIPPED':
       return 'bg-blue-100 text-blue-700';
-    case 'Dostarczono':
+    case 'DELIVERED':
       return 'bg-green-100 text-green-700';
-    case 'Oczekuje na płatność':
+    case 'PENDING':
       return 'bg-orange-100 text-orange-700';
+    case 'CONFIRMED':
+      return 'bg-blue-100 text-blue-700';
+    case 'PROCESSING':
+      return 'bg-purple-100 text-purple-700';
+    case 'CANCELLED':
+    case 'REFUNDED':
+      return 'bg-red-100 text-red-700';
     default:
       return 'bg-gray-100 text-gray-700';
   }
+}
+
+function getStatusLabel(status: string, paymentStatus: string) {
+  if (paymentStatus === 'PENDING') {
+    return 'Oczekuje na płatność';
+  }
+  switch (status) {
+    case 'PENDING':
+      return 'Oczekuje';
+    case 'CONFIRMED':
+      return 'Potwierdzone';
+    case 'PROCESSING':
+      return 'W realizacji';
+    case 'SHIPPED':
+      return 'W drodze';
+    case 'DELIVERED':
+      return 'Dostarczono';
+    case 'CANCELLED':
+      return 'Anulowano';
+    case 'REFUNDED':
+      return 'Zwrócono';
+    default:
+      return status;
+  }
+}
+
+function formatOrderDate(dateString: string) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('pl-PL', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
 export default function AccountPage() {
@@ -201,12 +161,80 @@ export default function AccountPage() {
   const searchParams = useSearchParams();
   const justRegistered = searchParams.get('registered') === 'true';
 
+  // Dashboard state
+  const [stats, setStats] = useState<DashboardStats>({
+    unpaidOrders: 0,
+    inTransitOrders: 0,
+    unreadMessages: 0,
+    loyaltyPoints: 0,
+  });
+  const [recentOrders, setRecentOrders] = useState<DashboardOrder[]>([]);
+  const [recommendations, setRecommendations] = useState<RecommendedProduct[]>([]);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [payingOrderId, setPayingOrderId] = useState<string | null>(null);
+
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.push('/login');
     }
   }, [isLoading, isAuthenticated, router]);
+
+  // Fetch dashboard data
+  useEffect(() => {
+    async function fetchDashboardData() {
+      if (!isAuthenticated) return;
+      
+      try {
+        setDashboardLoading(true);
+        
+        // Fetch dashboard overview and recommendations in parallel
+        const [overviewRes, recsRes] = await Promise.all([
+          dashboardApi.getOverview(),
+          dashboardApi.getRecommendations(4),
+        ]);
+        
+        setStats(overviewRes.stats);
+        setRecentOrders(overviewRes.recentOrders);
+        setRecommendations(recsRes.recommendations);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setDashboardLoading(false);
+      }
+    }
+
+    fetchDashboardData();
+  }, [isAuthenticated]);
+
+  // Handle payment simulation
+  const handleSimulatePayment = async (orderId: string) => {
+    try {
+      setPayingOrderId(orderId);
+      const response = await dashboardApi.simulatePayment(orderId, 'pay');
+      
+      if (response.success) {
+        // Update the order in the list
+        setRecentOrders((prev) =>
+          prev.map((order) =>
+            order.id === orderId
+              ? { ...order, paymentStatus: 'PAID', status: 'CONFIRMED' }
+              : order
+          )
+        );
+        // Update stats
+        setStats((prev) => ({
+          ...prev,
+          unpaidOrders: Math.max(0, prev.unpaidOrders - 1),
+        }));
+      }
+    } catch (error) {
+      console.error('Error simulating payment:', error);
+      alert('Nie udało się przetworzyć płatności. Spróbuj ponownie.');
+    } finally {
+      setPayingOrderId(null);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -223,7 +251,6 @@ export default function AccountPage() {
   const userData = {
     name: user?.firstName || 'Użytkownik',
     fullName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim(),
-    memberType: 'CZŁONEK SMART!',
     avatar: `${user?.firstName?.[0] || 'U'}${user?.lastName?.[0] || ''}`,
     email: user?.email,
     emailVerified: user?.emailVerified,
@@ -274,12 +301,6 @@ export default function AccountPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">{userData.fullName}</h3>
-                    <span className="inline-flex items-center gap-1 text-xs text-orange-500 font-medium">
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                      {userData.memberType}
-                    </span>
                   </div>
                 </div>
               </div>
@@ -302,24 +323,7 @@ export default function AccountPage() {
                 ))}
               </nav>
 
-              {/* Promo Banner */}
-              <div className="m-3 mt-4">
-                <div className="relative bg-gradient-to-r from-gray-900 to-gray-700 rounded-xl p-4 overflow-hidden">
-                  <div className="absolute top-2 right-2 bg-white/20 text-white text-[10px] px-2 py-0.5 rounded">
-                    AD
-                  </div>
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">BLACK FRIDAY</span>
-                  </div>
-                  <div className="flex gap-1 mb-2">
-                    <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full font-semibold">-50%</span>
-                    <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full font-semibold">70</span>
-                    <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full font-semibold">90%</span>
-                  </div>
-                  <h4 className="text-white font-bold text-sm mb-1">Super okazje cenowe!</h4>
-                  <p className="text-white/70 text-xs">Sprawdź najlepsze oferty dnia</p>
-                </div>
-              </div>
+
             </div>
           </aside>
 
@@ -343,15 +347,42 @@ export default function AccountPage() {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-4 gap-4 mb-8">
-              {statsData.map((stat) => (
-                <div key={stat.label} className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-500">{stat.label}</span>
-                    <StatIcon icon={stat.icon} />
-                  </div>
-                  <span className="text-3xl font-bold text-gray-900">{stat.value}</span>
+              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-500">Nieopłacone</span>
+                  <StatIcon icon="package" />
                 </div>
-              ))}
+                <span className="text-3xl font-bold text-gray-900">
+                  {dashboardLoading ? '...' : stats.unpaidOrders}
+                </span>
+              </div>
+              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-500">W drodze</span>
+                  <StatIcon icon="truck" />
+                </div>
+                <span className="text-3xl font-bold text-gray-900">
+                  {dashboardLoading ? '...' : stats.inTransitOrders}
+                </span>
+              </div>
+              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-500">Nieprzeczytane</span>
+                  <StatIcon icon="message" />
+                </div>
+                <span className="text-3xl font-bold text-gray-900">
+                  {dashboardLoading ? '...' : stats.unreadMessages}
+                </span>
+              </div>
+              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-500">Punkty lojalnościowe</span>
+                  <StatIcon icon="coin" />
+                </div>
+                <span className="text-3xl font-bold text-gray-900">
+                  {dashboardLoading ? '...' : stats.loyaltyPoints}
+                </span>
+              </div>
             </div>
 
             {/* Recent Orders */}
@@ -364,62 +395,117 @@ export default function AccountPage() {
               </div>
 
               <div className="divide-y divide-gray-100">
-                {recentOrders.map((order) => (
-                  <div key={order.id} className="p-5 flex items-center gap-4">
-                    {/* Product Image */}
-                    <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
-                      <img
-                        src={order.image}
-                        alt={order.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-
-                    {/* Order Info */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-gray-900 mb-1">{order.name}</h3>
-                      <p className="text-sm text-gray-500 mb-2">
-                        Zamówienie #{order.id} • Złożone {order.orderDate}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusColor(order.status)}`}>
-                          {order.status}
-                        </span>
-                        {order.deliveryInfo && (
-                          <span className="text-xs text-gray-500">{order.deliveryInfo}</span>
+                {dashboardLoading ? (
+                  <div className="p-8 text-center text-gray-500">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-2"></div>
+                    Ładowanie zamówień...
+                  </div>
+                ) : recentOrders.length === 0 ? (
+                  <div className="p-8 text-center text-gray-500">
+                    <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                    <p className="font-medium text-gray-600">Brak zamówień</p>
+                    <p className="text-sm">Nie masz jeszcze żadnych zamówień</p>
+                    <Link href="/products" className="inline-block mt-4 text-orange-500 hover:text-orange-600 font-medium">
+                      Zacznij zakupy →
+                    </Link>
+                  </div>
+                ) : (
+                  recentOrders.map((order) => (
+                    <div key={order.id} className="p-5 flex items-center gap-4">
+                      {/* Product Image */}
+                      <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                        {order.image ? (
+                          <img
+                            src={order.image}
+                            alt={order.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400">
+                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                            </svg>
+                          </div>
                         )}
                       </div>
-                    </div>
 
-                    {/* Price */}
-                    <div className="text-right shrink-0">
-                      <span className="font-semibold text-gray-900">${order.price.toFixed(2)}</span>
-                    </div>
+                      {/* Order Info */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-gray-900 mb-1">
+                          {order.name}
+                          {order.itemsCount > 1 && (
+                            <span className="text-gray-500 text-sm font-normal">
+                              {' '}+{order.itemsCount - 1} więcej
+                            </span>
+                          )}
+                        </h3>
+                        <p className="text-sm text-gray-500 mb-2">
+                          Zamówienie #{order.orderNumber} • Złożone {formatOrderDate(order.orderDate)}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                            order.paymentStatus === 'PENDING' 
+                              ? 'bg-orange-100 text-orange-700'
+                              : getStatusColor(order.status)
+                          }`}>
+                            {getStatusLabel(order.status, order.paymentStatus)}
+                          </span>
+                          {order.status === 'SHIPPED' && order.trackingNumber && (
+                            <span className="text-xs text-gray-500">
+                              Numer śledzenia: {order.trackingNumber}
+                            </span>
+                          )}
+                        </div>
+                      </div>
 
-                    {/* Actions */}
-                    <div className="flex flex-col gap-2 shrink-0">
-                      {order.actions.map((action) => (
-                        <button
-                          key={action}
-                          className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                            action === 'Track Package' || action === 'Pay Now'
-                              ? 'bg-orange-500 text-white hover:bg-orange-600'
-                              : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-                          }`}
+                      {/* Price */}
+                      <div className="text-right shrink-0">
+                        <span className="font-semibold text-gray-900">
+                          {order.total.toFixed(2)} {order.currency}
+                        </span>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex flex-col gap-2 shrink-0">
+                        {order.paymentStatus === 'PENDING' && (
+                          <button
+                            onClick={() => handleSimulatePayment(order.id)}
+                            disabled={payingOrderId === order.id}
+                            className="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {payingOrderId === order.id ? 'Przetwarzanie...' : 'Zapłać teraz'}
+                          </button>
+                        )}
+                        {order.status === 'SHIPPED' && (
+                          <Link
+                            href={`/account/orders/${order.id}`}
+                            className="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors bg-orange-500 text-white hover:bg-orange-600 text-center"
+                          >
+                            Śledź przesyłkę
+                          </Link>
+                        )}
+                        <Link
+                          href={`/account/orders/${order.id}`}
+                          className="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors border border-gray-300 text-gray-700 hover:bg-gray-50 text-center"
                         >
-                          {action}
-                        </button>
-                      ))}
+                          Szczegóły
+                        </Link>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
 
             {/* Recommended Products */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Polecane dla Ciebie</h2>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Polecane dla Ciebie</h2>
+                  <p className="text-sm text-gray-500">Na podstawie Twoich wyszukiwań i zakupów</p>
+                </div>
                 <div className="flex gap-2">
                   <button className="w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors">
                     <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -434,29 +520,65 @@ export default function AccountPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-4 gap-4">
-                {recommendedProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
+              {dashboardLoading ? (
+                <div className="grid grid-cols-4 gap-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="bg-white rounded-xl border border-gray-100 p-4 animate-pulse">
+                      <div className="bg-gray-200 h-40 rounded-lg mb-3"></div>
+                      <div className="bg-gray-200 h-4 rounded w-3/4 mb-2"></div>
+                      <div className="bg-gray-200 h-4 rounded w-1/2"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : recommendations.length > 0 ? (
+                <div className="grid grid-cols-4 gap-4">
+                  {recommendations.map((product) => (
+                    <div key={product.id} className="relative">
+                      {/* Recommendation reason badge */}
+                      {product.reason === 'search' && (
+                        <div className="absolute top-2 left-2 z-10 bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-full">
+                          Na podstawie wyszukiwań
+                        </div>
+                      )}
+                      {product.reason === 'similar' && (
+                        <div className="absolute top-2 left-2 z-10 bg-purple-500 text-white text-[10px] px-2 py-0.5 rounded-full">
+                          Podobne do zakupów
+                        </div>
+                      )}
+                      <ProductCard
+                        product={{
+                          id: product.id,
+                          name: product.name,
+                          slug: product.slug,
+                          price: String(product.price),
+                          compareAtPrice: product.compareAtPrice ? String(product.compareAtPrice) : undefined,
+                          status: 'active',
+                          images: product.images.map((img, idx) => ({
+                            id: String(idx),
+                            url: img.url,
+                            alt: img.alt || product.name,
+                            order: idx,
+                          })),
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-gray-50 rounded-xl p-8 text-center">
+                  <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                  <p className="font-medium text-gray-600">Brak rekomendacji</p>
+                  <p className="text-sm text-gray-500">Wyszukuj produkty, aby otrzymać spersonalizowane polecenia</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-200 mt-12 bg-white">
-        <div className="container-custom py-6">
-          <div className="flex items-center justify-between text-sm text-gray-500">
-            <span>© 2023 WBTrade. Wszelkie prawa zastrzeżone.</span>
-            <div className="flex items-center gap-6">
-              <Link href="/privacy" className="hover:text-gray-700">Polityka prywatności</Link>
-              <Link href="/terms" className="hover:text-gray-700">Regulamin</Link>
-              <button className="hover:text-gray-700">Ustawienia cookies</button>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer hideTrustBadges />
     </div>
   );
 }

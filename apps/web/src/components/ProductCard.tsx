@@ -36,15 +36,15 @@ export default function ProductCard({ product, showDelivery = false, showWishlis
   };
 
   return (
-    <div className="group bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow duration-200 relative">
+    <div className="group bg-white rounded-xl border border-gray-100 hover:border-primary-300 hover:shadow-xl transition-all duration-300 relative overflow-hidden">
       {/* Wishlist button */}
       {showWishlist && (
         <button
           onClick={handleWishlistClick}
-          className={`absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200
+          className={`absolute top-3 right-3 z-10 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 shadow-sm
             ${inWishlist 
-              ? 'bg-red-50 text-red-500' 
-              : 'bg-white/80 text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-50'
+              ? 'bg-red-500 text-white' 
+              : 'bg-white text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-50 border border-gray-100'
             }`}
           title={inWishlist ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'}
         >
@@ -66,39 +66,40 @@ export default function ProductCard({ product, showDelivery = false, showWishlis
 
       <Link href={`/products/${product.id}`}>
         {/* Image */}
-        <div className="relative aspect-square overflow-hidden rounded-t-lg bg-gray-50">
+        <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-xl">
           <img
             src={mainImage}
             alt={product.name}
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300 p-4"
           />
+          {/* Discount Badge */}
           {hasDiscount && (
-            <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
+            <span className="absolute top-3 left-3 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg shadow-sm">
               -{discountPercent}%
             </span>
           )}
         </div>
 
         {/* Info */}
-        <div className="p-3">
+        <div className="p-4">
           {/* Delivery Badge */}
           {showDelivery && (
-            <div className="flex items-center gap-1 text-green-600 text-xs mb-2">
+            <div className="flex items-center gap-1.5 text-green-600 text-xs mb-2 bg-green-50 px-2 py-1 rounded-md w-fit">
               <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
               </svg>
-              <span className="font-medium">Darmowa dostawa Smart!</span>
+              <span className="font-semibold">Darmowa dostawa</span>
             </div>
           )}
 
           {/* Product Name */}
-          <h3 className="text-sm text-secondary-800 line-clamp-2 mb-2 min-h-[2.5rem]">
+          <h3 className="text-sm font-medium text-gray-800 line-clamp-2 mb-3 min-h-[2.5rem] group-hover:text-primary-600 transition-colors">
             {product.name}
           </h3>
           
-          {/* Price */}
+          {/* Price Section */}
           <div className="flex items-baseline gap-2">
-            <span className="text-lg font-bold text-secondary-900">
+            <span className="text-lg font-bold text-gray-900">
               {Number(product.price).toFixed(2)} zł
             </span>
             {hasDiscount && (

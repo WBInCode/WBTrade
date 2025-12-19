@@ -15,6 +15,7 @@ interface AuthTokens {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
+  issuedAt?: number; // Timestamp when token was issued
 }
 
 interface AuthContextType {
@@ -105,8 +106,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const saveTokens = (newTokens: AuthTokens) => {
-    setTokens(newTokens);
-    localStorage.setItem('auth_tokens', JSON.stringify(newTokens));
+    // Add issuedAt timestamp if not present
+    const tokensWithTimestamp = {
+      ...newTokens,
+      issuedAt: newTokens.issuedAt || Date.now(),
+    };
+    setTokens(tokensWithTimestamp);
+    localStorage.setItem('auth_tokens', JSON.stringify(tokensWithTimestamp));
   };
 
   const clearTokens = () => {
@@ -210,11 +216,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Auto-refresh token before expiry
   useEffect(() => {
-    if (!tokens?.accessToken) return;
+    if (!tokens?.accessToken || !tokens?.expiresIn) return;
 
+    // Calculate time until token expires
+    const issuedAt = tokens.issuedAt || Date.now();
+    const expiresAt = issuedAt + tokens.expiresIn * 1000;
+    const now = Date.now();
+    
     // Refresh 1 minute before expiry
-    const refreshTime = (tokens.expiresIn - 60) * 1000;
-    if (refreshTime <= 0) return;
+    const refreshTime = expiresAt - now - 60 * 1000;
+    
+    // If token already expired or will expire very soon, refresh now
+    if (refreshTime <= 0) {
+      refreshToken();
+      return;
+    }
 
     const timeout = setTimeout(() => {
       refreshToken();

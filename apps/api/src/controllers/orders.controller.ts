@@ -77,7 +77,13 @@ export async function getOrder(req: Request, res: Response): Promise<void> {
  */
 export async function getUserOrders(req: Request, res: Response): Promise<void> {
   try {
-    const { userId } = req.params;
+    const userId = req.user?.userId;
+    
+    if (!userId) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+    
     const { page = '1', limit = '10' } = req.query;
     
     const result = await ordersService.getUserOrders(

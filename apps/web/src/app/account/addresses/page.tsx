@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Header from '../../../components/Header';
+import Footer from '../../../components/Footer';
 import { useAuth } from '../../../contexts/AuthContext';
+import { addressesApi, Address, AddressType } from '../../../lib/api';
 
 // Sidebar navigation items
 const sidebarItems = [
@@ -14,59 +16,6 @@ const sidebarItems = [
   { id: 'addresses', label: 'Adresy', icon: 'location', href: '/account/addresses' },
   { id: 'password', label: 'Zmiana hasła', icon: 'lock', href: '/account/password' },
   { id: 'settings', label: 'Ustawienia', icon: 'settings', href: '/account/settings' },
-];
-
-interface Address {
-  id: string;
-  label: string;
-  name: string;
-  street: string;
-  city: string;
-  postalCode: string;
-  country: string;
-  phone: string;
-  isDefault: boolean;
-  type: 'shipping' | 'billing';
-}
-
-// Mock addresses data
-const mockAddresses: Address[] = [
-  {
-    id: '1',
-    label: 'Dom',
-    name: 'Jan Kowalski',
-    street: 'ul. Przykładowa 123/45',
-    city: 'Warszawa',
-    postalCode: '00-001',
-    country: 'Polska',
-    phone: '+48 123 456 789',
-    isDefault: true,
-    type: 'shipping',
-  },
-  {
-    id: '2',
-    label: 'Praca',
-    name: 'Jan Kowalski',
-    street: 'ul. Biznesowa 50/10',
-    city: 'Warszawa',
-    postalCode: '00-100',
-    country: 'Polska',
-    phone: '+48 987 654 321',
-    isDefault: false,
-    type: 'shipping',
-  },
-  {
-    id: '3',
-    label: 'Firma',
-    name: 'Kowalski Sp. z o.o.',
-    street: 'ul. Firmowa 1',
-    city: 'Kraków',
-    postalCode: '30-001',
-    country: 'Polska',
-    phone: '+48 111 222 333',
-    isDefault: true,
-    type: 'billing',
-  },
 ];
 
 function SidebarIcon({ icon }: { icon: string }) {
@@ -116,19 +65,21 @@ function SidebarIcon({ icon }: { icon: string }) {
 
 interface AddressFormData {
   label: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   street: string;
   city: string;
   postalCode: string;
   country: string;
   phone: string;
-  type: 'shipping' | 'billing';
+  type: AddressType;
   isDefault: boolean;
 }
 
 interface FormErrors {
   label?: string;
-  name?: string;
+  firstName?: string;
+  lastName?: string;
   street?: string;
   city?: string;
   postalCode?: string;
@@ -137,26 +88,41 @@ interface FormErrors {
 
 const emptyFormData: AddressFormData = {
   label: '',
-  name: '',
+  firstName: '',
+  lastName: '',
   street: '',
   city: '',
   postalCode: '',
-  country: 'Polska',
+  country: 'PL',
   phone: '',
-  type: 'shipping',
+  type: 'SHIPPING',
   isDefault: false,
 };
 
 export default function AddressesPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
-  const [addresses, setAddresses] = useState<Address[]>(mockAddresses);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [addressesLoading, setAddressesLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [formData, setFormData] = useState<AddressFormData>(emptyFormData);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSaving, setIsSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // Fetch addresses from API
+  const fetchAddresses = async () => {
+    try {
+      setAddressesLoading(true);
+      const data = await addressesApi.getAll();
+      setAddresses(data);
+    } catch (error) {
+      console.error('Error fetching addresses:', error);
+    } finally {
+      setAddressesLoading(false);
+    }
+  };
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -165,7 +131,14 @@ export default function AddressesPage() {
     }
   }, [isLoading, isAuthenticated, router]);
 
-  if (isLoading) {
+  // Fetch addresses when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchAddresses();
+    }
+  }, [isAuthenticated]);
+
+  if (isLoading || addressesLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
@@ -180,12 +153,11 @@ export default function AddressesPage() {
   const userData = {
     name: user?.firstName || 'Użytkownik',
     fullName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim(),
-    memberType: 'CZŁONEK SMART!',
     avatar: `${user?.firstName?.[0] || 'U'}${user?.lastName?.[0] || ''}`,
   };
 
-  const shippingAddresses = addresses.filter(a => a.type === 'shipping');
-  const billingAddresses = addresses.filter(a => a.type === 'billing');
+  const shippingAddresses = addresses.filter(a => a.type === 'SHIPPING');
+  const billingAddresses = addresses.filter(a => a.type === 'BILLING');
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -194,8 +166,12 @@ export default function AddressesPage() {
       newErrors.label = 'Nazwa adresu jest wymagana';
     }
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'Imię i nazwisko jest wymagane';
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'Imię jest wymagane';
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Nazwisko jest wymagane';
     }
 
     if (!formData.street.trim()) {
@@ -224,13 +200,14 @@ export default function AddressesPage() {
     if (address) {
       setEditingAddress(address);
       setFormData({
-        label: address.label,
-        name: address.name,
+        label: address.label || '',
+        firstName: address.firstName,
+        lastName: address.lastName,
         street: address.street,
         city: address.city,
         postalCode: address.postalCode,
         country: address.country,
-        phone: address.phone,
+        phone: address.phone || '',
         type: address.type,
         isDefault: address.isDefault,
       });
@@ -258,53 +235,64 @@ export default function AddressesPage() {
 
     setIsSaving(true);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    if (editingAddress) {
-      // Update existing address
-      setAddresses(prev => prev.map(addr => {
-        if (addr.id === editingAddress.id) {
-          return { ...addr, ...formData };
-        }
-        // If this address is being set as default, remove default from others of same type
-        if (formData.isDefault && addr.type === formData.type && addr.id !== editingAddress.id) {
-          return { ...addr, isDefault: false };
-        }
-        return addr;
-      }));
-    } else {
-      // Add new address
-      const newAddress: Address = {
-        id: Date.now().toString(),
-        ...formData,
-      };
+    try {
+      if (editingAddress) {
+        // Update existing address
+        await addressesApi.update(editingAddress.id, {
+          label: formData.label,
+          type: formData.type,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          street: formData.street,
+          city: formData.city,
+          postalCode: formData.postalCode,
+          country: formData.country,
+          phone: formData.phone || undefined,
+          isDefault: formData.isDefault,
+        });
+      } else {
+        // Create new address
+        await addressesApi.create({
+          label: formData.label,
+          type: formData.type,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          street: formData.street,
+          city: formData.city,
+          postalCode: formData.postalCode,
+          country: formData.country,
+          phone: formData.phone || undefined,
+          isDefault: formData.isDefault,
+        });
+      }
       
-      setAddresses(prev => {
-        // If new address is default, remove default from others of same type
-        if (formData.isDefault) {
-          return [...prev.map(addr => 
-            addr.type === formData.type ? { ...addr, isDefault: false } : addr
-          ), newAddress];
-        }
-        return [...prev, newAddress];
-      });
+      // Refresh addresses list
+      await fetchAddresses();
+      handleCloseModal();
+    } catch (error) {
+      console.error('Error saving address:', error);
+    } finally {
+      setIsSaving(false);
     }
-
-    setIsSaving(false);
-    handleCloseModal();
   };
 
   const handleDelete = async (id: string) => {
-    setAddresses(prev => prev.filter(addr => addr.id !== id));
+    try {
+      await addressesApi.delete(id);
+      await fetchAddresses();
+    } catch (error) {
+      console.error('Error deleting address:', error);
+    }
     setDeleteConfirmId(null);
   };
 
-  const handleSetDefault = async (id: string, type: 'shipping' | 'billing') => {
-    setAddresses(prev => prev.map(addr => ({
-      ...addr,
-      isDefault: addr.type === type ? addr.id === id : addr.isDefault,
-    })));
+  const handleSetDefault = async (id: string, type: AddressType) => {
+    try {
+      await addressesApi.setDefault(id);
+      await fetchAddresses();
+    } catch (error) {
+      console.error('Error setting default address:', error);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -351,12 +339,6 @@ export default function AddressesPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">{userData.fullName}</h3>
-                    <span className="inline-flex items-center gap-1 text-xs text-orange-500 font-medium">
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                      {userData.memberType}
-                    </span>
                   </div>
                 </div>
               </div>
@@ -425,7 +407,7 @@ export default function AddressesPage() {
                   <p className="text-gray-500 mb-4">Nie masz jeszcze żadnych adresów dostawy</p>
                   <button
                     onClick={() => {
-                      setFormData(prev => ({ ...prev, type: 'shipping' }));
+                      setFormData(prev => ({ ...prev, type: 'SHIPPING' }));
                       handleOpenModal();
                     }}
                     className="text-orange-500 hover:text-orange-600 font-medium text-sm"
@@ -445,14 +427,14 @@ export default function AddressesPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-medium text-gray-900">{address.label}</h4>
+                          <h4 className="font-medium text-gray-900">{address.label || 'Adres'}</h4>
                           {address.isDefault && (
                             <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
                               Domyślny
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600">{address.name}</p>
+                        <p className="text-sm text-gray-600">{address.firstName} {address.lastName}</p>
                         <p className="text-sm text-gray-600">{address.street}</p>
                         <p className="text-sm text-gray-600">{address.postalCode} {address.city}</p>
                         <p className="text-sm text-gray-500 mt-1">{address.phone}</p>
@@ -460,7 +442,7 @@ export default function AddressesPage() {
                       <div className="flex items-center gap-2 shrink-0">
                         {!address.isDefault && (
                           <button
-                            onClick={() => handleSetDefault(address.id, 'shipping')}
+                            onClick={() => handleSetDefault(address.id, 'SHIPPING')}
                             className="px-3 py-1.5 text-gray-600 text-sm font-medium hover:text-orange-500 transition-colors"
                           >
                             Ustaw domyślny
@@ -530,7 +512,7 @@ export default function AddressesPage() {
                   <p className="text-gray-500 mb-4">Nie masz jeszcze żadnych adresów rozliczeniowych</p>
                   <button
                     onClick={() => {
-                      setFormData(prev => ({ ...prev, type: 'billing' }));
+                      setFormData(prev => ({ ...prev, type: 'BILLING' }));
                       handleOpenModal();
                     }}
                     className="text-orange-500 hover:text-orange-600 font-medium text-sm"
@@ -549,14 +531,14 @@ export default function AddressesPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-medium text-gray-900">{address.label}</h4>
+                          <h4 className="font-medium text-gray-900">{address.label || 'Adres'}</h4>
                           {address.isDefault && (
                             <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
                               Domyślny
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600">{address.name}</p>
+                        <p className="text-sm text-gray-600">{address.firstName} {address.lastName}</p>
                         <p className="text-sm text-gray-600">{address.street}</p>
                         <p className="text-sm text-gray-600">{address.postalCode} {address.city}</p>
                         <p className="text-sm text-gray-500 mt-1">{address.phone}</p>
@@ -564,7 +546,7 @@ export default function AddressesPage() {
                       <div className="flex items-center gap-2 shrink-0">
                         {!address.isDefault && (
                           <button
-                            onClick={() => handleSetDefault(address.id, 'billing')}
+                            onClick={() => handleSetDefault(address.id, 'BILLING')}
                             className="px-3 py-1.5 text-gray-600 text-sm font-medium hover:text-orange-500 transition-colors"
                           >
                             Ustaw domyślny
@@ -650,8 +632,8 @@ export default function AddressesPage() {
                       <input
                         type="radio"
                         name="type"
-                        value="shipping"
-                        checked={formData.type === 'shipping'}
+                        value="SHIPPING"
+                        checked={formData.type === 'SHIPPING'}
                         onChange={handleChange}
                         className="w-4 h-4 text-orange-500 focus:ring-orange-500"
                       />
@@ -661,8 +643,8 @@ export default function AddressesPage() {
                       <input
                         type="radio"
                         name="type"
-                        value="billing"
-                        checked={formData.type === 'billing'}
+                        value="BILLING"
+                        checked={formData.type === 'BILLING'}
                         onChange={handleChange}
                         className="w-4 h-4 text-orange-500 focus:ring-orange-500"
                       />
@@ -690,22 +672,40 @@ export default function AddressesPage() {
                   {errors.label && <p className="text-red-500 text-xs mt-1">{errors.label}</p>}
                 </div>
 
-                {/* Name */}
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Imię i nazwisko / Nazwa firmy <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                      errors.name ? 'border-red-300 bg-red-50' : 'border-gray-200'
-                    }`}
-                  />
-                  {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+                {/* First Name & Last Name */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                      Imię <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="firstName"
+                      name="firstName"
+                      value={formData.firstName}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                        errors.firstName ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                      }`}
+                    />
+                    {errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>}
+                  </div>
+                  <div>
+                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                      Nazwisko <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="lastName"
+                      name="lastName"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                        errors.lastName ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                      }`}
+                    />
+                    {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>}
+                  </div>
                 </div>
 
                 {/* Street */}
@@ -848,19 +848,7 @@ export default function AddressesPage() {
         </div>
       )}
 
-      {/* Footer */}
-      <footer className="border-t border-gray-200 mt-12 bg-white">
-        <div className="container-custom py-6">
-          <div className="flex items-center justify-between text-sm text-gray-500">
-            <span>© 2023 WBTrade. Wszelkie prawa zastrzeżone.</span>
-            <div className="flex items-center gap-6">
-              <Link href="/privacy" className="hover:text-gray-700">Polityka prywatności</Link>
-              <Link href="/terms" className="hover:text-gray-700">Regulamin</Link>
-              <button className="hover:text-gray-700">Ustawienia cookies</button>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer hideTrustBadges />
     </div>
   );
 }

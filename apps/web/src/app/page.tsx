@@ -2,26 +2,10 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
 import HeroBanner from '../components/HeroBanner';
-import CountdownTimer from '../components/CountdownTimer';
 import Newsletter from '../components/Newsletter';
 import RecommendedProducts from '../components/RecommendedProducts';
 import { productsApi, Product } from '../lib/api';
 import Link from 'next/link';
-
-// Category icons data
-const categoryIcons = [
-  { name: 'Telefony', icon: '📱', href: '/products?category=Elektronika' },
-  { name: 'Moda', icon: '👕', href: '/products?category=Moda' },
-  { name: 'Dom', icon: '🏠', href: '/products?category=Dom%20i%20Ogr%C3%B3d' },
-  { name: 'Sport', icon: '⚽', href: '/products?category=Sport' },
-  { name: 'Dziecko', icon: '👶', href: '/products?category=Dziecko' },
-  { name: 'Auto', icon: '🚗', href: '/products?category=Motoryzacja' },
-  { name: 'Zwierzęta', icon: '🐕', href: '/products?category=Zwierz%C4%99ta' },
-  { name: 'Narzędzia', icon: '🔧', href: '/products?category=Narz%C4%99dzia' },
-];
-
-// Brand logos
-const brands = ['SAMSUNG', 'adidas', 'LEGO', 'SONY', 'PHILIPS', 'BOSCH', 'NIKE', 'XIAOMI', 'APPLE'];
 
 // Demo products for Super Price section (when API has no products)
 const demoSuperPriceProducts: Product[] = [
@@ -137,40 +121,35 @@ export default async function HomePage() {
         {/* Hero Banner Section */}
         <HeroBanner />
 
-        {/* Category Icons */}
-        <section className="flex justify-center gap-2 sm:gap-4 lg:gap-8 py-6 mb-8 overflow-x-auto scrollbar-hide">
-          {categoryIcons.map((category) => (
-            <Link 
-              key={category.name}
-              href={category.href}
-              className="flex flex-col items-center gap-2 p-2 sm:p-3 hover:bg-gray-100 rounded-xl transition-colors group min-w-[60px]"
-            >
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gray-100 group-hover:bg-primary-50 flex items-center justify-center transition-colors text-2xl">
-                {category.icon}
-              </div>
-              <span className="text-xs text-secondary-600 group-hover:text-secondary-900 text-center whitespace-nowrap">
-                {category.name}
-              </span>
-            </Link>
-          ))}
-        </section>
-
         {/* Super Price Section */}
-        <section className="mb-10 bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <h2 className="text-xl font-bold text-secondary-900">Super Cena</h2>
-              <span className="bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded">HIT</span>
-              <div className="hidden sm:flex items-center gap-2 text-sm text-secondary-500">
-                <span>Oferta kończy się za</span>
-                <CountdownTimer />
+        <section className="mb-10 bg-gradient-to-r from-primary-500 to-orange-500 rounded-xl p-6 sm:p-8 shadow-lg">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white">Super Cena</h2>
+                  <p className="text-white/80 text-sm">Najlepsze oferty specjalnie dla Ciebie</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="bg-white text-primary-600 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
+                  🔥 GORĄCE OKAZJE
+                </span>
+                <span className="bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full animate-pulse">
+                  DO -70%
+                </span>
               </div>
             </div>
             <Link 
               href="/products?sale=true"
-              className="text-sm text-primary-500 hover:text-primary-600 font-medium flex items-center gap-1"
+              className="inline-flex items-center gap-2 bg-white text-primary-600 font-semibold px-5 py-2.5 rounded-lg hover:bg-gray-100 transition-colors shadow-sm"
             >
-              Zobacz wszystkie
+              Zobacz wszystkie oferty
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
@@ -179,23 +158,9 @@ export default async function HomePage() {
           
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {displaySuperPriceProducts.map((product) => (
-              <ProductCard key={product.id} product={product} showDelivery />
-            ))}
-          </div>
-        </section>
-
-        {/* Official Stores / Brands */}
-        <section className="mb-10 py-6 border-y border-gray-200">
-          <h3 className="text-sm font-medium text-secondary-500 mb-4">Oficjalne sklepy</h3>
-          <div className="flex items-center justify-between gap-6 overflow-x-auto scrollbar-hide">
-            {brands.map((brand) => (
-              <Link 
-                key={brand}
-                href={`/products?brand=${brand.toLowerCase()}`}
-                className="text-lg font-bold text-secondary-400 hover:text-secondary-700 transition-colors whitespace-nowrap"
-              >
-                {brand}
-              </Link>
+              <div key={product.id} className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow">
+                <ProductCard product={product} showDelivery />
+              </div>
             ))}
           </div>
         </section>

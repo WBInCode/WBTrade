@@ -1,29 +1,70 @@
+/**
+ * Dashboard Routes
+ * API endpoints for user dashboard, recommendations, and payment simulation
+ */
+
 import { Router } from 'express';
-import { dashboardController } from '../controllers/dashboard.controller';
-import { authGuard, roleGuard, optionalAuth } from '../middleware/auth.middleware';
+import {
+  getDashboardOverview,
+  getRecommendations,
+  recordSearch,
+  simulatePayment,
+  getSearchHistory,
+  clearSearchHistory,
+} from '../controllers/dashboard.controller';
+import { authGuard, optionalAuth } from '../middleware/auth.middleware';
 
 const router = Router();
 
-// Tymczasowo bez autoryzacji dla testow - USUNAC w produkcji!
-// router.use(authGuard);
-// router.use(roleGuard('ADMIN', 'MANAGER', 'WAREHOUSE'));
+// ============================================
+// DASHBOARD ENDPOINTS
+// ============================================
 
-// GET /api/admin/dashboard - wszystkie dane naraz
-router.get('/', dashboardController.getSummary);
+/**
+ * GET /api/dashboard
+ * Get dashboard overview with stats and recent orders
+ * Requires authentication
+ */
+router.get('/', authGuard, getDashboardOverview);
 
-// GET /api/admin/dashboard/kpis - KPI cards
-router.get('/kpis', dashboardController.getKPIs);
+/**
+ * GET /api/dashboard/recommendations
+ * Get personalized product recommendations
+ * Optional authentication - returns popular products for guests
+ */
+router.get('/recommendations', optionalAuth, getRecommendations);
 
-// GET /api/admin/dashboard/sales-chart - wykres sprzedazy
-router.get('/sales-chart', dashboardController.getSalesChart);
+/**
+ * POST /api/dashboard/search
+ * Record a search query for recommendation purposes
+ * Optional authentication - only records for logged in users
+ */
+router.post('/search', optionalAuth, recordSearch);
 
-// GET /api/admin/dashboard/recent-orders - ostatnie zamowienia
-router.get('/recent-orders', dashboardController.getRecentOrders);
+/**
+ * GET /api/dashboard/search-history
+ * Get user's search history
+ * Requires authentication
+ */
+router.get('/search-history', authGuard, getSearchHistory);
 
-// GET /api/admin/dashboard/low-stock - niski stan
-router.get('/low-stock', dashboardController.getLowStock);
+/**
+ * DELETE /api/dashboard/search-history
+ * Clear user's search history
+ * Requires authentication
+ */
+router.delete('/search-history', authGuard, clearSearchHistory);
 
-// GET /api/admin/dashboard/alerts - alerty
-router.get('/alerts', dashboardController.getAlerts);
+// ============================================
+// PAYMENT SIMULATION (Development/Testing)
+// ============================================
+
+/**
+ * POST /api/dashboard/orders/:orderId/simulate-payment
+ * Simulate payment completion for an order
+ * Body: { action: 'pay' | 'fail' }
+ * Requires authentication
+ */
+router.post('/orders/:orderId/simulate-payment', authGuard, simulatePayment);
 
 export default router;

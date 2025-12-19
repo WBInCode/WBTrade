@@ -1,7 +1,14 @@
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load environment variables from root .env first
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+// Also try local .env as fallback
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import dotenv from 'dotenv';
 import productsRoutes from './routes/products';
 import searchRoutes from './routes/search';
 import ordersRoutes from './routes/orders';
@@ -13,14 +20,13 @@ import wishlistRoutes from './routes/wishlist';
 import categoriesRoutes from './routes/categories';
 import checkoutRoutes from './routes/checkout';
 import dashboardRoutes from './routes/dashboard';
+import adminDashboardRoutes from './routes/admin-dashboard';
 import locationsRoutes from './routes/locations';
 import usersRoutes from './routes/users';
+import reviewsRoutes from './routes/reviews';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
 import { initializeMeilisearch } from './lib/meilisearch';
 import { startSearchIndexWorker } from './workers/search-index.worker';
-
-// Load environment variables
-dotenv.config();
 
 const app = express();
 const PORT = process.env.APP_PORT || 5000;
@@ -95,6 +101,7 @@ app.get('/', (req, res) => {
       inventory: '/api/inventory',
       addresses: '/api/addresses',
       wishlist: '/api/wishlist',
+      dashboard: '/api/dashboard',
       health: '/health',
     },
     documentation: 'https://github.com/wbtrade/docs',
@@ -112,8 +119,10 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/addresses', addressesRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/checkout', checkoutRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/reviews', reviewsRoutes);
 app.use('/api/webhooks', checkoutRoutes); // Webhook routes
-app.use('/api/admin/dashboard', dashboardRoutes); // Admin dashboard
+app.use('/api/admin/dashboard', adminDashboardRoutes); // Admin dashboard
 app.use('/api/locations', locationsRoutes); // Warehouse locations
 app.use('/api/users', usersRoutes); // Users management
 

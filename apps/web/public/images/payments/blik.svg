@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" fill="none">
+  <rect width="200" height="80" rx="8" fill="#000"/>
+  <g fill="#fff">
+    <path d="M35 20h10v40H35z"/>
+    <circle cx="40" cy="50" r="10"/>
+    <circle cx="40" cy="50" r="5" fill="#000"/>
+    <path d="M60 30h10v30H60z"/>
+    <circle cx="65" cy="25" r="6" fill="url(#blik-gradient)"/>
+    <path d="M80 30h10v30H80z"/>
+    <path d="M100 30h10v30h-10z"/>
+    <path d="M110 30l15 15-15 15"/>
+  </g>
+  <defs>
+    <linearGradient id="blik-gradient" x1="59" y1="19" x2="71" y2="31">
+      <stop stop-color="#E6007E"/>
+      <stop offset="1" stop-color="#FF4D6A"/>
+    </linearGradient>
+  </defs>
+</svg>
