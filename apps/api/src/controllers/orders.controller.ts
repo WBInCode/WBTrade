@@ -20,7 +20,7 @@ const sanitizeText = (text: string): string => {
  * Order item schema
  */
 const orderItemSchema = z.object({
-  variantId: z.string().uuid('Invalid variant ID'),
+  variantId: z.string().regex(/^c[a-z0-9]{20,}$/i, 'Invalid variant ID'),
   quantity: z.number().int().positive().max(100),
   unitPrice: z.number().positive().max(9999999),
 });
@@ -29,9 +29,9 @@ const orderItemSchema = z.object({
  * Create order validation schema
  */
 const createOrderSchema = z.object({
-  userId: z.string().uuid('Invalid user ID'),
-  shippingAddressId: z.string().uuid('Invalid shipping address ID'),
-  billingAddressId: z.string().uuid('Invalid billing address ID').optional(),
+  userId: z.string().regex(/^c[a-z0-9]{20,}$/i, 'Invalid user ID'),
+  shippingAddressId: z.string().regex(/^c[a-z0-9]{20,}$/i, 'Invalid shipping address ID'),
+  billingAddressId: z.string().regex(/^c[a-z0-9]{20,}$/i, 'Invalid billing address ID').optional(),
   shippingMethod: z.string().min(1).max(50),
   shippingCost: z.number().min(0).max(999999),
   paymentMethod: z.string().min(1).max(50),

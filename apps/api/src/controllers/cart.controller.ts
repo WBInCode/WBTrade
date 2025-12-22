@@ -7,18 +7,18 @@ import { cartService } from '../services/cart.service';
 // ============================================
 
 /**
- * UUID validation helper
+ * CUID validation helper (Prisma uses CUID by default)
  */
-const isValidUUID = (id: string): boolean => {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(id);
+const isValidCUID = (id: string): boolean => {
+  const cuidRegex = /^c[a-z0-9]{20,}$/i;
+  return cuidRegex.test(id);
 };
 
 /**
  * Add item to cart schema
  */
 const addItemSchema = z.object({
-  variantId: z.string().uuid('Invalid variant ID'),
+  variantId: z.string().regex(/^c[a-z0-9]{20,}$/i, 'Invalid variant ID'),
   quantity: z.number().int().positive().max(100).optional().default(1),
 });
 
@@ -65,7 +65,7 @@ export class CartController {
       }
 
       // Validate user ID if provided
-      if (userId && !isValidUUID(userId)) {
+      if (userId && !isValidCUID(userId)) {
         return res.status(400).json({
           success: false,
           message: 'Invalid user ID format',
@@ -96,7 +96,7 @@ export class CartController {
       const userId = req.headers['x-user-id'] as string | undefined;
       const sessionId = req.headers['x-session-id'] as string | undefined;
 
-      if (userId && !isValidUUID(userId)) {
+      if (userId && !isValidCUID(userId)) {
         return res.status(400).json({
           success: false,
           message: 'Invalid user ID format',
@@ -145,7 +145,7 @@ export class CartController {
       const sessionId = req.headers['x-session-id'] as string | undefined;
       const { itemId } = req.params;
 
-      if (!isValidUUID(itemId)) {
+      if (!isValidCUID(itemId)) {
         return res.status(400).json({
           success: false,
           message: 'Invalid item ID format',
@@ -188,7 +188,7 @@ export class CartController {
       const sessionId = req.headers['x-session-id'] as string | undefined;
       const { itemId } = req.params;
 
-      if (!isValidUUID(itemId)) {
+      if (!isValidCUID(itemId)) {
         return res.status(400).json({
           success: false,
           message: 'Invalid item ID format',
@@ -315,7 +315,7 @@ export class CartController {
         });
       }
 
-      if (!isValidUUID(userId)) {
+      if (!isValidCUID(userId)) {
         return res.status(400).json({
           success: false,
           message: 'Invalid user ID format',
