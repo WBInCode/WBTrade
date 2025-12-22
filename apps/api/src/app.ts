@@ -86,8 +86,12 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 // Apply general rate limiting to all routes
 app.use(generalRateLimiter);
 
-// Health check endpoint (simple)
+// Health check endpoint (skip rate limiter)
 app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
