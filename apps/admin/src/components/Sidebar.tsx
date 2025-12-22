@@ -78,6 +78,14 @@ const menuItems = [
     ],
   },
   {
+    title: 'Integracje',
+    href: '/integrations',
+    icon: Box,
+    submenu: [
+      { title: 'Baselinker', href: '/baselinker' },
+    ],
+  },
+  {
     title: 'Ustawienia',
     href: '/settings',
     icon: Settings,
@@ -86,7 +94,6 @@ const menuItems = [
       { title: 'Dostawa', href: '/settings/shipping' },
       { title: 'Płatności', href: '/settings/payments' },
       { title: 'Podatki', href: '/settings/taxes' },
-      { title: 'Integracje', href: '/settings/integrations' },
     ],
   },
 ];

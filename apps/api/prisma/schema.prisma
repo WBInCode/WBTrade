@@ -61,19 +61,20 @@ model Address {
 }
 
 model Category {
-  id            String          @id @default(cuid())
-  name          String
-  slug          String          @unique
-  parentId      String?         @map("parent_id")
-  image         String?
-  order         Int             @default(0)
-  isActive      Boolean         @default(true) @map("is_active")
-  createdAt     DateTime        @default(now()) @map("created_at")
-  updatedAt     DateTime        @updatedAt @map("updated_at")
-  parent        Category?       @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children      Category[]      @relation("CategoryHierarchy")
-  products      Product[]
-  searchHistory SearchHistory[]
+  id                   String          @id @default(cuid())
+  name                 String
+  slug                 String          @unique
+  parentId             String?         @map("parent_id")
+  image                String?
+  order                Int             @default(0)
+  isActive             Boolean         @default(true) @map("is_active")
+  createdAt            DateTime        @default(now()) @map("created_at")
+  updatedAt            DateTime        @updatedAt @map("updated_at")
+  baselinkerCategoryId String?         @unique @map("baselinker_category_id")
+  parent               Category?       @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children             Category[]      @relation("CategoryHierarchy")
+  products             Product[]
+  searchHistory        SearchHistory[]
 
   @@index([slug])
   @@index([parentId])
@@ -81,26 +82,27 @@ model Category {
 }
 
 model Product {
-  id              String           @id @default(cuid())
-  name            String
-  slug            String           @unique
-  description     String?
-  sku             String           @unique
-  barcode         String?
-  status          ProductStatus    @default(DRAFT)
-  price           Decimal          @db.Decimal(10, 2)
-  compareAtPrice  Decimal?         @map("compare_at_price") @db.Decimal(10, 2)
-  metaTitle       String?          @map("meta_title")
-  metaDescription String?          @map("meta_description")
-  createdAt       DateTime         @default(now()) @map("created_at")
-  updatedAt       DateTime         @updatedAt @map("updated_at")
-  categoryId      String?          @map("category_id")
-  specifications  Json?            @default("{}")
-  images          ProductImage[]
-  variants        ProductVariant[]
-  category        Category?        @relation(fields: [categoryId], references: [id])
-  reviews         Review[]
-  wishlistItems   WishlistItem[]
+  id                   String           @id @default(cuid())
+  name                 String
+  slug                 String           @unique
+  description          String?
+  sku                  String           @unique
+  barcode              String?
+  status               ProductStatus    @default(DRAFT)
+  price                Decimal          @db.Decimal(10, 2)
+  compareAtPrice       Decimal?         @map("compare_at_price") @db.Decimal(10, 2)
+  metaTitle            String?          @map("meta_title")
+  metaDescription      String?          @map("meta_description")
+  createdAt            DateTime         @default(now()) @map("created_at")
+  updatedAt            DateTime         @updatedAt @map("updated_at")
+  categoryId           String?          @map("category_id")
+  specifications       Json?            @default("{}")
+  baselinkerProductId  String?          @unique @map("baselinker_product_id")
+  images               ProductImage[]
+  variants             ProductVariant[]
+  category             Category?        @relation(fields: [categoryId], references: [id])
+  reviews              Review[]
+  wishlistItems        WishlistItem[]
 
   @@index([slug])
   @@index([sku])
@@ -162,22 +164,23 @@ model ProductImage {
 }
 
 model ProductVariant {
-  id             String          @id @default(cuid())
-  productId      String          @map("product_id")
-  name           String
-  sku            String          @unique
-  barcode        String?
-  price          Decimal         @db.Decimal(10, 2)
-  compareAtPrice Decimal?        @map("compare_at_price") @db.Decimal(10, 2)
-  attributes     Json            @default("{}")
-  createdAt      DateTime        @default(now()) @map("created_at")
-  updatedAt      DateTime        @updatedAt @map("updated_at")
-  cartItems      CartItem[]
-  inventory      Inventory[]
-  orderItems     OrderItem[]
-  product        Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
-  stockMovements StockMovement[]
-  wishlistItems  WishlistItem[]
+  id                  String          @id @default(cuid())
+  productId           String          @map("product_id")
+  name                String
+  sku                 String          @unique
+  barcode             String?
+  price               Decimal         @db.Decimal(10, 2)
+  compareAtPrice      Decimal?        @map("compare_at_price") @db.Decimal(10, 2)
+  attributes          Json            @default("{}")
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
+  baselinkerVariantId String?         @unique @map("baselinker_variant_id")
+  cartItems           CartItem[]
+  inventory           Inventory[]
+  orderItems          OrderItem[]
+  product             Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  stockMovements      StockMovement[]
+  wishlistItems       WishlistItem[]
 
   @@index([productId])
   @@index([sku])
@@ -496,4 +499,50 @@ enum CouponType {
   PERCENTAGE
   FIXED_AMOUNT
   FREE_SHIPPING
+}
+
+// Baselinker Integration Enums
+enum BaselinkerSyncType {
+  PRODUCTS
+  CATEGORIES
+  STOCK
+  IMAGES
+}
+
+enum BaselinkerSyncStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+// Baselinker Integration Models
+model BaselinkerConfig {
+  id                  String    @id @default(cuid())
+  inventoryId         String    @unique @map("inventory_id")
+  apiTokenEncrypted   String    @map("api_token_encrypted")
+  encryptionIv        String    @map("encryption_iv")
+  authTag             String    @map("auth_tag")
+  lastSyncAt          DateTime? @map("last_sync_at")
+  syncEnabled         Boolean   @default(true) @map("sync_enabled")
+  syncIntervalMinutes Int       @default(60) @map("sync_interval_minutes")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  @@map("baselinker_configs")
+}
+
+model BaselinkerSyncLog {
+  id             String               @id @default(cuid())
+  type           BaselinkerSyncType
+  status         BaselinkerSyncStatus
+  itemsProcessed Int                  @default(0) @map("items_processed")
+  errors         Json?
+  startedAt      DateTime             @default(now()) @map("started_at")
+  completedAt    DateTime?            @map("completed_at")
+
+  @@index([type])
+  @@index([status])
+  @@index([startedAt])
+  @@map("baselinker_sync_logs")
 }
