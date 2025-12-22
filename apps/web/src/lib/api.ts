@@ -176,15 +176,19 @@ async function fetchApi<T>(
     const data = await response.json();
     
     if (!response.ok) {
-      // If 401 and we have a refresh token, try to refresh and retry
-      if (response.status === 401 && retryAfterRefresh && data.code === 'TOKEN_EXPIRED') {
+      // If 401 and we have a refresh token, try to refresh and retry.
+      // Backend may respond with just "Invalid token" for expired tokens (or when JWT_SECRET changes),
+      // so we refresh on any 401 (once) instead of relying only on data.code.
+      if (response.status === 401 && retryAfterRefresh) {
         const refreshed = await tryRefreshToken();
         if (refreshed) {
           // Retry the original request with new token
           return fetchApi<T>(endpoint, config, false);
         }
-        // Refresh failed, redirect to login
+
+        // Refresh failed - clear tokens & redirect to login
         if (typeof window !== 'undefined') {
+          localStorage.removeItem('auth_tokens');
           window.location.href = '/login?expired=true';
         }
       }

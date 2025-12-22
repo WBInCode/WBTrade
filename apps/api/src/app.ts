@@ -25,6 +25,7 @@ import locationsRoutes from './routes/locations';
 import usersRoutes from './routes/users';
 import reviewsRoutes from './routes/reviews';
 import healthRoutes from './routes/health';
+import baselinkerRoutes from './routes/baselinker';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
 import { initializeMeilisearch } from './lib/meilisearch';
 import { startSearchIndexWorker } from './workers/search-index.worker';
@@ -32,6 +33,7 @@ import { startEmailWorker } from './workers/email.worker';
 import { startInventorySyncWorker } from './workers/inventory-sync.worker';
 import { startImportWorker, startExportWorker } from './workers/import-export.worker';
 import { startShippingWorker } from './workers/shipping.worker';
+import { startBaselinkerSyncWorker, scheduleBaselinkerSync } from './workers/baselinker-sync.worker';
 import { scheduleReservationCleanup } from './lib/queue';
 
 const app = express();
@@ -86,8 +88,12 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 // Apply general rate limiting to all routes
 app.use(generalRateLimiter);
 
-// Health check endpoint (simple)
+// Health check endpoint (skip rate limiter)
 app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
@@ -132,6 +138,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reviews', reviewsRoutes);
 app.use('/api/webhooks', checkoutRoutes); // Webhook routes
 app.use('/api/admin/dashboard', adminDashboardRoutes); // Admin dashboard
+app.use('/api/admin/baselinker', baselinkerRoutes); // Baselinker integration
 app.use('/api/locations', locationsRoutes); // Warehouse locations
 app.use('/api/users', usersRoutes); // Users management
 
@@ -165,10 +172,15 @@ app.listen(PORT, async () => {
   startImportWorker();
   startExportWorker();
   startShippingWorker();
+  startBaselinkerSyncWorker();
   
   // Schedule recurring jobs
   await scheduleReservationCleanup();
   console.log('✅ Reservation cleanup scheduled (every 5 minutes)');
+  
+  // Schedule Baselinker sync if configured
+  await scheduleBaselinkerSync();
+  console.log('✅ Baselinker sync worker started');
   
   console.log('✅ All workers started successfully');
 });
