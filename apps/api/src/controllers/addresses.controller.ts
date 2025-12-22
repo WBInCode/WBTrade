@@ -114,11 +114,11 @@ const createAddressSchema = z.object({
 const updateAddressSchema = createAddressSchema.partial();
 
 /**
- * UUID validation helper
+ * CUID validation helper (Prisma uses CUID by default)
  */
-const isValidUUID = (id: string): boolean => {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(id);
+const isValidCUID = (id: string): boolean => {
+  const cuidRegex = /^c[a-z0-9]{20,}$/i;
+  return cuidRegex.test(id);
 };
 
 export const addressesController = {
@@ -152,7 +152,7 @@ export const addressesController = {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      if (!isValidUUID(id)) {
+      if (!isValidCUID(id)) {
         return res.status(400).json({ error: 'Invalid address ID format' });
       }
 
@@ -230,7 +230,7 @@ export const addressesController = {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      if (!isValidUUID(id)) {
+      if (!isValidCUID(id)) {
         return res.status(400).json({ error: 'Invalid address ID format' });
       }
 
@@ -267,7 +267,7 @@ export const addressesController = {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      if (!isValidUUID(id)) {
+      if (!isValidCUID(id)) {
         return res.status(400).json({ error: 'Invalid address ID format' });
       }
 
@@ -293,7 +293,7 @@ export const addressesController = {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      if (!isValidUUID(id)) {
+      if (!isValidCUID(id)) {
         return res.status(400).json({ error: 'Invalid address ID format' });
       }
 

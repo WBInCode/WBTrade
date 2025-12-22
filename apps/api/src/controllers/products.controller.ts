@@ -79,7 +79,7 @@ const createProductSchema = z.object({
   compareAtPrice: z.number().positive().max(9999999).optional(),
   sku: z.string().min(1).max(100).optional(),
   barcode: z.string().max(50).optional(),
-  categoryId: z.string().uuid('Invalid category ID').optional(),
+  categoryId: z.string().regex(/^c[a-z0-9]{20,}$/i, 'Invalid category ID').optional(),
   status: z.enum(['ACTIVE', 'DRAFT', 'ARCHIVED']).optional().default('DRAFT'),
   specifications: z.record(z.string().max(500)).optional(),
   metaTitle: z.string().max(100).optional().transform((val) => val ? sanitizeText(val) : undefined),
@@ -188,9 +188,9 @@ export async function updateProduct(req: Request, res: Response): Promise<void> 
   try {
     const { id } = req.params;
     
-    // Validate UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(id)) {
+    // Validate CUID format (Prisma uses CUID by default)
+    const cuidRegex = /^c[a-z0-9]{20,}$/i;
+    if (!cuidRegex.test(id)) {
       res.status(400).json({ message: 'Invalid product ID format' });
       return;
     }
