@@ -181,22 +181,30 @@ export class BaselinkerService {
       return null;
     }
 
-    // Decrypt token just to mask it
-    const decryptedToken = decryptToken(
-      config.apiTokenEncrypted,
-      config.encryptionIv,
-      config.authTag
-    );
+    try {
+      // Decrypt token just to mask it
+      const decryptedToken = decryptToken(
+        config.apiTokenEncrypted,
+        config.encryptionIv,
+        config.authTag
+      );
 
-    return {
-      inventoryId: config.inventoryId,
-      tokenMasked: maskToken(decryptedToken),
-      syncEnabled: config.syncEnabled,
-      syncIntervalMinutes: config.syncIntervalMinutes,
-      lastSyncAt: config.lastSyncAt,
-      createdAt: config.createdAt,
-      updatedAt: config.updatedAt,
-    };
+      return {
+        inventoryId: config.inventoryId,
+        tokenMasked: maskToken(decryptedToken),
+        syncEnabled: config.syncEnabled,
+        syncIntervalMinutes: config.syncIntervalMinutes,
+        lastSyncAt: config.lastSyncAt,
+        createdAt: config.createdAt,
+        updatedAt: config.updatedAt,
+      };
+    } catch (error) {
+      // Token encryption key changed - config is invalid, delete it
+      console.warn('Invalid encryption key for stored config, removing corrupt config');
+      await prisma.baselinkerConfig.deleteMany();
+      await prisma.baselinkerSyncLog.deleteMany();
+      return null;
+    }
   }
 
   /**
@@ -217,13 +225,21 @@ export class BaselinkerService {
       return null;
     }
 
-    const token = decryptToken(
-      config.apiTokenEncrypted,
-      config.encryptionIv,
-      config.authTag
-    );
+    try {
+      const token = decryptToken(
+        config.apiTokenEncrypted,
+        config.encryptionIv,
+        config.authTag
+      );
 
-    return { token, inventoryId: config.inventoryId };
+      return { token, inventoryId: config.inventoryId };
+    } catch (error) {
+      // Token encryption key changed - config is invalid
+      console.warn('Invalid encryption key for stored config, removing corrupt config');
+      await prisma.baselinkerConfig.deleteMany();
+      await prisma.baselinkerSyncLog.deleteMany();
+      return null;
+    }
   }
 
   /**

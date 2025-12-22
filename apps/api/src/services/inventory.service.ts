@@ -107,20 +107,19 @@ export class InventoryService {
             throw new Error(`Insufficient stock. Available: ${available}, Requested: ${quantity}`);
           }
 
-          // Optimistic locking: update only if version matches
+          // Optimistic locking: update only if reserved hasn't changed
           const updated = await tx.inventory.updateMany({
             where: {
               id: inventory.id,
-              version: inventory.version, // Optimistic lock check
+              reserved: inventory.reserved, // Optimistic lock check using reserved field
             },
             data: {
               reserved: { increment: quantity },
-              version: { increment: 1 }, // Increment version
             },
           });
 
           if (updated.count === 0) {
-            // Version mismatch - another transaction modified this record
+            // Concurrent modification detected
             throw new Error('OPTIMISTIC_LOCK_CONFLICT');
           }
 

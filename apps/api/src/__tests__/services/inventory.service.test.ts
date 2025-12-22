@@ -110,7 +110,6 @@ describe('InventoryService', () => {
         locationId: 'loc-1',
         quantity: 100,
         reserved: 10,
-        version: 1,
       };
 
       (prisma.inventory.findFirst as jest.Mock).mockResolvedValue(mockInventory);
@@ -127,11 +126,10 @@ describe('InventoryService', () => {
         expect.objectContaining({
           where: {
             id: 'inv-1',
-            version: 1,
+            reserved: 10,
           },
           data: expect.objectContaining({
             reserved: { increment: 5 },
-            version: { increment: 1 },
           }),
         })
       );
@@ -144,7 +142,6 @@ describe('InventoryService', () => {
         locationId: 'loc-1',
         quantity: 10,
         reserved: 8,
-        version: 1,
       };
 
       (prisma.inventory.findFirst as jest.Mock).mockResolvedValue(mockInventory);
