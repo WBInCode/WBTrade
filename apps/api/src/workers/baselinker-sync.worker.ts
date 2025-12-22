@@ -43,6 +43,13 @@ export const baselinkerSyncQueue = getQueue(QUEUE_NAMES.BASELINKER_SYNC);
 async function handleFullSync(job: Job<BaselinkerSyncJobData>): Promise<void> {
   console.log('[BaselinkerWorker] Starting full sync...');
   
+  // Check if config exists before creating sync log
+  const stored = await baselinkerService.getDecryptedToken();
+  if (!stored) {
+    console.log('[BaselinkerWorker] No Baselinker configuration found, skipping sync');
+    return;
+  }
+
   const syncLog = await prisma.baselinkerSyncLog.create({
     data: {
       type: BaselinkerSyncType.PRODUCTS,
@@ -51,11 +58,6 @@ async function handleFullSync(job: Job<BaselinkerSyncJobData>): Promise<void> {
   });
 
   try {
-    const stored = await baselinkerService.getDecryptedToken();
-    if (!stored) {
-      throw new Error('No Baselinker configuration found');
-    }
-
     const provider = await (baselinkerService as any).createProvider();
     let totalProcessed = 0;
     const allErrors: string[] = [];
@@ -126,6 +128,13 @@ async function handleFullSync(job: Job<BaselinkerSyncJobData>): Promise<void> {
 async function handleStockSync(job: Job<BaselinkerSyncJobData>): Promise<void> {
   console.log('[BaselinkerWorker] Starting stock sync...');
   
+  // Check if config exists before creating sync log
+  const stored = await baselinkerService.getDecryptedToken();
+  if (!stored) {
+    console.log('[BaselinkerWorker] No Baselinker configuration found, skipping stock sync');
+    return;
+  }
+
   const syncLog = await prisma.baselinkerSyncLog.create({
     data: {
       type: BaselinkerSyncType.STOCK,
@@ -134,11 +143,6 @@ async function handleStockSync(job: Job<BaselinkerSyncJobData>): Promise<void> {
   });
 
   try {
-    const stored = await baselinkerService.getDecryptedToken();
-    if (!stored) {
-      throw new Error('No Baselinker configuration found');
-    }
-
     const provider = await (baselinkerService as any).createProvider();
     
     await job.updateProgress(20);
