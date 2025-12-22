@@ -19,18 +19,19 @@ const sanitizeText = (text: string): string => {
 };
 
 /**
- * UUID validation helper
+ * CUID validation helper (Prisma uses CUID by default)
  */
-const isValidUUID = (id: string): boolean => {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(id);
+const isValidCUID = (id: string): boolean => {
+  // CUID format: starts with 'c', followed by lowercase alphanumeric characters
+  const cuidRegex = /^c[a-z0-9]{20,}$/i;
+  return cuidRegex.test(id);
 };
 
 /**
  * Create review validation schema
  */
 const createReviewSchema = z.object({
-  productId: z.string().uuid('Invalid product ID'),
+  productId: z.string().regex(/^c[a-z0-9]{20,}$/i, 'Invalid product ID'),
   rating: z.number().int().min(1, 'Rating must be at least 1').max(5, 'Rating cannot exceed 5'),
   title: z
     .string()
@@ -116,7 +117,7 @@ export const reviewsController = {
     try {
       const { productId } = req.params;
       
-      if (!isValidUUID(productId)) {
+      if (!isValidCUID(productId)) {
         return res.status(400).json({ message: 'Invalid product ID format' });
       }
 
@@ -146,7 +147,7 @@ export const reviewsController = {
     try {
       const { productId } = req.params;
       
-      if (!isValidUUID(productId)) {
+      if (!isValidCUID(productId)) {
         return res.status(400).json({ message: 'Invalid product ID format' });
       }
       
@@ -177,7 +178,7 @@ export const reviewsController = {
 
       const { productId } = req.params;
       
-      if (!isValidUUID(productId)) {
+      if (!isValidCUID(productId)) {
         return res.status(400).json({ message: 'Invalid product ID format' });
       }
       
@@ -202,7 +203,7 @@ export const reviewsController = {
 
       const { reviewId } = req.params;
       
-      if (!isValidUUID(reviewId)) {
+      if (!isValidCUID(reviewId)) {
         return res.status(400).json({ message: 'Invalid review ID format' });
       }
 
@@ -238,7 +239,7 @@ export const reviewsController = {
 
       const { reviewId } = req.params;
       
-      if (!isValidUUID(reviewId)) {
+      if (!isValidCUID(reviewId)) {
         return res.status(400).json({ message: 'Invalid review ID format' });
       }
       
@@ -261,7 +262,7 @@ export const reviewsController = {
     try {
       const { reviewId } = req.params;
       
-      if (!isValidUUID(reviewId)) {
+      if (!isValidCUID(reviewId)) {
         return res.status(400).json({ message: 'Invalid review ID format' });
       }
       
