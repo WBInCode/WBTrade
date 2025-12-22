@@ -297,10 +297,10 @@
 
 #### Search Service (`apps/api/src/services/search.service.ts`)
 
-- [ ] **5.21** `indexProduct()` - dodanie do Meilisearch
-- [ ] **5.22** `indexAllProducts()` - pełna reindeksacja
-- [ ] **5.23** `search()` - wyszukiwanie z facetami
-- [ ] **5.24** `suggest()` - autocomplete
+- [x] **5.21** `indexProduct()` - dodanie do Meilisearch
+- [x] **5.22** `indexAllProducts()` - pełna reindeksacja
+- [x] **5.23** `search()` - wyszukiwanie z facetami
+- [x] **5.24** `suggest()` - autocomplete
 
 #### Cart Service (`apps/api/src/services/cart.service.ts`) ✅ UKOŃCZONY
 
@@ -341,62 +341,62 @@
 
 #### Setup (`apps/admin/`)
 
-- [x] **6.1** Nowa aplikacja Next.js w monorepo ✅
-- [x] **6.2** Layout z sidebar navigation ✅
-- [x] **6.3** Auth (login admin) + RBAC middleware ✅
-- [x] **6.4** Współdzielone komponenty z `packages/ui` ✅
+- [ ] **6.1** Nowa aplikacja Next.js w monorepo
+- [ ] **6.2** Layout z sidebar navigation
+- [ ] **6.3** Auth (login admin) + RBAC middleware
+- [ ] **6.4** Współdzielone komponenty z `packages/ui`
 
 #### Dashboard (`apps/admin/src/app/page.tsx`)
 
-- [x] **6.5** KPI cards (zamówienia dziś, przychód, nowi klienci) ✅
-- [x] **6.6** Wykres sprzedaży (ostatnie 30 dni) ✅
-- [x] **6.7** Ostatnie zamówienia ✅
-- [x] **6.8** Produkty z niskim stanem ✅
-- [x] **6.9** Alerty (zamówienia do realizacji, braki) ✅
+- [ ] **6.5** KPI cards (zamówienia dziś, przychód, nowi klienci)
+- [ ] **6.6** Wykres sprzedaży (ostatnie 30 dni)
+- [ ] **6.7** Ostatnie zamówienia
+- [ ] **6.8** Produkty z niskim stanem
+- [ ] **6.9** Alerty (zamówienia do realizacji, braki)
 
 #### Produkty (`apps/admin/src/app/products/`)
 
-- [x] **6.10** Lista produktów (tabela z filtrami, sortowaniem) ✅
-- [x] **6.11** Dodawanie produktu (formularz multi-step) ✅
-- [x] **6.12** Edycja produktu ✅
-- [x] **6.13** Zarządzanie wariantami ✅
-- [x] **6.14** Upload zdjęć (drag & drop) ✅
-- [x] **6.15** Import CSV/XLSX ✅
-- [x] **6.16** Eksport do CSV ✅
-- [x] **6.17** Bulk actions (aktywuj, deaktywuj, usuń) ✅
+- [ ] **6.10** Lista produktów (tabela z filtrami, sortowaniem)
+- [ ] **6.11** Dodawanie produktu (formularz multi-step)
+- [ ] **6.12** Edycja produktu
+- [ ] **6.13** Zarządzanie wariantami
+- [ ] **6.14** Upload zdjęć (drag & drop)
+- [ ] **6.15** Import CSV/XLSX
+- [ ] **6.16** Eksport do CSV
+- [ ] **6.17** Bulk actions (aktywuj, deaktywuj, usuń)
 
 #### Kategorie (`apps/admin/src/app/categories/`)
 
-- [x] **6.18** Drzewo kategorii ✅
-- [x] **6.19** Dodawanie/edycja kategorii ✅
-- [x] **6.20** Przypisywanie produktów ✅
+- [ ] **6.18** Drzewo kategorii
+- [ ] **6.19** Dodawanie/edycja kategorii
+- [ ] **6.20** Przypisywanie produktów
 
 #### Zamówienia (`apps/admin/src/app/orders/`)
 
-- [x] **6.21** Lista zamówień (tabela z filtrami) ✅
-- [x] **6.22** Szczegóły zamówienia ✅
-- [x] **6.23** Zmiana statusu ✅
-- [x] **6.24** Drukowanie etykiety kurierskiej ✅
-- [x] **6.25** Drukowanie faktury ✅
-- [x] **6.26** Anulowanie / zwrot ✅
+- [ ] **6.21** Lista zamówień (tabela z filtrami)
+- [ ] **6.22** Szczegóły zamówienia
+- [ ] **6.23** Zmiana statusu
+- [ ] **6.24** Drukowanie etykiety kurierskiej
+- [ ] **6.25** Drukowanie faktury
+- [ ] **6.26** Anulowanie / zwrot
 
 #### Magazyn (WMS) (`apps/admin/src/app/warehouse/`)
 
-- [x] **6.27** Stany magazynowe (tabela) ✅
-- [x] **6.28** Przyjęcie towaru (PZ) - formularz ✅
-- [x] **6.29** Wydanie towaru (WZ) - formularz ✅
-- [x] **6.30** Przesunięcia między lokalizacjami ✅
-- [x] **6.31** Inwentaryzacja ✅
-- [x] **6.32** Historia ruchów ✅
-- [x] **6.33** Lokalizacje (regały, półki) ✅
-- [x] **6.34** Alerty niskich stanów ✅
+- [ ] **6.27** Stany magazynowe (tabela)
+- [ ] **6.28** Przyjęcie towaru (PZ) - formularz
+- [ ] **6.29** Wydanie towaru (WZ) - formularz
+- [ ] **6.30** Przesunięcia między lokalizacjami
+- [ ] **6.31** Inwentaryzacja
+- [ ] **6.32** Historia ruchów
+- [ ] **6.33** Lokalizacje (regały, półki)
+- [ ] **6.34** Alerty niskich stanów
 
 #### Użytkownicy (`apps/admin/src/app/users/`)
 
-- [x] **6.35** Lista użytkowników ✅
-- [x] **6.36** Dodawanie/edycja użytkownika ✅
-- [x] **6.37** Role i uprawnienia (Admin, Magazynier, Obsługa) ✅
-- [x] **6.38** Blokowanie/odblokowywanie ✅
+- [ ] **6.35** Lista użytkowników
+- [ ] **6.36** Dodawanie/edycja użytkownika
+- [ ] **6.37** Role i uprawnienia (Admin, Magazynier, Obsługa)
+- [ ] **6.38** Blokowanie/odblokowywanie
 
 #### Ustawienia (`apps/admin/src/app/settings/`)
 
