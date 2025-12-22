@@ -214,6 +214,7 @@ model Inventory {
   quantity   Int            @default(0)
   reserved   Int            @default(0)
   minimum    Int            @default(0)
+  version    Int            @default(1)
   updatedAt  DateTime       @updatedAt @map("updated_at")
   location   Location       @relation(fields: [locationId], references: [id])
   variant    ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
