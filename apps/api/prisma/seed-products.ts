@@ -3,7 +3,6 @@ import 'dotenv/config';
 
 const prisma = new PrismaClient();
 
-// Simple placeholder images (solid color placeholders)
 const placeholderImages = [
   'https://placehold.co/600x600/e2e8f0/475569?text=Product',
   'https://placehold.co/600x600/fef3c7/d97706?text=Product',
@@ -12,7 +11,6 @@ const placeholderImages = [
   'https://placehold.co/600x600/fce7f3/db2777?text=Product',
 ];
 
-// Product name parts for generating random names
 const adjectives = [
   'Premium', 'Profesjonalny', 'Ultra', 'Mega', 'Super', 'Eco', 'Smart',
   'Compact', 'Deluxe', 'Classic', 'Modern', 'Elite', 'Pro', 'Max', 'Mini',
@@ -25,7 +23,6 @@ const brands = [
   'GreenGarden', 'FoodFresh', 'CleanPro', 'ToolMaster', 'LuxuryLine', 'ValueMax'
 ];
 
-// Product types by category
 const productTypes: Record<string, string[]> = {
   'smartfony': ['Smartfon', 'Telefon komórkowy', 'Smartphone 5G'],
   'laptopy': ['Laptop', 'Notebook', 'Ultrabook', 'Laptop gamingowy'],
@@ -87,9 +84,8 @@ function generateDescription(productType: string, brand: string, adj: string): s
 async function main() {
   console.log('🌱 Starting bulk product seed...');
 
-  // Get all categories
   const categories = await prisma.category.findMany({
-    where: { parentId: { not: null } }, // Only subcategories
+    where: { parentId: { not: null } },
   });
 
   if (categories.length === 0) {
@@ -99,7 +95,6 @@ async function main() {
 
   console.log(`📁 Found ${categories.length} categories`);
 
-  // Get a warehouse location for inventory
   const location = await prisma.location.findFirst({
     where: { type: 'SHELF' },
   });
@@ -110,19 +105,14 @@ async function main() {
   }
 
   const TOTAL_PRODUCTS = 10000;
-  const BATCH_SIZE = 500;
-  const batches = Math.ceil(TOTAL_PRODUCTS / BATCH_SIZE);
+  const BATCH_SIZE = 100; // Smaller batches for individual inserts
 
-  console.log(`📦 Creating ${TOTAL_PRODUCTS} products in ${batches} batches...`);
+  console.log(`📦 Creating ${TOTAL_PRODUCTS} products...`);
 
-  for (let batch = 0; batch < batches; batch++) {
-    const startIdx = batch * BATCH_SIZE;
-    const endIdx = Math.min(startIdx + BATCH_SIZE, TOTAL_PRODUCTS);
-    const batchProducts: any[] = [];
-    const batchImages: any[] = [];
-    const batchVariants: any[] = [];
+  let created = 0;
 
-    for (let i = startIdx; i < endIdx; i++) {
+  for (let i = 0; i < TOTAL_PRODUCTS; i++) {
+    try {
       const category = randomElement(categories);
       const categorySlug = category.slug;
       const types = productTypes[categorySlug] || productTypes['default'];
@@ -130,48 +120,50 @@ async function main() {
       const brand = randomElement(brands);
       const adj = randomElement(adjectives);
       const modelNumber = randomInt(100, 9999);
-      
+
       const name = `${brand} ${adj} ${productType} ${modelNumber}`;
       const sku = generateSku(i);
       const baseSlug = slugify(name);
       const slug = `${baseSlug}-${sku.toLowerCase()}`;
-      
+
       const price = randomInt(10, 5000) + 0.99;
       const hasDiscount = Math.random() > 0.7;
       const compareAtPrice = hasDiscount ? price * (1 + Math.random() * 0.3) : null;
 
-      const productId = `prod_${i.toString().padStart(6, '0')}`;
-      
-      batchProducts.push({
-        id: productId,
-        name,
-        slug,
-        description: generateDescription(productType, brand, adj),
-        specifications: JSON.stringify({
-          'Marka': brand,
-          'Model': `${modelNumber}`,
-          'Kolor': randomElement(colors),
-          'Materiał': 'Standard',
-          'Gwarancja': '24 miesiące'
-        }),
-        sku,
-        barcode: `590${String(i).padStart(10, '0')}`,
-        status: 'ACTIVE' as ProductStatus,
-        price,
-        compareAtPrice,
-        categoryId: category.id,
-        metaTitle: `${name} - Kup w WBTrade`,
-        metaDescription: `${name} w najlepszej cenie. Szybka dostawa!`,
+      // Create product - Prisma will generate CUID automatically
+      const product = await prisma.product.create({
+        data: {
+          name,
+          slug,
+          description: generateDescription(productType, brand, adj),
+          specifications: {
+            'Marka': brand,
+            'Model': `${modelNumber}`,
+            'Kolor': randomElement(colors),
+            'Materiał': 'Standard',
+            'Gwarancja': '24 miesiące'
+          },
+          sku,
+          barcode: `590${String(i).padStart(10, '0')}`,
+          status: 'ACTIVE' as ProductStatus,
+          price,
+          compareAtPrice,
+          categoryId: category.id,
+          metaTitle: `${name} - Kup w WBTrade`,
+          metaDescription: `${name} w najlepszej cenie. Szybka dostawa!`,
+        },
       });
 
       // Add 1-2 images per product
       const imageCount = randomInt(1, 2);
       for (let img = 0; img < imageCount; img++) {
-        batchImages.push({
-          productId,
-          url: randomElement(placeholderImages),
-          alt: `${name} - zdjęcie ${img + 1}`,
-          order: img,
+        await prisma.productImage.create({
+          data: {
+            productId: product.id,
+            url: randomElement(placeholderImages),
+            alt: `${name} - zdjęcie ${img + 1}`,
+            order: img,
+          },
         });
       }
 
@@ -182,65 +174,40 @@ async function main() {
         const variantColor = randomElement(colors);
         const variantSize = randomElement(sizes);
         const variantPrice = price + randomInt(-50, 100);
-        
-        batchVariants.push({
-          productId,
-          name: `${variantColor} / ${variantSize}`,
-          sku: variantSku,
-          barcode: `590${String(i).padStart(7, '0')}${String(v).padStart(3, '0')}`,
-          price: Math.max(variantPrice, 9.99),
-          compareAtPrice: compareAtPrice ? compareAtPrice + randomInt(-20, 50) : null,
-          attributes: JSON.stringify({ color: variantColor, size: variantSize }),
+
+        const variant = await prisma.productVariant.create({
+          data: {
+            productId: product.id,
+            name: `${variantColor} / ${variantSize}`,
+            sku: variantSku,
+            barcode: `590${String(i).padStart(7, '0')}${String(v).padStart(3, '0')}`,
+            price: Math.max(variantPrice, 9.99),
+            compareAtPrice: compareAtPrice ? compareAtPrice + randomInt(-20, 50) : null,
+            attributes: { color: variantColor, size: variantSize },
+          },
+        });
+
+        // Add inventory for variant
+        await prisma.inventory.create({
+          data: {
+            variantId: variant.id,
+            locationId: location.id,
+            quantity: randomInt(0, 500),
+            reserved: 0,
+            minimum: randomInt(5, 20),
+          },
         });
       }
-    }
 
-    // Bulk insert products
-    await prisma.product.createMany({
-      data: batchProducts,
-      skipDuplicates: true,
-    });
-
-    // Bulk insert images
-    await prisma.productImage.createMany({
-      data: batchImages,
-      skipDuplicates: true,
-    });
-
-    // Bulk insert variants
-    await prisma.productVariant.createMany({
-      data: batchVariants,
-      skipDuplicates: true,
-    });
-
-    const progress = ((batch + 1) / batches * 100).toFixed(1);
-    console.log(`  ✓ Batch ${batch + 1}/${batches} (${progress}%) - Products ${startIdx + 1}-${endIdx}`);
-  }
-
-  // Add inventory for all variants
-  console.log('📊 Adding inventory for variants...');
-  
-  const variants = await prisma.productVariant.findMany({
-    select: { id: true },
-  });
-
-  const inventoryBatchSize = 1000;
-  for (let i = 0; i < variants.length; i += inventoryBatchSize) {
-    const inventoryBatch = variants.slice(i, i + inventoryBatchSize).map(v => ({
-      variantId: v.id,
-      locationId: location.id,
-      quantity: randomInt(0, 500),
-      reserved: 0,
-      minimum: randomInt(5, 20),
-    }));
-
-    await prisma.inventory.createMany({
-      data: inventoryBatch,
-      skipDuplicates: true,
-    });
-
-    if ((i + inventoryBatchSize) % 5000 === 0 || i + inventoryBatchSize >= variants.length) {
-      console.log(`  ✓ Inventory ${Math.min(i + inventoryBatchSize, variants.length)}/${variants.length}`);
+      created++;
+      
+      if (created % BATCH_SIZE === 0) {
+        const progress = ((created / TOTAL_PRODUCTS) * 100).toFixed(1);
+        console.log(`  ✓ Progress: ${progress}% (${created}/${TOTAL_PRODUCTS})`);
+      }
+    } catch (e) {
+      // Skip duplicates or errors
+      continue;
     }
   }
 
