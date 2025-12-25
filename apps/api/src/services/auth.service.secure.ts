@@ -53,7 +53,7 @@ function getEnvOrThrow(key: string): string {
 
 const ACCESS_TOKEN_SECRET = getEnvOrThrow('JWT_ACCESS_SECRET');
 const REFRESH_TOKEN_SECRET = getEnvOrThrow('JWT_REFRESH_SECRET');
-const ACCESS_TOKEN_EXPIRY = '15m';
+const ACCESS_TOKEN_EXPIRY = '60m';
 const REFRESH_TOKEN_EXPIRY_SECONDS = 7 * 24 * 60 * 60; // 7 days
 const SALT_ROUNDS = 12;
 

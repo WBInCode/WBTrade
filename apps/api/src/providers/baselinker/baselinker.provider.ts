@@ -21,9 +21,9 @@ import {
 } from './baselinker-provider.interface';
 
 const BASELINKER_API_URL = 'https://api.baselinker.com/connector.php';
-const DEFAULT_MAX_REQUESTS_PER_MINUTE = 100;
-const DEFAULT_RETRY_ATTEMPTS = 3;
-const DEFAULT_RETRY_DELAY_MS = 1000;
+const DEFAULT_MAX_REQUESTS_PER_MINUTE = 30; // Reduced from 100 to avoid rate limiting
+const DEFAULT_RETRY_ATTEMPTS = 5; // Increased retries
+const DEFAULT_RETRY_DELAY_MS = 2000; // Increased delay
 const PRODUCTS_PER_PAGE = 1000;
 
 /**
@@ -92,9 +92,11 @@ export class BaselinkerProvider implements IBaselinkerProvider {
     await this.rateLimiter.acquire();
 
     let lastError: Error | null = null;
+    console.log(`[Baselinker] Calling API method: ${method}`);
 
     for (let attempt = 0; attempt < this.config.retryAttempts!; attempt++) {
       try {
+        console.log(`[Baselinker] Attempt ${attempt + 1}/${this.config.retryAttempts} for ${method}`);
         const formData = new URLSearchParams();
         formData.append('method', method);
         formData.append('parameters', JSON.stringify(parameters));
@@ -127,6 +129,23 @@ export class BaselinkerProvider implements IBaselinkerProvider {
         const data: BaselinkerApiResponse<T> = await response.json();
 
         if (data.status === 'ERROR') {
+          // Handle rate limiting error - wait and retry
+          if (data.error_message?.includes('Query limit exceeded') || 
+              data.error_message?.includes('token blocked')) {
+            // Extract wait time from message like "token blocked until 2025-12-24 13:30:04"
+            const match = data.error_message.match(/until (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
+            let waitMs = 60000; // Default 1 minute
+            
+            if (match) {
+              const blockedUntil = new Date(match[1]);
+              waitMs = Math.max(blockedUntil.getTime() - Date.now() + 5000, 10000); // Add 5s buffer, min 10s
+            }
+            
+            console.warn(`Baselinker rate limit hit. Waiting ${Math.round(waitMs / 1000)}s until ${match?.[1] || 'unknown'}...`);
+            await this.sleep(waitMs);
+            continue; // Retry after waiting
+          }
+          
           throw new BaselinkerApiError(
             data.error_message || 'Unknown Baselinker error',
             data.error_code || 'UNKNOWN'
@@ -245,11 +264,14 @@ export class BaselinkerProvider implements IBaselinkerProvider {
       return [];
     }
 
-    // Baselinker limits to 1000 products per request
-    const chunks = this.chunkArray(productIds, 1000);
+    // Baselinker limits to 1000 products per request - reduce to 500 for safety
+    const chunks = this.chunkArray(productIds, 500);
     const allProducts: BaselinkerProductData[] = [];
 
-    for (const chunk of chunks) {
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      console.log(`[Baselinker] Fetching products chunk ${i + 1}/${chunks.length} (${chunk.length} products)`);
+      
       const response = await this.request<{ products: Record<string, BaselinkerProductData> }>(
         'getInventoryProductsData',
         {
@@ -264,6 +286,11 @@ export class BaselinkerProvider implements IBaselinkerProvider {
       }));
 
       allProducts.push(...products);
+      
+      // Add delay between chunks to avoid rate limiting
+      if (i < chunks.length - 1) {
+        await this.sleep(2000); // 2 second delay between chunks
+      }
     }
 
     return allProducts;
