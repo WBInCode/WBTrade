@@ -18,7 +18,7 @@ export const baselinkerController = {
    */
   async saveConfig(req: Request, res: Response) {
     try {
-      const { apiToken, inventoryId, syncEnabled, syncIntervalMinutes } = req.body;
+      const { apiToken, inventoryId } = req.body;
 
       // Check if config already exists
       const existingConfig = await baselinkerService.getConfig();
@@ -44,21 +44,9 @@ export const baselinkerController = {
         });
       }
 
-      // Validate sync interval if provided
-      if (syncIntervalMinutes !== undefined) {
-        const interval = parseInt(syncIntervalMinutes, 10);
-        if (isNaN(interval) || interval < 5 || interval > 1440) {
-          return res.status(400).json({
-            message: 'Sync interval must be between 5 and 1440 minutes',
-          });
-        }
-      }
-
       const config = await baselinkerService.saveConfig({
         apiToken,
         inventoryId,
-        syncEnabled: syncEnabled ?? true,
-        syncIntervalMinutes: syncIntervalMinutes ?? 60,
       });
 
       res.json({

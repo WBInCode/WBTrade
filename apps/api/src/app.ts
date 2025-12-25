@@ -33,7 +33,6 @@ import { startEmailWorker } from './workers/email.worker';
 import { startInventorySyncWorker } from './workers/inventory-sync.worker';
 import { startImportWorker, startExportWorker } from './workers/import-export.worker';
 import { startShippingWorker } from './workers/shipping.worker';
-import { startBaselinkerSyncWorker, scheduleBaselinkerSync } from './workers/baselinker-sync.worker';
 import { scheduleReservationCleanup } from './lib/queue';
 
 const app = express();
@@ -172,15 +171,11 @@ app.listen(PORT, async () => {
   startImportWorker();
   startExportWorker();
   startShippingWorker();
-  startBaselinkerSyncWorker();
   
   // Schedule recurring jobs
   await scheduleReservationCleanup();
   console.log('✅ Reservation cleanup scheduled (every 5 minutes)');
   
-  // Schedule Baselinker sync if configured
-  await scheduleBaselinkerSync();
-  console.log('✅ Baselinker sync worker started');
-  
   console.log('✅ All workers started successfully');
+  console.log('ℹ️  Baselinker sync: manual only (use admin panel)');
 });
