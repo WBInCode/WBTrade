@@ -1,8 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { Product } from '../lib/api';
 import { useWishlist } from '../contexts/WishlistContext';
+
+// Placeholder SVG as data URI
+const PLACEHOLDER_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect fill='%23f3f4f6' width='400' height='400'/%3E%3Cpath fill='%23d1d5db' d='M160 150h80v100h-80z'/%3E%3Ccircle fill='%23d1d5db' cx='180' cy='130' r='20'/%3E%3Cpath fill='%23e5e7eb' d='M120 250l60-80 40 50 40-30 60 60v50H120z'/%3E%3C/svg%3E";
 
 export interface ProductCardProps {
   product: Product;
@@ -11,7 +15,8 @@ export interface ProductCardProps {
 }
 
 export default function ProductCard({ product, showDelivery = false, showWishlist = true }: ProductCardProps) {
-  const mainImage = product.images?.[0]?.url || '/placeholder.jpg';
+  const [imgError, setImgError] = useState(false);
+  const mainImage = imgError || !product.images?.[0]?.url ? PLACEHOLDER_IMAGE : product.images[0].url;
   const hasDiscount = product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price);
   const discountPercent = hasDiscount 
     ? Math.round((1 - Number(product.price) / Number(product.compareAtPrice)) * 100)
@@ -70,6 +75,7 @@ export default function ProductCard({ product, showDelivery = false, showWishlis
           <img
             src={mainImage}
             alt={product.name}
+            onError={() => setImgError(true)}
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300 p-4"
           />
           {/* Discount Badge */}
