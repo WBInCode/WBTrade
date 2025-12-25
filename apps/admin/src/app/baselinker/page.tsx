@@ -635,7 +635,7 @@ export default function BaselinkerPage() {
           )}
 
           {/* Manual Sync Buttons */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="grid grid-cols-4 gap-3 mb-6">
             <button
               onClick={() => handleTriggerSync('full')}
               disabled={syncing || !config}
@@ -645,12 +645,20 @@ export default function BaselinkerPage() {
               Pełna sync
             </button>
             <button
+              onClick={() => handleTriggerSync('categories')}
+              disabled={syncing || !config}
+              className="bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <FolderTree className="w-4 h-4" />
+              Kategorie
+            </button>
+            <button
               onClick={() => handleTriggerSync('products')}
               disabled={syncing || !config}
               className="bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Package className="w-4 h-4" />
-              Tylko produkty
+              Produkty
             </button>
             <button
               onClick={() => handleTriggerSync('stock')}
@@ -658,7 +666,7 @@ export default function BaselinkerPage() {
               className="bg-gray-700 hover:bg-gray-600 text-white py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Database className="w-4 h-4" />
-              Tylko stany
+              Stany
             </button>
           </div>
 
