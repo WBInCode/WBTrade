@@ -524,8 +524,6 @@ model BaselinkerConfig {
   encryptionIv        String    @map("encryption_iv")
   authTag             String    @map("auth_tag")
   lastSyncAt          DateTime? @map("last_sync_at")
-  syncEnabled         Boolean   @default(true) @map("sync_enabled")
-  syncIntervalMinutes Int       @default(60) @map("sync_interval_minutes")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
 

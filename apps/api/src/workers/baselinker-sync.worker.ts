@@ -60,21 +60,26 @@ async function handleFullSync(job: Job<BaselinkerSyncJobData>): Promise<void> {
   try {
     const provider = await (baselinkerService as any).createProvider();
     let totalProcessed = 0;
+    let totalSkipped = 0;
     const allErrors: string[] = [];
 
-    // 1. Sync categories
+    // 1. Sync categories (incremental)
     await job.updateProgress(10);
-    console.log('[BaselinkerWorker] Syncing categories...');
+    console.log('[BaselinkerWorker] Syncing categories (incremental)...');
     const catResult = await baselinkerService.syncCategories(provider, stored.inventoryId);
     totalProcessed += catResult.processed;
+    totalSkipped += catResult.skipped || 0;
     allErrors.push(...catResult.errors);
+    console.log(`[BaselinkerWorker] Categories: ${catResult.processed} updated, ${catResult.skipped || 0} unchanged`);
 
-    // 2. Sync products
+    // 2. Sync products (incremental)
     await job.updateProgress(30);
-    console.log('[BaselinkerWorker] Syncing products...');
+    console.log('[BaselinkerWorker] Syncing products (incremental)...');
     const prodResult = await baselinkerService.syncProducts(provider, stored.inventoryId);
     totalProcessed += prodResult.processed;
+    totalSkipped += prodResult.skipped || 0;
     allErrors.push(...prodResult.errors);
+    console.log(`[BaselinkerWorker] Products: ${prodResult.processed} updated, ${prodResult.skipped || 0} unchanged`);
 
     // 3. Sync stock
     await job.updateProgress(70);
@@ -83,10 +88,14 @@ async function handleFullSync(job: Job<BaselinkerSyncJobData>): Promise<void> {
     totalProcessed += stockResult.processed;
     allErrors.push(...stockResult.errors);
 
-    // 4. Reindex Meilisearch
+    // 4. Reindex Meilisearch (only if something changed)
     await job.updateProgress(90);
-    console.log('[BaselinkerWorker] Reindexing Meilisearch...');
-    await baselinkerService.reindexMeilisearch();
+    if (totalProcessed > 0) {
+      console.log('[BaselinkerWorker] Reindexing Meilisearch...');
+      await baselinkerService.reindexMeilisearch();
+    } else {
+      console.log('[BaselinkerWorker] No changes, skipping Meilisearch reindex');
+    }
 
     // Update sync log
     await prisma.baselinkerSyncLog.update({
@@ -105,7 +114,7 @@ async function handleFullSync(job: Job<BaselinkerSyncJobData>): Promise<void> {
     });
 
     await job.updateProgress(100);
-    console.log(`[BaselinkerWorker] Full sync completed. Processed: ${totalProcessed}, Errors: ${allErrors.length}`);
+    console.log(`[BaselinkerWorker] Full sync completed. Updated: ${totalProcessed}, Unchanged: ${totalSkipped}, Errors: ${allErrors.length}`);
   } catch (error) {
     console.error('[BaselinkerWorker] Full sync failed:', error);
     
@@ -272,6 +281,26 @@ export async function stopBaselinkerSyncWorker(): Promise<void> {
 // ============================================
 
 /**
+ * Minimum time between syncs at startup (5 minutes)
+ * Prevents running expensive full sync on every server restart
+ */
+const MIN_SYNC_INTERVAL_MS = 5 * 60 * 1000;
+
+/**
+ * Check if enough time has passed since last sync
+ */
+async function shouldRunScheduledSync(): Promise<boolean> {
+  const config = await prisma.baselinkerConfig.findFirst();
+  
+  if (!config?.lastSyncAt) {
+    return true; // Never synced, should run
+  }
+  
+  const timeSinceLastSync = Date.now() - config.lastSyncAt.getTime();
+  return timeSinceLastSync >= MIN_SYNC_INTERVAL_MS;
+}
+
+/**
  * Schedule recurring sync jobs
  * Call this during application startup
  */
@@ -290,31 +319,44 @@ export async function scheduleBaselinkerSync(): Promise<void> {
     await baselinkerSyncQueue.removeRepeatableByKey(job.key);
   }
 
-  // Schedule full sync based on config interval
+  // Check if we should delay the first sync
+  const shouldSync = await shouldRunScheduledSync();
+  
+  if (!shouldSync) {
+    const lastSync = config.lastSyncAt ? new Date(config.lastSyncAt).toISOString() : 'never';
+    console.log(`[BaselinkerWorker] Last sync was at ${lastSync}, skipping immediate sync - will run on schedule`);
+  }
+
+  // Get stock sync interval (with fallback for existing configs)
+  const stockSyncInterval = (config as any).stockSyncIntervalMinutes || 60; // 1 hour default
+  
+  // Schedule full sync (default: every 24 hours)
   await baselinkerSyncQueue.add(
     'scheduled-full-sync',
     { type: 'full-sync', triggeredBy: 'schedule' },
     {
       repeat: {
         every: config.syncIntervalMinutes * 60 * 1000, // Convert to ms
+        immediately: shouldSync, // Only run immediately if we should sync
       },
       jobId: 'baselinker-full-sync',
     }
   );
 
-  // Schedule stock sync every 15 minutes
+  // Schedule stock sync (default: every 1 hour)
   await baselinkerSyncQueue.add(
     'scheduled-stock-sync',
     { type: 'stock-sync', triggeredBy: 'schedule' },
     {
       repeat: {
-        every: 15 * 60 * 1000, // 15 minutes
+        every: stockSyncInterval * 60 * 1000, // Convert to ms
+        immediately: shouldSync, // Only run immediately if we should sync
       },
       jobId: 'baselinker-stock-sync',
     }
   );
 
-  console.log(`[BaselinkerWorker] Scheduled syncs: full every ${config.syncIntervalMinutes}min, stock every 15min`);
+  console.log(`[BaselinkerWorker] Scheduled syncs: full every ${config.syncIntervalMinutes}min, stock every ${stockSyncInterval}min${!shouldSync ? ' (waiting for schedule)' : ''}`);
 }
 
 // ============================================

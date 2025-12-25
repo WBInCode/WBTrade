@@ -21,15 +21,11 @@ import { BaselinkerSyncType, BaselinkerSyncStatus } from '@prisma/client';
 export interface SaveConfigInput {
   apiToken?: string;  // Optional for updates (keep existing token)
   inventoryId: string;
-  syncEnabled?: boolean;
-  syncIntervalMinutes?: number;
 }
 
 export interface ConfigOutput {
   inventoryId: string;
   tokenMasked: string;
-  syncEnabled: boolean;
-  syncIntervalMinutes: number;
   lastSyncAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -47,9 +43,7 @@ export interface SyncTriggerResult {
 
 export interface SyncStatus {
   configured: boolean;
-  syncEnabled: boolean;
   lastSyncAt: Date | null;
-  nextSyncAt: Date | null;
   currentSync: {
     id: string;
     type: BaselinkerSyncType;
@@ -99,7 +93,7 @@ export class BaselinkerService {
    * Save or update Baselinker configuration
    */
   async saveConfig(input: SaveConfigInput): Promise<ConfigOutput> {
-    const { apiToken, inventoryId, syncEnabled = true, syncIntervalMinutes = 60 } = input;
+    const { apiToken, inventoryId } = input;
 
     // Check if config already exists
     const existingConfig = await prisma.baselinkerConfig.findFirst({
@@ -118,53 +112,36 @@ export class BaselinkerService {
           apiTokenEncrypted: encrypted.ciphertext,
           encryptionIv: encrypted.iv,
           authTag: encrypted.authTag,
-          syncEnabled,
-          syncIntervalMinutes,
         },
         create: {
           inventoryId,
           apiTokenEncrypted: encrypted.ciphertext,
           encryptionIv: encrypted.iv,
           authTag: encrypted.authTag,
-          syncEnabled,
-          syncIntervalMinutes,
         },
       });
 
       return {
         inventoryId: config.inventoryId,
         tokenMasked: maskToken(apiToken),
-        syncEnabled: config.syncEnabled,
-        syncIntervalMinutes: config.syncIntervalMinutes,
         lastSyncAt: config.lastSyncAt,
         createdAt: config.createdAt,
         updatedAt: config.updatedAt,
       };
     } else if (existingConfig) {
-      // Update without changing token
-      config = await prisma.baselinkerConfig.update({
-        where: { inventoryId },
-        data: {
-          syncEnabled,
-          syncIntervalMinutes,
-        },
-      });
-
-      // Get masked token from existing encrypted data
+      // No token update needed, just return existing config
       const decryptedToken = decryptToken(
-        config.apiTokenEncrypted,
-        config.encryptionIv,
-        config.authTag
+        existingConfig.apiTokenEncrypted,
+        existingConfig.encryptionIv,
+        existingConfig.authTag
       );
 
       return {
-        inventoryId: config.inventoryId,
+        inventoryId: existingConfig.inventoryId,
         tokenMasked: maskToken(decryptedToken),
-        syncEnabled: config.syncEnabled,
-        syncIntervalMinutes: config.syncIntervalMinutes,
-        lastSyncAt: config.lastSyncAt,
-        createdAt: config.createdAt,
-        updatedAt: config.updatedAt,
+        lastSyncAt: existingConfig.lastSyncAt,
+        createdAt: existingConfig.createdAt,
+        updatedAt: existingConfig.updatedAt,
       };
     } else {
       throw new Error('API token is required for initial configuration');
@@ -192,8 +169,6 @@ export class BaselinkerService {
       return {
         inventoryId: config.inventoryId,
         tokenMasked: maskToken(decryptedToken),
-        syncEnabled: config.syncEnabled,
-        syncIntervalMinutes: config.syncIntervalMinutes,
         lastSyncAt: config.lastSyncAt,
         createdAt: config.createdAt,
         updatedAt: config.updatedAt,
@@ -307,6 +282,20 @@ export class BaselinkerService {
 
     const syncType = typeMap[type] || BaselinkerSyncType.PRODUCTS;
 
+    // Clean up any stuck RUNNING syncs (older than 30 minutes)
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+    await prisma.baselinkerSyncLog.updateMany({
+      where: {
+        status: BaselinkerSyncStatus.RUNNING,
+        startedAt: { lt: thirtyMinutesAgo },
+      },
+      data: {
+        status: BaselinkerSyncStatus.FAILED,
+        errors: ['Sync timed out - marked as failed'],
+        completedAt: new Date(),
+      },
+    });
+
     // Create sync log
     const syncLog = await prisma.baselinkerSyncLog.create({
       data: {
@@ -314,6 +303,8 @@ export class BaselinkerService {
         status: BaselinkerSyncStatus.RUNNING,
       },
     });
+
+    console.log(`[BaselinkerSync] Starting ${type} sync (logId: ${syncLog.id})`);
 
     // Run sync in background (don't await)
     this.runSync(syncLog.id, type).catch((error) => {
@@ -405,24 +396,73 @@ export class BaselinkerService {
   }
 
   /**
-   * Sync categories from Baselinker
+   * Sync categories from Baselinker (incremental - only changes)
    */
   async syncCategories(
     provider: BaselinkerProvider,
     inventoryId: string
-  ): Promise<{ processed: number; errors: string[] }> {
+  ): Promise<{ processed: number; errors: string[]; skipped: number }> {
     const errors: string[] = [];
     let processed = 0;
+    let skipped = 0;
 
     try {
       const categories = await provider.getInventoryCategories(inventoryId);
+      console.log(`[BaselinkerSync] Fetched ${categories.length} categories from Baselinker`);
 
+      // Pre-fetch all existing categories for comparison
+      const existingCategories = await prisma.category.findMany({
+        where: { baselinkerCategoryId: { not: null } },
+        select: {
+          id: true,
+          baselinkerCategoryId: true,
+          name: true,
+          parentId: true,
+        },
+      });
+      
+      const existingMap = new Map(
+        existingCategories.map(c => [c.baselinkerCategoryId!, c])
+      );
+
+      // Pre-build parent ID lookup
+      const blCategoryIdToDbId = new Map<string, string>();
+      for (const cat of existingCategories) {
+        if (cat.baselinkerCategoryId) {
+          blCategoryIdToDbId.set(cat.baselinkerCategoryId, cat.id);
+        }
+      }
+
+      // Process only new or changed categories
+      const categoriesToProcess: typeof categories = [];
+      
       for (const blCategory of categories) {
+        const categoryId = blCategory.category_id.toString();
+        const existing = existingMap.get(categoryId);
+        const expectedParentId = blCategory.parent_id 
+          ? blCategoryIdToDbId.get(blCategory.parent_id.toString()) || null
+          : null;
+
+        if (existing) {
+          // Check if changed
+          if (existing.name === blCategory.name && existing.parentId === expectedParentId) {
+            skipped++;
+            continue; // No changes, skip
+          }
+        }
+        
+        categoriesToProcess.push(blCategory);
+      }
+
+      console.log(`[BaselinkerSync] Processing ${categoriesToProcess.length} changed/new categories (${skipped} unchanged)`);
+
+      // Process only changed categories
+      for (const blCategory of categoriesToProcess) {
         try {
           const categoryId = blCategory.category_id.toString();
           const slug = slugify(blCategory.name) || `category-${categoryId}`;
 
-          await prisma.category.upsert({
+          const result = await prisma.category.upsert({
             where: { baselinkerCategoryId: categoryId },
             update: {
               name: blCategory.name,
@@ -441,6 +481,9 @@ export class BaselinkerService {
               isActive: true,
             },
           });
+          
+          // Update lookup for subsequent parent references
+          blCategoryIdToDbId.set(categoryId, result.id);
           processed++;
         } catch (error) {
           errors.push(`Category ${blCategory.category_id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -450,7 +493,7 @@ export class BaselinkerService {
       errors.push(`Failed to fetch categories: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
-    return { processed, errors };
+    return { processed, errors, skipped };
   }
 
   /**
@@ -484,32 +527,111 @@ export class BaselinkerService {
   }
 
   /**
-   * Sync products from Baselinker
+   * Generate a simple hash for product comparison
+   */
+  private generateProductHash(blProduct: any): string {
+    const data = {
+      name: blProduct.text_fields?.pl?.name || blProduct.name || '',
+      sku: blProduct.sku || '',
+      ean: blProduct.ean || '',
+      price: blProduct.price_brutto || 0,
+      category_id: blProduct.category_id || 0,
+      imageCount: blProduct.images ? Object.keys(blProduct.images).length : 0,
+      variantCount: blProduct.variants?.length || 0,
+    };
+    return JSON.stringify(data);
+  }
+
+  /**
+   * Sync products from Baselinker (incremental - only changes)
    */
   async syncProducts(
     provider: BaselinkerProvider,
     inventoryId: string
-  ): Promise<{ processed: number; errors: string[] }> {
+  ): Promise<{ processed: number; errors: string[]; skipped: number }> {
     const errors: string[] = [];
     let processed = 0;
+    let skipped = 0;
 
     try {
-      // Get all product IDs
+      console.log('[BaselinkerSync] Starting incremental products sync...');
+      
+      // Get all product IDs from Baselinker (lightweight call)
+      console.log('[BaselinkerSync] Fetching product list...');
       const productList = await provider.getAllInventoryProducts(inventoryId);
-      const productIds = productList.map((p) => p.id);
+      console.log(`[BaselinkerSync] Found ${productList.length} products in Baselinker`);
 
-      // Fetch detailed product data in batches
-      const products = await provider.getInventoryProductsData(inventoryId, productIds);
+      // Pre-fetch existing products with essential data for comparison
+      const existingProducts = await prisma.product.findMany({
+        where: { baselinkerProductId: { not: null } },
+        select: {
+          id: true,
+          baselinkerProductId: true,
+          name: true,
+          sku: true,
+          barcode: true,
+          price: true,
+          categoryId: true,
+          images: { select: { id: true } },
+          variants: { select: { id: true, baselinkerVariantId: true } },
+        },
+      });
 
-      // Process in batches of 100
-      const batchSize = 100;
+      const existingMap = new Map(
+        existingProducts.map(p => [p.baselinkerProductId!, p])
+      );
+
+      console.log(`[BaselinkerSync] Found ${existingProducts.length} existing products in database`);
+
+      // First pass: identify which products need updating
+      // Compare basic info from productList to reduce API calls
+      const productsToFetch: number[] = [];
+      
+      for (const blProduct of productList) {
+        const blId = blProduct.id.toString();
+        const existing = existingMap.get(blId);
+        
+        if (!existing) {
+          // New product - needs full fetch
+          productsToFetch.push(blProduct.id);
+          continue;
+        }
+        
+        // Quick comparison - if basic fields differ, fetch full data
+        const priceChanged = existing.price && Math.abs(parseFloat(existing.price.toString()) - (blProduct.price_brutto || 0)) > 0.01;
+        const skuChanged = existing.sku !== (blProduct.sku || `BL-${blProduct.id}`);
+        const nameChanged = existing.name !== blProduct.name;
+        
+        if (priceChanged || skuChanged || nameChanged) {
+          productsToFetch.push(blProduct.id);
+        } else {
+          skipped++;
+        }
+      }
+
+      console.log(`[BaselinkerSync] ${productsToFetch.length} products need updating, ${skipped} unchanged`);
+
+      if (productsToFetch.length === 0) {
+        console.log('[BaselinkerSync] No products to update, skipping fetch');
+        return { processed: 0, errors, skipped };
+      }
+
+      // Fetch detailed data only for changed products
+      console.log('[BaselinkerSync] Fetching detailed data for changed products...');
+      const products = await provider.getInventoryProductsData(inventoryId, productsToFetch);
+      console.log(`[BaselinkerSync] Got ${products.length} product details`);
+
+      // Process in batches of 10 with extended timeout (60 seconds)
+      const batchSize = 10;
       for (let i = 0; i < products.length; i += batchSize) {
         const batch = products.slice(i, i + batchSize);
+        console.log(`[BaselinkerSync] Processing products batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(products.length / batchSize)}`);
 
-        await prisma.$transaction(async (tx) => {
-          for (const blProduct of batch) {
-            try {
-              const baselinkerProductId = blProduct.id.toString();
+        await prisma.$transaction(
+          async (tx) => {
+            for (const blProduct of batch) {
+              try {
+                const baselinkerProductId = blProduct.id.toString();
               const sku = generateSku(blProduct.id, blProduct.sku);
               const name = blProduct.text_fields?.pl?.name || blProduct.name || `Product ${blProduct.id}`;
               const description = blProduct.text_fields?.pl?.description || '';
@@ -620,13 +742,17 @@ export class BaselinkerService {
               errors.push(`Product ${blProduct.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
             }
           }
+        },
+        {
+          maxWait: 60000, // 60 seconds max wait to acquire connection
+          timeout: 120000, // 2 minutes timeout for the transaction
         });
       }
     } catch (error) {
       errors.push(`Failed to fetch products: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
-    return { processed, errors };
+    return { processed, errors, skipped };
   }
 
   /**
@@ -896,16 +1022,9 @@ export class BaselinkerService {
       take: limit,
     });
 
-    let nextSyncAt: Date | null = null;
-    if (config?.syncEnabled && config?.lastSyncAt) {
-      nextSyncAt = new Date(config.lastSyncAt.getTime() + config.syncIntervalMinutes * 60 * 1000);
-    }
-
     return {
       configured: !!config,
-      syncEnabled: config?.syncEnabled ?? false,
       lastSyncAt: config?.lastSyncAt ?? null,
-      nextSyncAt,
       currentSync: currentSync
         ? {
             id: currentSync.id,
