@@ -65,9 +65,22 @@ export interface SyncStatus {
 // Helper Functions
 // ============================================
 
+// Polish character transliteration map
+const polishCharsMap: Record<string, string> = {
+  'ą': 'a', 'ć': 'c', 'ę': 'e', 'ł': 'l', 'ń': 'n',
+  'ó': 'o', 'ś': 's', 'ź': 'z', 'ż': 'z',
+  'Ą': 'A', 'Ć': 'C', 'Ę': 'E', 'Ł': 'L', 'Ń': 'N',
+  'Ó': 'O', 'Ś': 'S', 'Ź': 'Z', 'Ż': 'Z'
+};
+
 function slugify(text: string): string {
-  return text
-    .toString()
+  // First transliterate Polish characters
+  let result = text.toString();
+  for (const [polish, ascii] of Object.entries(polishCharsMap)) {
+    result = result.replace(new RegExp(polish, 'g'), ascii);
+  }
+  
+  return result
     .toLowerCase()
     .trim()
     .replace(/\s+/g, '-')
@@ -397,6 +410,8 @@ export class BaselinkerService {
 
   /**
    * Sync categories from Baselinker (incremental - only changes)
+   * Handles flat Baselinker categories with path-like names (e.g., "Odzież/Sport/Bluzy")
+   * by extracting the last segment for display name and creating proper slugs
    */
   async syncCategories(
     provider: BaselinkerProvider,
@@ -433,19 +448,33 @@ export class BaselinkerService {
         }
       }
 
+      // Helper to extract last segment from path-like name
+      const getDisplayName = (fullName: string): string => {
+        const parts = fullName.split('/');
+        return parts[parts.length - 1].trim() || fullName;
+      };
+
+      // Helper to create a unique slug from the full path
+      const createSlugFromPath = (fullName: string): string => {
+        // Create slug from full path but make it readable with dashes between segments
+        const parts = fullName.split('/').map(p => slugify(p.trim())).filter(Boolean);
+        return parts.join('-') || 'category';
+      };
+
       // Process only new or changed categories
       const categoriesToProcess: typeof categories = [];
       
       for (const blCategory of categories) {
         const categoryId = blCategory.category_id.toString();
         const existing = existingMap.get(categoryId);
+        const displayName = getDisplayName(blCategory.name);
         const expectedParentId = blCategory.parent_id 
           ? blCategoryIdToDbId.get(blCategory.parent_id.toString()) || null
           : null;
 
         if (existing) {
-          // Check if changed
-          if (existing.name === blCategory.name && existing.parentId === expectedParentId) {
+          // Check if changed (compare with display name, not full path)
+          if (existing.name === displayName && existing.parentId === expectedParentId) {
             skipped++;
             continue; // No changes, skip
           }
@@ -460,12 +489,13 @@ export class BaselinkerService {
       for (const blCategory of categoriesToProcess) {
         try {
           const categoryId = blCategory.category_id.toString();
-          const slug = slugify(blCategory.name) || `category-${categoryId}`;
+          const displayName = getDisplayName(blCategory.name);
+          const slug = createSlugFromPath(blCategory.name);
 
           const result = await prisma.category.upsert({
             where: { baselinkerCategoryId: categoryId },
             update: {
-              name: blCategory.name,
+              name: displayName,
               slug: await this.ensureUniqueSlug(slug, categoryId),
               parentId: blCategory.parent_id
                 ? (await this.findCategoryByBaselinkerIdcatId(blCategory.parent_id.toString()))?.id || null
@@ -473,7 +503,7 @@ export class BaselinkerService {
             },
             create: {
               baselinkerCategoryId: categoryId,
-              name: blCategory.name,
+              name: displayName,
               slug: await this.ensureUniqueSlug(slug, categoryId),
               parentId: blCategory.parent_id
                 ? (await this.findCategoryByBaselinkerIdcatId(blCategory.parent_id.toString()))?.id || null
