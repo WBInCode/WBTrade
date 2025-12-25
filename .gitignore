@@ -44,5 +44,12 @@ coverage/
 apps/api/prisma/*.db
 apps/api/prisma/*.db-journal
 
+# Baselinker debug/fix scripts
+apps/api/fix-categories.js
+apps/api/sync-categories-manual.js
+apps/api/assign-categories.js
+apps/api/test-baselinker-categories.js
+apps/api/check-count.js
+
 # md
 *.md
