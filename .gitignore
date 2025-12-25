@@ -50,6 +50,7 @@ apps/api/sync-categories-manual.js
 apps/api/assign-categories.js
 apps/api/test-baselinker-categories.js
 apps/api/check-count.js
+apps/api/sync-images.js
 
 # md
 *.md

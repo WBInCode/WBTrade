@@ -9,39 +9,41 @@ const p = new PrismaClient({
 });
 
 async function main() {
-  // Sprawdź przykładowe kategorie
-  console.log('=== Sample categories ===');
-  const cats = await p.category.findMany({
-    where: { baselinkerCategoryId: { not: null } },
-    take: 10,
-    select: { id: true, name: true, baselinkerCategoryId: true, slug: true }
+  // Sprawdź produkt 132070354 ze screena
+  console.log('=== Szukam produktu 132070354 ===');
+  const prod = await p.product.findFirst({
+    where: { name: { contains: '132070354' } },
+    include: { images: true }
   });
-  cats.forEach(c => console.log(`  baselinkerCategoryId: "${c.baselinkerCategoryId}", name: ${c.name.substring(0, 40)}`));
   
-  // Sprawdź czy jest kategoria 1038263 (z testu)
-  console.log('\n=== Szukam kategorii z baselinkerCategoryId = 1038263 ===');
-  const cat1038263 = await p.category.findFirst({
-    where: { baselinkerCategoryId: '1038263' }
+  if (prod) {
+    console.log('Name:', prod.name);
+    console.log('Images count:', prod.images?.length || 0);
+    if (prod.images && prod.images.length > 0) {
+      prod.images.forEach((img, i) => console.log(`  ${i}: ${img.url}`));
+    } else {
+      console.log('  BRAK OBRAZKÓW!');
+    }
+  } else {
+    console.log('Nie znaleziono produktu');
+  }
+  
+  // Sprawdź ile produktów w tej kategorii ma/nie ma obrazków
+  console.log('\n=== Statystyki obrazków produktów z kategorią ===');
+  const withCatWithImages = await p.product.count({
+    where: { 
+      categoryId: { not: null },
+      images: { some: {} }
+    }
   });
-  console.log('Znaleziono:', cat1038263 ? `TAK - ${cat1038263.name}` : 'NIE');
-  
-  // Sprawdź min/max baselinkerCategoryId w DB
-  console.log('\n=== Min/Max baselinkerCategoryId w DB ===');
-  const allCats = await p.category.findMany({
-    where: { baselinkerCategoryId: { not: null } },
-    select: { baselinkerCategoryId: true }
+  const withCatNoImages = await p.product.count({
+    where: { 
+      categoryId: { not: null },
+      images: { none: {} }
+    }
   });
-  const numericIds = allCats.map(c => parseInt(c.baselinkerCategoryId)).filter(n => !isNaN(n));
-  console.log('Min:', Math.min(...numericIds));
-  console.log('Max:', Math.max(...numericIds));
-  console.log('Total categories:', allCats.length);
-  
-  // Statystyki produktów
-  console.log('\n=== Statystyki produktów ===');
-  const withCat = await p.product.count({ where: { categoryId: { not: null } } });
-  const withoutCat = await p.product.count({ where: { categoryId: null } });
-  console.log('Products WITH category:', withCat);
-  console.log('Products WITHOUT category:', withoutCat);
+  console.log('Z kategorią I z obrazkami:', withCatWithImages);
+  console.log('Z kategorią BEZ obrazków:', withCatNoImages);
 }
 
 main().finally(() => p.$disconnect());
