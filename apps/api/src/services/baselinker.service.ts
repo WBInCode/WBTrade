@@ -557,11 +557,62 @@ export class BaselinkerService {
   }
 
   /**
+   * Get product name from Baselinker product data
+   */
+  private getProductName(blProduct: any): string {
+    if (blProduct.text_fields) {
+      // Direct name field (most common)
+      if (blProduct.text_fields.name) {
+        return blProduct.text_fields.name;
+      }
+      // Try Polish
+      if (blProduct.text_fields['pl']?.name) {
+        return blProduct.text_fields['pl'].name;
+      }
+      // Try any language
+      for (const langCode of Object.keys(blProduct.text_fields)) {
+        const textField = blProduct.text_fields[langCode];
+        if (typeof textField === 'object' && textField?.name) {
+          return textField.name;
+        }
+      }
+    }
+    if (blProduct.name) {
+      return blProduct.name;
+    }
+    return '';
+  }
+
+  /**
+   * Get product description from Baselinker product data
+   */
+  private getProductDescription(blProduct: any): string {
+    if (blProduct.text_fields) {
+      // Direct description field
+      if (blProduct.text_fields.description) {
+        return blProduct.text_fields.description;
+      }
+      // Try Polish
+      if (blProduct.text_fields['pl']?.description) {
+        return blProduct.text_fields['pl'].description;
+      }
+      // Try any language
+      for (const langCode of Object.keys(blProduct.text_fields)) {
+        const textField = blProduct.text_fields[langCode];
+        if (typeof textField === 'object' && textField?.description) {
+          return textField.description;
+        }
+      }
+    }
+    return '';
+  }
+
+  /**
    * Generate a simple hash for product comparison
    */
   private generateProductHash(blProduct: any): string {
     const data = {
-      name: blProduct.text_fields?.pl?.name || blProduct.name || '',
+      name: this.getProductName(blProduct),
       sku: blProduct.sku || '',
       ean: blProduct.ean || '',
       price: blProduct.price_brutto || 0,
@@ -663,8 +714,15 @@ export class BaselinkerService {
               try {
                 const baselinkerProductId = blProduct.id.toString();
               const sku = generateSku(blProduct.id, blProduct.sku);
-              const name = blProduct.text_fields?.pl?.name || blProduct.name || `Product ${blProduct.id}`;
-              const description = blProduct.text_fields?.pl?.description || '';
+              
+              // Get name and description using helper methods
+              let name = this.getProductName(blProduct);
+              if (!name) {
+                name = `Product ${blProduct.id}`;
+                console.log(`[BaselinkerSync] Warning: No name found for product ${blProduct.id}, using fallback`);
+              }
+              const description = this.getProductDescription(blProduct);
+              
               const slug = await this.ensureUniqueProductSlug(slugify(name) || `product-${baselinkerProductId}`, baselinkerProductId);
 
               // Find category

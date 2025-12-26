@@ -7,6 +7,7 @@ import {
   Box, Check, X, Plus, Trash2, Upload, GripVertical
 } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth } from '../../../contexts/AuthContext';
 
 interface Category {
   id: string;
@@ -37,6 +38,7 @@ const STEPS = [
 
 export default function NewProductPage() {
   const router = useRouter();
+  const { token } = useAuth();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -162,6 +164,11 @@ export default function NewProductPage() {
   };
 
   const handleSubmit = async () => {
+    if (!token) {
+      alert('Brak autoryzacji. Zaloguj się ponownie.');
+      return;
+    }
+    
     setSaving(true);
     try {
       const productData = {
@@ -184,7 +191,10 @@ export default function NewProductPage() {
 
       const response = await fetch('http://localhost:5000/api/products', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(productData),
       });
 

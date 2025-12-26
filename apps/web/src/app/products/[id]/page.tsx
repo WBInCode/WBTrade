@@ -423,7 +423,12 @@ export default function ProductPage({ params }: ProductPageProps) {
   // Use product images or fallback to mock images
   const images = product.images?.length ? product.images : mockProduct.images;
   const mainImage = images?.[selectedImage]?.url || '/placeholder.jpg';
-  const effectivePrice = selectedVariant?.price ?? Number(product.price);
+  
+  // Use variant price if available and > 0, otherwise fall back to product price
+  const variantPrice = selectedVariant?.price ? Number(selectedVariant.price) : 0;
+  const productPrice = Number(product.price) || 0;
+  const effectivePrice = variantPrice > 0 ? variantPrice : productPrice;
+  
   const hasDiscount = product.compareAtPrice && Number(product.compareAtPrice) > Number(effectivePrice);
   const discountPercent = hasDiscount 
     ? Math.round((1 - Number(effectivePrice) / Number(product.compareAtPrice)) * 100)
@@ -535,12 +540,12 @@ export default function ProductPage({ params }: ProductPageProps) {
               {/* Price */}
               <div className="flex items-baseline gap-3 mb-1">
                 <span className="text-3xl font-bold text-gray-900">
-                  ${Number(effectivePrice).toFixed(2)}
+                  {Number(effectivePrice).toFixed(2).replace('.', ',')} zł
                 </span>
                 {hasDiscount && (
                   <>
                     <span className="text-lg text-gray-400 line-through">
-                      ${Number(product.compareAtPrice).toFixed(2)}
+                      {Number(product.compareAtPrice).toFixed(2).replace('.', ',')} zł
                     </span>
                     <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded">
                       -{discountPercent}%
@@ -551,7 +556,7 @@ export default function ProductPage({ params }: ProductPageProps) {
 
               {/* Lowest Price Info */}
               <p className="text-xs text-gray-500 mb-3">
-                Najniższa cena w ostatnich 30 dniach: $139.99
+                Najniższa cena w ostatnich 30 dniach: {Number(product.compareAtPrice || effectivePrice).toFixed(2).replace('.', ',')} zł
               </p>
 
               {/* Installment Info */}
