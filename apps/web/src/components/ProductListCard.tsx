@@ -129,11 +129,11 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
             {/* Price */}
             <div className="flex items-baseline gap-2 mb-2">
               <span className="text-xl font-bold text-secondary-900">
-                ${Number(product.price).toFixed(2).replace('.', ',')}
+                {Number(product.price).toFixed(2).replace('.', ',')} zł
               </span>
               {hasDiscount && (
                 <span className="text-base text-gray-400 line-through">
-                  ${Number(product.compareAtPrice).toFixed(2).replace('.', ',')}
+                  {Number(product.compareAtPrice).toFixed(2).replace('.', ',')} zł
                 </span>
               )}
             </div>
@@ -225,11 +225,11 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
           {/* Price */}
           <div className="flex items-baseline gap-2 mb-2">
             <span className="text-lg font-bold text-secondary-900">
-              ${Number(product.price).toFixed(2).replace('.', ',')}
+              {Number(product.price).toFixed(2).replace('.', ',')} zł
             </span>
             {hasDiscount && (
               <span className="text-sm text-gray-400 line-through">
-                ${Number(product.compareAtPrice).toFixed(2).replace('.', ',')}
+                {Number(product.compareAtPrice).toFixed(2).replace('.', ',')} zł
               </span>
             )}
           </div>

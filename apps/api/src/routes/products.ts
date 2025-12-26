@@ -9,9 +9,13 @@ import {
   getFilters
 } from '../controllers/products.controller';
 import { reviewsController } from '../controllers/reviews.controller';
-import { optionalAuth } from '../middleware/auth.middleware';
+import { optionalAuth, authGuard, adminOnly } from '../middleware/auth.middleware';
 
 const router = Router();
+
+// ========================================
+// PUBLIC ROUTES - No authentication required
+// ========================================
 
 // Route to get all products (with filters & pagination)
 router.get('/', getProducts);
@@ -25,18 +29,22 @@ router.get('/slug/:slug', getProductBySlug);
 // Route to get a specific product by ID
 router.get('/:id', getProductById);
 
-// Product reviews routes
+// Product reviews routes (public read, optional auth for can-review check)
 router.get('/:productId/reviews', reviewsController.getProductReviews);
 router.get('/:productId/reviews/stats', reviewsController.getProductReviewStats);
 router.get('/:productId/reviews/can-review', optionalAuth, reviewsController.canUserReview);
 
-// Route to create a new product
-router.post('/', createProduct);
+// ========================================
+// ADMIN ROUTES - Require admin authentication
+// ========================================
 
-// Route to update an existing product
-router.put('/:id', updateProduct);
+// Route to create a new product (admin only)
+router.post('/', authGuard, adminOnly, createProduct);
 
-// Route to delete a product
-router.delete('/:id', deleteProduct);
+// Route to update an existing product (admin only)
+router.put('/:id', authGuard, adminOnly, updateProduct);
+
+// Route to delete a product (admin only)
+router.delete('/:id', authGuard, adminOnly, deleteProduct);
 
 export default router;

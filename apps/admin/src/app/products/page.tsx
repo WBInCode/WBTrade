@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Package, Plus, Search, Filter, Edit, Trash2, Eye, 
   ChevronLeft, ChevronRight, ArrowUpDown, Download, Upload,
-  CheckSquare, Square, Archive, Check, X
+  CheckSquare, Square, Archive, Check, X, DollarSign, AlertTriangle
 } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface Product {
   id: string;
@@ -29,6 +30,7 @@ interface Category {
 }
 
 export default function ProductsPage() {
+  const { token } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,6 +49,17 @@ export default function ProductsPage() {
   
   // Selection for bulk actions
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  
+  // Inline price editing
+  const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
+  const [editingPrice, setEditingPrice] = useState('');
+  const [editingComparePrice, setEditingComparePrice] = useState('');
+  const priceInputRef = useRef<HTMLInputElement>(null);
+  
+  // Bulk price modal
+  const [showBulkPriceModal, setShowBulkPriceModal] = useState(false);
+  const [bulkPrice, setBulkPrice] = useState('');
+  const [bulkComparePrice, setBulkComparePrice] = useState('');
 
   useEffect(() => {
     loadProducts();
@@ -128,14 +141,17 @@ export default function ProductsPage() {
 
   // Bulk actions
   const bulkUpdateStatus = async (status: string) => {
-    if (selectedIds.size === 0) return;
+    if (selectedIds.size === 0 || !token) return;
     
     try {
       await Promise.all(
         Array.from(selectedIds).map(id =>
           fetch(`http://localhost:5000/api/products/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'PUT',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify({ status })
           })
         )
@@ -148,19 +164,114 @@ export default function ProductsPage() {
   };
 
   const bulkDelete = async () => {
-    if (selectedIds.size === 0) return;
+    if (selectedIds.size === 0 || !token) return;
     if (!confirm(`Czy na pewno chcesz usunac ${selectedIds.size} produktow?`)) return;
     
     try {
       await Promise.all(
         Array.from(selectedIds).map(id =>
-          fetch(`http://localhost:5000/api/products/${id}`, { method: 'DELETE' })
+          fetch(`http://localhost:5000/api/products/${id}`, { 
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
         )
       );
       setSelectedIds(new Set());
       loadProducts();
     } catch (error) {
       console.error('Bulk delete failed:', error);
+    }
+  };
+
+  // Inline price update
+  const startEditingPrice = (product: Product) => {
+    setEditingPriceId(product.id);
+    setEditingPrice(product.price.toString());
+    setEditingComparePrice(product.compareAtPrice?.toString() || '');
+    setTimeout(() => priceInputRef.current?.focus(), 0);
+  };
+
+  const saveInlinePrice = async (productId: string) => {
+    if (!token) return;
+    
+    try {
+      const priceValue = parseFloat(editingPrice);
+      const comparePriceValue = editingComparePrice ? parseFloat(editingComparePrice) : null;
+      
+      if (isNaN(priceValue) || priceValue < 0) {
+        alert('Podaj poprawną cenę');
+        return;
+      }
+
+      await fetch(`http://localhost:5000/api/products/${productId}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          price: priceValue,
+          compareAtPrice: comparePriceValue 
+        })
+      });
+      
+      setEditingPriceId(null);
+      loadProducts();
+    } catch (error) {
+      console.error('Failed to update price:', error);
+      alert('Nie udało się zaktualizować ceny');
+    }
+  };
+
+  const cancelEditingPrice = () => {
+    setEditingPriceId(null);
+    setEditingPrice('');
+    setEditingComparePrice('');
+  };
+
+  // Bulk price update
+  const bulkUpdatePrice = async () => {
+    if (selectedIds.size === 0 || !token) return;
+    
+    const priceValue = bulkPrice ? parseFloat(bulkPrice) : undefined;
+    const comparePriceValue = bulkComparePrice ? parseFloat(bulkComparePrice) : undefined;
+    
+    if (priceValue !== undefined && (isNaN(priceValue) || priceValue < 0)) {
+      alert('Podaj poprawną cenę');
+      return;
+    }
+
+    try {
+      const updateData: any = {};
+      if (priceValue !== undefined) updateData.price = priceValue;
+      if (comparePriceValue !== undefined) updateData.compareAtPrice = comparePriceValue;
+      
+      if (Object.keys(updateData).length === 0) {
+        alert('Podaj przynajmniej jedną cenę do aktualizacji');
+        return;
+      }
+
+      await Promise.all(
+        Array.from(selectedIds).map(id =>
+          fetch(`http://localhost:5000/api/products/${id}`, {
+            method: 'PUT',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(updateData)
+          })
+        )
+      );
+      
+      setShowBulkPriceModal(false);
+      setBulkPrice('');
+      setBulkComparePrice('');
+      setSelectedIds(new Set());
+      loadProducts();
+    } catch (error) {
+      console.error('Bulk price update failed:', error);
+      alert('Nie udało się zaktualizować cen');
     }
   };
 
@@ -288,6 +399,13 @@ export default function ProductsPage() {
               Archiwizuj
             </button>
             <button
+              onClick={() => setShowBulkPriceModal(true)}
+              className="px-3 py-1.5 bg-orange-500/20 text-orange-400 rounded-lg text-sm hover:bg-orange-500/30 transition-colors"
+            >
+              <DollarSign className="w-4 h-4 inline mr-1" />
+              Zmień ceny
+            </button>
+            <button
               onClick={bulkDelete}
               className="px-3 py-1.5 bg-red-500/20 text-red-400 rounded-lg text-sm hover:bg-red-500/30 transition-colors"
             >
@@ -392,9 +510,55 @@ export default function ProductsPage() {
                   </td>
                   <td className="px-4 py-4 text-gray-300 font-mono text-sm">{product.sku}</td>
                   <td className="px-4 py-4">
-                    <p className="text-white font-medium">{formatPrice(product.price)}</p>
-                    {product.compareAtPrice && (
-                      <p className="text-sm text-gray-400 line-through">{formatPrice(product.compareAtPrice)}</p>
+                    {editingPriceId === product.id ? (
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1">
+                          <input
+                            ref={priceInputRef}
+                            type="number"
+                            step="0.01"
+                            value={editingPrice}
+                            onChange={(e) => setEditingPrice(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') saveInlinePrice(product.id);
+                              if (e.key === 'Escape') cancelEditingPrice();
+                            }}
+                            className="w-24 px-2 py-1 bg-slate-900 border border-orange-500 rounded text-white text-sm focus:outline-none"
+                            placeholder="Cena"
+                          />
+                          <button onClick={() => saveInlinePrice(product.id)} className="p-1 text-green-400 hover:bg-green-500/20 rounded">
+                            <Check className="w-4 h-4" />
+                          </button>
+                          <button onClick={cancelEditingPrice} className="p-1 text-red-400 hover:bg-red-500/20 rounded">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={editingComparePrice}
+                          onChange={(e) => setEditingComparePrice(e.target.value)}
+                          className="w-24 px-2 py-1 bg-slate-900 border border-slate-700 rounded text-gray-400 text-xs focus:outline-none focus:border-orange-500"
+                          placeholder="Stara cena"
+                        />
+                      </div>
+                    ) : (
+                      <div 
+                        className={`cursor-pointer group/price ${product.price === 0 ? 'text-red-400' : ''}`}
+                        onClick={() => startEditingPrice(product)}
+                        title="Kliknij aby edytować cenę"
+                      >
+                        <div className="flex items-center gap-1">
+                          {product.price === 0 && <AlertTriangle className="w-4 h-4 text-red-400" />}
+                          <p className={`font-medium ${product.price === 0 ? 'text-red-400' : 'text-white'} group-hover/price:text-orange-400`}>
+                            {formatPrice(product.price)}
+                          </p>
+                          <Edit className="w-3 h-3 text-gray-500 opacity-0 group-hover/price:opacity-100 transition-opacity" />
+                        </div>
+                        {product.compareAtPrice && (
+                          <p className="text-sm text-gray-400 line-through">{formatPrice(product.compareAtPrice)}</p>
+                        )}
+                      </div>
                     )}
                   </td>
                   <td className="px-4 py-4">
@@ -420,8 +584,11 @@ export default function ProductsPage() {
                       </Link>
                       <button 
                         onClick={() => {
-                          if (confirm('Czy na pewno chcesz usunac ten produkt?')) {
-                            fetch(`http://localhost:5000/api/products/${product.id}`, { method: 'DELETE' })
+                          if (confirm('Czy na pewno chcesz usunac ten produkt?') && token) {
+                            fetch(`http://localhost:5000/api/products/${product.id}`, { 
+                              method: 'DELETE',
+                              headers: { 'Authorization': `Bearer ${token}` }
+                            })
                               .then(() => loadProducts());
                           }
                         }}
@@ -478,6 +645,66 @@ export default function ProductsPage() {
           </button>
         </div>
       </div>
+
+      {/* Bulk Price Update Modal */}
+      {showBulkPriceModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 w-full max-w-md">
+            <h3 className="text-lg font-bold text-white mb-4">
+              Zmień ceny ({selectedIds.size} produktów)
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">
+                  Nowa cena (PLN)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={bulkPrice}
+                  onChange={(e) => setBulkPrice(e.target.value)}
+                  placeholder="Zostaw puste aby nie zmieniać"
+                  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">
+                  Cena przed promocją (PLN)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={bulkComparePrice}
+                  onChange={(e) => setBulkComparePrice(e.target.value)}
+                  placeholder="Zostaw puste aby nie zmieniać"
+                  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowBulkPriceModal(false);
+                  setBulkPrice('');
+                  setBulkComparePrice('');
+                }}
+                className="px-4 py-2 bg-slate-700 text-gray-300 rounded-lg hover:bg-slate-600"
+              >
+                Anuluj
+              </button>
+              <button
+                onClick={bulkUpdatePrice}
+                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+              >
+                Zapisz zmiany
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
