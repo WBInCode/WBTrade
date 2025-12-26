@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Package, Trash2, Plus, X, Edit } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth } from '../../../../contexts/AuthContext';
 
 interface Category {
   id: string;
@@ -49,6 +50,7 @@ interface Product {
 export default function EditProductPage() {
   const params = useParams();
   const router = useRouter();
+  const { token } = useAuth();
   const productId = params.id as string;
   
   const [loading, setLoading] = useState(true);
@@ -176,6 +178,11 @@ export default function EditProductPage() {
   };
 
   const handleSubmit = async () => {
+    if (!token) {
+      alert('Brak autoryzacji. Zaloguj się ponownie.');
+      return;
+    }
+    
     setSaving(true);
     try {
       const productData = {
@@ -198,7 +205,10 @@ export default function EditProductPage() {
 
       const response = await fetch(`http://localhost:5000/api/products/${productId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(productData),
       });
 
@@ -218,10 +228,15 @@ export default function EditProductPage() {
 
   const handleDelete = async () => {
     if (!confirm('Czy na pewno chcesz usunac ten produkt? Ta operacja jest nieodwracalna.')) return;
+    if (!token) {
+      alert('Brak autoryzacji. Zaloguj się ponownie.');
+      return;
+    }
     
     try {
       const response = await fetch(`http://localhost:5000/api/products/${productId}`, {
         method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
       });
 
       if (response.ok) {
