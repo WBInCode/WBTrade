@@ -28,10 +28,25 @@ export class CategoriesService {
 
   /**
    * Get all categories in a tree structure
+   * Filters only main categories (order > 0) and their children
    */
   async getCategoryTree(): Promise<CategoryWithChildren[]> {
+    // First get main categories (order > 0)
+    const mainCategoryIds = await prisma.category.findMany({
+      where: { isActive: true, parentId: null, order: { gt: 0 } },
+      select: { id: true }
+    });
+    const mainIds = mainCategoryIds.map(c => c.id);
+
+    // Get main categories and their children
     const allCategories = await prisma.category.findMany({
-      where: { isActive: true },
+      where: { 
+        isActive: true,
+        OR: [
+          { id: { in: mainIds } },
+          { parentId: { in: mainIds } }
+        ]
+      },
       orderBy: { order: 'asc' },
       include: {
         _count: {
@@ -67,7 +82,8 @@ export class CategoriesService {
           parent.children = parent.children || [];
           parent.children.push(cat);
         }
-      } else {
+      } else if (cat.order > 0) {
+        // Only add root categories with order > 0 (main unified categories)
         rootCategories.push(cat);
       }
     });
@@ -202,12 +218,14 @@ export class CategoriesService {
 
   /**
    * Get main (root) categories only
+   * Filters by order > 0 to exclude old BaseLinker categories
    */
   async getMainCategories(): Promise<CategoryWithChildren[]> {
     const categories = await prisma.category.findMany({
       where: { 
         isActive: true,
-        parentId: null 
+        parentId: null,
+        order: { gt: 0 } // Only unified main categories have order > 0
       },
       orderBy: { order: 'asc' },
       include: {

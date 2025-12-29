@@ -83,8 +83,9 @@ export default function ProductsPage() {
       const data = await response.json();
       
       setProducts(data.products || []);
-      setTotalPages(data.pagination?.totalPages || 1);
-      setTotalProducts(data.pagination?.total || 0);
+      // API returns total/totalPages directly, not in pagination object
+      setTotalPages(data.totalPages || data.pagination?.totalPages || 1);
+      setTotalProducts(data.total || data.pagination?.total || 0);
     } catch (error) {
       console.error('Failed to load products:', error);
     } finally {
@@ -493,7 +494,7 @@ export default function ProductsPage() {
                       )}
                     </button>
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="px-4 py-4 max-w-md">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 bg-slate-700 rounded-lg overflow-hidden flex-shrink-0">
                         {product.images?.[0] ? (
@@ -502,8 +503,8 @@ export default function ProductsPage() {
                           <Package className="w-6 h-6 m-3 text-gray-500" />
                         )}
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-white truncate">{product.name}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-white truncate max-w-xs" title={product.name}>{product.name}</p>
                         <p className="text-sm text-gray-400">{product.variants?.length || 0} wariantow</p>
                       </div>
                     </div>

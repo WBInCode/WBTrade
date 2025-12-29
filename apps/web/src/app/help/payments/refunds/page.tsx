@@ -1,0 +1,175 @@
+import Header from '../../../../components/Header';
+import Footer from '../../../../components/Footer';
+import Link from 'next/link';
+
+export const metadata = {
+  title: 'Zwroty płatności - Centrum pomocy - WBTrade',
+  description: 'Informacje o zwrotach płatności w WBTrade',
+};
+
+export default function RefundsPage() {
+  return (
+    <div className="min-h-screen bg-secondary-50">
+      <Header />
+      
+      <main className="py-12">
+        <div className="container-custom">
+          {/* Breadcrumb */}
+          <nav className="flex items-center gap-2 text-sm text-secondary-500 mb-8">
+            <Link href="/" className="hover:text-primary-600">Strona główna</Link>
+            <span>/</span>
+            <Link href="/help" className="hover:text-primary-600">Centrum pomocy</Link>
+            <span>/</span>
+            <span className="text-secondary-900">Zwroty płatności</span>
+          </nav>
+
+          <div className="max-w-4xl">
+            <h1 className="text-3xl lg:text-4xl font-bold text-secondary-900 mb-6">
+              Zwroty płatności
+            </h1>
+            
+            <div className="bg-white rounded-2xl p-8 shadow-sm">
+              <div className="prose prose-lg max-w-none">
+                <p className="text-secondary-600 text-lg mb-8">
+                  Dowiedz się, jak przebiega proces zwrotu pieniędzy i ile trwa w zależności od metody płatności.
+                </p>
+
+                <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">
+                  Kiedy otrzymam zwrot?
+                </h2>
+                
+                <p className="text-secondary-600 mb-4">
+                  Zwrot pieniędzy realizujemy po:
+                </p>
+                <ul className="list-disc pl-6 text-secondary-600 space-y-2 mb-6">
+                  <li>Anulowaniu zamówienia (przed wysyłką)</li>
+                  <li>Otrzymaniu zwróconego towaru i pozytywnej weryfikacji</li>
+                  <li>Rozpatrzeniu reklamacji na korzyść klienta</li>
+                  <li>Wykryciu nadpłaty na zamówieniu</li>
+                </ul>
+
+                <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">
+                  Czas realizacji zwrotu
+                </h2>
+                
+                <div className="overflow-x-auto mb-8">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-secondary-100">
+                        <th className="p-3 text-left font-medium text-secondary-900 border">Metoda płatności</th>
+                        <th className="p-3 text-left font-medium text-secondary-900 border">Czas zwrotu</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="p-3 border text-secondary-600">BLIK</td>
+                        <td className="p-3 border text-secondary-600">1-3 dni robocze</td>
+                      </tr>
+                      <tr className="bg-secondary-50">
+                        <td className="p-3 border text-secondary-600">Karta płatnicza (Visa, Mastercard)</td>
+                        <td className="p-3 border text-secondary-600">5-10 dni roboczych</td>
+                      </tr>
+                      <tr>
+                        <td className="p-3 border text-secondary-600">Przelew online</td>
+                        <td className="p-3 border text-secondary-600">3-5 dni roboczych</td>
+                      </tr>
+                      <tr className="bg-secondary-50">
+                        <td className="p-3 border text-secondary-600">Google Pay / Apple Pay</td>
+                        <td className="p-3 border text-secondary-600">5-10 dni roboczych</td>
+                      </tr>
+                      <tr>
+                        <td className="p-3 border text-secondary-600">PayPo</td>
+                        <td className="p-3 border text-secondary-600">Automatyczne anulowanie zobowiązania</td>
+                      </tr>
+                      <tr className="bg-secondary-50">
+                        <td className="p-3 border text-secondary-600">Raty</td>
+                        <td className="p-3 border text-secondary-600">Anulowanie umowy ratalnej (14 dni)</td>
+                      </tr>
+                      <tr>
+                        <td className="p-3 border text-secondary-600">Przelew tradycyjny</td>
+                        <td className="p-3 border text-secondary-600">3-5 dni roboczych</td>
+                      </tr>
+                      <tr className="bg-secondary-50">
+                        <td className="p-3 border text-secondary-600">Za pobraniem</td>
+                        <td className="p-3 border text-secondary-600">Przelew na wskazane konto (5-7 dni)</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">
+                  Jak sprawdzić status zwrotu?
+                </h2>
+                <ol className="list-decimal pl-6 text-secondary-600 space-y-2 mb-6">
+                  <li>Zaloguj się na swoje konto</li>
+                  <li>Przejdź do "Moje konto" → "Zwroty"</li>
+                  <li>Znajdź odpowiedni zwrot na liście</li>
+                  <li>Sprawdź status (przetwarzany / zrealizowany)</li>
+                </ol>
+
+                <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">
+                  Na jakie konto otrzymam zwrot?
+                </h2>
+                <p className="text-secondary-600 mb-6">
+                  Zwrot realizujemy <strong>tą samą metodą płatności</strong>, którą użyto przy zamówieniu:
+                </p>
+                <ul className="list-disc pl-6 text-secondary-600 space-y-2 mb-6">
+                  <li><strong>Karta:</strong> Na kartę, z której wykonano płatność</li>
+                  <li><strong>BLIK/Przelew:</strong> Na konto bankowe, z którego wysłano przelew</li>
+                  <li><strong>Za pobraniem:</strong> Na konto wskazane w formularzu zwrotu</li>
+                </ul>
+
+                <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">
+                  Zwrot nie dotarł?
+                </h2>
+                <p className="text-secondary-600 mb-4">
+                  Jeśli minął podany termin i zwrot nie dotarł:
+                </p>
+                <ol className="list-decimal pl-6 text-secondary-600 space-y-2 mb-6">
+                  <li>Sprawdź wyciąg bankowy za ostatnie dni</li>
+                  <li>Upewnij się, że konto/karta nie zostały zamknięte</li>
+                  <li>Sprawdź, czy nie ma opóźnień po stronie banku</li>
+                  <li>Skontaktuj się z nami podając numer zamówienia</li>
+                </ol>
+
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mt-8">
+                  <h3 className="font-semibold text-yellow-800 mb-2">⚠️ Ważne informacje</h3>
+                  <ul className="text-yellow-700 space-y-2">
+                    <li>• Zwrot za dostawę jest realizowany tylko przy zwrocie całego zamówienia</li>
+                    <li>• Koszty odesłania towaru pokrywa klient (chyba że towar był wadliwy)</li>
+                    <li>• Przy ratach - anulowanie może wymagać kontaktu z instytucją finansową</li>
+                  </ul>
+                </div>
+
+                <div className="bg-primary-50 border border-primary-200 rounded-xl p-6 mt-6">
+                  <h3 className="font-semibold text-primary-900 mb-2">💡 Wskazówka</h3>
+                  <p className="text-primary-700">
+                    Przy płatności kartą zwrot może najpierw pojawić się jako "oczekująca transakcja" zanim zostanie zaksięgowany.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Related links */}
+            <div className="mt-8 bg-white rounded-2xl p-6 shadow-sm">
+              <h3 className="font-semibold text-secondary-900 mb-4">Powiązane tematy</h3>
+              <div className="flex flex-wrap gap-3">
+                <Link href="/help/returns/policy" className="text-primary-600 hover:text-primary-700 text-sm bg-primary-50 px-4 py-2 rounded-lg">
+                  Polityka zwrotów
+                </Link>
+                <Link href="/help/orders/cancel" className="text-primary-600 hover:text-primary-700 text-sm bg-primary-50 px-4 py-2 rounded-lg">
+                  Anulowanie zamówienia
+                </Link>
+                <Link href="/help/returns/status" className="text-primary-600 hover:text-primary-700 text-sm bg-primary-50 px-4 py-2 rounded-lg">
+                  Status zwrotu
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <Footer />
+    </div>
+  );
+}

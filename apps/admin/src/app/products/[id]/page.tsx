@@ -212,7 +212,14 @@ export default function ProductDetailPage() {
               <p className="text-gray-300 mb-4">{product.shortDescription}</p>
             )}
             {product.description ? (
-              <p className="text-gray-400 whitespace-pre-wrap">{product.description}</p>
+              <div 
+                className="text-gray-300 text-sm leading-relaxed overflow-hidden
+                  [&_p]:mb-3 [&_table]:w-full [&_td]:p-2 [&_td]:border [&_td]:border-slate-600
+                  [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_a]:text-orange-400
+                  [&_h1]:text-xl [&_h1]:font-bold [&_h1]:mb-3 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mb-2
+                  [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1"
+                dangerouslySetInnerHTML={{ __html: product.description }}
+              />
             ) : (
               <p className="text-gray-500">Brak opisu</p>
             )}
