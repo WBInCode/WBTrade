@@ -14,11 +14,11 @@ export default function CategoryFilter() {
   const [expanded, setExpanded] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch categories
+  // Fetch categories - only main categories (order > 0)
   useEffect(() => {
     async function fetchCategories() {
       try {
-        const response = await categoriesApi.getAll();
+        const response = await categoriesApi.getMain();
         setCategories(response.categories);
       } catch (error) {
         console.error('Failed to fetch categories:', error);

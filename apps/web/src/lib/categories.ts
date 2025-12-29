@@ -1,4 +1,6 @@
 // Centralna konfiguracja kategorii - jedno źródło prawdy
+// Uwaga: główne kategorie są teraz pobierane dynamicznie z API (categoriesApi.getMain())
+// Ten plik zawiera definicje typów i helper functions
 
 export interface Category {
   name: string;
@@ -6,57 +8,43 @@ export interface Category {
   children?: Category[];
 }
 
-// Główne kategorie (wyświetlane w Header)
+// Główne kategorie (zsynchronizowane z bazą danych)
 export const mainCategories: Category[] = [
   {
     name: 'Elektronika',
     slug: 'elektronika',
     children: [
-      {
-        name: 'Laptopy',
-        slug: 'laptopy',
-        children: [
-          { name: 'Laptopy gamingowe', slug: 'laptopy-gamingowe' },
-          { name: 'Ultrabooki', slug: 'ultrabooki' },
-          { name: 'Laptopy 2w1', slug: 'laptopy-2w1' },
-          { name: 'Laptopy biznesowe', slug: 'laptopy-biznesowe' },
-        ]
-      },
-      {
-        name: 'Smartfony',
-        slug: 'smartfony',
-        children: [
-          { name: 'iPhone', slug: 'iphone' },
-          { name: 'Samsung', slug: 'samsung' },
-          { name: 'Xiaomi', slug: 'xiaomi' },
-        ]
-      },
-      {
-        name: 'Telewizory',
-        slug: 'telewizory',
-      },
-      {
-        name: 'Słuchawki',
-        slug: 'sluchawki',
-      },
+      { name: 'Laptopy i komputery', slug: 'elektronika-laptopy-i-komputery' },
+      { name: 'Smartfony i telefony', slug: 'elektronika-smartfony-i-telefony' },
+      { name: 'Etui i akcesoria GSM', slug: 'elektronika-etui-i-akcesoria-gsm' },
+      { name: 'Ładowarki i kable', slug: 'elektronika-ladowarki-i-kable' },
+      { name: 'Słuchawki i audio', slug: 'elektronika-sluchawki-i-audio' },
+      { name: 'Smartwatche i wearables', slug: 'elektronika-smartwatche-i-wearables' },
+      { name: 'Tablety', slug: 'elektronika-tablety' },
+      { name: 'Telewizory', slug: 'elektronika-telewizory' },
+      { name: 'Konsole i gaming', slug: 'elektronika-konsole-i-gaming' },
+      { name: 'Aparaty i kamery', slug: 'elektronika-aparaty-i-kamery' },
+      { name: 'Akcesoria komputerowe', slug: 'elektronika-akcesoria-komputerowe' },
+      { name: 'Narzędzia elektroniczne', slug: 'elektronika-narzedzia-elektroniczne' },
     ]
   },
   {
     name: 'Moda',
     slug: 'moda',
     children: [
-      { name: 'Odzież damska', slug: 'odziez-damska' },
-      { name: 'Odzież męska', slug: 'odziez-meska' },
-      { name: 'Buty', slug: 'buty' },
-      { name: 'Akcesoria', slug: 'akcesoria-moda' },
+      { name: 'Odzież damska', slug: 'moda-odziez-damska' },
+      { name: 'Odzież męska', slug: 'moda-odziez-meska' },
+      { name: 'Odzież dziecięca', slug: 'moda-odziez-dziecieca' },
+      { name: 'Buty', slug: 'moda-buty' },
+      { name: 'Akcesoria modowe', slug: 'moda-akcesoria-modowe' },
     ]
   },
   {
     name: 'Dom i Ogród',
     slug: 'dom-i-ogrod',
     children: [
-      { name: 'Meble', slug: 'meble' },
-      { name: 'Dekoracje', slug: 'dekoracje' },
+      { name: 'Meble', slug: 'dom-i-ogrod-meble' },
+      { name: 'Dekoracje', slug: 'dom-i-ogrod-dekoracje' },
       { name: 'Ogród', slug: 'ogrod' },
       { name: 'Narzędzia', slug: 'narzedzia' },
     ]
@@ -74,6 +62,7 @@ export const mainCategories: Category[] = [
     name: 'Dziecko',
     slug: 'dziecko',
     children: [
+      { name: 'Artykuły dziecięce', slug: 'dziecko-artykuly-dzieciece' },
       { name: 'Zabawki', slug: 'zabawki' },
       { name: 'Ubranka', slug: 'ubranka' },
       { name: 'Wózki', slug: 'wozki' },
@@ -92,10 +81,64 @@ export const mainCategories: Category[] = [
     name: 'Motoryzacja',
     slug: 'motoryzacja',
     children: [
-      { name: 'Części samochodowe', slug: 'czesci-samochodowe' },
-      { name: 'Akcesoria', slug: 'akcesoria-moto' },
+      { name: 'Części samochodowe', slug: 'motoryzacja-czesci-samochodowe' },
+      { name: 'Akcesoria samochodowe', slug: 'akcesoria-moto' },
       { name: 'Opony', slug: 'opony' },
     ]
+  },
+  {
+    name: 'AGD',
+    slug: 'agd',
+    children: [
+      { name: 'Małe AGD kuchenne', slug: 'agd-male-agd-kuchenne' },
+      { name: 'Duże AGD', slug: 'agd-duze-agd' },
+      { name: 'Sprzątanie', slug: 'agd-sprzatanie' },
+      { name: 'Klimatyzacja', slug: 'agd-klimatyzacja' },
+    ]
+  },
+  {
+    name: 'Gastronomia',
+    slug: 'gastronomia',
+    children: [
+      { name: 'Urządzenia gastronomiczne', slug: 'gastronomia-urzadzenia-gastronomiczne' },
+      { name: 'Wyposażenie kuchni', slug: 'gastronomia-wyposazenie-kuchni' },
+      { name: 'Naczynia i sztućce', slug: 'gastronomia-naczynia-i-sztucce' },
+      { name: 'Maszyny do mięsa', slug: 'gastronomia-maszyny-do-miesa' },
+      { name: 'Chłodnictwo', slug: 'gastronomia-chlodnictwo-gastronomiczne' },
+      { name: 'Pakowanie', slug: 'gastronomia-pakowanie-gastronomia' },
+      { name: 'Roboty kuchenne', slug: 'gastronomia-roboty-kuchenne' },
+    ]
+  },
+  {
+    name: 'Sport',
+    slug: 'sport',
+    children: [
+      { name: 'Fitness', slug: 'sport-fitness' },
+      { name: 'Rowery', slug: 'sport-rowery' },
+      { name: 'Turystyka', slug: 'sport-turystyka' },
+    ]
+  },
+  {
+    name: 'Zdrowie i Uroda',
+    slug: 'zdrowie-i-uroda',
+    children: [
+      { name: 'Kosmetyki', slug: 'zdrowie-i-uroda-kosmetyki' },
+      { name: 'Higiena', slug: 'zdrowie-i-uroda-higiena' },
+    ]
+  },
+  {
+    name: 'Zwierzęta',
+    slug: 'zwierzeta',
+    children: [
+      { name: 'Dla psa', slug: 'zwierzeta-dla-psa' },
+      { name: 'Dla kota', slug: 'zwierzeta-dla-kota' },
+      { name: 'Akwaria', slug: 'zwierzeta-akwaria' },
+    ]
+  },
+  {
+    name: 'Inne',
+    slug: 'inne',
+    children: []
   },
 ];
 

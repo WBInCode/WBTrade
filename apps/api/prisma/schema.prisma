@@ -82,27 +82,28 @@ model Category {
 }
 
 model Product {
-  id                   String           @id @default(cuid())
-  name                 String
-  slug                 String           @unique
-  description          String?
-  sku                  String           @unique
-  barcode              String?
-  status               ProductStatus    @default(DRAFT)
-  price                Decimal          @db.Decimal(10, 2)
-  compareAtPrice       Decimal?         @map("compare_at_price") @db.Decimal(10, 2)
-  metaTitle            String?          @map("meta_title")
-  metaDescription      String?          @map("meta_description")
-  createdAt            DateTime         @default(now()) @map("created_at")
-  updatedAt            DateTime         @updatedAt @map("updated_at")
-  categoryId           String?          @map("category_id")
-  specifications       Json?            @default("{}")
-  baselinkerProductId  String?          @unique @map("baselinker_product_id")
-  images               ProductImage[]
-  variants             ProductVariant[]
-  category             Category?        @relation(fields: [categoryId], references: [id])
-  reviews              Review[]
-  wishlistItems        WishlistItem[]
+  id                     String           @id @default(cuid())
+  name                   String
+  slug                   String           @unique
+  description            String?
+  sku                    String           @unique
+  barcode                String?
+  status                 ProductStatus    @default(DRAFT)
+  price                  Decimal          @db.Decimal(10, 2)
+  compareAtPrice         Decimal?         @map("compare_at_price") @db.Decimal(10, 2)
+  metaTitle              String?          @map("meta_title")
+  metaDescription        String?          @map("meta_description")
+  createdAt              DateTime         @default(now()) @map("created_at")
+  updatedAt              DateTime         @updatedAt @map("updated_at")
+  categoryId             String?          @map("category_id")
+  specifications         Json?            @default("{}")
+  baselinkerProductId    String?          @unique @map("baselinker_product_id")
+  baselinkerCategoryPath String?          @map("baselinker_category_path")
+  images                 ProductImage[]
+  variants               ProductVariant[]
+  category               Category?        @relation(fields: [categoryId], references: [id])
+  reviews                Review[]
+  wishlistItems          WishlistItem[]
 
   @@index([slug])
   @@index([sku])
@@ -524,6 +525,8 @@ model BaselinkerConfig {
   encryptionIv        String    @map("encryption_iv")
   authTag             String    @map("auth_tag")
   lastSyncAt          DateTime? @map("last_sync_at")
+  syncEnabled         Boolean   @default(false) @map("sync_enabled")
+  syncIntervalMinutes Int       @default(60) @map("sync_interval_minutes")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
 

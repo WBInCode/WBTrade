@@ -370,6 +370,19 @@ export default function ProductPage({ params }: ProductPageProps) {
   // Parse features from description (bullet points starting with •)
   const { mainDescription, features } = useMemo(() => {
     const description = product?.description || '';
+    
+    // Check if description contains HTML tags
+    const containsHtml = /<[a-z][\s\S]*>/i.test(description);
+    
+    if (containsHtml) {
+      // If it's HTML content (from BaseLinker), return as-is
+      return {
+        mainDescription: description,
+        features: [],
+      };
+    }
+    
+    // Otherwise parse as plain text with bullet points
     const lines = description.split('\n').filter(line => line.trim());
     
     const featureLines: string[] = [];
@@ -780,9 +793,14 @@ export default function ProductPage({ params }: ProductPageProps) {
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">
                   {product.name}
                 </h2>
-                <p className="text-gray-600 mb-6 leading-relaxed">
-                  {mainDescription || mockProduct.description}
-                </p>
+                {/* Render HTML description from BaseLinker */}
+                <div 
+                  className="text-gray-600 mb-6 leading-relaxed prose prose-sm max-w-none
+                    [&_p]:mb-3 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mb-2 [&_h3]:text-gray-900
+                    [&_img]:rounded-lg [&_img]:my-4 [&_img]:max-w-full [&_img]:h-auto
+                    [&_.section]:mb-4 [&_.text-item]:mb-2"
+                  dangerouslySetInnerHTML={{ __html: mainDescription || mockProduct.description }}
+                />
 
                 {features.length > 0 && (
                   <ul className="space-y-3 mb-8">

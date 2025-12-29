@@ -608,14 +608,82 @@ export class BaselinkerService {
   }
 
   /**
+   * Default PLN price group ID - fetched from BaseLinker config
+   * Common IDs: 10034 for PLN, but this should match your inventory settings
+   */
+  private defaultPriceGroupId: string = '10034'; // PLN price group
+
+  /**
+   * Get product price from Baselinker product data
+   * BaseLinker can return prices in different fields:
+   * - price_brutto: direct price (simple products)
+   * - prices: object with price groups { group_id: price } (inventory products)
+   * 
+   * Priority:
+   * 1. price_brutto (if exists)
+   * 2. Default PLN price group (ID 10034)
+   * 3. First non-zero price from any group
+   * 4. price_netto + tax
+   */
+  private getProductPrice(blProduct: any): number {
+    // First try direct price_brutto
+    if (blProduct.price_brutto && parseFloat(blProduct.price_brutto) > 0) {
+      return parseFloat(blProduct.price_brutto);
+    }
+    
+    // Try prices object (inventory price groups)
+    if (blProduct.prices && typeof blProduct.prices === 'object') {
+      // Priority 1: Default PLN price group
+      const plnPrice = blProduct.prices[this.defaultPriceGroupId];
+      if (plnPrice && parseFloat(plnPrice) > 0) {
+        return parseFloat(plnPrice);
+      }
+      
+      // Priority 2: First non-zero price (fallback)
+      for (const [groupId, price] of Object.entries(blProduct.prices)) {
+        const numPrice = parseFloat(String(price));
+        if (numPrice > 0) {
+          console.log(`[BaselinkerSync] Using price from group ${groupId} (not default PLN): ${numPrice}`);
+          return numPrice;
+        }
+      }
+    }
+    
+    // Try price_netto + tax
+    if (blProduct.price_netto && parseFloat(blProduct.price_netto) > 0) {
+      const taxRate = blProduct.tax_rate || 23; // Default VAT 23%
+      return parseFloat(blProduct.price_netto) * (1 + taxRate / 100);
+    }
+    
+    return 0;
+  }
+
+  /**
+   * Get product EAN/barcode from Baselinker product data
+   */
+  private getProductEan(blProduct: any): string | null {
+    // Direct ean field
+    if (blProduct.ean && String(blProduct.ean).trim()) {
+      return String(blProduct.ean).trim();
+    }
+    
+    // Sometimes EAN is in text_fields or other places
+    if (blProduct.text_fields?.ean) {
+      return String(blProduct.text_fields.ean).trim();
+    }
+    
+    return null;
+  }
+
+  /**
    * Generate a simple hash for product comparison
    */
   private generateProductHash(blProduct: any): string {
     const data = {
       name: this.getProductName(blProduct),
       sku: blProduct.sku || '',
-      ean: blProduct.ean || '',
-      price: blProduct.price_brutto || 0,
+      ean: this.getProductEan(blProduct) || '',
+      price: this.getProductPrice(blProduct),
       category_id: blProduct.category_id || 0,
       imageCount: blProduct.images ? Object.keys(blProduct.images).length : 0,
       variantCount: blProduct.variants?.length || 0,
@@ -679,7 +747,8 @@ export class BaselinkerService {
         }
         
         // Quick comparison - if basic fields differ, fetch full data
-        const priceChanged = existing.price && Math.abs(parseFloat(existing.price.toString()) - (blProduct.price_brutto || 0)) > 0.01;
+        const listPrice = this.getProductPrice(blProduct);
+        const priceChanged = existing.price && Math.abs(parseFloat(existing.price.toString()) - listPrice) > 0.01;
         const skuChanged = existing.sku !== (blProduct.sku || `BL-${blProduct.id}`);
         const nameChanged = existing.name !== blProduct.name;
         
@@ -722,6 +791,17 @@ export class BaselinkerService {
                 console.log(`[BaselinkerSync] Warning: No name found for product ${blProduct.id}, using fallback`);
               }
               const description = this.getProductDescription(blProduct);
+              const productPrice = this.getProductPrice(blProduct);
+              const productEan = this.getProductEan(blProduct);
+              
+              // Debug log for price issues
+              if (productPrice === 0) {
+                console.log(`[BaselinkerSync] Warning: Product ${blProduct.id} has price 0. Raw data:`, {
+                  price_brutto: blProduct.price_brutto,
+                  prices: blProduct.prices,
+                  price_netto: blProduct.price_netto,
+                });
+              }
               
               const slug = await this.ensureUniqueProductSlug(slugify(name) || `product-${baselinkerProductId}`, baselinkerProductId);
 
@@ -738,8 +818,8 @@ export class BaselinkerService {
                   slug,
                   description,
                   sku: await this.ensureUniqueSku(sku, baselinkerProductId),
-                  barcode: blProduct.ean || null,
-                  price: blProduct.price_brutto || 0,
+                  barcode: productEan,
+                  price: productPrice,
                   categoryId: category?.id || null,
                   status: 'ACTIVE',
                   specifications: blProduct.features || {},
@@ -750,8 +830,8 @@ export class BaselinkerService {
                   slug,
                   description,
                   sku: await this.ensureUniqueSku(sku, baselinkerProductId),
-                  barcode: blProduct.ean || null,
-                  price: blProduct.price_brutto || 0,
+                  barcode: productEan,
+                  price: productPrice,
                   categoryId: category?.id || null,
                   status: 'ACTIVE',
                   specifications: blProduct.features || {},
@@ -784,22 +864,24 @@ export class BaselinkerService {
                 for (const blVariant of blProduct.variants) {
                   const variantId = blVariant.variant_id.toString();
                   const variantSku = generateSku(blVariant.variant_id, blVariant.sku);
+                  const variantPrice = blVariant.price_brutto || productPrice;
+                  const variantEan = blVariant.ean ? String(blVariant.ean).trim() : null;
 
                   await tx.productVariant.upsert({
                     where: { baselinkerVariantId: variantId },
                     update: {
                       name: blVariant.name,
                       sku: await this.ensureUniqueVariantSku(variantSku, variantId),
-                      barcode: blVariant.ean || null,
-                      price: blVariant.price_brutto || blProduct.price_brutto || 0,
+                      barcode: variantEan,
+                      price: variantPrice,
                     },
                     create: {
                       baselinkerVariantId: variantId,
                       productId: product.id,
                       name: blVariant.name,
                       sku: await this.ensureUniqueVariantSku(variantSku, variantId),
-                      barcode: blVariant.ean || null,
-                      price: blVariant.price_brutto || blProduct.price_brutto || 0,
+                      barcode: variantEan,
+                      price: variantPrice,
                     },
                   });
                 }
@@ -811,16 +893,16 @@ export class BaselinkerService {
                   update: {
                     name: 'Domyślny',
                     sku: await this.ensureUniqueVariantSku(`${sku}-DEFAULT`, defaultVariantId),
-                    barcode: blProduct.ean || null,
-                    price: blProduct.price_brutto || 0,
+                    barcode: productEan,
+                    price: productPrice,
                   },
                   create: {
                     baselinkerVariantId: defaultVariantId,
                     productId: product.id,
                     name: 'Domyślny',
                     sku: await this.ensureUniqueVariantSku(`${sku}-DEFAULT`, defaultVariantId),
-                    barcode: blProduct.ean || null,
-                    price: blProduct.price_brutto || 0,
+                    barcode: productEan,
+                    price: productPrice,
                   },
                 });
               }
