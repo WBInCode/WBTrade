@@ -12,7 +12,7 @@ import { prisma } from '../db';
 import { encryptToken, decryptToken, maskToken } from '../lib/encryption';
 import { createBaselinkerProvider, BaselinkerProvider, BaselinkerInventory } from '../providers/baselinker';
 import { meiliClient, PRODUCTS_INDEX } from '../lib/meilisearch';
-import { BaselinkerSyncType, BaselinkerSyncStatus } from '@prisma/client';
+import { BaselinkerSyncType, BaselinkerSyncStatus, Prisma } from '@prisma/client';
 
 // ============================================
 // Types
@@ -55,7 +55,7 @@ export interface SyncStatus {
     type: BaselinkerSyncType;
     status: BaselinkerSyncStatus;
     itemsProcessed: number;
-    errors: any;
+    errors: Prisma.JsonValue;
     startedAt: Date;
     completedAt: Date | null;
   }>;
@@ -84,8 +84,8 @@ function slugify(text: string): string {
     .toLowerCase()
     .trim()
     .replace(/\s+/g, '-')
-    .replace(/[^\w\-]+/g, '')
-    .replace(/\-\-+/g, '-')
+    .replace(/[^\w-]+/g, '')
+    .replace(/-{2,}/g, '-')
     .replace(/^-+/, '')
     .replace(/-+$/, '');
 }
@@ -437,7 +437,7 @@ export class BaselinkerService {
       });
       
       const existingMap = new Map(
-        existingCategories.map(c => [c.baselinkerCategoryId!, c])
+        existingCategories.map(c => [c.baselinkerCategoryId as string, c])
       );
 
       // Pre-build parent ID lookup
@@ -542,7 +542,7 @@ export class BaselinkerService {
     let slug = baseSlug;
     let counter = 1;
 
-    while (true) {
+    while (counter < 10000) {
       const existing = await prisma.category.findUnique({
         where: { slug },
       });
@@ -554,11 +554,15 @@ export class BaselinkerService {
       slug = `${baseSlug}-${counter}`;
       counter++;
     }
+    
+    // Fallback if we somehow hit the limit
+    return `${baseSlug}-${Date.now()}`;
   }
 
   /**
    * Get product name from Baselinker product data
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private getProductName(blProduct: any): string {
     if (blProduct.text_fields) {
       // Direct name field (most common)
@@ -586,6 +590,7 @@ export class BaselinkerService {
   /**
    * Get product description from Baselinker product data
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private getProductDescription(blProduct: any): string {
     if (blProduct.text_fields) {
       // Direct description field
@@ -611,7 +616,7 @@ export class BaselinkerService {
    * Default PLN price group ID - fetched from BaseLinker config
    * Common IDs: 10034 for PLN, but this should match your inventory settings
    */
-  private defaultPriceGroupId: string = '10034'; // PLN price group
+  private defaultPriceGroupId = '10034'; // PLN price group
 
   /**
    * Get product price from Baselinker product data
@@ -625,6 +630,7 @@ export class BaselinkerService {
    * 3. First non-zero price from any group
    * 4. price_netto + tax
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private getProductPrice(blProduct: any): number {
     // First try direct price_brutto
     if (blProduct.price_brutto && parseFloat(blProduct.price_brutto) > 0) {
@@ -661,6 +667,7 @@ export class BaselinkerService {
   /**
    * Get product EAN/barcode from Baselinker product data
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private getProductEan(blProduct: any): string | null {
     // Direct ean field
     if (blProduct.ean && String(blProduct.ean).trim()) {
@@ -678,6 +685,7 @@ export class BaselinkerService {
   /**
    * Generate a simple hash for product comparison
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private generateProductHash(blProduct: any): string {
     const data = {
       name: this.getProductName(blProduct),
@@ -727,7 +735,7 @@ export class BaselinkerService {
       });
 
       const existingMap = new Map(
-        existingProducts.map(p => [p.baselinkerProductId!, p])
+        existingProducts.map(p => [p.baselinkerProductId as string, p])
       );
 
       console.log(`[BaselinkerSync] Found ${existingProducts.length} existing products in database`);
@@ -931,7 +939,7 @@ export class BaselinkerService {
     let slug = baseSlug;
     let counter = 1;
 
-    while (true) {
+    while (counter < 10000) {
       const existing = await prisma.product.findUnique({
         where: { slug },
       });
@@ -943,6 +951,9 @@ export class BaselinkerService {
       slug = `${baseSlug}-${counter}`;
       counter++;
     }
+    
+    // Fallback if we hit the limit
+    return `${baseSlug}-${Date.now()}`;
   }
 
   /**
@@ -952,7 +963,7 @@ export class BaselinkerService {
     let sku = baseSku;
     let counter = 1;
 
-    while (true) {
+    while (counter < 10000) {
       const existing = await prisma.product.findUnique({
         where: { sku },
       });
@@ -964,6 +975,9 @@ export class BaselinkerService {
       sku = `${baseSku}-${counter}`;
       counter++;
     }
+    
+    // Fallback if we hit the limit
+    return `${baseSku}-${Date.now()}`;
   }
 
   /**
@@ -973,7 +987,7 @@ export class BaselinkerService {
     let sku = baseSku;
     let counter = 1;
 
-    while (true) {
+    while (counter < 10000) {
       const existing = await prisma.productVariant.findUnique({
         where: { sku },
       });
@@ -985,6 +999,9 @@ export class BaselinkerService {
       sku = `${baseSku}-${counter}`;
       counter++;
     }
+    
+    // Fallback if we hit the limit
+    return `${baseSku}-${Date.now()}`;
   }
 
   /**
@@ -1089,7 +1106,7 @@ export class BaselinkerService {
 
       const productIds = products
         .filter((p) => p.baselinkerProductId)
-        .map((p) => parseInt(p.baselinkerProductId!, 10));
+        .map((p) => parseInt(p.baselinkerProductId as string, 10));
 
       // Fetch product data with images
       const blProducts = await provider.getInventoryProductsData(inventoryId, productIds);
@@ -1178,7 +1195,7 @@ export class BaselinkerService {
   /**
    * Get sync status and recent logs
    */
-  async getStatus(limit: number = 10): Promise<SyncStatus> {
+  async getStatus(limit = 10): Promise<SyncStatus> {
     const config = await prisma.baselinkerConfig.findFirst();
 
     const currentSync = await prisma.baselinkerSyncLog.findFirst({

@@ -1,4 +1,4 @@
-import { PrismaClient, OrderStatus, Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -632,7 +632,7 @@ export class ReportsService {
     }));
   }
 
-  private async getTopCustomers(startDate: Date) {
+  private async getTopCustomers(_startDate: Date) {
     const customers = await prisma.user.findMany({
       where: {
         role: 'CUSTOMER',
