@@ -19,6 +19,6 @@
       "@/*": ["*"]
     }
   },
-  "include": ["apps/web/src"],
+  "include": ["apps/web/src", "apps/api/src", "apps/api/scripts"],
   "exclude": ["node_modules", "**/*.spec.ts"]
 }
