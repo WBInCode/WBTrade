@@ -127,7 +127,7 @@ async function main() {
 
     for (const product of products) {
       processed++;
-      
+
       const blProduct = blProductData[product.baselinkerProductId];
       if (!blProduct) {
         errors++;
@@ -144,17 +144,26 @@ async function main() {
 
       // Mapuj kategorię
       const mapping = categoryMapper.mapCategory(blCategoryPath, product.name);
-      const categorySlug = mapping.subSlug 
-        ? `${mapping.mainSlug}-${mapping.subSlug}` 
-        : mapping.mainSlug;
-      
-      const newCategoryId = shopCategoryCache.get(categorySlug);
 
+      // Przypisuj TYLKO do podkategorii, jeśli istnieje subSlug
+      let categorySlug = null;
+      if (mapping.subSlug) {
+        categorySlug = `${mapping.mainSlug}-${mapping.subSlug}`;
+      } else if (!mapping.subSlug) {
+        // Brak podkategorii, przypisz do głównej
+        categorySlug = mapping.mainSlug;
+      }
+
+      // Jeśli nie ma subSlug (czyli nie znaleziono podkategorii), przypisz do głównej
+      // Jeśli jest subSlug, przypisz tylko do podkategorii
+      // (czyli nie przypisuj do głównej, jeśli jest podkategoria)
       // Statystyki
       const catName = mapping.subCategory 
         ? `${mapping.mainCategory} > ${mapping.subCategory}`
         : mapping.mainCategory;
       categoryStats[catName] = (categoryStats[catName] || 0) + 1;
+
+      const newCategoryId = shopCategoryCache.get(categorySlug);
 
       if (!DRY_RUN && newCategoryId) {
         try {

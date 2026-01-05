@@ -214,8 +214,9 @@ export default function OrderDetailsPage() {
 
     try {
       setCancelling(true);
-      const updatedOrder = await ordersApi.cancel(order.id);
-      setOrder(updatedOrder);
+      await ordersApi.cancel(order.id);
+      // Zaktualizuj lokalny stan zamówienia
+      setOrder({ ...order, status: 'CANCELLED' });
     } catch (err: unknown) {
       console.error('Error cancelling order:', err);
       const errorMessage = err instanceof Error ? err.message : 'Nie udało się anulować zamówienia';

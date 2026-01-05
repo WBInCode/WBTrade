@@ -130,9 +130,10 @@ export async function getOrder(req: Request, res: Response): Promise<void> {
   try {
     const { id } = req.params;
     
-    // Validate UUID format
+    // Validate ID format: accept either UUID or cuid (c... string used by Prisma @default(cuid()))
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(id)) {
+    const cuidRegex = /^c[a-z0-9]{20,}$/i;
+    if (!uuidRegex.test(id) && !cuidRegex.test(id)) {
       res.status(400).json({ message: 'Invalid order ID format' });
       return;
     }
@@ -191,9 +192,10 @@ export async function updateOrder(req: Request, res: Response): Promise<void> {
   try {
     const { id } = req.params;
     
-    // Validate UUID format
+    // Validate ID format: accept either UUID or cuid
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(id)) {
+    const cuidRegex = /^c[a-z0-9]{20,}$/i;
+    if (!uuidRegex.test(id) && !cuidRegex.test(id)) {
       res.status(400).json({ message: 'Invalid order ID format' });
       return;
     }
@@ -229,9 +231,10 @@ export async function deleteOrder(req: Request, res: Response): Promise<void> {
   try {
     const { id } = req.params;
     
-    // Validate UUID format
+    // Validate ID format: accept either UUID or cuid
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(id)) {
+    const cuidRegex = /^c[a-z0-9]{20,}$/i;
+    if (!uuidRegex.test(id) && !cuidRegex.test(id)) {
       res.status(400).json({ message: 'Invalid order ID format' });
       return;
     }

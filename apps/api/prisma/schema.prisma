@@ -445,6 +445,36 @@ model SearchHistory {
   @@map("search_history")
 }
 
+model BaselinkerConfig {
+  id                  String    @id @default(cuid())
+  inventoryId         String    @unique @map("inventory_id")
+  apiTokenEncrypted   String    @map("api_token_encrypted")
+  encryptionIv        String    @map("encryption_iv")
+  authTag             String    @map("auth_tag")
+  lastSyncAt          DateTime? @map("last_sync_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  syncEnabled         Boolean   @default(false) @map("sync_enabled")
+  syncIntervalMinutes Int       @default(60) @map("sync_interval_minutes")
+
+  @@map("baselinker_configs")
+}
+
+model BaselinkerSyncLog {
+  id             String               @id @default(cuid())
+  type           BaselinkerSyncType
+  status         BaselinkerSyncStatus
+  itemsProcessed Int                  @default(0) @map("items_processed")
+  errors         Json?
+  startedAt      DateTime             @default(now()) @map("started_at")
+  completedAt    DateTime?            @map("completed_at")
+
+  @@index([type])
+  @@index([status])
+  @@index([startedAt])
+  @@map("baselinker_sync_logs")
+}
+
 enum UserRole {
   CUSTOMER
   ADMIN
@@ -502,7 +532,6 @@ enum CouponType {
   FREE_SHIPPING
 }
 
-// Baselinker Integration Enums
 enum BaselinkerSyncType {
   PRODUCTS
   CATEGORIES
@@ -515,35 +544,4 @@ enum BaselinkerSyncStatus {
   RUNNING
   SUCCESS
   FAILED
-}
-
-// Baselinker Integration Models
-model BaselinkerConfig {
-  id                  String    @id @default(cuid())
-  inventoryId         String    @unique @map("inventory_id")
-  apiTokenEncrypted   String    @map("api_token_encrypted")
-  encryptionIv        String    @map("encryption_iv")
-  authTag             String    @map("auth_tag")
-  lastSyncAt          DateTime? @map("last_sync_at")
-  syncEnabled         Boolean   @default(false) @map("sync_enabled")
-  syncIntervalMinutes Int       @default(60) @map("sync_interval_minutes")
-  createdAt           DateTime  @default(now()) @map("created_at")
-  updatedAt           DateTime  @updatedAt @map("updated_at")
-
-  @@map("baselinker_configs")
-}
-
-model BaselinkerSyncLog {
-  id             String               @id @default(cuid())
-  type           BaselinkerSyncType
-  status         BaselinkerSyncStatus
-  itemsProcessed Int                  @default(0) @map("items_processed")
-  errors         Json?
-  startedAt      DateTime             @default(now()) @map("started_at")
-  completedAt    DateTime?            @map("completed_at")
-
-  @@index([type])
-  @@index([status])
-  @@index([startedAt])
-  @@map("baselinker_sync_logs")
 }

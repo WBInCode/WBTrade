@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { 
   ShoppingCart, Search, Filter, Eye, ChevronLeft, ChevronRight, 
   Truck, FileText, Package, Calendar, RefreshCw, Download,
@@ -88,9 +89,12 @@ const shippingMethods: Record<string, string> = {
 };
 
 export default function OrdersPage() {
+  const searchParams = useSearchParams();
+  const urlStatus = searchParams.get('status') || '';
+  
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState(urlStatus);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -100,6 +104,12 @@ export default function OrdersPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [actionMenuId, setActionMenuId] = useState<string | null>(null);
+
+  // Sync statusFilter with URL parameter
+  useEffect(() => {
+    setStatusFilter(urlStatus);
+    setPage(1);
+  }, [urlStatus]);
 
   const loadOrders = useCallback(async () => {
     try {

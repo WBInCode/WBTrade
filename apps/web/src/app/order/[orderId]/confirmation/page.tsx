@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { ordersApi } from '@/lib/api';
+import { useParams, useSearchParams } from 'next/navigation';
+import { ordersApi, checkoutApi } from '@/lib/api';
 
 interface OrderItem {
   id: string;
@@ -40,32 +40,72 @@ interface Order {
 
 export default function OrderConfirmationPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const orderId = params.orderId as string;
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState('');
 
+  // Pobierz parametry z URL PayU
+  const payuOrderId = searchParams.get('orderId');
+
+  const fetchOrder = useCallback(async () => {
+    try {
+      const data = await ordersApi.getById(orderId);
+      setOrder(data as Order);
+      return data;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Nie znaleziono zamówienia');
+      return null;
+    }
+  }, [orderId]);
+
+  // Weryfikuj płatność PayU jeśli mamy orderId z URL
+  const verifyPayment = useCallback(async () => {
+    if (!payuOrderId) return;
+    
+    setIsVerifying(true);
+    try {
+      const result = await checkoutApi.verifyPayment(payuOrderId);
+      console.log('Payment verification result:', result);
+      
+      // Po weryfikacji odśwież dane zamówienia
+      await fetchOrder();
+    } catch (err) {
+      console.error('Payment verification error:', err);
+      // Nie pokazuj błędu użytkownikowi - zamówienie może być już zaktualizowane
+    } finally {
+      setIsVerifying(false);
+    }
+  }, [payuOrderId, fetchOrder]);
+
   useEffect(() => {
-    const fetchOrder = async () => {
-      try {
-        const data = await ordersApi.getById(orderId);
-        setOrder(data as Order);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Nie znaleziono zamówienia');
-      } finally {
+    const initialize = async () => {
+      if (orderId) {
+        await fetchOrder();
+        
+        // Jeśli mamy payuOrderId z URL, weryfikuj płatność
+        if (payuOrderId) {
+          await verifyPayment();
+        }
+        
         setIsLoading(false);
       }
     };
 
-    if (orderId) {
-      fetchOrder();
-    }
-  }, [orderId]);
+    initialize();
+  }, [orderId, payuOrderId, fetchOrder, verifyPayment]);
 
-  if (isLoading) {
+  if (isLoading || isVerifying) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">
+            {isVerifying ? 'Weryfikuję płatność...' : 'Ładowanie...'}
+          </p>
+        </div>
       </div>
     );
   }

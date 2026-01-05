@@ -333,30 +333,37 @@ export class CartService {
    * Format cart with calculated totals
    */
   private formatCart(cart: any): CartWithItems {
-    const items: CartItemWithProduct[] = cart.items.map((item: any) => ({
-      id: item.id,
-      quantity: item.quantity,
-      variant: {
-        id: item.variant.id,
-        name: item.variant.name,
-        sku: item.variant.sku,
-        price: Number(item.variant.price),
-        compareAtPrice: item.variant.compareAtPrice
-          ? Number(item.variant.compareAtPrice)
-          : null,
-        attributes: item.variant.attributes,
-        product: {
-          id: item.variant.product.id,
-          name: item.variant.product.name,
-          slug: item.variant.product.slug,
-          images: item.variant.product.images,
+    const items: CartItemWithProduct[] = cart.items.map((item: any) => {
+      // Use variant price, but fallback to product price if variant price is 0
+      const variantPrice = Number(item.variant.price);
+      const productPrice = Number(item.variant.product.price || 0);
+      const effectivePrice = variantPrice > 0 ? variantPrice : productPrice;
+      
+      return {
+        id: item.id,
+        quantity: item.quantity,
+        variant: {
+          id: item.variant.id,
+          name: item.variant.name,
+          sku: item.variant.sku,
+          price: effectivePrice,
+          compareAtPrice: item.variant.compareAtPrice
+            ? Number(item.variant.compareAtPrice)
+            : null,
+          attributes: item.variant.attributes,
+          product: {
+            id: item.variant.product.id,
+            name: item.variant.product.name,
+            slug: item.variant.product.slug,
+            images: item.variant.product.images,
+          },
+          inventory: item.variant.inventory.map((inv: any) => ({
+            quantity: inv.quantity,
+            reserved: inv.reserved,
+          })),
         },
-        inventory: item.variant.inventory.map((inv: any) => ({
-          quantity: inv.quantity,
-          reserved: inv.reserved,
-        })),
-      },
-    }));
+      };
+    });
 
     const subtotal = items.reduce(
       (sum, item) => sum + item.variant.price * item.quantity,
