@@ -798,8 +798,7 @@ export class BaselinkerService {
               if (productPrice === 0) {
                 console.log(`[BaselinkerSync] Warning: Product ${blProduct.id} has price 0. Raw data:`, {
                   price_brutto: blProduct.price_brutto,
-                  prices: blProduct.prices,
-                  price_netto: blProduct.price_netto,
+                  price_wholesale_netto: blProduct.price_wholesale_netto,
                 });
               }
               
