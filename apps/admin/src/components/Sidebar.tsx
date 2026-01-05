@@ -42,9 +42,9 @@ const menuItems = [
     icon: ShoppingCart,
     submenu: [
       { title: 'Wszystkie', href: '/orders' },
-      { title: 'Nowe', href: '/orders?status=new' },
-      { title: 'W realizacji', href: '/orders?status=processing' },
-      { title: 'Wysłane', href: '/orders?status=shipped' },
+      { title: 'Nowe', href: '/orders?status=PENDING' },
+      { title: 'W realizacji', href: '/orders?status=PROCESSING' },
+      { title: 'Wysłane', href: '/orders?status=SHIPPED' },
     ],
   },
   {

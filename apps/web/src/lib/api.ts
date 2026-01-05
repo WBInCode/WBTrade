@@ -194,7 +194,7 @@ async function fetchApi<T>(
       }
       
       throw new ApiClientError(
-        data.message || 'An error occurred',
+        data.message || data.error || 'An error occurred',
         response.status,
         data.errors
       );
@@ -480,7 +480,7 @@ export const ordersApi = {
     api.get<Order>(`/orders/${id}`),
     
   cancel: (id: string) =>
-    api.post<Order>(`/orders/${id}/cancel`),
+    api.delete<{ message: string }>(`/orders/${id}`),
 };
 
 // ============================================

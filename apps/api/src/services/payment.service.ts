@@ -159,14 +159,12 @@ export class PaymentService {
    * Verify payment status
    */
   async verifyPayment(sessionId: string): Promise<PaymentResult> {
-    // Get stored session to determine provider
-    const storedSession = await this.getStoredSession(sessionId);
-    if (!storedSession) {
-      throw new Error('Payment session not found');
-    }
-
-    const provider = this.getProvider(storedSession.providerId as PaymentProviderId);
+    // PayU sessionId is PayU's orderId, not our internal orderId
+    // Always use PayU provider for verification since PayU returns their orderId format
+    const provider = this.getProvider('payu');
     const result = await provider.verifyPayment(sessionId);
+
+    console.log('Payment verification result:', result);
 
     // Update order payment status
     await this.updateOrderPaymentStatus(result);
@@ -293,40 +291,63 @@ export class PaymentService {
    * Update order payment status based on payment result
    */
   private async updateOrderPaymentStatus(result: PaymentResult): Promise<void> {
-    const statusMap: Record<string, string> = {
-      'succeeded': 'PAID',
+    // Map payment result status to order status
+    const orderStatusMap: Record<string, string> = {
+      'succeeded': 'PROCESSING',
       'failed': 'PAYMENT_FAILED',
       'cancelled': 'CANCELLED',
       'refunded': 'REFUNDED',
     };
 
-    const newStatus = statusMap[result.status];
-    if (!newStatus) {
-      return;
-    }
+    // Map payment result status to payment status
+    const paymentStatusMap: Record<string, string> = {
+      'succeeded': 'PAID',
+      'failed': 'FAILED',
+      'cancelled': 'CANCELLED',
+      'refunded': 'REFUNDED',
+      'pending': 'PENDING',
+    };
+
+    const newOrderStatus = orderStatusMap[result.status];
+    const newPaymentStatus = paymentStatusMap[result.status] || 'PENDING';
+
+    console.log(`Updating order ${result.orderId} - orderStatus: ${newOrderStatus}, paymentStatus: ${newPaymentStatus}`);
 
     const order = await prisma.order.findFirst({
       where: { id: result.orderId },
     });
 
     if (order) {
+      const updateData: any = {
+        paymentStatus: newPaymentStatus as any,
+      };
+      
+      // Only update order status if payment succeeded or failed
+      if (newOrderStatus) {
+        updateData.status = newOrderStatus as any;
+      }
+
       await prisma.order.update({
         where: { id: order.id },
-        data: { status: newStatus as any },
+        data: updateData,
       });
 
       await prisma.orderStatusHistory.create({
         data: {
           orderId: order.id,
-          status: newStatus as any,
+          status: (newOrderStatus || order.status) as any,
           note: `Payment ${result.status}${result.transactionId ? ` (Transaction: ${result.transactionId})` : ''}`,
         },
       });
+
+      console.log(`Order ${order.id} updated successfully`);
 
       // If payment succeeded, we might want to trigger other actions
       if (result.status === 'succeeded') {
         // e.g., send confirmation email, start fulfillment, etc.
       }
+    } else {
+      console.error(`Order ${result.orderId} not found for payment update`);
     }
   }
 

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { checkoutApi, addressesApi } from '@/lib/api';
+import { checkoutApi, addressesApi, ApiClientError } from '@/lib/api';
 import CheckoutSteps from './components/CheckoutSteps';
 import AddressForm from './components/AddressForm';
 import ShippingMethod from './components/ShippingMethod';
@@ -37,7 +37,7 @@ export interface ShippingData {
 }
 
 export interface PaymentData {
-  method: 'card' | 'blik' | 'transfer' | 'cod';
+  method: 'card' | 'blik' | 'transfer' | 'cod' | 'google_pay' | 'apple_pay' | 'paypo';
   extraFee: number;
 }
 
@@ -211,7 +211,29 @@ export default function CheckoutPage() {
       router.push(`/order/${checkoutResponse.orderId}/confirmation`);
     } catch (err) {
       console.error('Checkout error:', err);
-      setError(err instanceof Error ? err.message : 'Wystąpił błąd podczas składania zamówienia');
+      if (err instanceof Error) {
+        console.error('Error details:', {
+          name: err.name,
+          message: err.message,
+          stack: err.stack
+        });
+      }
+      // Better error message with validation details
+      if (err instanceof ApiClientError) {
+        let errorMsg = err.message || 'Błąd API: ' + err.statusCode;
+        // If there are validation errors, show them
+        if (err.errors) {
+          const validationErrors = Object.entries(err.errors)
+            .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+            .join('; ');
+          if (validationErrors) {
+            errorMsg = `${errorMsg} - ${validationErrors}`;
+          }
+        }
+        setError(errorMsg);
+      } else {
+        setError(err instanceof Error ? err.message : 'Wystąpił błąd podczas składania zamówienia');
+      }
     } finally {
       setIsSubmitting(false);
     }

@@ -11,6 +11,24 @@ import { CartService } from '../services/cart.service';
 import { ShippingProviderId } from '../types/shipping.types';
 import { CreatePaymentRequest, PaymentMethodType, PaymentProviderId } from '../types/payment.types';
 
+/**
+ * Map frontend payment method names to API payment method types
+ */
+function mapPaymentMethod(frontendMethod: string): PaymentMethodType {
+  const methodMapping: Record<string, PaymentMethodType> = {
+    'blik': 'blik',
+    'card': 'card',
+    'transfer': 'bank_transfer',
+    'bank_transfer': 'bank_transfer',
+    'google_pay': 'google_pay',
+    'apple_pay': 'apple_pay',
+    'paypo': 'paypo',
+    'cod': 'cod',
+  };
+  
+  return methodMapping[frontendMethod] || 'blik';
+}
+
 const ordersService = new OrdersService();
 const cartService = new CartService();
 
@@ -112,10 +130,17 @@ export async function getPaymentMethods(req: Request, res: Response): Promise<vo
  */
 export async function createCheckout(req: Request, res: Response): Promise<void> {
   try {
+    console.log('🛒 createCheckout started');
+    console.log('📋 Request body:', JSON.stringify(req.body, null, 2));
+    
     const userId = req.user?.userId;
     const sessionId = req.headers['x-session-id'] as string | undefined;
     
+    console.log('👤 User ID:', userId);
+    console.log('🆔 Session ID:', sessionId);
+    
     if (!userId) {
+      console.log('❌ No user ID - auth required');
       res.status(401).json({ message: 'Authentication required' });
       return;
     }
@@ -131,8 +156,13 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       acceptTerms,
     } = req.body;
 
+    console.log('📦 Shipping Address ID:', shippingAddressId);
+    console.log('🚚 Shipping Method:', shippingMethod);
+    console.log('💳 Payment Method:', paymentMethod);
+
     // Validate required fields
     if (!shippingMethod || !paymentMethod || !acceptTerms) {
+      console.log('❌ Missing required fields');
       res.status(400).json({ 
         message: 'Shipping method, payment method, and terms acceptance are required' 
       });
@@ -141,10 +171,13 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
 
     // Get user's cart - try both userId and sessionId
     // First try by userId, then by sessionId if user has session cart
+    console.log('🛒 Getting cart for user:', userId);
     let cart = await cartService.getOrCreateCart(userId);
+    console.log('🛒 Cart found:', cart?.id, 'Items:', cart?.items?.length);
     
     // If cart by userId is empty but we have sessionId, try to merge or get session cart
     if ((!cart || !cart.items.length) && sessionId) {
+      console.log('🔄 Trying session cart merge...');
       // Try to get cart by sessionId
       const sessionCart = await cartService.getOrCreateCart(undefined, sessionId);
       if (sessionCart && sessionCart.items.length > 0) {
@@ -154,6 +187,7 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
     }
     
     if (!cart || !cart.items.length) {
+      console.log('❌ Cart is empty');
       res.status(400).json({ message: 'Cart is empty' });
       return;
     }
@@ -227,11 +261,15 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       // Get first URL from FRONTEND_URL (may be comma-separated)
       const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').split(',')[0].trim();
       
+      // Map frontend payment method to API payment method type
+      const mappedPaymentMethod = mapPaymentMethod(paymentMethod);
+      console.log(`💳 Payment method mapping: ${paymentMethod} → ${mappedPaymentMethod}`);
+      
       const paymentRequest: CreatePaymentRequest = {
         orderId: order.id,
         amount: total,
         currency: 'PLN',
-        paymentMethod: paymentMethod as PaymentMethodType,
+        paymentMethod: mappedPaymentMethod,
         providerId: 'payu' as PaymentProviderId, // Force PayU for testing
         customer: {
           email: req.user?.email || '',
@@ -241,7 +279,7 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
         description: `Zamówienie ${order.orderNumber}`,
         returnUrl: `${frontendUrl}/order/${order.id}/confirmation`,
         cancelUrl: `${frontendUrl}/checkout?orderId=${order.id}&cancelled=true`,
-        notifyUrl: `${process.env.API_URL || 'http://localhost:3001'}/api/webhooks/payu`,
+        notifyUrl: `${process.env.APP_URL || 'http://localhost:5000'}/api/webhooks/payu`,
         metadata: {
           customerIp: req.ip || req.socket.remoteAddress || '127.0.0.1',
         },
@@ -263,8 +301,12 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       });
     }
   } catch (error) {
-    console.error('Error creating checkout:', error);
-    res.status(500).json({ message: 'Failed to create order' });
+    console.error('❌ Error creating checkout:', error);
+    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack');
+    res.status(500).json({ 
+      message: 'Failed to create order',
+      error: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
+    });
   }
 }
 

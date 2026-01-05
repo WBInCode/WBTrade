@@ -71,8 +71,10 @@ const phoneSchema = z
   .refine(
     (phone) => {
       if (!phone) return true;
-      const cleaned = phone.replace(/[\s()+-]/g, '');
-      return /^(\+48)?[0-9]{9}$/.test(cleaned);
+      // Remove spaces, parentheses, and dashes but keep + for country code
+      const cleaned = phone.replace(/[\s()-]/g, '');
+      // Accept formats: 123456789, +48123456789, 48123456789
+      return /^(\+?48)?[0-9]{9}$/.test(cleaned);
     },
     'Invalid phone number format'
   );
@@ -130,7 +132,7 @@ export const addressesController = {
       const userId = req.user?.userId;
       
       if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(401).json({ message: 'Unauthorized' });
       }
 
       const addresses = await addressesService.getUserAddresses(userId);
@@ -159,7 +161,7 @@ export const addressesController = {
       const address = await addressesService.getById(id, userId);
       
       if (!address) {
-        return res.status(404).json({ error: 'Address not found' });
+        return res.status(404).json({ message: 'Address not found' });
       }
 
       res.json(address);
@@ -176,7 +178,7 @@ export const addressesController = {
       const userId = req.user?.userId;
       
       if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(401).json({ message: 'Unauthorized' });
       }
 
       const address = await addressesService.getDefaultAddress(userId);
@@ -194,14 +196,14 @@ export const addressesController = {
       const userId = req.user?.userId;
       
       if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(401).json({ message: 'Unauthorized' });
       }
 
       const validation = createAddressSchema.safeParse(req.body);
       
       if (!validation.success) {
         return res.status(400).json({
-          error: 'Validation error',
+          message: 'Validation error',
           errors: validation.error.flatten().fieldErrors,
         });
       }
@@ -227,7 +229,7 @@ export const addressesController = {
       const { id } = req.params;
       
       if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(401).json({ message: 'Unauthorized' });
       }
 
       if (!isValidCUID(id)) {
