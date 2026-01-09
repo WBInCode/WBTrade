@@ -7,6 +7,8 @@ import Header from '../../../../components/Header';
 import Footer from '../../../../components/Footer';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { ordersApi, Order } from '../../../../lib/api';
+import StarRatingInput from '../../../../components/StarRatingInput';
+import { MessageCircle, Star } from 'lucide-react';
 
 // Order status types
 type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
@@ -175,6 +177,20 @@ export default function OrderDetailsPage() {
   const [orderLoading, setOrderLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [contactMessage, setContactMessage] = useState('');
+  const [contactIssueType, setContactIssueType] = useState('other');
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [messageSent, setMessageSent] = useState(false);
+  
+  // Review states
+  const [reviewingProductId, setReviewingProductId] = useState<string | null>(null);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewTitle, setReviewTitle] = useState('');
+  const [reviewContent, setReviewContent] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [reviewSuccess, setReviewSuccess] = useState<string | null>(null);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -224,6 +240,131 @@ export default function OrderDetailsPage() {
     } finally {
       setCancelling(false);
     }
+  };
+
+  const handleSendMessage = async () => {
+    if (!order || !user) return;
+    
+    if (!contactMessage.trim()) {
+      alert('Proszę wpisać wiadomość');
+      return;
+    }
+
+    if (contactMessage.trim().length < 10) {
+      alert('Wiadomość musi mieć minimum 10 znaków');
+      return;
+    }
+
+    try {
+      setSendingMessage(true);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      
+      const payload = {
+        name: `${user.firstName} ${user.lastName}`,
+        email: user.email,
+        phone: user.phone || undefined,
+        orderId: order.orderNumber,
+        issueType: contactIssueType,
+        message: contactMessage,
+      };
+      
+      console.log('Sending contact message:', payload);
+      
+      const response = await fetch(`${apiUrl}/contact/order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+      console.log('Response:', data);
+      console.log('Response status:', response.status);
+
+      if (!response.ok) {
+        console.error('Response error:', data);
+        throw new Error(data.message || 'Nie udało się wysłać wiadomości');
+      }
+
+      setMessageSent(true);
+      setContactMessage('');
+      
+      setTimeout(() => {
+        setShowContactModal(false);
+        setMessageSent(false);
+      }, 3000);
+    } catch (err: unknown) {
+      console.error('Error sending message:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Nie udało się wysłać wiadomości';
+      alert(errorMessage);
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
+  const handleSubmitReview = async (productId: string) => {
+    if (!reviewRating || reviewRating < 1 || reviewRating > 5) {
+      setReviewError('Proszę wybrać ocenę od 1 do 5 gwiazdek');
+      return;
+    }
+
+    if (!reviewContent.trim() || reviewContent.length < 10) {
+      setReviewError('Opinia musi mieć minimum 10 znaków');
+      return;
+    }
+
+    try {
+      setSubmittingReview(true);
+      setReviewError(null);
+      
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const token = localStorage.getItem('token');
+
+      const response = await fetch(`${apiUrl}/reviews`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          productId,
+          rating: reviewRating,
+          title: reviewTitle.trim() || undefined,
+          content: reviewContent.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Nie udało się wysłać opinii');
+      }
+
+      setReviewSuccess('Dziękujemy za opinię!');
+      setReviewingProductId(null);
+      setReviewRating(0);
+      setReviewTitle('');
+      setReviewContent('');
+      
+      setTimeout(() => {
+        setReviewSuccess(null);
+      }, 5000);
+    } catch (err: unknown) {
+      console.error('Error submitting review:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Nie udało się wysłać opinii';
+      setReviewError(errorMessage);
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  const handleCancelReview = () => {
+    setReviewingProductId(null);
+    setReviewRating(0);
+    setReviewTitle('');
+    setReviewContent('');
+    setReviewError(null);
   };
 
   if (isLoading || orderLoading) {
@@ -289,6 +430,16 @@ export default function OrderDetailsPage() {
           </svg>
           <span className="text-gray-900">#{order.orderNumber}</span>
         </nav>
+
+        {/* Success Message */}
+        {reviewSuccess && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
+            <svg className="w-5 h-5 text-green-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm text-green-800 font-medium">{reviewSuccess}</p>
+          </div>
+        )}
 
         <div className="flex gap-6">
           {/* Sidebar */}
@@ -367,6 +518,15 @@ export default function OrderDetailsPage() {
                     Śledź przesyłkę
                   </a>
                 )}
+                <button 
+                  onClick={() => setShowContactModal(true)}
+                  className="px-4 py-2 border border-orange-500 text-orange-600 rounded-lg text-sm font-medium hover:bg-orange-50 transition-colors inline-flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  Kontakt ze sprzedawcą
+                </button>
                 <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors inline-flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -452,31 +612,131 @@ export default function OrderDetailsPage() {
               </div>
               
               <div className="divide-y divide-gray-100">
-                {order.items.map((item) => (
-                  <div key={item.id} className="p-5 flex items-center gap-4">
-                    <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden shrink-0">
-                      <img
-                        src={item.variant?.product?.images?.[0]?.url || '/placeholder.png'}
-                        alt={item.productName}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-gray-900 mb-1">{item.productName}</h4>
-                      {item.variantName && item.variantName !== 'Default' && (
-                        <p className="text-sm text-gray-500 mb-1">{item.variantName}</p>
+                {order.items.map((item) => {
+                  const productId = item.variant?.product?.id || item.variant?.productId;
+                  const canReview = order.status === 'DELIVERED' || order.status === 'SHIPPED';
+                  const isReviewing = reviewingProductId === productId;
+                  
+                  return (
+                    <div key={item.id}>
+                      <div className="p-5 flex items-center gap-4">
+                        <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                          <img
+                            src={item.variant?.product?.images?.[0]?.url || '/placeholder.png'}
+                            alt={item.productName}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-gray-900 mb-1">{item.productName}</h4>
+                          {item.variantName && item.variantName !== 'Default' && (
+                            <p className="text-sm text-gray-500 mb-1">{item.variantName}</p>
+                          )}
+                          <p className="text-xs text-gray-400">SKU: {item.sku}</p>
+                        </div>
+                        <div className="text-center shrink-0 px-4">
+                          <span className="text-sm text-gray-500">Ilość</span>
+                          <p className="font-medium text-gray-900">{item.quantity}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="font-semibold text-gray-900">{Number(item.unitPrice).toFixed(2)} zł</span>
+                          {canReview && productId && (
+                            <button
+                              onClick={() => setReviewingProductId(isReviewing ? null : productId)}
+                              className="mt-2 text-sm text-orange-500 hover:text-orange-600 font-medium flex items-center gap-1"
+                            >
+                              <Star className="w-4 h-4" />
+                              {isReviewing ? 'Anuluj' : 'Wystaw opinię'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Review Form */}
+                      {isReviewing && canReview && productId && (
+                        <div className="px-5 pb-5 border-t border-gray-100 pt-4 bg-gray-50">
+                          <h4 className="font-semibold text-gray-900 mb-4">Wystaw opinię o produkcie</h4>
+                          
+                          {reviewError && (
+                            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                              {reviewError}
+                            </div>
+                          )}
+
+                          <div className="space-y-4">
+                            {/* Rating */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Ocena <span className="text-red-500">*</span>
+                              </label>
+                              <StarRatingInput
+                                value={reviewRating}
+                                onChange={setReviewRating}
+                                size="lg"
+                                required
+                              />
+                            </div>
+
+                            {/* Title (optional) */}
+                            <div>
+                              <label htmlFor="review-title" className="block text-sm font-medium text-gray-700 mb-1">
+                                Tytuł opinii (opcjonalnie)
+                              </label>
+                              <input
+                                id="review-title"
+                                type="text"
+                                value={reviewTitle}
+                                onChange={(e) => setReviewTitle(e.target.value)}
+                                maxLength={200}
+                                placeholder="Podsumuj swoją opinię w kilku słowach"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                              />
+                            </div>
+
+                            {/* Content */}
+                            <div>
+                              <label htmlFor="review-content" className="block text-sm font-medium text-gray-700 mb-1">
+                                Twoja opinia <span className="text-red-500">*</span>
+                              </label>
+                              <textarea
+                                id="review-content"
+                                value={reviewContent}
+                                onChange={(e) => setReviewContent(e.target.value)}
+                                minLength={10}
+                                maxLength={5000}
+                                rows={4}
+                                placeholder="Opisz co sądzisz o produkcie... (minimum 10 znaków)"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+                                required
+                              />
+                              <p className="text-xs text-gray-500 mt-1">
+                                {reviewContent.length} / 5000 znaków
+                              </p>
+                            </div>
+
+                            {/* Buttons */}
+                            <div className="flex gap-3 pt-2">
+                              <button
+                                onClick={() => handleSubmitReview(productId)}
+                                disabled={submittingReview || !reviewRating || reviewContent.length < 10}
+                                className="px-6 py-2.5 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                              >
+                                {submittingReview ? 'Wysyłanie...' : 'Wyślij opinię'}
+                              </button>
+                              <button
+                                onClick={handleCancelReview}
+                                disabled={submittingReview}
+                                className="px-6 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                              >
+                                Anuluj
+                              </button>
+                            </div>
+                          </div>
+                        </div>
                       )}
-                      <p className="text-xs text-gray-400">SKU: {item.sku}</p>
                     </div>
-                    <div className="text-center shrink-0 px-4">
-                      <span className="text-sm text-gray-500">Ilość</span>
-                      <p className="font-medium text-gray-900">{item.quantity}</p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <span className="font-semibold text-gray-900">{Number(item.unitPrice).toFixed(2)} zł</span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Order Summary */}
@@ -614,6 +874,137 @@ export default function OrderDetailsPage() {
           </div>
         </div>
       </main>
+
+      {/* Contact Modal */}
+      {showContactModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-900">
+                  Kontakt dotyczący zamówienia #{order?.orderNumber}
+                </h3>
+                <button
+                  onClick={() => setShowContactModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {messageSent ? (
+              <div className="p-8 text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">Wiadomość wysłana!</h4>
+                <p className="text-gray-600">Odpowiemy najszybciej jak to możliwe.</p>
+              </div>
+            ) : (
+              <div className="p-6 space-y-5">
+                {/* Issue Type */}
+                <div>
+                  <label htmlFor="issueType" className="block text-sm font-medium text-gray-700 mb-2">
+                    Typ problemu
+                  </label>
+                  <select
+                    id="issueType"
+                    value={contactIssueType}
+                    onChange={(e) => setContactIssueType(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  >
+                    <option value="delivery">Problem z dostawą</option>
+                    <option value="payment">Problem z płatnością</option>
+                    <option value="product">Problem z produktem</option>
+                    <option value="return">Zwrot/reklamacja</option>
+                    <option value="other">Inne</option>
+                  </select>
+                </div>
+
+                {/* Message */}
+                <div>
+                  <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
+                    Wiadomość <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    id="message"
+                    value={contactMessage}
+                    onChange={(e) => setContactMessage(e.target.value)}
+                    rows={6}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+                    placeholder="Opisz szczegółowo swoją sprawę (minimum 10 znaków)..."
+                    minLength={10}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {contactMessage.length} / 10 znaków minimum
+                  </p>
+                </div>
+
+                {/* Info */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+                  <svg className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <p className="text-sm text-blue-800">
+                    Otrzymasz potwierdzenie na adres email <strong>{user?.email}</strong>. 
+                    Odpowiadamy zazwyczaj w ciągu 24 godzin roboczych.
+                  </p>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => setShowContactModal(false)}
+                    className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    Anuluj
+                  </button>
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={sendingMessage || !contactMessage.trim() || contactMessage.trim().length < 10}
+                    className="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {sendingMessage ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Wysyłanie...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                          />
+                        </svg>
+                        Wyślij wiadomość
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <Footer hideTrustBadges />
     </div>

@@ -1,5 +1,7 @@
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import ContactForm from '../../components/ContactForm';
+import Link from 'next/link';
 
 export const metadata = {
   title: 'Kontakt - WBTrade',
@@ -108,129 +110,7 @@ export default function ContactPage() {
                 Wypełnij formularz, a nasz zespół skontaktuje się z Tobą jak najszybciej.
               </p>
               
-              <form className="space-y-6">
-                <div className="grid sm:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="firstName" className="block text-sm font-medium text-secondary-700 mb-2">
-                      Imię *
-                    </label>
-                    <input
-                      type="text"
-                      id="firstName"
-                      name="firstName"
-                      required
-                      className="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
-                      placeholder="Jan"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="lastName" className="block text-sm font-medium text-secondary-700 mb-2">
-                      Nazwisko *
-                    </label>
-                    <input
-                      type="text"
-                      id="lastName"
-                      name="lastName"
-                      required
-                      className="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
-                      placeholder="Kowalski"
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-secondary-700 mb-2">
-                    Adres e-mail *
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    required
-                    className="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
-                    placeholder="jan.kowalski@example.com"
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-secondary-700 mb-2">
-                    Numer telefonu
-                  </label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    className="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
-                    placeholder="+48 123 456 789"
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="topic" className="block text-sm font-medium text-secondary-700 mb-2">
-                    Temat *
-                  </label>
-                  <select
-                    id="topic"
-                    name="topic"
-                    required
-                    className="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
-                  >
-                    <option value="">Wybierz temat</option>
-                    {topics.map((topic) => (
-                      <option key={topic.value} value={topic.value}>
-                        {topic.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <label htmlFor="orderNumber" className="block text-sm font-medium text-secondary-700 mb-2">
-                    Numer zamówienia
-                  </label>
-                  <input
-                    type="text"
-                    id="orderNumber"
-                    name="orderNumber"
-                    className="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
-                    placeholder="np. WBT-123456"
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="message" className="block text-sm font-medium text-secondary-700 mb-2">
-                    Wiadomość *
-                  </label>
-                  <textarea
-                    id="message"
-                    name="message"
-                    rows={5}
-                    required
-                    className="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors resize-none"
-                    placeholder="Opisz swoje pytanie lub problem..."
-                  />
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <input
-                    type="checkbox"
-                    id="privacy"
-                    name="privacy"
-                    required
-                    className="mt-1 w-4 h-4 text-primary-600 border-secondary-300 rounded focus:ring-primary-500"
-                  />
-                  <label htmlFor="privacy" className="text-sm text-secondary-600">
-                    Wyrażam zgodę na przetwarzanie moich danych osobowych w celu udzielenia odpowiedzi na moje zapytanie. *
-                  </label>
-                </div>
-                
-                <button
-                  type="submit"
-                  className="w-full px-8 py-4 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-colors"
-                >
-                  Wyślij wiadomość
-                </button>
-              </form>
+              <ContactForm type="general" />
             </div>
             
             {/* Company Info */}

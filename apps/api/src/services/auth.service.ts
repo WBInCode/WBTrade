@@ -1,7 +1,9 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { prisma } from '../db';
 import { UserRole } from '@prisma/client';
+import { emailQueue } from '../lib/queue';
 
 // Types
 interface RegisterData {
@@ -66,6 +68,10 @@ export class AuthService {
     // Hash password
     const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
 
+    // Generate email verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
     // Create user
     const user = await prisma.user.create({
       data: {
@@ -75,6 +81,8 @@ export class AuthService {
         lastName: data.lastName,
         phone: data.phone,
         role: 'CUSTOMER',
+        emailVerificationToken: verificationToken,
+        emailVerificationExpires: verificationExpires,
       },
     });
 
@@ -85,9 +93,134 @@ export class AuthService {
       role: user.role,
     });
 
+    // Send verification email
+    try {
+      const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').split(',')[0].trim();
+      const verificationUrl = `${frontendUrl}/verify-email?token=${verificationToken}`;
+      
+      await emailQueue.add('send-email', {
+        to: user.email,
+        template: 'email-verification',
+        context: {
+          name: user.firstName,
+          verificationUrl,
+        },
+      });
+      console.log(`[Auth] Verification email queued for ${user.email}`);
+    } catch (emailError) {
+      // Don't fail registration if email fails
+      console.error('[Auth] Failed to queue verification email:', emailError);
+    }
+
     return {
       user: this.sanitizeUser(user),
       tokens,
+    };
+  }
+
+  /**
+   * Verify email with token
+   */
+  async verifyEmail(token: string): Promise<{ success: boolean; message: string }> {
+    const user = await prisma.user.findFirst({
+      where: {
+        emailVerificationToken: token,
+        emailVerificationExpires: {
+          gt: new Date(),
+        },
+      },
+    });
+
+    if (!user) {
+      throw new Error('Invalid or expired verification token');
+    }
+
+    if (user.emailVerified) {
+      return {
+        success: true,
+        message: 'Email already verified',
+      };
+    }
+
+    // Update user
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerified: true,
+        emailVerifiedAt: new Date(),
+        emailVerificationToken: null,
+        emailVerificationExpires: null,
+      },
+    });
+
+    // Send confirmation email
+    try {
+      const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').split(',')[0].trim();
+      await emailQueue.add('send-email', {
+        to: user.email,
+        template: 'email-verified',
+        context: {
+          name: user.firstName,
+          shopUrl: frontendUrl,
+        },
+      });
+    } catch (emailError) {
+      console.error('[Auth] Failed to queue confirmation email:', emailError);
+    }
+
+    return {
+      success: true,
+      message: 'Email verified successfully',
+    };
+  }
+
+  /**
+   * Resend verification email
+   */
+  async resendVerification(email: string): Promise<{ success: boolean; message: string }> {
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    if (user.emailVerified) {
+      return {
+        success: false,
+        message: 'Email already verified',
+      };
+    }
+
+    // Generate new token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerificationToken: verificationToken,
+        emailVerificationExpires: verificationExpires,
+      },
+    });
+
+    // Send verification email
+    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').split(',')[0].trim();
+    const verificationUrl = `${frontendUrl}/verify-email?token=${verificationToken}`;
+    
+    await emailQueue.add('send-email', {
+      to: user.email,
+      template: 'email-verification',
+      context: {
+        name: user.firstName,
+        verificationUrl,
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Verification email sent',
     };
   }
 
@@ -239,8 +372,23 @@ export class AuthService {
 
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-    // In production: send email with reset link
-    // await emailService.sendPasswordResetEmail(user.email, resetToken);
+    // Send password reset email
+    try {
+      const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+      
+      await emailQueue.add('send-email', {
+        to: user.email,
+        template: 'password-reset',
+        context: {
+          resetUrl,
+          name: user.firstName,
+        },
+      });
+      console.log(`[Auth] Password reset email queued for ${user.email}`);
+    } catch (emailError) {
+      console.error('[Auth] Failed to queue password reset email:', emailError);
+      throw new Error('Failed to send password reset email');
+    }
 
     return { resetToken, expiresAt };
   }

@@ -18,6 +18,7 @@ import { IPaymentProvider } from '../providers/payment/payment-provider.interfac
 import { Przelewy24Provider } from '../providers/payment/przelewy24.provider';
 import { PayUProvider } from '../providers/payment/payu.provider';
 import { prisma } from '../db';
+import { sendPaymentConfirmationEmail } from '../lib/email';
 
 // Provider configurations from environment
 const providerConfigs: Record<PaymentProviderId, Partial<PaymentProviderConfig>> = {
@@ -342,9 +343,29 @@ export class PaymentService {
 
       console.log(`Order ${order.id} updated successfully`);
 
-      // If payment succeeded, we might want to trigger other actions
+      // If payment succeeded, send confirmation email
       if (result.status === 'succeeded') {
-        // e.g., send confirmation email, start fulfillment, etc.
+        try {
+          // Get user email
+          const orderWithUser = await prisma.order.findFirst({
+            where: { id: order.id },
+            include: {
+              user: { select: { email: true } },
+            },
+          });
+
+          if (orderWithUser?.user?.email) {
+            await sendPaymentConfirmationEmail(orderWithUser.user.email, {
+              orderNumber: order.orderNumber,
+              total: result.amount || order.total.toNumber(),
+              transactionId: result.transactionId,
+            });
+            console.log(`Payment confirmation email sent to ${orderWithUser.user.email}`);
+          }
+        } catch (emailError) {
+          console.error('Failed to send payment confirmation email:', emailError);
+          // Don't throw - payment is still successful, just email failed
+        }
       }
     } else {
       console.error(`Order ${result.orderId} not found for payment update`);

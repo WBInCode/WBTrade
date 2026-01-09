@@ -16,6 +16,37 @@ export interface ReviewsQueryParams {
 
 export const reviewsService = {
   /**
+   * Update product rating statistics (averageRating and reviewCount)
+   */
+  async updateProductRatingStats(productId: string) {
+    const stats = await prisma.review.aggregate({
+      where: {
+        productId,
+        isApproved: true,
+      },
+      _avg: {
+        rating: true,
+      },
+      _count: {
+        rating: true,
+      },
+    });
+
+    const averageRating = stats._avg.rating ? Number(stats._avg.rating.toFixed(1)) : null;
+    const reviewCount = stats._count.rating;
+
+    await prisma.product.update({
+      where: { id: productId },
+      data: {
+        averageRating,
+        reviewCount,
+      },
+    });
+
+    return { averageRating, reviewCount };
+  },
+
+  /**
    * Check if user has purchased the product
    */
   async hasUserPurchasedProduct(userId: string, productId: string): Promise<boolean> {
@@ -132,6 +163,9 @@ export const reviewsService = {
         images: true,
       },
     });
+
+    // Update product rating statistics
+    await this.updateProductRatingStats(productId);
 
     return review;
   },
@@ -305,7 +339,7 @@ export const reviewsService = {
       throw new Error('Rating must be between 1 and 5');
     }
 
-    return prisma.review.update({
+    const updatedReview = await prisma.review.update({
       where: { id: reviewId },
       data: {
         rating: data.rating,
@@ -323,6 +357,13 @@ export const reviewsService = {
         images: true,
       },
     });
+
+    // Update product rating statistics if rating changed
+    if (data.rating !== undefined) {
+      await this.updateProductRatingStats(review.productId);
+    }
+
+    return updatedReview;
   },
 
   /**
@@ -341,9 +382,14 @@ export const reviewsService = {
       throw new Error('You can only delete your own reviews');
     }
 
+    const productId = review.productId;
+
     await prisma.review.delete({
       where: { id: reviewId },
     });
+
+    // Update product rating statistics after deletion
+    await this.updateProductRatingStats(productId);
 
     return { success: true };
   },

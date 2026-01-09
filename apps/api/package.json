@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.7.0",
+    "axios": "^1.13.2",
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.66.1",
     "cors": "^2.8.5",
@@ -33,6 +34,7 @@
     "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.3",
     "meilisearch": "^0.54.0",
+    "nodemailer": "^7.0.12",
     "rate-limit-redis": "^4.3.1",
     "redis": "^5.10.0",
     "uuid": "^13.0.0",
@@ -46,6 +48,7 @@
     "@types/jest": "^29.5.11",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.10.5",
+    "@types/nodemailer": "^7.0.4",
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",

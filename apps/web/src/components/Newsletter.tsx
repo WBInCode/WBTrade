@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
 export default function Newsletter() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -18,12 +20,30 @@ export default function Newsletter() {
 
     setStatus('loading');
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setStatus('success');
-    setMessage('Dziękujemy! Potwierdź subskrypcję w mailu.');
-    setEmail('');
+    try {
+      const response = await fetch(`${API_URL}/newsletter/subscribe`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setStatus('success');
+        setMessage(data.message || 'Sprawdź swoją skrzynkę email i potwierdź subskrypcję!');
+        setEmail('');
+      } else {
+        setStatus('error');
+        setMessage(data.message || 'Wystąpił błąd. Spróbuj ponownie.');
+      }
+    } catch (error) {
+      console.error('Newsletter subscription error:', error);
+      setStatus('error');
+      setMessage('Wystąpił błąd połączenia. Spróbuj ponownie.');
+    }
     
     // Reset after 5 seconds
     setTimeout(() => {
