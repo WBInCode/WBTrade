@@ -81,21 +81,52 @@ export class CartService {
     variantId: string,
     quantity = 1
   ): Promise<CartWithItems> {
-    // First, verify the variant exists
+    // First, verify the variant exists and check stock
     const variant = await prisma.productVariant.findUnique({
       where: { id: variantId },
+      include: {
+        inventory: true,
+        product: {
+          select: { name: true, status: true }
+        }
+      }
     });
 
     if (!variant) {
       throw new Error(`Wariant o ID ${variantId} nie został znaleziony`);
     }
 
-    // Check if item already exists in cart
+    // Check if product is active
+    if (variant.product.status !== 'ACTIVE') {
+      throw new Error(`Produkt "${variant.product.name}" jest niedostępny`);
+    }
+
+    // Calculate available stock
+    const availableStock = variant.inventory.reduce(
+      (sum, inv) => sum + (inv.quantity - inv.reserved), 
+      0
+    );
+
+    // Check if item already exists in cart to calculate total quantity
     const existingItem = await prisma.cartItem.findUnique({
       where: {
         cartId_variantId: { cartId, variantId },
       },
     });
+
+    const totalRequestedQuantity = (existingItem?.quantity || 0) + quantity;
+
+    // Validate stock availability
+    if (availableStock <= 0) {
+      throw new Error(`Produkt "${variant.product.name}" jest niedostępny (brak na stanie)`);
+    }
+
+    if (totalRequestedQuantity > availableStock) {
+      throw new Error(
+        `Niewystarczająca ilość produktu "${variant.product.name}". ` +
+        `Dostępne: ${availableStock} szt., żądane: ${totalRequestedQuantity} szt.`
+      );
+    }
 
     if (existingItem) {
       // Update quantity
@@ -137,6 +168,36 @@ export class CartService {
         where: { id: itemId },
       });
     } else {
+      // Get the cart item with variant and inventory
+      const cartItem = await prisma.cartItem.findUnique({
+        where: { id: itemId },
+        include: {
+          variant: {
+            include: {
+              inventory: true,
+              product: { select: { name: true } }
+            }
+          }
+        }
+      });
+
+      if (!cartItem) {
+        throw new Error('Produkt nie został znaleziony w koszyku');
+      }
+
+      // Calculate available stock
+      const availableStock = cartItem.variant.inventory.reduce(
+        (sum, inv) => sum + (inv.quantity - inv.reserved),
+        0
+      );
+
+      if (quantity > availableStock) {
+        throw new Error(
+          `Niewystarczająca ilość produktu "${cartItem.variant.product.name}". ` +
+          `Dostępne: ${availableStock} szt., żądane: ${quantity} szt.`
+        );
+      }
+
       await prisma.cartItem.update({
         where: { id: itemId },
         data: { quantity },

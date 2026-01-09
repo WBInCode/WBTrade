@@ -13,6 +13,7 @@ interface ProductFilters {
   search?: string;
   sort?: string;
   status?: string;
+  hideOldZeroStock?: boolean; // Ukryj produkty ze stanem 0 starsze niż 14 dni
 }
 
 interface ProductsListResult {
@@ -45,15 +46,25 @@ function parseJsonField(value: unknown): Record<string, unknown> | null {
 function transformProduct(product: any): any {
   if (!product) return product;
   
+  // Transform variants with stock calculated from inventory
+  const transformedVariants = product.variants?.map((variant: any) => ({
+    ...variant,
+    attributes: parseJsonField(variant.attributes) || {},
+    // Calculate stock from inventory if available
+    stock: variant.inventory?.reduce((sum: number, inv: any) => sum + (inv.quantity - inv.reserved), 0) ?? 0,
+  }));
+  
+  // Calculate total stock as sum of all variant stocks
+  const totalStock = transformedVariants?.reduce((sum: number, v: any) => sum + (v.stock || 0), 0) ?? 0;
+  
   return {
     ...product,
     specifications: parseJsonField(product.specifications),
-    variants: product.variants?.map((variant: any) => ({
-      ...variant,
-      attributes: parseJsonField(variant.attributes) || {},
-      // Calculate stock from inventory if available
-      stock: variant.inventory?.reduce((sum: number, inv: any) => sum + (inv.quantity - inv.reserved), 0) ?? 0,
-    })),
+    variants: transformedVariants,
+    // Add total stock at product level for easy access
+    stock: totalStock,
+    // Ensure tags are always an array
+    tags: product.tags || [],
   };
 }
 
@@ -64,7 +75,38 @@ function transformProducts(products: any[]): any[] {
   return products.map(transformProduct);
 }
 
+/**
+ * Filter out products with zero stock that are older than specified days
+ */
+function filterOldZeroStockProducts(products: any[], days: number = 14): any[] {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - days);
+  
+  return products.filter(product => {
+    // If product has stock > 0, keep it
+    if (product.stock > 0) return true;
+    
+    // If product was created within the last X days, keep it (even with 0 stock)
+    const createdAt = new Date(product.createdAt);
+    if (createdAt > cutoffDate) return true;
+    
+    // Product has 0 stock and is older than X days - hide it
+    return false;
+  });
+}
+
 export class ProductsService {
+  /**
+   * Check if a category exists by ID
+   */
+  async categoryExists(categoryId: string): Promise<boolean> {
+    const category = await prisma.category.findUnique({
+      where: { id: categoryId },
+      select: { id: true },
+    });
+    return !!category;
+  }
+
   /**
    * Get all descendant category IDs for a given category slug (including the category itself)
    */
@@ -115,7 +157,8 @@ export class ProductsService {
       maxPrice,
       search,
       sort = 'newest',
-      status = 'ACTIVE',
+      status,
+      hideOldZeroStock = false,
     } = filters;
 
     // If search is provided, use Meilisearch for better results
@@ -126,9 +169,12 @@ export class ProductsService {
     const skip = (page - 1) * limit;
 
     // Build where clause
-    const where: Prisma.ProductWhereInput = {
-      status: status as Prisma.EnumProductStatusFilter,
-    };
+    const where: Prisma.ProductWhereInput = {};
+    
+    // Only filter by status if explicitly provided
+    if (status) {
+      where.status = status as Prisma.EnumProductStatusFilter;
+    }
 
     // If category is specified, get all subcategory IDs and filter by them
     if (category) {
@@ -195,12 +241,20 @@ export class ProductsService {
       prisma.product.count({ where }),
     ]);
 
+    // Transform products
+    let transformedProducts = transformProducts(products);
+    
+    // Filter out old zero-stock products if requested
+    if (hideOldZeroStock) {
+      transformedProducts = filterOldZeroStockProducts(transformedProducts, 14);
+    }
+
     return {
-      products: transformProducts(products),
-      total,
+      products: transformedProducts,
+      total: hideOldZeroStock ? transformedProducts.length : total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil((hideOldZeroStock ? transformedProducts.length : total) / limit),
     };
   }
 
@@ -216,14 +270,20 @@ export class ProductsService {
       maxPrice,
       search,
       sort = 'newest',
-      status = 'ACTIVE',
+      status,
+      hideOldZeroStock = false,
     } = filters;
 
     try {
       const index = getProductsIndex();
 
       // Build filter array
-      const meiliFilters: string[] = [`status = "${status}"`];
+      const meiliFilters: string[] = [];
+      
+      // Only filter by status if explicitly provided
+      if (status) {
+        meiliFilters.push(`status = "${status}"`);
+      }
       
       if (category) {
         const categoryIds = await this.getAllCategoryIds(category);
@@ -303,12 +363,20 @@ export class ProductsService {
 
       const total = results.estimatedTotalHits || results.hits.length;
 
+      // Transform products
+      let transformedProducts = transformProducts(sortedProducts as any[]);
+      
+      // Filter out old zero-stock products if requested
+      if (hideOldZeroStock) {
+        transformedProducts = filterOldZeroStockProducts(transformedProducts, 14);
+      }
+
       return {
-        products: transformProducts(sortedProducts as any[]),
-        total,
+        products: transformedProducts,
+        total: hideOldZeroStock ? transformedProducts.length : total,
         page,
         limit,
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.ceil((hideOldZeroStock ? transformedProducts.length : total) / limit),
       };
     } catch (error) {
       console.error('Meilisearch search error, falling back to Prisma:', error);
@@ -329,14 +397,18 @@ export class ProductsService {
       maxPrice,
       search,
       sort = 'newest',
-      status = 'ACTIVE',
+      status,
+      hideOldZeroStock = false,
     } = filters;
 
     const skip = (page - 1) * limit;
 
-    const where: Prisma.ProductWhereInput = {
-      status: status as Prisma.EnumProductStatusFilter,
-    };
+    const where: Prisma.ProductWhereInput = {};
+    
+    // Only filter by status if explicitly provided
+    if (status) {
+      where.status = status as Prisma.EnumProductStatusFilter;
+    }
 
     if (category) {
       const categoryIds = await this.getAllCategoryIds(category);
@@ -390,12 +462,20 @@ export class ProductsService {
       prisma.product.count({ where }),
     ]);
 
+    // Transform products
+    let transformedProducts = transformProducts(products);
+    
+    // Filter out old zero-stock products if requested
+    if (hideOldZeroStock) {
+      transformedProducts = filterOldZeroStockProducts(transformedProducts, 14);
+    }
+
     return {
-      products: transformProducts(products),
-      total,
+      products: transformedProducts,
+      total: hideOldZeroStock ? transformedProducts.length : total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil((hideOldZeroStock ? transformedProducts.length : total) / limit),
     };
   }
 
@@ -444,22 +524,52 @@ export class ProductsService {
   /**
    * Create a new product
    */
-  async create(data: Prisma.ProductCreateInput) {
-    const product = await prisma.product.create({
-      data,
-      include: {
-        images: true,
-        category: true,
-        variants: true,
-      },
-    });
-    
-    // Queue product for Meilisearch indexing
-    await queueProductIndex(product.id).catch(err => 
-      console.error('Failed to queue product index:', err)
-    );
-    
-    return product;
+  async create(data: Prisma.ProductCreateInput, initialStock?: number) {
+    console.log('ProductsService.create called with:', JSON.stringify(data, null, 2));
+    try {
+      const product = await prisma.product.create({
+        data,
+        include: {
+          images: true,
+          category: true,
+          variants: true,
+        },
+      });
+      
+      // Create inventory entries for variants with default location
+      if (product.variants && product.variants.length > 0) {
+        // Get default location (first available)
+        const defaultLocation = await prisma.location.findFirst({
+          where: { isActive: true },
+          orderBy: { name: 'asc' },
+        });
+        
+        if (defaultLocation) {
+          await prisma.inventory.createMany({
+            data: product.variants.map(variant => ({
+              variantId: variant.id,
+              locationId: defaultLocation.id,
+              quantity: initialStock || 0,
+              reserved: 0,
+              minimum: 0,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
+      
+      // Queue product for Meilisearch indexing
+      await queueProductIndex(product.id).catch(err => 
+        console.error('Failed to queue product index:', err)
+      );
+      
+      return product;
+    } catch (error: any) {
+      console.error('Prisma create error:', error.message);
+      console.error('Prisma error code:', error.code);
+      console.error('Prisma error meta:', error.meta);
+      throw error;
+    }
   }
 
   /**
@@ -472,7 +582,11 @@ export class ProductsService {
       include: {
         images: true,
         category: true,
-        variants: true,
+        variants: {
+          include: {
+            inventory: true,
+          },
+        },
       },
     });
     
@@ -482,6 +596,43 @@ export class ProductsService {
     );
     
     return product;
+  }
+
+  /**
+   * Update stock for multiple variants
+   */
+  async updateVariantsStock(variantIds: string[], quantity: number) {
+    // Get default location
+    const defaultLocation = await prisma.location.findFirst({
+      where: { isActive: true },
+      orderBy: { name: 'asc' },
+    });
+    
+    if (!defaultLocation) {
+      console.error('No default location found for inventory update');
+      return;
+    }
+
+    for (const variantId of variantIds) {
+      await prisma.inventory.upsert({
+        where: {
+          variantId_locationId: {
+            variantId,
+            locationId: defaultLocation.id,
+          },
+        },
+        update: {
+          quantity,
+        },
+        create: {
+          variantId,
+          locationId: defaultLocation.id,
+          quantity,
+          reserved: 0,
+          minimum: 0,
+        },
+      });
+    }
   }
 
   /**

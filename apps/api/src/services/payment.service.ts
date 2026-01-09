@@ -292,9 +292,10 @@ export class PaymentService {
    */
   private async updateOrderPaymentStatus(result: PaymentResult): Promise<void> {
     // Map payment result status to order status
+    // OPEN -> CONFIRMED (when payment succeeds)
     const orderStatusMap: Record<string, string> = {
-      'succeeded': 'PROCESSING',
-      'failed': 'PAYMENT_FAILED',
+      'succeeded': 'CONFIRMED', // Payment successful - order confirmed
+      'failed': 'OPEN', // Payment failed - order still open
       'cancelled': 'CANCELLED',
       'refunded': 'REFUNDED',
     };

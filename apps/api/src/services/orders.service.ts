@@ -129,6 +129,7 @@ export class OrdersService {
           paymentMethod: data.paymentMethod,
           paczkomatCode: data.paczkomatCode,
           paczkomatAddress: data.paczkomatAddress,
+          status: 'OPEN', // Order is OPEN until payment is completed
           subtotal,
           shipping,
           tax,
@@ -156,8 +157,8 @@ export class OrdersService {
           },
           statusHistory: {
             create: {
-              status: 'PENDING',
-              note: 'Order created',
+              status: 'OPEN',
+              note: 'Zamówienie utworzone - oczekuje na płatność',
             },
           },
         },
@@ -412,6 +413,54 @@ export class OrdersService {
       });
 
       return restoredOrder;
+    });
+  }
+
+  /**
+   * Simulate payment for development/testing
+   * Changes order status from OPEN/PENDING to CONFIRMED and payment status to PAID
+   */
+  async simulatePayment(id: string) {
+    return prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id },
+        include: { items: true },
+      });
+
+      if (!order) return null;
+
+      // Allow simulation for both OPEN (new) and PENDING (legacy) statuses
+      if (order.status !== 'OPEN' && order.status !== 'PENDING') {
+        throw new Error('Zamówienie nie jest otwarte - nie można symulować płatności');
+      }
+
+      // Update order status to CONFIRMED and payment status to PAID
+      const updatedOrder = await tx.order.update({
+        where: { id },
+        data: { 
+          status: 'CONFIRMED',
+          paymentStatus: 'PAID',
+        },
+        include: {
+          items: true,
+          user: { select: { id: true, email: true, firstName: true, lastName: true } },
+          shippingAddress: true,
+          billingAddress: true,
+        },
+      });
+
+      // Add to status history
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: id,
+          status: 'CONFIRMED',
+          note: '[DEV] Płatność zasymulowana - zamówienie opłacone',
+        },
+      });
+
+      console.log(`[DEV] Payment simulated for order ${order.orderNumber}`);
+
+      return updatedOrder;
     });
   }
 }

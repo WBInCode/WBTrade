@@ -48,7 +48,7 @@ const createOrderSchema = z.object({
  * Update order status schema
  */
 const updateOrderStatusSchema = z.object({
-  status: z.enum(['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED']),
+  status: z.enum(['OPEN', 'PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED']),
   note: z.string().max(500).optional().transform((val) => val ? sanitizeText(val) : undefined),
 });
 
@@ -291,5 +291,45 @@ export async function restoreOrder(req: Request, res: Response): Promise<void> {
   } catch (error: any) {
     console.error('Error restoring order:', error);
     res.status(400).json({ message: error.message || 'Error restoring order' });
+  }
+}
+
+/**
+ * Simulate payment for development/testing
+ * Only works in development environment
+ */
+export async function simulatePayment(req: Request, res: Response): Promise<void> {
+  try {
+    // Only allow in development
+    if (process.env.NODE_ENV === 'production') {
+      res.status(403).json({ message: 'Payment simulation not available in production' });
+      return;
+    }
+
+    const { id } = req.params;
+    
+    // Validate ID format
+    const cuidRegex = /^c[a-z0-9]{20,}$/i;
+    if (!cuidRegex.test(id)) {
+      res.status(400).json({ message: 'Invalid order ID format' });
+      return;
+    }
+    
+    const order = await ordersService.simulatePayment(id);
+    
+    if (!order) {
+      res.status(404).json({ message: 'Order not found' });
+      return;
+    }
+    
+    res.status(200).json({ 
+      message: 'Payment simulated successfully', 
+      order,
+      paymentStatus: 'PAID',
+      orderStatus: order.status
+    });
+  } catch (error: any) {
+    console.error('Error simulating payment:', error);
+    res.status(400).json({ message: error.message || 'Error simulating payment' });
   }
 }

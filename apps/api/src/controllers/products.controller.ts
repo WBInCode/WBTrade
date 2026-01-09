@@ -44,16 +44,19 @@ const productQuerySchema = z.object({
   search: z.string().max(200).optional().transform((val) => val ? sanitizeText(val) : undefined),
   sort: z.enum(['price_asc', 'price_desc', 'name_asc', 'name_desc', 'newest', 'oldest', 'popular']).optional(),
   status: z.enum(['ACTIVE', 'DRAFT', 'ARCHIVED']).optional(),
+  // Ukryj produkty ze stanem 0 starsze niż 14 dni (domyślnie true dla frontendu)
+  hideOldZeroStock: z.string().optional().transform((val) => val !== 'false'),
 });
 
 /**
  * Product variant schema
  */
 const productVariantSchema = z.object({
+  id: z.string().optional(), // Existing variant ID
   sku: z.string().min(1).max(100),
   name: z.string().min(1).max(200).transform(sanitizeText),
   price: z.number().positive().max(9999999),
-  compareAtPrice: z.number().positive().max(9999999).optional(),
+  compareAtPrice: z.number().positive().max(9999999).optional().nullable(),
   stock: z.number().int().min(0).optional(),
   attributes: z.record(z.string().max(200)).optional(),
 });
@@ -62,8 +65,9 @@ const productVariantSchema = z.object({
  * Product image schema
  */
 const productImageSchema = z.object({
+  id: z.string().optional(), // Existing image ID
   url: z.string().url().max(2000),
-  alt: z.string().max(200).optional().transform((val) => val ? sanitizeText(val) : undefined),
+  alt: z.string().max(200).optional().nullable().transform((val) => val ? sanitizeText(val) : undefined),
   order: z.number().int().min(0).max(100).optional(),
 });
 
@@ -76,16 +80,19 @@ const createProductSchema = z.object({
   description: z.string().max(10000).optional().transform((val) => val ? sanitizeText(val) : undefined),
   shortDescription: z.string().max(500).optional().transform((val) => val ? sanitizeText(val) : undefined),
   price: z.number().positive('Price must be positive').max(9999999),
-  compareAtPrice: z.number().positive().max(9999999).optional(),
+  compareAtPrice: z.number().positive().max(9999999).nullable().optional(),
   sku: z.string().min(1).max(100).optional(),
   barcode: z.string().max(50).optional(),
-  categoryId: z.string().regex(/^c[a-z0-9]{20,}$/i, 'Invalid category ID').optional(),
+  categoryId: z.string().optional(),
   status: z.enum(['ACTIVE', 'DRAFT', 'ARCHIVED']).optional().default('DRAFT'),
   specifications: z.record(z.string().max(500)).optional(),
   metaTitle: z.string().max(100).optional().transform((val) => val ? sanitizeText(val) : undefined),
   metaDescription: z.string().max(300).optional().transform((val) => val ? sanitizeText(val) : undefined),
   variants: z.array(productVariantSchema).optional(),
   images: z.array(productImageSchema).optional(),
+  stock: z.number().int().min(0).optional(),
+  lowStockThreshold: z.number().int().min(0).optional(),
+  weight: z.number().min(0).nullable().optional(),
 });
 
 /**
@@ -162,9 +169,12 @@ export async function getProductBySlug(req: Request, res: Response): Promise<voi
  */
 export async function createProduct(req: Request, res: Response): Promise<void> {
   try {
+    console.log('Creating product, req.body:', JSON.stringify(req.body, null, 2));
+    
     const validation = createProductSchema.safeParse(req.body);
     
     if (!validation.success) {
+      console.log('Validation failed:', validation.error.flatten());
       res.status(400).json({
         message: 'Validation error',
         errors: validation.error.flatten().fieldErrors,
@@ -172,12 +182,58 @@ export async function createProduct(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // Data is validated by Zod, safe to pass to Prisma
-    const product = await productsService.create(validation.data as any);
+    console.log('Validation passed, data:', JSON.stringify(validation.data, null, 2));
+
+    const { images, variants, categoryId, stock, lowStockThreshold, weight, shortDescription, ...productData } = validation.data;
+    
+    // Build Prisma-compatible data structure
+    const prismaData: any = {
+      ...productData,
+      // Connect category if provided
+      ...(categoryId && {
+        category: { connect: { id: categoryId } }
+      }),
+      // Create images if provided
+      ...(images && images.length > 0 && {
+        images: {
+          create: images.map((img, index) => ({
+            url: img.url,
+            alt: img.alt || productData.name,
+            order: img.order ?? index,
+          }))
+        }
+      }),
+      // Create variants if provided
+      ...(variants && variants.length > 0 && {
+        variants: {
+          create: variants.map((variant) => ({
+            name: variant.name,
+            sku: variant.sku,
+            price: variant.price,
+            compareAtPrice: variant.compareAtPrice,
+            attributes: variant.attributes || {},
+          }))
+        }
+      }),
+    };
+
+    console.log('Prisma data:', JSON.stringify(prismaData, null, 2));
+
+    // If categoryId is provided, verify it exists first
+    if (categoryId) {
+      const categoryExists = await productsService.categoryExists(categoryId);
+      if (!categoryExists) {
+        res.status(400).json({ message: 'Kategoria nie istnieje', details: `Category ID: ${categoryId}` });
+        return;
+      }
+    }
+
+    const product = await productsService.create(prismaData, stock);
     res.status(201).json(product);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating product:', error);
-    res.status(500).json({ message: 'Error creating product' });
+    console.error('Error details:', error?.message, error?.code, error?.meta);
+    res.status(500).json({ message: 'Error creating product', details: error?.message });
   }
 }
 
@@ -195,9 +251,11 @@ export async function updateProduct(req: Request, res: Response): Promise<void> 
       return;
     }
     
+    console.log('Update product req.body:', JSON.stringify(req.body, null, 2));
     const validation = updateProductSchema.safeParse(req.body);
     
     if (!validation.success) {
+      console.log('Update validation failed:', validation.error.flatten());
       res.status(400).json({
         message: 'Validation error',
         errors: validation.error.flatten().fieldErrors,
@@ -205,12 +263,28 @@ export async function updateProduct(req: Request, res: Response): Promise<void> 
       return;
     }
     
-    // Data is validated by Zod, safe to pass to Prisma
-    const product = await productsService.update(id, validation.data as any);
+    // Extract fields that need special handling
+    const { images, variants, categoryId, stock, lowStockThreshold, weight, shortDescription, ...productData } = validation.data;
+    
+    // Build Prisma-compatible data structure for update
+    const prismaData: any = {
+      ...productData,
+      // Connect/disconnect category
+      ...(categoryId !== undefined && {
+        category: categoryId ? { connect: { id: categoryId } } : { disconnect: true }
+      }),
+    };
+    
+    const product = await productsService.update(id, prismaData);
 
     if (!product) {
       res.status(404).json({ message: 'Product not found' });
       return;
+    }
+
+    // Update inventory for variants if stock value is provided
+    if (stock !== undefined && product.variants && product.variants.length > 0) {
+      await productsService.updateVariantsStock(product.variants.map((v: any) => v.id), stock);
     }
 
     res.status(200).json(product);
