@@ -264,6 +264,166 @@ export class CategoriesService {
       }))
     }));
   }
+
+  /**
+   * Get all categories (flat list for admin)
+   */
+  async getAllCategoriesFlat() {
+    return prisma.category.findMany({
+      where: { isActive: true },
+      orderBy: [{ order: 'asc' }, { name: 'asc' }],
+      include: {
+        _count: {
+          select: { products: true, children: true }
+        }
+      }
+    });
+  }
+
+  /**
+   * Create a new category
+   */
+  async createCategory(data: {
+    name: string;
+    slug: string;
+    description?: string | null;
+    image?: string | null;
+    parentId?: string | null;
+  }) {
+    // Check if slug already exists
+    const existingSlug = await prisma.category.findUnique({
+      where: { slug: data.slug }
+    });
+
+    if (existingSlug) {
+      throw new Error('Kategoria z tym slugiem już istnieje');
+    }
+
+    // Get the max order to add at the end
+    const maxOrder = await prisma.category.aggregate({
+      _max: { order: true }
+    });
+
+    return prisma.category.create({
+      data: {
+        name: data.name,
+        slug: data.slug,
+        image: data.image || null,
+        parentId: data.parentId || null,
+        order: (maxOrder._max.order || 0) + 1,
+        isActive: true,
+      },
+      include: {
+        _count: {
+          select: { products: true, children: true }
+        }
+      }
+    });
+  }
+
+  /**
+   * Update an existing category
+   */
+  async updateCategory(id: string, data: {
+    name?: string;
+    slug?: string;
+    description?: string | null;
+    image?: string | null;
+    parentId?: string | null;
+  }) {
+    // Check if category exists
+    const existing = await prisma.category.findUnique({
+      where: { id }
+    });
+
+    if (!existing) {
+      throw new Error('Kategoria nie została znaleziona');
+    }
+
+    // Check if new slug conflicts with another category
+    if (data.slug && data.slug !== existing.slug) {
+      const slugConflict = await prisma.category.findUnique({
+        where: { slug: data.slug }
+      });
+      if (slugConflict) {
+        throw new Error('Kategoria z tym slugiem już istnieje');
+      }
+    }
+
+    // Prevent setting parent to self or creating circular reference
+    if (data.parentId === id) {
+      throw new Error('Kategoria nie może być swoim własnym rodzicem');
+    }
+
+    return prisma.category.update({
+      where: { id },
+      data: {
+        name: data.name,
+        slug: data.slug,
+        image: data.image,
+        parentId: data.parentId,
+      },
+      include: {
+        _count: {
+          select: { products: true, children: true }
+        }
+      }
+    });
+  }
+
+  /**
+   * Delete a category
+   */
+  async deleteCategory(id: string) {
+    // Check if category exists
+    const existing = await prisma.category.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: { products: true, children: true }
+        }
+      }
+    });
+
+    if (!existing) {
+      throw new Error('Kategoria nie została znaleziona');
+    }
+
+    // Set products in this category to have no category
+    await prisma.product.updateMany({
+      where: { categoryId: id },
+      data: { categoryId: null }
+    });
+
+    // Move children to parent of deleted category (or make them root)
+    await prisma.category.updateMany({
+      where: { parentId: id },
+      data: { parentId: existing.parentId }
+    });
+
+    // Delete the category
+    return prisma.category.delete({
+      where: { id }
+    });
+  }
+
+  /**
+   * Get category by ID
+   */
+  async getCategoryById(id: string) {
+    return prisma.category.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: { products: true, children: true }
+        },
+        children: {
+          where: { isActive: true },
+          orderBy: { order: 'asc' }
+        }
+      }
+    });
+  }
 }
 
 export const categoriesService = new CategoriesService();

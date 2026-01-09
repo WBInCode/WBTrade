@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { 
-  FolderTree, Plus, Edit, Trash2, ChevronRight, Package, 
-  X, Save, GripVertical, Search, Check, Image as ImageIcon
+  FolderTree, ChevronRight, Package, 
+  X, Save, Search, Check, Image as ImageIcon
 } from 'lucide-react';
 
 interface Category {
@@ -34,25 +34,11 @@ export default function CategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   
-  // Modal states
-  const [showModal, setShowModal] = useState(false);
-  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  
   // Assign products modal
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [assigningCategory, setAssigningCategory] = useState<Category | null>(null);
   const [productSearch, setProductSearch] = useState('');
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
-  
-  // Form state
-  const [form, setForm] = useState({
-    name: '',
-    slug: '',
-    description: '',
-    image: '',
-    parentId: ''
-  });
 
   useEffect(() => {
     loadCategories();
@@ -120,32 +106,6 @@ export default function CategoriesPage() {
     });
   };
 
-  const openAddModal = (parentId: string | null = null) => {
-    setModalMode('add');
-    setForm({
-      name: '',
-      slug: '',
-      description: '',
-      image: '',
-      parentId: parentId || ''
-    });
-    setEditingCategory(null);
-    setShowModal(true);
-  };
-
-  const openEditModal = (category: Category) => {
-    setModalMode('edit');
-    setForm({
-      name: category.name,
-      slug: category.slug,
-      description: category.description || '',
-      image: category.image || '',
-      parentId: category.parentId || ''
-    });
-    setEditingCategory(category);
-    setShowModal(true);
-  };
-
   const openAssignModal = (category: Category) => {
     setAssigningCategory(category);
     // Pre-select products already in this category
@@ -153,77 +113,6 @@ export default function CategoriesPage() {
     setSelectedProducts(new Set(productsInCategory.map(p => p.id)));
     setProductSearch('');
     setShowAssignModal(true);
-  };
-
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim();
-  };
-
-  const handleNameChange = (name: string) => {
-    setForm(prev => ({
-      ...prev,
-      name,
-      slug: prev.slug || generateSlug(name)
-    }));
-  };
-
-  const handleSave = async () => {
-    if (!form.name.trim()) {
-      alert('Nazwa kategorii jest wymagana');
-      return;
-    }
-
-    try {
-      const url = modalMode === 'add' 
-        ? 'http://localhost:5000/api/categories'
-        : `http://localhost:5000/api/categories/${editingCategory?.id}`;
-      
-      const method = modalMode === 'add' ? 'POST' : 'PUT';
-      
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: form.name,
-          slug: form.slug || generateSlug(form.name),
-          description: form.description || null,
-          image: form.image || null,
-          parentId: form.parentId || null
-        })
-      });
-
-      if (!response.ok) throw new Error('Failed to save');
-      
-      await loadCategories();
-      setShowModal(false);
-    } catch (error) {
-      console.error('Failed to save category:', error);
-      alert('Blad podczas zapisywania kategorii');
-    }
-  };
-
-  const handleDelete = async (category: Category) => {
-    if (!confirm(`Czy na pewno chcesz usunac kategorie "${category.name}"? Produkty w tej kategorii zostana bez kategorii.`)) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`http://localhost:5000/api/categories/${category.id}`, {
-        method: 'DELETE'
-      });
-
-      if (!response.ok) throw new Error('Failed to delete');
-      
-      await loadCategories();
-    } catch (error) {
-      console.error('Failed to delete category:', error);
-      alert('Blad podczas usuwania kategorii');
-    }
   };
 
   const handleAssignProducts = async () => {
@@ -262,7 +151,7 @@ export default function CategoriesPage() {
       setShowAssignModal(false);
     } catch (error) {
       console.error('Failed to assign products:', error);
-      alert('Blad podczas przypisywania produktow');
+      alert('Błąd podczas przypisywania produktów');
     }
   };
 
@@ -327,39 +216,13 @@ export default function CategoriesPage() {
             <p className="text-sm text-gray-400 truncate">/{category.slug}</p>
           </div>
           
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => openAssignModal(category)}
-              className="flex items-center gap-1 text-sm text-gray-400 hover:text-orange-400 transition-colors"
-            >
-              <Package className="w-4 h-4" />
-              {category._count?.products || 0} produktow
-            </button>
-            
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button 
-                onClick={() => openAddModal(category.id)}
-                className="p-2 hover:bg-slate-600 rounded-lg transition-colors"
-                title="Dodaj podkategorie"
-              >
-                <Plus className="w-4 h-4 text-gray-400" />
-              </button>
-              <button 
-                onClick={() => openEditModal(category)}
-                className="p-2 hover:bg-slate-600 rounded-lg transition-colors"
-                title="Edytuj"
-              >
-                <Edit className="w-4 h-4 text-gray-400" />
-              </button>
-              <button 
-                onClick={() => handleDelete(category)}
-                className="p-2 hover:bg-slate-600 rounded-lg transition-colors"
-                title="Usun"
-              >
-                <Trash2 className="w-4 h-4 text-red-400" />
-              </button>
-            </div>
-          </div>
+          <button
+            onClick={() => openAssignModal(category)}
+            className="flex items-center gap-1 text-sm text-gray-400 hover:text-orange-400 transition-colors"
+          >
+            <Package className="w-4 h-4" />
+            {category._count?.products || 0} produktów
+          </button>
         </div>
         
         {hasChildren && isExpanded && (
@@ -394,44 +257,14 @@ export default function CategoriesPage() {
 
   const categoryTree = buildTree(categories);
 
-  // Get flat list of categories for parent selection (excluding current category and its children)
-  const getParentOptions = (excludeId?: string): Category[] => {
-    const result: Category[] = [];
-    
-    const getChildIds = (catId: string): string[] => {
-      const ids = [catId];
-      categories.filter(c => c.parentId === catId).forEach(c => {
-        ids.push(...getChildIds(c.id));
-      });
-      return ids;
-    };
-    
-    const excludeIds = excludeId ? getChildIds(excludeId) : [];
-    
-    categories.forEach(cat => {
-      if (!excludeIds.includes(cat.id)) {
-        result.push(cat);
-      }
-    });
-    
-    return result;
-  };
-
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Kategorie</h1>
-          <p className="text-gray-400">Zarzadzaj kategoriami produktow</p>
+          <p className="text-gray-400">Przeglądaj kategorie produktów (synchronizowane z Baselinker)</p>
         </div>
-        <button 
-          onClick={() => openAddModal()}
-          className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Dodaj kategorie
-        </button>
       </div>
 
       {/* Stats */}
@@ -441,7 +274,7 @@ export default function CategoriesPage() {
           <p className="text-2xl font-bold text-white mt-1">{categories.length}</p>
         </div>
         <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
-          <p className="text-gray-400 text-sm">Kategorie glowne</p>
+          <p className="text-gray-400 text-sm">Kategorie główne</p>
           <p className="text-2xl font-bold text-white mt-1">{categoryTree.length}</p>
         </div>
         <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
@@ -449,7 +282,7 @@ export default function CategoriesPage() {
           <p className="text-2xl font-bold text-white mt-1">{categories.length - categoryTree.length}</p>
         </div>
         <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
-          <p className="text-gray-400 text-sm">Produktow w kategoriach</p>
+          <p className="text-gray-400 text-sm">Produktów w kategoriach</p>
           <p className="text-2xl font-bold text-white mt-1">
             {categories.reduce((sum, c) => sum + (c._count?.products || 0), 0)}
           </p>
@@ -464,7 +297,7 @@ export default function CategoriesPage() {
             onClick={() => setExpandedIds(new Set(categories.map(c => c.id)))}
             className="text-sm text-gray-400 hover:text-white transition-colors"
           >
-            Rozwin wszystkie
+            Rozwiń wszystkie
           </button>
         </div>
         
@@ -479,134 +312,13 @@ export default function CategoriesPage() {
             <div className="p-12 text-center text-gray-400">
               <FolderTree className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <p>Brak kategorii</p>
-              <p className="text-sm mt-2">Dodaj pierwsza kategorie, aby rozpoczac</p>
+              <p className="text-sm mt-2">Kategorie są synchronizowane z Baselinker</p>
             </div>
           ) : (
             categoryTree.map(category => renderCategory(category))
           )}
         </div>
       </div>
-
-      {/* Add/Edit Category Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg">
-            <div className="flex items-center justify-between p-4 border-b border-slate-700">
-              <h2 className="text-lg font-medium text-white">
-                {modalMode === 'add' ? 'Dodaj kategorie' : 'Edytuj kategorie'}
-              </h2>
-              <button
-                onClick={() => setShowModal(false)}
-                className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-400" />
-              </button>
-            </div>
-            
-            <div className="p-4 space-y-4">
-              {/* Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Nazwa kategorii *
-                </label>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => handleNameChange(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-orange-500"
-                  placeholder="np. Elektronika"
-                />
-              </div>
-
-              {/* Slug */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Slug (URL)
-                </label>
-                <input
-                  type="text"
-                  value={form.slug}
-                  onChange={(e) => setForm(prev => ({ ...prev, slug: e.target.value }))}
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-orange-500"
-                  placeholder="np. elektronika"
-                />
-              </div>
-
-              {/* Parent Category */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Kategoria nadrzedna
-                </label>
-                <select
-                  value={form.parentId}
-                  onChange={(e) => setForm(prev => ({ ...prev, parentId: e.target.value }))}
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-orange-500"
-                >
-                  <option value="">-- Brak (kategoria glowna) --</option>
-                  {getParentOptions(editingCategory?.id).map(cat => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Opis
-                </label>
-                <textarea
-                  value={form.description}
-                  onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
-                  rows={3}
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-orange-500 resize-none"
-                  placeholder="Opis kategorii..."
-                />
-              </div>
-
-              {/* Image URL */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  URL obrazka
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={form.image}
-                    onChange={(e) => setForm(prev => ({ ...prev, image: e.target.value }))}
-                    className="flex-1 px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-orange-500"
-                    placeholder="https://..."
-                  />
-                  {form.image && (
-                    <img 
-                      src={form.image} 
-                      alt="Preview" 
-                      className="w-10 h-10 rounded object-cover"
-                    />
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-end gap-3 p-4 border-t border-slate-700">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-              >
-                Anuluj
-              </button>
-              <button
-                onClick={handleSave}
-                className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-              >
-                <Save className="w-4 h-4" />
-                {modalMode === 'add' ? 'Dodaj' : 'Zapisz'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Assign Products Modal */}
       {showAssignModal && assigningCategory && (
@@ -636,11 +348,11 @@ export default function CategoriesPage() {
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-orange-500"
-                  placeholder="Szukaj produktow..."
+                  placeholder="Szukaj produktów..."
                 />
               </div>
               <p className="text-sm text-gray-400 mt-2">
-                Zaznaczono: {selectedProducts.size} produktow
+                Zaznaczono: {selectedProducts.size} produktów
               </p>
             </div>
             
@@ -649,7 +361,7 @@ export default function CategoriesPage() {
               {filteredProducts.length === 0 ? (
                 <div className="p-8 text-center text-gray-400">
                   <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Brak produktow</p>
+                  <p>Brak produktów</p>
                 </div>
               ) : (
                 <div className="divide-y divide-slate-700/50">

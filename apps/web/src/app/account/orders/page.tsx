@@ -9,7 +9,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { ordersApi, Order } from '../../../lib/api';
 
 // Order status types
-type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
+type OrderStatus = 'OPEN' | 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
 
 // Sidebar navigation items
 const sidebarItems = [
@@ -24,7 +24,7 @@ const sidebarItems = [
 // Filter tabs
 const filterTabs = [
   { id: 'all', label: 'Wszystkie' },
-  { id: 'PENDING', label: 'Oczekujące' },
+  { id: 'OPEN', label: 'Oczekujące' },
   { id: 'SHIPPED', label: 'W drodze' },
   { id: 'DELIVERED', label: 'Dostarczone' },
   { id: 'CANCELLED', label: 'Anulowane' },
@@ -78,6 +78,8 @@ function SidebarIcon({ icon }: { icon: string }) {
 
 function getStatusColor(status: string): string {
   switch (status) {
+    case 'OPEN':
+      return 'bg-orange-100 text-orange-700';
     case 'PENDING':
       return 'bg-yellow-100 text-yellow-700';
     case 'CONFIRMED':
@@ -98,10 +100,12 @@ function getStatusColor(status: string): string {
 
 function getStatusLabel(status: string): string {
   switch (status) {
-    case 'PENDING':
+    case 'OPEN':
       return 'Oczekuje na płatność';
+    case 'PENDING':
+      return 'Oczekuje';
     case 'CONFIRMED':
-      return 'Potwierdzone';
+      return 'Opłacone';
     case 'PROCESSING':
       return 'W realizacji';
     case 'SHIPPED':
@@ -119,6 +123,12 @@ function getStatusLabel(status: string): string {
 
 function getStatusIcon(status: string) {
   switch (status) {
+    case 'OPEN':
+      return (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      );
     case 'PENDING':
       return (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -178,6 +188,7 @@ export default function OrdersPage() {
   const [totalOrders, setTotalOrders] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [simulatingPayment, setSimulatingPayment] = useState<string | null>(null);
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
@@ -189,25 +200,52 @@ export default function OrdersPage() {
   }, [isLoading, isAuthenticated, router]);
 
   // Fetch orders from API
-  useEffect(() => {
-    async function fetchOrders() {
-      if (!isAuthenticated) return;
-      
-      try {
-        setOrdersLoading(true);
-        const response = await ordersApi.getAll(currentPage, 10);
-        setOrders(response.orders);
-        setTotalOrders(response.total);
-        setTotalPages(Math.ceil(response.total / response.limit));
-      } catch (error) {
-        console.error('Error fetching orders:', error);
-      } finally {
-        setOrdersLoading(false);
-      }
-    }
+  const fetchOrders = async () => {
+    if (!isAuthenticated) return;
     
+    try {
+      setOrdersLoading(true);
+      const response = await ordersApi.getAll(currentPage, 10);
+      setOrders(response.orders);
+      setTotalOrders(response.total);
+      setTotalPages(Math.ceil(response.total / response.limit));
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchOrders();
   }, [isAuthenticated, currentPage]);
+
+  // Simulate payment (development only)
+  const handleSimulatePayment = async (orderId: string) => {
+    try {
+      setSimulatingPayment(orderId);
+      const response = await fetch(`http://localhost:5000/api/orders/${orderId}/simulate-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Błąd symulacji płatności');
+      }
+
+      // Refresh orders after successful payment
+      await fetchOrders();
+      alert('✅ Płatność zasymulowana pomyślnie! Zamówienie zostało opłacone.');
+    } catch (error: any) {
+      console.error('Error simulating payment:', error);
+      alert(`❌ Błąd: ${error.message}`);
+    } finally {
+      setSimulatingPayment(null);
+    }
+  };
 
   if (isLoading || ordersLoading) {
     return (
@@ -239,6 +277,7 @@ export default function OrdersPage() {
   // Count orders by status
   const orderCounts = {
     all: orders.length,
+    OPEN: orders.filter(o => o.status === 'OPEN').length,
     PENDING: orders.filter(o => o.status === 'PENDING').length,
     CONFIRMED: orders.filter(o => o.status === 'CONFIRMED').length,
     PROCESSING: orders.filter(o => o.status === 'PROCESSING').length,
@@ -454,9 +493,13 @@ export default function OrdersPage() {
                               Śledź przesyłkę
                             </button>
                           )}
-                          {order.status === 'PENDING' && (
-                            <button className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors">
-                              Zapłać teraz
+                          {(order.status === 'OPEN' || order.status === 'PENDING') && (
+                            <button 
+                              onClick={() => handleSimulatePayment(order.id)}
+                              disabled={simulatingPayment === order.id}
+                              className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {simulatingPayment === order.id ? 'Przetwarzanie...' : 'Zapłać teraz'}
                             </button>
                           )}
                           {order.status === 'DELIVERED' && (

@@ -21,11 +21,15 @@ import { BaselinkerSyncType, BaselinkerSyncStatus, Prisma } from '@prisma/client
 export interface SaveConfigInput {
   apiToken?: string;  // Optional for updates (keep existing token)
   inventoryId: string;
+  syncEnabled?: boolean;
+  syncIntervalMinutes?: number;
 }
 
 export interface ConfigOutput {
   inventoryId: string;
   tokenMasked: string;
+  syncEnabled: boolean;
+  syncIntervalMinutes: number;
   lastSyncAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -106,7 +110,7 @@ export class BaselinkerService {
    * Save or update Baselinker configuration
    */
   async saveConfig(input: SaveConfigInput): Promise<ConfigOutput> {
-    const { apiToken, inventoryId } = input;
+    const { apiToken, inventoryId, syncEnabled = true, syncIntervalMinutes = 60 } = input;
 
     // Check if config already exists
     const existingConfig = await prisma.baselinkerConfig.findFirst({
@@ -125,36 +129,52 @@ export class BaselinkerService {
           apiTokenEncrypted: encrypted.ciphertext,
           encryptionIv: encrypted.iv,
           authTag: encrypted.authTag,
+          syncEnabled,
+          syncIntervalMinutes,
         },
         create: {
           inventoryId,
           apiTokenEncrypted: encrypted.ciphertext,
           encryptionIv: encrypted.iv,
           authTag: encrypted.authTag,
+          syncEnabled,
+          syncIntervalMinutes,
         },
       });
 
       return {
         inventoryId: config.inventoryId,
         tokenMasked: maskToken(apiToken),
+        syncEnabled: config.syncEnabled,
+        syncIntervalMinutes: config.syncIntervalMinutes,
         lastSyncAt: config.lastSyncAt,
         createdAt: config.createdAt,
         updatedAt: config.updatedAt,
       };
     } else if (existingConfig) {
-      // No token update needed, just return existing config
+      // Update only sync settings
+      config = await prisma.baselinkerConfig.update({
+        where: { id: existingConfig.id },
+        data: {
+          syncEnabled,
+          syncIntervalMinutes,
+        },
+      });
+      
       const decryptedToken = decryptToken(
-        existingConfig.apiTokenEncrypted,
-        existingConfig.encryptionIv,
-        existingConfig.authTag
+        config.apiTokenEncrypted,
+        config.encryptionIv,
+        config.authTag
       );
 
       return {
-        inventoryId: existingConfig.inventoryId,
+        inventoryId: config.inventoryId,
         tokenMasked: maskToken(decryptedToken),
-        lastSyncAt: existingConfig.lastSyncAt,
-        createdAt: existingConfig.createdAt,
-        updatedAt: existingConfig.updatedAt,
+        syncEnabled: config.syncEnabled,
+        syncIntervalMinutes: config.syncIntervalMinutes,
+        lastSyncAt: config.lastSyncAt,
+        createdAt: config.createdAt,
+        updatedAt: config.updatedAt,
       };
     } else {
       throw new Error('API token is required for initial configuration');
@@ -182,6 +202,8 @@ export class BaselinkerService {
       return {
         inventoryId: config.inventoryId,
         tokenMasked: maskToken(decryptedToken),
+        syncEnabled: config.syncEnabled,
+        syncIntervalMinutes: config.syncIntervalMinutes,
         lastSyncAt: config.lastSyncAt,
         createdAt: config.createdAt,
         updatedAt: config.updatedAt,
@@ -282,8 +304,10 @@ export class BaselinkerService {
 
   /**
    * Trigger sync (creates sync log and starts sync)
+   * @param type - 'full', 'products', 'categories', 'stock', 'images'
+   * @param mode - 'new-only' (tylko nowe produkty, bez stanów 0), 'update-only' (tylko aktualizacja istniejących)
    */
-  async triggerSync(type: string): Promise<SyncTriggerResult> {
+  async triggerSync(type: string, mode?: string): Promise<SyncTriggerResult> {
     // Map string type to enum
     const typeMap: Record<string, BaselinkerSyncType> = {
       full: BaselinkerSyncType.PRODUCTS,
@@ -317,10 +341,10 @@ export class BaselinkerService {
       },
     });
 
-    console.log(`[BaselinkerSync] Starting ${type} sync (logId: ${syncLog.id})`);
+    console.log(`[BaselinkerSync] Starting ${type} sync (logId: ${syncLog.id})${mode ? ` with mode: ${mode}` : ''}`);
 
     // Run sync in background (don't await)
-    this.runSync(syncLog.id, type).catch((error) => {
+    this.runSync(syncLog.id, type, mode).catch((error) => {
       console.error('Sync failed:', error);
     });
 
@@ -329,8 +353,9 @@ export class BaselinkerService {
 
   /**
    * Run the actual sync process
+   * @param mode - 'new-only' (tylko nowe produkty, bez stanów 0), 'update-only' (tylko aktualizacja istniejących)
    */
-  private async runSync(syncLogId: string, type: string): Promise<void> {
+  private async runSync(syncLogId: string, type: string, mode?: string): Promise<void> {
     let itemsProcessed = 0;
     const errors: string[] = [];
 
@@ -348,7 +373,7 @@ export class BaselinkerService {
         itemsProcessed += catResult.processed;
         errors.push(...catResult.errors);
 
-        const prodResult = await this.syncProducts(provider, stored.inventoryId);
+        const prodResult = await this.syncProducts(provider, stored.inventoryId, mode);
         itemsProcessed += prodResult.processed;
         errors.push(...prodResult.errors);
 
@@ -363,9 +388,16 @@ export class BaselinkerService {
         itemsProcessed = result.processed;
         errors.push(...result.errors);
       } else if (type === 'products') {
-        const result = await this.syncProducts(provider, stored.inventoryId);
+        const result = await this.syncProducts(provider, stored.inventoryId, mode);
         itemsProcessed = result.processed;
         errors.push(...result.errors);
+        
+        // Po synchronizacji produktów, synchronizuj też stany magazynowe
+        console.log('[BaselinkerSync] Syncing stock after products sync...');
+        const stockResult = await this.syncStock(provider, stored.inventoryId);
+        itemsProcessed += stockResult.processed;
+        errors.push(...stockResult.errors);
+        
         await this.reindexMeilisearch();
       } else if (type === 'stock') {
         const result = await this.syncStock(provider, stored.inventoryId);
@@ -701,17 +733,19 @@ export class BaselinkerService {
 
   /**
    * Sync products from Baselinker (incremental - only changes)
+   * @param mode - 'new-only' (tylko nowe produkty, bez stanów 0), 'update-only' (tylko aktualizacja istniejących), undefined (wszystko)
    */
   async syncProducts(
     provider: BaselinkerProvider,
-    inventoryId: string
+    inventoryId: string,
+    mode?: string
   ): Promise<{ processed: number; errors: string[]; skipped: number }> {
     const errors: string[] = [];
     let processed = 0;
     let skipped = 0;
 
     try {
-      console.log('[BaselinkerSync] Starting incremental products sync...');
+      console.log(`[BaselinkerSync] Starting products sync with mode: ${mode || 'all'}...`);
       
       // Get all product IDs from Baselinker (lightweight call)
       console.log('[BaselinkerSync] Fetching product list...');
@@ -740,14 +774,70 @@ export class BaselinkerService {
 
       console.log(`[BaselinkerSync] Found ${existingProducts.length} existing products in database`);
 
-      // First pass: identify which products need updating
-      // Compare basic info from productList to reduce API calls
+      // First pass: identify which products need updating based on mode
       const productsToFetch: number[] = [];
+      
+      // Dla trybu new-only, pobieramy też stany magazynowe aby pominąć produkty z zerowym stanem
+      let stockMap: Map<number, number> | null = null;
+      if (mode === 'new-only') {
+        console.log('[BaselinkerSync] Fetching stock data for new-only mode...');
+        const stockEntries = await provider.getInventoryProductsStock(inventoryId);
+        stockMap = new Map();
+        for (const entry of stockEntries) {
+          const totalStock = Object.values(entry.stock as Record<string, number>).reduce((sum: number, qty: number) => sum + qty, 0);
+          stockMap.set(entry.product_id, totalStock);
+        }
+        console.log(`[BaselinkerSync] Got stock data for ${stockMap.size} products`);
+      }
       
       for (const blProduct of productList) {
         const blId = blProduct.id.toString();
         const existing = existingMap.get(blId);
         
+        // MODE: fetch-all - pobierz wszystkie produkty (inicjalizacja)
+        if (mode === 'fetch-all') {
+          // Skip only if product already exists
+          if (existing) {
+            skipped++;
+            continue;
+          }
+          // Pobierz wszystkie nowe produkty, nawet ze stanem 0
+          productsToFetch.push(blProduct.id);
+          continue;
+        }
+        
+        // MODE: new-only - tylko nowe produkty, bez stanów zerowych
+        if (mode === 'new-only') {
+          // Skip if product already exists
+          if (existing) {
+            skipped++;
+            continue;
+          }
+          
+          // Skip if stock is 0
+          const productStock = stockMap?.get(blProduct.id) ?? 0;
+          if (productStock <= 0) {
+            skipped++;
+            continue;
+          }
+          
+          productsToFetch.push(blProduct.id);
+          continue;
+        }
+        
+        // MODE: update-only - tylko aktualizacja istniejących
+        if (mode === 'update-only') {
+          // Skip if product does not exist
+          if (!existing) {
+            skipped++;
+            continue;
+          }
+          
+          productsToFetch.push(blProduct.id);
+          continue;
+        }
+        
+        // MODE: all (default) - standardowa logika inkrementalna
         if (!existing) {
           // New product - needs full fetch
           productsToFetch.push(blProduct.id);
@@ -767,15 +857,15 @@ export class BaselinkerService {
         }
       }
 
-      console.log(`[BaselinkerSync] ${productsToFetch.length} products need updating, ${skipped} unchanged`);
+      console.log(`[BaselinkerSync] ${productsToFetch.length} products to process, ${skipped} skipped (mode: ${mode || 'all'})`);
 
       if (productsToFetch.length === 0) {
-        console.log('[BaselinkerSync] No products to update, skipping fetch');
+        console.log('[BaselinkerSync] No products to process, skipping fetch');
         return { processed: 0, errors, skipped };
       }
 
       // Fetch detailed data only for changed products
-      console.log('[BaselinkerSync] Fetching detailed data for changed products...');
+      console.log('[BaselinkerSync] Fetching detailed data for products...');
       const products = await provider.getInventoryProductsData(inventoryId, productsToFetch);
       console.log(`[BaselinkerSync] Got ${products.length} product details`);
 
@@ -817,6 +907,9 @@ export class BaselinkerService {
                 ? await this.findCategoryByBaselinkerIdcatId(blProduct.category_id.toString())
                 : null;
 
+              // Get tags (trim whitespace from each tag)
+              const productTags = (blProduct.tags || []).map((tag: string) => tag.trim()).filter(Boolean);
+
               // Upsert product
               const product = await tx.product.upsert({
                 where: { baselinkerProductId },
@@ -830,6 +923,7 @@ export class BaselinkerService {
                   categoryId: category?.id || null,
                   status: 'ACTIVE',
                   specifications: blProduct.features || {},
+                  tags: productTags,
                 },
                 create: {
                   baselinkerProductId,
@@ -842,6 +936,7 @@ export class BaselinkerService {
                   categoryId: category?.id || null,
                   status: 'ACTIVE',
                   specifications: blProduct.features || {},
+                  tags: productTags,
                 },
               });
 
@@ -1229,6 +1324,40 @@ export class BaselinkerService {
         completedAt: log.completedAt,
       })),
     };
+  }
+
+  /**
+   * Cancel a running sync or delete a sync log
+   */
+  async cancelSync(syncId: string): Promise<{ cancelled: boolean; deleted: boolean }> {
+    const syncLog = await prisma.baselinkerSyncLog.findUnique({
+      where: { id: syncId },
+    });
+
+    if (!syncLog) {
+      throw new Error('Sync log not found');
+    }
+
+    // If sync is running, mark it as failed
+    if (syncLog.status === BaselinkerSyncStatus.RUNNING) {
+      await prisma.baselinkerSyncLog.update({
+        where: { id: syncId },
+        data: {
+          status: BaselinkerSyncStatus.FAILED,
+          errors: ['Cancelled by user'],
+          completedAt: new Date(),
+        },
+      });
+      console.log(`[BaselinkerSync] Sync ${syncId} cancelled by user`);
+      return { cancelled: true, deleted: false };
+    }
+
+    // If sync is already completed/failed, delete the log
+    await prisma.baselinkerSyncLog.delete({
+      where: { id: syncId },
+    });
+    console.log(`[BaselinkerSync] Sync log ${syncId} deleted by user`);
+    return { cancelled: false, deleted: true };
   }
 }
 

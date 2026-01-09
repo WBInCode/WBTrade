@@ -27,6 +27,7 @@ import reviewsRoutes from './routes/reviews';
 import healthRoutes from './routes/health';
 import baselinkerRoutes from './routes/baselinker';
 import reportsRoutes from './routes/reports';
+import uploadRoutes from './routes/upload';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
 import { initializeMeilisearch } from './lib/meilisearch';
 import { startSearchIndexWorker } from './workers/search-index.worker';
@@ -49,10 +50,11 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       scriptSrc: ["'self'"],
-      imgSrc: ["'self'", 'data:', 'https:'],
+      imgSrc: ["'self'", 'data:', 'https:', 'http://localhost:5000'],
     },
   },
   crossOriginEmbedderPolicy: false, // Allow embedding for API
+  crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow images to be loaded from other origins
   hsts: {
     maxAge: 31536000, // 1 year
     includeSubDomains: true,
@@ -82,8 +84,8 @@ const corsOptions = {
 
 // Middleware
 app.use(cors(corsOptions));
-app.use(express.json({ limit: '10kb' })); // Limit body size to prevent DoS
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(express.json({ limit: '10mb' })); // Increased for base64 images if needed
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Apply general rate limiting to all routes
 app.use(generalRateLimiter);
@@ -142,6 +144,10 @@ app.use('/api/admin/baselinker', baselinkerRoutes); // Baselinker integration
 app.use('/api/reports', reportsRoutes); // Reports
 app.use('/api/locations', locationsRoutes); // Warehouse locations
 app.use('/api/users', usersRoutes); // Users management
+app.use('/api/upload', uploadRoutes); // File uploads
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // 404 handler
 app.use((req, res) => {
