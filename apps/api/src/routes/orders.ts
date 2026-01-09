@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createOrder, getOrder, updateOrder, deleteOrder, getAllOrders, getUserOrders, refundOrder, restoreOrder } from '../controllers/orders.controller';
+import { createOrder, getOrder, updateOrder, deleteOrder, getAllOrders, getUserOrders, refundOrder, restoreOrder, simulatePayment } from '../controllers/orders.controller';
 import { authGuard } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -27,5 +27,8 @@ router.post('/:id/refund', refundOrder);
 
 // Route to restore a cancelled/refunded order
 router.post('/:id/restore', restoreOrder);
+
+// Route to simulate payment (development only)
+router.post('/:id/simulate-payment', simulatePayment);
 
 export default router;

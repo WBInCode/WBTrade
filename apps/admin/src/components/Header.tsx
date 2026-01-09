@@ -1,17 +1,11 @@
 'use client';
 
-import { Bell, Search, Settings, Menu, LogOut, User } from 'lucide-react';
+import { Search, Menu, LogOut, User } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function Header() {
   const { user, logout } = useAuth();
-  const [notifications] = useState([
-    { id: 1, title: 'Nowe zamówienie #12345', time: '2 min temu', type: 'order' },
-    { id: 2, title: 'Niski stan: iPhone 15 Pro', time: '15 min temu', type: 'stock' },
-    { id: 3, title: 'Zwrot #11234 oczekuje', time: '1h temu', type: 'return' },
-  ]);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   const roleLabels: Record<string, string> = {
@@ -29,8 +23,8 @@ export default function Header() {
           <Menu className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-lg font-semibold text-white">Dashboard</h1>
-          <p className="text-xs text-slate-400">Przegląd sklepu i magazynu</p>
+          <h1 className="text-lg font-semibold text-white">Panel administracyjny</h1>
+          <p className="text-xs text-slate-400">WBTrade</p>
         </div>
       </div>
 
@@ -48,46 +42,6 @@ export default function Header() {
             ⌘K
           </kbd>
         </div>
-
-        {/* Notifications */}
-        <div className="relative">
-          <button
-            onClick={() => setShowNotifications(!showNotifications)}
-            className="relative p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700/30 transition-colors"
-          >
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-orange-500 rounded-full"></span>
-          </button>
-
-          {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 bg-slate-800 rounded-lg shadow-xl border border-slate-700 z-50">
-              <div className="px-4 py-3 border-b border-slate-700">
-                <h3 className="font-medium text-white">Powiadomienia</h3>
-              </div>
-              <div className="max-h-80 overflow-y-auto">
-                {notifications.map((notif) => (
-                  <div
-                    key={notif.id}
-                    className="px-4 py-3 hover:bg-slate-700/50 cursor-pointer border-b border-slate-700/50 last:border-0"
-                  >
-                    <p className="text-sm text-white">{notif.title}</p>
-                    <p className="text-xs text-slate-400 mt-1">{notif.time}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="px-4 py-2 border-t border-slate-700">
-                <button className="text-sm text-orange-400 hover:text-orange-300">
-                  Zobacz wszystkie
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Settings */}
-        <button className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700/30 transition-colors">
-          <Settings className="w-5 h-5" />
-        </button>
 
         {/* User menu */}
         {user && (

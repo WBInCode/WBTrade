@@ -336,7 +336,7 @@ export default function BaselinkerPage() {
     }
   };
 
-  const handleTriggerSync = async (type: string) => {
+  const handleTriggerSync = async (type: string, mode?: string) => {
     if (!token) return;
     
     setSyncing(true);
@@ -347,17 +347,35 @@ export default function BaselinkerPage() {
         '/admin/baselinker/sync',
         {
           method: 'POST',
-          body: JSON.stringify({ type }),
+          body: JSON.stringify({ type, mode }),
         },
         token
       );
       
-      setSuccess(`Synchronizacja ${type} uruchomiona`);
+      const modeLabel = mode === 'new-only' ? ' (tylko nowe)' : mode === 'update-only' ? ' (aktualizacja)' : '';
+      setSuccess(`Synchronizacja ${type}${modeLabel} uruchomiona`);
       await loadStatus();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Nie udało się uruchomić synchronizacji');
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleCancelSync = async (syncId: string) => {
+    if (!token) return;
+    
+    try {
+      await apiRequest(
+        `/admin/baselinker/sync/${syncId}`,
+        { method: 'DELETE' },
+        token
+      );
+      
+      setSuccess('Synchronizacja anulowana');
+      await loadStatus();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Nie udało się anulować synchronizacji');
     }
   };
 
@@ -504,54 +522,6 @@ export default function BaselinkerPage() {
               )}
             </div>
 
-            {/* Sync Settings */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Interwał synchronizacji
-                </label>
-                <select
-                  value={syncInterval}
-                  onChange={(e) => setSyncInterval(parseInt(e.target.value))}
-                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
-                >
-                  <option value={15}>15 minut</option>
-                  <option value={30}>30 minut</option>
-                  <option value={60}>1 godzina</option>
-                  <option value={120}>2 godziny</option>
-                  <option value={360}>6 godzin</option>
-                  <option value={720}>12 godzin</option>
-                  <option value={1440}>24 godziny</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Automatyczna synchronizacja
-                </label>
-                <button
-                  onClick={() => setSyncEnabled(!syncEnabled)}
-                  className={`w-full py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
-                    syncEnabled
-                      ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                      : 'bg-gray-700 text-gray-400 border border-gray-600'
-                  }`}
-                >
-                  {syncEnabled ? (
-                    <>
-                      <Play className="w-4 h-4" />
-                      Włączona
-                    </>
-                  ) : (
-                    <>
-                      <Pause className="w-4 h-4" />
-                      Wyłączona
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
             {/* Action Buttons */}
             <div className="flex gap-3 pt-4">
               <button
@@ -623,117 +593,78 @@ export default function BaselinkerPage() {
 
               {status.currentSync && (
                 <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
-                    <span className="text-blue-400 font-medium">
-                      Synchronizacja {status.currentSync.type} w toku...
-                    </span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
+                      <span className="text-blue-400 font-medium">
+                        Synchronizacja {status.currentSync.type} w toku...
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => handleCancelSync(status.currentSync!.id)}
+                      className="px-3 py-1 text-sm bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors flex items-center gap-1"
+                    >
+                      <XCircle className="w-4 h-4" />
+                      Anuluj
+                    </button>
                   </div>
+                  <p className="text-xs text-gray-400 mt-2">
+                    ID: {status.currentSync.id} | Start: {new Date(status.currentSync.startedAt).toLocaleString('pl-PL')}
+                  </p>
                 </div>
               )}
             </div>
           )}
 
           {/* Manual Sync Buttons */}
-          <div className="grid grid-cols-4 gap-3 mb-6">
+          <div className="space-y-4 mb-6">
+            {/* Główne opcje synchronizacji */}
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => handleTriggerSync('products', 'new-only')}
+                disabled={syncing || !config}
+                className="bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-medium transition-colors flex flex-col items-center justify-center gap-1 disabled:opacity-50"
+              >
+                <div className="flex items-center gap-2">
+                  <Package className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} />
+                  <span>Pobierz nowe produkty</span>
+                </div>
+                <span className="text-xs text-green-200">Bez aktualizacji istniejących, bez stanów 0</span>
+              </button>
+              <button
+                onClick={() => handleTriggerSync('products', 'update-only')}
+                disabled={syncing || !config}
+                className="bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors flex flex-col items-center justify-center gap-1 disabled:opacity-50"
+              >
+                <div className="flex items-center gap-2">
+                  <RefreshCw className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} />
+                  <span>Aktualizuj istniejące</span>
+                </div>
+                <span className="text-xs text-blue-200">Tylko produkty już w bazie</span>
+              </button>
+            </div>
+            
+            {/* Opcja inicjalizacji */}
             <button
-              onClick={() => handleTriggerSync('full')}
+              onClick={() => {
+                if (confirm('Czy na pewno chcesz pobrać WSZYSTKIE produkty z Baselinker? To może zająć dużo czasu.')) {
+                  handleTriggerSync('products', 'fetch-all');
+                }
+              }}
               disabled={syncing || !config}
-              className="bg-purple-600 hover:bg-purple-700 text-white py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-medium transition-colors flex flex-col items-center justify-center gap-1 disabled:opacity-50"
             >
-              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-              Pełna sync
-            </button>
-            <button
-              onClick={() => handleTriggerSync('categories')}
-              disabled={syncing || !config}
-              className="bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              <FolderTree className="w-4 h-4" />
-              Kategorie
-            </button>
-            <button
-              onClick={() => handleTriggerSync('products')}
-              disabled={syncing || !config}
-              className="bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              <Package className="w-4 h-4" />
-              Produkty
-            </button>
-            <button
-              onClick={() => handleTriggerSync('stock')}
-              disabled={syncing || !config}
-              className="bg-gray-700 hover:bg-gray-600 text-white py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              <Database className="w-4 h-4" />
-              Stany
+              <div className="flex items-center gap-2">
+                <Database className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} />
+                <span>Pobierz wszystko (inicjalizacja)</span>
+              </div>
+              <span className="text-xs text-purple-200">Wszystkie nowe produkty, łącznie ze stanem 0</span>
             </button>
           </div>
 
           {/* Recent Logs */}
-          <div>
-            <h3 className="text-sm font-medium text-gray-400 mb-3">Historia synchronizacji</h3>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {status?.recentLogs && status.recentLogs.length > 0 ? (
-                status.recentLogs.map((log) => (
-                  <div
-                    key={log.id}
-                    className="bg-gray-900 rounded-lg p-3 flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                      <SyncTypeIcon type={log.type} />
-                      <div>
-                        <p className="text-white text-sm font-medium">{log.type}</p>
-                        <p className="text-gray-500 text-xs">
-                          {new Date(log.startedAt).toLocaleString('pl-PL')}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-gray-400 text-sm">
-                        {log.itemsProcessed} elementów
-                      </span>
-                      <StatusBadge status={log.status} />
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-500 text-sm text-center py-4">
-                  Brak historii synchronizacji
-                </p>
-              )}
-            </div>
-          </div>
         </div>
       </div>
-
-      {/* Errors Section */}
-      {status?.recentLogs?.some((log) => log.errors && log.errors.length > 0) && (
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-red-500/20 rounded-lg">
-              <AlertTriangle className="w-5 h-5 text-red-400" />
-            </div>
-            <h2 className="text-lg font-semibold text-white">Błędy synchronizacji</h2>
-          </div>
-          
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {status.recentLogs
-              .filter((log) => log.errors && log.errors.length > 0)
-              .slice(0, 3)
-              .flatMap((log) =>
-                (log.errors || []).map((err, idx) => (
-                  <div key={`${log.id}-${idx}`} className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-                    <p className="text-red-400 text-sm">{err}</p>
-                    <p className="text-red-500/60 text-xs mt-1">
-                      {log.type} - {new Date(log.startedAt).toLocaleString('pl-PL')}
-                    </p>
-                  </div>
-                ))
-              )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
