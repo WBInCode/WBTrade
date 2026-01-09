@@ -3,17 +3,9 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  LayoutDashboard,
   Package,
   ShoppingCart,
   Users,
-  Warehouse,
-  FolderTree,
-  Settings,
-  BarChart3,
-  Truck,
-  CreditCard,
-  Bell,
   LogOut,
   ChevronDown,
   Box,
@@ -22,17 +14,11 @@ import { useState } from 'react';
 
 const menuItems = [
   {
-    title: 'Dashboard',
-    href: '/',
-    icon: LayoutDashboard,
-  },
-  {
     title: 'Produkty',
     href: '/products',
     icon: Package,
     submenu: [
       { title: 'Lista produktów', href: '/products' },
-      { title: 'Dodaj produkt', href: '/products/new' },
       { title: 'Kategorie', href: '/categories' },
     ],
   },
@@ -42,24 +28,10 @@ const menuItems = [
     icon: ShoppingCart,
     submenu: [
       { title: 'Wszystkie', href: '/orders' },
-      { title: 'Nowe', href: '/orders?status=PENDING' },
+      { title: 'Otwarte', href: '/orders?status=OPEN' },
+      { title: 'Opłacone', href: '/orders?status=CONFIRMED' },
       { title: 'W realizacji', href: '/orders?status=PROCESSING' },
       { title: 'Wysłane', href: '/orders?status=SHIPPED' },
-    ],
-  },
-  {
-    title: 'Magazyn (WMS)',
-    href: '/warehouse',
-    icon: Warehouse,
-    submenu: [
-      { title: 'Stany magazynowe', href: '/warehouse' },
-      { title: 'Przyjęcie (PZ)', href: '/warehouse/receive' },
-      { title: 'Wydanie (WZ)', href: '/warehouse/ship' },
-      { title: 'Przesunięcia', href: '/warehouse/transfer' },
-      { title: 'Inwentaryzacja', href: '/warehouse/inventory-count' },
-      { title: 'Historia ruchów', href: '/warehouse/movements' },
-      { title: 'Lokalizacje', href: '/warehouse/locations' },
-      { title: 'Alerty stanów', href: '/warehouse/alerts' },
     ],
   },
   {
@@ -68,32 +40,11 @@ const menuItems = [
     icon: Users,
   },
   {
-    title: 'Raporty',
-    href: '/reports',
-    icon: BarChart3,
-    submenu: [
-      { title: 'Sprzedaż', href: '/reports/sales' },
-      { title: 'Produkty', href: '/reports/products' },
-      { title: 'Klienci', href: '/reports/customers' },
-    ],
-  },
-  {
     title: 'Integracje',
     href: '/integrations',
     icon: Box,
     submenu: [
       { title: 'Baselinker', href: '/baselinker' },
-    ],
-  },
-  {
-    title: 'Ustawienia',
-    href: '/settings',
-    icon: Settings,
-    submenu: [
-      { title: 'Dane firmy', href: '/settings/company' },
-      { title: 'Dostawa', href: '/settings/shipping' },
-      { title: 'Płatności', href: '/settings/payments' },
-      { title: 'Podatki', href: '/settings/taxes' },
     ],
   },
 ];

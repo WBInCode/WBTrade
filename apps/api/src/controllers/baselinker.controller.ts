@@ -18,7 +18,7 @@ export const baselinkerController = {
    */
   async saveConfig(req: Request, res: Response) {
     try {
-      const { apiToken, inventoryId } = req.body;
+      const { apiToken, inventoryId, syncEnabled, syncIntervalMinutes } = req.body;
 
       // Check if config already exists
       const existingConfig = await baselinkerService.getConfig();
@@ -47,6 +47,8 @@ export const baselinkerController = {
       const config = await baselinkerService.saveConfig({
         apiToken,
         inventoryId,
+        syncEnabled: syncEnabled ?? true,
+        syncIntervalMinutes: syncIntervalMinutes ?? 60,
       });
 
       res.json({
@@ -147,9 +149,12 @@ export const baselinkerController = {
    */
   async triggerSync(req: Request, res: Response) {
     try {
-      const { type } = req.body; // 'full', 'products', 'categories', 'stock', 'images'
+      const { type, mode } = req.body; 
+      // type: 'full', 'products', 'categories', 'stock', 'images'
+      // mode: 'new-only' (tylko nowe produkty, bez stanów 0), 'update-only' (tylko aktualizacja istniejących)
 
       const validTypes = ['full', 'products', 'categories', 'stock', 'images'];
+      const validModes = ['new-only', 'update-only', 'fetch-all', undefined];
       const syncType = type || 'full';
 
       if (!validTypes.includes(syncType)) {
@@ -158,10 +163,16 @@ export const baselinkerController = {
         });
       }
 
-      const result = await baselinkerService.triggerSync(syncType);
+      if (mode && !validModes.includes(mode)) {
+        return res.status(400).json({
+          message: `Invalid sync mode. Must be one of: new-only, update-only`,
+        });
+      }
+
+      const result = await baselinkerService.triggerSync(syncType, mode);
 
       res.json({
-        message: `Sync ${syncType} started`,
+        message: `Sync ${syncType} started${mode ? ` (${mode})` : ''}`,
         syncLogId: result.syncLogId,
       });
     } catch (error) {
@@ -207,6 +218,35 @@ export const baselinkerController = {
       console.error('Error fetching Baselinker inventories:', error);
       res.status(500).json({
         message: 'Failed to fetch inventories',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  },
+
+  /**
+   * DELETE /api/admin/baselinker/sync/:id
+   * Cancel/delete a sync log (mark as failed or remove)
+   */
+  async cancelSync(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+
+      if (!id) {
+        return res.status(400).json({
+          message: 'Sync ID is required',
+        });
+      }
+
+      const result = await baselinkerService.cancelSync(id);
+
+      res.json({
+        message: 'Sync cancelled successfully',
+        result,
+      });
+    } catch (error) {
+      console.error('Error cancelling sync:', error);
+      res.status(500).json({
+        message: 'Failed to cancel sync',
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }

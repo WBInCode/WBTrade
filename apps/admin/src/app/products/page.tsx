@@ -13,6 +13,7 @@ interface Product {
   id: string;
   name: string;
   sku: string;
+  barcode: string | null;
   price: number;
   stock: number;
   compareAtPrice: number | null;
@@ -21,6 +22,7 @@ interface Product {
   category?: { name: string };
   images: { url: string }[];
   variants: { id: string; sku: string; price: number }[];
+  tags: string[];
   createdAt: string;
 }
 
@@ -109,14 +111,14 @@ export default function ProductsPage() {
 
   const statusColors: Record<string, string> = {
     ACTIVE: 'bg-green-500/20 text-green-400',
-    DRAFT: 'bg-yellow-500/20 text-yellow-400',
+    DRAFT: 'bg-red-500/20 text-red-400',
     ARCHIVED: 'bg-gray-500/20 text-gray-400',
   };
 
   const statusLabels: Record<string, string> = {
     ACTIVE: 'Aktywny',
-    DRAFT: 'Szkic',
-    ARCHIVED: 'Zarchiwizowany',
+    DRAFT: 'Nieaktywny',
+    ARCHIVED: 'Ukryty',
   };
 
   // Toggle selection
@@ -278,14 +280,16 @@ export default function ProductsPage() {
 
   // Export to CSV
   const exportToCSV = () => {
-    const headers = ['ID', 'Nazwa', 'SKU', 'Cena', 'Stan', 'Status', 'Kategoria'];
+    const headers = ['ID', 'Nazwa', 'SKU', 'EAN', 'Cena', 'Stan', 'Status', 'Tagi', 'Kategoria'];
     const rows = products.map(p => [
       p.id,
       p.name,
       p.sku,
+      p.barcode || '',
       p.price,
       p.stock || 0,
       p.status,
+      (p.tags || []).join(', '),
       p.category?.name || ''
     ]);
     
@@ -317,29 +321,6 @@ export default function ProductsPage() {
           <h1 className="text-2xl font-bold text-white">Produkty</h1>
           <p className="text-gray-400">{totalProducts} produktow w bazie</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/products/import"
-            className="flex items-center gap-2 px-4 py-2 bg-slate-800 border border-slate-700 text-gray-300 rounded-lg hover:bg-slate-700 transition-colors"
-          >
-            <Upload className="w-4 h-4" />
-            Import
-          </Link>
-          <button
-            onClick={exportToCSV}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-800 border border-slate-700 text-gray-300 rounded-lg hover:bg-slate-700 transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            Eksport
-          </button>
-          <Link
-            href="/products/new"
-            className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            Dodaj produkt
-          </Link>
-        </div>
       </div>
 
       {/* Search & Filters */}
@@ -362,8 +343,8 @@ export default function ProductsPage() {
         >
           <option value="">Wszystkie statusy</option>
           <option value="ACTIVE">Aktywne</option>
-          <option value="DRAFT">Szkice</option>
-          <option value="ARCHIVED">Zarchiwizowane</option>
+          <option value="DRAFT">Nieaktywne</option>
+          <option value="ARCHIVED">Ukryte</option>
         </select>
         
         <select
@@ -448,6 +429,11 @@ export default function ProductsPage() {
                   SKU <ArrowUpDown className="w-3 h-3" />
                 </div>
               </th>
+              <th className="px-4 py-4">
+                <div className="flex items-center gap-1">
+                  EAN
+                </div>
+              </th>
               <th className="px-4 py-4 cursor-pointer hover:text-white" onClick={() => toggleSort('price')}>
                 <div className="flex items-center gap-1">
                   Cena <ArrowUpDown className="w-3 h-3" />
@@ -459,6 +445,7 @@ export default function ProductsPage() {
                 </div>
               </th>
               <th className="px-4 py-4">Status</th>
+              <th className="px-4 py-4">Tagi</th>
               <th className="px-4 py-4">Kategoria</th>
               <th className="px-4 py-4"></th>
             </tr>
@@ -467,19 +454,16 @@ export default function ProductsPage() {
             {loading ? (
               Array.from({ length: 8 }).map((_, i) => (
                 <tr key={i}>
-                  <td colSpan={8} className="px-4 py-4">
+                  <td colSpan={10} className="px-4 py-4">
                     <div className="h-12 bg-slate-700 rounded animate-pulse"></div>
                   </td>
                 </tr>
               ))
             ) : products.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-12 text-center text-gray-400">
+                <td colSpan={10} className="px-4 py-12 text-center text-gray-400">
                   <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Brak produktow</p>
-                  <Link href="/products/new" className="text-orange-400 hover:text-orange-300 mt-2 inline-block">
-                    Dodaj pierwszy produkt
-                  </Link>
+                  <p>Brak produktów spełniających kryteria</p>
                 </td>
               </tr>
             ) : (
@@ -510,6 +494,7 @@ export default function ProductsPage() {
                     </div>
                   </td>
                   <td className="px-4 py-4 text-gray-300 font-mono text-sm">{product.sku}</td>
+                  <td className="px-4 py-4 text-gray-400 font-mono text-xs">{product.barcode || '-'}</td>
                   <td className="px-4 py-4">
                     {editingPriceId === product.id ? (
                       <div className="flex flex-col gap-1">
@@ -571,6 +556,19 @@ export default function ProductsPage() {
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[product.status] || 'bg-gray-500/20 text-gray-400'}`}>
                       {statusLabels[product.status] || product.status}
                     </span>
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="flex flex-wrap gap-1">
+                      {product.tags && product.tags.length > 0 ? (
+                        product.tags.map((tag, idx) => (
+                          <span key={idx} className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400">
+                            {tag}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-gray-500">-</span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-4 text-gray-400 text-sm">
                     {product.category?.name || '-'}
