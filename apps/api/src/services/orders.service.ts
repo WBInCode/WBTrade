@@ -1,5 +1,6 @@
 import { prisma } from '../db';
 import { OrderStatus, Prisma } from '@prisma/client';
+import { sendOrderConfirmationEmail, sendOrderShippedEmail } from '../lib/email';
 
 interface CreateOrderData {
   userId?: string;
@@ -258,7 +259,10 @@ export class OrdersService {
       const order = await tx.order.update({
         where: { id },
         data: { status },
-        include: { items: true },
+        include: { 
+          items: true,
+          user: { select: { email: true } },
+        },
       });
 
       // Add to status history
@@ -270,6 +274,26 @@ export class OrdersService {
           createdBy,
         },
       });
+
+      // Send email notification for specific status changes
+      if (order.user?.email) {
+        try {
+          if (status === 'SHIPPED' && order.trackingNumber) {
+            await sendOrderShippedEmail(order.user.email, {
+              orderNumber: order.orderNumber,
+              trackingNumber: order.trackingNumber,
+              carrier: order.shippingMethod || 'Kurier',
+              // Generate tracking URL based on carrier
+              trackingUrl: order.shippingMethod?.includes('inpost') 
+                ? `https://inpost.pl/sledzenie-przesylek?number=${order.trackingNumber}`
+                : undefined,
+            });
+            console.log(`Order shipped email sent to ${order.user.email}`);
+          }
+        } catch (emailError) {
+          console.error('Failed to send order status email:', emailError);
+        }
+      }
 
       return order;
     });

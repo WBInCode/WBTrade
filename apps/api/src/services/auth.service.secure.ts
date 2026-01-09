@@ -29,6 +29,7 @@ import {
   checkSuspiciousLogin,
 } from '../lib/audit';
 import { validatePassword } from '../lib/validation';
+import { sendVerificationEmail, sendPasswordResetEmail } from '../lib/email';
 
 // ============================================
 // CONFIGURATION - NO FALLBACKS IN PRODUCTION!
@@ -241,8 +242,14 @@ export class SecureAuthService {
     // Log registration
     await logRegistration(user.id, normalizedEmail, ipAddress, userAgent);
 
-    // TODO: Send verification email
-    // await emailService.sendVerificationEmail(normalizedEmail, verificationToken);
+    // Send verification email
+    try {
+      await sendVerificationEmail(normalizedEmail, verificationToken, user.firstName || undefined);
+      console.log(`Verification email sent to ${normalizedEmail}`);
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+      // Don't fail registration if email fails - user can resend
+    }
 
     return {
       user: this.sanitizeUser(user),
@@ -517,10 +524,15 @@ export class SecureAuthService {
       const resetToken = this.generateSecureToken();
       await storePasswordResetToken(user.id, resetToken);
 
-      // TODO: Send reset email
-      // await emailService.sendPasswordResetEmail(user.email, resetToken);
+      // Send reset email
+      try {
+        await sendPasswordResetEmail(user.email, resetToken);
+        console.log(`Password reset email sent to ${user.email}`);
+      } catch (emailError) {
+        console.error('Failed to send password reset email:', emailError);
+      }
 
-      // For development, log the token
+      // For development, also log the token
       if (process.env.NODE_ENV === 'development') {
         console.log(`[DEV] Password reset token for ${email}: ${resetToken}`);
       }
@@ -672,10 +684,15 @@ export class SecureAuthService {
     const verificationToken = this.generateSecureToken();
     await storeEmailVerificationToken(user.id, verificationToken);
 
-    // TODO: Send verification email
-    // await emailService.sendVerificationEmail(user.email, verificationToken);
+    // Send verification email
+    try {
+      await sendVerificationEmail(user.email, verificationToken);
+      console.log(`Verification email resent to ${user.email}`);
+    } catch (emailError) {
+      console.error('Failed to resend verification email:', emailError);
+    }
 
-    // For development
+    // For development, also log the token
     if (process.env.NODE_ENV === 'development') {
       console.log(`[DEV] Verification token for ${user.email}: ${verificationToken}`);
     }

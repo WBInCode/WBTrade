@@ -301,3 +301,65 @@ export async function updateProfile(req: Request, res: Response): Promise<void> 
     res.status(500).json({ message: 'Profile update failed' });
   }
 }
+
+/**
+ * Verify email with token
+ * GET /api/auth/verify-email/:token
+ */
+export async function verifyEmail(req: Request, res: Response): Promise<void> {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      res.status(400).json({ message: 'Token is required' });
+      return;
+    }
+
+    const result = await authService.verifyEmail(token);
+
+    res.status(200).json({
+      success: result.success,
+      message: result.message,
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes('Invalid or expired')) {
+        res.status(400).json({ message: error.message });
+        return;
+      }
+    }
+    console.error('Verify email error:', error);
+    res.status(500).json({ message: 'Email verification failed' });
+  }
+}
+
+/**
+ * Resend verification email
+ * POST /api/auth/resend-verification
+ */
+export async function resendVerification(req: Request, res: Response): Promise<void> {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      res.status(400).json({ message: 'Email is required' });
+      return;
+    }
+
+    const result = await authService.resendVerification(email);
+
+    res.status(200).json({
+      success: result.success,
+      message: result.message,
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes('not found')) {
+        res.status(404).json({ message: 'User not found' });
+        return;
+      }
+    }
+    console.error('Resend verification error:', error);
+    res.status(500).json({ message: 'Failed to resend verification email' });
+  }
+}

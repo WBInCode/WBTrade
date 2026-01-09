@@ -27,6 +27,8 @@ import reviewsRoutes from './routes/reviews';
 import healthRoutes from './routes/health';
 import baselinkerRoutes from './routes/baselinker';
 import reportsRoutes from './routes/reports';
+import contactRoutes from './routes/contact';
+import newsletterRoutes from './routes/newsletter';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
 import { initializeMeilisearch } from './lib/meilisearch';
 import { startSearchIndexWorker } from './workers/search-index.worker';
@@ -117,6 +119,8 @@ app.get('/', (req, res) => {
       addresses: '/api/addresses',
       wishlist: '/api/wishlist',
       dashboard: '/api/dashboard',
+      contact: '/api/contact',
+      newsletter: '/api/newsletter',
       health: '/health',
     },
     documentation: 'https://github.com/wbtrade/docs',
@@ -136,6 +140,8 @@ app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/checkout', checkoutRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reviews', reviewsRoutes);
+app.use('/api/contact', contactRoutes);
+app.use('/api/newsletter', newsletterRoutes); // Contact forms
 app.use('/api/webhooks', checkoutRoutes); // Webhook routes
 app.use('/api/admin/dashboard', adminDashboardRoutes); // Admin dashboard
 app.use('/api/admin/baselinker', baselinkerRoutes); // Baselinker integration
