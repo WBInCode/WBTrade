@@ -200,8 +200,15 @@ export default function EditProductPage() {
         weight: weight ? parseFloat(weight) : null,
         specifications,
         images: images.map((img, i) => ({ ...img, order: i })),
-        variants,
+        variants: variants.map(v => ({
+          ...v,
+          price: typeof v.price === 'string' ? parseFloat(v.price) : v.price,
+          stock: typeof v.stock === 'string' ? parseInt(v.stock) : v.stock,
+          compareAtPrice: v.compareAtPrice ? (typeof v.compareAtPrice === 'string' ? parseFloat(v.compareAtPrice) : v.compareAtPrice) : null,
+        })),
       };
+
+      console.log('Sending productData:', JSON.stringify(productData, null, 2));
 
       const response = await fetch(`http://localhost:5000/api/products/${productId}`, {
         method: 'PUT',
@@ -212,11 +219,14 @@ export default function EditProductPage() {
         body: JSON.stringify(productData),
       });
 
+      const responseData = await response.json();
+      console.log('Response:', response.status, responseData);
+
       if (response.ok) {
         router.push(`/products/${productId}`);
       } else {
-        const error = await response.json();
-        alert(`Blad: ${error.message || 'Nie udalo sie zapisac produktu'}`);
+        const errorDetails = responseData.errors ? JSON.stringify(responseData.errors) : '';
+        alert(`Blad: ${responseData.message || 'Nie udalo sie zapisac produktu'} ${errorDetails}`);
       }
     } catch (error) {
       console.error('Failed to update product:', error);

@@ -53,6 +53,7 @@ export interface BaselinkerProductData {
   manufacturer_id?: number;
   images: Record<string, string>; // { "0": "url1", "1": "url2", ... }
   features: Record<string, string>; // Product features/attributes
+  tags?: string[]; // Product tags
   variants?: BaselinkerVariantData[];
   text_fields: Record<string, BaselinkerProductTextField>; // Keyed by language
   average_cost?: number;

@@ -26,6 +26,7 @@ router.post('/test', baselinkerController.testConnection);
 // Sync endpoints
 router.post('/sync', baselinkerController.triggerSync);
 router.get('/status', baselinkerController.getStatus);
+router.delete('/sync/:id', baselinkerController.cancelSync);
 
 // Inventories list
 router.get('/inventories', baselinkerController.getInventories);

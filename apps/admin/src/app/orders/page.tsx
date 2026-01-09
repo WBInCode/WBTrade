@@ -56,6 +56,7 @@ interface Order {
 }
 
 const statusColors: Record<string, string> = {
+  OPEN: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
   PENDING: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
   CONFIRMED: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
   PROCESSING: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
@@ -66,8 +67,9 @@ const statusColors: Record<string, string> = {
 };
 
 const statusLabels: Record<string, string> = {
+  OPEN: 'Otwarte',
   PENDING: 'Oczekujące',
-  CONFIRMED: 'Potwierdzone',
+  CONFIRMED: 'Opłacone',
   PROCESSING: 'W realizacji',
   SHIPPED: 'Wysłane',
   DELIVERED: 'Dostarczone',
