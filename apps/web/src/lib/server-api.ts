@@ -133,6 +133,8 @@ export async function getProducts(params?: {
   if (params?.sort) searchParams.set('sort', params.sort);
   if (params?.minPrice) searchParams.set('minPrice', params.minPrice.toString());
   if (params?.maxPrice) searchParams.set('maxPrice', params.maxPrice.toString());
+  // Ukryj produkty ze stanem 0 starsze niż 14 dni
+  searchParams.set('hideOldZeroStock', 'true');
 
   const queryString = searchParams.toString();
   const endpoint = `/products${queryString ? `?${queryString}` : ''}`;

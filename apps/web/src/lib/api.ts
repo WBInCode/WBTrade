@@ -328,7 +328,7 @@ export interface ProductFiltersResponse {
 
 export const productsApi = {
   getAll: (filters?: ProductFilters) =>
-    api.get<ProductsListResponse>('/products', filters as Record<string, string | number | boolean>),
+    api.get<ProductsListResponse>('/products', { ...filters, hideOldZeroStock: 'true' } as Record<string, string | number | boolean>),
     
   getById: (id: string) =>
     api.get<Product>(`/products/${id}`),

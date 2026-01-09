@@ -232,12 +232,6 @@ export default function BaselinkerPage() {
     }
   }, [config, loadInventories]);
 
-  // Auto-refresh status every 10 seconds
-  useEffect(() => {
-    const interval = setInterval(loadStatus, 10000);
-    return () => clearInterval(interval);
-  }, [loadStatus]);
-
   // ============================================
   // Actions
   // ============================================
