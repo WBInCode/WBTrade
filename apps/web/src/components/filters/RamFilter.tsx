@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
 interface SpecFilterProps {
@@ -10,7 +10,7 @@ interface SpecFilterProps {
   unit?: string;
 }
 
-export default function SpecificationFilter({ specKey, label, options, unit = '' }: SpecFilterProps) {
+function SpecificationFilterContent({ specKey, label, options, unit = '' }: SpecFilterProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -67,5 +67,13 @@ export function RamFilter({ options }: { options: { value: string; count: number
       options={options}
       unit="GB"
     />
+  );
+}
+
+export default function SpecificationFilter(props: SpecFilterProps) {
+  return (
+    <Suspense fallback={<div className="mb-6 animate-pulse"><div className="h-6 bg-gray-200 rounded w-1/2 mb-3"></div><div className="h-20 bg-gray-200 rounded"></div></div>}>
+      <SpecificationFilterContent {...props} />
+    </Suspense>
   );
 }
