@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
 interface Brand {
@@ -12,7 +12,7 @@ interface BrandFilterProps {
   brands: Brand[];
 }
 
-export default function BrandFilter({ brands = [] }: BrandFilterProps) {
+function BrandFilterContent({ brands = [] }: BrandFilterProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -116,5 +116,13 @@ export default function BrandFilter({ brands = [] }: BrandFilterProps) {
         <p className="text-sm text-gray-500">Brak wyników dla "{searchQuery}"</p>
       )}
     </div>
+  );
+}
+
+export default function BrandFilter(props: BrandFilterProps) {
+  return (
+    <Suspense fallback={<div className="mb-6 animate-pulse"><div className="h-6 bg-gray-200 rounded w-1/4 mb-3"></div><div className="h-24 bg-gray-200 rounded"></div></div>}>
+      <BrandFilterContent {...props} />
+    </Suspense>
   );
 }

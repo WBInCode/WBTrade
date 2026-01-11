@@ -33,6 +33,9 @@ const paymentMethodNames: Record<PaymentData['method'], string> = {
   card: 'Karta płatnicza',
   transfer: 'Przelew online',
   cod: 'Płatność przy odbiorze',
+  google_pay: 'Google Pay',
+  apple_pay: 'Apple Pay',
+  paypo: 'PayPo',
 };
 
 export default function OrderSummary({

@@ -799,7 +799,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                     [&_p]:mb-3 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mb-2 [&_h3]:text-gray-900
                     [&_img]:rounded-lg [&_img]:my-4 [&_img]:max-w-full [&_img]:h-auto
                     [&_.section]:mb-4 [&_.text-item]:mb-2"
-                  dangerouslySetInnerHTML={{ __html: mainDescription || mockProduct.description }}
+                  dangerouslySetInnerHTML={{ __html: mainDescription || mockProduct.description || '' }}
                 />
 
                 {features.length > 0 && (

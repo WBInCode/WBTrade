@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '../../components/Header';
@@ -155,7 +155,7 @@ function formatOrderDate(dateString: string) {
   });
 }
 
-export default function AccountPage() {
+function AccountPageContent() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -580,5 +580,13 @@ export default function AccountPage() {
 
       <Footer hideTrustBadges />
     </div>
+  );
+}
+
+export default function AccountPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div></div>}>
+      <AccountPageContent />
+    </Suspense>
   );
 }
