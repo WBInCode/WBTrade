@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { categoriesApi, CategoryWithChildren } from '../../lib/api';
 
-export default function CategoryFilter() {
+function CategoryFilterContent() {
   const searchParams = useSearchParams();
   const currentCategorySlug = searchParams.get('category') || '';
   
@@ -174,5 +174,13 @@ export default function CategoryFilter() {
         {categories.map(cat => renderCategory(cat))}
       </div>
     </div>
+  );
+}
+
+export default function CategoryFilter() {
+  return (
+    <Suspense fallback={<div className="mb-6 animate-pulse"><div className="h-6 bg-gray-200 rounded w-1/3 mb-3"></div><div className="space-y-2">{[1,2,3,4,5].map(i => <div key={i} className="h-6 bg-gray-200 rounded w-3/4"></div>)}</div></div>}>
+      <CategoryFilterContent />
+    </Suspense>
   );
 }

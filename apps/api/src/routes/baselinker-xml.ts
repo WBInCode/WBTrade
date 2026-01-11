@@ -123,21 +123,22 @@ async function generateProductsXML(): Promise<string> {
     for (const variant of product.variants) {
       const stock = variant.inventory.reduce((sum, inv) => sum + inv.quantity, 0);
       const mainImage = product.images[0]?.url || '';
+      const specs = product.specifications as Record<string, unknown> || {};
       
       xml += `
   <product>
     <id>${variant.id}</id>
     <sku><![CDATA[${variant.sku}]]></sku>
-    <ean>${variant.ean || ''}</ean>
+    <ean>${variant.barcode || ''}</ean>
     <name><![CDATA[${product.name}${variant.name ? ' - ' + variant.name : ''}]]></name>
     <description><![CDATA[${product.description || ''}]]></description>
     <price>${variant.price.toNumber().toFixed(2)}</price>
     <price_wholesale>${variant.compareAtPrice?.toNumber().toFixed(2) || variant.price.toNumber().toFixed(2)}</price_wholesale>
     <tax_rate>23</tax_rate>
-    <weight>${variant.weight || 0}</weight>
+    <weight>${(specs.weight as number) || 0}</weight>
     <stock>${stock}</stock>
     <category><![CDATA[${product.category?.name || 'Inne'}]]></category>
-    <manufacturer><![CDATA[${product.brand || ''}]]></manufacturer>
+    <manufacturer><![CDATA[${(specs.brand as string) || ''}]]></manufacturer>
     <image><![CDATA[${mainImage}]]></image>
     <images>${product.images.map(img => `<img><![CDATA[${img.url}]]></img>`).join('')}</images>
     <active>${product.status === 'ACTIVE' ? 1 : 0}</active>
@@ -194,29 +195,29 @@ async function generateOrdersXML(fromDate?: string): Promise<string> {
     <currency>PLN</currency>
     <total>${order.total.toNumber().toFixed(2)}</total>
     <subtotal>${order.subtotal.toNumber().toFixed(2)}</subtotal>
-    <shipping_cost>${order.shippingCost.toNumber().toFixed(2)}</shipping_cost>
+    <shipping_cost>${order.shipping.toNumber().toFixed(2)}</shipping_cost>
     <customer>
-      <email><![CDATA[${order.email}]]></email>
-      <phone><![CDATA[${order.phone || ''}]]></phone>
+      <email><![CDATA[${order.user?.email || ''}]]></email>
+      <phone><![CDATA[${shipping?.phone || ''}]]></phone>
       <name><![CDATA[${shipping?.firstName || ''} ${shipping?.lastName || ''}]]></name>
     </customer>
     <shipping_address>
       <name><![CDATA[${shipping?.firstName || ''} ${shipping?.lastName || ''}]]></name>
-      <company><![CDATA[${shipping?.company || ''}]]></company>
+      <company><![CDATA[]]></company>
       <street><![CDATA[${shipping?.street || ''}]]></street>
       <city><![CDATA[${shipping?.city || ''}]]></city>
       <postcode><![CDATA[${shipping?.postalCode || ''}]]></postcode>
       <country><![CDATA[${shipping?.country || 'PL'}]]></country>
-      <phone><![CDATA[${shipping?.phone || order.phone || ''}]]></phone>
+      <phone><![CDATA[${shipping?.phone || ''}]]></phone>
     </shipping_address>
     <billing_address>
       <name><![CDATA[${billing?.firstName || ''} ${billing?.lastName || ''}]]></name>
-      <company><![CDATA[${billing?.company || ''}]]></company>
+      <company><![CDATA[]]></company>
       <street><![CDATA[${billing?.street || ''}]]></street>
       <city><![CDATA[${billing?.city || ''}]]></city>
       <postcode><![CDATA[${billing?.postalCode || ''}]]></postcode>
       <country><![CDATA[${billing?.country || 'PL'}]]></country>
-      <nip><![CDATA[${billing?.nip || ''}]]></nip>
+      <nip><![CDATA[]]></nip>
     </billing_address>
     <products>
       ${order.items.map(item => `
@@ -229,7 +230,7 @@ async function generateOrdersXML(fromDate?: string): Promise<string> {
         <tax_rate>23</tax_rate>
       </product>`).join('')}
     </products>
-    <notes><![CDATA[${order.notes || ''}]]></notes>
+    <notes><![CDATA[${order.customerNotes || ''}]]></notes>
   </order>`;
   }
 
@@ -260,7 +261,7 @@ async function generateStockXML(): Promise<string> {
   <product>
     <id>${variant.id}</id>
     <sku><![CDATA[${variant.sku}]]></sku>
-    <ean>${variant.ean || ''}</ean>
+    <ean>${variant.barcode || ''}</ean>
     <stock>${stock}</stock>
     <price>${variant.price.toNumber().toFixed(2)}</price>
   </product>`;
