@@ -14,6 +14,7 @@ import {
   payuWebhook,
   shippingWebhook,
   getOrderTracking,
+  calculateCartShipping,
 } from '../controllers/checkout.controller';
 import { authGuard, optionalAuth } from '../middleware/auth.middleware';
 
@@ -36,6 +37,13 @@ router.get('/shipping/methods', optionalAuth, getShippingMethods);
  * Query params: postalCode (required), city (optional), provider (optional), limit (optional)
  */
 router.get('/shipping/pickup-points', optionalAuth, getPickupPoints);
+
+/**
+ * GET /api/checkout/shipping/calculate
+ * Calculate shipping cost for cart based on product tags
+ * Takes into account: gabaryt (oversized), wholesalers, paczkomat limits
+ */
+router.get('/shipping/calculate', optionalAuth, calculateCartShipping);
 
 // ============================================
 // PAYMENT ENDPOINTS

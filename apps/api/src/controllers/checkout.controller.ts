@@ -5,6 +5,7 @@
 
 import { Request, Response } from 'express';
 import { shippingService } from '../services/shipping.service';
+import { shippingCalculatorService } from '../services/shipping-calculator.service';
 import { paymentService } from '../services/payment.service';
 import { OrdersService } from '../services/orders.service';
 import { CartService } from '../services/cart.service';
@@ -73,6 +74,61 @@ export async function getShippingMethods(req: Request, res: Response): Promise<v
   } catch (error) {
     console.error('Error getting shipping methods:', error);
     res.status(500).json({ message: 'Failed to get shipping methods' });
+  }
+}
+
+/**
+ * Calculate shipping cost for cart based on product tags
+ * This takes into account:
+ * - Gabaryt (oversized) products - individual shipping
+ * - Different wholesalers - separate packages
+ * - Paczkomat limits (X products in package tags)
+ */
+export async function calculateCartShipping(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = req.user?.userId;
+    const sessionId = req.headers['x-session-id'] as string | undefined;
+    
+    // Get user's cart
+    let cart = await cartService.getOrCreateCart(userId, sessionId);
+    
+    if (!cart || !cart.items.length) {
+      res.status(400).json({ message: 'Cart is empty' });
+      return;
+    }
+    
+    // Convert cart items to format needed by shipping calculator
+    const cartItems = cart.items.map(item => ({
+      variantId: item.variant.id,
+      quantity: item.quantity,
+    }));
+    
+    // Get available shipping methods with calculated prices
+    const shippingMethods = await shippingCalculatorService.getAvailableShippingMethods(cartItems);
+    
+    // Get detailed calculation for additional info
+    const detailedCalculation = await shippingCalculatorService.calculateShipping(cartItems);
+    
+    res.json({
+      shippingMethods: shippingMethods.map(method => ({
+        id: method.id,
+        name: method.name,
+        price: method.price,
+        currency: 'PLN',
+        available: method.available,
+        message: method.message,
+      })),
+      calculation: {
+        totalPackages: detailedCalculation.totalPackages,
+        totalPaczkomatPackages: detailedCalculation.totalPaczkomatPackages,
+        isPaczkomatAvailable: detailedCalculation.isPaczkomatAvailable,
+        breakdown: detailedCalculation.breakdown,
+        warnings: detailedCalculation.warnings,
+      },
+    });
+  } catch (error) {
+    console.error('Error calculating cart shipping:', error);
+    res.status(500).json({ message: 'Failed to calculate shipping' });
   }
 }
 
@@ -207,18 +263,40 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
 
     const subtotal = items.reduce((sum: number, item: CartItemData) => sum + item.unitPrice * item.quantity, 0);
     
-    // Get shipping rate
-    const shippingRates = await shippingService.calculateRate(
-      shippingMethod as ShippingProviderId,
-      {
-        providerId: shippingMethod as ShippingProviderId,
-        origin: { postalCode: '00-001', city: 'Warszawa', country: 'PL' },
-        destination: { postalCode: '00-001', city: '', country: 'PL' },
-        packages: [{ weight: 1 }],
-        pickupPointCode,
+    // Get shipping rate using the new calculator based on product tags
+    // Convert cart items to format needed by shipping calculator
+    const cartItemsForShipping = cart.items.map(item => ({
+      variantId: item.variant.id,
+      quantity: item.quantity,
+    }));
+    
+    let shippingCost = 0;
+    try {
+      const shippingResult = await shippingCalculatorService.calculateShippingCost(
+        cartItemsForShipping,
+        shippingMethod
+      );
+      shippingCost = shippingResult.cost;
+      
+      // Log any warnings for debugging
+      if (shippingResult.warnings.length > 0) {
+        console.log('📦 Shipping warnings:', shippingResult.warnings);
       }
-    );
-    const shippingCost = shippingRates[0]?.price || 0;
+    } catch (shippingError) {
+      // Fallback to old shipping calculation if new one fails
+      console.error('⚠️ Error with new shipping calculator, falling back:', shippingError);
+      const shippingRates = await shippingService.calculateRate(
+        shippingMethod as ShippingProviderId,
+        {
+          providerId: shippingMethod as ShippingProviderId,
+          origin: { postalCode: '00-001', city: 'Warszawa', country: 'PL' },
+          destination: { postalCode: '00-001', city: '', country: 'PL' },
+          packages: [{ weight: 1 }],
+          pickupPointCode,
+        }
+      );
+      shippingCost = shippingRates[0]?.price || 0;
+    }
 
     // Get payment fee
     const paymentMethods = await paymentService.getAvailablePaymentMethods();
