@@ -10,8 +10,8 @@ router.get('/', authGuard, getUserOrders);
 // Route to get all orders (admin)
 router.get('/admin/all', getAllOrders);
 
-// Route to create a new order
-router.post('/', createOrder);
+// Route to create a new order (requires authentication)
+router.post('/', authGuard, createOrder);
 
 // Route to get an order by ID
 router.get('/:id', getOrder);

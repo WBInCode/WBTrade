@@ -15,6 +15,7 @@ import {
   shippingWebhook,
   getOrderTracking,
   calculateCartShipping,
+  calculateItemsShipping,
 } from '../controllers/checkout.controller';
 import { authGuard, optionalAuth } from '../middleware/auth.middleware';
 
@@ -44,6 +45,13 @@ router.get('/shipping/pickup-points', optionalAuth, getPickupPoints);
  * Takes into account: gabaryt (oversized), wholesalers, paczkomat limits
  */
 router.get('/shipping/calculate', optionalAuth, calculateCartShipping);
+
+/**
+ * POST /api/checkout/shipping/calculate
+ * Calculate shipping cost for provided items (alternative to cart-based calculation)
+ * Body: { items: [{ variantId: string, quantity: number }] }
+ */
+router.post('/shipping/calculate', calculateItemsShipping);
 
 // ============================================
 // PAYMENT ENDPOINTS

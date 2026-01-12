@@ -911,6 +911,46 @@ export const checkoutApi = {
       city 
     }),
   
+  // Calculate shipping for current cart (includes gabaryt pricing)
+  calculateCartShipping: () =>
+    api.get<{ 
+      shippingMethods: Array<{
+        id: string;
+        name: string;
+        price: number;
+        currency: string;
+        available: boolean;
+        message?: string;
+      }>;
+      calculation: {
+        totalPackages: number;
+        totalPaczkomatPackages: number;
+        isPaczkomatAvailable: boolean;
+        breakdown: Array<{ description: string; cost: number; packageCount: number }>;
+        warnings: string[];
+      };
+    }>('/checkout/shipping/calculate'),
+  
+  // Calculate shipping for provided items (alternative to cart-based)
+  calculateItemsShipping: (items: Array<{ variantId: string; quantity: number }>) =>
+    api.post<{ 
+      shippingMethods: Array<{
+        id: string;
+        name: string;
+        price: number;
+        currency: string;
+        available: boolean;
+        message?: string;
+      }>;
+      calculation: {
+        totalPackages: number;
+        totalPaczkomatPackages: number;
+        isPaczkomatAvailable: boolean;
+        breakdown: Array<{ description: string; cost: number; packageCount: number }>;
+        warnings: string[];
+      };
+    }>('/checkout/shipping/calculate', { items }),
+  
   // Get pickup points (Paczkomaty)
   getPickupPoints: (postalCode: string, city?: string, limit?: number) =>
     api.get<{ pickupPoints: PickupPoint[] }>('/checkout/shipping/pickup-points', { 
