@@ -27,9 +27,10 @@ const orderItemSchema = z.object({
 
 /**
  * Create order validation schema
+ * Note: userId is optional in body as we use authenticated user's ID from token
  */
 const createOrderSchema = z.object({
-  userId: z.string().regex(/^c[a-z0-9]{20,}$/i, 'Invalid user ID'),
+  userId: z.string().regex(/^c[a-z0-9]{20,}$/i, 'Invalid user ID').optional(),
   shippingAddressId: z.string().regex(/^c[a-z0-9]{20,}$/i, 'Invalid shipping address ID'),
   billingAddressId: z.string().regex(/^c[a-z0-9]{20,}$/i, 'Invalid billing address ID').optional(),
   shippingMethod: z.string().min(1).max(50),
@@ -105,6 +106,14 @@ export async function getAllOrders(req: Request, res: Response): Promise<void> {
  */
 export async function createOrder(req: Request, res: Response): Promise<void> {
   try {
+    // Get userId from authenticated user (set by authGuard)
+    const userId = req.user?.userId;
+    
+    if (!userId) {
+      res.status(401).json({ message: 'Authentication required' });
+      return;
+    }
+    
     const validation = createOrderSchema.safeParse(req.body);
     
     if (!validation.success) {
@@ -115,7 +124,11 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const order = await ordersService.create(validation.data);
+    // Override userId from body with authenticated user's ID for security
+    const order = await ordersService.create({
+      ...validation.data,
+      userId, // Use authenticated user's ID
+    });
     res.status(201).json(order);
   } catch (error) {
     console.error('Error creating order:', error);
