@@ -86,6 +86,9 @@ export default function ProductPage({ params }: ProductPageProps) {
   const { addToCart } = useCart();
   const router = useRouter();
 
+  // Cart error state for displaying error messages
+  const [cartError, setCartError] = useState<string | null>(null);
+
   // Reviews state
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null);
@@ -183,15 +186,40 @@ export default function ProductPage({ params }: ProductPageProps) {
     [selectedVariant?.stock]
   );
 
+  // Check if product/variant is out of stock
+  const isOutOfStock = useMemo(() => {
+    if (!selectedVariant) {
+      // If no variant selected, check if ALL variants are out of stock
+      const variants = product?.variants || [];
+      if (variants.length === 0) return true;
+      return variants.every(v => (v.stock ?? 0) <= 0);
+    }
+    return (selectedVariant.stock ?? 0) <= 0;
+  }, [selectedVariant, product?.variants]);
+
+  // Clear cart error after 5 seconds
+  useEffect(() => {
+    if (cartError) {
+      const timer = setTimeout(() => setCartError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [cartError]);
+
   const handleAddToCart = async () => {
     if (!selectedVariant) return;
+    if (isOutOfStock) {
+      setCartError('Produkt jest niedostępny (brak na stanie)');
+      return;
+    }
     
     setAddingToCart(true);
+    setCartError(null);
     try {
       await addToCart(selectedVariant.id, quantity);
       // Could show a toast notification here
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to add to cart:', err);
+      setCartError(err?.message || 'Nie udało się dodać produktu do koszyka');
     } finally {
       setAddingToCart(false);
     }
@@ -199,13 +227,19 @@ export default function ProductPage({ params }: ProductPageProps) {
 
   const handleBuyNow = async () => {
     if (!selectedVariant) return;
+    if (isOutOfStock) {
+      setCartError('Produkt jest niedostępny (brak na stanie)');
+      return;
+    }
     
     setBuyingNow(true);
+    setCartError(null);
     try {
       await addToCart(selectedVariant.id, quantity);
       router.push('/checkout');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to buy now:', err);
+      setCartError(err?.message || 'Nie udało się dodać produktu do koszyka');
       setBuyingNow(false);
     }
   };
@@ -637,7 +671,11 @@ export default function ProductPage({ params }: ProductPageProps) {
                         +
                       </button>
                       {selectedVariant && (
-                        <span className="text-xs text-gray-500 ml-1">Dostępne: {selectedVariant.stock}</span>
+                        <span className={`text-xs ml-1 ${(selectedVariant.stock ?? 0) > 0 ? 'text-gray-500' : 'text-red-500 font-medium'}`}>
+                          {(selectedVariant.stock ?? 0) > 0 
+                            ? `Dostępne: ${selectedVariant.stock}` 
+                            : 'Brak na stanie'}
+                        </span>
                       )}
                     </div>
                     {variantAttributes.length > 0 && !selectedVariant && (
@@ -647,56 +685,109 @@ export default function ProductPage({ params }: ProductPageProps) {
                 </div>
               ) : null}
 
+              {/* Error Message */}
+              {cartError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-sm">{cartError}</span>
+                </div>
+              )}
+
+              {/* Out of Stock Banner */}
+              {isOutOfStock && (
+                <div className="bg-gray-100 border border-gray-300 text-gray-700 px-4 py-3 rounded-lg mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 flex-shrink-0 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-sm font-medium">Produkt chwilowo niedostępny</span>
+                </div>
+              )}
+
               {/* Buy Now Button */}
-              <button 
-                onClick={handleBuyNow}
-                disabled={buyingNow || !selectedVariant}
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-lg mb-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {buyingNow ? (
-                  <>
-                    <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Przekierowuję...
-                  </>
-                ) : (
-                  'Kup teraz'
-                )}
-              </button>
+              {!isOutOfStock ? (
+                <button 
+                  onClick={handleBuyNow}
+                  disabled={buyingNow || !selectedVariant}
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-lg mb-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {buyingNow ? (
+                    <>
+                      <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Przekierowuję...
+                    </>
+                  ) : (
+                    'Kup teraz'
+                  )}
+                </button>
+              ) : (
+                <button 
+                  disabled
+                  className="w-full bg-gray-400 text-white font-semibold py-3 rounded-lg mb-3 cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                  </svg>
+                  Brak na stanie
+                </button>
+              )}
 
               {/* Add to Cart Button */}
-              <button 
-                onClick={handleAddToCart}
-                disabled={addingToCart || !selectedVariant}
-                className="w-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 font-semibold py-3 rounded-lg mb-4 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {addingToCart ? (
-                  <>
-                    <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Dodawanie...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    Dodaj do koszyka
-                  </>
-                )}
-              </button>
+              {!isOutOfStock ? (
+                <button 
+                  onClick={handleAddToCart}
+                  disabled={addingToCart || !selectedVariant}
+                  className="w-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 font-semibold py-3 rounded-lg mb-4 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {addingToCart ? (
+                    <>
+                      <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Dodawanie...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                      Dodaj do koszyka
+                    </>
+                  )}
+                </button>
+              ) : (
+                <button 
+                  disabled
+                  className="w-full border-2 border-gray-300 text-gray-400 font-semibold py-3 rounded-lg mb-4 cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  Powiadom o dostępności
+                </button>
+              )}
 
               {/* Stock Status */}
-              <div className="flex items-center gap-2 text-sm text-green-600 mb-3">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <span className="font-medium">W magazynie: Wysyłka natychmiast</span>
-              </div>
+              {!isOutOfStock ? (
+                <div className="flex items-center gap-2 text-sm text-green-600 mb-3">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span className="font-medium">W magazynie: Wysyłka natychmiast</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-sm text-red-600 mb-3">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                  <span className="font-medium">Produkt chwilowo niedostępny</span>
+                </div>
+              )}
 
               {/* People Bought */}
               <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
