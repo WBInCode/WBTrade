@@ -340,11 +340,12 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
     
     let shippingCost = 0;
     try {
-      const shippingResult = await shippingCalculatorService.calculateShippingCost(
-        cartItemsForShipping,
-        shippingMethod
-      );
-      shippingCost = shippingResult.cost;
+      const shippingResult = await shippingCalculatorService.calculateShipping(cartItemsForShipping);
+      
+      // Get price for specific shipping method
+      const methods = await shippingCalculatorService.getAvailableShippingMethods(cartItemsForShipping);
+      const selectedMethod = methods.find(m => m.id === shippingMethod);
+      shippingCost = selectedMethod?.price || shippingResult.shippingCost;
       
       // Log any warnings for debugging
       if (shippingResult.warnings.length > 0) {
