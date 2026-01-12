@@ -88,6 +88,41 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  // Fetch shipping prices from API as soon as cart is loaded
+  useEffect(() => {
+    async function fetchShippingPrices() {
+      if (cartLoading || !cart?.items || cart.items.length === 0) return;
+      
+      try {
+        const items = cart.items.map(item => ({
+          variantId: item.variant.id,
+          quantity: item.quantity,
+        }));
+        
+        const response = await checkoutApi.calculateItemsShipping(items);
+        
+        // Update shipping price with API value for default method
+        const currentMethodPrice = response.shippingMethods.find(
+          (m: any) => m.id === checkoutData.shipping.method
+        )?.price;
+        
+        if (currentMethodPrice !== undefined) {
+          setCheckoutData(prev => ({
+            ...prev,
+            shipping: {
+              ...prev.shipping,
+              price: currentMethodPrice,
+            }
+          }));
+        }
+      } catch {
+        // Silently ignore errors - prices will be calculated on step 2
+      }
+    }
+    
+    fetchShippingPrices();
+  }, [cartLoading, cart?.items]);
+
   // Pre-fill address if user is logged in
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -117,6 +152,17 @@ export default function CheckoutPage() {
     setCheckoutData(prev => ({ ...prev, shipping }));
     setCurrentStep(3);
     window.scrollTo(0, 0);
+  };
+
+  const handleShippingPriceChange = (method: string, price: number) => {
+    setCheckoutData(prev => ({
+      ...prev,
+      shipping: {
+        ...prev.shipping,
+        method: method as ShippingData['method'],
+        price: price,
+      }
+    }));
   };
 
   const handlePaymentSubmit = (payment: PaymentData) => {
@@ -368,6 +414,8 @@ export default function CheckoutPage() {
                 initialData={checkoutData.shipping}
                 onSubmit={handleShippingSubmit}
                 onBack={handleBack}
+                onPriceChange={handleShippingPriceChange}
+                cartItems={cart?.items}
               />
             )}
 
