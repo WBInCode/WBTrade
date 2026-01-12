@@ -193,16 +193,24 @@ export class BaselinkerProvider implements IBaselinkerProvider {
 
   /**
    * Get categories for an inventory
+   * Note: BaseLinker returns categories as an array, not as an object keyed by ID
    */
   async getInventoryCategories(inventoryId: string): Promise<BaselinkerCategory[]> {
-    const response = await this.request<{ categories: Record<string, BaselinkerCategory> }>(
+    const response = await this.request<{ categories: BaselinkerCategory[] }>(
       'getInventoryCategories',
       { inventory_id: parseInt(inventoryId, 10) }
     );
 
-    // Convert object to array
+    // Categories are returned as an array directly from API
+    // Handle both array format (correct) and object format (legacy/fallback)
+    if (Array.isArray(response.categories)) {
+      return response.categories;
+    }
+    
+    // Fallback for object format (shouldn't happen with current API)
+    console.warn('[Baselinker] Categories returned as object instead of array, converting...');
     return Object.entries(response.categories || {}).map(([id, category]) => ({
-      ...category,
+      ...(category as BaselinkerCategory),
       category_id: parseInt(id, 10),
     }));
   }
