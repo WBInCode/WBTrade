@@ -201,6 +201,56 @@ export async function calculateItemsShipping(req: Request, res: Response): Promi
 }
 
 /**
+ * Get shipping options per package (for per-product shipping selection)
+ * POST /checkout/shipping/per-package
+ */
+export async function getShippingPerPackage(req: Request, res: Response): Promise<void> {
+  try {
+    const { items } = req.body;
+    
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      res.status(400).json({ message: 'Items array is required' });
+      return;
+    }
+    
+    // Validate items format
+    const cartItems = items.map((item: any) => ({
+      variantId: item.variantId,
+      quantity: item.quantity || 1,
+    }));
+    
+    // Get shipping options per package
+    const result = await shippingCalculatorService.getShippingOptionsPerPackage(cartItems);
+    
+    res.json({
+      packagesWithOptions: result.packagesWithOptions.map(pkgOpt => ({
+        package: {
+          id: pkgOpt.package.id,
+          type: pkgOpt.package.type,
+          wholesaler: pkgOpt.package.wholesaler,
+          items: pkgOpt.package.items,
+          isPaczkomatAvailable: pkgOpt.package.isPaczkomatAvailable,
+        },
+        shippingMethods: pkgOpt.shippingMethods.map(method => ({
+          id: method.id,
+          name: method.name,
+          price: method.price,
+          available: method.available,
+          message: method.message,
+          estimatedDelivery: method.estimatedDelivery,
+        })),
+        selectedMethod: pkgOpt.selectedMethod,
+      })),
+      totalShippingCost: result.totalShippingCost,
+      warnings: result.warnings,
+    });
+  } catch (error) {
+    console.error('Error getting shipping per package:', error);
+    res.status(500).json({ message: 'Failed to get shipping per package' });
+  }
+}
+
+/**
  * Get pickup points (Paczkomaty) for postal code
  */
 export async function getPickupPoints(req: Request, res: Response): Promise<void> {
@@ -278,11 +328,13 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       paymentMethod,
       customerNotes,
       acceptTerms,
+      packageShipping,
     } = req.body;
 
     console.log('📦 Shipping Address ID:', shippingAddressId);
     console.log('🚚 Shipping Method:', shippingMethod);
     console.log('💳 Payment Method:', paymentMethod);
+    console.log('📦 Package Shipping:', packageShipping?.length ? `${packageShipping.length} packages` : 'none');
 
     // Validate required fields
     if (!shippingMethod || !paymentMethod || !acceptTerms) {
@@ -385,6 +437,7 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       customerNotes,
       paczkomatCode: pickupPointCode,
       paczkomatAddress: pickupPointAddress,
+      packageShipping: packageShipping,
     });
 
     // Clear cart after order creation
