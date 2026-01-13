@@ -10,6 +10,7 @@ import Pagination from '../../components/Pagination';
 import Breadcrumb from '../../components/Breadcrumb';
 import { CategoryFilter, PriceFilter, BrandFilter, SpecificationFilter } from '../../components/filters';
 import { Product, productsApi, ProductFiltersResponse, categoriesApi } from '../../lib/api';
+import { cleanCategoryName } from '../../lib/categories';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -193,9 +194,9 @@ function ProductsContent() {
     if (categoryPath.length > 0) {
       categoryPath.forEach((cat, index) => {
         if (index === categoryPath.length - 1) {
-          items.push({ label: cat.name });
+          items.push({ label: cleanCategoryName(cat.name) });
         } else {
-          items.push({ label: cat.name, href: `/products?category=${cat.slug}` });
+          items.push({ label: cleanCategoryName(cat.name), href: `/products?category=${cat.slug}` });
         }
       });
     } else if (searchQuery) {
@@ -209,7 +210,7 @@ function ProductsContent() {
 
   // Get current category name for title
   const currentCategoryName = categoryPath.length > 0 
-    ? categoryPath[categoryPath.length - 1].name 
+    ? cleanCategoryName(categoryPath[categoryPath.length - 1].name)
     : null;
 
   return (

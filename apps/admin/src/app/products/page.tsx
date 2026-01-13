@@ -71,14 +71,24 @@ export default function ProductsPage() {
   async function loadProducts() {
     try {
       setLoading(true);
+      
+      // Map sortBy/sortDir to API format
+      let sort = 'newest';
+      if (sortBy === 'price') {
+        sort = sortDir === 'asc' ? 'price_asc' : 'price_desc';
+      } else if (sortBy === 'name') {
+        sort = sortDir === 'asc' ? 'name_asc' : 'name_desc';
+      } else if (sortBy === 'createdAt') {
+        sort = sortDir === 'asc' ? 'oldest' : 'newest';
+      }
+      
       const params = new URLSearchParams({
         page: page.toString(),
         limit: '20',
         ...(search && { search }),
         ...(statusFilter && { status: statusFilter }),
-        ...(categoryFilter && { categoryId: categoryFilter }),
-        sortBy,
-        sortDir,
+        ...(categoryFilter && { category: categoryFilter }),
+        sort,
       });
       
       const response = await fetch(`http://localhost:5000/api/products?${params}`);

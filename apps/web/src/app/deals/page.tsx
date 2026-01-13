@@ -9,6 +9,7 @@ import ProductListCard from '../../components/ProductListCard';
 import Pagination from '../../components/Pagination';
 import Breadcrumb from '../../components/Breadcrumb';
 import { Product, productsApi, categoriesApi, CategoryWithChildren } from '../../lib/api';
+import { cleanCategoryName } from '../../lib/categories';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -90,7 +91,7 @@ function DealsContent() {
               existing.count++;
             } else {
               categoryCountMap.set(product.category.id, {
-                name: product.category.name,
+                name: cleanCategoryName(product.category.name),
                 slug: product.category.slug,
                 count: 1,
               });
@@ -207,7 +208,7 @@ function DealsContent() {
       const cat = categoriesWithCounts.find((c) => c.slug === currentCategorySlug);
       if (cat) {
         items[1] = { label: 'Promocje', href: '/deals' };
-        items.push({ label: cat.name });
+        items.push({ label: cleanCategoryName(cat.name) });
       }
     }
     
@@ -216,7 +217,7 @@ function DealsContent() {
 
   // Current category name
   const currentCategoryName = currentCategorySlug
-    ? categoriesWithCounts.find((c) => c.slug === currentCategorySlug)?.name
+    ? cleanCategoryName(categoriesWithCounts.find((c) => c.slug === currentCategorySlug)?.name || '')
     : null;
 
   return (
@@ -279,7 +280,7 @@ function DealsContent() {
                           : 'text-gray-600 hover:bg-gray-50'
                       }`}
                     >
-                      {cat.name}
+                      {cleanCategoryName(cat.name)}
                       <span className="float-right text-gray-400">({cat.discountedCount})</span>
                     </button>
                   ))}
