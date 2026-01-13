@@ -558,10 +558,12 @@ enum OrderStatus {
 
 enum PaymentStatus {
   PENDING
+  AWAITING_CONFIRMATION
   PAID
   FAILED
   REFUNDED
   PARTIALLY_REFUNDED
+  CANCELLED
 }
 
 enum CouponType {

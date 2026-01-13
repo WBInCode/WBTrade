@@ -84,7 +84,18 @@ const corsOptions = {
 
 // Middleware
 app.use(cors(corsOptions));
-app.use(express.json({ limit: '10mb' })); // Increased for base64 images if needed
+
+// Custom JSON parser that preserves raw body for webhook signature verification
+app.use(express.json({ 
+  limit: '10mb',
+  verify: (req: any, res, buf) => {
+    // Store raw body for webhook signature verification
+    // Only for webhook endpoints
+    if (req.url?.includes('/webhooks/')) {
+      req.rawBody = buf.toString('utf-8');
+    }
+  }
+}));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Apply general rate limiting to all routes

@@ -17,6 +17,10 @@ interface InventorySyncJobData {
 // Reservation timeout in minutes
 const RESERVATION_TIMEOUT_MINUTES = 15;
 
+// Payment timeout - longer than reservation (user may need time to complete payment)
+const PAYMENT_TIMEOUT_MINUTES = 60; // 1 hour for pending payments
+const FAILED_PAYMENT_CLEANUP_MINUTES = 30; // 30 minutes for failed payments
+
 /**
  * Check for low stock items and send alerts
  */
@@ -93,17 +97,46 @@ async function checkLowStock(): Promise<{ alertsSent: number; itemsFound: number
  * Cleanup expired reservations
  * Reservations older than RESERVATION_TIMEOUT_MINUTES are released
  */
-async function cleanupExpiredReservations(): Promise<{ released: number }> {
-  const timeoutDate = new Date();
-  timeoutDate.setMinutes(timeoutDate.getMinutes() - RESERVATION_TIMEOUT_MINUTES);
+async function cleanupExpiredReservations(): Promise<{ released: number; failedPaymentsCleaned: number }> {
+  const reservationTimeoutDate = new Date();
+  reservationTimeoutDate.setMinutes(reservationTimeoutDate.getMinutes() - RESERVATION_TIMEOUT_MINUTES);
 
-  // Find orders that are still in PENDING status with old reservations
+  const paymentTimeoutDate = new Date();
+  paymentTimeoutDate.setMinutes(paymentTimeoutDate.getMinutes() - PAYMENT_TIMEOUT_MINUTES);
+
+  const failedPaymentTimeoutDate = new Date();
+  failedPaymentTimeoutDate.setMinutes(failedPaymentTimeoutDate.getMinutes() - FAILED_PAYMENT_CLEANUP_MINUTES);
+
+  // Find orders that need cleanup:
+  // 1. PENDING/OPEN orders older than payment timeout
+  // 2. Orders with FAILED payment status older than failed payment timeout
   const expiredOrders = await prisma.order.findMany({
     where: {
-      status: 'PENDING',
-      createdAt: {
-        lt: timeoutDate,
-      },
+      OR: [
+        // Old PENDING orders without payment
+        {
+          status: 'PENDING',
+          createdAt: { lt: reservationTimeoutDate },
+        },
+        // Old OPEN orders (new payment flow) without payment
+        {
+          status: 'OPEN',
+          paymentStatus: 'PENDING',
+          createdAt: { lt: paymentTimeoutDate },
+        },
+        // Orders with failed payment - cleanup after shorter period
+        {
+          paymentStatus: 'FAILED',
+          createdAt: { lt: failedPaymentTimeoutDate },
+          status: { in: ['OPEN', 'PENDING'] },
+        },
+        // Orders with awaiting confirmation that timed out
+        {
+          paymentStatus: 'AWAITING_CONFIRMATION',
+          createdAt: { lt: paymentTimeoutDate },
+          status: { in: ['OPEN', 'PENDING'] },
+        },
+      ],
     },
     include: {
       items: {
@@ -115,9 +148,17 @@ async function cleanupExpiredReservations(): Promise<{ released: number }> {
   });
 
   let released = 0;
+  let failedPaymentsCleaned = 0;
 
   for (const order of expiredOrders) {
     try {
+      const isFailedPayment = order.paymentStatus === 'FAILED';
+      const reasonNote = isFailedPayment
+        ? 'Zamówienie anulowane - płatność nieudana'
+        : order.paymentStatus === 'AWAITING_CONFIRMATION'
+        ? 'Zamówienie anulowane - płatność nie została potwierdzona w wymaganym czasie'
+        : 'Zamówienie anulowane - przekroczono czas na płatność';
+
       await prisma.$transaction(async (tx) => {
         // Release reservations for each item
         for (const item of order.items) {
@@ -146,7 +187,10 @@ async function cleanupExpiredReservations(): Promise<{ released: number }> {
         // Update order status to CANCELLED
         await tx.order.update({
           where: { id: order.id },
-          data: { status: 'CANCELLED' },
+          data: { 
+            status: 'CANCELLED',
+            paymentStatus: 'CANCELLED',
+          },
         });
 
         // Add status history
@@ -154,18 +198,22 @@ async function cleanupExpiredReservations(): Promise<{ released: number }> {
           data: {
             orderId: order.id,
             status: 'CANCELLED',
-            note: 'Zamówienie anulowane - przekroczono czas na płatność',
+            note: reasonNote,
           },
         });
       });
 
-      console.log(`[InventoryWorker] Released reservation for order ${order.id}`);
+      if (isFailedPayment) {
+        failedPaymentsCleaned++;
+      }
+
+      console.log(`[InventoryWorker] Released reservation for order ${order.id} (reason: ${reasonNote})`);
     } catch (error) {
       console.error(`[InventoryWorker] Failed to release reservation for order ${order.id}:`, error);
     }
   }
 
-  return { released };
+  return { released, failedPaymentsCleaned };
 }
 
 /**
@@ -226,7 +274,7 @@ export function startInventorySyncWorker(): Worker {
 
         case 'reservation-cleanup': {
           const result = await cleanupExpiredReservations();
-          console.log(`[InventoryWorker] Reservation cleanup complete: ${result.released} released`);
+          console.log(`[InventoryWorker] Reservation cleanup complete: ${result.released} released, ${result.failedPaymentsCleaned} failed payments cleaned`);
           return result;
         }
 
