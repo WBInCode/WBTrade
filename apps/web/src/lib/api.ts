@@ -435,7 +435,7 @@ export interface Order {
   id: string;
   orderNumber: string;
   status: 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
-  paymentStatus?: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+  paymentStatus?: 'PENDING' | 'AWAITING_CONFIRMATION' | 'PAID' | 'FAILED' | 'REFUNDED' | 'CANCELLED';
   items: OrderItem[];
   shippingAddress?: OrderAddress;
   billingAddress?: OrderAddress;
