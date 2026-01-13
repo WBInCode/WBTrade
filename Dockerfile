@@ -38,8 +38,9 @@ FROM node:18-alpine AS production
 RUN apk add --no-cache libc6-compat bash
 WORKDIR /app
 
-# Kopiowanie node_modules z poprzedniego stage
+# Kopiowanie node_modules z poprzedniego stage (root i apps/api)
 COPY --from=base /app/node_modules ./node_modules
+COPY --from=base /app/apps/api/node_modules ./apps/api/node_modules
 
 # Kopiowanie zbudowanej aplikacji i plików potrzebnych do działania
 COPY --from=base /app/apps/api/dist ./apps/api/dist
