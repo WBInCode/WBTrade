@@ -1,13 +1,11 @@
+// Load environment variables FIRST - before any other imports
+import dotenv from 'dotenv';
 import path from 'path';
 
-// Load environment variables only in development
-if (process.env.NODE_ENV !== 'production') {
-  const dotenv = require('dotenv');
-  // Load environment variables from root .env first
-  dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
-  // Also try local .env as fallback
-  dotenv.config();
-}
+// Load environment variables from root .env first
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+// Also try local .env as fallback
+dotenv.config();
 
 import express from 'express';
 import cors from 'cors';
