@@ -5,7 +5,7 @@ services:
     name: wbtrade-api
     runtime: docker
     dockerfilePath: ./Dockerfile
-    plan: starter # Możesz zmienić na: free, starter, standard, pro
+    plan: free # Darmowy plan - serwis usypia się po 15 min nieaktywności
     region: frankfurt # EU region dla lepszej wydajności w Polsce
     branch: main # lub master - nazwa głównej gałęzi
     healthCheckPath: /health
@@ -87,18 +87,13 @@ services:
     name: wbtrade-meilisearch
     runtime: docker
     dockerfilePath: ./Dockerfile.meilisearch
-    plan: starter
+    plan: free # Darmowy plan - serwis usypia się po 15 min nieaktywności
     region: frankfurt
     branch: main
     envVars:
       - key: MEILI_MASTER_KEY
         # Ten sam klucz co w API
         sync: false
-    # Opcjonalny persistent volume dla indeksów
-    disk:
-      name: meilisearch-data
-      mountPath: /data.ms
-      sizeGB: 1
 
 databases:
   # Jeśli nie używasz Neon, możesz utworzyć bazę na Render
