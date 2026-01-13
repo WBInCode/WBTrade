@@ -8,8 +8,8 @@ RUN apk update
 # Ustawienie katalogu roboczego
 WORKDIR /app
 
-# Instalacja pnpm globalnie
-RUN npm install -g pnpm@8.15.1
+# Instalacja pnpm globalnie (v9 dla kompatybilności z lockfile)
+RUN npm install -g pnpm@9
 
 # Kopiowanie plików konfiguracyjnych
 COPY package*.json ./
