@@ -2,7 +2,7 @@
 FROM node:18-alpine AS base
 
 # Instalowanie zależności systemowych wymaganych przez Prisma i inne pakiety
-RUN apk add --no-cache libc6-compat openssl1.1-compat
+RUN apk add --no-cache libc6-compat openssl
 RUN apk update
 
 # Ustawienie katalogu roboczego
@@ -35,7 +35,7 @@ RUN pnpm build
 # Stage końcowy - tylko niezbędne pliki
 FROM node:18-alpine AS production
 
-RUN apk add --no-cache libc6-compat bash openssl1.1-compat
+RUN apk add --no-cache libc6-compat bash openssl
 WORKDIR /app
 
 # Kopiowanie node_modules z poprzedniego stage (root i apps/api)
