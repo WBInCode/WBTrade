@@ -8,6 +8,7 @@ import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useWishlist } from '../contexts/WishlistContext';
 import { categoriesApi, CategoryWithChildren } from '../lib/api';
+import { cleanCategoryName } from '../lib/categories';
 
 function HeaderContent() {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
@@ -113,7 +114,7 @@ function HeaderContent() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
-                {isOnProductsPage && currentMainCategory ? currentMainCategory.name : 'Wybierz kategorię'}
+                {isOnProductsPage && currentMainCategory ? cleanCategoryName(currentMainCategory.name) : 'Wybierz kategorię'}
                 <svg className={`w-4 h-4 transition-transform ${isCategoryOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -133,7 +134,7 @@ function HeaderContent() {
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span>{category.name}</span>
+                          <span>{cleanCategoryName(category.name)}</span>
                           {isActive && (
                             <svg className="w-4 h-4 text-primary-500" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -290,7 +291,7 @@ function HeaderContent() {
                         : 'text-white hover:bg-primary-600'
                     }`}
                   >
-                    {category.name}
+                    {cleanCategoryName(category.name)}
                   </Link>
                 );
               })}

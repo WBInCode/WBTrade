@@ -9,6 +9,7 @@ import Breadcrumb from '../../../components/Breadcrumb';
 import { productsApi, reviewsApi, Product, Review, ReviewStats, CanReviewResult } from '../../../lib/api';
 import ProductCard from '../../../components/ProductCard';
 import { useCart } from '../../../contexts/CartContext';
+import { cleanCategoryName } from '../../../lib/categories';
 
 interface ProductPageProps {
   params: Promise<{ id: string }>;
@@ -482,7 +483,7 @@ export default function ProductPage({ params }: ProductPageProps) {
     : 0;
 
   // Use real category if available
-  const categoryName = product.category?.name || 'Produkty';
+  const categoryName = product.category?.name ? cleanCategoryName(product.category.name) : 'Produkty';
   const categorySlug = product.category?.slug || '';
   const breadcrumbItems = [
     { label: 'Strona główna', href: '/' },

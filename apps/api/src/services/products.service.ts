@@ -108,14 +108,22 @@ export class ProductsService {
   }
 
   /**
-   * Get all descendant category IDs for a given category slug (including the category itself)
+   * Get all descendant category IDs for a given category slug or ID (including the category itself)
    */
-  private async getAllCategoryIds(categorySlug: string): Promise<string[]> {
-    // Find the category by slug
-    const category = await prisma.category.findUnique({
-      where: { slug: categorySlug },
+  private async getAllCategoryIds(categorySlugOrId: string): Promise<string[]> {
+    // Try to find the category by slug first, then by ID
+    let category = await prisma.category.findUnique({
+      where: { slug: categorySlugOrId },
       select: { id: true },
     });
+
+    // If not found by slug, try by ID
+    if (!category) {
+      category = await prisma.category.findUnique({
+        where: { id: categorySlugOrId },
+        select: { id: true },
+      });
+    }
 
     if (!category) {
       return [];
