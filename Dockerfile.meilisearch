@@ -1,0 +1,10 @@
+FROM getmeili/meilisearch:v1.6
+
+# Expose Meilisearch default port
+EXPOSE 7700
+
+# Set environment variable for data directory
+ENV MEILI_DATA_DIR=/data.ms
+
+# Run Meilisearch
+CMD ["meilisearch"]
