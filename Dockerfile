@@ -26,11 +26,11 @@ RUN pnpm install --frozen-lockfile
 # Zmiana katalogu na API do budowania
 WORKDIR /app/apps/api
 
+# Generowanie klienta Prisma PRZED kompilacją TypeScript
+RUN npx prisma generate
+
 # Budowanie aplikacji
 RUN pnpm build
-
-# Generowanie klienta Prisma
-RUN npx prisma generate
 
 # Stage końcowy - tylko niezbędne pliki
 FROM node:18-alpine AS production
