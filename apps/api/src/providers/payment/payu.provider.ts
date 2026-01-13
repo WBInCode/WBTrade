@@ -323,8 +323,10 @@ export class PayUProvider implements IPaymentProvider {
         status = 'cancelled';
         break;
       case 'PENDING':
-      case 'WAITING_FOR_CONFIRMATION':
         status = 'pending';
+        break;
+      case 'WAITING_FOR_CONFIRMATION':
+        status = 'requires_action';
         break;
       case 'REJECTED':
         status = 'failed';
@@ -418,8 +420,10 @@ export class PayUProvider implements IPaymentProvider {
         status = 'cancelled';
         break;
       case 'PENDING':
-      case 'WAITING_FOR_CONFIRMATION':
         status = 'pending';
+        break;
+      case 'WAITING_FOR_CONFIRMATION':
+        status = 'requires_action';
         break;
       case 'REJECTED':
         status = 'failed';

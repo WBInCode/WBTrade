@@ -538,7 +538,9 @@ export async function paymentWebhook(req: Request, res: Response): Promise<void>
   try {
     const providerId = req.params.provider as PaymentProviderId || 'payu';
     const signature = req.headers['x-signature'] as string || '';
-    const payload = JSON.stringify(req.body);
+    
+    // Use raw body if available (for correct signature verification)
+    const payload = (req as any).rawBody || JSON.stringify(req.body);
 
     const result = await paymentService.processWebhook(providerId, payload, signature);
 
@@ -557,10 +559,14 @@ export async function payuWebhook(req: Request, res: Response): Promise<void> {
   try {
     // PayU signature format: signature=<md5>;algorithm=MD5;sender=checkout
     const signature = req.headers['openpayu-signature'] as string || '';
-    const payload = JSON.stringify(req.body);
+    
+    // Use raw body if available (for correct signature verification)
+    // Fall back to JSON.stringify for backwards compatibility
+    const payload = (req as any).rawBody || JSON.stringify(req.body);
 
     console.log('PayU webhook received:', {
       signature,
+      hasRawBody: !!(req as any).rawBody,
       body: req.body,
     });
 
@@ -582,7 +588,9 @@ export async function shippingWebhook(req: Request, res: Response): Promise<void
   try {
     const providerId = req.params.provider as ShippingProviderId;
     const signature = req.headers['x-signature'] as string || '';
-    const payload = JSON.stringify(req.body);
+    
+    // Use raw body if available (for correct signature verification)
+    const payload = (req as any).rawBody || JSON.stringify(req.body);
 
     await shippingService.processWebhook(providerId, payload, signature);
 

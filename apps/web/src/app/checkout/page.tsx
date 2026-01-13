@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { checkoutApi, addressesApi, ApiClientError } from '@/lib/api';
@@ -11,7 +11,6 @@ import AddressForm from './components/AddressForm';
 import ShippingPerPackage from './components/ShippingPerPackage';
 import PaymentMethod from './components/PaymentMethod';
 import OrderSummary from './components/OrderSummary';
-import { useRouter as useNextRouter } from 'next/navigation';
 
 export interface AddressData {
   firstName: string;
@@ -93,8 +92,9 @@ const initialPayment: PaymentData = {
   extraFee: 0,
 };
 
-export default function CheckoutPage() {
+function CheckoutPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { cart, itemCount, loading: cartLoading, removeFromCart, updateQuantity } = useCart();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   
@@ -109,6 +109,29 @@ export default function CheckoutPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [paymentCancelledMessage, setPaymentCancelledMessage] = useState<string | null>(null);
+
+  // Check if payment was cancelled (redirected back from PayU)
+  useEffect(() => {
+    const cancelled = searchParams.get('cancelled');
+    const orderId = searchParams.get('orderId');
+    
+    if (cancelled === 'true') {
+      setPaymentCancelledMessage(
+        orderId 
+          ? `Płatność dla zamówienia została anulowana. Możesz spróbować ponownie lub wybrać inną metodę płatności.`
+          : 'Płatność została anulowana. Możesz spróbować ponownie lub wybrać inną metodę płatności.'
+      );
+      // Skip to payment step if coming back from cancelled payment
+      setCurrentStep(3);
+      
+      // Clean URL without reloading
+      const url = new URL(window.location.href);
+      url.searchParams.delete('cancelled');
+      url.searchParams.delete('orderId');
+      window.history.replaceState({}, '', url.pathname);
+    }
+  }, [searchParams]);
 
   // Fetch shipping prices from API as soon as cart is loaded
   useEffect(() => {
@@ -426,6 +449,27 @@ export default function CheckoutPage() {
         <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main form area */}
           <div className="lg:col-span-2">
+            {/* Payment cancelled message */}
+            {paymentCancelledMessage && (
+              <div className="mb-6 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg flex items-start gap-3">
+                <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <div>
+                  <p className="font-medium">Płatność anulowana</p>
+                  <p className="text-sm mt-1">{paymentCancelledMessage}</p>
+                </div>
+                <button 
+                  onClick={() => setPaymentCancelledMessage(null)}
+                  className="ml-auto text-amber-600 hover:text-amber-800"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            )}
+            
             {error && (
               <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                 {error}
@@ -580,5 +624,17 @@ export default function CheckoutPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+      </div>
+    }>
+      <CheckoutPageContent />
+    </Suspense>
   );
 }
