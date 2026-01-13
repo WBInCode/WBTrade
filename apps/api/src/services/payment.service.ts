@@ -307,6 +307,7 @@ export class PaymentService {
       'cancelled': 'CANCELLED',
       'refunded': 'REFUNDED',
       'pending': 'PENDING',
+      'requires_action': 'AWAITING_CONFIRMATION', // User needs to confirm in banking app
     };
 
     const newOrderStatus = orderStatusMap[result.status];
