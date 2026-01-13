@@ -39,6 +39,10 @@ services:
         # Ustaw bezpieczny klucz JWT (min. 32 znaki)
         sync: false
         
+      - key: JWT_ACCESS_SECRET
+        # Ten sam co JWT_SECRET lub osobny klucz dla access tokenów
+        sync: false
+        
       - key: JWT_REFRESH_SECRET
         # Ustaw bezpieczny klucz dla refresh tokenów
         sync: false
