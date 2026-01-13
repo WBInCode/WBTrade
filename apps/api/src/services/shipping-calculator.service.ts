@@ -32,7 +32,7 @@ const TAG_PATTERNS = {
 // Shipping method prices (in PLN)
 export const SHIPPING_PRICES = {
   inpost_paczkomat: 9.99,
-  inpost_kurier: 14.99,
+  inpost_kurier: 19.99,
   dpd: 15.99,
   dhl: 19.99,
   gls: 13.99,

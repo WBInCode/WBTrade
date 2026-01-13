@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { categoriesApi, CategoryWithChildren } from '../../lib/api';
+import { cleanCategoryName } from '../../lib/categories';
 
 function CategoryFilterContent() {
   const searchParams = useSearchParams();
@@ -102,7 +103,7 @@ function CategoryFilterContent() {
                   : 'text-secondary-700 hover:text-primary-500'
             }`}
           >
-            {category.name}
+            {cleanCategoryName(category.name)}
             {category.productCount !== undefined && category.productCount > 0 && (
               <span className="text-gray-400 text-xs ml-1">({category.productCount})</span>
             )}
@@ -165,7 +166,7 @@ function CategoryFilterContent() {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          {parentCategory ? parentCategory.name : 'Wszystkie kategorie'}
+          {parentCategory ? cleanCategoryName(parentCategory.name) : 'Wszystkie kategorie'}
         </Link>
       )}
       
