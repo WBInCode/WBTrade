@@ -1,0 +1,41 @@
+# Pliki i foldery do pominięcia w Dockerze
+node_modules
+npm-debug.log*
+.npm
+.env.local
+.env.production
+.env.test
+.git
+.gitignore
+README.md
+.DS_Store
+.vscode
+*.log
+coverage
+.nyc_output
+dist
+build
+
+# Tymczasowe pliki
+*.tmp
+*.temp
+.cache
+
+# IDE
+.idea
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+.directory
+
+# Testy
+**/*.test.ts
+**/*.spec.ts
+__tests__
+coverage/
+
+# Inne
+docs/
+examples/

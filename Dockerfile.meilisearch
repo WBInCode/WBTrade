@@ -1,0 +1,15 @@
+# Dockerfile dla Meilisearch
+FROM getmeili/meilisearch:v1.6
+
+# Ustawienie domyślnego portu
+EXPOSE 7700
+
+# Zmienne środowiskowe
+ENV MEILI_HTTP_ADDR=0.0.0.0:7700
+ENV MEILI_ENV=production
+
+# Katalog dla danych
+VOLUME ["/data.ms"]
+
+# Punkt wejścia
+CMD ["meilisearch"]

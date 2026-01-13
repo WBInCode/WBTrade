@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
     "start": "node dist/app.js",
+    "start:prod": "NODE_ENV=production node dist/app.js",
     "build": "tsc",
+    "build:prod": "NODE_ENV=production tsc",
+    "deploy": "npm run build:prod && npm run prisma:generate && npm run prisma:migrate:deploy",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -15,6 +18,7 @@
     "lint": "eslint src --ext .ts --max-warnings 999",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "db:seed": "ts-node prisma/seed.ts",
     "db:seed-products": "ts-node prisma/seed-products.ts",
