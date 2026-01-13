@@ -51,22 +51,42 @@ export interface ProductWithTags {
   id: string;
   name: string;
   tags: string[];
+  image?: string;
+}
+
+export interface ShippingPackageItem {
+  productId: string;
+  productName: string;
+  variantId: string;
+  quantity: number;
+  isGabaryt: boolean;
+  gabarytPrice?: number;
+  productImage?: string;
 }
 
 export interface ShippingPackage {
   id: string;
   type: 'standard' | 'gabaryt';
   wholesaler: string | null;
-  items: Array<{
-    productId: string;
-    productName: string;
-    variantId: string;
-    quantity: number;
-    isGabaryt: boolean;
-    gabarytPrice?: number;
-  }>;
+  items: ShippingPackageItem[];
   paczkomatPackageCount: number;
   gabarytPrice?: number;
+  isPaczkomatAvailable: boolean;
+}
+
+export interface ShippingMethodForPackage {
+  id: string;
+  name: string;
+  price: number;
+  available: boolean;
+  message?: string;
+  estimatedDelivery: string;
+}
+
+export interface PackageWithShippingOptions {
+  package: ShippingPackage;
+  shippingMethods: ShippingMethodForPackage[];
+  selectedMethod?: string;
 }
 
 export interface ShippingCalculationResult {
@@ -144,7 +164,7 @@ export class ShippingCalculatorService {
     const warnings: string[] = [];
     const packages: ShippingPackage[] = [];
     
-    // Fetch products with tags
+    // Fetch products with tags and images
     const variantIds = items.map(item => item.variantId);
     const variants = await prisma.productVariant.findMany({
       where: { id: { in: variantIds } },
@@ -154,17 +174,23 @@ export class ShippingCalculatorService {
             id: true,
             name: true,
             tags: true,
+            images: {
+              take: 1,
+              orderBy: { order: 'asc' },
+              select: { url: true },
+            },
           },
         },
       },
     });
     
-    const variantToProduct = new Map<string, ProductWithTags>();
+    const variantToProduct = new Map<string, ProductWithTags & { image?: string }>();
     for (const variant of variants) {
       variantToProduct.set(variant.id, {
         id: variant.product.id,
         name: variant.product.name,
         tags: variant.product.tags,
+        image: variant.product.images[0]?.url,
       });
     }
     
@@ -213,9 +239,11 @@ export class ShippingCalculatorService {
             quantity: 1,
             isGabaryt: true,
             gabarytPrice: gabarytPrice || undefined,
+            productImage: gabarytItem.product.image,
           }],
           paczkomatPackageCount: 0,
           gabarytPrice: gabarytPrice || SHIPPING_PRICES.gabaryt_base,
+          isPaczkomatAvailable: false, // Gabaryt cannot use paczkomat
         });
       }
     }
@@ -228,6 +256,7 @@ export class ShippingCalculatorService {
         variantId: item.variantId,
         quantity: item.quantity,
         isGabaryt: false,
+        productImage: item.product.image,
       }));
       
       let paczkomatPackageCount = 0;
@@ -243,6 +272,7 @@ export class ShippingCalculatorService {
         wholesaler: wholesaler === 'default' ? null : wholesaler,
         items: packageItems,
         paczkomatPackageCount,
+        isPaczkomatAvailable: true, // Standard items can use paczkomat
       });
     }
     
@@ -372,6 +402,143 @@ export class ShippingCalculatorService {
     ];
     
     return methods;
+  }
+  
+  /**
+   * Get shipping options per package (for per-product shipping selection)
+   * Each package gets its own list of available shipping methods
+   */
+  async getShippingOptionsPerPackage(items: CartItemForShipping[]): Promise<{
+    packagesWithOptions: PackageWithShippingOptions[];
+    totalShippingCost: number;
+    warnings: string[];
+  }> {
+    const calculation = await this.calculateShipping(items);
+    const packagesWithOptions: PackageWithShippingOptions[] = [];
+    
+    for (const pkg of calculation.packages) {
+      const methods: ShippingMethodForPackage[] = [];
+      
+      if (pkg.type === 'gabaryt') {
+        // Gabaryt packages - only courier options available
+        const gabarytPrice = pkg.gabarytPrice || SHIPPING_PRICES.gabaryt_base;
+        
+        methods.push({
+          id: 'inpost_paczkomat',
+          name: 'InPost Paczkomat',
+          price: 0,
+          available: false,
+          message: 'Produkt gabarytowy - tylko kurier',
+          estimatedDelivery: '1-2 dni',
+        });
+        methods.push({
+          id: 'inpost_kurier',
+          name: 'Kurier InPost',
+          price: gabarytPrice,
+          available: true,
+          estimatedDelivery: '1-2 dni',
+        });
+        methods.push({
+          id: 'dpd',
+          name: 'Kurier DPD',
+          price: gabarytPrice,
+          available: true,
+          estimatedDelivery: '1-3 dni',
+        });
+        methods.push({
+          id: 'pocztex',
+          name: 'Pocztex Kurier48',
+          price: gabarytPrice,
+          available: true,
+          estimatedDelivery: '2-3 dni',
+        });
+        methods.push({
+          id: 'dhl',
+          name: 'Kurier DHL',
+          price: gabarytPrice,
+          available: true,
+          estimatedDelivery: '1-2 dni',
+        });
+        methods.push({
+          id: 'gls',
+          name: 'Kurier GLS',
+          price: gabarytPrice,
+          available: true,
+          estimatedDelivery: '2-4 dni',
+        });
+      } else {
+        // Standard packages - all options available
+        const paczkomatPackages = pkg.paczkomatPackageCount;
+        
+        methods.push({
+          id: 'inpost_paczkomat',
+          name: 'InPost Paczkomat',
+          price: paczkomatPackages * SHIPPING_PRICES.inpost_paczkomat,
+          available: true,
+          message: paczkomatPackages > 1 ? `${paczkomatPackages} paczki` : undefined,
+          estimatedDelivery: '1-2 dni',
+        });
+        methods.push({
+          id: 'inpost_kurier',
+          name: 'Kurier InPost',
+          price: SHIPPING_PRICES.inpost_kurier,
+          available: true,
+          estimatedDelivery: '1-2 dni',
+        });
+        methods.push({
+          id: 'dpd',
+          name: 'Kurier DPD',
+          price: SHIPPING_PRICES.dpd,
+          available: true,
+          estimatedDelivery: '1-3 dni',
+        });
+        methods.push({
+          id: 'pocztex',
+          name: 'Pocztex Kurier48',
+          price: SHIPPING_PRICES.pocztex,
+          available: true,
+          estimatedDelivery: '2-3 dni',
+        });
+        methods.push({
+          id: 'dhl',
+          name: 'Kurier DHL',
+          price: SHIPPING_PRICES.dhl,
+          available: true,
+          estimatedDelivery: '1-2 dni',
+        });
+        methods.push({
+          id: 'gls',
+          name: 'Kurier GLS',
+          price: SHIPPING_PRICES.gls,
+          available: true,
+          estimatedDelivery: '2-4 dni',
+        });
+      }
+      
+      // Set default selected method
+      const defaultMethod = pkg.isPaczkomatAvailable ? 'inpost_paczkomat' : 'inpost_kurier';
+      
+      packagesWithOptions.push({
+        package: pkg,
+        shippingMethods: methods,
+        selectedMethod: defaultMethod,
+      });
+    }
+    
+    // Calculate initial total with default methods
+    let totalShippingCost = 0;
+    for (const pkgOpt of packagesWithOptions) {
+      const selectedMethod = pkgOpt.shippingMethods.find(m => m.id === pkgOpt.selectedMethod && m.available);
+      if (selectedMethod) {
+        totalShippingCost += selectedMethod.price;
+      }
+    }
+    
+    return {
+      packagesWithOptions,
+      totalShippingCost,
+      warnings: calculation.warnings,
+    };
   }
 }
 

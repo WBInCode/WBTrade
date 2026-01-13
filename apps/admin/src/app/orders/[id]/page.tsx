@@ -35,6 +35,32 @@ interface Address {
   phone?: string;
 }
 
+interface PackageShippingData {
+  packageId: string;
+  method: string;
+  price: number;
+  paczkomatCode?: string;
+  paczkomatAddress?: string;
+  useCustomAddress?: boolean;
+  customAddress?: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    street: string;
+    apartment?: string;
+    postalCode: string;
+    city: string;
+  };
+  items?: {
+    productId: string;
+    productName: string;
+    variantId: string;
+    variantName: string;
+    quantity: number;
+    image?: string;
+  }[];
+}
+
 interface Order {
   id: string;
   orderNumber: string;
@@ -52,6 +78,9 @@ interface Order {
   internalNotes?: string;
   createdAt: string;
   updatedAt: string;
+  paczkomatCode?: string;
+  paczkomatAddress?: string;
+  packageShipping?: PackageShippingData[];
   user?: {
     id: string;
     email: string;
@@ -514,9 +543,73 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               <Truck className="w-5 h-5 text-orange-400" />
               Dostawa
             </h2>
-            <p className="text-white">
-              {shippingMethods[order.shippingMethod] || order.shippingMethod}
-            </p>
+            
+            {/* Per-package shipping info */}
+            {order.packageShipping && order.packageShipping.length > 0 ? (
+              <div className="space-y-4">
+                {order.packageShipping.map((pkg, index) => (
+                  <div key={pkg.packageId} className="p-3 bg-slate-700/50 rounded-lg">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-sm font-medium text-orange-400">
+                        Paczka {index + 1}
+                      </span>
+                      <span className="text-sm text-gray-400">
+                        {pkg.price.toFixed(2)} zł
+                      </span>
+                    </div>
+                    <p className="text-white text-sm mb-1">
+                      {shippingMethods[pkg.method] || pkg.method}
+                    </p>
+                    {pkg.paczkomatCode && (
+                      <p className="text-xs text-gray-400 mb-2">
+                        Paczkomat: {pkg.paczkomatCode}
+                        {pkg.paczkomatAddress && ` - ${pkg.paczkomatAddress}`}
+                      </p>
+                    )}
+                    
+                    {/* Items in package */}
+                    {pkg.items && pkg.items.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-slate-600/50">
+                        <p className="text-xs text-gray-500 mb-1">Produkty:</p>
+                        <ul className="text-xs text-gray-400 space-y-1">
+                          {pkg.items.map((item, itemIndex) => (
+                            <li key={itemIndex}>
+                              {item.productName} {item.variantName !== 'Default' && `(${item.variantName})`} × {item.quantity}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {/* Custom address for package */}
+                    {pkg.useCustomAddress && pkg.customAddress && (
+                      <div className="mt-2 pt-2 border-t border-slate-600/50">
+                        <p className="text-xs text-gray-500 mb-1">Inny adres dostawy:</p>
+                        <div className="text-xs text-gray-300">
+                          <p>{pkg.customAddress.firstName} {pkg.customAddress.lastName}</p>
+                          <p>{pkg.customAddress.street}{pkg.customAddress.apartment && ` ${pkg.customAddress.apartment}`}</p>
+                          <p>{pkg.customAddress.postalCode} {pkg.customAddress.city}</p>
+                          {pkg.customAddress.phone && <p>Tel: {pkg.customAddress.phone}</p>}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
+                <p className="text-white">
+                  {shippingMethods[order.shippingMethod] || order.shippingMethod}
+                </p>
+                {order.paczkomatCode && (
+                  <p className="text-sm text-gray-400 mt-1">
+                    Paczkomat: {order.paczkomatCode}
+                    {order.paczkomatAddress && ` - ${order.paczkomatAddress}`}
+                  </p>
+                )}
+              </>
+            )}
+            
             {order.trackingNumber && (
               <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
                 <p className="text-sm text-gray-400">Numer przesyłki:</p>
