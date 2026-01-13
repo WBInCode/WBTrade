@@ -8,8 +8,6 @@ services:
     plan: starter # Możesz zmienić na: free, starter, standard, pro
     region: frankfurt # EU region dla lepszej wydajności w Polsce
     branch: main # lub master - nazwa głównej gałęzi
-    buildCommand: echo "Build handled by Dockerfile"
-    startCommand: node dist/app.js
     healthCheckPath: /health
     autoDeploy: true # Automatyczne wdrożenia przy push do głównej gałęzi
     
