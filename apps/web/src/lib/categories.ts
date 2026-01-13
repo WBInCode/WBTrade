@@ -2,6 +2,16 @@
 // Uwaga: główne kategorie są teraz pobierane dynamicznie z API (categoriesApi.getMain())
 // Ten plik zawiera definicje typów i helper functions
 
+/**
+ * Usuwa prefiksy [BTP], [HP] itp. z nazwy kategorii
+ * Te prefiksy są używane wewnętrznie do identyfikacji źródła kategorii,
+ * ale nie powinny być widoczne dla użytkowników
+ */
+export function cleanCategoryName(name: string): string {
+  // Usuwa prefiksy w formacie [XXX] na początku nazwy
+  return name.replace(/^\[[A-Z]+\]\s*/g, '').trim();
+}
+
 export interface Category {
   name: string;
   slug: string;
