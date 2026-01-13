@@ -860,6 +860,32 @@ export interface PaymentMethod {
   description?: string;
 }
 
+export interface PackageShippingRequest {
+  packageId: string;
+  method: string;
+  price: number;
+  paczkomatCode?: string;
+  paczkomatAddress?: string;
+  useCustomAddress?: boolean;
+  customAddress?: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    street: string;
+    apartment?: string;
+    postalCode: string;
+    city: string;
+  };
+  items?: {
+    productId: string;
+    productName: string;
+    variantId: string;
+    variantName: string;
+    quantity: number;
+    image?: string;
+  }[];
+}
+
 export interface CheckoutRequest {
   shippingAddressId: string;
   billingAddressId?: string;
@@ -869,6 +895,7 @@ export interface CheckoutRequest {
   paymentMethod: string;
   customerNotes?: string;
   acceptTerms: boolean;
+  packageShipping?: PackageShippingRequest[];
 }
 
 export interface CheckoutResponse {
@@ -950,6 +977,38 @@ export const checkoutApi = {
         warnings: string[];
       };
     }>('/checkout/shipping/calculate', { items }),
+  
+  // Get shipping options per package (for per-product shipping selection)
+  getShippingPerPackage: (items: Array<{ variantId: string; quantity: number }>) =>
+    api.post<{
+      packagesWithOptions: Array<{
+        package: {
+          id: string;
+          type: 'standard' | 'gabaryt';
+          wholesaler: string | null;
+          items: Array<{
+            productId: string;
+            productName: string;
+            variantId: string;
+            quantity: number;
+            isGabaryt: boolean;
+            productImage?: string;
+          }>;
+          isPaczkomatAvailable: boolean;
+        };
+        shippingMethods: Array<{
+          id: string;
+          name: string;
+          price: number;
+          available: boolean;
+          message?: string;
+          estimatedDelivery: string;
+        }>;
+        selectedMethod: string;
+      }>;
+      totalShippingCost: number;
+      warnings: string[];
+    }>('/checkout/shipping/per-package', { items }),
   
   // Get pickup points (Paczkomaty)
   getPickupPoints: (postalCode: string, city?: string, limit?: number) =>

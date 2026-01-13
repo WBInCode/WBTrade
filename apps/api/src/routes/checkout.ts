@@ -16,6 +16,7 @@ import {
   getOrderTracking,
   calculateCartShipping,
   calculateItemsShipping,
+  getShippingPerPackage,
 } from '../controllers/checkout.controller';
 import { authGuard, optionalAuth } from '../middleware/auth.middleware';
 
@@ -52,6 +53,13 @@ router.get('/shipping/calculate', optionalAuth, calculateCartShipping);
  * Body: { items: [{ variantId: string, quantity: number }] }
  */
 router.post('/shipping/calculate', calculateItemsShipping);
+
+/**
+ * POST /api/checkout/shipping/per-package
+ * Get shipping options per package for per-product shipping selection
+ * Body: { items: [{ variantId: string, quantity: number }] }
+ */
+router.post('/shipping/per-package', getShippingPerPackage);
 
 // ============================================
 // PAYMENT ENDPOINTS

@@ -1,6 +1,32 @@
 import { prisma } from '../db';
 import { OrderStatus, Prisma } from '@prisma/client';
 
+interface PackageShippingItem {
+  packageId: string;
+  method: string;
+  price: number;
+  paczkomatCode?: string;
+  paczkomatAddress?: string;
+  useCustomAddress?: boolean;
+  customAddress?: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    street: string;
+    apartment?: string;
+    postalCode: string;
+    city: string;
+  };
+  items?: {
+    productId: string;
+    productName: string;
+    variantId: string;
+    variantName: string;
+    quantity: number;
+    image?: string;
+  }[];
+}
+
 interface CreateOrderData {
   userId?: string;
   shippingAddressId?: string;
@@ -15,6 +41,7 @@ interface CreateOrderData {
   customerNotes?: string;
   paczkomatCode?: string;
   paczkomatAddress?: string;
+  packageShipping?: PackageShippingItem[];
 }
 
 interface GetAllOrdersParams {
@@ -111,7 +138,13 @@ export class OrdersService {
       (sum, item) => sum + item.unitPrice * item.quantity,
       0
     );
-    const shipping = 0; // TODO: Calculate based on shipping method
+    
+    // Calculate shipping cost from packageShipping or use 0
+    let shipping = 0;
+    if (data.packageShipping && data.packageShipping.length > 0) {
+      shipping = data.packageShipping.reduce((sum, pkg) => sum + (pkg.price || 0), 0);
+    }
+    
     // VAT is already included in product prices (Polish prices are gross)
     // We calculate VAT for display purposes only (23% is already in the price)
     const tax = 0; // VAT already included in prices
@@ -129,6 +162,7 @@ export class OrdersService {
           paymentMethod: data.paymentMethod,
           paczkomatCode: data.paczkomatCode,
           paczkomatAddress: data.paczkomatAddress,
+          packageShipping: data.packageShipping ? JSON.parse(JSON.stringify(data.packageShipping)) : Prisma.JsonNull,
           status: 'OPEN', // Order is OPEN until payment is completed
           subtotal,
           shipping,

@@ -253,11 +253,21 @@ function OrderConfirmationPageContent() {
           </div>
 
           {/* Total */}
-          <div className="flex justify-between items-center mt-6 pt-4 border-t">
-            <span className="text-lg font-bold">Razem</span>
-            <span className="text-2xl font-bold text-orange-600">
-              {Number(order?.total || 0).toFixed(2)} zł
-            </span>
+          <div className="mt-6 pt-4 border-t space-y-2">
+            <div className="flex justify-between items-center text-gray-600">
+              <span>Suma częściowa</span>
+              <span>{Number(order?.subtotal || 0).toFixed(2)} zł</span>
+            </div>
+            <div className="flex justify-between items-center text-gray-600">
+              <span>Dostawa</span>
+              <span>{Number(order?.shipping || 0).toFixed(2)} zł</span>
+            </div>
+            <div className="flex justify-between items-center pt-2 border-t">
+              <span className="text-lg font-bold">Razem</span>
+              <span className="text-2xl font-bold text-orange-600">
+                {Number(order?.total || 0).toFixed(2)} zł
+              </span>
+            </div>
           </div>
         </div>
 
