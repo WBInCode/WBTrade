@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { checkoutApi, addressesApi, ApiClientError } from '@/lib/api';
 import CheckoutSteps from './components/CheckoutSteps';
 import AddressForm from './components/AddressForm';
-import ShippingMethod from './components/ShippingMethod';
+import ShippingPerPackage from './components/ShippingPerPackage';
 import PaymentMethod from './components/PaymentMethod';
 import OrderSummary from './components/OrderSummary';
 import { useRouter as useNextRouter } from 'next/navigation';
@@ -34,6 +34,27 @@ export interface ShippingData {
   paczkomatCode?: string;
   paczkomatAddress?: string;
   price: number;
+  // Per-package shipping selections
+  packageShipping?: PackageShippingSelection[];
+}
+
+export interface PackageShippingSelection {
+  packageId: string;
+  method: 'inpost_paczkomat' | 'inpost_kurier' | 'dpd' | 'pocztex' | 'dhl' | 'gls';
+  price: number;
+  paczkomatCode?: string;
+  paczkomatAddress?: string;
+  // Custom delivery address for this package (if different from main address)
+  useCustomAddress?: boolean;
+  customAddress?: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    street: string;
+    apartment: string;
+    postalCode: string;
+    city: string;
+  };
 }
 
 export interface PaymentData {
@@ -64,6 +85,7 @@ const initialAddress: AddressData = {
 const initialShipping: ShippingData = {
   method: 'inpost_kurier',
   price: 14.99,
+  packageShipping: [],
 };
 
 const initialPayment: PaymentData = {
@@ -154,13 +176,12 @@ export default function CheckoutPage() {
     window.scrollTo(0, 0);
   };
 
-  const handleShippingPriceChange = (method: string, price: number) => {
+  const handleShippingPriceChange = (totalPrice: number) => {
     setCheckoutData(prev => ({
       ...prev,
       shipping: {
         ...prev.shipping,
-        method: method as ShippingData['method'],
-        price: price,
+        price: totalPrice,
       }
     }));
   };
@@ -245,6 +266,15 @@ export default function CheckoutPage() {
         paymentMethod: checkoutData.payment.method,
         customerNotes: '',
         acceptTerms: checkoutData.acceptTerms,
+        packageShipping: checkoutData.shipping.packageShipping?.map(pkg => ({
+          packageId: pkg.packageId,
+          method: pkg.method,
+          price: pkg.price,
+          paczkomatCode: pkg.paczkomatCode,
+          paczkomatAddress: pkg.paczkomatAddress,
+          useCustomAddress: pkg.useCustomAddress,
+          customAddress: pkg.customAddress,
+        })),
       });
 
       // If payment URL is provided, redirect to payment gateway
@@ -410,7 +440,7 @@ export default function CheckoutPage() {
             )}
 
             {currentStep === 2 && (
-              <ShippingMethod
+              <ShippingPerPackage
                 initialData={checkoutData.shipping}
                 onSubmit={handleShippingSubmit}
                 onBack={handleBack}

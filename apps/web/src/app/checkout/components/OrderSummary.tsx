@@ -160,15 +160,63 @@ export default function OrderSummary({
         {/* Shipping method */}
         <div className="flex justify-between items-start p-4 border rounded-lg">
           <div>
-            <h4 className="font-medium text-gray-900 mb-1">🚚 Metoda dostawy</h4>
-            <p className="text-sm text-gray-600">
-              {shippingMethodNames[shipping.method]}
-            </p>
+            <h4 className="font-medium text-gray-900 mb-1">🚚 Dostawa</h4>
+            {shipping.packageShipping && shipping.packageShipping.length > 1 ? (
+              // Multiple packages - show each one
+              <div className="space-y-3">
+                {shipping.packageShipping.map((pkg, index) => (
+                  <div key={pkg.packageId} className="text-sm text-gray-600">
+                    <div>
+                      <span className="font-medium">Przesyłka {index + 1}:</span>{' '}
+                      {shippingMethodNames[pkg.method]}
+                      {pkg.paczkomatCode && (
+                        <span className="text-orange-600 ml-1">({pkg.paczkomatCode})</span>
+                      )}
+                      <span className="text-gray-500 ml-1">– {pkg.price.toFixed(2)} zł</span>
+                    </div>
+                    {pkg.useCustomAddress && pkg.customAddress && (
+                      <div className="mt-1 ml-4 text-xs text-gray-500 border-l-2 border-orange-200 pl-2">
+                        <span className="text-orange-600">📍 Inny adres:</span>{' '}
+                        {pkg.customAddress.firstName} {pkg.customAddress.lastName},{' '}
+                        {pkg.customAddress.street}{pkg.customAddress.apartment ? ` m. ${pkg.customAddress.apartment}` : ''},{' '}
+                        {pkg.customAddress.postalCode} {pkg.customAddress.city}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : shipping.packageShipping && shipping.packageShipping.length === 1 ? (
+              // Single package with possible custom address
+              <div className="text-sm text-gray-600">
+                <p>
+                  {shippingMethodNames[shipping.method]}
+                  {shipping.paczkomatCode && (
+                    <span className="text-orange-600 ml-1">({shipping.paczkomatCode})</span>
+                  )}
+                </p>
+                {shipping.packageShipping[0].useCustomAddress && shipping.packageShipping[0].customAddress && (
+                  <div className="mt-1 text-xs text-gray-500 border-l-2 border-orange-200 pl-2">
+                    <span className="text-orange-600">📍 Inny adres:</span>{' '}
+                    {shipping.packageShipping[0].customAddress.firstName} {shipping.packageShipping[0].customAddress.lastName},{' '}
+                    {shipping.packageShipping[0].customAddress.street},{' '}
+                    {shipping.packageShipping[0].customAddress.postalCode} {shipping.packageShipping[0].customAddress.city}
+                  </div>
+                )}
+              </div>
+            ) : (
+              // No package shipping (backward compat)
+              <p className="text-sm text-gray-600">
+                {shippingMethodNames[shipping.method]}
+                {shipping.paczkomatCode && (
+                  <span className="text-orange-600 ml-1">({shipping.paczkomatCode})</span>
+                )}
+              </p>
+            )}
             <p className="text-sm font-medium mt-1">
               {shipping.price === 0 ? (
                 <span className="text-green-600">GRATIS</span>
               ) : (
-                <span>{shipping.price.toFixed(2)} zł</span>
+                <span>Razem: {shipping.price.toFixed(2)} zł</span>
               )}
             </p>
           </div>

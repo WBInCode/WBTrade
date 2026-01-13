@@ -26,6 +26,37 @@ const orderItemSchema = z.object({
 });
 
 /**
+ * Package shipping item schema for per-package delivery
+ */
+const packageShippingCustomAddressSchema = z.object({
+  firstName: z.string().min(1).max(100),
+  lastName: z.string().min(1).max(100),
+  phone: z.string().min(1).max(20),
+  street: z.string().min(1).max(200),
+  apartment: z.string().max(50).optional(),
+  postalCode: z.string().min(1).max(20),
+  city: z.string().min(1).max(100),
+});
+
+const packageShippingItemSchema = z.object({
+  packageId: z.string().min(1),
+  method: z.string().min(1).max(50),
+  price: z.number().min(0),
+  paczkomatCode: z.string().max(50).optional(),
+  paczkomatAddress: z.string().max(500).optional(),
+  useCustomAddress: z.boolean().optional(),
+  customAddress: packageShippingCustomAddressSchema.optional(),
+  items: z.array(z.object({
+    productId: z.string().min(1),
+    productName: z.string().min(1),
+    variantId: z.string().min(1),
+    variantName: z.string().min(1),
+    quantity: z.number().int().positive(),
+    image: z.string().optional(),
+  })).optional(),
+});
+
+/**
  * Create order validation schema
  * Note: userId is optional in body as we use authenticated user's ID from token
  */
@@ -42,6 +73,7 @@ const createOrderSchema = z.object({
   customerNotes: z.string().max(1000).optional().transform((val) => val ? sanitizeText(val) : undefined),
   pickupPointCode: z.string().max(50).optional(),
   pickupPointAddress: z.string().max(500).optional().transform((val) => val ? sanitizeText(val) : undefined),
+  packageShipping: z.array(packageShippingItemSchema).optional(),
   items: z.array(orderItemSchema).min(1, 'Order must have at least one item'),
 });
 

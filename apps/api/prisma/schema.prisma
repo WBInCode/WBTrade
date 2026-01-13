@@ -8,30 +8,32 @@ datasource db {
 }
 
 model User {
-  id                  String             @id @default(cuid())
-  email               String             @unique
-  password            String
-  firstName           String             @map("first_name")
-  lastName            String             @map("last_name")
-  phone               String?
-  role                UserRole           @default(CUSTOMER)
-  isActive            Boolean            @default(true) @map("is_active")
-  createdAt           DateTime           @default(now()) @map("created_at")
-  updatedAt           DateTime           @updatedAt @map("updated_at")
-  emailVerified       Boolean            @default(false) @map("email_verified")
-  emailVerifiedAt     DateTime?          @map("email_verified_at")
-  failedLoginAttempts Int                @default(0) @map("failed_login_attempts")
-  lastLoginAt         DateTime?          @map("last_login_at")
-  lastLoginIp         String?            @map("last_login_ip")
-  lockedUntil         DateTime?          @map("locked_until")
-  passwordChangedAt   DateTime?          @map("password_changed_at")
-  addresses           Address[]
-  cart                Cart?
-  orders              Order[]
-  reviews             Review[]
-  searchHistory       SearchHistory[]
-  auditLogs           SecurityAuditLog[]
-  wishlistItems       WishlistItem[]
+  id                         String             @id @default(cuid())
+  email                      String             @unique
+  password                   String
+  firstName                  String             @map("first_name")
+  lastName                   String             @map("last_name")
+  phone                      String?
+  role                       UserRole           @default(CUSTOMER)
+  isActive                   Boolean            @default(true) @map("is_active")
+  createdAt                  DateTime           @default(now()) @map("created_at")
+  updatedAt                  DateTime           @updatedAt @map("updated_at")
+  emailVerified              Boolean            @default(false) @map("email_verified")
+  emailVerifiedAt            DateTime?          @map("email_verified_at")
+  failedLoginAttempts        Int                @default(0) @map("failed_login_attempts")
+  lastLoginAt                DateTime?          @map("last_login_at")
+  lastLoginIp                String?            @map("last_login_ip")
+  lockedUntil                DateTime?          @map("locked_until")
+  passwordChangedAt          DateTime?          @map("password_changed_at")
+  email_verification_expires DateTime?
+  email_verification_token   String?            @unique
+  addresses                  Address[]
+  cart                       Cart?
+  orders                     Order[]
+  reviews                    Review[]
+  searchHistory              SearchHistory[]
+  auditLogs                  SecurityAuditLog[]
+  wishlistItems              WishlistItem[]
 
   @@map("users")
 }
@@ -93,13 +95,15 @@ model Product {
   compareAtPrice         Decimal?         @map("compare_at_price") @db.Decimal(10, 2)
   metaTitle              String?          @map("meta_title")
   metaDescription        String?          @map("meta_description")
-  tags                   String[]         @default([])
   createdAt              DateTime         @default(now()) @map("created_at")
   updatedAt              DateTime         @updatedAt @map("updated_at")
   categoryId             String?          @map("category_id")
   specifications         Json?            @default("{}")
   baselinkerProductId    String?          @unique @map("baselinker_product_id")
   baselinkerCategoryPath String?          @map("baselinker_category_path")
+  average_rating         Decimal?         @db.Decimal(2, 1)
+  review_count           Int              @default(0)
+  tags                   String[]         @default([])
   images                 ProductImage[]
   variants               ProductVariant[]
   category               Category?        @relation(fields: [categoryId], references: [id])
@@ -299,6 +303,7 @@ model Order {
   updatedAt         DateTime             @updatedAt @map("updated_at")
   paczkomatAddress  String?              @map("paczkomat_address")
   paczkomatCode     String?              @map("paczkomat_code")
+  packageShipping   Json?                @map("package_shipping")
   items             OrderItem[]
   statusHistory     OrderStatusHistory[]
   billingAddress    Address?             @relation("BillingAddress", fields: [billingAddressId], references: [id])
@@ -476,6 +481,37 @@ model BaselinkerSyncLog {
   @@map("baselinker_sync_logs")
 }
 
+model newsletter_campaigns {
+  id              String                   @id
+  title           String
+  subject         String
+  content         String
+  status          NewsletterCampaignStatus @default(DRAFT)
+  scheduled_for   DateTime?
+  sent_at         DateTime?
+  recipient_count Int                      @default(0)
+  opened_count    Int                      @default(0)
+  clicked_count   Int                      @default(0)
+  created_at      DateTime                 @default(now())
+  updated_at      DateTime
+
+  @@index([sent_at])
+  @@index([status])
+}
+
+model newsletter_subscriptions {
+  id              String    @id
+  email           String    @unique
+  token           String    @unique
+  is_verified     Boolean   @default(false)
+  subscribed_at   DateTime  @default(now())
+  verified_at     DateTime?
+  unsubscribed_at DateTime?
+
+  @@index([email])
+  @@index([is_verified])
+}
+
 enum UserRole {
   CUSTOMER
   ADMIN
@@ -510,7 +546,6 @@ enum StockMovementType {
 }
 
 enum OrderStatus {
-  OPEN
   PENDING
   CONFIRMED
   PROCESSING
@@ -518,6 +553,7 @@ enum OrderStatus {
   DELIVERED
   CANCELLED
   REFUNDED
+  OPEN
 }
 
 enum PaymentStatus {
@@ -545,5 +581,13 @@ enum BaselinkerSyncStatus {
   PENDING
   RUNNING
   SUCCESS
+  FAILED
+}
+
+enum NewsletterCampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
   FAILED
 }
