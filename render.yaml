@@ -4,8 +4,7 @@ services:
   - type: web
     name: wbtrade-api
     runtime: docker
-    dockerfile: ./Dockerfile
-    rootDir: .
+    dockerfilePath: ./Dockerfile
     plan: starter # Możesz zmienić na: free, starter, standard, pro
     region: frankfurt # EU region dla lepszej wydajności w Polsce
     branch: main # lub master - nazwa głównej gałęzi
@@ -89,7 +88,6 @@ services:
   - type: web
     name: wbtrade-meilisearch
     runtime: docker
-    dockerfileDir: ./
     dockerfilePath: ./Dockerfile.meilisearch
     plan: starter
     region: frankfurt
