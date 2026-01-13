@@ -5,6 +5,7 @@
 
 import { Request, Response } from 'express';
 import { shippingService } from '../services/shipping.service';
+import { shippingCalculatorService } from '../services/shipping-calculator.service';
 import { paymentService } from '../services/payment.service';
 import { OrdersService } from '../services/orders.service';
 import { CartService } from '../services/cart.service';
@@ -73,6 +74,129 @@ export async function getShippingMethods(req: Request, res: Response): Promise<v
   } catch (error) {
     console.error('Error getting shipping methods:', error);
     res.status(500).json({ message: 'Failed to get shipping methods' });
+  }
+}
+
+/**
+ * Calculate shipping cost for cart based on product tags
+ * This takes into account:
+ * - Gabaryt (oversized) products - individual shipping
+ * - Different wholesalers - separate packages
+ * - Paczkomat limits (X products in package tags)
+ */
+export async function calculateCartShipping(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = req.user?.userId;
+    const sessionId = req.headers['x-session-id'] as string | undefined;
+    
+    console.log('[calculateCartShipping] userId:', userId, 'sessionId:', sessionId);
+    
+    // Get user's cart - try multiple strategies to find cart with items
+    let cart;
+    
+    // Strategy 1: If user is logged in, try user's cart first
+    if (userId) {
+      cart = await cartService.getOrCreateCart(userId, undefined);
+      console.log('[calculateCartShipping] User cart items:', cart?.items?.length || 0);
+    }
+    
+    // Strategy 2: If no items found and sessionId provided, try merge or session cart
+    if ((!cart || !cart.items.length) && sessionId) {
+      if (userId) {
+        cart = await cartService.mergeCarts(userId, sessionId);
+        console.log('[calculateCartShipping] After merge items:', cart?.items?.length || 0);
+      } else {
+        cart = await cartService.getOrCreateCart(undefined, sessionId);
+        console.log('[calculateCartShipping] Session cart items:', cart?.items?.length || 0);
+      }
+    }
+    
+    if (!cart || !cart.items.length) {
+      console.log('[calculateCartShipping] Cart is empty or not found');
+      res.status(400).json({ message: 'Cart is empty' });
+      return;
+    }
+    
+    // Convert cart items to format needed by shipping calculator
+    const cartItems = cart.items.map(item => ({
+      variantId: item.variant.id,
+      quantity: item.quantity,
+    }));
+    
+    // Get available shipping methods with calculated prices
+    const shippingMethods = await shippingCalculatorService.getAvailableShippingMethods(cartItems);
+    
+    // Get detailed calculation for additional info
+    const detailedCalculation = await shippingCalculatorService.calculateShipping(cartItems);
+    
+    res.json({
+      shippingMethods: shippingMethods.map(method => ({
+        id: method.id,
+        name: method.name,
+        price: method.price,
+        currency: 'PLN',
+        available: method.available,
+        message: method.message,
+      })),
+      calculation: {
+        totalPackages: detailedCalculation.totalPackages,
+        totalPaczkomatPackages: detailedCalculation.totalPaczkomatPackages,
+        isPaczkomatAvailable: detailedCalculation.isPaczkomatAvailable,
+        breakdown: detailedCalculation.breakdown,
+        warnings: detailedCalculation.warnings,
+      },
+    });
+  } catch (error) {
+    console.error('Error calculating cart shipping:', error);
+    res.status(500).json({ message: 'Failed to calculate shipping' });
+  }
+}
+
+/**
+ * Calculate shipping for provided items (without needing cart)
+ * POST /checkout/shipping/calculate
+ */
+export async function calculateItemsShipping(req: Request, res: Response): Promise<void> {
+  try {
+    const { items } = req.body;
+    
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      res.status(400).json({ message: 'Items array is required' });
+      return;
+    }
+    
+    // Validate items format
+    const cartItems = items.map((item: any) => ({
+      variantId: item.variantId,
+      quantity: item.quantity || 1,
+    }));
+    
+    // Get available shipping methods with calculated prices
+    const shippingMethods = await shippingCalculatorService.getAvailableShippingMethods(cartItems);
+    
+    // Get detailed calculation for additional info
+    const detailedCalculation = await shippingCalculatorService.calculateShipping(cartItems);
+    
+    res.json({
+      shippingMethods: shippingMethods.map(method => ({
+        id: method.id,
+        name: method.name,
+        price: method.price,
+        currency: 'PLN',
+        available: method.available,
+        message: method.message,
+      })),
+      calculation: {
+        totalPackages: detailedCalculation.totalPackages,
+        totalPaczkomatPackages: detailedCalculation.totalPaczkomatPackages,
+        isPaczkomatAvailable: detailedCalculation.isPaczkomatAvailable,
+        breakdown: detailedCalculation.breakdown,
+        warnings: detailedCalculation.warnings,
+      },
+    });
+  } catch (error) {
+    console.error('Error calculating items shipping:', error);
+    res.status(500).json({ message: 'Failed to calculate shipping' });
   }
 }
 
@@ -207,18 +331,41 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
 
     const subtotal = items.reduce((sum: number, item: CartItemData) => sum + item.unitPrice * item.quantity, 0);
     
-    // Get shipping rate
-    const shippingRates = await shippingService.calculateRate(
-      shippingMethod as ShippingProviderId,
-      {
-        providerId: shippingMethod as ShippingProviderId,
-        origin: { postalCode: '00-001', city: 'Warszawa', country: 'PL' },
-        destination: { postalCode: '00-001', city: '', country: 'PL' },
-        packages: [{ weight: 1 }],
-        pickupPointCode,
+    // Get shipping rate using the new calculator based on product tags
+    // Convert cart items to format needed by shipping calculator
+    const cartItemsForShipping = cart.items.map(item => ({
+      variantId: item.variant.id,
+      quantity: item.quantity,
+    }));
+    
+    let shippingCost = 0;
+    try {
+      const shippingResult = await shippingCalculatorService.calculateShipping(cartItemsForShipping);
+      
+      // Get price for specific shipping method
+      const methods = await shippingCalculatorService.getAvailableShippingMethods(cartItemsForShipping);
+      const selectedMethod = methods.find(m => m.id === shippingMethod);
+      shippingCost = selectedMethod?.price || shippingResult.shippingCost;
+      
+      // Log any warnings for debugging
+      if (shippingResult.warnings.length > 0) {
+        console.log('📦 Shipping warnings:', shippingResult.warnings);
       }
-    );
-    const shippingCost = shippingRates[0]?.price || 0;
+    } catch (shippingError) {
+      // Fallback to old shipping calculation if new one fails
+      console.error('⚠️ Error with new shipping calculator, falling back:', shippingError);
+      const shippingRates = await shippingService.calculateRate(
+        shippingMethod as ShippingProviderId,
+        {
+          providerId: shippingMethod as ShippingProviderId,
+          origin: { postalCode: '00-001', city: 'Warszawa', country: 'PL' },
+          destination: { postalCode: '00-001', city: '', country: 'PL' },
+          packages: [{ weight: 1 }],
+          pickupPointCode,
+        }
+      );
+      shippingCost = shippingRates[0]?.price || 0;
+    }
 
     // Get payment fee
     const paymentMethods = await paymentService.getAvailablePaymentMethods();

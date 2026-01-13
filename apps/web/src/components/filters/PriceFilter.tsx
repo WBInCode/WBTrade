@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
 interface PriceFilterProps {
   priceRange?: { min: number; max: number };
 }
 
-export default function PriceFilter({ priceRange }: PriceFilterProps) {
+function PriceFilterContent({ priceRange }: PriceFilterProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -118,5 +118,13 @@ export default function PriceFilter({ priceRange }: PriceFilterProps) {
         </p>
       )}
     </div>
+  );
+}
+
+export default function PriceFilter(props: PriceFilterProps) {
+  return (
+    <Suspense fallback={<div className="mb-6 animate-pulse"><div className="h-6 bg-gray-200 rounded w-1/4 mb-3"></div><div className="h-10 bg-gray-200 rounded"></div></div>}>
+      <PriceFilterContent {...props} />
+    </Suspense>
   );
 }

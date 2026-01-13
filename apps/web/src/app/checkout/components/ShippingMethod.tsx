@@ -1,12 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShippingData } from '../page';
+import { checkoutApi } from '../../../lib/api';
 
 interface ShippingMethodProps {
   initialData: ShippingData;
   onSubmit: (data: ShippingData) => void;
   onBack: () => void;
+  onPriceChange?: (method: string, price: number) => void;
+  cartItems?: Array<{ variant: { id: string }; quantity: number }>;
 }
 
 type ShippingProviderId = 'inpost_paczkomat' | 'inpost_kurier' | 'dpd' | 'pocztex' | 'dhl' | 'gls';
@@ -18,15 +21,18 @@ interface ShippingProvider {
   estimatedDelivery: string;
   requiresPaczkomat?: boolean;
   badge?: string;
+  available: boolean;
+  message?: string;
 }
 
-const shippingProviders: ShippingProvider[] = [
-  { id: 'inpost_paczkomat', name: 'InPost Paczkomat', price: 9.99, estimatedDelivery: '1-2 dni', requiresPaczkomat: true, badge: 'Popularne' },
-  { id: 'inpost_kurier', name: 'Kurier InPost', price: 14.99, estimatedDelivery: '1-2 dni' },
-  { id: 'dpd', name: 'Kurier DPD', price: 15.99, estimatedDelivery: '1-3 dni' },
-  { id: 'pocztex', name: 'Pocztex Kurier48', price: 12.99, estimatedDelivery: '2-3 dni' },
-  { id: 'dhl', name: 'Kurier DHL', price: 19.99, estimatedDelivery: '1-2 dni' },
-  { id: 'gls', name: 'Kurier GLS', price: 13.99, estimatedDelivery: '2-4 dni' },
+// Default shipping providers (will be updated from API)
+const defaultShippingProviders: ShippingProvider[] = [
+  { id: 'inpost_paczkomat', name: 'InPost Paczkomat', price: 9.99, estimatedDelivery: '1-2 dni', requiresPaczkomat: true, badge: 'Popularne', available: true },
+  { id: 'inpost_kurier', name: 'Kurier InPost', price: 14.99, estimatedDelivery: '1-2 dni', available: true },
+  { id: 'dpd', name: 'Kurier DPD', price: 15.99, estimatedDelivery: '1-3 dni', available: true },
+  { id: 'pocztex', name: 'Pocztex Kurier48', price: 12.99, estimatedDelivery: '2-3 dni', available: true },
+  { id: 'dhl', name: 'Kurier DHL', price: 19.99, estimatedDelivery: '1-2 dni', available: true },
+  { id: 'gls', name: 'Kurier GLS', price: 13.99, estimatedDelivery: '2-4 dni', available: true },
 ];
 
 // Ikony dla dostawców
@@ -68,14 +74,80 @@ const ShippingIcon = ({ id }: { id: ShippingProviderId }) => {
   }
 };
 
-export default function ShippingMethod({ initialData, onSubmit, onBack }: ShippingMethodProps) {
+export default function ShippingMethod({ initialData, onSubmit, onBack, onPriceChange, cartItems }: ShippingMethodProps) {
+  const [shippingProviders, setShippingProviders] = useState<ShippingProvider[]>(defaultShippingProviders);
   const [selectedMethod, setSelectedMethod] = useState<ShippingProviderId>(
-    (initialData.method as ShippingProviderId) || 'inpost_paczkomat'
+    (initialData.method as ShippingProviderId) || 'inpost_kurier'
   );
   const [paczkomatCode, setPaczkomatCode] = useState(initialData.paczkomatCode || '');
   const [paczkomatAddress, setPaczkomatAddress] = useState('');
   const [error, setError] = useState('');
   const [isLoadingPoints, setIsLoadingPoints] = useState(false);
+  const [isLoadingPrices, setIsLoadingPrices] = useState(true);
+  const [shippingWarnings, setShippingWarnings] = useState<string[]>([]);
+
+  // Fetch shipping prices from API
+  useEffect(() => {
+    async function fetchShippingPrices() {
+      try {
+        setIsLoadingPrices(true);
+        
+        let response;
+        if (cartItems && cartItems.length > 0) {
+          // Use POST with items from props
+          const items = cartItems.map(item => ({
+            variantId: item.variant.id,
+            quantity: item.quantity,
+          }));
+          response = await checkoutApi.calculateItemsShipping(items);
+        } else {
+          // Fallback to GET (cart-based)
+          response = await checkoutApi.calculateCartShipping();
+        }
+        
+        // Update providers with calculated prices
+        const updatedProviders = defaultShippingProviders.map(provider => {
+          const apiMethod = response.shippingMethods.find((m: any) => m.id === provider.id);
+          if (apiMethod) {
+            return {
+              ...provider,
+              price: apiMethod.price,
+              available: apiMethod.available,
+              message: apiMethod.message,
+            };
+          }
+          return provider;
+        });
+        
+        setShippingProviders(updatedProviders);
+        setShippingWarnings(response.calculation?.warnings || []);
+        
+        // If current selection is unavailable, switch to first available
+        let newSelectedMethod = selectedMethod;
+        const currentAvailable = updatedProviders.find(p => p.id === selectedMethod)?.available;
+        if (!currentAvailable) {
+          const firstAvailable = updatedProviders.find(p => p.available);
+          if (firstAvailable) {
+            newSelectedMethod = firstAvailable.id;
+            setSelectedMethod(firstAvailable.id);
+          }
+        }
+        
+        // Update price in parent component with API price
+        const currentProvider = updatedProviders.find(p => p.id === newSelectedMethod);
+        if (currentProvider && onPriceChange) {
+          onPriceChange(newSelectedMethod, currentProvider.price);
+        }
+      } catch (err) {
+        console.error('Failed to fetch shipping prices:', err);
+        // Keep default prices on error
+      } finally {
+        setIsLoadingPrices(false);
+      }
+    }
+    
+    fetchShippingPrices();
+  }, [cartItems]);
 
   const selectedProvider = shippingProviders.find(p => p.id === selectedMethod);
 
@@ -98,6 +170,12 @@ export default function ShippingMethod({ initialData, onSubmit, onBack }: Shippi
   const handleMethodChange = (method: ShippingProviderId) => {
     setSelectedMethod(method);
     setError('');
+    
+    // Update price in parent component immediately
+    const provider = shippingProviders.find(p => p.id === method);
+    if (provider && onPriceChange) {
+      onPriceChange(method, provider.price);
+    }
   };
 
   const openPaczkomatWidget = async () => {
@@ -137,14 +215,44 @@ export default function ShippingMethod({ initialData, onSubmit, onBack }: Shippi
         <h2 className="text-lg font-semibold text-gray-900">Dostawa</h2>
       </div>
 
+      {/* Shipping warnings */}
+      {shippingWarnings.length > 0 && (
+        <div className="mx-6 mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <div className="flex items-start gap-3">
+            <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <div>
+              <p className="text-sm font-medium text-amber-800">Informacja o wysyłce</p>
+              {shippingWarnings.map((warning, idx) => (
+                <p key={idx} className="text-sm text-amber-700 mt-1">{warning}</p>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isLoadingPrices ? (
+        <div className="p-6 flex items-center justify-center">
+          <svg className="animate-spin w-6 h-6 text-orange-500" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+          <span className="ml-3 text-gray-600">Obliczanie kosztów wysyłki...</span>
+        </div>
+      ) : (
       <form onSubmit={handleSubmit}>
         <div className="divide-y divide-gray-100">
           {shippingProviders.map((provider) => (
             <div key={provider.id}>
               <label
                 className={`
-                  flex items-center justify-between px-6 py-4 cursor-pointer transition-colors
-                  ${selectedMethod === provider.id ? 'bg-gray-50' : 'hover:bg-gray-50'}
+                  flex items-center justify-between px-6 py-4 transition-colors
+                  ${!provider.available 
+                    ? 'opacity-50 cursor-not-allowed bg-gray-50' 
+                    : selectedMethod === provider.id 
+                      ? 'bg-gray-50 cursor-pointer' 
+                      : 'hover:bg-gray-50 cursor-pointer'}
                 `}
               >
                 <div className="flex items-center gap-4">
@@ -168,7 +276,8 @@ export default function ShippingMethod({ initialData, onSubmit, onBack }: Shippi
                     name="shipping"
                     value={provider.id}
                     checked={selectedMethod === provider.id}
-                    onChange={() => handleMethodChange(provider.id)}
+                    onChange={() => provider.available && handleMethodChange(provider.id)}
+                    disabled={!provider.available}
                     className="sr-only"
                   />
 
@@ -176,13 +285,22 @@ export default function ShippingMethod({ initialData, onSubmit, onBack }: Shippi
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2">
                       <span className="text-gray-900">{provider.name}</span>
-                      {provider.badge && (
+                      {provider.badge && provider.available && (
                         <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded">
                           {provider.badge}
                         </span>
                       )}
+                      {!provider.available && (
+                        <span className="px-2 py-0.5 bg-gray-200 text-gray-600 text-xs font-medium rounded">
+                          Niedostępne
+                        </span>
+                      )}
                     </div>
-                    <span className="text-xs text-gray-500">{provider.estimatedDelivery}</span>
+                    <span className="text-xs text-gray-500">
+                      {!provider.available && provider.message 
+                        ? provider.message 
+                        : provider.estimatedDelivery}
+                    </span>
                   </div>
                 </div>
 
@@ -283,6 +401,7 @@ export default function ShippingMethod({ initialData, onSubmit, onBack }: Shippi
           </button>
         </div>
       </form>
+      )}
     </div>
   );
 }

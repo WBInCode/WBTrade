@@ -16,6 +16,7 @@ interface Variant {
   name: string;
   sku: string;
   price: number;
+  compareAtPrice?: number | null;
   stock: number;
   attributes: Record<string, string>;
 }
