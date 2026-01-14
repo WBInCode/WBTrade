@@ -27,8 +27,8 @@ const productQuerySchema = z.object({
     return isNaN(num) || num < 1 ? 1 : Math.min(num, 1000);
   }),
   limit: z.string().optional().transform((val) => {
-    const num = parseInt(val || '20', 10);
-    return isNaN(num) || num < 1 ? 20 : Math.min(num, 100);
+    const num = parseInt(val || '48', 10);
+    return isNaN(num) || num < 1 ? 48 : Math.min(num, 500);
   }),
   category: z.string().max(100).optional(),
   minPrice: z.string().optional().transform((val) => {

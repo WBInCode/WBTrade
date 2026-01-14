@@ -12,7 +12,7 @@ import { CategoryFilter, PriceFilter, BrandFilter, SpecificationFilter } from '.
 import { Product, productsApi, ProductFiltersResponse, categoriesApi } from '../../lib/api';
 import { cleanCategoryName } from '../../lib/categories';
 
-const ITEMS_PER_PAGE = 12;
+const ITEMS_PER_PAGE = 48;
 
 // Spec labels in Polish
 const specLabels: Record<string, { label: string; unit?: string }> = {
