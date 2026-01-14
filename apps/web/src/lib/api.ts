@@ -152,6 +152,11 @@ async function fetchApi<T>(
   const { params, ...fetchConfig } = config;
   const url = buildUrl(endpoint, params);
   
+  // Debug: log the actual URL being called
+  if (typeof window !== 'undefined') {
+    console.log('[API] Fetching URL:', url);
+  }
+  
   const token = getAuthToken();
   
   const headers: HeadersInit = {
