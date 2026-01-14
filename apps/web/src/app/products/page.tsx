@@ -131,12 +131,17 @@ function ProductsContent() {
             sort: sortValue,
             brand: brand || undefined,
           });
+          console.log('[ProductsPage] API Response:', { 
+            total: response.total, 
+            totalPages: response.totalPages, 
+            productsCount: response.products.length 
+          });
           setProducts(response.products);
           setTotalProducts(response.total);
           setTotalPages(response.totalPages);
         }
       } catch (error) {
-        console.error('Failed to fetch products:', error);
+        console.error('[ProductsPage] Failed to fetch products:', error);
         setProducts([]);
         setTotalProducts(0);
         setTotalPages(1);
