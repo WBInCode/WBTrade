@@ -28,11 +28,7 @@ services:
         sync: false
         
       - key: DATABASE_URL
-        # Twój URL bazy Neon z pgbouncer (pooled connection)
-        sync: false
-        
-      - key: DIRECT_DATABASE_URL
-        # Twój URL bazy Neon BEZ pgbouncer (dla migracji Prisma)
+        # Twój URL bazy Neon (skopiuj z .env)
         sync: false
         
       - key: REDIS_URL
