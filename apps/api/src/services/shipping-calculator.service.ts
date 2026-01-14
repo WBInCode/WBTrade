@@ -5,10 +5,11 @@
  * 
  * Rules:
  * 1. GABARYT (oversized) - Each oversized product requires individual shipping, costs are summed
- * 2. HURTOWNIA (wholesaler) - Products from different wholesalers are shipped separately
- * 3. Non-oversized from same wholesaler - Packed together as one shipment
- * 4. Paczkomat limits - Tags like "X produktów w paczce" define package limits
- * 5. Gabaryt + non-gabaryt - Two separate shipments (costs sum up)
+ * 2. WYSYLKA_GABARYT - Forced shipping method for oversized products
+ * 3. HURTOWNIA (wholesaler) - Products from different wholesalers are shipped separately
+ * 4. Non-oversized from same wholesaler - Packed together as one shipment
+ * 5. Paczkomat limits - Tags like "X produktów w paczce" define package limits
+ * 6. Gabaryt + non-gabaryt - Two separate shipments (costs sum up)
  */
 
 import { prisma } from '../db';
