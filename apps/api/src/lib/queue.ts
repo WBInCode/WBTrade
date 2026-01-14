@@ -20,11 +20,33 @@ export const QUEUE_NAMES = {
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
 
 // Redis connection for BullMQ
-export const queueConnection = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  password: process.env.REDIS_PASSWORD || undefined,
-};
+// Parse REDIS_URL or fall back to individual env vars or localhost
+function getRedisConnection() {
+  const redisUrl = process.env.REDIS_URL;
+  
+  if (redisUrl) {
+    try {
+      const url = new URL(redisUrl);
+      return {
+        host: url.hostname,
+        port: parseInt(url.port) || 6379,
+        password: url.password || undefined,
+        tls: url.protocol === 'rediss:' ? {} : undefined, // Enable TLS for rediss://
+      };
+    } catch (error) {
+      console.error('❌ Failed to parse REDIS_URL:', error);
+    }
+  }
+  
+  // Fallback to individual env vars or localhost
+  return {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+    password: process.env.REDIS_PASSWORD || undefined,
+  };
+}
+
+export const queueConnection = getRedisConnection();
 
 // Queue instances
 const queues: Map<string, Queue> = new Map();

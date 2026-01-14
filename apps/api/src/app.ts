@@ -180,6 +180,21 @@ app.listen(PORT, async () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
   console.log(`📦 Environment: ${process.env.NODE_ENV || 'development'}`);
   
+  // Initialize Redis connection
+  try {
+    console.log('🔗 Initializing Redis connection...');
+    const { getRedisClient } = await import('./lib/redis');
+    const redis = getRedisClient();
+    await redis.ping();
+    console.log('✅ Redis connection verified');
+  } catch (error) {
+    console.error('❌ Redis initialization failed:', error);
+    if (process.env.NODE_ENV === 'production' && !process.env.REDIS_URL) {
+      console.error('💥 CRITICAL: REDIS_URL is not set in production!');
+    }
+    console.warn('⚠️  Application will continue but Redis-dependent features may not work');
+  }
+  
   // Initialize Meilisearch
   await initializeMeilisearch();
   

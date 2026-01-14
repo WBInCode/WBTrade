@@ -12,25 +12,42 @@ export function getRedisClient(): Redis {
     const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
     
     redisClient = new Redis(redisUrl, {
-      maxRetriesPerRequest: 3,
+      maxRetriesPerRequest: 10,
       retryStrategy(times) {
-        const delay = Math.min(times * 50, 2000);
+        if (times > 10) {
+          console.error('❌ Redis: Max retry attempts reached');
+          return null; // Stop retrying
+        }
+        const delay = Math.min(times * 100, 3000);
+        console.log(`🔄 Redis: Retry attempt ${times}, waiting ${delay}ms...`);
         return delay;
       },
       enableReadyCheck: true,
-      lazyConnect: true,
+      lazyConnect: false, // Connect immediately
+      connectTimeout: 10000, // 10 seconds
     });
 
     redisClient.on('error', (err) => {
-      console.error('Redis connection error:', err);
+      console.error('❌ Redis connection error:', err.message);
+      if (!process.env.REDIS_URL) {
+        console.error('⚠️  REDIS_URL environment variable is not set!');
+      }
     });
 
     redisClient.on('connect', () => {
-      console.log('✅ Redis connected');
+      console.log('✅ Redis connected successfully');
     });
 
     redisClient.on('ready', () => {
-      console.log('✅ Redis ready');
+      console.log('✅ Redis ready to accept commands');
+    });
+
+    redisClient.on('close', () => {
+      console.warn('⚠️  Redis connection closed');
+    });
+
+    redisClient.on('reconnecting', () => {
+      console.log('🔄 Redis reconnecting...');
     });
   }
 
