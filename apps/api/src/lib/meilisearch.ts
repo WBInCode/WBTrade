@@ -1,7 +1,8 @@
 import { MeiliSearch, Index } from 'meilisearch';
 
-const MEILISEARCH_HOST = process.env.MEILISEARCH_HOST || 'http://localhost:7700';
-const MEILISEARCH_API_KEY = process.env.MEILISEARCH_API_KEY || 'wbtrade_meili_key_change_in_production';
+// Support both MEILI_HOST and MEILISEARCH_HOST for compatibility
+const MEILISEARCH_HOST = process.env.MEILI_HOST || process.env.MEILISEARCH_HOST || 'http://localhost:7700';
+const MEILISEARCH_API_KEY = process.env.MEILI_MASTER_KEY || process.env.MEILISEARCH_API_KEY || 'wbtrade_meili_key_change_in_production';
 
 export const meiliClient = new MeiliSearch({
   host: MEILISEARCH_HOST,
@@ -108,6 +109,34 @@ const POLISH_STOP_WORDS: string[] = [
  */
 export async function initializeMeilisearch(): Promise<void> {
   try {
+    // Check if Meilisearch is configured
+    if (!process.env.MEILI_HOST && !process.env.MEILISEARCH_HOST) {
+      console.warn('⚠️  Meilisearch not configured - search functionality will be limited');
+      console.warn('   Set MEILI_HOST environment variable to enable Meilisearch');
+      return;
+    }
+
+    console.log('🔍 Initializing Meilisearch...');
+    console.log(`   Host: ${MEILISEARCH_HOST}`);
+
+    // Test connection with timeout
+    const healthCheck = await Promise.race([
+      meiliClient.health(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Connection timeout')), 5000)
+      )
+    ]).catch(err => {
+      console.warn('⚠️  Meilisearch connection failed:', err.message);
+      console.warn('   Application will continue without search functionality');
+      return null;
+    });
+
+    if (!healthCheck) {
+      return; // Skip initialization if connection failed
+    }
+
+    console.log('✅ Meilisearch connection successful');
+    
     // Create or get products index
     const index = await meiliClient.getIndex(PRODUCTS_INDEX).catch(async () => {
       console.log('Creating products index...');
@@ -187,7 +216,9 @@ export async function initializeMeilisearch(): Promise<void> {
 
     console.log('✓ Meilisearch initialized successfully');
   } catch (error) {
-    console.error('Failed to initialize Meilisearch:', error);
+    console.error('❌ Failed to initialize Meilisearch:', error instanceof Error ? error.message : error);
+    console.warn('⚠️  Application will continue without search functionality');
+    // Don't throw - allow app to continue without Meilisearch
   }
 }
 
