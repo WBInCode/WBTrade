@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../db';
 import { UserRole } from '@prisma/client';
+import { queueEmail } from '../lib/queue';
 import {
   blacklistToken,
   isTokenBlacklisted,
@@ -241,13 +242,21 @@ export class SecureAuthService {
     // Log registration
     await logRegistration(user.id, normalizedEmail, ipAddress, userAgent);
 
-    // TODO: Send verification email
-    // await emailService.sendVerificationEmail(normalizedEmail, verificationToken);
+    // Send verification email
+    const verifyUrl = `${process.env.FRONTEND_URL || 'https://wb-trade.pl'}/verify-email?token=${verificationToken}`;
+    await queueEmail({
+      to: normalizedEmail,
+      template: 'email-verification',
+      context: {
+        name: user.email.split('@')[0],
+        verifyUrl,
+      },
+    });
 
     return {
       user: this.sanitizeUser(user),
       tokens,
-      verificationToken, // In production, remove this and only send via email
+      verificationToken: process.env.NODE_ENV !== 'production' ? verificationToken : undefined, // Only in dev
     };
   }
 
@@ -672,11 +681,19 @@ export class SecureAuthService {
     const verificationToken = this.generateSecureToken();
     await storeEmailVerificationToken(user.id, verificationToken);
 
-    // TODO: Send verification email
-    // await emailService.sendVerificationEmail(user.email, verificationToken);
+    // Send verification email
+    const verifyUrl = `${process.env.FRONTEND_URL || 'https://wb-trade.pl'}/verify-email?token=${verificationToken}`;
+    await queueEmail({
+      to: user.email,
+      template: 'email-verification',
+      context: {
+        name: user.email.split('@')[0],
+        verifyUrl,
+      },
+    });
 
     // For development
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV !== 'production') {
       console.log(`[DEV] Verification token for ${user.email}: ${verificationToken}`);
     }
 

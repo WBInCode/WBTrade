@@ -4,7 +4,11 @@
  */
 
 import { Worker, Job } from 'bullmq';
+import { Resend } from 'resend';
 import { QUEUE_NAMES, queueConnection } from '../lib/queue';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@wb-trade.pl';
 
 interface EmailJobData {
   to: string;
@@ -79,8 +83,7 @@ const EMAIL_TEMPLATES: Record<string, (context: Record<string, any>) => { subjec
 };
 
 /**
- * Send email using configured provider
- * In production, replace with actual email service (Nodemailer, Resend, SendGrid, etc.)
+ * Send email using Resend
  */
 async function sendEmail(
   to: string,
@@ -88,19 +91,34 @@ async function sendEmail(
   html: string,
   text: string
 ): Promise<void> {
-  // TODO: Replace with actual email sending implementation
-  // Example with Nodemailer:
-  // const transporter = nodemailer.createTransport({...});
-  // await transporter.sendMail({ from, to, subject, html, text });
-  
-  console.log(`[EmailWorker] Sending email to ${to}`);
-  console.log(`[EmailWorker] Subject: ${subject}`);
-  console.log(`[EmailWorker] Text preview: ${text.substring(0, 100)}...`);
-  
-  // Simulate sending delay
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  
-  console.log(`[EmailWorker] Email sent successfully to ${to}`);
+  try {
+    // If no API key configured, log only (development mode)
+    if (!process.env.RESEND_API_KEY) {
+      console.log(`[EmailWorker] No RESEND_API_KEY - logging email instead`);
+      console.log(`[EmailWorker] To: ${to}`);
+      console.log(`[EmailWorker] Subject: ${subject}`);
+      console.log(`[EmailWorker] Text preview: ${text.substring(0, 100)}...`);
+      return;
+    }
+
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: [to],
+      subject,
+      html,
+      text,
+    });
+
+    if (error) {
+      console.error(`[EmailWorker] Resend error:`, error);
+      throw new Error(`Failed to send email: ${error.message}`);
+    }
+
+    console.log(`[EmailWorker] Email sent successfully to ${to}`, data);
+  } catch (error: any) {
+    console.error(`[EmailWorker] Failed to send email to ${to}:`, error);
+    throw error;
+  }
 }
 
 /**
