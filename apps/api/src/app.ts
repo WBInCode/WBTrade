@@ -68,6 +68,10 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   'http://localhost:3002',
+  // Production domains
+  'https://wb-trade-admin.vercel.app',
+  'https://wbtrade.pl',
+  'https://www.wbtrade.pl',
 ];
 
 // Parse FRONTEND_URL if it's a comma-separated string
