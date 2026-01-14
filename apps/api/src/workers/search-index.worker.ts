@@ -4,14 +4,8 @@
  */
 
 import { Worker, Job } from 'bullmq';
-import { QUEUE_NAMES } from '../lib/queue';
+import { QUEUE_NAMES, queueConnection } from '../lib/queue';
 import { SearchService } from '../services/search.service';
-
-const connection = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  password: process.env.REDIS_PASSWORD || undefined,
-};
 
 const searchService = new SearchService();
 
@@ -60,7 +54,7 @@ export function startSearchIndexWorker(): Worker {
       }
     },
     {
-      connection,
+      connection: queueConnection,
       concurrency: 5, // Process up to 5 jobs concurrently
     }
   );
