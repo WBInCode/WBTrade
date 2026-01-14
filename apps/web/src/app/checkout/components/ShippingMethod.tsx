@@ -12,7 +12,7 @@ interface ShippingMethodProps {
   cartItems?: Array<{ variant: { id: string }; quantity: number }>;
 }
 
-type ShippingProviderId = 'inpost_paczkomat' | 'inpost_kurier' | 'dpd' | 'pocztex' | 'dhl' | 'gls';
+type ShippingProviderId = 'inpost_paczkomat' | 'inpost_kurier' | 'dpd' | 'pocztex' | 'dhl' | 'gls' | 'wysylka_gabaryt';
 
 interface ShippingProvider {
   id: ShippingProviderId;
@@ -23,6 +23,7 @@ interface ShippingProvider {
   badge?: string;
   available: boolean;
   message?: string;
+  forced?: boolean;
 }
 
 // Default shipping providers (will be updated from API)
@@ -69,6 +70,14 @@ const ShippingIcon = ({ id }: { id: ShippingProviderId }) => {
           <span className="text-[#F7D117] text-[10px] font-bold">GLS</span>
         </div>
       );
+    case 'wysylka_gabaryt':
+      return (
+        <div className="flex items-center justify-center w-12 h-7 bg-orange-500 rounded px-1">
+          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+        </div>
+      );
     default:
       return null;
   }
@@ -106,7 +115,7 @@ export default function ShippingMethod({ initialData, onSubmit, onBack, onPriceC
         }
         
         // Update providers with calculated prices
-        const updatedProviders = defaultShippingProviders.map(provider => {
+        const updatedProviders: ShippingProvider[] = defaultShippingProviders.map(provider => {
           const apiMethod = response.shippingMethods.find((m: any) => m.id === provider.id);
           if (apiMethod) {
             return {
@@ -114,22 +123,45 @@ export default function ShippingMethod({ initialData, onSubmit, onBack, onPriceC
               price: apiMethod.price,
               available: apiMethod.available,
               message: apiMethod.message,
+              forced: apiMethod.forced,
             };
           }
           return provider;
         });
         
+        // Dodaj opcję "Wysyłka gabaryt" jeśli jest w odpowiedzi API
+        const gabarytMethod = response.shippingMethods.find((m: any) => m.id === 'wysylka_gabaryt');
+        if (gabarytMethod) {
+          updatedProviders.unshift({
+            id: 'wysylka_gabaryt',
+            name: gabarytMethod.name || 'Wysyłka gabaryt',
+            price: gabarytMethod.price,
+            estimatedDelivery: '2-5 dni roboczych',
+            available: gabarytMethod.available,
+            message: gabarytMethod.message,
+            badge: 'Wymagane',
+            forced: true,
+          });
+        }
+        
         setShippingProviders(updatedProviders);
         setShippingWarnings(response.calculation?.warnings || []);
         
-        // If current selection is unavailable, switch to first available
+        // Jeśli jest wymuszona metoda (gabaryt), automatycznie ją wybierz
         let newSelectedMethod = selectedMethod;
-        const currentAvailable = updatedProviders.find(p => p.id === selectedMethod)?.available;
-        if (!currentAvailable) {
-          const firstAvailable = updatedProviders.find(p => p.available);
-          if (firstAvailable) {
-            newSelectedMethod = firstAvailable.id;
-            setSelectedMethod(firstAvailable.id);
+        const forcedMethod = updatedProviders.find(p => p.forced && p.available);
+        if (forcedMethod) {
+          newSelectedMethod = forcedMethod.id;
+          setSelectedMethod(forcedMethod.id);
+        } else {
+          // If current selection is unavailable, switch to first available
+          const currentAvailable = updatedProviders.find(p => p.id === selectedMethod)?.available;
+          if (!currentAvailable) {
+            const firstAvailable = updatedProviders.find(p => p.available);
+            if (firstAvailable) {
+              newSelectedMethod = firstAvailable.id;
+              setSelectedMethod(firstAvailable.id);
+            }
           }
         }
         
@@ -168,6 +200,12 @@ export default function ShippingMethod({ initialData, onSubmit, onBack, onPriceC
   };
 
   const handleMethodChange = (method: ShippingProviderId) => {
+    // Nie pozwól na zmianę jeśli jest wymuszona metoda gabaryt
+    const forcedMethod = shippingProviders.find(p => p.forced && p.available);
+    if (forcedMethod && method !== forcedMethod.id) {
+      return; // Blokuj zmianę - metoda jest wymuszona
+    }
+    
     setSelectedMethod(method);
     setError('');
     
@@ -243,16 +281,23 @@ export default function ShippingMethod({ initialData, onSubmit, onBack, onPriceC
       ) : (
       <form onSubmit={handleSubmit}>
         <div className="divide-y divide-gray-100">
-          {shippingProviders.map((provider) => (
+          {shippingProviders.map((provider) => {
+            // Sprawdź czy jest wymuszona metoda i czy to nie jest ta metoda
+            const forcedMethod = shippingProviders.find(p => p.forced && p.available);
+            const isDisabledByForced = forcedMethod && provider.id !== forcedMethod.id;
+            const isDisabled = !provider.available || isDisabledByForced;
+            
+            return (
             <div key={provider.id}>
               <label
                 className={`
                   flex items-center justify-between px-6 py-4 transition-colors
-                  ${!provider.available 
+                  ${isDisabled 
                     ? 'opacity-50 cursor-not-allowed bg-gray-50' 
                     : selectedMethod === provider.id 
-                      ? 'bg-gray-50 cursor-pointer' 
+                      ? 'bg-orange-50 border-l-4 border-orange-500 cursor-pointer' 
                       : 'hover:bg-gray-50 cursor-pointer'}
+                  ${provider.forced && selectedMethod === provider.id ? 'bg-orange-100 border-l-4 border-orange-500' : ''}
                 `}
               >
                 <div className="flex items-center gap-4">
@@ -264,6 +309,7 @@ export default function ShippingMethod({ initialData, onSubmit, onBack, onPriceC
                         ? 'border-orange-500'
                         : 'border-gray-300'
                       }
+                      ${provider.forced ? 'bg-orange-100' : ''}
                     `}
                   >
                     {selectedMethod === provider.id && (
@@ -276,16 +322,21 @@ export default function ShippingMethod({ initialData, onSubmit, onBack, onPriceC
                     name="shipping"
                     value={provider.id}
                     checked={selectedMethod === provider.id}
-                    onChange={() => provider.available && handleMethodChange(provider.id)}
-                    disabled={!provider.available}
+                    onChange={() => !isDisabled && handleMethodChange(provider.id)}
+                    disabled={isDisabled}
                     className="sr-only"
                   />
 
                   {/* Name, badge, and delivery time */}
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-900">{provider.name}</span>
-                      {provider.badge && provider.available && (
+                      <span className="text-gray-900 font-medium">{provider.name}</span>
+                      {provider.forced && provider.available && (
+                        <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded border border-orange-300">
+                          Wymagane
+                        </span>
+                      )}
+                      {provider.badge && provider.available && !provider.forced && (
                         <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded">
                           {provider.badge}
                         </span>
@@ -295,11 +346,18 @@ export default function ShippingMethod({ initialData, onSubmit, onBack, onPriceC
                           Niedostępne
                         </span>
                       )}
+                      {isDisabledByForced && provider.available && (
+                        <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs font-medium rounded">
+                          Zablokowane
+                        </span>
+                      )}
                     </div>
                     <span className="text-xs text-gray-500">
                       {!provider.available && provider.message 
                         ? provider.message 
-                        : provider.estimatedDelivery}
+                        : isDisabledByForced 
+                          ? 'Niedostępne dla produktów gabarytowych'
+                          : provider.estimatedDelivery}
                     </span>
                   </div>
                 </div>
@@ -371,7 +429,8 @@ export default function ShippingMethod({ initialData, onSubmit, onBack, onPriceC
                 </div>
               )}
             </div>
-          ))}
+          );
+          })}
         </div>
 
         {/* Info */}
