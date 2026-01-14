@@ -134,11 +134,6 @@ function ProductsContent() {
           setProducts(response.products);
           setTotalProducts(response.total);
           setTotalPages(response.totalPages);
-          console.log('[ProductsPage] Pagination data:', { 
-            total: response.total, 
-            totalPages: response.totalPages,
-            currentPage 
-          });
         }
       } catch (error) {
         console.error('[ProductsPage] Failed to fetch products:', error);
