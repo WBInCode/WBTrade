@@ -73,8 +73,6 @@ function PaginationContent({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  console.log('[Pagination] Rendering with:', { currentPage, totalPages, totalItems });
-
   // Don't show pagination if only 1 page
   if (totalPages <= 1) return null;
 
