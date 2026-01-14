@@ -211,7 +211,7 @@ export async function initializeMeilisearch(): Promise<void> {
 
     // Configure pagination
     await meiliClient.index(PRODUCTS_INDEX).updatePagination({
-      maxTotalHits: 10000,
+      maxTotalHits: 50000, // Increased for large product catalogs
     });
 
     console.log('✓ Meilisearch initialized successfully');

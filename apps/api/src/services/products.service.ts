@@ -412,9 +412,9 @@ export class ProductsService {
         products.find(p => p.id === id)
       ).filter(Boolean);
 
-      // Use estimatedTotalHits if available, otherwise fallback to hits.length
-      // estimatedTotalHits should contain the total count of matching documents
-      const total = results.estimatedTotalHits ?? results.totalHits ?? results.hits.length;
+      // Use estimatedTotalHits from MeiliSearch
+      // Note: estimatedTotalHits is limited by maxTotalHits setting (default 10000)
+      const total = results.estimatedTotalHits ?? results.hits.length;
 
       // Transform products
       let transformedProducts = transformProducts(sortedProducts as any[]);
