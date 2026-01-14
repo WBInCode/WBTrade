@@ -3,7 +3,16 @@
  * Handles all communication with the backend API
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 
+  (typeof window !== 'undefined' && window.location.hostname === 'wbtrade.pl'
+    ? 'https://wbtrade-iv71.onrender.com/api'
+    : 'http://localhost:5000/api');
+
+// Debug: log API URL in browser console
+if (typeof window !== 'undefined') {
+  console.log('[API] Using API_BASE_URL:', API_BASE_URL);
+  console.log('[API] NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
+}
 
 // Types for API responses
 interface ApiResponse<T> {
