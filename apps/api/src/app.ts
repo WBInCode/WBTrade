@@ -72,7 +72,6 @@ const allowedOrigins = [
   'https://wb-trade-admin.vercel.app',
   'https://wbtrade.pl',
   'https://www.wbtrade.pl',
-  'https://www.wb-trade.pl',
 ];
 
 // Parse FRONTEND_URL if it's a comma-separated string
