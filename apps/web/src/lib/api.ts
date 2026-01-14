@@ -948,6 +948,7 @@ export const checkoutApi = {
         currency: string;
         available: boolean;
         message?: string;
+        forced?: boolean;
       }>;
       calculation: {
         totalPackages: number;
@@ -968,6 +969,7 @@ export const checkoutApi = {
         currency: string;
         available: boolean;
         message?: string;
+        forced?: boolean;
       }>;
       calculation: {
         totalPackages: number;
