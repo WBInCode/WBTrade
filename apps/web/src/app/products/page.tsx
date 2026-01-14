@@ -121,16 +121,6 @@ function ProductsContent() {
           // Use the sort value from URL params directly (already in API format)
           const sortValue = sort as 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'newest';
           
-          console.log('[ProductsPage] Calling API with params:', {
-            page: currentPage,
-            limit: ITEMS_PER_PAGE,
-            category: currentCategorySlug || 'EMPTY',
-            minPrice,
-            maxPrice,
-            search: searchQuery,
-            sort: sortValue,
-            brand,
-          });
           const response = await productsApi.getAll({
             page: currentPage,
             limit: ITEMS_PER_PAGE,
@@ -140,11 +130,6 @@ function ProductsContent() {
             search: searchQuery || undefined,
             sort: sortValue,
             brand: brand || undefined,
-          });
-          console.log('[ProductsPage] API Response:', { 
-            total: response.total, 
-            totalPages: response.totalPages, 
-            productsCount: response.products.length 
           });
           setProducts(response.products);
           setTotalProducts(response.total);
