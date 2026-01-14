@@ -111,27 +111,56 @@ export class ProductsService {
    * Get all descendant category IDs for a given category slug or ID (including the category itself)
    */
   private async getAllCategoryIds(categorySlugOrId: string): Promise<string[]> {
-    // Try to find the category by slug first, then by ID
-    let category = await prisma.category.findUnique({
+    // Try to find the category by exact slug first
+    let categories = await prisma.category.findMany({
       where: { slug: categorySlugOrId },
       select: { id: true },
     });
 
-    // If not found by slug, try by ID
-    if (!category) {
-      category = await prisma.category.findUnique({
-        where: { id: categorySlugOrId },
+    // If not found by exact slug, try with common prefixes from all suppliers
+    if (categories.length === 0) {
+      const prefixes = ['btp-', 'hp-', 'leker-', 'ikonka-'];
+      
+      // Find ALL matching categories from all suppliers
+      categories = await prisma.category.findMany({
+        where: { 
+          OR: [
+            ...prefixes.map(prefix => ({
+              slug: {
+                startsWith: `${prefix}${categorySlugOrId}`
+              }
+            })),
+            // Also match if slug contains the search term (removes numeric IDs)
+            {
+              slug: {
+                contains: categorySlugOrId,
+                mode: 'insensitive' as const
+              }
+            }
+          ]
+        },
         select: { id: true },
       });
     }
 
-    if (!category) {
+    // If not found by slug patterns, try by ID
+    if (categories.length === 0) {
+      const categoryById = await prisma.category.findUnique({
+        where: { id: categorySlugOrId },
+        select: { id: true },
+      });
+      if (categoryById) {
+        categories = [categoryById];
+      }
+    }
+
+    if (categories.length === 0) {
       return [];
     }
 
-    const categoryIds: string[] = [category.id];
+    const categoryIds: string[] = categories.map(c => c.id);
 
-    // Recursively get all descendant categories
+    // Recursively get all descendant categories for each found category
     const getDescendants = async (parentIds: string[]): Promise<void> => {
       const children = await prisma.category.findMany({
         where: {
@@ -148,7 +177,7 @@ export class ProductsService {
       }
     };
 
-    await getDescendants([category.id]);
+    await getDescendants(categoryIds);
 
     return categoryIds;
   }

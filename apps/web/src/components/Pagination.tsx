@@ -18,7 +18,7 @@ function PaginationContent({
   currentPage, 
   totalPages, 
   totalItems,
-  itemsPerPage = 12,
+  itemsPerPage = 48,
   onPageChange,
   baseUrl,
   showInfo = true

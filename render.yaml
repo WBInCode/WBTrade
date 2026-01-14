@@ -7,7 +7,7 @@ services:
     dockerfilePath: ./Dockerfile
     plan: free # Darmowy plan - serwis usypia się po 15 min nieaktywności
     region: frankfurt # EU region dla lepszej wydajności w Polsce
-    branch: praca-nad-deployem-api # Branch z poprawkami Redis i Meilisearch
+    branch: main # Branch główny z wszystkimi poprawkami
     healthCheckPath: /health
     autoDeploy: true # Automatyczne wdrożenia przy push do głównej gałęzi
     
