@@ -74,7 +74,6 @@ function PaginationContent({
   };
 
   // Don't show pagination if only 1 page
-  console.log('[Pagination] Props:', { currentPage, totalPages, totalItems });
   if (totalPages <= 1) return null;
 
   return (

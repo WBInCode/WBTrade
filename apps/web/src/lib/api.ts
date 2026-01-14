@@ -8,12 +8,6 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ||
     ? 'https://wbtrade-iv71.onrender.com/api'
     : 'http://localhost:5000/api');
 
-// Debug: log API URL in browser console
-if (typeof window !== 'undefined') {
-  console.log('[API] Using API_BASE_URL:', API_BASE_URL);
-  console.log('[API] NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
-}
-
 // Types for API responses
 interface ApiResponse<T> {
   data: T;
@@ -151,11 +145,6 @@ async function fetchApi<T>(
 ): Promise<T> {
   const { params, ...fetchConfig } = config;
   const url = buildUrl(endpoint, params);
-  
-  // Debug: log the actual URL being called
-  if (typeof window !== 'undefined') {
-    console.log('[API] Fetching URL:', url);
-  }
   
   const token = getAuthToken();
   

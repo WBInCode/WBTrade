@@ -76,21 +76,32 @@ function transformProducts(products: any[]): any[] {
 }
 
 /**
- * Filter out products with zero stock that are older than specified days
+ * Filter out products with zero stock that haven't been updated in specified days
+ * Only hides products that have 0 stock AND haven't had inventory updates recently
  */
 function filterOldZeroStockProducts(products: any[], days: number = 14): any[] {
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - days);
   
   return products.filter(product => {
-    // If product has stock > 0, keep it
+    // If product has stock > 0, always keep it
     if (product.stock > 0) return true;
     
-    // If product was created within the last X days, keep it (even with 0 stock)
-    const createdAt = new Date(product.createdAt);
-    if (createdAt > cutoffDate) return true;
+    // Product has 0 stock - check if it was recently updated
+    // Use updatedAt instead of createdAt to check for recent inventory changes
+    const updatedAt = new Date(product.updatedAt);
+    if (updatedAt > cutoffDate) return true;
     
-    // Product has 0 stock and is older than X days - hide it
+    // Also check variants for recent updates (inventory syncs update variants)
+    if (product.variants && product.variants.length > 0) {
+      const hasRecentVariantUpdate = product.variants.some((variant: any) => {
+        const variantUpdated = new Date(variant.updatedAt);
+        return variantUpdated > cutoffDate;
+      });
+      if (hasRecentVariantUpdate) return true;
+    }
+    
+    // Product has 0 stock and hasn't been updated in X days - hide it
     return false;
   });
 }
