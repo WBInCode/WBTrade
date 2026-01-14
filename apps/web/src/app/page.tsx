@@ -7,6 +7,9 @@ import RecommendedProducts from '../components/RecommendedProducts';
 import { productsApi, Product } from '../lib/api';
 import Link from 'next/link';
 
+// Force dynamic rendering - don't wait for API during build
+export const dynamic = 'force-dynamic';
+
 // Demo products for Super Price section (when API has no products)
 const demoSuperPriceProducts: Product[] = [
   {
