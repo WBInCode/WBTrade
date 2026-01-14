@@ -73,6 +73,7 @@ function PaginationContent({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Don't show pagination if only 1 page
   if (totalPages <= 1) return null;
 
   return (
