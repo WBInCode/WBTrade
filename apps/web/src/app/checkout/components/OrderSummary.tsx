@@ -26,6 +26,7 @@ const shippingMethodNames: Record<ShippingData['method'], string> = {
   pocztex: 'Pocztex Kurier48',
   dhl: 'Kurier DHL',
   gls: 'Kurier GLS',
+  wysylka_gabaryt: 'Wysyłka gabaryt',
 };
 
 const paymentMethodNames: Record<PaymentData['method'], string> = {

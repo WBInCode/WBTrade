@@ -5,10 +5,11 @@
  * 
  * Rules:
  * 1. GABARYT (oversized) - Each oversized product requires individual shipping, costs are summed
- * 2. HURTOWNIA (wholesaler) - Products from different wholesalers are shipped separately
- * 3. Non-oversized from same wholesaler - Packed together as one shipment
- * 4. Paczkomat limits - Tags like "X produktów w paczce" define package limits
- * 5. Gabaryt + non-gabaryt - Two separate shipments (costs sum up)
+ * 2. WYSYLKA_GABARYT - Forced shipping method for oversized products
+ * 3. HURTOWNIA (wholesaler) - Products from different wholesalers are shipped separately
+ * 4. Non-oversized from same wholesaler - Packed together as one shipment
+ * 5. Paczkomat limits - Tags like "X produktów w paczce" define package limits
+ * 6. Gabaryt + non-gabaryt - Two separate shipments (costs sum up)
  */
 
 import { prisma } from '../db';
@@ -40,6 +41,7 @@ export const SHIPPING_PRICES = {
   fedex: 29.99,
   ups: 29.99,
   gabaryt_base: 49.99,
+  wysylka_gabaryt: 79.99,
 } as const;
 
 export interface CartItemForShipping {
@@ -401,6 +403,19 @@ export class ShippingCalculatorService {
       },
     ];
     
+    // Jeśli są produkty gabarytowe, dodaj wymuszoną opcję "Wysyłka gabaryt"
+    const hasGabarytPackages = calculation.packages.some(p => p.type === 'gabaryt');
+    if (hasGabarytPackages) {
+      methods.unshift({
+        id: 'wysylka_gabaryt',
+        name: 'Wysyłka gabaryt',
+        price: totalGabarytCost || SHIPPING_PRICES.wysylka_gabaryt,
+        available: true,
+        message: 'Wymagana dla produktów gabarytowych',
+        forced: true, // Ta opcja jest wymuszona i nie może być zmieniona
+      } as any);
+    }
+    
     return methods;
   }
   
@@ -420,8 +435,18 @@ export class ShippingCalculatorService {
       const methods: ShippingMethodForPackage[] = [];
       
       if (pkg.type === 'gabaryt') {
-        // Gabaryt packages - only courier options available
+        // Gabaryt packages - wymuszona opcja "Wysyłka gabaryt" + inne kurierskie
         const gabarytPrice = pkg.gabarytPrice || SHIPPING_PRICES.gabaryt_base;
+        
+        // Dodaj wymuszoną opcję "Wysyłka gabaryt" na początek
+        methods.push({
+          id: 'wysylka_gabaryt',
+          name: 'Wysyłka gabaryt',
+          price: gabarytPrice,
+          available: true,
+          message: 'Wymagana dla produktów gabarytowych',
+          estimatedDelivery: '2-5 dni roboczych',
+        });
         
         methods.push({
           id: 'inpost_paczkomat',
@@ -435,35 +460,39 @@ export class ShippingCalculatorService {
           id: 'inpost_kurier',
           name: 'Kurier InPost',
           price: gabarytPrice,
-          available: true,
+          available: false,
+          message: 'Wymagana wysyłka gabaryt',
           estimatedDelivery: '1-2 dni',
         });
         methods.push({
           id: 'dpd',
           name: 'Kurier DPD',
           price: gabarytPrice,
-          available: true,
+          available: false,
+          message: 'Wymagana wysyłka gabaryt',
           estimatedDelivery: '1-3 dni',
         });
         methods.push({
           id: 'pocztex',
           name: 'Pocztex Kurier48',
           price: gabarytPrice,
-          available: true,
+          available: false,
+          message: 'Wymagana wysyłka gabaryt',
           estimatedDelivery: '2-3 dni',
         });
         methods.push({
           id: 'dhl',
           name: 'Kurier DHL',
           price: gabarytPrice,
-          available: true,
+          available: false,
+          message: 'Wymagana wysyłka gabaryt',
           estimatedDelivery: '1-2 dni',
         });
         methods.push({
           id: 'gls',
           name: 'Kurier GLS',
           price: gabarytPrice,
-          available: true,
+          available: false,
           estimatedDelivery: '2-4 dni',
         });
       } else {
@@ -516,7 +545,11 @@ export class ShippingCalculatorService {
       }
       
       // Set default selected method
-      const defaultMethod = pkg.isPaczkomatAvailable ? 'inpost_paczkomat' : 'inpost_kurier';
+      // Dla paczek gabarytowych - wymuszona wysyłka gabaryt
+      // Dla standardowych - paczkomat jeśli dostępny, w przeciwnym razie kurier
+      const defaultMethod = pkg.type === 'gabaryt' 
+        ? 'wysylka_gabaryt' 
+        : (pkg.isPaczkomatAvailable ? 'inpost_paczkomat' : 'inpost_kurier');
       
       packagesWithOptions.push({
         package: pkg,
