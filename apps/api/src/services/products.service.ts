@@ -372,6 +372,9 @@ export class ProductsService {
         offset: (page - 1) * limit,
         filter: meiliFilters.join(' AND '),
         sort: meiliSort,
+        // Ensure we get accurate total count
+        showMatchesPosition: false,
+        attributesToRetrieve: ['id'], // Only need IDs for fetching from Prisma
       });
 
       // Get full product data from Prisma for the found IDs
@@ -409,7 +412,9 @@ export class ProductsService {
         products.find(p => p.id === id)
       ).filter(Boolean);
 
-      const total = results.estimatedTotalHits || results.hits.length;
+      // Use estimatedTotalHits if available, otherwise fallback to hits.length
+      // estimatedTotalHits should contain the total count of matching documents
+      const total = results.estimatedTotalHits ?? results.totalHits ?? results.hits.length;
 
       // Transform products
       let transformedProducts = transformProducts(sortedProducts as any[]);
