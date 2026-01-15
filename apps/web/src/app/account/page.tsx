@@ -337,12 +337,12 @@ function AccountPageContent() {
                 </h1>
                 <p className="text-gray-500 text-sm">Oto co się dziś dzieje na Twoim koncie.</p>
               </div>
-              <Link href="/account/report" className="text-orange-500 hover:text-orange-600 text-sm font-medium flex items-center gap-1">
-                Zobacz pełny raport
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
+              {/* <Link href="/account/report" className="text-orange-500 hover:text-orange-600 text-sm font-medium flex items-center gap-1"> */}
+                {/* Zobacz pełny raport */}
+                {/* <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"> */}
+                  {/* <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /> */}
+                {/* </svg> */}
+              {/* </Link> */}
             </div>
 
             {/* Stats Cards */}

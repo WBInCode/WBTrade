@@ -317,7 +317,7 @@ export default function LoginPage() {
                 </svg>
               </div>
               <div>
-                <p className="font-semibold">30 dni na zwrot</p>
+                <p className="font-semibold">14 dni na zwrot</p>
                 <p className="text-sm text-white/70">Bez podawania przyczyny</p>
               </div>
             </div>
