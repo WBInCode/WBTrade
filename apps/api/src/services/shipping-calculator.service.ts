@@ -196,46 +196,6 @@ export class ShippingCalculatorService {
       });
     }
     
-    // Check if any product has 'test' or 'testowy' tag - if yes, free shipping
-    const hasTestProduct = Array.from(variantToProduct.values()).some(product => 
-      product.tags.some(tag => tag.toLowerCase() === 'test' || tag.toLowerCase() === 'testowy')
-    );
-    
-    if (hasTestProduct) {
-      warnings.push('🎁 DARMOWA DOSTAWA - Produkt testowy');
-      return {
-        packages: [{
-          id: 'test-1',
-          type: 'standard',
-          wholesaler: null,
-          items: items.map(item => {
-            const product = variantToProduct.get(item.variantId)!;
-            return {
-              productId: product.id,
-              productName: product.name,
-              variantId: item.variantId,
-              quantity: item.quantity,
-              isGabaryt: false,
-              productImage: product.image,
-            };
-          }),
-          paczkomatPackageCount: 1,
-          isPaczkomatAvailable: true,
-        }],
-        totalPackages: 1,
-        totalPaczkomatPackages: 1,
-        shippingCost: 0,
-        paczkomatCost: 0,
-        breakdown: [{
-          description: 'Darmowa dostawa - Produkt testowy',
-          cost: 0,
-          packageCount: 1,
-        }],
-        warnings,
-        isPaczkomatAvailable: true,
-      };
-    }
-    
     // Categorize items
     const gabarytItems: Array<{ product: ProductWithTags; variantId: string; quantity: number }> = [];
     const standardItemsByWholesaler = new Map<string, Array<{ product: ProductWithTags; variantId: string; quantity: number }>>();
