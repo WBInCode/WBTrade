@@ -9,6 +9,8 @@ import {
 import Link from 'next/link';
 import { useAuth } from '../../contexts/AuthContext';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
 interface Product {
   id: string;
   name: string;
@@ -91,7 +93,7 @@ export default function ProductsPage() {
         sort,
       });
       
-      const response = await fetch(`http://localhost:5000/api/products?${params}`);
+      const response = await fetch(`${API_URL}/products?${params}`);
       const data = await response.json();
       
       setProducts(data.products || []);
@@ -107,7 +109,7 @@ export default function ProductsPage() {
 
   async function loadCategories() {
     try {
-      const response = await fetch('http://localhost:5000/api/categories');
+      const response = await fetch(`${API_URL}/categories`);
       const data = await response.json();
       const cats = Array.isArray(data) ? data : (data.categories || []);
       setCategories(cats);
@@ -159,7 +161,7 @@ export default function ProductsPage() {
     try {
       await Promise.all(
         Array.from(selectedIds).map(id =>
-          fetch(`http://localhost:5000/api/products/${id}`, {
+          fetch(`${API_URL}/products/${id}`, {
             method: 'PUT',
             headers: { 
               'Content-Type': 'application/json',
@@ -183,7 +185,7 @@ export default function ProductsPage() {
     try {
       await Promise.all(
         Array.from(selectedIds).map(id =>
-          fetch(`http://localhost:5000/api/products/${id}`, { 
+          fetch(`${API_URL}/products/${id}`, { 
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
           })
@@ -216,7 +218,7 @@ export default function ProductsPage() {
         return;
       }
 
-      await fetch(`http://localhost:5000/api/products/${productId}`, {
+      await fetch(`${API_URL}/products/${productId}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -266,7 +268,7 @@ export default function ProductsPage() {
 
       await Promise.all(
         Array.from(selectedIds).map(id =>
-          fetch(`http://localhost:5000/api/products/${id}`, {
+          fetch(`${API_URL}/products/${id}`, {
             method: 'PUT',
             headers: { 
               'Content-Type': 'application/json',
@@ -594,7 +596,7 @@ export default function ProductsPage() {
                       <button 
                         onClick={() => {
                           if (confirm('Czy na pewno chcesz usunac ten produkt?') && token) {
-                            fetch(`http://localhost:5000/api/products/${product.id}`, { 
+                            fetch(`${API_URL}/products/${product.id}`, { 
                               method: 'DELETE',
                               headers: { 'Authorization': `Bearer ${token}` }
                             })

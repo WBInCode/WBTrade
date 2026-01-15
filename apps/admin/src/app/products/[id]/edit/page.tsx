@@ -6,6 +6,8 @@ import { ArrowLeft, Save, Package, Trash2, Plus, X, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '../../../../contexts/AuthContext';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
 interface Category {
   id: string;
   name: string;
@@ -88,7 +90,7 @@ export default function EditProductPage() {
   async function loadProduct() {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5000/api/products/${productId}`);
+      const response = await fetch(`${API_URL}/products/${productId}`);
       if (!response.ok) throw new Error('Product not found');
       
       const product: Product = await response.json();
@@ -119,7 +121,7 @@ export default function EditProductPage() {
 
   async function loadCategories() {
     try {
-      const response = await fetch('http://localhost:5000/api/categories');
+      const response = await fetch(`${API_URL}/categories`);
       const data = await response.json();
       const cats = Array.isArray(data) ? data : (data.categories || []);
       setCategories(cats);
@@ -211,7 +213,7 @@ export default function EditProductPage() {
 
       console.log('Sending productData:', JSON.stringify(productData, null, 2));
 
-      const response = await fetch(`http://localhost:5000/api/products/${productId}`, {
+      const response = await fetch(`${API_URL}/products/${productId}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -245,7 +247,7 @@ export default function EditProductPage() {
     }
     
     try {
-      const response = await fetch(`http://localhost:5000/api/products/${productId}`, {
+      const response = await fetch(`${API_URL}/products/${productId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
