@@ -64,5 +64,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
 
 # Uruchomienie aplikacji
 # Używamy db push zamiast migrate deploy - nie wymaga advisory locks
-# Ustaw DATABASE_DIRECT_URL w Render dla bezpośredniego połączenia
-CMD ["sh", "-c", "echo 'Starting deployment...' && if [ -z \"$DATABASE_DIRECT_URL\" ]; then echo 'ERROR: DATABASE_DIRECT_URL not set! Database sync requires direct connection.' && exit 1; fi && echo 'Syncing database schema with direct connection...' && DATABASE_URL=$DATABASE_DIRECT_URL npx prisma db push --accept-data-loss --skip-generate && echo 'Starting application...' && node dist/app.js"]
+CMD ["sh", "-c", "echo 'Starting deployment...' && echo 'Syncing database schema...' && npx prisma db push --accept-data-loss --skip-generate && echo 'Starting application...' && node dist/app.js"]
