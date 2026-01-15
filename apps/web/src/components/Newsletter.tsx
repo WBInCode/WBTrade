@@ -47,8 +47,7 @@ export default function Newsletter() {
           Zapisz się do newslettera
         </h2>
         <p className="text-white/80 mb-6 max-w-xl mx-auto">
-          Otrzymuj informacje o najlepszych promocjach, nowościach i ekskluzywnych ofertach. 
-          <span className="font-semibold text-white"> -10% na pierwsze zakupy!</span>
+          Otrzymuj informacje o najlepszych promocjach, nowościach i ekskluzywnych ofertach.
         </p>
 
         {/* Form */}

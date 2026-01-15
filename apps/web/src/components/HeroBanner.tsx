@@ -8,13 +8,13 @@ export default function HeroBanner() {
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800')] bg-cover bg-center opacity-30"></div>
         <div className="relative p-8 lg:p-12 h-full flex flex-col justify-center">
           <span className="inline-block bg-primary-500 text-white text-xs font-bold px-3 py-1 rounded-full mb-4 w-fit">
-            MEGA WYPRZEDAŻ
+            Super Ceny
           </span>
           <h1 className="text-3xl lg:text-5xl font-bold text-secondary-900 mb-3">
-            Letnia<br />Promocja
+            Niskie<br />Ceny
           </h1>
           <p className="text-secondary-600 mb-6 max-w-md">
-            Do 70% zniżki na wybrane produkty z mody i elektroniki. Darmowa dostawa dla członków.
+            Najniższe ceny na rynku na tysiące produktów. Sprawdź nasze oferty i oszczędzaj więcej przy każdym zakupie.
           </p>
           <Link 
             href="/products?sale=true"
@@ -43,7 +43,7 @@ export default function HeroBanner() {
         <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-emerald-50 to-teal-50 flex-1 min-h-[160px]">
           <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400')] bg-cover bg-right opacity-30"></div>
           <div className="relative p-6 h-full flex flex-col justify-center">
-            <h3 className="text-xl font-bold text-secondary-900 mb-1">Odmów Dom</h3>
+            <h3 className="text-xl font-bold text-secondary-900 mb-1">Odnów Dom</h3>
             <p className="text-sm text-secondary-500">Przytulne wnętrza</p>
           </div>
         </div>
