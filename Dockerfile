@@ -65,4 +65,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
 # Uruchomienie aplikacji
 # Migracje wymagają direct connection (bez poolera)
 # Ustaw DATABASE_DIRECT_URL w Render dla bezpośredniego połączenia
-CMD ["sh", "-c", "if [ -n \"$DATABASE_DIRECT_URL\" ]; then DATABASE_URL=$DATABASE_DIRECT_URL npx prisma migrate deploy; fi && node dist/app.js"]
+CMD ["sh", "-c", "echo 'Starting deployment...' && if [ -z \"$DATABASE_DIRECT_URL\" ]; then echo 'ERROR: DATABASE_DIRECT_URL not set! Migrations require direct connection.' && exit 1; fi && echo 'Running migrations with direct connection...' && DATABASE_URL=$DATABASE_DIRECT_URL npx prisma migrate deploy && echo 'Starting application...' && node dist/app.js"]
