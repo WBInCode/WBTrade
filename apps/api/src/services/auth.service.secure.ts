@@ -529,11 +529,20 @@ export class SecureAuthService {
       const resetToken = this.generateSecureToken();
       await storePasswordResetToken(user.id, resetToken);
 
-      // TODO: Send reset email
-      // await emailService.sendPasswordResetEmail(user.email, resetToken);
+      // Send reset email
+      const frontendUrl = (process.env.FRONTEND_URL || 'https://www.wb-trade.pl').split(',')[0].trim();
+      const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+      await queueEmail({
+        to: user.email,
+        subject: 'Reset hasła - WBTrade',
+        template: 'password-reset',
+        context: {
+          resetUrl,
+        },
+      });
 
       // For development, log the token
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV !== 'production') {
         console.log(`[DEV] Password reset token for ${email}: ${resetToken}`);
       }
     }
