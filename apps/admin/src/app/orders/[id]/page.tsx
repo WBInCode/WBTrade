@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
 interface OrderItem {
   id: string;
   productName: string;
@@ -147,7 +149,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   async function loadOrder() {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5000/api/orders/${id}`);
+      const response = await fetch(`${API_URL}/orders/${id}`);
       if (!response.ok) throw new Error('Order not found');
       const data = await response.json();
       setOrder(data);
@@ -176,7 +178,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     
     try {
       setSaving(true);
-      const response = await fetch(`http://localhost:5000/api/orders/${id}`, {
+      const response = await fetch(`${API_URL}/orders/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus, note: statusNote }),
@@ -198,7 +200,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     if (!confirm('Czy na pewno chcesz anulować to zamówienie? Ta operacja zwolni zarezerwowany towar.')) return;
     
     try {
-      await fetch(`http://localhost:5000/api/orders/${id}`, {
+      await fetch(`${API_URL}/orders/${id}`, {
         method: 'DELETE',
       });
       await loadOrder();
@@ -212,7 +214,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     if (reason === null) return; // User cancelled
     
     try {
-      const response = await fetch(`http://localhost:5000/api/orders/${id}/refund`, {
+      const response = await fetch(`${API_URL}/orders/${id}/refund`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: reason || 'Zwrot na życzenie klienta' }),
@@ -233,7 +235,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     if (!confirm('Czy na pewno chcesz przywrócić to zamówienie? Towar zostanie ponownie zarezerwowany.')) return;
     
     try {
-      const response = await fetch(`http://localhost:5000/api/orders/${id}/restore`, {
+      const response = await fetch(`${API_URL}/orders/${id}/restore`, {
         method: 'POST',
       });
       

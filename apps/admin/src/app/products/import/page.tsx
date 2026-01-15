@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
 interface ParsedProduct {
   name: string;
   sku: string;
@@ -190,7 +192,7 @@ export default function ImportProductsPage() {
       const product = validProducts[i];
       
       try {
-        const response = await fetch('http://localhost:5000/api/products', {
+        const response = await fetch(`${API_URL}/products`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
