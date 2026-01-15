@@ -137,12 +137,6 @@ export default async function HomePage() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="bg-white text-primary-600 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
-                  🔥 GORĄCE OKAZJE
-                </span>
-                <span className="bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full animate-pulse">
-                  DO -70%
-                </span>
               </div>
             </div>
             <Link 
@@ -159,14 +153,14 @@ export default async function HomePage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {displaySuperPriceProducts.map((product) => (
               <div key={product.id} className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow">
-                <ProductCard product={product} showDelivery />
+                <ProductCard product={product} />
               </div>
             ))}
           </div>
         </section>
 
         {/* Recommended For You Section */}
-        <RecommendedProducts initialProducts={displayProducts} />
+        {/* <RecommendedProducts initialProducts={displayProducts} /> */}
 
         {/* Show More Button */}
         <div className="flex justify-center mb-10">
