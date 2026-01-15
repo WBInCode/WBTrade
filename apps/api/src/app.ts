@@ -208,9 +208,23 @@ app.listen(PORT, async () => {
   startExportWorker();
   startShippingWorker();
   
-  // Schedule recurring jobs
-  await scheduleReservationCleanup();
-  console.log('✅ Reservation cleanup scheduled (every 5 minutes)');
+  // Schedule recurring jobs with retry logic
+  try {
+    await scheduleReservationCleanup();
+    console.log('✅ Reservation cleanup scheduled (every 5 minutes)');
+  } catch (error) {
+    console.error('⚠️  Failed to schedule reservation cleanup:', error);
+    console.log('ℹ️  Will retry in background...');
+    // Retry after 10 seconds
+    setTimeout(async () => {
+      try {
+        await scheduleReservationCleanup();
+        console.log('✅ Reservation cleanup scheduled (retry successful)');
+      } catch (retryError) {
+        console.error('❌ Reservation cleanup scheduling failed after retry:', retryError);
+      }
+    }, 10000);
+  }
   
   console.log('✅ All workers started successfully');
   console.log('ℹ️  Baselinker sync: manual only (use admin panel)');
