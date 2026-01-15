@@ -5,50 +5,68 @@ import crypto from 'crypto';
 let redisClient: Redis | null = null;
 
 /**
- * Get Redis client instance (singleton)
+ * Check if Redis is available
  */
-export function getRedisClient(): Redis {
+export function isRedisAvailable(): boolean {
+  return redisClient !== null;
+}
+
+/**
+ * Get Redis client instance (singleton)
+ * Returns null if Redis is unavailable (e.g., limit exceeded)
+ */
+export function getRedisClient(): Redis | null {
   if (!redisClient) {
     const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
     
-    redisClient = new Redis(redisUrl, {
-      maxRetriesPerRequest: 10,
-      retryStrategy(times) {
-        if (times > 10) {
-          console.error('❌ Redis: Max retry attempts reached');
-          return null; // Stop retrying
+    try {
+      redisClient = new Redis(redisUrl, {
+        maxRetriesPerRequest: 3, // Reduced retries
+        retryStrategy(times) {
+          if (times > 3) {
+            console.error('❌ Redis: Max retry attempts reached - continuing without Redis');
+            return null; // Stop retrying
+          }
+          const delay = Math.min(times * 100, 1000);
+          console.log(`🔄 Redis: Retry attempt ${times}, waiting ${delay}ms...`);
+          return delay;
+        },
+        enableReadyCheck: true,
+        lazyConnect: true, // Don't connect immediately - lazy connect
+        connectTimeout: 5000, // 5 seconds
+      });
+
+      redisClient.on('error', (err) => {
+        console.error('❌ Redis error:', err.message);
+        if (err.message.includes('max requests limit')) {
+          console.error('⚠️  Redis limit exceeded - app will run without caching');
+          redisClient = null; // Disable Redis
         }
-        const delay = Math.min(times * 100, 3000);
-        console.log(`🔄 Redis: Retry attempt ${times}, waiting ${delay}ms...`);
-        return delay;
-      },
-      enableReadyCheck: true,
-      lazyConnect: false, // Connect immediately
-      connectTimeout: 10000, // 10 seconds
-    });
+        if (!process.env.REDIS_URL) {
+          console.error('⚠️  REDIS_URL environment variable is not set!');
+        }
+      });
 
-    redisClient.on('error', (err) => {
-      console.error('❌ Redis connection error:', err.message);
-      if (!process.env.REDIS_URL) {
-        console.error('⚠️  REDIS_URL environment variable is not set!');
-      }
-    });
+      redisClient.on('connect', () => {
+        console.log('✅ Redis connected successfully');
+      });
 
-    redisClient.on('connect', () => {
-      console.log('✅ Redis connected successfully');
-    });
+      redisClient.on('ready', () => {
+        console.log('✅ Redis ready to accept commands');
+      });
 
-    redisClient.on('ready', () => {
-      console.log('✅ Redis ready to accept commands');
-    });
+      redisClient.on('close', () => {
+        console.warn('⚠️  Redis connection closed - app will run without caching');
+        redisClient = null;
+      });
 
-    redisClient.on('close', () => {
-      console.warn('⚠️  Redis connection closed');
-    });
-
-    redisClient.on('reconnecting', () => {
-      console.log('🔄 Redis reconnecting...');
-    });
+      redisClient.on('reconnecting', () => {
+        console.log('🔄 Redis reconnecting...');
+      });
+    } catch (error) {
+      console.error('❌ Failed to create Redis client:', error);
+      redisClient = null;
+    }
   }
 
   return redisClient;
@@ -69,52 +87,79 @@ const TOKEN_BLACKLIST_PREFIX = 'auth:blacklist:';
 const TOKEN_BLACKLIST_TTL = 7 * 24 * 60 * 60; // 7 days (match refresh token expiry)
 
 /**
- * Add token to blacklist
+ * Add token to blacklist (no-op if Redis unavailable)
  */
 export async function blacklistToken(token: string, ttlSeconds?: number): Promise<void> {
   const redis = getRedisClient();
+  if (!redis) {
+    console.warn('⚠️  Redis unavailable - token blacklist disabled');
+    return;
+  }
   const key = `${TOKEN_BLACKLIST_PREFIX}${hashToken(token)}`;
-  await redis.set(key, '1', 'EX', ttlSeconds || TOKEN_BLACKLIST_TTL);
+  try {
+    await redis.set(key, '1', 'EX', ttlSeconds || TOKEN_BLACKLIST_TTL);
+  } catch (error) {
+    console.error('❌ Failed to blacklist token:', error);
+  }
 }
 
 /**
- * Check if token is blacklisted
+ * Check if token is blacklisted (returns false if Redis unavailable)
  */
 export async function isTokenBlacklisted(token: string): Promise<boolean> {
   const redis = getRedisClient();
+  if (!redis) {
+    console.warn('⚠️  Redis unavailable - token blacklist check skipped');
+    return false;
+  }
   const key = `${TOKEN_BLACKLIST_PREFIX}${hashToken(token)}`;
-  const result = await redis.exists(key);
-  return result === 1;
+  try {
+    const result = await redis.exists(key);
+    return result === 1;
+  } catch (error) {
+    console.error('❌ Failed to check token blacklist:', error);
+    return false;
+  }
 }
 
 // Rate limiting storage
 const RATE_LIMIT_PREFIX = 'ratelimit:';
 
 /**
- * Increment rate limit counter
+ * Increment rate limit counter (returns default if Redis unavailable)
  */
 export async function incrementRateLimit(
   key: string,
   windowSeconds: number
 ): Promise<{ count: number; ttl: number }> {
   const redis = getRedisClient();
-  const fullKey = `${RATE_LIMIT_PREFIX}${key}`;
-  
-  const multi = redis.multi();
-  multi.incr(fullKey);
-  multi.ttl(fullKey);
-  
-  const results = await multi.exec();
-  const count = results?.[0]?.[1] as number;
-  let ttl = results?.[1]?.[1] as number;
-  
-  // Set TTL if key is new
-  if (ttl === -1) {
-    await redis.expire(fullKey, windowSeconds);
-    ttl = windowSeconds;
+  if (!redis) {
+    console.warn('⚠️  Redis unavailable - rate limiting disabled');
+    return { count: 1, ttl: windowSeconds };
   }
   
-  return { count, ttl };
+  const fullKey = `${RATE_LIMIT_PREFIX}${key}`;
+  
+  try {
+    const multi = redis.multi();
+    multi.incr(fullKey);
+    multi.ttl(fullKey);
+    
+    const results = await multi.exec();
+    const count = results?.[0]?.[1] as number;
+    let ttl = results?.[1]?.[1] as number;
+    
+    // Set TTL if key is new
+    if (ttl === -1) {
+      await redis.expire(fullKey, windowSeconds);
+      ttl = windowSeconds;
+    }
+    
+    return { count, ttl };
+  } catch (error) {
+    console.error('❌ Rate limit error:', error);
+    return { count: 1, ttl: windowSeconds };
+  }
 }
 
 // Login attempt tracking

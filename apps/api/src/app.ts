@@ -186,14 +186,20 @@ app.listen(PORT, async () => {
     console.log('🔗 Initializing Redis connection...');
     const { getRedisClient } = await import('./lib/redis');
     const redis = getRedisClient();
-    await redis.ping();
-    console.log('✅ Redis connection verified');
-  } catch (error) {
-    console.error('❌ Redis initialization failed:', error);
-    if (process.env.NODE_ENV === 'production' && !process.env.REDIS_URL) {
+    if (redis) {
+      await redis.ping();
+      console.log('✅ Redis connection verified');
+    } else {
+      console.warn('⚠️  Redis unavailable - app will run without caching/workers');
+    }
+  } catch (error: any) {
+    console.error('❌ Redis initialization failed:', error?.message || error);
+    if (error?.message?.includes('max requests limit')) {
+      console.warn('⚠️  Redis limit exceeded - app will run without caching/workers');
+    } else if (process.env.NODE_ENV === 'production' && !process.env.REDIS_URL) {
       console.error('💥 CRITICAL: REDIS_URL is not set in production!');
     }
-    console.warn('⚠️  Application will continue but Redis-dependent features may not work');
+    console.warn('⚠️  Application will continue but Redis-dependent features disabled');
   }
   
   // Initialize Meilisearch
