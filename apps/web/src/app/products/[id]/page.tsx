@@ -15,6 +15,7 @@ interface ProductPageProps {
   params: Promise<{ id: string }>;
 }
 
+
 // Mock data for demonstration - in production this would come from API
 const mockProduct: Product = {
   id: '1',
@@ -799,14 +800,14 @@ export default function ProductPage({ params }: ProductPageProps) {
               </div>
 
               {/* Delivery Info */}
+              
               <div className="border-t pt-4 space-y-3">
                 <div className="flex items-start gap-3">
                   <svg className="w-5 h-5 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                   </svg>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">Dostawa jutro</p>
-                    <p className="text-xs text-orange-500">Zamów w ciągu 2h 18m</p>
+                    <p className="text-sm font-medium text-gray-900">Jak najszybsza dostawa</p>
                   </div>
                 </div>
 
@@ -817,13 +818,13 @@ export default function ProductPage({ params }: ProductPageProps) {
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">Darmowa dostawa i zwroty</p>
+                    <p className="text-sm font-medium text-gray-900">Tania i szybka dostawa i darmowe zwroty</p>
                   </div>
                 </div>
               </div>
 
               {/* Seller Info */}
-              <div className="border-t mt-4 pt-4">
+              <div className="border-t mt-4 pt-4 hidden">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
                     <span className="text-green-600 font-semibold text-sm">OW</span>
