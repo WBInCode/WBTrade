@@ -499,7 +499,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   const tabs = [
     { id: 'description', label: 'Opis produktu' },
     { id: 'parameters', label: 'Parametry' },
-    { id: 'reviews', label: 'Opinie' },
+    // { id: 'reviews', label: 'Opinie' }, // Hidden
   ];
 
   return (
@@ -561,7 +561,7 @@ export default function ProductPage({ params }: ProductPageProps) {
               </h1>
 
               {/* Rating */}
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-4 hidden">
                 <div className="flex items-center">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <svg
@@ -1023,7 +1023,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                         <h3 className="text-lg font-semibold text-gray-900 mb-4">Twoja opinia</h3>
                         
                         {/* Rating Selection */}
-                        <div className="mb-4">
+                        <div className="mb-4 hidden">
                           <label className="block text-sm font-medium text-gray-700 mb-2">Ocena</label>
                           <div className="flex gap-1">
                             {[1, 2, 3, 4, 5].map((star) => (

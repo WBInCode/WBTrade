@@ -34,7 +34,7 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
   const reviewCount = product.reviewCount || Math.floor(Math.random() * 500) + 10;
   const storeName = product.storeName || 'TopStore';
   const badge = product.badge as BadgeType | undefined;
-  const deliveryInfo = product.deliveryInfo || 'dostawa jutro';
+  const deliveryInfo = product.deliveryInfo || 'błyskawiczna dostawa';
 
   const { isInWishlist, toggleWishlist } = useWishlist();
   const inWishlist = isInWishlist(product.id);
@@ -141,7 +141,6 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
             {/* Delivery Info */}
             <div className="flex items-center gap-2 mt-auto">
               <span className="text-sm text-green-600">{deliveryInfo}</span>
-              <span className="text-sm text-gray-400">• {storeName}</span>
             </div>
           </div>
         </Link>
@@ -236,12 +235,8 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
 
           {/* Delivery Info */}
           <div className="flex items-center gap-2 mb-2 mt-auto">
-
             <span className="text-xs text-green-600">{deliveryInfo}</span>
           </div>
-
-          {/* Store Name */}
-          <p className="text-xs text-gray-400">{storeName}</p>
         </div>
       </Link>
     </div>
