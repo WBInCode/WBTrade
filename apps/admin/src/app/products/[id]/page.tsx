@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
 interface ProductImage {
   id: string;
   url: string;
@@ -62,7 +64,7 @@ export default function ProductDetailPage() {
   async function loadProduct() {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5000/api/products/${productId}`);
+      const response = await fetch(`${API_URL}/products/${productId}`);
       if (!response.ok) throw new Error('Product not found');
       const data = await response.json();
       setProduct(data);
@@ -79,7 +81,7 @@ export default function ProductDetailPage() {
     if (!confirm('Czy na pewno chcesz usunac ten produkt?')) return;
     
     try {
-      await fetch(`http://localhost:5000/api/products/${productId}`, { method: 'DELETE' });
+      await fetch(`${API_URL}/products/${productId}`, { method: 'DELETE' });
       router.push('/products');
     } catch (error) {
       console.error('Failed to delete:', error);

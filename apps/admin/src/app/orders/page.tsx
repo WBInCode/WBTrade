@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
 // Get auth token from localStorage
 function getAuthToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -126,7 +128,7 @@ export default function OrdersPage() {
         ...(dateTo && { dateTo }),
       });
       
-      const response = await fetch(`http://localhost:5000/api/orders/admin/all?${params}`, {
+      const response = await fetch(`${API_URL}/orders/admin/all?${params}`, {
         headers: {
           'Content-Type': 'application/json',
           ...(token && { Authorization: `Bearer ${token}` }),
@@ -189,7 +191,7 @@ export default function OrdersPage() {
     
     try {
       const token = getAuthToken();
-      await fetch(`http://localhost:5000/api/orders/${orderId}`, {
+      await fetch(`${API_URL}/orders/${orderId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
