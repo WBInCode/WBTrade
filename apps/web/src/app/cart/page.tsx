@@ -471,7 +471,7 @@ export default function CartPage() {
                 </svg>
               </div>
               <h3 className="text-lg font-bold mb-2">Najniższe ceny</h3>
-              <p className="text-white/80 text-sm">Gwarancja najlepszej ceny na rynku. Znajdziesz taniej? Zwrócimy różnicę!</p>
+              <p className="text-white/80 text-sm">Gwarancja najlepszej ceny na rynku.</p>
             </div>
             <div className="text-center">
               <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -480,7 +480,7 @@ export default function CartPage() {
                 </svg>
               </div>
               <h3 className="text-lg font-bold mb-2">Błyskawiczna dostawa</h3>
-              <p className="text-white/80 text-sm">Wysyłka nawet tego samego dnia. Darmowa dostawa od 200 zł</p>
+              <p className="text-white/80 text-sm">Wysyłka nawet tego samego dnia.</p>
             </div>
             <div className="text-center">
               <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -498,7 +498,7 @@ export default function CartPage() {
                 </svg>
               </div>
               <h3 className="text-lg font-bold mb-2">Łatwy zwrot</h3>
-              <p className="text-white/80 text-sm">30 dni na bezpłatny zwrot towaru. Bez podawania przyczyny</p>
+              <p className="text-white/80 text-sm">30 dni na bezpłatny zwrot towaru. Pełne wsparcie klienta.</p>
             </div>
           </div>
         </div>

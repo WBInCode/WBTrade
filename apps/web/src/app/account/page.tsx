@@ -365,7 +365,7 @@ function AccountPageContent() {
                   {dashboardLoading ? '...' : stats.inTransitOrders}
                 </span>
               </div>
-              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hidden">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-gray-500">Nieprzeczytane</span>
                   <StatIcon icon="message" />
@@ -374,7 +374,7 @@ function AccountPageContent() {
                   {dashboardLoading ? '...' : stats.unreadMessages}
                 </span>
               </div>
-              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hidden">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-gray-500">Punkty lojalnościowe</span>
                   <StatIcon icon="coin" />
