@@ -58,9 +58,11 @@ EXPOSE 5000
 ENV NODE_ENV=production
 
 # Sprawdzenie zdrowia aplikacji
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+# Zwiększony start-period do 60s dla inicjalizacji Redis/Meilisearch/workers
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
   CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 5000) + '/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"
 
 # Uruchomienie aplikacji
-# Najpierw uruchom migracje Prisma, potem startuj serwer
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/app.js"]
+# Migracje wymagają direct connection (bez poolera)
+# Ustaw DATABASE_DIRECT_URL w Render dla bezpośredniego połączenia
+CMD ["sh", "-c", "if [ -n \"$DATABASE_DIRECT_URL\" ]; then DATABASE_URL=$DATABASE_DIRECT_URL npx prisma migrate deploy; fi && node dist/app.js"]
