@@ -199,7 +199,12 @@ app.listen(PORT, async () => {
   // Initialize Meilisearch
   await initializeMeilisearch();
   
-  // Start background workers
+  // Start background workers - DISABLED due to Redis limit exceeded
+  console.log('⚠️  Background workers disabled - Redis limit exceeded');
+  console.log('ℹ️  Enable workers after upgrading Upstash Redis plan');
+  
+  // TODO: Re-enable after upgrading Redis
+  /*
   console.log('⚙️  Starting background workers...');
   startSearchIndexWorker();
   startEmailWorker();
@@ -225,7 +230,8 @@ app.listen(PORT, async () => {
       }
     }, 10000);
   }
+  */
   
-  console.log('✅ All workers started successfully');
+  console.log('✅ Server started (workers disabled)');
   console.log('ℹ️  Baselinker sync: manual only (use admin panel)');
 });
