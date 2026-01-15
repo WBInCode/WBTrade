@@ -243,7 +243,9 @@ export class SecureAuthService {
     await logRegistration(user.id, normalizedEmail, ipAddress, userAgent);
 
     // Send verification email
-    const verifyUrl = `${process.env.FRONTEND_URL || 'https://wb-trade.pl'}/verify-email?token=${verificationToken}`;
+    // Extract first URL from FRONTEND_URL (in case it contains multiple URLs separated by comma)
+    const frontendUrl = (process.env.FRONTEND_URL || 'https://www.wb-trade.pl').split(',')[0].trim();
+    const verifyUrl = `${frontendUrl}/verify-email?token=${verificationToken}`;
     await queueEmail({
       to: normalizedEmail,
       subject: 'Potwierdź swój email - WBTrade',
@@ -683,7 +685,8 @@ export class SecureAuthService {
     await storeEmailVerificationToken(user.id, verificationToken);
 
     // Send verification email
-    const verifyUrl = `${process.env.FRONTEND_URL || 'https://wb-trade.pl'}/verify-email?token=${verificationToken}`;
+    const frontendUrl = (process.env.FRONTEND_URL || 'https://www.wb-trade.pl').split(',')[0].trim();
+    const verifyUrl = `${frontendUrl}/verify-email?token=${verificationToken}`;
     await queueEmail({
       to: user.email,
       subject: 'Potwierdź swój email - WBTrade',
