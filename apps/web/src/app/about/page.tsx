@@ -9,9 +9,8 @@ export const metadata = {
 
 export default function AboutPage() {
   const stats = [
-    { value: '2M+', label: 'Zadowolonych klientów' },
-    { value: '50K+', label: 'Produktów w ofercie' },
-    { value: '500+', label: 'Sprawdzonych sprzedawców' },
+    { value: 'tysiące', label: 'Zadowolonych klientów' },
+    { value: '40K+', label: 'Produktów w ofercie' },
     { value: '99.8%', label: 'Pozytywnych opinii' },
   ];
 
@@ -41,7 +40,7 @@ export default function AboutPage() {
         </svg>
       ),
       title: 'Społeczność',
-      description: 'Tworzymy przestrzeń, gdzie kupujący i sprzedający mogą się rozwijać.',
+      description: 'Tworzymy przestrzeń, gdzie kupujący mają szeroki wybór produktów.',
     },
     {
       icon: (
@@ -56,25 +55,9 @@ export default function AboutPage() {
 
   const team = [
     {
-      name: 'Anna Kowalska',
-      role: 'CEO & Założycielka',
-      image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop',
-    },
-    {
-      name: 'Piotr Nowak',
-      role: 'CTO',
-      image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop',
-    },
-    {
-      name: 'Magdalena Wiśniewska',
-      role: 'COO',
-      image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop',
-    },
-    {
-      name: 'Tomasz Zieliński',
-      role: 'CFO',
-      image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop',
-    },
+      name: 'Daniel Budyka',
+      role: 'CEO & Założyciel',
+    }
   ];
 
   return (
@@ -90,7 +73,7 @@ export default function AboutPage() {
               Tworzymy przyszłość <span className="text-primary-200">e-commerce</span>
             </h1>
             <p className="text-xl text-primary-100 leading-relaxed">
-              WBTrade to więcej niż platforma zakupowa. To społeczność milionów użytkowników, 
+              WBTrade to więcej niż platforma zakupowa. To społeczność tysięcy  użytkowników, 
               którzy każdego dnia ufają nam swoje zakupy online.
             </p>
           </div>
@@ -123,14 +106,13 @@ export default function AboutPage() {
               </h2>
               <div className="space-y-4 text-secondary-600 leading-relaxed">
                 <p>
-                  WBTrade powstało w 2018 roku z prostej idei – stworzyć miejsce, gdzie każdy 
+                  WBTrade powstało w 2025 roku z prostej idei – stworzyć miejsce, gdzie każdy 
                   może bezpiecznie i wygodnie kupować online. Zaczęliśmy jako mały startup 
                   z zespołem pięciu osób i marzeniem o zmianie sposobu, w jaki Polacy robią zakupy.
                 </p>
                 <p>
-                  Dziś jesteśmy jedną z najszybciej rozwijających się platform e-commerce w Polsce. 
-                  Nasza społeczność liczy ponad 2 miliony aktywnych użytkowników, a na naszej 
-                  platformie znajdziesz ponad 50 000 produktów od sprawdzonych sprzedawców.
+                  Dziś jesteśmy bardzo szybko rozwijającą się platformą e-commerce w Polsce. 
+                  Na naszej platformie znajdziesz ponad 50 000 produktów od sprawdzonych sprzedawców.
                 </p>
                 <p>
                   Sukces zawdzięczamy przede wszystkim naszym klientom i partnerom, którzy 
@@ -150,7 +132,7 @@ export default function AboutPage() {
                 />
               </div>
               <div className="absolute -bottom-6 -left-6 bg-primary-500 text-white p-6 rounded-xl shadow-lg">
-                <div className="text-3xl font-bold">2018</div>
+                <div className="text-3xl font-bold">2025</div>
                 <div className="text-primary-100">Rok założenia</div>
               </div>
             </div>
@@ -195,7 +177,7 @@ export default function AboutPage() {
               Nasz zespół zarządzający
             </h2>
             <p className="text-secondary-600 max-w-2xl mx-auto">
-              Poznaj ludzi, którzy stoją za sukcesem WBTrade.
+              Poznaj człowieka, który stoi za sukcesem WBTrade.
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
