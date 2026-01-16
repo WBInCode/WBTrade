@@ -59,6 +59,13 @@ async function checkRedis(): Promise<ComponentHealth> {
   const start = Date.now();
   try {
     const redis = getRedisClient();
+    if (!redis) {
+      return {
+        status: 'unhealthy',
+        latency: Date.now() - start,
+        message: 'Redis client not available',
+      };
+    }
     await redis.ping();
     return {
       status: 'healthy',
@@ -168,7 +175,9 @@ export async function readiness(req: Request, res: Response): Promise<void> {
     // Check essential services
     await prisma.$queryRaw`SELECT 1`;
     const redis = getRedisClient();
-    await redis.ping();
+    if (redis) {
+      await redis.ping();
+    }
     
     res.status(200).json({ status: 'ready' });
   } catch (error) {

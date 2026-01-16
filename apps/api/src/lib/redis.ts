@@ -171,6 +171,8 @@ const LOGIN_LOCKOUT_PREFIX = 'auth:lockout:';
  */
 export async function recordFailedLogin(identifier: string): Promise<number> {
   const redis = getRedisClient();
+  if (!redis) return 0;
+  
   const key = `${LOGIN_ATTEMPTS_PREFIX}${identifier}`;
   
   const count = await redis.incr(key);
@@ -188,6 +190,8 @@ export async function recordFailedLogin(identifier: string): Promise<number> {
  */
 export async function getFailedLoginAttempts(identifier: string): Promise<number> {
   const redis = getRedisClient();
+  if (!redis) return 0;
+  
   const key = `${LOGIN_ATTEMPTS_PREFIX}${identifier}`;
   const count = await redis.get(key);
   return count ? parseInt(count, 10) : 0;
@@ -198,6 +202,8 @@ export async function getFailedLoginAttempts(identifier: string): Promise<number
  */
 export async function resetFailedLoginAttempts(identifier: string): Promise<void> {
   const redis = getRedisClient();
+  if (!redis) return;
+  
   const key = `${LOGIN_ATTEMPTS_PREFIX}${identifier}`;
   await redis.del(key);
 }
@@ -207,6 +213,8 @@ export async function resetFailedLoginAttempts(identifier: string): Promise<void
  */
 export async function lockAccount(identifier: string, durationSeconds: number): Promise<void> {
   const redis = getRedisClient();
+  if (!redis) return;
+  
   const key = `${LOGIN_LOCKOUT_PREFIX}${identifier}`;
   await redis.set(key, Date.now().toString(), 'EX', durationSeconds);
 }
@@ -216,6 +224,8 @@ export async function lockAccount(identifier: string, durationSeconds: number): 
  */
 export async function isAccountLocked(identifier: string): Promise<{ locked: boolean; ttl: number }> {
   const redis = getRedisClient();
+  if (!redis) return { locked: false, ttl: 0 };
+  
   const key = `${LOGIN_LOCKOUT_PREFIX}${identifier}`;
   
   const multi = redis.multi();
@@ -241,6 +251,8 @@ export async function storeEmailVerificationToken(
   token: string
 ): Promise<void> {
   const redis = getRedisClient();
+  if (!redis) return;
+  
   const key = `${EMAIL_VERIFICATION_PREFIX}${token}`;
   await redis.set(key, userId, 'EX', EMAIL_VERIFICATION_TTL);
 }
@@ -250,6 +262,8 @@ export async function storeEmailVerificationToken(
  */
 export async function verifyEmailToken(token: string): Promise<string | null> {
   const redis = getRedisClient();
+  if (!redis) return null;
+  
   const key = `${EMAIL_VERIFICATION_PREFIX}${token}`;
   const userId = await redis.get(key);
   
@@ -273,6 +287,8 @@ export async function storePasswordResetToken(
   token: string
 ): Promise<void> {
   const redis = getRedisClient();
+  if (!redis) return;
+  
   const key = `${PASSWORD_RESET_PREFIX}${token}`;
   await redis.set(key, userId, 'EX', PASSWORD_RESET_TTL);
 }
