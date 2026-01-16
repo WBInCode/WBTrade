@@ -7,6 +7,7 @@ import { Worker, Job } from 'bullmq';
 import { QUEUE_NAMES, queueConnection, queueEmail } from '../lib/queue';
 import { prisma } from '../db';
 import { invalidateInventoryCache } from '../lib/cache';
+import { PaymentStatus } from '@prisma/client';
 
 interface InventorySyncJobData {
   type: 'sync-all' | 'sync-location' | 'low-stock-check' | 'reservation-cleanup';
@@ -132,7 +133,7 @@ async function cleanupExpiredReservations(): Promise<{ released: number; failedP
         },
         // Orders with awaiting confirmation that timed out
         {
-          paymentStatus: 'AWAITING_CONFIRMATION',
+          paymentStatus: PaymentStatus.AWAITING_CONFIRMATION,
           createdAt: { lt: paymentTimeoutDate },
           status: { in: ['OPEN', 'PENDING'] },
         },
@@ -152,10 +153,10 @@ async function cleanupExpiredReservations(): Promise<{ released: number; failedP
 
   for (const order of expiredOrders) {
     try {
-      const isFailedPayment = order.paymentStatus === 'FAILED';
+      const isFailedPayment = order.paymentStatus === PaymentStatus.FAILED;
       const reasonNote = isFailedPayment
         ? 'Zamówienie anulowane - płatność nieudana'
-        : order.paymentStatus === 'AWAITING_CONFIRMATION'
+        : order.paymentStatus === PaymentStatus.AWAITING_CONFIRMATION
         ? 'Zamówienie anulowane - płatność nie została potwierdzona w wymaganym czasie'
         : 'Zamówienie anulowane - przekroczono czas na płatność';
 
@@ -189,7 +190,7 @@ async function cleanupExpiredReservations(): Promise<{ released: number; failedP
           where: { id: order.id },
           data: { 
             status: 'CANCELLED',
-            paymentStatus: 'CANCELLED',
+            paymentStatus: PaymentStatus.CANCELLED,
           },
         });
 

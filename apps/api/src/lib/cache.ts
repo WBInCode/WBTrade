@@ -31,6 +31,8 @@ export const CACHE_TTL = {
  */
 export async function cacheGet<T>(key: string): Promise<T | null> {
   const redis = getRedisClient();
+  if (!redis) return null;
+  
   const data = await redis.get(key);
   
   if (!data) return null;
@@ -51,6 +53,7 @@ export async function cacheSet<T>(
   ttlSeconds: number
 ): Promise<void> {
   const redis = getRedisClient();
+  if (!redis) return;
   await redis.set(key, JSON.stringify(value), 'EX', ttlSeconds);
 }
 
@@ -59,6 +62,7 @@ export async function cacheSet<T>(
  */
 export async function cacheDelete(key: string): Promise<void> {
   const redis = getRedisClient();
+  if (!redis) return;
   await redis.del(key);
 }
 
@@ -67,6 +71,8 @@ export async function cacheDelete(key: string): Promise<void> {
  */
 export async function cacheDeletePattern(pattern: string): Promise<number> {
   const redis = getRedisClient();
+  if (!redis) return 0;
+  
   const keys = await redis.keys(pattern);
   
   if (keys.length === 0) return 0;
@@ -166,6 +172,8 @@ export async function invalidateProductBySlug(slug: string): Promise<void> {
  */
 export async function getCachedInventory(variantId: string): Promise<number | null> {
   const redis = getRedisClient();
+  if (!redis) return null;
+  
   const key = `${CACHE_PREFIX.INVENTORY}${variantId}`;
   const data = await redis.get(key);
   return data ? parseInt(data, 10) : null;
@@ -179,6 +187,8 @@ export async function setCachedInventory(
   availableStock: number
 ): Promise<void> {
   const redis = getRedisClient();
+  if (!redis) return;
+  
   const key = `${CACHE_PREFIX.INVENTORY}${variantId}`;
   await redis.set(key, availableStock.toString(), 'EX', CACHE_TTL.INVENTORY);
 }
@@ -250,6 +260,8 @@ export async function acquireLock(
   ttlSeconds: number = DEFAULT_LOCK_TTL
 ): Promise<string | null> {
   const redis = getRedisClient();
+  if (!redis) return null;
+  
   const key = `${LOCK_PREFIX}${resource}`;
   const token = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   
@@ -265,6 +277,8 @@ export async function acquireLock(
  */
 export async function releaseLock(resource: string, token: string): Promise<boolean> {
   const redis = getRedisClient();
+  if (!redis) return false;
+  
   const key = `${LOCK_PREFIX}${resource}`;
   
   // Lua script to atomically check and delete
@@ -289,6 +303,8 @@ export async function extendLock(
   ttlSeconds: number
 ): Promise<boolean> {
   const redis = getRedisClient();
+  if (!redis) return false;
+  
   const key = `${LOCK_PREFIX}${resource}`;
   
   // Lua script to atomically check and extend
@@ -355,6 +371,14 @@ export async function getCacheStats(): Promise<{
   sessionKeys: number;
 }> {
   const redis = getRedisClient();
+  if (!redis) {
+    return {
+      productKeys: 0,
+      inventoryKeys: 0,
+      categoryKeys: 0,
+      sessionKeys: 0,
+    };
+  }
   
   const [productKeys, inventoryKeys, categoryKeys, sessionKeys] = await Promise.all([
     redis.keys(`${CACHE_PREFIX.PRODUCT}*`),
