@@ -168,8 +168,8 @@ export default function RegisterPage() {
                 </svg>
               </div>
               <div>
-                <p className="font-semibold">Ekskluzywne rabaty</p>
-                <p className="text-sm text-white/70">Specjalne oferty tylko dla członków</p>
+                <p className="font-semibold">Niskie ceny</p>
+                <p className="text-sm text-white/70">Miej kontrolę nad swoimi zamówieniami</p>
               </div>
             </div>
 
@@ -245,7 +245,7 @@ export default function RegisterPage() {
           {/* Title */}
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Utwórz konto 🎉
+              Utwórz konto 
             </h1>
             <p className="text-gray-600">
               Zarejestruj się i zacznij oszczędzać

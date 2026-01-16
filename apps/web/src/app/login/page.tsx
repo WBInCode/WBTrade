@@ -281,7 +281,7 @@ export default function LoginPage() {
                 </svg>
               </div>
               <div>
-                <p className="font-semibold">Ponad 100,000 produktów</p>
+                <p className="font-semibold">Tysiące produktów</p>
                 <p className="text-sm text-white/70">W najlepszych cenach</p>
               </div>
             </div>
@@ -293,8 +293,8 @@ export default function LoginPage() {
                 </svg>
               </div>
               <div>
-                <p className="font-semibold">Szybka dostawa 24h</p>
-                <p className="text-sm text-white/70">Darmowa od 199 zł</p>
+                <p className="font-semibold">Błyskawiczna dostawa</p>
+                <p className="text-sm text-white/70">Natychmiastowa obsługa zamówień</p>
               </div>
             </div>
 

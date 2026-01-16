@@ -282,15 +282,22 @@ export async function storePasswordResetToken(
  */
 export async function verifyPasswordResetToken(token: string): Promise<string | null> {
   const redis = getRedisClient();
+  if (!redis) return null;
+  
   const key = `${PASSWORD_RESET_PREFIX}${token}`;
-  const userId = await redis.get(key);
-  
-  if (userId) {
-    // Delete token after use (one-time use)
-    await redis.del(key);
+  try {
+    const userId = await redis.get(key);
+    
+    if (userId) {
+      // Delete token after use (one-time use)
+      await redis.del(key);
+    }
+    
+    return userId;
+  } catch (error) {
+    console.error('❌ Failed to verify password reset token:', error);
+    return null;
   }
-  
-  return userId;
 }
 
 // Session management
@@ -306,8 +313,16 @@ export async function storeSession(
   ttlSeconds: number
 ): Promise<void> {
   const redis = getRedisClient();
+  if (!redis) {
+    console.warn('⚠️  Redis unavailable - session storage disabled');
+    return;
+  }
   const key = `${SESSION_PREFIX}${userId}:${sessionId}`;
-  await redis.set(key, JSON.stringify(data), 'EX', ttlSeconds);
+  try {
+    await redis.set(key, JSON.stringify(data), 'EX', ttlSeconds);
+  } catch (error) {
+    console.error('❌ Failed to store session:', error);
+  }
 }
 
 /**
@@ -315,9 +330,16 @@ export async function storeSession(
  */
 export async function getSession(userId: string, sessionId: string): Promise<object | null> {
   const redis = getRedisClient();
+  if (!redis) return null;
+  
   const key = `${SESSION_PREFIX}${userId}:${sessionId}`;
-  const data = await redis.get(key);
-  return data ? JSON.parse(data) : null;
+  try {
+    const data = await redis.get(key);
+    return data ? JSON.parse(data) : null;
+  } catch (error) {
+    console.error('❌ Failed to get session:', error);
+    return null;
+  }
 }
 
 /**
@@ -325,8 +347,14 @@ export async function getSession(userId: string, sessionId: string): Promise<obj
  */
 export async function deleteSession(userId: string, sessionId: string): Promise<void> {
   const redis = getRedisClient();
+  if (!redis) return;
+  
   const key = `${SESSION_PREFIX}${userId}:${sessionId}`;
-  await redis.del(key);
+  try {
+    await redis.del(key);
+  } catch (error) {
+    console.error('❌ Failed to delete session:', error);
+  }
 }
 
 /**
@@ -334,11 +362,17 @@ export async function deleteSession(userId: string, sessionId: string): Promise<
  */
 export async function deleteAllUserSessions(userId: string): Promise<void> {
   const redis = getRedisClient();
+  if (!redis) return;
+  
   const pattern = `${SESSION_PREFIX}${userId}:*`;
   
-  const keys = await redis.keys(pattern);
-  if (keys.length > 0) {
-    await redis.del(...keys);
+  try {
+    const keys = await redis.keys(pattern);
+    if (keys.length > 0) {
+      await redis.del(...keys);
+    }
+  } catch (error) {
+    console.error('❌ Failed to delete user sessions:', error);
   }
 }
 

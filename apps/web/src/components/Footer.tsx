@@ -73,7 +73,7 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
                 </div>
                 <div>
                   <h4 className="font-semibold text-secondary-900">Najwyższa Jakość</h4>
-                  <p className="text-sm text-secondary-500">Sprawdzeni sprzedawcy</p>
+                  <p className="text-sm text-secondary-500">Sprawdzone produkty</p>
                 </div>
               </div>
             </div>
@@ -117,10 +117,10 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
             <h5 className="font-bold text-secondary-900 mb-5 text-sm uppercase tracking-wider">O firmie</h5>
             <ul className="space-y-3">
               <li><Link href="/about" className="text-secondary-600 hover:text-primary-500 transition-colors">O nas</Link></li>
-              <li><Link href="/careers" className="text-secondary-600 hover:text-primary-500 transition-colors">Kariera</Link></li>
-              <li><Link href="/press" className="text-secondary-600 hover:text-primary-500 transition-colors">Dla prasy</Link></li>
-              <li><Link href="/sustainability" className="text-secondary-600 hover:text-primary-500 transition-colors">Zrównoważony rozwój</Link></li>
-              <li><Link href="/blog" className="text-secondary-600 hover:text-primary-500 transition-colors">Blog</Link></li>
+              {/* <li><Link href="/careers" className="text-secondary-600 hover:text-primary-500 transition-colors">Kariera</Link></li> */}
+              {/* <li><Link href="/press" className="text-secondary-600 hover:text-primary-500 transition-colors">Dla prasy</Link></li> */}
+              {/* <li><Link href="/sustainability" className="text-secondary-600 hover:text-primary-500 transition-colors">Zrównoważony rozwój</Link></li> */}
+              {/* <li><Link href="/blog" className="text-secondary-600 hover:text-primary-500 transition-colors">Blog</Link></li> */}
             </ul>
           </div>
 
