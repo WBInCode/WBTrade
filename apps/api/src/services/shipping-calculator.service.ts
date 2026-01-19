@@ -33,15 +33,10 @@ const TAG_PATTERNS = {
 } as const;
 
 // Shipping method prices (in PLN)
+// Na ten moment tylko InPost + wysyłka gabaryt
 export const SHIPPING_PRICES = {
   inpost_paczkomat: 9.99,
   inpost_kurier: 19.99,
-  dpd: 15.99,
-  dhl: 19.99,
-  gls: 13.99,
-  pocztex: 12.99,
-  fedex: 29.99,
-  ups: 29.99,
   gabaryt_base: 49.99,
   wysylka_gabaryt: 79.99,
 } as const;
@@ -355,10 +350,7 @@ export class ShippingCalculatorService {
     switch (method) {
       case 'inpost_paczkomat': return SHIPPING_PRICES.inpost_paczkomat;
       case 'inpost_kurier': return SHIPPING_PRICES.inpost_kurier;
-      case 'dpd': return SHIPPING_PRICES.dpd;
-      case 'dhl': return SHIPPING_PRICES.dhl;
-      case 'gls': return SHIPPING_PRICES.gls;
-      case 'pocztex': return SHIPPING_PRICES.pocztex;
+      case 'wysylka_gabaryt': return SHIPPING_PRICES.wysylka_gabaryt;
       default: return SHIPPING_PRICES.inpost_kurier;
     }
   }
@@ -401,34 +393,6 @@ export class ShippingCalculatorService {
         name: 'Kurier InPost',
         price: totalGabarytCost + (standardPackageCount * SHIPPING_PRICES.inpost_kurier),
         available: true,
-      },
-      {
-        id: 'dpd',
-        name: 'Kurier DPD',
-        price: totalGabarytCost + (standardPackageCount * SHIPPING_PRICES.dpd),
-        available: !hasInPostOnlyPackages,
-        message: hasInPostOnlyPackages ? inPostOnlyMessage : undefined,
-      },
-      {
-        id: 'pocztex',
-        name: 'Pocztex Kurier48',
-        price: totalGabarytCost + (standardPackageCount * SHIPPING_PRICES.pocztex),
-        available: !hasInPostOnlyPackages,
-        message: hasInPostOnlyPackages ? inPostOnlyMessage : undefined,
-      },
-      {
-        id: 'dhl',
-        name: 'Kurier DHL',
-        price: totalGabarytCost + (standardPackageCount * SHIPPING_PRICES.dhl),
-        available: !hasInPostOnlyPackages,
-        message: hasInPostOnlyPackages ? inPostOnlyMessage : undefined,
-      },
-      {
-        id: 'gls',
-        name: 'Kurier GLS',
-        price: totalGabarytCost + (standardPackageCount * SHIPPING_PRICES.gls),
-        available: !hasInPostOnlyPackages,
-        message: hasInPostOnlyPackages ? inPostOnlyMessage : undefined,
       },
     ];
     
@@ -493,37 +457,6 @@ export class ShippingCalculatorService {
           message: 'Wymagana wysyłka gabaryt',
           estimatedDelivery: '1-2 dni',
         });
-        methods.push({
-          id: 'dpd',
-          name: 'Kurier DPD',
-          price: gabarytPrice,
-          available: false,
-          message: 'Wymagana wysyłka gabaryt',
-          estimatedDelivery: '1-3 dni',
-        });
-        methods.push({
-          id: 'pocztex',
-          name: 'Pocztex Kurier48',
-          price: gabarytPrice,
-          available: false,
-          message: 'Wymagana wysyłka gabaryt',
-          estimatedDelivery: '2-3 dni',
-        });
-        methods.push({
-          id: 'dhl',
-          name: 'Kurier DHL',
-          price: gabarytPrice,
-          available: false,
-          message: 'Wymagana wysyłka gabaryt',
-          estimatedDelivery: '1-2 dni',
-        });
-        methods.push({
-          id: 'gls',
-          name: 'Kurier GLS',
-          price: gabarytPrice,
-          available: false,
-          estimatedDelivery: '2-4 dni',
-        });
       } else {
         // Standard packages - check if InPost only restriction applies
         const paczkomatPackages = pkg.paczkomatPackageCount;
@@ -543,38 +476,6 @@ export class ShippingCalculatorService {
           price: SHIPPING_PRICES.inpost_kurier,
           available: true,
           estimatedDelivery: '1-2 dni',
-        });
-        methods.push({
-          id: 'dpd',
-          name: 'Kurier DPD',
-          price: SHIPPING_PRICES.dpd,
-          available: !pkg.isInPostOnly,
-          message: pkg.isInPostOnly ? inPostOnlyMessage : undefined,
-          estimatedDelivery: '1-3 dni',
-        });
-        methods.push({
-          id: 'pocztex',
-          name: 'Pocztex Kurier48',
-          price: SHIPPING_PRICES.pocztex,
-          available: !pkg.isInPostOnly,
-          message: pkg.isInPostOnly ? inPostOnlyMessage : undefined,
-          estimatedDelivery: '2-3 dni',
-        });
-        methods.push({
-          id: 'dhl',
-          name: 'Kurier DHL',
-          price: SHIPPING_PRICES.dhl,
-          available: !pkg.isInPostOnly,
-          message: pkg.isInPostOnly ? inPostOnlyMessage : undefined,
-          estimatedDelivery: '1-2 dni',
-        });
-        methods.push({
-          id: 'gls',
-          name: 'Kurier GLS',
-          price: SHIPPING_PRICES.gls,
-          available: !pkg.isInPostOnly,
-          message: pkg.isInPostOnly ? inPostOnlyMessage : undefined,
-          estimatedDelivery: '2-4 dni',
         });
       }
       
