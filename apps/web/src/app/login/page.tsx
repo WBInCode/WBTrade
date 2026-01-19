@@ -13,6 +13,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   // Redirect if already logged in
@@ -29,21 +31,39 @@ export default function LoginPage() {
     return emailRegex.test(email) && email.length <= 254;
   };
 
+  // Walidacja pola email przy blur lub submit
+  const validateEmail = (): boolean => {
+    if (!email.trim()) {
+      setEmailError('Email jest wymagany');
+      return false;
+    }
+    if (!isValidEmail(email)) {
+      setEmailError('Nieprawidłowy format email');
+      return false;
+    }
+    setEmailError('');
+    return true;
+  };
+
+  // Walidacja pola hasła przy blur lub submit
+  const validatePassword = (): boolean => {
+    if (!password) {
+      setPasswordError('Hasło jest wymagane');
+      return false;
+    }
+    setPasswordError('');
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     // Walidacja pól
-    if (!email.trim()) {
-      setError('Email jest wymagany');
-      return;
-    }
-    if (!isValidEmail(email)) {
-      setError('Podaj prawidłowy adres email');
-      return;
-    }
-    if (!password) {
-      setError('Hasło jest wymagane');
+    const isEmailValid = validateEmail();
+    const isPasswordValid = validatePassword();
+
+    if (!isEmailValid || !isPasswordValid) {
       return;
     }
 
@@ -124,13 +144,24 @@ export default function LoginPage() {
                   name="email"
                   type="email"
                   autoComplete="email"
-                  required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full pl-12 pr-4 py-3.5 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (emailError) setEmailError('');
+                  }}
+                  onBlur={validateEmail}
+                  className={`block w-full pl-12 pr-4 py-3.5 border rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all ${emailError ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
                   placeholder="twoj@email.pl"
                 />
               </div>
+              {emailError && (
+                <p className="mt-1.5 text-sm text-red-500 flex items-center gap-1" data-testid="email-error">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {emailError}
+                </p>
+              )}
             </div>
 
             <div>
@@ -148,10 +179,13 @@ export default function LoginPage() {
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
-                  required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-12 pr-12 py-3.5 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (passwordError) setPasswordError('');
+                  }}
+                  onBlur={validatePassword}
+                  className={`block w-full pl-12 pr-12 py-3.5 border rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all ${passwordError ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
                   placeholder="••••••••"
                 />
                 <button
@@ -171,6 +205,14 @@ export default function LoginPage() {
                   )}
                 </button>
               </div>
+              {passwordError && (
+                <p className="mt-1.5 text-sm text-red-500 flex items-center gap-1" data-testid="password-error">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {passwordError}
+                </p>
+              )}
             </div>
 
             <div className="flex items-center justify-between">
