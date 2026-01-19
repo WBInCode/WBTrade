@@ -133,7 +133,7 @@ export default function TermsPage() {
                 <ol className="list-decimal pl-6 text-secondary-600 mb-6 space-y-3">
                   <li>Dostawa realizowana jest na terenie Polski.</li>
                   <li>
-                    Dostępne metody dostawy: kurier (DPD, DHL), Paczkomaty InPost, odbiór osobisty.
+                    Dostępne metody dostawy: Kurier InPost, Paczkomaty InPost, wysyłka gabaryt.
                   </li>
                   <li>Koszty dostawy podawane są podczas składania Zamówienia.</li>
                   <li>

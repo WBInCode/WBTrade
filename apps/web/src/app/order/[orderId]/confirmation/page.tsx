@@ -157,7 +157,7 @@ function OrderConfirmationPageContent() {
   const shippingMethodNames: Record<string, string> = {
     inpost_paczkomat: 'InPost Paczkomat',
     inpost_kurier: 'Kurier InPost',
-    dpd: 'Kurier DPD',
+    wysylka_gabaryt: 'Wysyłka gabaryt',
     pickup: 'Odbiór osobisty',
   };
 
