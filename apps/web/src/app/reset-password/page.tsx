@@ -19,6 +19,8 @@ function ResetPasswordContent() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState<'weak' | 'fair' | 'good' | 'strong' | null>(null);
+  const [passwordError, setPasswordError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
 
   useEffect(() => {
     if (!token) {
@@ -45,6 +47,34 @@ function ResetPasswordContent() {
     const value = e.target.value;
     setPassword(value);
     setPasswordStrength(value ? checkPasswordStrength(value) : null);
+    setPasswordError(''); // Clear error on change
+  };
+
+  const validatePasswordField = (): boolean => {
+    if (!password) {
+      setPasswordError('Hasło jest wymagane');
+      return false;
+    }
+    const validationError = validatePassword();
+    if (validationError && !validationError.includes('identyczne')) {
+      setPasswordError(validationError);
+      return false;
+    }
+    setPasswordError('');
+    return true;
+  };
+
+  const validateConfirmPasswordField = (): boolean => {
+    if (!confirmPassword) {
+      setConfirmPasswordError('Potwierdzenie hasła jest wymagane');
+      return false;
+    }
+    if (password !== confirmPassword) {
+      setConfirmPasswordError('Hasła nie są identyczne');
+      return false;
+    }
+    setConfirmPasswordError('');
+    return true;
   };
 
   const validatePassword = (): string | null => {
@@ -60,6 +90,8 @@ function ResetPasswordContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setPasswordError('');
+    setConfirmPasswordError('');
 
     const validationError = validatePassword();
     if (validationError) {
@@ -369,10 +401,14 @@ function ResetPasswordContent() {
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="new-password"
-                  required
                   value={password}
                   onChange={handlePasswordChange}
-                  className="block w-full pl-12 pr-12 py-3.5 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+                  onBlur={validatePasswordField}
+                  className={`block w-full pl-12 pr-12 py-3.5 border rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
+                    passwordError
+                      ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500'
+                      : 'border-gray-200 focus:ring-orange-500/20 focus:border-orange-500'
+                  }`}
                   placeholder="••••••••"
                 />
                 <button
@@ -394,7 +430,7 @@ function ResetPasswordContent() {
               </div>
 
               {/* Password strength indicator */}
-              {password && (
+              {password && !passwordError && (
                 <div className="mt-3 space-y-2">
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -426,6 +462,14 @@ function ResetPasswordContent() {
                   </div>
                 </div>
               )}
+              {passwordError && (
+                <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {passwordError}
+                </p>
+              )}
             </div>
 
             {/* Confirm Password */}
@@ -444,11 +488,14 @@ function ResetPasswordContent() {
                   name="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
                   autoComplete="new-password"
-                  required
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    setConfirmPasswordError('');
+                  }}
+                  onBlur={validateConfirmPasswordField}
                   className={`block w-full pl-12 pr-12 py-3.5 border rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
-                    confirmPassword && password !== confirmPassword
+                    confirmPasswordError
                       ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500'
                       : confirmPassword && password === confirmPassword
                       ? 'border-green-300 focus:ring-green-500/20 focus:border-green-500'
@@ -473,15 +520,15 @@ function ResetPasswordContent() {
                   )}
                 </button>
               </div>
-              {confirmPassword && password !== confirmPassword && (
+              {confirmPasswordError && (
                 <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                  Hasła nie są identyczne
+                  {confirmPasswordError}
                 </p>
               )}
-              {confirmPassword && password === confirmPassword && (
+              {!confirmPasswordError && confirmPassword && password === confirmPassword && (
                 <p className="mt-1.5 text-xs text-green-600 flex items-center gap-1">
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
