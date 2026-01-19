@@ -1000,6 +1000,7 @@ export const checkoutApi = {
             productImage?: string;
           }>;
           isPaczkomatAvailable: boolean;
+          isInPostOnly: boolean;
         };
         shippingMethods: Array<{
           id: string;
