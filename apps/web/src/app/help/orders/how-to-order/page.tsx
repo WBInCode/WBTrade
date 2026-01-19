@@ -95,9 +95,9 @@ export default function HowToOrderPage() {
                   Dostępne opcje dostawy:
                 </p>
                 <ul className="list-disc pl-6 text-secondary-600 space-y-2 mb-6">
-                  <li>Kurier (DPD, InPost, DHL)</li>
+                  <li>Kurier InPost</li>
                   <li>Paczkomat InPost</li>
-                  <li>Odbiór w punkcie</li>
+                  <li>Wysyłka gabaryt (dla dużych produktów)</li>
                 </ul>
 
                 <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">
