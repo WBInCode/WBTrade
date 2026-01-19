@@ -22,10 +22,6 @@ interface OrderSummaryProps {
 const shippingMethodNames: Record<ShippingData['method'], string> = {
   inpost_paczkomat: 'InPost Paczkomat',
   inpost_kurier: 'Kurier InPost',
-  dpd: 'Kurier DPD',
-  pocztex: 'Pocztex Kurier48',
-  dhl: 'Kurier DHL',
-  gls: 'Kurier GLS',
   wysylka_gabaryt: 'Wysyłka gabaryt',
 };
 

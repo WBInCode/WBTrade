@@ -51,11 +51,11 @@ export default function FAQPage() {
       questions: [
         {
           question: 'Jakie są dostępne metody dostawy?',
-          answer: 'Oferujemy dostawę kurierską (DPD, DHL), dostawę do Paczkomatów InPost oraz odbiór osobisty. Szczegółowe informacje o cenach i czasie dostawy znajdziesz na stronie "Dostawa".',
+          answer: 'Oferujemy dostawę kurierską InPost, dostawę do Paczkomatów InPost oraz specjalną wysyłkę dla produktów gabarytowych. Szczegółowe informacje o cenach i czasie dostawy znajdziesz na stronie "Dostawa".',
         },
         {
           question: 'Ile kosztuje dostawa?',
-          answer: 'Koszt dostawy zależy od wybranej metody: Paczkomaty InPost od 9,99 zł, kurier DPD od 14,99 zł, kurier DHL od 16,99 zł. Darmowa dostawa dostępna przy zamówieniach powyżej określonej kwoty (od 100 zł dla Paczkomatów).',
+          answer: 'Koszt dostawy zależy od wybranej metody: Paczkomaty InPost od 9,99 zł, Kurier InPost od 19,99 zł. Darmowa dostawa dostępna przy zamówieniach powyżej określonej kwoty (od 100 zł dla Paczkomatów).',
         },
         {
           question: 'Jak długo trwa dostawa?',
