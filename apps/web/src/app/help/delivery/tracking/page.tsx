@@ -77,34 +77,10 @@ export default function TrackingPage() {
                   </div>
                   
                   <div className="flex items-center gap-4 p-4 bg-secondary-50 rounded-lg">
-                    <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center text-2xl">🚚</div>
+                    <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center text-2xl">🚚</div>
                     <div>
-                      <h4 className="font-medium text-secondary-900">DPD</h4>
-                      <p className="text-primary-600 text-sm">dpd.com.pl/tracking</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-4 p-4 bg-secondary-50 rounded-lg">
-                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-2xl">📮</div>
-                    <div>
-                      <h4 className="font-medium text-secondary-900">Poczta Polska</h4>
-                      <p className="text-primary-600 text-sm">emonitoring.poczta-polska.pl</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-4 p-4 bg-secondary-50 rounded-lg">
-                    <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center text-2xl">🚛</div>
-                    <div>
-                      <h4 className="font-medium text-secondary-900">GLS</h4>
-                      <p className="text-primary-600 text-sm">gls-group.eu/PL/pl/sledzenie-paczek</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-4 p-4 bg-secondary-50 rounded-lg">
-                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-2xl">📬</div>
-                    <div>
-                      <h4 className="font-medium text-secondary-900">UPS</h4>
-                      <p className="text-primary-600 text-sm">ups.com/track</p>
+                      <h4 className="font-medium text-secondary-900">Kurier InPost</h4>
+                      <p className="text-primary-600 text-sm">inpost.pl/sledzenie-przesylek</p>
                     </div>
                   </div>
                 </div>

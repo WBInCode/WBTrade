@@ -81,9 +81,8 @@ export default function DeliveryIssuesPage() {
                   Po nieudanej próbie doręczenia:
                 </p>
                 <ul className="list-disc pl-6 text-secondary-600 space-y-2 mb-6">
-                  <li><strong>InPost:</strong> Paczka trafia do najbliższego paczkomatu</li>
-                  <li><strong>DPD/GLS:</strong> Kurier podejmie kolejną próbę następnego dnia</li>
-                  <li><strong>Poczta:</strong> Paczka czeka w placówce (awizo w skrzynce)</li>
+                  <li><strong>InPost:</strong> Paczka trafia do najbliższego paczkomatu lub kurier podejmie kolejną próbę</li>
+                  <li><strong>Wysyłka gabaryt:</strong> Kurier skontaktuje się telefonicznie w celu umówienia nowego terminu</li>
                 </ul>
                 <p className="text-secondary-600 mb-6">
                   Możesz też zalogować się na stronę przewoźnika i wybrać nowy termin dostawy lub przekierować paczkę.

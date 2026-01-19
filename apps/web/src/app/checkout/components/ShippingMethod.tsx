@@ -12,7 +12,7 @@ interface ShippingMethodProps {
   cartItems?: Array<{ variant: { id: string }; quantity: number }>;
 }
 
-type ShippingProviderId = 'inpost_paczkomat' | 'inpost_kurier' | 'dpd' | 'pocztex' | 'dhl' | 'gls' | 'wysylka_gabaryt';
+type ShippingProviderId = 'inpost_paczkomat' | 'inpost_kurier' | 'wysylka_gabaryt';
 
 interface ShippingProvider {
   id: ShippingProviderId;
@@ -27,13 +27,10 @@ interface ShippingProvider {
 }
 
 // Default shipping providers (will be updated from API)
+// Na ten moment tylko InPost + wysyłka gabaryt
 const defaultShippingProviders: ShippingProvider[] = [
   { id: 'inpost_paczkomat', name: 'InPost Paczkomat', price: 9.99, estimatedDelivery: '1-2 dni', requiresPaczkomat: true, badge: 'Popularne', available: true },
-  { id: 'inpost_kurier', name: 'Kurier InPost', price: 14.99, estimatedDelivery: '1-2 dni', available: true },
-  { id: 'dpd', name: 'Kurier DPD', price: 15.99, estimatedDelivery: '1-3 dni', available: true },
-  { id: 'pocztex', name: 'Pocztex Kurier48', price: 12.99, estimatedDelivery: '2-3 dni', available: true },
-  { id: 'dhl', name: 'Kurier DHL', price: 19.99, estimatedDelivery: '1-2 dni', available: true },
-  { id: 'gls', name: 'Kurier GLS', price: 13.99, estimatedDelivery: '2-4 dni', available: true },
+  { id: 'inpost_kurier', name: 'Kurier InPost', price: 19.99, estimatedDelivery: '1-2 dni', available: true },
 ];
 
 // Ikony dla dostawców
@@ -44,30 +41,6 @@ const ShippingIcon = ({ id }: { id: ShippingProviderId }) => {
       return (
         <div className="flex items-center justify-center w-12 h-7 bg-[#FFCD00] rounded px-1">
           <span className="text-[#1D1D1B] text-[10px] font-bold">InPost</span>
-        </div>
-      );
-    case 'dpd':
-      return (
-        <div className="flex items-center justify-center w-12 h-7 bg-[#DC0032] rounded px-1">
-          <span className="text-white text-[10px] font-bold">DPD</span>
-        </div>
-      );
-    case 'pocztex':
-      return (
-        <div className="flex items-center justify-center w-12 h-7 bg-[#003D7C] rounded px-1">
-          <span className="text-white text-[8px] font-bold">POCZTEX</span>
-        </div>
-      );
-    case 'dhl':
-      return (
-        <div className="flex items-center justify-center w-12 h-7 bg-[#FFCC00] rounded px-1">
-          <span className="text-[#D40511] text-[10px] font-bold">DHL</span>
-        </div>
-      );
-    case 'gls':
-      return (
-        <div className="flex items-center justify-center w-12 h-7 bg-[#003087] rounded px-1">
-          <span className="text-[#F7D117] text-[10px] font-bold">GLS</span>
         </div>
       );
     case 'wysylka_gabaryt':

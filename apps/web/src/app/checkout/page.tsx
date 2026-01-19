@@ -29,7 +29,7 @@ export interface AddressData {
 }
 
 export interface ShippingData {
-  method: 'inpost_paczkomat' | 'inpost_kurier' | 'dpd' | 'pocztex' | 'dhl' | 'gls' | 'wysylka_gabaryt';
+  method: 'inpost_paczkomat' | 'inpost_kurier' | 'wysylka_gabaryt';
   paczkomatCode?: string;
   paczkomatAddress?: string;
   price: number;
@@ -39,7 +39,7 @@ export interface ShippingData {
 
 export interface PackageShippingSelection {
   packageId: string;
-  method: 'inpost_paczkomat' | 'inpost_kurier' | 'dpd' | 'pocztex' | 'dhl' | 'gls' | 'wysylka_gabaryt';
+  method: 'inpost_paczkomat' | 'inpost_kurier' | 'wysylka_gabaryt';
   price: number;
   paczkomatCode?: string;
   paczkomatAddress?: string;
