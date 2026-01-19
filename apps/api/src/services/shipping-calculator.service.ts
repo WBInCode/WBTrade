@@ -28,6 +28,8 @@ const TAG_PATTERNS = {
   COURIER_ONLY: /^(tylko\s*kurier)$/i,
   // Matches tags that indicate paczkomat is available
   PACZKOMAT_AVAILABLE: /^(paczkomaty?\s*(i\s*kurier)?|paczkomat)$/i,
+  // Matches tags that restrict shipping to InPost only (Paczkomat + Kurier InPost)
+  INPOST_ONLY: /^paczkomaty?\s*i\s*kurier$/i,
 } as const;
 
 // Shipping method prices (in PLN)
@@ -74,6 +76,7 @@ export interface ShippingPackage {
   paczkomatPackageCount: number;
   gabarytPrice?: number;
   isPaczkomatAvailable: boolean;
+  isInPostOnly: boolean; // When true, only InPost Paczkomat and Kurier InPost are available
 }
 
 export interface ShippingMethodForPackage {
@@ -158,6 +161,14 @@ function getPaczkomatLimit(tags: string[]): number {
   return 10; // Default limit
 }
 
+/**
+ * Check if product has "Paczkomaty i Kurier" tag (InPost only)
+ * When true, only InPost Paczkomat and Kurier InPost shipping methods are available
+ */
+function isInPostOnly(tags: string[]): boolean {
+  return tags.some(tag => TAG_PATTERNS.INPOST_ONLY.test(tag));
+}
+
 export class ShippingCalculatorService {
   /**
    * Calculate shipping for cart items
@@ -229,6 +240,7 @@ export class ShippingCalculatorService {
     let packageId = 1;
     for (const gabarytItem of gabarytItems) {
       const gabarytPrice = getGabarytPrice(gabarytItem.product.tags);
+      const productIsInPostOnly = isInPostOnly(gabarytItem.product.tags);
       for (let i = 0; i < gabarytItem.quantity; i++) {
         packages.push({
           id: `gabaryt-${packageId++}`,
@@ -246,6 +258,7 @@ export class ShippingCalculatorService {
           paczkomatPackageCount: 0,
           gabarytPrice: gabarytPrice || SHIPPING_PRICES.gabaryt_base,
           isPaczkomatAvailable: false, // Gabaryt cannot use paczkomat
+          isInPostOnly: productIsInPostOnly,
         });
       }
     }
@@ -262,10 +275,17 @@ export class ShippingCalculatorService {
       }));
       
       let paczkomatPackageCount = 0;
+      // Check if any item in this package requires InPost only
+      let packageIsInPostOnly = false;
       for (const item of wholesalerItems) {
         const limit = getPaczkomatLimit(item.product.tags);
         const packagesForItem = Math.ceil(item.quantity / limit);
         paczkomatPackageCount += packagesForItem;
+        
+        // If any product has "Paczkomaty i Kurier" tag, the whole package is InPost only
+        if (isInPostOnly(item.product.tags)) {
+          packageIsInPostOnly = true;
+        }
       }
       
       packages.push({
@@ -275,6 +295,7 @@ export class ShippingCalculatorService {
         items: packageItems,
         paczkomatPackageCount,
         isPaczkomatAvailable: true, // Standard items can use paczkomat
+        isInPostOnly: packageIsInPostOnly,
       });
     }
     
@@ -361,6 +382,10 @@ export class ShippingCalculatorService {
     
     const standardPackageCount = calculation.packages.filter(p => p.type === 'standard').length;
     
+    // Check if any package has InPost only restriction
+    const hasInPostOnlyPackages = calculation.packages.some(p => p.isInPostOnly);
+    const inPostOnlyMessage = 'Dla niektórych produktów dostępna tylko wysyłka InPost';
+    
     const methods = [
       {
         id: 'inpost_paczkomat',
@@ -381,25 +406,29 @@ export class ShippingCalculatorService {
         id: 'dpd',
         name: 'Kurier DPD',
         price: totalGabarytCost + (standardPackageCount * SHIPPING_PRICES.dpd),
-        available: true,
+        available: !hasInPostOnlyPackages,
+        message: hasInPostOnlyPackages ? inPostOnlyMessage : undefined,
       },
       {
         id: 'pocztex',
         name: 'Pocztex Kurier48',
         price: totalGabarytCost + (standardPackageCount * SHIPPING_PRICES.pocztex),
-        available: true,
+        available: !hasInPostOnlyPackages,
+        message: hasInPostOnlyPackages ? inPostOnlyMessage : undefined,
       },
       {
         id: 'dhl',
         name: 'Kurier DHL',
         price: totalGabarytCost + (standardPackageCount * SHIPPING_PRICES.dhl),
-        available: true,
+        available: !hasInPostOnlyPackages,
+        message: hasInPostOnlyPackages ? inPostOnlyMessage : undefined,
       },
       {
         id: 'gls',
         name: 'Kurier GLS',
         price: totalGabarytCost + (standardPackageCount * SHIPPING_PRICES.gls),
-        available: true,
+        available: !hasInPostOnlyPackages,
+        message: hasInPostOnlyPackages ? inPostOnlyMessage : undefined,
       },
     ];
     
@@ -496,8 +525,9 @@ export class ShippingCalculatorService {
           estimatedDelivery: '2-4 dni',
         });
       } else {
-        // Standard packages - all options available
+        // Standard packages - check if InPost only restriction applies
         const paczkomatPackages = pkg.paczkomatPackageCount;
+        const inPostOnlyMessage = 'Dla tego produktu dostępna tylko wysyłka InPost';
         
         methods.push({
           id: 'inpost_paczkomat',
@@ -518,28 +548,32 @@ export class ShippingCalculatorService {
           id: 'dpd',
           name: 'Kurier DPD',
           price: SHIPPING_PRICES.dpd,
-          available: true,
+          available: !pkg.isInPostOnly,
+          message: pkg.isInPostOnly ? inPostOnlyMessage : undefined,
           estimatedDelivery: '1-3 dni',
         });
         methods.push({
           id: 'pocztex',
           name: 'Pocztex Kurier48',
           price: SHIPPING_PRICES.pocztex,
-          available: true,
+          available: !pkg.isInPostOnly,
+          message: pkg.isInPostOnly ? inPostOnlyMessage : undefined,
           estimatedDelivery: '2-3 dni',
         });
         methods.push({
           id: 'dhl',
           name: 'Kurier DHL',
           price: SHIPPING_PRICES.dhl,
-          available: true,
+          available: !pkg.isInPostOnly,
+          message: pkg.isInPostOnly ? inPostOnlyMessage : undefined,
           estimatedDelivery: '1-2 dni',
         });
         methods.push({
           id: 'gls',
           name: 'Kurier GLS',
           price: SHIPPING_PRICES.gls,
-          available: true,
+          available: !pkg.isInPostOnly,
+          message: pkg.isInPostOnly ? inPostOnlyMessage : undefined,
           estimatedDelivery: '2-4 dni',
         });
       }
