@@ -1,0 +1,5 @@
+# Ignoruj raporty i wyniki testów
+/playwright-report/
+/test-results/
+/playwright/.cache/
+test-results.json
