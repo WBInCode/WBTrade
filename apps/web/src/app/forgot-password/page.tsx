@@ -10,6 +10,7 @@ export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [emailError, setEmailError] = useState('');
 
   // Walidacja email
   const isValidEmail = (email: string): boolean => {
@@ -18,17 +19,26 @@ export default function ForgotPasswordPage() {
     return emailRegex.test(email) && email.length <= 254;
   };
 
+  const validateEmail = (email: string) => {
+    if (!email.trim()) {
+      setEmailError('Email jest wymagany');
+      return false;
+    }
+    if (!isValidEmail(email)) {
+      setEmailError('Podaj prawidłowy adres email');
+      return false;
+    }
+    setEmailError('');
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setEmailError('');
 
     // Walidacja pól
-    if (!email.trim()) {
-      setError('Email jest wymagany');
-      return;
-    }
-    if (!isValidEmail(email)) {
-      setError('Podaj prawidłowy adres email');
+    if (!validateEmail(email)) {
       return;
     }
 
@@ -242,13 +252,25 @@ export default function ForgotPasswordPage() {
                   name="email"
                   type="email"
                   autoComplete="email"
-                  required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full pl-12 pr-4 py-3.5 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+                  onBlur={() => validateEmail(email)}
+                  className={`block w-full pl-12 pr-4 py-3.5 border rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
+                    emailError 
+                      ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500' 
+                      : 'border-gray-200 focus:ring-orange-500/20 focus:border-orange-500'
+                  }`}
                   placeholder="twoj@email.pl"
                 />
               </div>
+              {emailError && (
+                <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {emailError}
+                </p>
+              )}
             </div>
 
             <button
