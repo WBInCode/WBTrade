@@ -32,6 +32,7 @@ interface PackageWithOptions {
     wholesaler: string | null;
     items: PackageItem[];
     isPaczkomatAvailable: boolean;
+    isInPostOnly: boolean;
   };
   shippingMethods: ShippingMethodOption[];
   selectedMethod: string;
