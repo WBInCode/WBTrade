@@ -83,7 +83,7 @@ function HeaderContent() {
   }, [pathname, searchParams]);
 
   return (
-    <header className="bg-white sticky top-0 z-50 shadow-sm">
+    <header className="bg-white sticky top-0 z-50 shadow-sm relative">
       {/* Top Header */}
       <div className="border-b border-gray-100">
         <div className="container-custom">
@@ -120,14 +120,6 @@ function HeaderContent() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              
-              {/* Mega Menu Component */}
-              <MegaMenu
-                categories={categories}
-                isOpen={isCategoryOpen}
-                onClose={() => setIsCategoryOpen(false)}
-                currentCategorySlug={currentMainCategory?.slug}
-              />
             </div>
 
             {/* Search */}
@@ -263,7 +255,7 @@ function HeaderContent() {
         </div>
       </div>
 
-      {/* Mobile Menu - Categories */}
+      {/* Mega Menu - works for both mobile and desktop */}
       <MegaMenu
         categories={categories}
         isOpen={isCategoryOpen}
