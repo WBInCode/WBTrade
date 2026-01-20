@@ -47,21 +47,21 @@ export class CategoriesService {
       orderBy: { order: 'asc' },
       include: {
         _count: {
-          select: { products: true }
+          select: { products: { where: { price: { gt: 0 } } } }
         },
         children: {
           where: { isActive: true },
           orderBy: { name: 'asc' },
           include: {
             _count: {
-              select: { products: true }
+              select: { products: { where: { price: { gt: 0 } } } }
             },
             children: {
               where: { isActive: true },
               orderBy: { name: 'asc' },
               include: {
                 _count: {
-                  select: { products: true }
+                  select: { products: { where: { price: { gt: 0 } } } }
                 }
               }
             }
@@ -114,14 +114,14 @@ export class CategoriesService {
           orderBy: { order: 'asc' },
           include: {
             _count: {
-              select: { products: true }
+              select: { products: { where: { price: { gt: 0 } } } }
             },
             children: {
               where: { isActive: true },
               orderBy: { order: 'asc' },
               include: {
                 _count: {
-                  select: { products: true }
+                  select: { products: { where: { price: { gt: 0 } } } }
                 }
               }
             }
@@ -129,7 +129,7 @@ export class CategoriesService {
         },
         parent: true,
         _count: {
-          select: { products: true }
+          select: { products: { where: { price: { gt: 0 } } } }
         }
       }
     });
@@ -230,21 +230,21 @@ export class CategoriesService {
       orderBy: { order: 'asc' },
       include: {
         _count: {
-          select: { products: true }
+          select: { products: { where: { price: { gt: 0 } } } }
         },
         children: {
           where: { isActive: true },
           orderBy: { name: 'asc' },
           include: {
             _count: {
-              select: { products: true }
+              select: { products: { where: { price: { gt: 0 } } } }
             },
             children: {
               where: { isActive: true },
               orderBy: { name: 'asc' },
               include: {
                 _count: {
-                  select: { products: true }
+                  select: { products: { where: { price: { gt: 0 } } } }
                 }
               }
             }
@@ -284,7 +284,7 @@ export class CategoriesService {
       orderBy: [{ order: 'asc' }, { name: 'asc' }],
       include: {
         _count: {
-          select: { products: true, children: true }
+          select: { products: { where: { price: { gt: 0 } } }, children: true }
         }
       }
     });
