@@ -210,7 +210,7 @@ export class BaselinkerOrdersService {
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`[BaselinkerOrders] Failed to sync order ${orderId}:`, error);
+      console.error('[BaselinkerOrders] Failed to sync order %s:', orderId, error);
 
       return {
         success: false,
