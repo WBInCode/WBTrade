@@ -1,4 +1,5 @@
-"description": "Mapowanie kategorii z BaseLinker na zunifikowane kategorie sklepu",
+{
+  "description": "Mapowanie kategorii z BaseLinker na zunifikowane kategorie sklepu",
   "version": "3.0",
   
   "mainCategories": [

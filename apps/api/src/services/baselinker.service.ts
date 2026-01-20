@@ -560,11 +560,29 @@ export class BaselinkerService {
 
   /**
    * Find category by Baselinker ID
+   * Searches for exact match first, then tries with common prefixes (btp-, hp-)
    */
   private async findCategoryByBaselinkerIdcatId(baselinkerCategoryId: string) {
-    return prisma.category.findUnique({
+    // Try exact match first
+    let category = await prisma.category.findUnique({
       where: { baselinkerCategoryId },
     });
+    
+    if (category) return category;
+    
+    // Try with btp- prefix
+    category = await prisma.category.findUnique({
+      where: { baselinkerCategoryId: `btp-${baselinkerCategoryId}` },
+    });
+    
+    if (category) return category;
+    
+    // Try with hp- prefix
+    category = await prisma.category.findUnique({
+      where: { baselinkerCategoryId: `hp-${baselinkerCategoryId}` },
+    });
+    
+    return category;
   }
 
   /**
