@@ -93,6 +93,72 @@ export interface BaselinkerImage {
 }
 
 // ============================================
+// Order Types for addOrder API
+// ============================================
+
+export interface BaselinkerOrderProduct {
+  storage: 'db' | 'bl'; // db = external, bl = baselinker inventory
+  storage_id: string;
+  product_id?: string; // Baselinker product ID
+  variant_id?: number;
+  name: string;
+  sku?: string;
+  ean?: string;
+  price_brutto: number;
+  tax_rate?: number;
+  quantity: number;
+  weight?: number;
+}
+
+export interface BaselinkerAddOrderRequest {
+  order_status_id: number;
+  date_add?: number; // Unix timestamp
+  currency?: string;
+  payment_method?: string;
+  payment_method_cod?: boolean;
+  paid?: boolean;
+  user_comments?: string;
+  admin_comments?: string;
+  email?: string;
+  phone?: string;
+  user_login?: string;
+  delivery_method?: string;
+  delivery_price?: number;
+  delivery_fullname?: string;
+  delivery_company?: string;
+  delivery_address?: string;
+  delivery_city?: string;
+  delivery_postcode?: string;
+  delivery_country_code?: string;
+  delivery_point_id?: string;
+  delivery_point_name?: string;
+  delivery_point_address?: string;
+  delivery_point_postcode?: string;
+  delivery_point_city?: string;
+  invoice_fullname?: string;
+  invoice_company?: string;
+  invoice_nip?: string;
+  invoice_address?: string;
+  invoice_city?: string;
+  invoice_postcode?: string;
+  invoice_country_code?: string;
+  want_invoice?: boolean;
+  extra_field_1?: string;
+  extra_field_2?: string;
+  custom_extra_fields?: Record<string, string>;
+  products: BaselinkerOrderProduct[];
+}
+
+export interface BaselinkerAddOrderResponse {
+  order_id: number;
+}
+
+export interface BaselinkerUpdateStockRequest {
+  inventory_id: number;
+  products: Record<string, Record<string, number>>; // { product_id: { warehouse_id: stock } }
+}
+
+// ============================================
 // API Response Wrappers
 // ============================================
 
@@ -183,4 +249,21 @@ export interface IBaselinkerProvider {
    * Test connection to Baselinker API
    */
   testConnection(): Promise<boolean>;
+
+  /**
+   * Add order to Baselinker
+   * This automatically decreases stock in Baselinker inventory
+   * @param orderData - Order data to add
+   */
+  addOrder(orderData: BaselinkerAddOrderRequest): Promise<BaselinkerAddOrderResponse>;
+
+  /**
+   * Update stock levels for products in inventory
+   * @param inventoryId - The inventory ID
+   * @param products - Map of product_id to warehouse stock levels
+   */
+  updateInventoryProductsStock(
+    inventoryId: string,
+    products: Record<string, Record<string, number>>
+  ): Promise<void>;
 }
