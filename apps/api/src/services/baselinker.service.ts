@@ -1359,6 +1359,48 @@ export class BaselinkerService {
     console.log(`[BaselinkerSync] Sync log ${syncId} deleted by user`);
     return { cancelled: false, deleted: true };
   }
+
+  /**
+   * Send order to Baselinker
+   * @param orderId - Order ID from our database
+   */
+  async sendOrderToBaselinker(orderId: string): Promise<{ success: boolean; baselinkerOrderId?: string; error?: string }> {
+    try {
+      // TODO: Implement order sending to Baselinker
+      // This would require adding order-related methods to the Baselinker provider
+      console.log(`[BaselinkerService] Sending order ${orderId} to Baselinker - not yet implemented`);
+      return {
+        success: false,
+        error: 'Order sending to Baselinker is not yet implemented',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Sync stock for a specific variant to Baselinker
+   * @param variantId - Product variant ID
+   */
+  async syncStockToBaselinker(variantId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      // TODO: Implement stock update to Baselinker
+      // This would require adding stock update methods to the Baselinker provider
+      console.log(`[BaselinkerService] Syncing stock for variant ${variantId} to Baselinker - not yet implemented`);
+      return {
+        success: false,
+        error: 'Stock sync to Baselinker is not yet implemented',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
 }
 
 // Export singleton instance

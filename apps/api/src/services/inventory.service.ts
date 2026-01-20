@@ -248,7 +248,7 @@ export class InventoryService {
       });
     }).then(async () => {
       // Sync stock to BaseLinker after receiving
-      await baselinkerService.syncStockToBaselinker(variantId).catch(err => {
+      await baselinkerService.syncStockToBaselinker(variantId).catch((err: unknown) => {
         console.error(`[InventoryService] Failed to sync stock for ${variantId} to BaseLinker:`, err);
       });
     });
@@ -302,7 +302,7 @@ export class InventoryService {
       });
     }).then(async () => {
       // Sync stock to BaseLinker after shipping
-      await baselinkerService.syncStockToBaselinker(variantId).catch(err => {
+      await baselinkerService.syncStockToBaselinker(variantId).catch((err: unknown) => {
         console.error(`[InventoryService] Failed to sync stock for ${variantId} to BaseLinker:`, err);
       });
     });
