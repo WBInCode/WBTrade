@@ -6,10 +6,12 @@
  * - Connection testing
  * - Manual sync triggers
  * - Sync status and logs
+ * - Order synchronization (shop → Baselinker)
  */
 
 import { Request, Response } from 'express';
 import { baselinkerService } from '../services/baselinker.service';
+import { baselinkerOrdersService } from '../services/baselinker-orders.service';
 
 export const baselinkerController = {
   /**
@@ -251,6 +253,83 @@ export const baselinkerController = {
       });
     }
   },
+
+  // ============================================
+  // Order Sync Endpoints (Shop → Baselinker)
+  // ============================================
+
+  /**
+   * POST /api/admin/baselinker/orders/sync
+   * Sync all pending paid orders to Baselinker
+   */
+  async syncPendingOrders(req: Request, res: Response) {
+    try {
+      const results = await baselinkerOrdersService.syncPendingOrders();
+
+      const successful = results.filter(r => r.success);
+      const failed = results.filter(r => !r.success);
+
+      res.json({
+        message: `Synced ${successful.length} orders, ${failed.length} failed`,
+        summary: {
+          total: results.length,
+          successful: successful.length,
+          failed: failed.length,
+        },
+        results,
+      });
+    } catch (error) {
+      console.error('Error syncing pending orders:', error);
+      res.status(500).json({
+        message: 'Failed to sync orders',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  },
+
+  /**
+   * POST /api/admin/baselinker/orders/:orderId/sync
+   * Sync a single order to Baselinker
+   */
+  async syncOrder(req: Request, res: Response) {
+    try {
+      const { orderId } = req.params;
+      const { force, orderStatusId } = req.body;
+
+      if (!orderId) {
+        return res.status(400).json({
+          message: 'Order ID is required',
+        });
+      }
+
+      const result = await baselinkerOrdersService.syncOrderToBaselinker(orderId, {
+        force: force === true,
+        orderStatusId: orderStatusId ? parseInt(orderStatusId) : undefined,
+      });
+
+      if (result.success) {
+        res.json({
+          message: 'Order synced successfully',
+          ...result,
+        });
+      } else {
+        res.status(400).json({
+          message: 'Failed to sync order',
+          ...result,
+        });
+      }
+    } catch (error) {
+      console.error('Error syncing order:', error);
+      res.status(500).json({
+        message: 'Failed to sync order',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  },
+
+  // ============================================
+  // Manual Stock/Order Sync (Legacy Endpoints)
+  // ============================================
 
   /**
    * POST /api/admin/baselinker/send-order/:orderId

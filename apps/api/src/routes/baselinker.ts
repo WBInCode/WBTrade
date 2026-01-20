@@ -23,12 +23,17 @@ router.delete('/config', baselinkerController.deleteConfig);
 // Connection test
 router.post('/test', baselinkerController.testConnection);
 
-// Sync endpoints
+// Product sync endpoints (Baselinker → Shop)
 router.post('/sync', baselinkerController.triggerSync);
 router.get('/status', baselinkerController.getStatus);
 router.delete('/sync/:id', baselinkerController.cancelSync);
 
-// Manual order/stock sync endpoints
+// Order sync endpoints (Shop → Baselinker)
+// Orders are synced after payment to decrease stock in Baselinker
+router.post('/orders/sync', baselinkerController.syncPendingOrders);
+router.post('/orders/:orderId/sync', baselinkerController.syncOrder);
+
+// Manual order/stock sync endpoints (legacy/alternative)
 router.post('/send-order/:orderId', baselinkerController.sendOrder);
 router.post('/sync-stock/:variantId', baselinkerController.syncStock);
 router.post('/sync-all-stock', baselinkerController.syncAllStock);
