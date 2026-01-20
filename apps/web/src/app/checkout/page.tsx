@@ -57,7 +57,7 @@ export interface PackageShippingSelection {
 }
 
 export interface PaymentData {
-  method: 'card' | 'blik' | 'transfer' | 'cod' | 'google_pay' | 'apple_pay' | 'paypo';
+  method: 'payu' | 'card' | 'blik' | 'transfer' | 'google_pay' | 'apple_pay' | 'paypo';
   extraFee: number;
 }
 
@@ -88,7 +88,7 @@ const initialShipping: ShippingData = {
 };
 
 const initialPayment: PaymentData = {
-  method: 'blik',
+  method: 'payu',
   extraFee: 0,
 };
 

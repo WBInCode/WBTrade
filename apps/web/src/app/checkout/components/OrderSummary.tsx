@@ -26,10 +26,10 @@ const shippingMethodNames: Record<ShippingData['method'], string> = {
 };
 
 const paymentMethodNames: Record<PaymentData['method'], string> = {
+  payu: 'Płatność online (PayU)',
   blik: 'BLIK',
   card: 'Karta płatnicza',
   transfer: 'Przelew online',
-  cod: 'Płatność przy odbiorze',
   google_pay: 'Google Pay',
   apple_pay: 'Apple Pay',
   paypo: 'PayPo',

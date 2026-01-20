@@ -162,10 +162,13 @@ function OrderConfirmationPageContent() {
   };
 
   const paymentMethodNames: Record<string, string> = {
+    payu: 'Płatność online (PayU)',
     blik: 'BLIK',
     card: 'Karta płatnicza',
     transfer: 'Przelew online',
-    cod: 'Płatność przy odbiorze',
+    google_pay: 'Google Pay',
+    apple_pay: 'Apple Pay',
+    paypo: 'PayPo',
   };
 
   const statusBadge = () => {
