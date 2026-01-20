@@ -314,7 +314,7 @@ export class PaymentService {
     const newOrderStatus = orderStatusMap[result.status];
     const newPaymentStatus = paymentStatusMap[result.status] || 'PENDING';
 
-    console.log(`Updating order ${result.orderId} - orderStatus: ${newOrderStatus}, paymentStatus: ${newPaymentStatus}`);
+    console.log(`Updating order ${result.orderId} - orderStatus: ${newOrderStatus}, paymentStatus: ${newPaymentStatus}${result.paymentMethodUsed ? `, paymentMethod: ${result.paymentMethodUsed}` : ''}`);
 
     const order = await prisma.order.findFirst({
       where: { id: result.orderId },
@@ -328,6 +328,11 @@ export class PaymentService {
       // Only update order status if payment succeeded or failed
       if (newOrderStatus) {
         updateData.status = newOrderStatus as any;
+      }
+
+      // Update payment method if we got the actual method used from provider
+      if (result.paymentMethodUsed) {
+        updateData.paymentMethod = result.paymentMethodUsed;
       }
 
       await prisma.order.update({
