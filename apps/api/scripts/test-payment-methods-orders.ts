@@ -7,6 +7,7 @@
  * Usage: npx tsx scripts/test-payment-methods-orders.ts
  */
 
+import { randomUUID, randomInt } from 'crypto';
 import { config } from 'dotenv';
 config();
 
@@ -109,7 +110,7 @@ async function getTestProduct() {
 function generateOrderNumber(): string {
   const date = new Date();
   const year = date.getFullYear();
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  const random = randomInt(10000).toString().padStart(4, '0');
   return `TEST-${year}-${random}`;
 }
 
@@ -275,7 +276,7 @@ async function main() {
       const order = await createTestOrder(user, address, variant, 'payu');
 
       // Simulate PayU webhook with specific payment method
-      const payuOrderId = `PAYU_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      const payuOrderId = `PAYU_${Date.now()}_${randomUUID().substring(0, 8)}`;
       await simulatePayUWebhook(
         order.id,
         payuOrderId,
