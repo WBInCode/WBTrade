@@ -289,7 +289,7 @@ export class ShippingCalculatorService {
         wholesaler: wholesaler === 'default' ? null : wholesaler,
         items: packageItems,
         paczkomatPackageCount,
-        isPaczkomatAvailable: true, // Standard items can use paczkomat
+        isPaczkomatAvailable: !packageIsInPostOnly, // Disable paczkomat for "paczkomat i kurier" tagged products
         isInPostOnly: packageIsInPostOnly,
       });
     }
@@ -374,19 +374,32 @@ export class ShippingCalculatorService {
     
     const standardPackageCount = calculation.packages.filter(p => p.type === 'standard').length;
     
-    // Check if any package has InPost only restriction
+    // Check if any package has InPost only restriction (paczkomat i kurier tag)
     const hasInPostOnlyPackages = calculation.packages.some(p => p.isInPostOnly);
-    const inPostOnlyMessage = 'Dla niektórych produktów dostępna tylko wysyłka InPost';
+    
+    // Paczkomat is not available if:
+    // 1. There are gabaryt packages (isPaczkomatAvailable = false)
+    // 2. Any package has "paczkomat i kurier" tag (isInPostOnly = true)
+    const isPaczkomatAvailable = calculation.isPaczkomatAvailable && !hasInPostOnlyPackages;
+    
+    let paczkomatMessage: string | undefined;
+    if (!isPaczkomatAvailable) {
+      if (hasInPostOnlyPackages) {
+        paczkomatMessage = 'Produkt dostępny tylko z dostawą kurierem';
+      } else {
+        paczkomatMessage = 'Produkty gabarytowe wykluczają dostawę do paczkomatu';
+      }
+    } else if (calculation.totalPaczkomatPackages > 1) {
+      paczkomatMessage = `${calculation.totalPaczkomatPackages} paczki`;
+    }
     
     const methods = [
       {
         id: 'inpost_paczkomat',
         name: 'InPost Paczkomat',
         price: calculation.paczkomatCost,
-        available: calculation.isPaczkomatAvailable,
-        message: calculation.isPaczkomatAvailable 
-          ? (calculation.totalPaczkomatPackages > 1 ? `${calculation.totalPaczkomatPackages} paczki` : undefined)
-          : 'Produkty gabarytowe wykluczają dostawę do paczkomatu',
+        available: isPaczkomatAvailable,
+        message: paczkomatMessage,
       },
       {
         id: 'inpost_kurier',
@@ -460,14 +473,16 @@ export class ShippingCalculatorService {
       } else {
         // Standard packages - check if InPost only restriction applies
         const paczkomatPackages = pkg.paczkomatPackageCount;
-        const inPostOnlyMessage = 'Dla tego produktu dostępna tylko wysyłka InPost';
+        const isPaczkomatDisabled = pkg.isInPostOnly; // Disable paczkomat for "paczkomat i kurier" tagged products
         
         methods.push({
           id: 'inpost_paczkomat',
           name: 'InPost Paczkomat',
           price: paczkomatPackages * SHIPPING_PRICES.inpost_paczkomat,
-          available: true,
-          message: paczkomatPackages > 1 ? `${paczkomatPackages} paczki` : undefined,
+          available: !isPaczkomatDisabled,
+          message: isPaczkomatDisabled 
+            ? 'Produkt dostępny tylko z dostawą kurierem' 
+            : (paczkomatPackages > 1 ? `${paczkomatPackages} paczki` : undefined),
           estimatedDelivery: '1-2 dni',
         });
         methods.push({
