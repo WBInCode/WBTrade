@@ -506,24 +506,24 @@ export default function ProductPage({ params }: ProductPageProps) {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <main className="container-custom py-6">
+      <main className="container-custom py-3 sm:py-6 px-3 sm:px-4">
         {/* Breadcrumb */}
         <Breadcrumb items={breadcrumbItems} />
 
         {/* Main Product Section */}
-        <div className="grid lg:grid-cols-3 gap-8 mb-8">
+        <div className="grid lg:grid-cols-3 gap-4 sm:gap-8 mb-6 sm:mb-8">
           {/* Left: Image Gallery */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg p-4 relative">
+            <div className="bg-white rounded-lg p-2 sm:p-4 relative">
               {/* Badge */}
               {product.badge && (
-                <span className="absolute top-6 left-6 bg-orange-500 text-white text-xs font-bold px-3 py-1.5 rounded z-10 uppercase">
+                <span className="absolute top-3 left-3 sm:top-6 sm:left-6 bg-orange-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 sm:px-3 sm:py-1.5 rounded z-10 uppercase">
                   {product.badge}
                 </span>
               )}
               
               {/* Main Image */}
-              <div className="aspect-square overflow-hidden rounded-lg mb-4">
+              <div className="aspect-square overflow-hidden rounded-lg mb-3 sm:mb-4">
                 <img
                   src={mainImage}
                   alt={product.name}
@@ -532,12 +532,12 @@ export default function ProductPage({ params }: ProductPageProps) {
               </div>
 
               {/* Thumbnail Gallery */}
-              <div className="flex gap-2 overflow-x-auto pb-2">
+              <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-2 -mx-2 px-2 sm:mx-0 sm:px-0">
                 {images?.map((image, index) => (
                   <button
                     key={image.id}
                     onClick={() => setSelectedImage(index)}
-                    className={`shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
+                    className={`shrink-0 w-14 h-14 sm:w-20 sm:h-20 rounded-md sm:rounded-lg overflow-hidden border-2 transition-colors ${
                       selectedImage === index ? 'border-orange-500' : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
@@ -554,9 +554,9 @@ export default function ProductPage({ params }: ProductPageProps) {
 
           {/* Right: Product Info Panel */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg p-6 sticky top-24">
+            <div className="bg-white rounded-lg p-4 sm:p-6 lg:sticky lg:top-24">
               {/* Title */}
-              <h1 className="text-xl font-semibold text-gray-900 mb-3 leading-snug">
+              <h1 className="text-base sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3 leading-snug">
                 {product.name}
               </h1>
 
@@ -587,16 +587,16 @@ export default function ProductPage({ params }: ProductPageProps) {
               </div>
 
               {/* Price */}
-              <div className="flex items-baseline gap-3 mb-1">
-                <span className="text-3xl font-bold text-gray-900">
+              <div className="flex flex-wrap items-baseline gap-2 sm:gap-3 mb-1">
+                <span className="text-2xl sm:text-3xl font-bold text-gray-900">
                   {Number(effectivePrice).toFixed(2).replace('.', ',')} zł
                 </span>
                 {hasDiscount && (
                   <>
-                    <span className="text-lg text-gray-400 line-through">
+                    <span className="text-sm sm:text-lg text-gray-400 line-through">
                       {Number(product.compareAtPrice).toFixed(2).replace('.', ',')} zł
                     </span>
-                    <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded">
+                    <span className="bg-red-500 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2 rounded">
                       -{discountPercent}%
                     </span>
                   </>
@@ -604,12 +604,12 @@ export default function ProductPage({ params }: ProductPageProps) {
               </div>
 
               {/* Lowest Price Info */}
-              <p className="text-xs text-gray-500 mb-3">
+              <p className="text-[11px] sm:text-xs text-gray-500 mb-2 sm:mb-3">
                 Najniższa cena w ostatnich 30 dniach: {Number(product.compareAtPrice || effectivePrice).toFixed(2).replace('.', ',')} zł
               </p>
 
               {/* Installment Info */}
-              <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                 </svg>
@@ -619,10 +619,10 @@ export default function ProductPage({ params }: ProductPageProps) {
 
               {/* Variants */}
               {product.variants?.length ? (
-                <div className="mb-4 space-y-3">
+                <div className="mb-3 sm:mb-4 space-y-2 sm:space-y-3">
                   {variantAttributes.map((key) => (
                     <div key={key}>
-                      <label className="block text-sm font-medium text-gray-900 mb-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-900 mb-1">
                         {key}
                       </label>
                       <select
@@ -644,13 +644,13 @@ export default function ProductPage({ params }: ProductPageProps) {
 
                   {/* Quantity */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-1">Ilość</label>
-                    <div className="flex items-center gap-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-900 mb-1">Ilość</label>
+                    <div className="flex items-center gap-1.5 sm:gap-2">
                       <button
                         type="button"
                         onClick={() => setQuantity((q) => clampQuantity(q - 1))}
                         disabled={quantity <= 1}
-                        className="w-10 h-10 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
                         aria-label="Zmniejsz ilość"
                       >
                         -
@@ -661,19 +661,19 @@ export default function ProductPage({ params }: ProductPageProps) {
                         max={selectedVariant?.stock ?? undefined}
                         value={quantity}
                         onChange={(e) => setQuantity(clampQuantity(Number(e.target.value || 1)))}
-                        className="w-20 h-10 text-center rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200"
+                        className="w-16 sm:w-20 h-9 sm:h-10 text-center rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200"
                       />
                       <button
                         type="button"
                         onClick={() => setQuantity((q) => clampQuantity(q + 1))}
                         disabled={!!selectedVariant && quantity >= selectedVariant.stock}
-                        className="w-10 h-10 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
                         aria-label="Zwiększ ilość"
                       >
                         +
                       </button>
                       {selectedVariant && (
-                        <span className={`text-xs ml-1 ${(selectedVariant.stock ?? 0) > 0 ? 'text-gray-500' : 'text-red-500 font-medium'}`}>
+                        <span className={`text-[10px] sm:text-xs ml-1 ${(selectedVariant.stock ?? 0) > 0 ? 'text-gray-500' : 'text-red-500 font-medium'}`}>
                           {(selectedVariant.stock ?? 0) > 0 
                             ? `Dostępne: ${selectedVariant.stock}` 
                             : 'Brak na stanie'}
@@ -689,17 +689,17 @@ export default function ProductPage({ params }: ProductPageProps) {
 
               {/* Error Message */}
               {cartError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 sm:px-4 sm:py-3 rounded-lg mb-3 sm:mb-4 flex items-center gap-2">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-sm">{cartError}</span>
+                  <span className="text-xs sm:text-sm">{cartError}</span>
                 </div>
               )}
 
               {/* Out of Stock Banner */}
               {isOutOfStock && (
-                <div className="bg-gray-100 border border-gray-300 text-gray-700 px-4 py-3 rounded-lg mb-4 flex items-center gap-2">
+                <div className="bg-gray-100 border border-gray-300 text-gray-700 px-3 py-2 sm:px-4 sm:py-3 rounded-lg mb-3 sm:mb-4 flex items-center gap-2">
                   <svg className="w-5 h-5 flex-shrink-0 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
                   </svg>
@@ -712,7 +712,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                 <button 
                   onClick={handleBuyNow}
                   disabled={buyingNow || !selectedVariant}
-                  className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-lg mb-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 sm:py-3 rounded-lg mb-2 sm:mb-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
                 >
                   {buyingNow ? (
                     <>
@@ -743,7 +743,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                 <button 
                   onClick={handleAddToCart}
                   disabled={addingToCart || !selectedVariant}
-                  className="w-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 font-semibold py-3 rounded-lg mb-4 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 font-semibold py-2.5 sm:py-3 rounded-lg mb-3 sm:mb-4 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                 >
                   {addingToCart ? (
                     <>
@@ -776,15 +776,15 @@ export default function ProductPage({ params }: ProductPageProps) {
 
               {/* Stock Status */}
               {!isOutOfStock ? (
-                <div className="flex items-center gap-2 text-sm text-green-600 mb-3">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-green-600 mb-2 sm:mb-3">
+                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   <span className="font-medium">W magazynie: Wysyłka natychmiast</span>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 text-sm text-red-600 mb-3">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-red-600 mb-2 sm:mb-3">
+                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                   </svg>
                   <span className="font-medium">Produkt chwilowo niedostępny</span>
@@ -792,7 +792,7 @@ export default function ProductPage({ params }: ProductPageProps) {
               )}
 
               {/* People Bought */}
-              <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">
                 <svg className="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" />
                 </svg>
@@ -801,24 +801,24 @@ export default function ProductPage({ params }: ProductPageProps) {
 
               {/* Delivery Info */}
               
-              <div className="border-t pt-4 space-y-3">
-                <div className="flex items-start gap-3">
-                  <svg className="w-5 h-5 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="border-t pt-3 sm:pt-4 space-y-2 sm:space-y-3">
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                   </svg>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">Jak najszybsza dostawa</p>
+                    <p className="text-xs sm:text-sm font-medium text-gray-900">Jak najszybsza dostawa</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center mt-0.5">
-                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <div className="w-4 h-4 sm:w-5 sm:h-5 bg-green-500 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0">
+                    <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">Tania i szybka dostawa i darmowe zwroty</p>
+                    <p className="text-xs sm:text-sm font-medium text-gray-900">Tania i szybka dostawa i darmowe zwroty</p>
                   </div>
                 </div>
               </div>

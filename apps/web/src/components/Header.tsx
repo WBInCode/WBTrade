@@ -262,6 +262,14 @@ function HeaderContent() {
           </div>
         </div>
       </div>
+
+      {/* Mobile Menu - Categories */}
+      <MegaMenu
+        categories={categories}
+        isOpen={isCategoryOpen}
+        onClose={() => setIsCategoryOpen(false)}
+        currentCategorySlug={currentMainCategory?.slug}
+      />
     </header>
   );
 }
