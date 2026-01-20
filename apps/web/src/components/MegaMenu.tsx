@@ -14,13 +14,19 @@ interface MegaMenuProps {
 
 export default function MegaMenu({ categories, isOpen, onClose, currentCategorySlug }: MegaMenuProps) {
   const [hoveredCategorySlug, setHoveredCategorySlug] = useState<string | null>(null);
+  const [selectedMobileCategory, setSelectedMobileCategory] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  // Get the hovered or selected category
+  // Get the hovered or selected category (desktop)
   const activeCategory = categories.find(
     (cat) => cat.slug === (hoveredCategorySlug || currentCategorySlug)
   );
+
+  // Get selected mobile category
+  const mobileCategoryData = selectedMobileCategory 
+    ? categories.find(cat => cat.slug === selectedMobileCategory)
+    : null;
 
   return (
     <>
@@ -30,8 +36,111 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
         onClick={onClose}
       />
       
-      {/* Mega Menu Panel */}
-      <div className="absolute top-full left-0 right-0 bg-white border-t border-gray-200 shadow-2xl z-50">
+      {/* Mobile Menu */}
+      <div className="lg:hidden fixed inset-x-0 top-[120px] bottom-0 bg-white z-50 overflow-hidden flex flex-col">
+        {/* Mobile Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
+          {selectedMobileCategory ? (
+            <button 
+              onClick={() => setSelectedMobileCategory(null)}
+              className="flex items-center gap-2 text-sm font-medium text-gray-700"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Wstecz
+            </button>
+          ) : (
+            <span className="text-sm font-semibold text-gray-900">Kategorie</span>
+          )}
+          <button 
+            onClick={onClose}
+            className="p-2 text-gray-500 hover:text-gray-700"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Mobile Categories List */}
+        <div className="flex-1 overflow-y-auto">
+          {!selectedMobileCategory ? (
+            // Main categories list
+            <div className="divide-y">
+              {categories.map((category) => {
+                const productCount = category.productCount || 0;
+                let totalProducts = productCount;
+                if (category.children) {
+                  totalProducts = category.children.reduce((sum, child) => 
+                    sum + (child.productCount || 0), productCount);
+                }
+
+                return (
+                  <div key={category.slug} className="flex items-center">
+                    <Link
+                      href={`/products?category=${category.slug}`}
+                      className="flex-1 px-4 py-4 text-sm font-medium text-gray-900"
+                      onClick={onClose}
+                    >
+                      {cleanCategoryName(category.name)}
+                      {totalProducts > 0 && (
+                        <span className="text-xs text-gray-500 ml-2">({totalProducts})</span>
+                      )}
+                    </Link>
+                    {category.children && category.children.length > 0 && (
+                      <button
+                        onClick={() => setSelectedMobileCategory(category.slug)}
+                        className="px-4 py-4 text-gray-400"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : mobileCategoryData ? (
+            // Subcategories list
+            <div>
+              {/* Category header */}
+              <Link
+                href={`/products?category=${mobileCategoryData.slug}`}
+                className="block px-4 py-3 bg-primary-50 text-primary-600 font-semibold text-sm border-b"
+                onClick={onClose}
+              >
+                Zobacz wszystko w {cleanCategoryName(mobileCategoryData.name)}
+              </Link>
+              
+              {/* Subcategories */}
+              <div className="divide-y">
+                {mobileCategoryData.children?.map((subCategory) => {
+                  const subProductCount = subCategory.productCount || 0;
+                  
+                  return (
+                    <Link
+                      key={subCategory.slug}
+                      href={`/products?category=${subCategory.slug}`}
+                      className="block px-4 py-3 text-sm text-gray-900"
+                      onClick={onClose}
+                    >
+                      {cleanCategoryName(subCategory.name)}
+                      {subProductCount > 0 && (
+                        <span className="text-xs text-gray-500 ml-2">({subProductCount})</span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Desktop Mega Menu Panel */}
+      <div className="hidden lg:block absolute top-full left-0 right-0 bg-white border-t border-gray-200 shadow-2xl z-50">
         <div className="max-w-[1400px] mx-auto px-4">
           <div className="flex min-h-[400px]">
             {/* Left Sidebar - Main Categories */}
@@ -77,7 +186,7 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
             </div>
 
             {/* Right Panel - Subcategories */}
-            <div className="flex-1 p-8 max-h-[70vh] overflow-y-auto min-w-[800px] bg-white">
+            <div className="flex-1 p-8 max-h-[70vh] overflow-y-auto min-w-[600px] bg-white">
               {activeCategory && activeCategory.children && activeCategory.children.length > 0 ? (
                 <div>
                   <h3 className="text-lg font-bold text-secondary-900 mb-4">
