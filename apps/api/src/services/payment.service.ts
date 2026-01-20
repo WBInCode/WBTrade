@@ -18,6 +18,7 @@ import { IPaymentProvider } from '../providers/payment/payment-provider.interfac
 import { Przelewy24Provider } from '../providers/payment/przelewy24.provider';
 import { PayUProvider } from '../providers/payment/payu.provider';
 import { prisma } from '../db';
+import { baselinkerOrdersService } from './baselinker-orders.service';
 
 // Provider configurations from environment
 const providerConfigs: Record<PaymentProviderId, Partial<PaymentProviderConfig>> = {
@@ -344,9 +345,24 @@ export class PaymentService {
 
       console.log(`Order ${order.id} updated successfully`);
 
-      // If payment succeeded, we might want to trigger other actions
+      // If payment succeeded, sync order to Baselinker
+      // This is the critical point - stock will be decreased in Baselinker
+      // only AFTER payment is confirmed
       if (result.status === 'succeeded') {
-        // e.g., send confirmation email, start fulfillment, etc.
+        console.log(`[PaymentService] Payment succeeded, triggering Baselinker sync for order ${order.id}`);
+        
+        // Sync to Baselinker asynchronously (don't block payment confirmation)
+        baselinkerOrdersService.syncOrderToBaselinker(order.id)
+          .then((syncResult) => {
+            if (syncResult.success) {
+              console.log(`[PaymentService] Order ${order.id} synced to Baselinker (BL ID: ${syncResult.baselinkerOrderId})`);
+            } else {
+              console.error(`[PaymentService] Failed to sync order ${order.id} to Baselinker:`, syncResult.error);
+            }
+          })
+          .catch((err) => {
+            console.error(`[PaymentService] Baselinker sync error for order ${order.id}:`, err);
+          });
       }
     } else {
       console.error(`Order ${result.orderId} not found for payment update`);

@@ -1,5 +1,6 @@
 import { prisma } from '../db';
 import { OrderStatus, Prisma } from '@prisma/client';
+import { baselinkerOrdersService } from './baselinker-orders.service';
 
 interface PackageShippingItem {
   packageId: string;
@@ -455,7 +456,7 @@ export class OrdersService {
    * Changes order status from OPEN/PENDING to CONFIRMED and payment status to PAID
    */
   async simulatePayment(id: string) {
-    return prisma.$transaction(async (tx) => {
+    const updatedOrder = await prisma.$transaction(async (tx) => {
       const order = await tx.order.findUnique({
         where: { id },
         include: { items: true },
@@ -469,7 +470,7 @@ export class OrdersService {
       }
 
       // Update order status to CONFIRMED and payment status to PAID
-      const updatedOrder = await tx.order.update({
+      const updated = await tx.order.update({
         where: { id },
         data: { 
           status: 'CONFIRMED',
@@ -494,7 +495,25 @@ export class OrdersService {
 
       console.log(`[DEV] Payment simulated for order ${order.orderNumber}`);
 
-      return updatedOrder;
+      return updated;
     });
+
+    // After successful payment simulation, sync to Baselinker
+    if (updatedOrder) {
+      console.log(`[DEV] Triggering Baselinker sync for simulated payment, order ${id}`);
+      baselinkerOrdersService.syncOrderToBaselinker(id)
+        .then((syncResult) => {
+          if (syncResult.success) {
+            console.log(`[DEV] Order ${id} synced to Baselinker (BL ID: ${syncResult.baselinkerOrderId})`);
+          } else {
+            console.error(`[DEV] Failed to sync order ${id} to Baselinker:`, syncResult.error);
+          }
+        })
+        .catch((err) => {
+          console.error(`[DEV] Baselinker sync error for order ${id}:`, err);
+        });
+    }
+
+    return updatedOrder;
   }
 }

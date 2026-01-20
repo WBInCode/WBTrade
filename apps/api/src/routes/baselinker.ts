@@ -23,10 +23,15 @@ router.delete('/config', baselinkerController.deleteConfig);
 // Connection test
 router.post('/test', baselinkerController.testConnection);
 
-// Sync endpoints
+// Product sync endpoints (Baselinker → Shop)
 router.post('/sync', baselinkerController.triggerSync);
 router.get('/status', baselinkerController.getStatus);
 router.delete('/sync/:id', baselinkerController.cancelSync);
+
+// Order sync endpoints (Shop → Baselinker)
+// Orders are synced after payment to decrease stock in Baselinker
+router.post('/orders/sync', baselinkerController.syncPendingOrders);
+router.post('/orders/:orderId/sync', baselinkerController.syncOrder);
 
 // Inventories list
 router.get('/inventories', baselinkerController.getInventories);

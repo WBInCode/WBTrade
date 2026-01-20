@@ -18,6 +18,8 @@ import {
   BaselinkerProductData,
   BaselinkerStockEntry,
   BaselinkerApiResponse,
+  BaselinkerAddOrderRequest,
+  BaselinkerAddOrderResponse,
 } from './baselinker-provider.interface';
 
 const BASELINKER_API_URL = 'https://api.baselinker.com/connector.php';
@@ -347,6 +349,50 @@ export class BaselinkerProvider implements IBaselinkerProvider {
       console.error('Baselinker connection test failed:', error);
       return false;
     }
+  }
+
+  /**
+   * Add order to Baselinker
+   * This automatically decreases stock in Baselinker inventory when products
+   * are linked to the inventory (storage='bl')
+   * 
+   * @param orderData - Order data following Baselinker addOrder API format
+   * @returns Object containing the new order_id from Baselinker
+   */
+  async addOrder(orderData: BaselinkerAddOrderRequest): Promise<BaselinkerAddOrderResponse> {
+    console.log('[Baselinker] Adding order to Baselinker:', {
+      productsCount: orderData.products.length,
+      email: orderData.email,
+      deliveryMethod: orderData.delivery_method,
+    });
+
+    const response = await this.request<BaselinkerAddOrderResponse>('addOrder', orderData);
+    
+    console.log('[Baselinker] Order added successfully, order_id:', response.order_id);
+    
+    return response;
+  }
+
+  /**
+   * Update stock levels for products in inventory
+   * Use this for manual stock adjustments or when not using addOrder
+   * 
+   * @param inventoryId - The inventory ID
+   * @param products - Map of product_id to warehouse stock levels
+   *                   Format: { "product_id": { "warehouse_id": stock_quantity } }
+   */
+  async updateInventoryProductsStock(
+    inventoryId: string,
+    products: Record<string, Record<string, number>>
+  ): Promise<void> {
+    console.log('[Baselinker] Updating stock for', Object.keys(products).length, 'products');
+
+    await this.request('updateInventoryProductsStock', {
+      inventory_id: parseInt(inventoryId, 10),
+      products,
+    });
+
+    console.log('[Baselinker] Stock updated successfully');
   }
 
   /**
