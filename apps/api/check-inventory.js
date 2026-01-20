@@ -2,50 +2,72 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('=== Checking Inventory Data ===\n');
+  console.log('=== STATYSTYKI STANÓW MAGAZYNOWYCH ===\n');
   
-  // Check inventory count
-  const inventoryCount = await prisma.inventory.count();
-  console.log('Total Inventory records:', inventoryCount);
+  // Sprawdź warianty ze stanem = 0
+  const inventoryWithZero = await prisma.inventory.count({
+    where: { quantity: 0 }
+  });
   
-  // Check locations
-  const locations = await prisma.location.findMany();
-  console.log('Locations:', locations.length);
-  locations.forEach(l => console.log(`  - ${l.name} (${l.code})`));
+  const inventoryWithStock = await prisma.inventory.count({
+    where: { quantity: { gt: 0 } }
+  });
   
-  // Check a sample of inventory records
-  const inventorySample = await prisma.inventory.findMany({
-    take: 5,
+  console.log('REKORDY INVENTORY:');
+  console.log(`Stan = 0: ${inventoryWithZero}`);
+  console.log(`Stan > 0: ${inventoryWithStock}`);
+  console.log('');
+  
+  // Produkty, których wszystkie warianty mają stan = 0
+  const allVariants = await prisma.productVariant.findMany({
     include: {
-      variant: {
-        include: {
-          product: true
+      inventory: true,
+      product: {
+        select: {
+          id: true,
+          status: true
         }
-      },
-      location: true
-    }
-  });
-  
-  console.log('\nSample inventory records:');
-  inventorySample.forEach(inv => {
-    console.log(`  - Variant: ${inv.variant?.name || 'N/A'}, Product: ${inv.variant?.product?.name?.substring(0, 40) || 'N/A'}...`);
-    console.log(`    Location: ${inv.location?.name}, Qty: ${inv.quantity}, Reserved: ${inv.reserved}`);
-  });
-  
-  // Check product variants count
-  const variantsCount = await prisma.productVariant.count();
-  console.log('\nTotal Product Variants:', variantsCount);
-  
-  // Check variants with inventory
-  const variantsWithInventory = await prisma.productVariant.count({
-    where: {
-      inventory: {
-        some: {}
       }
     }
   });
-  console.log('Variants WITH inventory records:', variantsWithInventory);
-  console.log('Variants WITHOUT inventory records:', variantsCount - variantsWithInventory);
+  
+  // Grupuj warianty po productId
+  const productStockMap = new Map();
+  allVariants.forEach(variant => {
+    if (!productStockMap.has(variant.productId)) {
+      productStockMap.set(variant.productId, {
+        productId: variant.productId,
+        status: variant.product.status,
+        variants: []
+      });
+    }
+    
+    // Suma stanów ze wszystkich lokalizacji dla tego wariantu
+    const totalStock = variant.inventory.reduce((sum, inv) => sum + inv.quantity, 0);
+    productStockMap.get(variant.productId).variants.push({
+      quantity: totalStock
+    });
+  });
+  
+  // Policz produkty ze stanem = 0 we wszystkich wariantach
+  let activeProductsWithZeroStock = 0;
+  let activeProductsWithStock = 0;
+  
+  productStockMap.forEach((data) => {
+    if (data.status !== 'ACTIVE') return;
+    
+    const totalStock = data.variants.reduce((sum, v) => sum + v.quantity, 0);
+    if (totalStock === 0) {
+      activeProductsWithZeroStock++;
+    } else {
+      activeProductsWithStock++;
+    }
+  });
+  
+  console.log('PRODUKTY AKTYWNE (status=ACTIVE):');
+  console.log(`Produkty ze stanem = 0: ${activeProductsWithZeroStock}`);
+  console.log(`Produkty ze stanem > 0: ${activeProductsWithStock}`);
+  console.log(`RAZEM aktywnych: ${activeProductsWithZeroStock + activeProductsWithStock}`);
 }
 
 main()

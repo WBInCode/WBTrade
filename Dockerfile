@@ -51,8 +51,8 @@ COPY --from=base /app/packages ./packages
 # Zmiana katalogu na API
 WORKDIR /app/apps/api
 
-# Render automatycznie ustawia PORT, ale domyślnie 5000 dla lokalnych testów
-EXPOSE 5000
+# Render automatycznie ustawia PORT
+EXPOSE ${PORT:-5000}
 
 # Ustawienie zmiennych środowiskowych
 ENV NODE_ENV=production
