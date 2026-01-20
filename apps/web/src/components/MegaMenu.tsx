@@ -78,12 +78,8 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
             // Main categories list
             <div className="divide-y">
               {categories.map((category) => {
-                const productCount = category.productCount || 0;
-                let totalProducts = productCount;
-                if (category.children) {
-                  totalProducts = category.children.reduce((sum, child) => 
-                    sum + (child.productCount || 0), productCount);
-                }
+                // API already returns total productCount including children
+                const totalProducts = category.productCount || 0;
 
                 const hasChildren = category.children && category.children.length > 0;
 
@@ -176,14 +172,8 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
               {categories.map((category) => {
                 const isHovered = hoveredCategorySlug === category.slug;
                 const isActive = currentCategorySlug === category.slug;
-                const productCount = category.productCount || 0;
-                
-                // Count total products including children
-                let totalProducts = productCount;
-                if (category.children) {
-                  totalProducts = category.children.reduce((sum, child) => 
-                    sum + (child.productCount || 0), productCount);
-                }
+                // API already returns total productCount including children
+                const totalProducts = category.productCount || 0;
 
                 return (
                   <Link
