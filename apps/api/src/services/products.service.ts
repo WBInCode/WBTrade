@@ -4,6 +4,20 @@ import { getProductsIndex } from '../lib/meilisearch';
 import { MeiliProduct } from './search.service';
 import { queueProductIndex, queueProductDelete } from '../lib/queue';
 
+// Tagi dostawy - produkty MUSZĄ mieć przynajmniej jeden z tych tagów żeby być widoczne
+// Produkty z TYLKO tagiem hurtowni (Ikonka, BTP, HP, Leker) nie będą wyświetlane
+const DELIVERY_TAGS = [
+  'Paczkomaty i Kurier',
+  'paczkomaty i kurier',
+  'Tylko kurier',
+  'tylko kurier',
+  'do 2 kg',
+  'do 5 kg',
+  'do 10 kg',
+  'do 20 kg',
+  'do 31,5 kg',
+];
+
 interface ProductFilters {
   page?: number;
   limit?: number;
@@ -220,6 +234,10 @@ export class ProductsService {
     const where: Prisma.ProductWhereInput = {
       // Always filter out products with price <= 0
       price: { gt: 0 },
+      // Produkty MUSZĄ mieć tag dostawy - nie pokazuj produktów z tylko tagiem hurtowni
+      tags: {
+        hasSome: DELIVERY_TAGS,
+      },
     };
     
     // Only filter by status if explicitly provided
@@ -336,6 +354,11 @@ export class ProductsService {
       
       // Always filter out products with price <= 0
       meiliFilters.push('price > 0');
+      
+      // Produkty MUSZĄ mieć tag dostawy - nie pokazuj produktów z tylko tagiem hurtowni
+      // Meilisearch używa składni: tags IN ["tag1", "tag2"] dla OR
+      const deliveryTagsFilter = DELIVERY_TAGS.map(tag => `"${tag}"`).join(', ');
+      meiliFilters.push(`tags IN [${deliveryTagsFilter}]`);
       
       // Only filter by status if explicitly provided
       if (status) {
