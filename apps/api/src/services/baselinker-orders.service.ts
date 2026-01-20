@@ -379,12 +379,31 @@ export class BaselinkerOrdersService {
    */
   private mapPaymentMethod(method: string): string {
     const mappings: Record<string, string> = {
+      // From checkout
       'payu': 'PayU',
       'przelewy24': 'Przelewy24',
       'blik': 'BLIK',
       'card': 'Karta płatnicza',
       'transfer': 'Przelew bankowy',
       'cod': 'Płatność przy odbiorze',
+      // From PayU webhook (actual method used)
+      'BLIK': 'BLIK',
+      'Karta płatnicza': 'Karta płatnicza',
+      'Przelew bankowy': 'Przelew bankowy',
+      'Google Pay': 'Google Pay',
+      'Apple Pay': 'Apple Pay',
+      'Raty PayU': 'Raty PayU',
+      'Klarna': 'Klarna',
+      'PayPo': 'PayPo',
+      'Twisto': 'Twisto',
+      // Bank names
+      'mBank': 'Przelew mBank',
+      'Pekao': 'Przelew Pekao',
+      'ING': 'Przelew ING',
+      'PKO BP': 'Przelew PKO BP',
+      'BNP Paribas': 'Przelew BNP Paribas',
+      'Santander': 'Przelew Santander',
+      'Alior': 'Przelew Alior',
     };
 
     return mappings[method] || method;

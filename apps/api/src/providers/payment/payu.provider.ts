@@ -430,6 +430,13 @@ export class PayUProvider implements IPaymentProvider {
         break;
     }
 
+    // Extract actual payment method used from PayU payMethod
+    let paymentMethodUsed: string | undefined;
+    if (order.payMethod?.type) {
+      paymentMethodUsed = this.mapPayUMethodToReadable(order.payMethod.type, order.payMethod.value);
+      console.log(`[PayU] Payment method used: ${order.payMethod.type} -> ${paymentMethodUsed}`);
+    }
+
     return {
       orderId: internalOrderId,
       sessionId: order.orderId,
@@ -438,6 +445,43 @@ export class PayUProvider implements IPaymentProvider {
       amount: parseInt(order.totalAmount) / 100,
       currency: order.currencyCode,
       paidAt: status === 'succeeded' ? new Date() : undefined,
+      paymentMethodUsed,
     };
+  }
+
+  /**
+   * Map PayU payment method type to readable name
+   */
+  private mapPayUMethodToReadable(type: string, value?: string): string {
+    const methodNames: Record<string, string> = {
+      'BLIK': 'BLIK',
+      'CARD_TOKEN': 'Karta płatnicza',
+      'PBL': 'Przelew bankowy',
+      'GPAY': 'Google Pay',
+      'APAY': 'Apple Pay',
+      'INSTALLMENTS': 'Raty PayU',
+      'KLARNA_PAY_LATER': 'Klarna',
+      'KLARNA_PAY_NOW': 'Klarna',
+      'PAYPO': 'PayPo',
+      'TWISTO': 'Twisto',
+    };
+
+    // For bank transfers, include bank name if available
+    if (type === 'PBL' && value) {
+      const bankNames: Record<string, string> = {
+        'm': 'mBank',
+        'o': 'Pekao',
+        'i': 'ING',
+        'p': 'PKO BP',
+        'n': 'BNP Paribas',
+        's': 'Santander',
+        'a': 'Alior',
+        'g': 'Getin',
+        'w': 'VeloBank',
+      };
+      return bankNames[value] || 'Przelew bankowy';
+    }
+
+    return methodNames[type] || type;
   }
 }
