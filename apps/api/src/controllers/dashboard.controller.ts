@@ -116,7 +116,10 @@ export async function getRecommendations(req: Request, res: Response): Promise<v
     if (!userId) {
       // Return popular products for non-authenticated users
       const popularProducts = await prisma.product.findMany({
-        where: { status: 'ACTIVE' },
+        where: { 
+          status: 'ACTIVE',
+          price: { gt: 0 }, // Don't show products with price 0
+        },
         include: {
           images: { orderBy: { order: 'asc' }, take: 1 },
           category: true,

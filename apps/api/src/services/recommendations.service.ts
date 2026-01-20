@@ -222,6 +222,7 @@ export class RecommendationsService {
       const popularProducts = await prisma.product.findMany({
         where: {
           status: 'ACTIVE',
+          price: { gt: 0 }, // Don't show products with price 0
           id: { notIn: Array.from(addedProductIds) },
         },
         include: {
