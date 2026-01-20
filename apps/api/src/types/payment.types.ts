@@ -121,6 +121,7 @@ export interface PaymentResult {
   paidAt?: Date;
   errorCode?: string;
   errorMessage?: string;
+  paymentMethodUsed?: string; // Actual payment method used (e.g., BLIK, CARD_TOKEN, PBL, GPAY, APAY)
 }
 
 // Refund request
