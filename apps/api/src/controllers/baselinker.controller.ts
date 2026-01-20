@@ -326,4 +326,140 @@ export const baselinkerController = {
       });
     }
   },
+
+  // ============================================
+  // Manual Stock/Order Sync (Legacy Endpoints)
+  // ============================================
+
+  /**
+   * POST /api/admin/baselinker/send-order/:orderId
+   * Manually send specific order to BaseLinker
+   */
+  async sendOrder(req: Request, res: Response) {
+    try {
+      const { orderId } = req.params;
+
+      if (!orderId) {
+        return res.status(400).json({
+          message: 'Order ID is required',
+        });
+      }
+
+      console.log(`[BaselinkerController] Manual order send requested for ${orderId}`);
+      const result = await baselinkerService.sendOrderToBaselinker(orderId);
+
+      if (result.success) {
+        res.json({
+          message: 'Order sent to BaseLinker successfully',
+          baselinkerOrderId: result.baselinkerOrderId,
+        });
+      } else {
+        res.status(500).json({
+          message: 'Failed to send order to BaseLinker',
+          error: result.error,
+        });
+      }
+    } catch (error) {
+      console.error('Error sending order to BaseLinker:', error);
+      res.status(500).json({
+        message: 'Failed to send order',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  },
+
+  /**
+   * POST /api/admin/baselinker/sync-stock/:variantId
+   * Manually sync stock for specific variant to BaseLinker
+   */
+  async syncStock(req: Request, res: Response) {
+    try {
+      const { variantId } = req.params;
+
+      if (!variantId) {
+        return res.status(400).json({
+          message: 'Variant ID is required',
+        });
+      }
+
+      console.log(`[BaselinkerController] Manual stock sync requested for ${variantId}`);
+      const result = await baselinkerService.syncStockToBaselinker(variantId);
+
+      if (result.success) {
+        res.json({
+          message: 'Stock synced to BaseLinker successfully',
+        });
+      } else {
+        res.status(500).json({
+          message: 'Failed to sync stock to BaseLinker',
+          error: result.error,
+        });
+      }
+    } catch (error) {
+      console.error('Error syncing stock to BaseLinker:', error);
+      res.status(500).json({
+        message: 'Failed to sync stock',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  },
+
+  /**
+   * POST /api/admin/baselinker/sync-all-stock
+   * Sync all product stocks to BaseLinker (batch operation)
+   */
+  async syncAllStock(req: Request, res: Response) {
+    try {
+      console.log('[BaselinkerController] Batch stock sync requested');
+      
+      // Get all active product variants
+      const { prisma } = await import('../db');
+      const variants = await prisma.productVariant.findMany({
+        where: {
+          product: { status: 'ACTIVE' },
+        },
+        select: { id: true },
+        take: 1000, // Limit to prevent timeout
+      });
+
+      console.log(`[BaselinkerController] Found ${variants.length} variants to sync`);
+
+      let successCount = 0;
+      let failCount = 0;
+      const errors: string[] = [];
+
+      // Sync in batches to avoid overwhelming BaseLinker API
+      for (const variant of variants) {
+        try {
+          const result = await baselinkerService.syncStockToBaselinker(variant.id);
+          if (result.success) {
+            successCount++;
+          } else {
+            failCount++;
+            errors.push(`${variant.id}: ${result.error}`);
+          }
+          
+          // Small delay to respect rate limits
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (error) {
+          failCount++;
+          errors.push(`${variant.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+
+      res.json({
+        message: 'Batch stock sync completed',
+        total: variants.length,
+        success: successCount,
+        failed: failCount,
+        errors: errors.slice(0, 10), // Return first 10 errors
+      });
+    } catch (error) {
+      console.error('Error in batch stock sync:', error);
+      res.status(500).json({
+        message: 'Failed to sync stocks',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  },
 };
