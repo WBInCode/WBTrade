@@ -35,7 +35,7 @@ const TAG_PATTERNS = {
 // Shipping method prices (in PLN)
 // Na ten moment tylko InPost + wysyłka gabaryt
 export const SHIPPING_PRICES = {
-  inpost_paczkomat: 9.99,
+  inpost_paczkomat: 15.99,
   inpost_kurier: 19.99,
   gabaryt_base: 49.99,
   wysylka_gabaryt: 79.99,
