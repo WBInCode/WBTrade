@@ -234,35 +234,45 @@ export class CategoriesService {
         },
         children: {
           where: { isActive: true },
-          orderBy: { order: 'asc' },
-          select: {
-            id: true,
-            name: true,
-            slug: true,
+          orderBy: { name: 'asc' },
+          include: {
+            _count: {
+              select: { products: true }
+            },
+            children: {
+              where: { isActive: true },
+              orderBy: { name: 'asc' },
+              include: {
+                _count: {
+                  select: { products: true }
+                }
+              }
+            }
           }
         }
       }
     });
 
-    return categories.map(cat => ({
-      id: cat.id,
-      name: cat.name,
-      slug: cat.slug,
-      parentId: cat.parentId,
-      image: cat.image,
-      order: cat.order,
-      isActive: cat.isActive,
-      productCount: cat._count.products,
-      children: cat.children.map(child => ({
-        id: child.id,
-        name: child.name,
-        slug: child.slug,
-        parentId: cat.id,
-        image: null,
-        order: 0,
-        isActive: true,
-      }))
-    }));
+    // Transform and calculate total product counts
+    const transformCategory = (cat: any, parentId: string | null = null): CategoryWithChildren => {
+      const directCount = cat._count?.products || 0;
+      const children = cat.children ? cat.children.map((child: any) => transformCategory(child, cat.id)) : [];
+      const childrenCount = children.reduce((sum: number, child: CategoryWithChildren) => sum + (child.productCount || 0), 0);
+      
+      return {
+        id: cat.id,
+        name: cat.name,
+        slug: cat.slug,
+        parentId: parentId,
+        image: cat.image || null,
+        order: cat.order || 0,
+        isActive: cat.isActive ?? true,
+        productCount: directCount + childrenCount,
+        children: children.length > 0 ? children : undefined
+      };
+    };
+
+    return categories.map(cat => transformCategory(cat, null));
   }
 
   /**
