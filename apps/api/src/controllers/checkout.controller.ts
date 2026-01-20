@@ -17,6 +17,7 @@ import { CreatePaymentRequest, PaymentMethodType, PaymentProviderId } from '../t
  */
 function mapPaymentMethod(frontendMethod: string): PaymentMethodType {
   const methodMapping: Record<string, PaymentMethodType> = {
+    'payu': 'blik', // PayU handles all online payment methods (BLIK, cards, transfers, etc.)
     'blik': 'blik',
     'card': 'card',
     'transfer': 'bank_transfer',
@@ -24,7 +25,6 @@ function mapPaymentMethod(frontendMethod: string): PaymentMethodType {
     'google_pay': 'google_pay',
     'apple_pay': 'apple_pay',
     'paypo': 'paypo',
-    'cod': 'cod',
   };
   
   return methodMapping[frontendMethod] || 'blik';
