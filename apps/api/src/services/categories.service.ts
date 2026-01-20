@@ -28,7 +28,7 @@ export class CategoriesService {
 
   /**
    * Get all categories in a tree structure
-   * Filters only main categories (order > 0) and their children
+   * Filters only main categories (order > 0) and their children (all levels)
    */
   async getCategoryTree(): Promise<CategoryWithChildren[]> {
     // First get main categories (order > 0)
@@ -38,63 +38,63 @@ export class CategoriesService {
     });
     const mainIds = mainCategoryIds.map(c => c.id);
 
-    // Get main categories and their children
-    const allCategories = await prisma.category.findMany({
+    // Get main categories with their full hierarchy (3 levels)
+    const mainCategories = await prisma.category.findMany({
       where: { 
         isActive: true,
-        OR: [
-          { id: { in: mainIds } },
-          { parentId: { in: mainIds } }
-        ]
+        id: { in: mainIds }
       },
       orderBy: { order: 'asc' },
       include: {
         _count: {
           select: { products: true }
+        },
+        children: {
+          where: { isActive: true },
+          orderBy: { name: 'asc' },
+          include: {
+            _count: {
+              select: { products: true }
+            },
+            children: {
+              where: { isActive: true },
+              orderBy: { name: 'asc' },
+              include: {
+                _count: {
+                  select: { products: true }
+                }
+              }
+            }
+          }
         }
       }
     });
 
-    // Build tree structure
-    const categoryMap = new Map<string, CategoryWithChildren>();
-    const rootCategories: CategoryWithChildren[] = [];
-
-    // First pass: create all category objects
-    allCategories.forEach(cat => {
-      categoryMap.set(cat.id, {
-        id: cat.id,
-        name: cat.name,
-        slug: cat.slug,
-        parentId: cat.parentId,
-        image: cat.image,
-        order: cat.order,
-        isActive: cat.isActive,
-        children: [],
-        productCount: cat._count.products,
-      });
+    // Transform to CategoryWithChildren format
+    const transformCategory = (cat: any): CategoryWithChildren => ({
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      parentId: cat.parentId,
+      image: cat.image,
+      order: cat.order,
+      isActive: cat.isActive,
+      productCount: cat._count.products,
+      children: cat.children ? cat.children.map(transformCategory) : []
     });
 
-    // Second pass: build tree
-    categoryMap.forEach(cat => {
-      if (cat.parentId) {
-        const parent = categoryMap.get(cat.parentId);
-        if (parent) {
-          parent.children = parent.children || [];
-          parent.children.push(cat);
-        }
-      } else if (cat.order > 0) {
-        // Only add root categories with order > 0 (main unified categories)
-        rootCategories.push(cat);
-      }
-    });
+    const rootCategories = mainCategories.map(transformCategory);
 
-    // Third pass: calculate total product counts including descendants
+    // Calculate total product counts including descendants
     const updateProductCounts = (categories: CategoryWithChildren[]) => {
       for (const cat of categories) {
         if (cat.children && cat.children.length > 0) {
           updateProductCounts(cat.children);
+          // Add children's products to parent count
+          cat.productCount = (cat.productCount || 0) + cat.children.reduce(
+            (sum, child) => sum + (child.productCount || 0), 0
+          );
         }
-        cat.productCount = this.calculateTotalProductCount(cat);
       }
     };
     updateProductCounts(rootCategories);
@@ -234,35 +234,45 @@ export class CategoriesService {
         },
         children: {
           where: { isActive: true },
-          orderBy: { order: 'asc' },
-          select: {
-            id: true,
-            name: true,
-            slug: true,
+          orderBy: { name: 'asc' },
+          include: {
+            _count: {
+              select: { products: true }
+            },
+            children: {
+              where: { isActive: true },
+              orderBy: { name: 'asc' },
+              include: {
+                _count: {
+                  select: { products: true }
+                }
+              }
+            }
           }
         }
       }
     });
 
-    return categories.map(cat => ({
-      id: cat.id,
-      name: cat.name,
-      slug: cat.slug,
-      parentId: cat.parentId,
-      image: cat.image,
-      order: cat.order,
-      isActive: cat.isActive,
-      productCount: cat._count.products,
-      children: cat.children.map(child => ({
-        id: child.id,
-        name: child.name,
-        slug: child.slug,
-        parentId: cat.id,
-        image: null,
-        order: 0,
-        isActive: true,
-      }))
-    }));
+    // Transform and calculate total product counts
+    const transformCategory = (cat: any, parentId: string | null = null): CategoryWithChildren => {
+      const directCount = cat._count?.products || 0;
+      const children = cat.children ? cat.children.map((child: any) => transformCategory(child, cat.id)) : [];
+      const childrenCount = children.reduce((sum: number, child: CategoryWithChildren) => sum + (child.productCount || 0), 0);
+      
+      return {
+        id: cat.id,
+        name: cat.name,
+        slug: cat.slug,
+        parentId: parentId,
+        image: cat.image || null,
+        order: cat.order || 0,
+        isActive: cat.isActive ?? true,
+        productCount: directCount + childrenCount,
+        children: children.length > 0 ? children : undefined
+      };
+    };
+
+    return categories.map(cat => transformCategory(cat, null));
   }
 
   /**

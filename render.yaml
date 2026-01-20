@@ -18,6 +18,12 @@ services:
       
       - key: APP_PORT
         value: 5000
+      
+      - key: PORT
+        fromService:
+          type: web
+          name: wbtrade-api
+          property: port
         
       - key: APP_URL
         # Zostanie automatycznie ustawione przez Render

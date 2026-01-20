@@ -33,6 +33,11 @@ router.delete('/sync/:id', baselinkerController.cancelSync);
 router.post('/orders/sync', baselinkerController.syncPendingOrders);
 router.post('/orders/:orderId/sync', baselinkerController.syncOrder);
 
+// Manual order/stock sync endpoints (legacy/alternative)
+router.post('/send-order/:orderId', baselinkerController.sendOrder);
+router.post('/sync-stock/:variantId', baselinkerController.syncStock);
+router.post('/sync-all-stock', baselinkerController.syncAllStock);
+
 // Inventories list
 router.get('/inventories', baselinkerController.getInventories);
 
