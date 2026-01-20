@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, usePathname } from 'next/navigation';
 import SearchBar from './SearchBar';
+import MegaMenu from './MegaMenu';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useWishlist } from '../contexts/WishlistContext';
@@ -99,7 +100,7 @@ function HeaderContent() {
               </span>
             </Link>
 
-            {/* Category Dropdown - only shows main categories */}
+            {/* Category Dropdown - Mega Menu */}
             <div className="hidden lg:block relative" ref={categoryDropdownRef}>
               <button
                 onClick={() => setIsCategoryOpen(!isCategoryOpen)}
@@ -114,43 +115,19 @@ function HeaderContent() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
-                {isOnProductsPage && currentMainCategory ? cleanCategoryName(currentMainCategory.name) : 'Wybierz kategorię'}
+                {isOnProductsPage && currentMainCategory ? cleanCategoryName(currentMainCategory.name) : 'Kategorie'}
                 <svg className={`w-4 h-4 transition-transform ${isCategoryOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              {isCategoryOpen && (
-                <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-50 max-h-[calc(100vh-200px)] overflow-y-auto">
-                  {categories.map((category) => {
-                    const isActive = currentMainCategory?.slug === category.slug;
-                    return (
-                      <Link
-                        key={category.slug}
-                        href={`/products?category=${category.slug}`}
-                        className={`block px-4 py-2.5 text-sm transition-colors ${
-                          isActive
-                            ? 'text-primary-600 bg-primary-50 font-medium'
-                            : 'text-secondary-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span>{cleanCategoryName(category.name)}</span>
-                          {isActive && (
-                            <svg className="w-4 h-4 text-primary-500" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                          {category.children && category.children.length > 0 && !isActive && (
-                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                          )}
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
+              
+              {/* Mega Menu Component */}
+              <MegaMenu
+                categories={categories}
+                isOpen={isCategoryOpen}
+                onClose={() => setIsCategoryOpen(false)}
+                currentCategorySlug={currentMainCategory?.slug}
+              />
             </div>
 
             {/* Search */}

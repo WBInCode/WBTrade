@@ -39,7 +39,8 @@ import { startShippingWorker } from './workers/shipping.worker';
 import { scheduleReservationCleanup } from './lib/queue';
 
 const app = express();
-const PORT = process.env.APP_PORT || 5000;
+// Render używa PORT, lokalnie APP_PORT
+const PORT = process.env.PORT || process.env.APP_PORT || 5000;
 
 // Trust proxy for rate limiting behind reverse proxy (e.g. nginx)
 app.set('trust proxy', 1);

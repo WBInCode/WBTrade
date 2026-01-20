@@ -1,6 +1,5 @@
-{
-  "description": "Mapowanie kategorii z BaseLinker na zunifikowane kategorie sklepu",
-  "version": "2.0",
+"description": "Mapowanie kategorii z BaseLinker na zunifikowane kategorie sklepu",
+  "version": "3.0",
   
   "mainCategories": [
     {
@@ -10,67 +9,68 @@
         {
           "name": "Laptopy i komputery",
           "slug": "laptopy-i-komputery",
-          "keywords": ["laptop", "notebook", "komputer", "computer", "macbook", "chromebook", "ultrabook", "netbook"],
-          "excludeKeywords": ["torba", "etui", "pokrowiec", "akcesoria"]
+          "keywords": ["laptop", "notebook", "komputer", "computer", "macbook", "chromebook", "ultrabook", "netbook", "pc", "desktop", "all in one"],
+          "excludeKeywords": ["torba", "etui", "pokrowiec", "akcesoria", "mysz", "klawiatura"]
         },
         {
           "name": "Smartfony i telefony",
           "slug": "smartfony-i-telefony", 
-          "keywords": ["smartfon", "smartphone", "telefon", "iphone", "samsung galaxy", "xiaomi", "huawei", "oneplus", "oppo", "realme", "motorola", "nokia"],
-          "excludeKeywords": ["etui", "case", "pokrowiec", "szkło", "folia", "ładowarka", "kabel"]
+          "keywords": ["smartfon", "smartphone", "telefon", "iphone", "samsung galaxy", "xiaomi", "huawei", "oneplus", "oppo", "realme", "motorola", "nokia", "redmi", "poco"],
+          "excludeKeywords": ["etui", "case", "pokrowiec", "szkło", "folia", "ładowarka", "kabel", "uchwyt", "powerbank"]
         },
         {
           "name": "Etui i akcesoria GSM",
           "slug": "etui-i-akcesoria-gsm",
-          "keywords": ["etui", "case", "pokrowiec", "cover", "bumper", "futerał", "szkło ochronne", "folia", "grip", "uchwyt telefon", "telefony i akcesoria"],
+          "keywords": ["etui", "case", "pokrowiec", "cover", "bumper", "futerał", "szkło ochronne", "folia ochronna", "folia", "grip", "uchwyt telefon", "uchwyt do telefonu", "telefony i akcesoria", "selfie stick", "kijek do zdjęć", "bluetooth s560w", "statyw do telefonu", "ringlight", "ring light", "holder", "podstawka pod telefon", "ring holder", "popsocket", "pop socket", "tripod", "monopod", "gimbal", "stabilizator", "obudowa", "futerał na telefon"],
           "priority": 10
         },
         {
           "name": "Ładowarki i kable",
           "slug": "ladowarki-i-kable",
-          "keywords": ["ładowarka", "charger", "kabel usb", "kabel lightning", "kabel type-c", "powerbank", "power bank", "adapter zasilacz"],
-          "excludeKeywords": ["samochodowa"]
+          "keywords": ["ładowarka", "charger", "kabel", "przewód", "kabel usb", "kabel lightning", "kabel type-c", "kabel usb-c", "kabel usb-a", "kabel usbc", "usb-c", "usb-a", "usb c", "usb a", "type c", "typu c", "lightning", "kabel typu c", "przewód usb", "przewód lightning", "kabel s-a28", "s-a28", "kabel przewód", "powerbank", "power bank", "adapter", "zasilacz", "quick set", "air glass fit", "ładowarka sieciowa", "ładowarka ścienna", "fast charging", "quick charge", "qc", "pd", "power delivery", "bateria", "akumulator zewnętrzny", "magnetyczna ładowarka", "bezprzewodowa ładowarka", "wireless charger", "qi", "indukcyjna", "usb hub"],
+          "excludeKeywords": ["samochodowa", "samochodowy", "samochodowe"],
+          "priority": 9
         },
         {
           "name": "Słuchawki i audio",
           "slug": "sluchawki-i-audio",
-          "keywords": ["słuchawki", "headphones", "earbuds", "airpods", "głośnik", "speaker", "soundbar", "audio", "bluetooth speaker", "kolumna"]
+          "keywords": ["słuchawki", "headphones", "earbuds", "earphones", "airpods", "air pods", "tws", "true wireless", "głośnik", "speaker", "soundbar", "audio", "bluetooth speaker", "kolumna", "głośniki", "nauszne", "douszne", "bezprzewodowe słuchawki", "wireless", "jbl", "sony", "bose", "marshall", "mikrofon", "microphone", "zestaw głośnomówiący"]
         },
         {
           "name": "Smartwatche i wearables",
           "slug": "smartwatche-i-wearables",
-          "keywords": ["smartwatch", "zegarek", "watch", "opaska", "band", "fitness", "garmin", "apple watch", "galaxy watch", "mi band"]
+          "keywords": ["smartwatch", "zegarek", "watch", "opaska", "band", "fitness tracker", "garmin", "apple watch", "galaxy watch", "mi band", "xiaomi band", "huawei watch", "pulsometr", "krokomierz", "monitor aktywności"]
         },
         {
           "name": "Tablety",
           "slug": "tablety",
-          "keywords": ["tablet", "ipad", "galaxy tab"],
-          "excludeKeywords": ["etui", "pokrowiec", "rysik"]
+          "keywords": ["tablet", "ipad", "galaxy tab", "lenovo tab", "huawei matepad"],
+          "excludeKeywords": ["etui", "pokrowiec", "rysik", "klawiatura"]
         },
         {
           "name": "Telewizory",
           "slug": "telewizory",
-          "keywords": ["telewizor", "tv", "smart tv", "led tv", "oled", "qled"]
+          "keywords": ["telewizor", "tv", "smart tv", "led tv", "oled", "qled", "uhd", "4k", "8k", "full hd"]
         },
         {
           "name": "Konsole i gaming",
           "slug": "konsole-i-gaming",
-          "keywords": ["konsola", "playstation", "xbox", "nintendo", "switch", "ps5", "ps4", "gaming", "pad", "kontroler", "gra wideo"]
+          "keywords": ["konsola", "playstation", "xbox", "nintendo", "switch", "ps5", "ps4", "gaming", "pad", "kontroler", "gamepad", "gra wideo", "joystick"]
         },
         {
           "name": "Aparaty i kamery",
           "slug": "aparaty-i-kamery",
-          "keywords": ["aparat", "camera", "lustrzanka", "bezlusterkowiec", "gopro", "kamera", "obiektyw", "statyw"]
+          "keywords": ["aparat", "camera", "lustrzanka", "bezlusterkowiec", "gopro", "kamera", "obiektyw", "statyw fotograficzny", "statyw", "action cam", "dron", "drone"]
         },
         {
           "name": "Akcesoria komputerowe",
           "slug": "akcesoria-komputerowe",
-          "keywords": ["mysz", "mouse", "klawiatura", "keyboard", "monitor", "hub usb", "pendrive", "dysk", "ssd", "ram", "torba laptop", "pokrowiec laptop", "stacja dokująca"]
+          "keywords": ["mysz", "mouse", "klawiatura", "keyboard", "monitor", "hub usb", "pendrive", "dysk", "ssd", "hdd", "ram", "pamięć", "torba laptop", "pokrowiec laptop", "plecak laptop", "stacja dokująca", "dock", "kamera internetowa", "webcam", "router", "switch sieciowy", "modemu"]
         },
         {
           "name": "Narzędzia elektroniczne",
           "slug": "narzedzia-elektroniczne",
-          "keywords": ["lutownica", "stacja lutownicza", "separator ekran", "odizolowywacz", "narzędzia dla elektroników"],
+          "keywords": ["lutownica", "stacja lutownicza", "separator ekran", "odizolowywacz", "narzędzia dla elektroników", "multimetr", "oscyloskop", "zestaw narzędzi elektronicznych"],
           "priority": 5
         }
       ]
@@ -82,109 +82,116 @@
         {
           "name": "Małe AGD kuchenne",
           "slug": "male-agd-kuchenne",
-          "keywords": ["blender domowy", "mikser domowy", "robot kuchenny domowy", "toster domowy", "czajnik", "expres do kawy", "kawiarka", "sokowirówka", "frytkownica domowa", "grill elektryczny domowy", "opiekacz domowy"],
+          "keywords": ["blender domowy", "mikser domowy", "robot kuchenny domowy", "toster domowy", "czajnik", "czajnik elektryczny", "expres do kawy", "ekspres", "kawiarka", "sokowirówka", "frytkownica domowa", "frytkownica beztłuszczowa", "air fryer", "grill elektryczny domowy", "opiekacz domowy", "multicooker", "wolnowar", "rozdrabniacz", "maszynka do mielenia"],
           "excludeKeywords": ["gastronomia", "gastronomiczny", "profesjonalny"]
         },
         {
           "name": "Duże AGD",
           "slug": "duze-agd",
-          "keywords": ["lodówka", "pralka", "zmywarka", "piekarnik", "kuchenka", "suszarka", "chłodziarka", "zamrażarka"]
+          "keywords": ["lodówka", "pralka", "zmywarka", "piekarnik", "kuchenka", "płyta indukcyjna", "płyta gazowa", "okap", "suszarka", "chłodziarka", "zamrażarka", "side by side"]
         },
         {
           "name": "Sprzątanie",
           "slug": "sprzatanie",
-          "keywords": ["odkurzacz", "mop", "robot sprzątający", "roomba", "parowy", "myjka okien"]
+          "keywords": ["odkurzacz", "mop", "robot sprzątający", "roomba", "parowy", "parownica", "myjka okien", "karcher", "mop parowy", "odkurzacz pionowy", "odkurzacz bezworkowy"]
         },
         {
           "name": "Klimatyzacja",
           "slug": "klimatyzacja",
-          "keywords": ["klimatyzator", "wentylator", "oczyszczacz", "nawilżacz", "osuszacz", "klimatyzacja"]
+          "keywords": ["klimatyzator", "klimatyzacja", "wentylator", "oczyszczacz powietrza", "nawilżacz powietrza", "osuszacz powietrza", "termowentylator", "grzejnik"]
         }
       ]
     },
     {
       "name": "Gastronomia",
       "slug": "gastronomia",
-      "keywords": ["gastronomia"],
+      "keywords": ["gastronomia", "gastronomiczny", "profesjonalny"],
       "priority": 12,
       "subcategories": [
         {
           "name": "Urządzenia gastronomiczne",
           "slug": "urzadzenia-gastronomiczne",
-          "keywords": ["frytownica", "frytownice", "grill gastronomiczny", "piec konwekcyjny", "salamander", "bemarowy", "bemar", "podgrzewacz", "warnik", "kocioł", "opiekacz", "maszyna do waty", "maszyna do popcornu", "hot dog", "gofrownica", "naleśnikarka", "urządzenia grzewcze", "płyty grillowe", "kontakt grill", "tostery", "blender gastronomia", "cukiernia", "kawiarnia"],
+          "keywords": ["frytownica gastronomiczna", "frytownice", "grill gastronomiczny", "piec konwekcyjny", "piec piekarniczy", "salamander", "bemarowy", "bemar", "podgrzewacz gastronomiczny", "warnik", "kocioł", "opiekacz gastronomiczny", "maszyna do waty", "maszyna do popcornu", "hot dog", "parówki", "gofrownica gastronomiczna", "naleśnikarka", "urządzenia grzewcze", "płyty grillowe", "kontakt grill", "tostery gastronomiczne", "blender gastronomia", "mikser gastronomiczny", "cukiernia", "kawiarnia", "steamer", "parowar", "pizza"],
           "priority": 10
         },
         {
           "name": "Wyposażenie kuchni",
           "slug": "wyposazenie-kuchni",
-          "keywords": ["stół roboczy", "zlew gastronomia", "regał magazynowy", "szafa chłodnicza", "lada chłodnicza", "witryna", "wózek kelnerski", "stoły i blaty", "meble technologiczne"],
+          "keywords": ["stół roboczy", "stół gastronomiczny", "zlew gastronomia", "zlew ze stali", "regał magazynowy", "regał", "szafa chłodnicza", "lada chłodnicza", "witryna chłodnicza", "wózek kelnerski", "stoły i blaty", "blat roboczy", "meble technologiczne", "szafka gastronomiczna", "półka naścienna"],
           "priority": 8
         },
         {
           "name": "Naczynia i sztućce",
           "slug": "naczynia-i-sztucce",
-          "keywords": ["pojemnik gn", "garnek gastronomia", "patelnia gastronomia", "nóż kuchenny", "deska do krojenia", "taca", "talerz gastronomia", "sztućce", "przybory kuchenne", "akcesoria bufetowe", "przybory do serwowania", "deski noże"]
+          "keywords": ["pojemnik gn", "gastronorm", "garnek gastronomia", "garnek profesjonalny", "patelnia gastronomia", "nóż kuchenny", "noże profesjonalne", "deska do krojenia", "taca", "talerz gastronomia", "talerze", "sztućce", "widelce", "łyżki", "noże", "przybory kuchenne", "akcesoria bufetowe", "przybory do serwowania", "deski noże", "pojemniki", "миски"]
         },
         {
           "name": "Maszyny do mięsa",
           "slug": "maszyny-do-miesa",
-          "keywords": ["wilk do mięsa", "krajalnica", "maszynka do mięsa", "szatkownica", "napełniacz kiełbasy", "piła do kości", "kotleciarka", "obróbka mięsa", "steaker", "krajalnice do wędlin"]
+          "keywords": ["wilk do mięsa", "krajalnica", "krajalnica do wędlin", "maszynka do mięsa", "szatkownica", "szatkownica do warzyw", "napełniacz kiełbasy", "piła do kości", "piła taśmowa", "kotleciarka", "obróbka mięsa", "steaker", "krajalnice do wędlin", "krajalnice universal", "wilki", "międlarka"],
+          "priority": 8
         },
         {
           "name": "Chłodnictwo",
           "slug": "chlodnictwo-gastronomiczne",
-          "keywords": ["kostkarki do lodu", "lód", "chłodnia", "agregat chłodniczy", "schładzarki"]
+          "keywords": ["kostkarki do lodu", "kostkarka", "lód", "chłodnia", "agregat chłodniczy", "schładzarki", "blast chiller", "szafa mroźnicza", "zamrażarka gastronomiczna"]
         },
         {
           "name": "Pakowanie",
           "slug": "pakowanie-gastronomia",
-          "keywords": ["pakowarka próżniowa", "sous vide", "woreczki próżniowe", "folia stretch", "pakowarki"]
+          "keywords": ["pakowarka próżniowa", "pakowarka", "sous vide", "woreczki próżniowe", "folia stretch", "pakowarki", "zgrzewarka"]
         },
         {
           "name": "Roboty kuchenne",
-          "slug": "roboty-kuchenne",
-          "keywords": ["robot kuchenny gastronomia", "blendery miksery gastronomia", "roboty kuchenne gastronomia"]
+          "slug": "roboty-kuchenne-gastronomiczne",
+          "keywords": ["robot kuchenny gastronomia", "robot planetarny", "blendery miksery gastronomia", "mikser planetarny", "mikser spiralny", "ubijacz"]
         }
       ]
     },
     {
       "name": "Narzędzia",
       "slug": "narzedzia",
-      "keywords": ["elektronarzędzia", "warsztat pracownia garaż"],
+      "keywords": ["elektronarzędzia", "warsztat", "pracownia", "garaż"],
       "priority": 6,
       "subcategories": [
         {
           "name": "Elektronarzędzia",
           "slug": "elektronarzedzia",
-          "keywords": ["wiertarka", "szlifierka", "piła", "frezarka", "młot", "wkrętarka", "wyrzynarka", "szlifierki polerki", "satyniarki", "szlifierki kątowe", "szlifierki do rur"],
+          "keywords": ["wiertarka", "wiertarko-wkrętarka", "szlifierka", "piła", "piła tarczowa", "piła szablasta", "piła łańcuchowa", "frezarka", "młot", "młot udarowy", "młot wyburzeniowy", "wkrętarka", "wkrętarka akumulatorowa", "wyrzynarka", "szlifierki polerki", "polerka", "satyniarki", "szlifierki kątowe", "flex", "szlifierki do rur", "oscylacyjne", "wielofunkcyjne", "heblowarka", "strugarka", "bruzdownica"],
           "priority": 6
         },
         {
           "name": "Spawarki",
           "slug": "spawarki",
-          "keywords": ["spawarka", "spawalnicza", "spawalnictwo", "mig", "mag", "tig", "elektroda", "przecinarka plazmowa", "maska spawalnicza", "akcesoria spawalnicze"],
+          "keywords": ["spawarka", "spawalnicza", "spawalnictwo", "mig", "mag", "tig", "mma", "elektroda", "przecinarka plazmowa", "plazma", "maska spawalnicza", "przyłbica spawalnicza", "akcesoria spawalnicze", "uchwyt elektrody", "spawanie"],
           "priority": 7
         },
         {
           "name": "Wagi",
           "slug": "wagi",
-          "keywords": ["waga", "wagi", "platformowa", "hakowa", "precyzyjna", "sklepowa", "magazynowa", "wagi elektroniczne"],
+          "keywords": ["waga", "wagi", "waga platformowa", "waga hakowa", "waga precyzyjna", "waga sklepowa", "waga magazynowa", "wagi elektroniczne", "waga przemysłowa", "waga wiszaca"],
           "priority": 7
         },
         {
           "name": "Wciągarki",
           "slug": "wciagarki",
-          "keywords": ["wciągarka", "wyciągarka", "wciąg", "suwnica", "podnośnik"]
+          "keywords": ["wciągarka", "wyciągarka", "wciąg", "wciąg łańcuchowy", "suwnica", "podnośnik", "trawers", "wózek podwieszony"]
         },
         {
           "name": "Materiały ścierne",
           "slug": "materialy-scierne",
-          "keywords": ["pasy szlifierskie", "tarcze ścierne", "walce szlifierskie", "materiały ścierne", "polerskie", "papier ścierny"]
+          "keywords": ["pasy szlifierskie", "pas szlifierski", "tarcze ścierne", "tarcza ścierna", "tarcza do cięcia", "tarcza do szlifowania", "walce szlifierskie", "materiały ścierne", "polerskie", "papier ścierny", "nasadki ścierne", "bębny ścierne"],
+          "priority": 5
         },
         {
           "name": "Warsztat",
           "slug": "warsztat",
-          "keywords": ["myjki warsztatowe", "czyściwa", "suszarki próżniowe", "urządzenia specjalistyczne", "chemia przemysłowa"]
+          "keywords": ["myjki warsztatowe", "myjka ciśnieniowa", "kompresor", "sprężarka", "czyściwa", "chemia warsztatowa", "suszarki próżniowe", "urządzenia specjalistyczne", "chemia przemysłowa", "stół warsztatowy", "imadło", "pilnik"]
+        },
+        {
+          "name": "Narzędzia ręczne",
+          "slug": "narzedzia-reczne",
+          "keywords": ["klucz", "klucz płaski", "klucz nasadowy", "nasadka", "zestaw kluczy", "śrubokręt", "szczypce", "obcęgi", "młotek", "poziomnica", "miara", "taśma miernicza", "piła ręczna"]
         }
       ]
     },
@@ -195,142 +202,286 @@
         {
           "name": "Akcesoria samochodowe",
           "slug": "akcesoria-samochodowe",
-          "keywords": ["samochodowy", "car", "auto", "uchwyt samochodowy", "ładowarka samochodowa", "transmiter fm", "cb radio", "nawigacja"]
+          "keywords": ["samochodowy", "samochodowa", "samochodowe", "car", "auto", "uchwyt samochodowy", "ładowarka samochodowa", "ładowarka do auta", "transmiter fm", "fm transmitter", "cb radio", "radiotelefon", "nawigacja", "gps", "do samochodu", "automotive", "wideorejestr", "kamera samochodowa", "kamera cofania", "parking", "dywaniki", "organizery", "akcesoria podróżne"],
+          "priority": 8
         },
         {
           "name": "Części",
           "slug": "czesci-samochodowe",
-          "keywords": ["część samochodowa", "filtr samochodowy", "olej silnikowy", "świeca zapłonowa", "hamulec", "amortyzator", "opony"]
+          "keywords": ["część samochodowa", "filtr samochodowy", "olej silnikowy", "olej", "świeca zapłonowa", "hamulec", "klocki hamulcowe", "tarcze hamulcowe", "amortyzator", "opony", "akumulator samochodowy", "płyn"]
+        },
+        {
+          "name": "Pielęgnacja auta",
+          "slug": "pielegnacja-auta",
+          "keywords": ["kosmetyki samochodowe", "wosk", "politura", "szampon samochodowy", "odkurzacz samochodowy", "myjka", "detailing"]
         }
       ]
     },
     {
       "name": "Dom i ogród",
       "slug": "dom-i-ogrod",
-      "keywords": ["dom i ogród"],
+      "keywords": ["dom i ogród", "wyposażenie domu"],
       "subcategories": [
         {
           "name": "Meble",
           "slug": "meble",
-          "keywords": ["meble", "krzesło", "stół", "biurko", "regał", "szafka", "fotel", "sofa", "komoda", "łóżko", "kanapa"]
+          "keywords": ["meble", "krzesło", "stół", "stolik", "biurko", "regał", "szafka", "szafa", "fotel", "sofa", "komoda", "łóżko", "kanapa", "taboret", "ława", "szafka nocna", "półka", "wieszak", "garderoba", "kredens", "barek"]
         },
         {
           "name": "Oświetlenie",
           "slug": "oswietlenie",
-          "keywords": ["lampa", "żarówka", "oświetlenie", "świecznik", "kinkiet", "plafon", "żyrandol", "lampy owadobójcze"]
+          "keywords": ["lampa", "żarówka", "oświetlenie", "świecznik", "kinkiet", "plafon", "żyrandol", "lampy owadobójcze", "lampa stojąca", "lampa biurkowa", "lampka nocna", "led", "halogen", "reflektor"]
         },
         {
           "name": "Ogród",
           "slug": "ogrod",
-          "keywords": ["ogrodowy", "doniczka", "nawóz", "nasiona", "kosiarka", "sekator", "parasol ogrodowy", "grill ogrodowy", "basen", "trampolina"]
+          "keywords": ["ogrodowy", "ogrodowe", "doniczka", "nawóz", "nasiona", "kosiarka", "sekator", "nożyce ogrodowe", "parasol ogrodowy", "grill ogrodowy", "basen", "trampolina", "huśtawka", "meble ogrodowe", "leżak", "poduszka ogrodowa"]
         },
         {
           "name": "Dekoracje",
           "slug": "dekoracje",
-          "keywords": ["dekoracja", "obraz", "ramka", "wazon", "świeca zapachowa", "dywan"]
+          "keywords": ["dekoracja", "obraz", "ramka", "wazon", "świeca zapachowa", "dywan", "firanka", "zasłona", "pościel", "poduszka dekoracyjna", "koc", "narzuta"]
+        },
+        {
+          "name": "Przechowywanie",
+          "slug": "przechowywanie",
+          "keywords": ["pojemnik", "pudełko", "koszyk", "organizer domowy", "wieszak na ubrania", "pudło", "skrzynia", "torba", "worek", "kosz na śmieci", "segregator"]
+        },
+        {
+          "name": "Łazienka",
+          "slug": "lazienka",
+          "keywords": ["łazienkowy", "łazienkowe", "ręcznik", "mata łazienkowa", "wieszak na ręczniki", "mydło", "dozownik", "szczotka do wc", "lustr"]
         }
       ]
     },
     {
       "name": "Moda",
       "slug": "moda",
-      "keywords": ["odzież", "obuwie", "buty", "moda", "fashion"],
+      "keywords": ["odzież", "obuwie", "buty", "moda", "fashion", "ubrania"],
       "priority": 8,
       "subcategories": [
         {
           "name": "Odzież damska",
           "slug": "odziez-damska",
-          "keywords": ["sukienka", "bluzka damska", "spodnie damskie", "spódnica", "damska", "kobieta", "kobiece"],
+          "keywords": ["sukienka", "bluzka damska", "koszulka damska", "spodnie damskie", "jeansy damskie", "spódnica", "damska", "kobieta", "kobiece", "dla kobiet", "żakiet", "marynarka damska", "sweter damski", "kardigan"],
           "priority": 7
         },
         {
           "name": "Odzież męska",
           "slug": "odziez-meska",
-          "keywords": ["koszula męska", "spodnie męskie", "garnitur", "męska", "mężczyzna", "męskie"],
+          "keywords": ["koszula męska", "koszulka męska", "polo męskie", "spodnie męskie", "jeansy męskie", "garnitur", "męska", "mężczyzna", "męskie", "dla mężczyzn", "marynarka męska", "sweter męski", "bluza męska"],
           "priority": 7
         },
         {
           "name": "Odzież dziecięca",
           "slug": "odziez-dziecieca",
-          "keywords": ["odzież dziecięca", "odzież dla dzieci", "niemowlęce", "chłopięce", "dziewczęce"]
+          "keywords": ["odzież dziecięca", "odzież dla dzieci", "niemowlęce", "chłopięce", "dziewczęce", "body", "pajac", "śpioszki", "bluzeczka dziecięca", "spodenki dziecięce"]
         },
         {
           "name": "Buty",
           "slug": "buty",
-          "keywords": ["buty", "obuwie", "sneakersy", "trampki", "sandały", "klapki", "botki", "kozaki", "półbuty", "adidasy"],
+          "keywords": ["buty", "obuwie", "sneakersy", "trampki", "sandały", "klapki", "botki", "kozaki", "półbuty", "adidasy", "baleriny", "szpilki", "mokasyny", "espadryle"],
           "priority": 9
         },
         {
           "name": "Akcesoria modowe",
           "slug": "akcesoria-modowe",
-          "keywords": ["torebka", "pasek", "portfel", "rękawiczki", "szalik", "czapka", "biżuteria", "zegarek modowy", "okulary przeciwsłoneczne"]
+          "keywords": ["torebka", "pasek", "portfel", "rękawiczki", "szalik", "chusta", "apaszka", "czapka", "kapelusz", "biżuteria", "zegarek modowy", "okulary przeciwsłoneczne", "bransoletka", "naszyjnik", "kolczyki", "pierścionek"]
         }
       ]
     },
     {
       "name": "Kosmetyka i uroda",
       "slug": "kosmetyka-i-uroda",
-      "keywords": ["zdrowie i uroda", "kosmetyka", "uroda", "gabinet masażu"],
+      "keywords": ["zdrowie i uroda", "kosmetyka", "uroda", "gabinet", "salon kosmetyczny"],
       "subcategories": [
         {
           "name": "Sprzęt kosmetyczny",
           "slug": "sprzet-kosmetyczny",
-          "keywords": ["fotel kosmetyczny", "łóżko kosmetyczne", "łóżko do masażu", "stoły do masażu", "sterylizator", "autoklaw", "myjka ultradźwiękowa", "lampa kosmetyczna"]
+          "keywords": ["fotel kosmetyczny", "łóżko kosmetyczne", "łóżko do masażu", "stoły do masażu", "leżanka kosmetyczna", "sterylizator", "autoklaw", "myjka ultradźwiękowa", "lampa kosmetyczna", "lampa lupa", "lupa kosmetyczna", "toaletka", "toaletka kosmetyczna", "organizer kosmetyczny", "stojak na kosmetyki", "lustro kosmetyczne", "taboret kosmetyczny", "taboret", "krzesło kosmetyczne", "wózek kosmetyczny", "parownica", "wapozon", "mikrodermabrazja", "ultradźwięki", "urządzenie kosmetyczne"],
+          "priority": 9
         },
         {
           "name": "Pielęgnacja",
           "slug": "pielegnacja",
-          "keywords": ["krem", "serum", "maseczka", "pielęgnacja", "szampon", "odżywka", "balsam", "żel pod prysznic"]
+          "keywords": ["krem", "serum", "maseczka", "pielęgnacja", "szampon", "odżywka", "balsam", "żel pod prysznic", "mleczko do ciała", "peeling", "scrub", "tonik"]
         },
         {
           "name": "Makijaż",
           "slug": "makijaz",
-          "keywords": ["makijaż", "pomadka", "tusz do rzęs", "podkład", "puder", "róż", "cienie do powiek"]
+          "keywords": ["makijaż", "pomadka", "tusz do rzęs", "podkład", "puder", "róż", "cienie do powiek", "eyeliner", "kredka", "szminka", "brokat"]
         },
         {
           "name": "Perfumy",
           "slug": "perfumy",
-          "keywords": ["perfumy", "woda toaletowa", "woda perfumowana", "zapach"]
+          "keywords": ["perfumy", "woda toaletowa", "woda perfumowana", "zapach", "dyfuzor zapachowy"]
+        },
+        {
+          "name": "Pielęgnacja paznokci",
+          "slug": "pielegnacja-paznokci",
+          "keywords": ["lakier do paznokci", "żel", "hybryd", "frezarka", "lampa uv", "manicure", "pilnik", "tipsy"]
         }
       ]
     },
     {
       "name": "Dziecko",
       "slug": "dziecko",
-      "keywords": ["dziecko"],
+      "keywords": ["dziecko", "dzieci", "dziecięce"],
       "subcategories": [
         {
           "name": "Zabawki",
           "slug": "zabawki",
-          "keywords": ["zabawka", "zabawki", "lalka", "klocki", "puzzle", "gra planszowa", "pluszak", "maskotka", "samochodzik", "figurka", "zestaw kreatywny", "zabawki drewniane"],
+          "keywords": ["zabawka", "zabawki", "lalka", "lalki", "klocki", "puzzle", "gra planszowa", "pluszak", "pluszaki", "maskotka", "maskotki", "samochodzik", "autko", "figurka", "zestaw kreatywny", "zabawki drewniane", "miś", "przytulanka", "dla dzieci", "dziecięca", "zabawka interaktywna", "edukacyjna", "kuchnia zabawkowa", "warsztat zabawkowy"],
           "priority": 8
         },
         {
           "name": "Artykuły dziecięce",
           "slug": "artykuly-dzieciece",
-          "keywords": ["wózek dziecięcy", "fotelik", "łóżeczko", "przewijak", "smoczek", "butelka dziecięca", "nocnik"]
+          "keywords": ["wózek dziecięcy", "fotelik samochodowy", "łóżeczko", "łóżeczko dziecięce", "przewijak", "smoczek", "butelka dziecięca", "butelka dla niemowlaka", "nocnik", "leżaczek", "nosidło", "chusta do noszenia", "monitor oddechu"]
+        },
+        {
+          "name": "Artykuły szkolne",
+          "slug": "artykuly-szkolne",
+          "keywords": ["plecak szkolny", "tornister", "piórnik", "zeszyt", "notes", "długopis", "ołówek", "kredki", "farby", "pędzel", "blok rysunkowy", "linijka", "gumka", "temperówka", "segregator szkolny"],
+          "priority": 7
         }
       ]
     },
     {
       "name": "Sport i turystyka",
       "slug": "sport-i-turystyka",
-      "keywords": ["sport", "turystyka", "outdoor", "survival", "fitness", "sport i turystyka"],
+      "keywords": ["sport", "turystyka", "outdoor", "survival", "fitness", "sport i turystyka", "sportowy", "aktywność fizyczna"],
       "subcategories": [
         {
           "name": "Sprzęt sportowy",
           "slug": "sprzet-sportowy",
-          "keywords": ["rower", "hulajnoga", "rolki", "piłka", "rakieta", "hantle", "siłownia", "bieżnia"]
+          "keywords": ["rower", "hulajnoga", "hulajnoga elektryczna", "rolki", "piłka", "piłka nożna", "piłka do koszykówki", "rakieta", "hantle", "hantla", "ciężarki", "siłownia", "bieżnia", "orbitrek", "rower stacjonarny", "fitness", "trening", "ćwiczenia", "sportowy", "sportowe", "sport", "mata do ćwiczeń", "mata fitness", "guma do ćwiczeń", "taśma oporowa", "odzież sportowa", "sportowa", "dres", "koszulka sportowa", "spodenki sportowe", "legginsy sportowe"],
+          "priority": 7
         },
         {
           "name": "Turystyka i camping",
           "slug": "turystyka-camping",
-          "keywords": ["namiot", "śpiwór", "plecak turystyczny", "karimata", "latarka", "nóż survivalowy", "kompas", "camping"]
+          "keywords": ["namiot", "śpiwór", "plecak turystyczny", "plecak trekkingowy", "karimata", "mata turystyczna", "latarka", "czołówka", "nóż survivalowy", "scyzoryk", "kompas", "camping", "termos", "menażka", "palnik turystyczny", "krzesło turystyczne"]
+        },
+        {
+          "name": "Rowery i akcesoria",
+          "slug": "rowery-akcesoria",
+          "keywords": ["rower", "rower górski", "rower miejski", "rower szosowy", "e-bike", "kask rowerowy", "licznik rowerowy", "oświetlenie rowerowe", "pompka rowerowa", "bagażnik rowerowy", "kosz rowerowy"]
         },
         {
           "name": "Strzelectwo",
           "slug": "strzelectwo",
-          "keywords": ["strzelectwo", "wiatrówka", "pistolet", "karabin", "śrut", "tarcza strzelecka", "amunicja"]
+          "keywords": ["strzelectwo", "wiatrówka", "pistolet", "karabin", "śrut", "kulki", "tarcza strzelecka", "amunicja", "celownik", "kolba"]
+        },
+        {
+          "name": "Sporty wodne",
+          "slug": "sporty-wodne",
+          "keywords": ["pływanie", "gogle pływackie", "czepek", "strój kąpielowy", "rękawki", "koło do pływania", "materac dmuchany", "kajak", "deska sup", "wiosło", "sporty wodne"]
+        }
+      ]
+    },
+    {
+      "name": "Biuro i papiernicze",
+      "slug": "biuro-papiernicze",
+      "keywords": ["biuro", "biurowe", "papiernicze", "artykuły biurowe"],
+      "subcategories": [
+        {
+          "name": "Artykuły biurowe",
+          "slug": "artykuly-biurowe",
+          "keywords": ["notes", "zeszyt", "teczka", "segregator", "skoroszyt", "koszulka", "długopis", "ołówek", "marker", "zakreślacz", "flamaster", "spinacz", "zszywacz", "dziurkacz", "taśma klejąca", "nożyczki biurowe", "linijka", "kalkulator", "temperówka", "gumka", "korektorka"]
+        },
+        {
+          "name": "Papier i koperty",
+          "slug": "papier-koperty",
+          "keywords": ["papier", "papier ksero", "papier a4", "papier fotograficzny", "koperta", "blok", "kartka", "papier do drukarki"]
+        },
+        {
+          "name": "Organizacja",
+          "slug": "organizacja-biurowa",
+          "keywords": ["organizer biurkowy", "stojak na dokumenty", "pojemnik na długopisy", "tablica korkowa", "tablica magnetyczna", "kalendarz", "planer", "etykiety", "naklejki"]
+        }
+      ]
+    },
+    {
+      "name": "Zdrowie",
+      "slug": "zdrowie",
+      "keywords": ["zdrowie", "medyczny", "medyczna", "health"],
+      "subcategories": [
+        {
+          "name": "Pomiar i diagnostyka",
+          "slug": "pomiar-diagnostyka",
+          "keywords": ["ciśnieniomierz", "glukometr", "termometr", "termometr bezdotykowy", "pulsoksymetr", "waga łazienkowa", "waga analityczna", "test ciążowy", "test owulacyjny"]
+        },
+        {
+          "name": "Suplementy",
+          "slug": "suplementy",
+          "keywords": ["witaminy", "minerały", "suplement", "omega", "probiotyk", "magnez", "witamina d", "witamina c", "kolagen"]
+        },
+        {
+          "name": "Rehabilitacja",
+          "slug": "rehabilitacja",
+          "keywords": ["stabilizator", "orteza", "bandaż", "kule", "balkonik", "wózek inwalidzki", "laska", "poduszka ortopedyczna"]
+        }
+      ]
+    },
+    {
+      "name": "Książki i multimedia",
+      "slug": "ksiazki-multimedia",
+      "keywords": ["książka", "książki", "film", "muzyka", "media"],
+      "subcategories": [
+        {
+          "name": "Książki",
+          "slug": "ksiazki",
+          "keywords": ["książka", "książki", "powieść", "kryminał", "fantasy", "romans", "thriller", "biografia", "poradnik", "literatura", "beletrystyka"]
+        },
+        {
+          "name": "Filmy i muzyka",
+          "slug": "filmy-muzyka",
+          "keywords": ["film", "dvd", "blu-ray", "płyta cd", "winyl", "muzyka", "soundtrack"]
+        }
+      ]
+    },
+    {
+      "name": "Hobby i rozrywka",
+      "slug": "hobby-rozrywka",
+      "keywords": ["hobby", "rozrywka", "kreatywne"],
+      "subcategories": [
+        {
+          "name": "Modelarstwo",
+          "slug": "modelarstwo",
+          "keywords": ["model", "makieta", "model rc", "samolot rc", "dron", "quadcopter", "helikopter rc", "samochód rc", "łódka rc"]
+        },
+        {
+          "name": "Rękodzieło",
+          "slug": "rekodzielnictwo",
+          "keywords": ["włóczka", "robótki ręczne", "szydełko", "igły", "nici", "haft", "szuwy", "koraliki", "biżuteria diy", "scrapbooking", "decoupage"]
+        },
+        {
+          "name": "Muzyka",
+          "slug": "instrumenty",
+          "keywords": ["gitara", "keyboard", "pianino", "perkusja", "instrument", "strunowy", "mikrofon muzyczny", "statyw mikrofonowy", "nuty"]
+        }
+      ]
+    },
+    {
+      "name": "Zwierzęta",
+      "slug": "zwierzeta",
+      "keywords": ["zwierzęta", "pupil", "pet"],
+      "subcategories": [
+        {
+          "name": "Psy",
+          "slug": "psy",
+          "keywords": ["pies", "psy", "karma dla psa", "smycz", "obroża", "legowisko dla psa", "zabawka dla psa", "kuweta", "miska dla psa"]
+        },
+        {
+          "name": "Koty",
+          "slug": "koty",
+          "keywords": ["kot", "koty", "karma dla kota", "żwirek", "drapak", "legowisko dla kota", "zabawka dla kota", "kuweta dla kota", "miska dla kota"]
+        },
+        {
+          "name": "Inne zwierzęta",
+          "slug": "inne-zwierzeta",
+          "keywords": ["akwarium", "terrarium", "klatka", "chomik", "królik", "świnka morska", "papuga", "pokarm dla ptaków", "karmnik"]
         }
       ]
     },
@@ -343,7 +494,7 @@
         {
           "name": "Akcesoria różne",
           "slug": "akcesoria-rozne",
-          "keywords": ["akcesoria"]
+          "keywords": ["akcesoria", "dodatki"]
         }
       ]
     }
@@ -357,6 +508,7 @@
   "notes": [
     "keywords - słowa kluczowe do wykrycia kategorii (case-insensitive)",
     "excludeKeywords - jeśli ścieżka zawiera te słowa, nie przypisuj do tej kategorii",
-    "priority - wyższy priorytet oznacza że ta kategoria wygrywa przy konflikcie (default: 0)"
+    "priority - wyższy priorytet oznacza że ta kategoria wygrywa przy konflikcie (default: 0)",
+    "v3.0 - znacznie rozszerzone słowniki, dodane nowe kategorie główne"
   ]
 }

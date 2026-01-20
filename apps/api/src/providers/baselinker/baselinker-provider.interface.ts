@@ -96,7 +96,7 @@ export interface BaselinkerImage {
 // API Response Wrappers
 // ============================================
 
-export interface BaselinkerApiResponse<T = any> {
+export interface BaselinkerApiResponse<T = unknown> {
   status: 'SUCCESS' | 'ERROR';
   error_code?: string;
   error_message?: string;

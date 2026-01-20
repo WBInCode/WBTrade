@@ -1,5 +1,8 @@
 import { prisma } from '../db';
 import { StockMovementType } from '@prisma/client';
+import { BaselinkerService } from './baselinker.service';
+
+const baselinkerService = new BaselinkerService();
 
 interface StockResult {
   variantId: string;
@@ -243,6 +246,11 @@ export class InventoryService {
           createdBy,
         },
       });
+    }).then(async () => {
+      // Sync stock to BaseLinker after receiving
+      await baselinkerService.syncStockToBaselinker(variantId).catch(err => {
+        console.error(`[InventoryService] Failed to sync stock for ${variantId} to BaseLinker:`, err);
+      });
     });
   }
 
@@ -291,6 +299,11 @@ export class InventoryService {
           notes,
           createdBy,
         },
+      });
+    }).then(async () => {
+      // Sync stock to BaseLinker after shipping
+      await baselinkerService.syncStockToBaselinker(variantId).catch(err => {
+        console.error(`[InventoryService] Failed to sync stock for ${variantId} to BaseLinker:`, err);
       });
     });
   }

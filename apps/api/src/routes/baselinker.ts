@@ -28,6 +28,11 @@ router.post('/sync', baselinkerController.triggerSync);
 router.get('/status', baselinkerController.getStatus);
 router.delete('/sync/:id', baselinkerController.cancelSync);
 
+// Manual order/stock sync endpoints
+router.post('/send-order/:orderId', baselinkerController.sendOrder);
+router.post('/sync-stock/:variantId', baselinkerController.syncStock);
+router.post('/sync-all-stock', baselinkerController.syncAllStock);
+
 // Inventories list
 router.get('/inventories', baselinkerController.getInventories);
 
