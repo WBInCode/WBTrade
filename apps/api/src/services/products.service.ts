@@ -217,7 +217,10 @@ export class ProductsService {
     const skip = (page - 1) * limit;
 
     // Build where clause
-    const where: Prisma.ProductWhereInput = {};
+    const where: Prisma.ProductWhereInput = {
+      // Always filter out products with price <= 0
+      price: { gt: 0 },
+    };
     
     // Only filter by status if explicitly provided
     if (status) {
@@ -242,9 +245,12 @@ export class ProductsService {
     }
 
     if (minPrice || maxPrice) {
-      where.price = {};
-      if (minPrice) where.price.gte = minPrice;
-      if (maxPrice) where.price.lte = maxPrice;
+      // Combine with existing price > 0 filter
+      where.price = {
+        gt: 0,
+        ...(minPrice ? { gte: minPrice } : {}),
+        ...(maxPrice ? { lte: maxPrice } : {}),
+      };
     }
 
     // Build orderBy clause
@@ -327,6 +333,9 @@ export class ProductsService {
 
       // Build filter array
       const meiliFilters: string[] = [];
+      
+      // Always filter out products with price <= 0
+      meiliFilters.push('price > 0');
       
       // Only filter by status if explicitly provided
       if (status) {
@@ -471,6 +480,7 @@ export class ProductsService {
     }
 
     if (minPrice || maxPrice) {
+      // Note: Admin view can see products with price 0
       where.price = {};
       if (minPrice) where.price.gte = minPrice;
       if (maxPrice) where.price.lte = maxPrice;
