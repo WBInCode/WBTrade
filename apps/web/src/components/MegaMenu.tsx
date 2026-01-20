@@ -76,27 +76,38 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                     sum + (child.productCount || 0), productCount);
                 }
 
+                const hasChildren = category.children && category.children.length > 0;
+
                 return (
-                  <div key={category.slug} className="flex items-center">
-                    <Link
-                      href={`/products?category=${category.slug}`}
-                      className="flex-1 px-4 py-4 text-sm font-medium text-gray-900"
-                      onClick={onClose}
-                    >
-                      {cleanCategoryName(category.name)}
-                      {totalProducts > 0 && (
-                        <span className="text-xs text-gray-500 ml-2">({totalProducts})</span>
-                      )}
-                    </Link>
-                    {category.children && category.children.length > 0 && (
+                  <div key={category.slug}>
+                    {hasChildren ? (
+                      // Category with subcategories - click to expand
                       <button
                         onClick={() => setSelectedMobileCategory(category.slug)}
-                        className="px-4 py-4 text-gray-400"
+                        className="w-full flex items-center justify-between px-4 py-4 text-sm font-medium text-gray-900 hover:bg-gray-50 active:bg-gray-100"
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <span>
+                          {cleanCategoryName(category.name)}
+                          {totalProducts > 0 && (
+                            <span className="text-xs text-gray-500 ml-2">({totalProducts})</span>
+                          )}
+                        </span>
+                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       </button>
+                    ) : (
+                      // Category without subcategories - navigate directly
+                      <Link
+                        href={`/products?category=${category.slug}`}
+                        className="block px-4 py-4 text-sm font-medium text-gray-900 hover:bg-gray-50 active:bg-gray-100"
+                        onClick={onClose}
+                      >
+                        {cleanCategoryName(category.name)}
+                        {totalProducts > 0 && (
+                          <span className="text-xs text-gray-500 ml-2">({totalProducts})</span>
+                        )}
+                      </Link>
                     )}
                   </div>
                 );
@@ -105,13 +116,16 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
           ) : mobileCategoryData ? (
             // Subcategories list
             <div>
-              {/* Category header */}
+              {/* Category header - view all */}
               <Link
                 href={`/products?category=${mobileCategoryData.slug}`}
-                className="block px-4 py-3 bg-primary-50 text-primary-600 font-semibold text-sm border-b"
+                className="flex items-center justify-between px-4 py-4 bg-primary-50 text-primary-600 font-semibold text-sm border-b hover:bg-primary-100 active:bg-primary-200"
                 onClick={onClose}
               >
-                Zobacz wszystko w {cleanCategoryName(mobileCategoryData.name)}
+                <span>Zobacz wszystko w "{cleanCategoryName(mobileCategoryData.name)}"</span>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
               </Link>
               
               {/* Subcategories */}
@@ -123,13 +137,18 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                     <Link
                       key={subCategory.slug}
                       href={`/products?category=${subCategory.slug}`}
-                      className="block px-4 py-3 text-sm text-gray-900"
+                      className="flex items-center justify-between px-4 py-4 text-sm text-gray-900 hover:bg-gray-50 active:bg-gray-100"
                       onClick={onClose}
                     >
-                      {cleanCategoryName(subCategory.name)}
-                      {subProductCount > 0 && (
-                        <span className="text-xs text-gray-500 ml-2">({subProductCount})</span>
-                      )}
+                      <span>
+                        {cleanCategoryName(subCategory.name)}
+                        {subProductCount > 0 && (
+                          <span className="text-xs text-gray-500 ml-2">({subProductCount})</span>
+                        )}
+                      </span>
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
                     </Link>
                   );
                 })}
