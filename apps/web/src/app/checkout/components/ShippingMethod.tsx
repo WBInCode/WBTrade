@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShippingData } from '../page';
 import { checkoutApi } from '../../../lib/api';
+import InPostGeoWidget, { InPostPoint } from '../../../components/InPostGeoWidget';
 
 interface ShippingMethodProps {
   initialData: ShippingData;
@@ -62,9 +63,9 @@ export default function ShippingMethod({ initialData, onSubmit, onBack, onPriceC
     (initialData.method as ShippingProviderId) || 'inpost_kurier'
   );
   const [paczkomatCode, setPaczkomatCode] = useState(initialData.paczkomatCode || '');
-  const [paczkomatAddress, setPaczkomatAddress] = useState('');
+  const [paczkomatAddress, setPaczkomatAddress] = useState(initialData.paczkomatAddress || '');
   const [error, setError] = useState('');
-  const [isLoadingPoints, setIsLoadingPoints] = useState(false);
+  const [isGeoWidgetOpen, setIsGeoWidgetOpen] = useState(false);
   const [isLoadingPrices, setIsLoadingPrices] = useState(true);
   const [shippingWarnings, setShippingWarnings] = useState<string[]>([]);
 
@@ -189,35 +190,18 @@ export default function ShippingMethod({ initialData, onSubmit, onBack, onPriceC
     }
   };
 
-  const openPaczkomatWidget = async () => {
-    setIsLoadingPoints(true);
+  const openPaczkomatWidget = () => {
+    setIsGeoWidgetOpen(true);
+  };
+
+  const handlePointSelect = (point: InPostPoint) => {
+    const address = point.address_details
+      ? `${point.address_details.street} ${point.address_details.building_number}, ${point.address_details.post_code} ${point.address_details.city}`
+      : `${point.address.line1}, ${point.address.line2}`;
     
-    try {
-      const mockPaczkomaty = [
-        { code: 'WAW123M', address: 'ul. Marszałkowska 100, 00-001 Warszawa' },
-        { code: 'WAW456K', address: 'ul. Krakowska 50, 02-001 Warszawa' },
-        { code: 'KRK001A', address: 'ul. Główna 1, 30-001 Kraków' },
-        { code: 'GDA010B', address: 'ul. Długa 10, 80-001 Gdańsk' },
-        { code: 'WRO005C', address: 'ul. Rynek 5, 50-001 Wrocław' },
-      ];
-      
-      const selected = prompt(
-        '🗺️ Wybierz paczkomat:\n\n' + 
-        mockPaczkomaty.map((p, i) => `${i + 1}. ${p.code} - ${p.address}`).join('\n') +
-        '\n\nWpisz numer (1-5):'
-      );
-      
-      if (selected && ['1', '2', '3', '4', '5'].includes(selected)) {
-        const index = parseInt(selected) - 1;
-        setPaczkomatCode(mockPaczkomaty[index].code);
-        setPaczkomatAddress(mockPaczkomaty[index].address);
-      }
-    } catch (err) {
-      console.error('Błąd ładowania paczkomatów:', err);
-      setError('Nie udało się załadować listy paczkomatów');
-    } finally {
-      setIsLoadingPoints(false);
-    }
+    setPaczkomatCode(point.name);
+    setPaczkomatAddress(address);
+    setError('');
   };
 
   return (
@@ -371,25 +355,12 @@ export default function ShippingMethod({ initialData, onSubmit, onBack, onPriceC
                     <button
                       type="button"
                       onClick={openPaczkomatWidget}
-                      disabled={isLoadingPoints}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#FFCD00] text-[#1D1D1B] font-semibold rounded-lg hover:bg-[#E6B800] transition-colors disabled:opacity-50"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#FFCD00] text-[#1D1D1B] font-semibold rounded-lg hover:bg-[#E6B800] transition-colors"
                     >
-                      {isLoadingPoints ? (
-                        <>
-                          <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                          </svg>
-                          Ładowanie...
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                          </svg>
-                          Wybierz paczkomat na mapie
-                        </>
-                      )}
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                      </svg>
+                      Wybierz paczkomat na mapie
                     </button>
                   )}
                   {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
@@ -434,6 +405,13 @@ export default function ShippingMethod({ initialData, onSubmit, onBack, onPriceC
         </div>
       </form>
       )}
+
+      {/* InPost GeoWidget Modal */}
+      <InPostGeoWidget
+        isOpen={isGeoWidgetOpen}
+        onClose={() => setIsGeoWidgetOpen(false)}
+        onPointSelect={handlePointSelect}
+      />
     </div>
   );
 }
