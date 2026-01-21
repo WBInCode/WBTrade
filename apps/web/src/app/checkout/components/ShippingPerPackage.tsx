@@ -34,6 +34,7 @@ interface PackageWithOptions {
     items: PackageItem[];
     isPaczkomatAvailable: boolean;
     isInPostOnly: boolean;
+    isCourierOnly: boolean;
   };
   shippingMethods: ShippingMethodOption[];
   selectedMethod: string;
