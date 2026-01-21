@@ -36,17 +36,18 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
         onClick={onClose}
       />
       
-      {/* Mobile backdrop - separate for proper event handling */}
-      <div 
-        className="lg:hidden fixed inset-0 bg-black bg-opacity-20 z-40"
-        onClick={onClose}
-      />
-      
-      {/* Mobile Menu */}
-      <div 
-        className="lg:hidden fixed inset-x-0 top-[120px] bottom-0 bg-white z-50 overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
+      {/* Mobile Menu - includes its own backdrop */}
+      <div className="lg:hidden fixed inset-0 z-40">
+        {/* Mobile backdrop */}
+        <div 
+          className="absolute inset-0 bg-black bg-opacity-20"
+          onClick={onClose}
+        />
+        
+        {/* Mobile menu content */}
+        <div 
+          className="absolute inset-x-0 top-[120px] bottom-0 bg-white overflow-hidden flex flex-col"
+        >
         {/* Mobile Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
           {selectedMobileCategory ? (
@@ -157,6 +158,7 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
               </div>
             </div>
           ) : null}
+        </div>
         </div>
       </div>
 
