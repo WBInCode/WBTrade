@@ -22,6 +22,7 @@ function HeaderContent() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
+  const megaMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   
   // Get current category from URL
@@ -65,7 +66,11 @@ function HeaderContent() {
   // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
+      // Don't close category menu if clicking inside dropdown button OR inside mega menu
+      const clickedInsideDropdown = categoryDropdownRef.current?.contains(event.target as Node);
+      const clickedInsideMegaMenu = megaMenuRef.current?.contains(event.target as Node);
+      
+      if (!clickedInsideDropdown && !clickedInsideMegaMenu) {
         setIsCategoryOpen(false);
       }
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
@@ -256,11 +261,13 @@ function HeaderContent() {
       </div>
 
       {/* Mega Menu - works for both mobile and desktop */}
-      <MegaMenu
-        categories={categories}
-        isOpen={isCategoryOpen}
-        onClose={() => setIsCategoryOpen(false)}
-      />
+      <div ref={megaMenuRef}>
+        <MegaMenu
+          categories={categories}
+          isOpen={isCategoryOpen}
+          onClose={() => setIsCategoryOpen(false)}
+        />
+      </div>
     </header>
   );
 }

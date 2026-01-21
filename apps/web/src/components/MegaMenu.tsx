@@ -26,8 +26,11 @@ export default function MegaMenu({ categories, isOpen, onClose }: MegaMenuProps)
         {/* Dark overlay */}
         <div className="absolute inset-0 bg-black/50" onClick={onClose} />
         
-        {/* Sidebar */}
-        <div className="absolute left-0 top-0 bottom-0 w-[85%] max-w-[320px] bg-white shadow-xl overflow-y-auto">
+        {/* Sidebar - stop propagation to prevent overlay from catching clicks */}
+        <div 
+          className="absolute left-0 top-0 bottom-0 w-[85%] max-w-[320px] bg-white shadow-xl overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
           {/* Header */}
           <div className="sticky top-0 bg-white border-b px-4 py-3 flex items-center justify-between z-10">
             <span className="font-bold text-lg">Kategorie</span>
@@ -110,6 +113,7 @@ export default function MegaMenu({ categories, isOpen, onClose }: MegaMenuProps)
       <div 
         className="hidden lg:block absolute top-full left-0 right-0 z-50 bg-white shadow-2xl border-t"
         onMouseLeave={() => setHoveredCategory(null)}
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="max-w-7xl mx-auto flex">
           {/* Left: Main categories */}
