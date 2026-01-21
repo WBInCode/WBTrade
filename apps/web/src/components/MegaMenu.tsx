@@ -19,9 +19,13 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
 
   // Navigate to category and close menu
   const navigateToCategory = useCallback((slug: string) => {
-    onClose();
+    console.log('Navigating to category:', slug);
     router.push(`/products?category=${slug}`);
-  }, [onClose, router]);
+    // Defer closing to allow navigation to complete
+    setTimeout(() => {
+      onClose();
+    }, 50);
+  }, [router, onClose]);
 
   if (!isOpen) return null;
 
@@ -112,6 +116,7 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                       // Category without subcategories - navigate directly
                       <button
                         onClick={(e) => {
+                          e.preventDefault();
                           e.stopPropagation();
                           navigateToCategory(category.slug);
                         }}
@@ -133,6 +138,7 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
               {/* Category header - view all */}
               <button
                 onClick={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   navigateToCategory(mobileCategoryData.slug);
                 }}
@@ -153,6 +159,7 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                     <button
                       key={subCategory.slug}
                       onClick={(e) => {
+                        e.preventDefault();
                         e.stopPropagation();
                         navigateToCategory(subCategory.slug);
                       }}
@@ -192,6 +199,7 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                   <button
                     key={category.slug}
                     onClick={(e) => {
+                      e.preventDefault();
                       e.stopPropagation();
                       navigateToCategory(category.slug);
                     }}
@@ -235,6 +243,7 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                         <div key={subCategory.slug} className="space-y-2">
                           <button
                             onClick={(e) => {
+                              e.preventDefault();
                               e.stopPropagation();
                               navigateToCategory(subCategory.slug);
                             }}
@@ -260,6 +269,7 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                                   <li key={thirdLevel.slug}>
                                     <button
                                       onClick={(e) => {
+                                        e.preventDefault();
                                         e.stopPropagation();
                                         navigateToCategory(thirdLevel.slug);
                                       }}
