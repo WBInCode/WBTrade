@@ -260,7 +260,6 @@ function HeaderContent() {
         categories={categories}
         isOpen={isCategoryOpen}
         onClose={() => setIsCategoryOpen(false)}
-        currentCategorySlug={currentMainCategory?.slug}
       />
     </header>
   );
