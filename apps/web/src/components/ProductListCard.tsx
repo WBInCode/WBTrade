@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Product } from '../lib/api';
 import { useWishlist } from '../contexts/WishlistContext';
+import { useCart } from '../contexts/CartContext';
 
 // Placeholder SVG as data URI
 const PLACEHOLDER_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect fill='%23f3f4f6' width='400' height='400'/%3E%3Cpath fill='%23d1d5db' d='M160 150h80v100h-80z'/%3E%3Ccircle fill='%23d1d5db' cx='180' cy='130' r='20'/%3E%3Cpath fill='%23e5e7eb' d='M120 250l60-80 40 50 40-30 60 60v50H120z'/%3E%3C/svg%3E";
@@ -26,15 +27,18 @@ const badgeStyles: Record<BadgeType, string> = {
 
 export default function ProductListCard({ product, showWishlist = true, viewMode = 'grid' }: ProductListCardProps) {
   const [imgError, setImgError] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [added, setAdded] = useState(false);
   const mainImage = imgError || !product.images?.[0]?.url ? PLACEHOLDER_IMAGE : product.images[0].url;
   const hasDiscount = product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price);
   
   // Demo data for display
   const storeName = product.storeName || 'TopStore';
   const badge = product.badge as BadgeType | undefined;
-  const deliveryInfo = product.deliveryInfo || 'błyskawiczna dostawa';
+  const deliveryInfo = product.deliveryInfo || 'Dostawa w ciągu 24-72h';
 
   const { isInWishlist, toggleWishlist } = useWishlist();
+  const { addToCart } = useCart();
   const inWishlist = isInWishlist(product.id);
 
   const handleWishlistClick = (e: React.MouseEvent) => {
@@ -50,6 +54,27 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
       image: mainImage,
     });
   };
+
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const firstVariant = product.variants?.[0];
+    if (!firstVariant) return;
+    
+    setIsAdding(true);
+    try {
+      await addToCart(firstVariant.id, 1);
+      setAdded(true);
+      setTimeout(() => setAdded(false), 2000);
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  const canAddToCart = product.variants && product.variants.length > 0 && product.variants[0].stock > 0;
 
   // List view
   if (viewMode === 'list') {
@@ -123,6 +148,45 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
             <div className="flex items-center gap-2 mt-auto">
               <span className="text-sm text-green-600">{deliveryInfo}</span>
             </div>
+
+            {/* Add to Cart Button */}
+            {canAddToCart && (
+              <button
+                onClick={handleAddToCart}
+                disabled={isAdding || added}
+                className={`mt-3 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 w-fit
+                  ${added 
+                    ? 'bg-green-500 text-white' 
+                    : 'bg-primary-500 hover:bg-primary-600 text-white'
+                  }
+                  ${isAdding ? 'opacity-70 cursor-wait' : ''}
+                `}
+              >
+                {isAdding ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Dodawanie...
+                  </>
+                ) : added ? (
+                  <>
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Dodano!
+                  </>
+                ) : (
+                  <>
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    Dodaj do koszyka
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </Link>
       </div>
@@ -201,6 +265,45 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
           <div className="flex items-center gap-2 mb-2 mt-auto">
             <span className="text-xs text-green-600">{deliveryInfo}</span>
           </div>
+
+          {/* Add to Cart Button */}
+          {canAddToCart && (
+            <button
+              onClick={handleAddToCart}
+              disabled={isAdding || added}
+              className={`w-full py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2
+                ${added 
+                  ? 'bg-green-500 text-white' 
+                  : 'bg-primary-500 hover:bg-primary-600 text-white'
+                }
+                ${isAdding ? 'opacity-70 cursor-wait' : ''}
+              `}
+            >
+              {isAdding ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Dodawanie...
+                </>
+              ) : added ? (
+                <>
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Dodano!
+                </>
+              ) : (
+                <>
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  Do koszyka
+                </>
+              )}
+            </button>
+          )}
         </div>
       </Link>
     </div>
