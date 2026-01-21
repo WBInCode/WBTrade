@@ -329,8 +329,8 @@ export class BaselinkerOrdersService {
       const wholesalerMethods = new Map<string, string>();
       for (const pkg of packageShipping) {
         if (pkg.wholesaler) {
-          const methodName = pkg.method === 'inpost_paczkomat' ? 'PACZKOMAT' : 
-                            pkg.method === 'inpost_kurier' ? 'KURIER' :
+          const methodName = pkg.method === 'inpost_paczkomat' ? 'INPOST PACZKOMAT' : 
+                            pkg.method === 'inpost_kurier' ? 'INPOST KURIER' :
                             pkg.method === 'gabaryt' ? 'GABARYT' :
                             pkg.method?.toUpperCase() || '?';
           const paczkomat = pkg.paczkomatCode ? ` [${pkg.paczkomatCode}]` : '';
