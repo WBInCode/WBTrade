@@ -1,7 +1,7 @@
 /**
  * Test script to create a paid order with 2 products from different warehouses
- * - Product 1: Ikonka warehouse -> InPost Paczkomat
- * - Product 2: Leker warehouse -> InPost Kurier
+ * - Product 1: Ikonka warehouse with "Paczkomaty i Kurier" tag -> InPost Paczkomat
+ * - Product 2: Ikonka warehouse with "Tylko kurier" tag -> DPD Kurier
  * 
  * Usage: npx ts-node scripts/test-multi-warehouse-order.ts
  */
@@ -93,17 +93,17 @@ async function createTestMultiWarehouseOrder() {
       return;
     }
 
-    console.log(`\n📦 IKONKA PRODUCT (Paczkomat):`);
+    console.log(`\n📦 IKONKA PRODUCT (Paczkomat - tag "Paczkomaty i Kurier"):`);
     console.log(`   Name: ${ikonkaProduct.name}`);
     console.log(`   SKU: ${ikonkaProduct.variants[0].sku}`);
     console.log(`   Price: ${ikonkaProduct.variants[0].price} PLN`);
     console.log(`   Tags: ${ikonkaProduct.tags.join(', ')}`);
 
-    // 4. Find product from Leker warehouse (for Kurier)
-    const lekerProduct = await prisma.product.findFirst({
+    // 4. Find product with "Tylko kurier" tag (for DPD)
+    const dpdProduct = await prisma.product.findFirst({
       where: {
         status: 'ACTIVE',
-        tags: { has: 'Leker' },
+        tags: { has: 'Tylko kurier' },
         id: { not: ikonkaProduct.id },
       },
       include: {
@@ -116,32 +116,37 @@ async function createTestMultiWarehouseOrder() {
       },
     });
 
-    if (!lekerProduct || !lekerProduct.variants || !lekerProduct.variants[0]) {
-      console.error('❌ No Leker product found!');
+    if (!dpdProduct || !dpdProduct.variants || !dpdProduct.variants[0]) {
+      console.error('❌ No product with "Tylko kurier" tag found!');
       return;
     }
 
-    console.log(`\n📦 LEKER PRODUCT (Kurier):`);
-    console.log(`   Name: ${lekerProduct.name}`);
-    console.log(`   SKU: ${lekerProduct.variants[0].sku}`);
-    console.log(`   Price: ${lekerProduct.variants[0].price} PLN`);
-    console.log(`   Tags: ${lekerProduct.tags.join(', ')}`);
+    console.log(`\n📦 DPD PRODUCT (Kurier DPD - tag "Tylko kurier"):`);
+    console.log(`   Name: ${dpdProduct.name}`);
+    console.log(`   SKU: ${dpdProduct.variants[0].sku}`);
+    console.log(`   Price: ${dpdProduct.variants[0].price} PLN`);
+    console.log(`   Tags: ${dpdProduct.tags.join(', ')}`);
 
     const ikonkaVariant = ikonkaProduct.variants[0];
-    const lekerVariant = lekerProduct.variants[0];
+    const dpdVariant = dpdProduct.variants[0];
     
     const ikonkaPrice = Number(ikonkaVariant.price);
-    const lekerPrice = Number(lekerVariant.price);
+    const dpdPrice = Number(dpdVariant.price);
     const quantity = 1;
     
     const paczkomatShippingCost = 15.99; // InPost Paczkomat price
-    const kurierShippingCost = 19.99; // InPost Kurier price
-    const totalShipping = paczkomatShippingCost + kurierShippingCost;
+    const dpdShippingCost = 19.99; // DPD Kurier price
+    const totalShipping = paczkomatShippingCost + dpdShippingCost;
 
     // 5. Generate order number
-    const orderNumber = `TEST-MULTI-WH-${Date.now()}`;
+    const orderNumber = `TEST-DPD-INPOST-${Date.now()}`;
 
-    // 6. Package shipping data - 2 packages from different warehouses
+    // Get wholesaler from dpdProduct tags
+    const dpdWholesaler = dpdProduct.tags.find((t: string) => 
+      /^(Ikonka|BTP|HP|Gastro|Horeca|Hurtownia\s+Przemysłowa|Leker|Forcetop)$/i.test(t)
+    ) || 'Ikonka';
+
+    // 6. Package shipping data - 2 packages with different shipping methods
     const packageShipping = [
       {
         packageId: 'standard-1',
@@ -153,9 +158,9 @@ async function createTestMultiWarehouseOrder() {
       },
       {
         packageId: 'standard-2',
-        wholesaler: 'Leker',
-        method: 'inpost_kurier',
-        price: kurierShippingCost,
+        wholesaler: dpdWholesaler,
+        method: 'dpd_kurier',
+        price: dpdShippingCost,
       },
     ];
 
@@ -163,7 +168,7 @@ async function createTestMultiWarehouseOrder() {
     console.log(JSON.stringify(packageShipping, null, 2));
 
     // 7. Create the order
-    const subtotal = (ikonkaPrice * quantity) + (lekerPrice * quantity);
+    const subtotal = (ikonkaPrice * quantity) + (dpdPrice * quantity);
     const total = subtotal + totalShipping;
 
     const order = await prisma.order.create({
@@ -201,13 +206,13 @@ async function createTestMultiWarehouseOrder() {
               total: ikonkaPrice * quantity,
             },
             {
-              variantId: lekerVariant.id,
-              productName: lekerProduct.name,
-              variantName: lekerVariant.name,
-              sku: lekerVariant.sku,
+              variantId: dpdVariant.id,
+              productName: dpdProduct.name,
+              variantName: dpdVariant.name,
+              sku: dpdVariant.sku,
               quantity,
-              unitPrice: lekerPrice,
-              total: lekerPrice * quantity,
+              unitPrice: dpdPrice,
+              total: dpdPrice * quantity,
             },
           ],
         },
@@ -215,7 +220,7 @@ async function createTestMultiWarehouseOrder() {
         statusHistory: {
           create: {
             status: 'PROCESSING',
-            note: 'TEST: Zamówienie z 2 magazynów - Ikonka (paczkomat) + Leker (kurier)',
+            note: 'TEST: Zamówienie InPost + DPD - Ikonka (paczkomat) + Tylko kurier (DPD)',
           },
         },
       },
@@ -238,10 +243,10 @@ async function createTestMultiWarehouseOrder() {
       console.log(`   - ${item.productName} (${item.sku}) x${item.quantity} = ${item.total} PLN`);
     }
     console.log(`\n🚚 SHIPPING:`);
-    console.log(`   Package 1 (Ikonka): InPost Paczkomat - ${paczkomatShippingCost} PLN`);
-    console.log(`   Package 2 (Leker): InPost Kurier - ${kurierShippingCost} PLN`);
+    console.log(`   Package 1: InPost Paczkomat - ${paczkomatShippingCost} PLN (tag: Paczkomaty i Kurier)`);
+    console.log(`   Package 2: DPD Kurier - ${dpdShippingCost} PLN (tag: Tylko kurier)`);
     console.log(`   Total Shipping: ${totalShipping} PLN`);
-    console.log(`\n🏪 PACZKOMAT (for Ikonka package):`);
+    console.log(`\n🏪 PACZKOMAT (for InPost package):`);
     console.log(`   Code: ${order.paczkomatCode}`);
     console.log(`   Address: ${order.paczkomatAddress}`);
     console.log(`\n💰 TOTALS:`);
@@ -263,11 +268,11 @@ async function createTestMultiWarehouseOrder() {
       if (syncResult.success) {
         console.log('\n🎉 Order successfully synced to Baselinker!');
         console.log('\nExpected Baselinker data:');
-        console.log('- delivery_point_id: WAW96HP (for Ikonka package)');
+        console.log('- delivery_point_id: WAW96HP (for InPost Paczkomat package)');
         console.log('- delivery_point_address: Świętokrzyska 30, 00-116 Warszawa');
-        console.log('- 2 products from different warehouses');
-        console.log('\n⚠️  Note: Baselinker may require separate orders for different warehouses');
-        console.log('   Check the order in Baselinker panel to verify the data.');
+        console.log('- 2 products: 1x InPost Paczkomat, 1x DPD Kurier');
+        console.log('- Uwagi powinny zawierać: SKU - INPOST PACZKOMAT | SKU - DPD KURIER');
+        console.log('\n⚠️  Check the order in Baselinker panel to verify the data.');
       }
     } catch (syncError) {
       console.error('\n❌ Baselinker sync error:', syncError);

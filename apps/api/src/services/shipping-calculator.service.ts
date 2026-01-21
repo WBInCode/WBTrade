@@ -35,10 +35,10 @@ const TAG_PATTERNS = {
 } as const;
 
 // Shipping method prices (in PLN)
-// Na ten moment tylko InPost + wysyłka gabaryt
 export const SHIPPING_PRICES = {
   inpost_paczkomat: 15.99,
   inpost_kurier: 19.99,
+  dpd_kurier: 19.99, // DPD Kurier price
   gabaryt_base: 49.99,
   wysylka_gabaryt: 79.99,
 } as const;
@@ -86,8 +86,8 @@ export interface ShippingPackage {
   gabarytPrice?: number;
   weightShippingPrice?: number; // Highest weight-based price in this package
   isPaczkomatAvailable: boolean;
-  isInPostOnly: boolean; // When true, only InPost Paczkomat and Kurier InPost are available
-  isCourierOnly: boolean; // When true, only Kurier InPost is available (tag "Tylko kurier")
+  isInPostOnly: boolean; // When true, only InPost (Paczkomat + Kurier InPost) - no DPD
+  isCourierOnly: boolean; // When true, only DPD Kurier - no InPost (tag "Tylko kurier")
 }
 
 export interface ShippingMethodForPackage {
@@ -131,7 +131,7 @@ function isGabaryt(tags: string[]): boolean {
 
 /**
  * Check if product has "Tylko kurier" tag
- * When true, only Kurier InPost is available (no paczkomat, no gabaryt)
+ * When true, only DPD Kurier is available (no InPost paczkomat, no InPost kurier)
  */
 function isCourierOnly(tags: string[]): boolean {
   return tags.some(tag => TAG_PATTERNS.TYLKO_KURIER.test(tag));
@@ -276,7 +276,9 @@ export class ShippingCalculatorService {
     
     // Categorize items
     const gabarytItems: Array<{ product: ProductWithTags; variantId: string; quantity: number }> = [];
-    const standardItemsByWholesaler = new Map<string, Array<{ product: ProductWithTags; variantId: string; quantity: number }>>();
+    // Group by wholesaler AND shipping type to avoid conflicts
+    // Key format: "wholesaler:shippingType" where shippingType is "inpost_only", "dpd_only", or "all"
+    const standardItemsByGroup = new Map<string, Array<{ product: ProductWithTags; variantId: string; quantity: number }>>();
     
     for (const item of items) {
       const product = variantToProduct.get(item.variantId);
@@ -289,13 +291,23 @@ export class ShippingCalculatorService {
       const productIsGabaryt = isGabaryt(tags);
       const wholesaler = getWholesaler(tags) || 'default';
       
+      // Determine shipping type based on tags
+      let shippingType = 'all'; // Default: all shipping methods available
+      if (isCourierOnly(tags)) {
+        shippingType = 'dpd_only'; // "Tylko kurier" = only DPD
+      } else if (isInPostOnly(tags)) {
+        shippingType = 'inpost_only'; // "Paczkomaty i Kurier" = only InPost
+      }
+      
+      const groupKey = `${wholesaler}:${shippingType}`;
+      
       if (productIsGabaryt) {
         gabarytItems.push({ product, variantId: item.variantId, quantity: item.quantity });
       } else {
-        if (!standardItemsByWholesaler.has(wholesaler)) {
-          standardItemsByWholesaler.set(wholesaler, []);
+        if (!standardItemsByGroup.has(groupKey)) {
+          standardItemsByGroup.set(groupKey, []);
         }
-        standardItemsByWholesaler.get(wholesaler)!.push({
+        standardItemsByGroup.get(groupKey)!.push({
           product,
           variantId: item.variantId,
           quantity: item.quantity,
@@ -331,9 +343,11 @@ export class ShippingCalculatorService {
       }
     }
     
-    // Create packages for standard items by wholesaler
-    for (const [wholesaler, wholesalerItems] of standardItemsByWholesaler) {
-      const packageItems = wholesalerItems.map(item => {
+    // Create packages for standard items by group (wholesaler + shipping type)
+    for (const [groupKey, groupItems] of standardItemsByGroup) {
+      const [wholesaler, shippingType] = groupKey.split(':');
+      
+      const packageItems = groupItems.map(item => {
         const weightPrice = getWeightShippingPrice(item.product.tags);
         return {
           productId: item.product.id,
@@ -347,27 +361,13 @@ export class ShippingCalculatorService {
       });
       
       let paczkomatPackageCount = 0;
-      // Check if any item in this package requires InPost only (Paczkomaty i Kurier)
-      let packageIsInPostOnly = false;
-      // Check if any item requires courier only (Tylko kurier)
-      let packageIsCourierOnly = false;
       // Track highest weight-based shipping price in this package
       let maxWeightShippingPrice: number | null = null;
       
-      for (const item of wholesalerItems) {
+      for (const item of groupItems) {
         const limit = getPaczkomatLimit(item.product.tags);
         const packagesForItem = Math.ceil(item.quantity / limit);
         paczkomatPackageCount += packagesForItem;
-        
-        // If any product has "Paczkomaty i Kurier" tag, the whole package is InPost only
-        if (isInPostOnly(item.product.tags)) {
-          packageIsInPostOnly = true;
-        }
-        
-        // If any product has "Tylko kurier" tag, the whole package is courier only
-        if (isCourierOnly(item.product.tags)) {
-          packageIsCourierOnly = true;
-        }
         
         // Track highest weight-based price (całość paczki płaci najwyższą cenę wagi)
         const weightPrice = getWeightShippingPrice(item.product.tags);
@@ -378,9 +378,12 @@ export class ShippingCalculatorService {
         }
       }
       
-      // Paczkomat available only if NOT courier-only
-      // "Paczkomaty i Kurier" = paczkomat available
-      // "Tylko kurier" = paczkomat NOT available
+      // Determine shipping availability based on shipping type
+      // shippingType: "dpd_only" | "inpost_only" | "all"
+      const packageIsCourierOnly = shippingType === 'dpd_only';
+      const packageIsInPostOnly = shippingType === 'inpost_only';
+      
+      // Paczkomat available only if NOT courier-only (DPD only)
       const isPaczkomatAvailableForPackage = !packageIsCourierOnly;
       
       packages.push({
@@ -612,37 +615,60 @@ export class ShippingCalculatorService {
         const paczkomatPackages = pkg.paczkomatPackageCount;
         
         // Use weight-based price if available, otherwise standard price
-        const courierPrice = pkg.weightShippingPrice || SHIPPING_PRICES.inpost_kurier;
+        const dpdPrice = pkg.weightShippingPrice || SHIPPING_PRICES.dpd_kurier;
         
-        // Paczkomat available only if NOT courier-only (tag "Tylko kurier")
-        const isPaczkomatAvailableForPackage = !pkg.isCourierOnly;
+        // Shipping availability based on tags:
+        // - isInPostOnly (tag "Paczkomaty i Kurier") = only InPost (paczkomat + kurier), NO DPD
+        // - isCourierOnly (tag "Tylko kurier") = only DPD, NO InPost
+        // - No tags = all options available
         
+        const isInPostAvailable = !pkg.isCourierOnly; // InPost available unless "Tylko kurier"
+        const isDpdAvailable = !pkg.isInPostOnly;     // DPD available unless "Paczkomaty i Kurier"
+        
+        // InPost Paczkomat - available only if InPost is available
         methods.push({
           id: 'inpost_paczkomat',
           name: 'InPost Paczkomat',
           price: paczkomatPackages * SHIPPING_PRICES.inpost_paczkomat,
-          available: isPaczkomatAvailableForPackage,
-          message: !isPaczkomatAvailableForPackage 
-            ? 'Produkt dostępny tylko z dostawą kurierem'
+          available: isInPostAvailable,
+          message: !isInPostAvailable 
+            ? 'Produkt dostępny tylko z DPD'
             : (paczkomatPackages > 1 ? `${paczkomatPackages} paczki` : undefined),
           estimatedDelivery: '1-2 dni',
         });
+        
+        // InPost Kurier - available only if InPost is available
         methods.push({
           id: 'inpost_kurier',
           name: 'Kurier InPost',
-          price: courierPrice,
-          available: true,
-          message: pkg.weightShippingPrice ? `Cena wg wagi: ${courierPrice.toFixed(2)} zł` : undefined,
+          price: SHIPPING_PRICES.inpost_kurier,
+          available: isInPostAvailable,
+          message: !isInPostAvailable ? 'Produkt dostępny tylko z DPD' : undefined,
+          estimatedDelivery: '1-2 dni',
+        });
+        
+        // DPD Kurier - available only if DPD is available
+        methods.push({
+          id: 'dpd_kurier',
+          name: 'Kurier DPD',
+          price: dpdPrice,
+          available: isDpdAvailable,
+          message: !isDpdAvailable 
+            ? 'Produkt dostępny tylko z InPost' 
+            : (pkg.weightShippingPrice ? `Cena wg wagi: ${dpdPrice.toFixed(2)} zł` : undefined),
           estimatedDelivery: '1-2 dni',
         });
       }
       
       // Set default selected method
       // Dla paczek gabarytowych - wymuszona wysyłka gabaryt
-      // Dla standardowych - paczkomat jeśli dostępny, w przeciwnym razie kurier
+      // Dla standardowych z "Tylko kurier" - DPD
+      // Dla standardowych z "Paczkomaty i Kurier" lub bez tagów - paczkomat jeśli dostępny
       const defaultMethod = pkg.type === 'gabaryt' 
         ? 'wysylka_gabaryt' 
-        : (pkg.isPaczkomatAvailable ? 'inpost_paczkomat' : 'inpost_kurier');
+        : pkg.isCourierOnly 
+          ? 'dpd_kurier'
+          : (pkg.isPaczkomatAvailable ? 'inpost_paczkomat' : 'inpost_kurier');
       
       packagesWithOptions.push({
         package: pkg,
