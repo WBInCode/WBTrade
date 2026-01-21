@@ -532,7 +532,7 @@ function CheckoutPageContent() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <p className="text-xs text-blue-700">
-                    Produkty mogą pochodzić z różnych magazynów. Zamówienie może zostać wysłane w dwóch oddzielnych przesyłkach.
+                    Produkty mogą pochodzić z różnych magazynów. Zamówienie może zostać wysłane w oddzielnych przesyłkach.
                   </p>
                 </div>
               </div>

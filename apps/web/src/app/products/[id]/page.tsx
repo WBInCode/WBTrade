@@ -498,7 +498,7 @@ export default function ProductPage({ params }: ProductPageProps) {
 
   const tabs = [
     { id: 'description', label: 'Opis produktu' },
-    { id: 'parameters', label: 'Parametry' },
+    // { id: 'parameters', label: 'Parametry' }, // Hidden
     // { id: 'reviews', label: 'Opinie' }, // Hidden
   ];
 
@@ -604,18 +604,9 @@ export default function ProductPage({ params }: ProductPageProps) {
               </div>
 
               {/* Lowest Price Info */}
-              <p className="text-[11px] sm:text-xs text-gray-500 mb-2 sm:mb-3">
+              <p className="text-[11px] sm:text-xs text-gray-500 mb-3 sm:mb-4">
                 Najniższa cena w ostatnich 30 dniach: {Number(product.compareAtPrice || effectivePrice).toFixed(2).replace('.', ',')} zł
               </p>
-
-              {/* Installment Info */}
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                </svg>
-                <span>$7.50 x 20 rat</span>
-                <button className="text-orange-500 hover:underline">Oblicz</button>
-              </div>
 
               {/* Variants */}
               {product.variants?.length ? (
