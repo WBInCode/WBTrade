@@ -105,7 +105,6 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                       // Category without subcategories - navigate directly
                       <Link
                         href={`/products?category=${category.slug}`}
-                        onClick={onClose}
                         className="w-full text-left block px-4 py-4 text-sm font-medium text-gray-900 hover:bg-gray-50 active:bg-gray-100"
                       >
                         {cleanCategoryName(category.name)}
@@ -124,7 +123,6 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
               {/* Category header - view all */}
               <Link
                 href={`/products?category=${mobileCategoryData.slug}`}
-                onClick={onClose}
                 className="w-full flex items-center justify-between px-4 py-4 bg-primary-50 text-primary-600 font-semibold text-sm border-b hover:bg-primary-100 active:bg-primary-200"
               >
                 <span>Zobacz wszystko w "{cleanCategoryName(mobileCategoryData.name)}"</span>
@@ -142,7 +140,6 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                     <Link
                       key={subCategory.slug}
                       href={`/products?category=${subCategory.slug}`}
-                      onClick={onClose}
                       className="w-full flex items-center justify-between px-4 py-4 text-sm text-gray-900 hover:bg-gray-50 active:bg-gray-100"
                     >
                       <span>
@@ -179,7 +176,6 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                   <Link
                     key={category.slug}
                     href={`/products?category=${category.slug}`}
-                    onClick={onClose}
                     className={`w-full text-left block px-6 py-3 text-sm font-medium transition-colors relative ${
                       isHovered || isActive
                         ? 'text-primary-600 bg-white border-r-3 border-primary-500'
@@ -220,7 +216,6 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                         <div key={subCategory.slug} className="space-y-2">
                           <Link
                             href={`/products?category=${subCategory.slug}`}
-                            onClick={onClose}
                             className="w-full text-left block font-semibold text-sm text-secondary-900 hover:text-primary-600 transition-colors"
                           >
                             <div className="flex items-center justify-between">
@@ -243,7 +238,6 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                                   <li key={thirdLevel.slug}>
                                     <Link
                                       href={`/products?category=${thirdLevel.slug}`}
-                                      onClick={onClose}
                                       className="w-full text-left block text-xs text-secondary-600 hover:text-primary-600 transition-colors"
                                     >
                                       <div className="flex items-center justify-between">
@@ -269,7 +263,6 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                   <div className="mt-6 pt-4 border-t border-gray-200">
                     <Link
                       href={`/products?category=${activeCategory.slug}`}
-                      onClick={onClose}
                       className="inline-flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
                     >
                       Zobacz wszystkie produkty w kategorii {cleanCategoryName(activeCategory.name)}
@@ -292,7 +285,6 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                   </p>
                   <Link
                     href={`/products?category=${activeCategory.slug}`}
-                    onClick={onClose}
                     className="inline-flex items-center gap-2 px-6 py-3 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-600 transition-colors"
                   >
                     Zobacz produkty
