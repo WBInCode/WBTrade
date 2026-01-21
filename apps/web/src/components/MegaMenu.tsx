@@ -111,7 +111,10 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                     ) : (
                       // Category without subcategories - navigate directly
                       <button
-                        onClick={() => navigateToCategory(category.slug)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigateToCategory(category.slug);
+                        }}
                         className="w-full text-left block px-4 py-4 text-sm font-medium text-gray-900 hover:bg-gray-50 active:bg-gray-100"
                       >
                         {cleanCategoryName(category.name)}
@@ -129,7 +132,10 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
             <div>
               {/* Category header - view all */}
               <button
-                onClick={() => navigateToCategory(mobileCategoryData.slug)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigateToCategory(mobileCategoryData.slug);
+                }}
                 className="w-full flex items-center justify-between px-4 py-4 bg-primary-50 text-primary-600 font-semibold text-sm border-b hover:bg-primary-100 active:bg-primary-200"
               >
                 <span>Zobacz wszystko w "{cleanCategoryName(mobileCategoryData.name)}"</span>
@@ -146,7 +152,10 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                   return (
                     <button
                       key={subCategory.slug}
-                      onClick={() => navigateToCategory(subCategory.slug)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigateToCategory(subCategory.slug);
+                      }}
                       className="w-full flex items-center justify-between px-4 py-4 text-sm text-gray-900 hover:bg-gray-50 active:bg-gray-100"
                     >
                       <span>
@@ -182,7 +191,10 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                 return (
                   <button
                     key={category.slug}
-                    onClick={() => navigateToCategory(category.slug)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigateToCategory(category.slug);
+                    }}
                     className={`w-full text-left block px-6 py-3 text-sm font-medium transition-colors relative ${
                       isHovered || isActive
                         ? 'text-primary-600 bg-white border-r-3 border-primary-500'
@@ -222,7 +234,10 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                       return (
                         <div key={subCategory.slug} className="space-y-2">
                           <button
-                            onClick={() => navigateToCategory(subCategory.slug)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigateToCategory(subCategory.slug);
+                            }}
                             className="w-full text-left block font-semibold text-sm text-secondary-900 hover:text-primary-600 transition-colors"
                           >
                             <div className="flex items-center justify-between">
@@ -244,7 +259,10 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                                 return (
                                   <li key={thirdLevel.slug}>
                                     <button
-                                      onClick={() => navigateToCategory(thirdLevel.slug)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigateToCategory(thirdLevel.slug);
+                                      }}
                                       className="w-full text-left block text-xs text-secondary-600 hover:text-primary-600 transition-colors"
                                     >
                                       <div className="flex items-center justify-between">
@@ -269,7 +287,10 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                   {/* View all link */}
                   <div className="mt-6 pt-4 border-t border-gray-200">
                     <button
-                      onClick={() => navigateToCategory(activeCategory.slug)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigateToCategory(activeCategory.slug);
+                      }}
                       className="inline-flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
                     >
                       Zobacz wszystkie produkty w kategorii {cleanCategoryName(activeCategory.name)}
@@ -291,7 +312,10 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                     {activeCategory.productCount || 0} produktów
                   </p>
                   <button
-                    onClick={() => navigateToCategory(activeCategory.slug)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigateToCategory(activeCategory.slug);
+                    }}
                     className="inline-flex items-center gap-2 px-6 py-3 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-600 transition-colors"
                   >
                     Zobacz produkty
