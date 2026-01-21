@@ -302,6 +302,7 @@ export default function ShippingPerPackage({
 
       return {
         packageId: pkgOpt.package.id,
+        wholesaler: pkgOpt.package.wholesaler || undefined,
         method: methodId,
         price: method?.price || 0,
         paczkomatCode: methodId === 'inpost_paczkomat' ? paczkomat?.code : undefined,
