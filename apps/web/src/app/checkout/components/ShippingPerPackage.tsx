@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShippingData, PackageShippingSelection } from '../page';
 import { checkoutApi } from '../../../lib/api';
+import InPostGeoWidget, { InPostPoint } from '../../../components/InPostGeoWidget';
 
 type ShippingMethodId = 'inpost_paczkomat' | 'inpost_kurier' | 'wysylka_gabaryt';
 
@@ -83,7 +84,7 @@ export default function ShippingPerPackage({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [warnings, setWarnings] = useState<string[]>([]);
-  const [isLoadingPoints, setIsLoadingPoints] = useState<string | null>(null);
+  const [geoWidgetPackageId, setGeoWidgetPackageId] = useState<string | null>(null);
   
   // Custom address state per package
   const [useCustomAddress, setUseCustomAddress] = useState<Record<string, boolean>>({});
@@ -240,41 +241,25 @@ export default function ShippingPerPackage({
     }));
   };
 
-  const openPaczkomatWidget = async (packageId: string) => {
-    setIsLoadingPoints(packageId);
+  const openPaczkomatWidget = (packageId: string) => {
+    setGeoWidgetPackageId(packageId);
+  };
 
-    try {
-      // Mock paczkomat selection (same as original)
-      const mockPaczkomaty = [
-        { code: 'WAW123M', address: 'ul. Marszałkowska 100, 00-001 Warszawa' },
-        { code: 'WAW456K', address: 'ul. Krakowska 50, 02-001 Warszawa' },
-        { code: 'KRK001A', address: 'ul. Główna 1, 30-001 Kraków' },
-        { code: 'GDA010B', address: 'ul. Długa 10, 80-001 Gdańsk' },
-        { code: 'WRO005C', address: 'ul. Rynek 5, 50-001 Wrocław' },
-      ];
-
-      const selected = prompt(
-        '🗺️ Wybierz paczkomat:\n\n' +
-          mockPaczkomaty.map((p, i) => `${i + 1}. ${p.code} - ${p.address}`).join('\n') +
-          '\n\nWpisz numer (1-5):'
-      );
-
-      if (selected && ['1', '2', '3', '4', '5'].includes(selected)) {
-        const index = parseInt(selected) - 1;
-        setPaczkomatSelections(prev => ({
-          ...prev,
-          [packageId]: {
-            code: mockPaczkomaty[index].code,
-            address: mockPaczkomaty[index].address,
-          },
-        }));
-      }
-    } catch (err) {
-      console.error('Błąd ładowania paczkomatów:', err);
-      setError('Nie udało się załadować listy paczkomatów');
-    } finally {
-      setIsLoadingPoints(null);
-    }
+  const handlePointSelect = (point: InPostPoint) => {
+    if (!geoWidgetPackageId) return;
+    
+    const address = point.address_details
+      ? `${point.address_details.street} ${point.address_details.building_number}, ${point.address_details.post_code} ${point.address_details.city}`
+      : `${point.address.line1}, ${point.address.line2}`;
+    
+    setPaczkomatSelections(prev => ({
+      ...prev,
+      [geoWidgetPackageId]: {
+        code: point.name,
+        address: address,
+      },
+    }));
+    setError('');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -569,41 +554,17 @@ export default function ShippingPerPackage({
                             <button
                               type="button"
                               onClick={() => openPaczkomatWidget(pkgOpt.package.id)}
-                              disabled={isLoadingPoints === pkgOpt.package.id}
-                              className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[#FFCD00] text-[#1D1D1B] text-sm font-semibold rounded-lg hover:bg-[#E6B800] transition-colors disabled:opacity-50"
+                              className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[#FFCD00] text-[#1D1D1B] text-sm font-semibold rounded-lg hover:bg-[#E6B800] transition-colors"
                             >
-                              {isLoadingPoints === pkgOpt.package.id ? (
-                                <>
-                                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                                    <circle
-                                      className="opacity-25"
-                                      cx="12"
-                                      cy="12"
-                                      r="10"
-                                      stroke="currentColor"
-                                      strokeWidth="4"
-                                    />
-                                    <path
-                                      className="opacity-75"
-                                      fill="currentColor"
-                                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                    />
-                                  </svg>
-                                  Ładowanie...
-                                </>
-                              ) : (
-                                <>
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-                                    />
-                                  </svg>
-                                  Wybierz paczkomat
-                                </>
-                              )}
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+                                />
+                              </svg>
+                              Wybierz paczkomat
                             </button>
                           )}
                         </div>
@@ -747,6 +708,13 @@ export default function ShippingPerPackage({
           </button>
         </div>
       </form>
+
+      {/* InPost GeoWidget Modal */}
+      <InPostGeoWidget
+        isOpen={geoWidgetPackageId !== null}
+        onClose={() => setGeoWidgetPackageId(null)}
+        onPointSelect={handlePointSelect}
+      />
     </div>
   );
 }
