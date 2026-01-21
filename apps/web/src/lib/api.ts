@@ -265,6 +265,7 @@ export interface Product {
   categoryId?: string;
   createdAt?: string;
   updatedAt?: string;
+  tags?: string[];
   // Extended fields for UI
   badge?: 'super-price' | 'outlet' | 'bestseller' | 'new';
   rating?: string | number;
