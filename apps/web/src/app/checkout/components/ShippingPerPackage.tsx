@@ -5,7 +5,7 @@ import { ShippingData, PackageShippingSelection } from '../page';
 import { checkoutApi } from '../../../lib/api';
 import InPostGeoWidget, { InPostPoint } from '../../../components/InPostGeoWidget';
 
-type ShippingMethodId = 'inpost_paczkomat' | 'inpost_kurier' | 'wysylka_gabaryt';
+type ShippingMethodId = 'inpost_paczkomat' | 'inpost_kurier' | 'dpd_kurier' | 'wysylka_gabaryt';
 
 interface ShippingMethodOption {
   id: string;
@@ -49,7 +49,6 @@ interface ShippingPerPackageProps {
 }
 
 // Shipping provider icons
-// Na ten moment tylko InPost + wysyłka gabaryt
 const ShippingIcon = ({ id }: { id: string }) => {
   switch (id) {
     case 'inpost_paczkomat':
@@ -57,6 +56,12 @@ const ShippingIcon = ({ id }: { id: string }) => {
       return (
         <div className="flex items-center justify-center w-12 h-7 bg-[#FFCD00] rounded px-1">
           <span className="text-[#1D1D1B] text-[10px] font-bold">InPost</span>
+        </div>
+      );
+    case 'dpd_kurier':
+      return (
+        <div className="flex items-center justify-center w-12 h-7 bg-[#DC0032] rounded px-1">
+          <span className="text-white text-[10px] font-bold">DPD</span>
         </div>
       );
     case 'wysylka_gabaryt':
