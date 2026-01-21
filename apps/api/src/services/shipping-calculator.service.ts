@@ -483,20 +483,16 @@ export class ShippingCalculatorService {
     }, 0);
     
     // Check if any package has InPost only restriction (paczkomat i kurier tag)
+    // isInPostOnly = true means ONLY InPost methods are available (paczkomat + kurier), NOT that paczkomat is disabled
     const hasInPostOnlyPackages = calculation.packages.some(p => p.isInPostOnly);
     
-    // Paczkomat is not available if:
-    // 1. There are gabaryt packages (isPaczkomatAvailable = false)
-    // 2. Any package has "paczkomat i kurier" tag (isInPostOnly = true)
-    const isPaczkomatAvailable = calculation.isPaczkomatAvailable && !hasInPostOnlyPackages;
+    // Paczkomat is not available only if there are gabaryt packages
+    // "Paczkomaty i Kurier" tag means paczkomat IS available (just no other carriers)
+    const isPaczkomatAvailable = calculation.isPaczkomatAvailable;
     
     let paczkomatMessage: string | undefined;
     if (!isPaczkomatAvailable) {
-      if (hasInPostOnlyPackages) {
-        paczkomatMessage = 'Produkt dostępny tylko z dostawą kurierem';
-      } else {
-        paczkomatMessage = 'Produkty gabarytowe wykluczają dostawę do paczkomatu';
-      }
+      paczkomatMessage = 'Produkty gabarytowe wykluczają dostawę do paczkomatu';
     } else if (calculation.totalPaczkomatPackages > 1) {
       paczkomatMessage = `${calculation.totalPaczkomatPackages} paczki`;
     }
@@ -579,9 +575,9 @@ export class ShippingCalculatorService {
           estimatedDelivery: '1-2 dni',
         });
       } else {
-        // Standard packages - check if InPost only restriction applies
+        // Standard packages - paczkomat is always available for standard packages
+        // isInPostOnly = true means ONLY InPost methods (paczkomat + kurier) - paczkomat IS available
         const paczkomatPackages = pkg.paczkomatPackageCount;
-        const isPaczkomatDisabled = pkg.isInPostOnly; // Disable paczkomat for "paczkomat i kurier" tagged products
         
         // Use weight-based price if available, otherwise standard price
         const courierPrice = pkg.weightShippingPrice || SHIPPING_PRICES.inpost_kurier;
@@ -590,10 +586,8 @@ export class ShippingCalculatorService {
           id: 'inpost_paczkomat',
           name: 'InPost Paczkomat',
           price: paczkomatPackages * SHIPPING_PRICES.inpost_paczkomat,
-          available: !isPaczkomatDisabled,
-          message: isPaczkomatDisabled 
-            ? 'Produkt dostępny tylko z dostawą kurierem' 
-            : (paczkomatPackages > 1 ? `${paczkomatPackages} paczki` : undefined),
+          available: true,
+          message: paczkomatPackages > 1 ? `${paczkomatPackages} paczki` : undefined,
           estimatedDelivery: '1-2 dni',
         });
         methods.push({
