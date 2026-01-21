@@ -81,7 +81,6 @@ export default function OrderCancelPage() {
                 <ul className="list-disc pl-6 text-secondary-600 space-y-2 mb-6">
                   <li><strong>Płatność kartą:</strong> zwrot w ciągu 5-10 dni roboczych</li>
                   <li><strong>BLIK / przelew:</strong> zwrot w ciągu 3-5 dni roboczych</li>
-                  <li><strong>PayPo / raty:</strong> transakcja zostaje anulowana automatycznie</li>
                 </ul>
                 <p className="text-secondary-600 mb-6">
                   Zwrot zostanie wykonany tą samą metodą płatności, którą użyto przy składaniu zamówienia.

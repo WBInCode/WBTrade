@@ -104,9 +104,6 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
                 <LogoImage src={getLogoUrl(SOCIAL_LOGOS.instagram)} alt="Instagram" width={28} height={28} className="object-contain" />
               </a>
               <a href="#" className="hover:opacity-70 transition-opacity">
-                <LogoImage src={getLogoUrl(SOCIAL_LOGOS.twitter)} alt="X" width={28} height={28} className="object-contain" />
-              </a>
-              <a href="#" className="hover:opacity-70 transition-opacity">
                 <LogoImage src={getLogoUrl(SOCIAL_LOGOS.linkedin)} alt="LinkedIn" width={28} height={28} className="object-contain" />
               </a>
             </div>
@@ -142,19 +139,19 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
                 <svg className="w-5 h-5 text-primary-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                <span className="text-secondary-600">kontakt@wbtrade.pl</span>
+                <span className="text-secondary-600">support@wb-partners.pl</span>
               </li>
               <li className="flex items-start gap-2">
                 <svg className="w-5 h-5 text-primary-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                 </svg>
-                <span className="text-secondary-600">+48 800 123 456</span>
+                <span className="text-secondary-600">+48 570 028 761</span>
               </li>
               <li className="flex items-start gap-2">
                 <svg className="w-5 h-5 text-primary-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span className="text-secondary-600">Pon-Pt: 9:00 - 17:00</span>
+                <span className="text-secondary-600 whitespace-nowrap">Pon-Pt: 9:00 - 17:00</span>
               </li>
             </ul>
           </div>
