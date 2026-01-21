@@ -85,6 +85,7 @@ export interface ShippingPackage {
   weightShippingPrice?: number; // Highest weight-based price in this package
   isPaczkomatAvailable: boolean;
   isInPostOnly: boolean; // When true, only InPost Paczkomat and Kurier InPost are available
+  isCourierOnly: boolean; // When true, only Kurier InPost is available (tag "Tylko kurier")
 }
 
 export interface ShippingMethodForPackage {
@@ -118,10 +119,20 @@ export interface ShippingCalculationResult {
 }
 
 /**
- * Check if product has gabaryt tag (oversized or courier-only)
+ * Check if product has gabaryt tag (oversized)
+ * Tag format: "gabaryt" or "149.99 Gabaryt" (with price)
+ * Gabaryt = only "Wysyłka gabaryt" option available
  */
 function isGabaryt(tags: string[]): boolean {
-  return tags.some(tag => TAG_PATTERNS.GABARYT.test(tag) || TAG_PATTERNS.TYLKO_KURIER.test(tag));
+  return tags.some(tag => TAG_PATTERNS.GABARYT.test(tag));
+}
+
+/**
+ * Check if product has "Tylko kurier" tag
+ * When true, only Kurier InPost is available (no paczkomat, no gabaryt)
+ */
+function isCourierOnly(tags: string[]): boolean {
+  return tags.some(tag => TAG_PATTERNS.TYLKO_KURIER.test(tag));
 }
 
 /**
@@ -313,6 +324,7 @@ export class ShippingCalculatorService {
           gabarytPrice: gabarytPrice || SHIPPING_PRICES.gabaryt_base,
           isPaczkomatAvailable: false, // Gabaryt cannot use paczkomat
           isInPostOnly: productIsInPostOnly,
+          isCourierOnly: false, // Gabaryt has its own shipping method
         });
       }
     }
@@ -333,8 +345,10 @@ export class ShippingCalculatorService {
       });
       
       let paczkomatPackageCount = 0;
-      // Check if any item in this package requires InPost only
+      // Check if any item in this package requires InPost only (Paczkomaty i Kurier)
       let packageIsInPostOnly = false;
+      // Check if any item requires courier only (Tylko kurier)
+      let packageIsCourierOnly = false;
       // Track highest weight-based shipping price in this package
       let maxWeightShippingPrice: number | null = null;
       
@@ -348,6 +362,11 @@ export class ShippingCalculatorService {
           packageIsInPostOnly = true;
         }
         
+        // If any product has "Tylko kurier" tag, the whole package is courier only
+        if (isCourierOnly(item.product.tags)) {
+          packageIsCourierOnly = true;
+        }
+        
         // Track highest weight-based price (całość paczki płaci najwyższą cenę wagi)
         const weightPrice = getWeightShippingPrice(item.product.tags);
         if (weightPrice !== null) {
@@ -357,6 +376,11 @@ export class ShippingCalculatorService {
         }
       }
       
+      // Paczkomat available only if NOT courier-only
+      // "Paczkomaty i Kurier" = paczkomat available
+      // "Tylko kurier" = paczkomat NOT available
+      const isPaczkomatAvailableForPackage = !packageIsCourierOnly;
+      
       packages.push({
         id: `standard-${packageId++}`,
         type: 'standard',
@@ -364,8 +388,9 @@ export class ShippingCalculatorService {
         items: packageItems,
         paczkomatPackageCount,
         weightShippingPrice: maxWeightShippingPrice || undefined,
-        isPaczkomatAvailable: !packageIsInPostOnly, // Disable paczkomat for "paczkomat i kurier" tagged products
+        isPaczkomatAvailable: isPaczkomatAvailableForPackage,
         isInPostOnly: packageIsInPostOnly,
+        isCourierOnly: packageIsCourierOnly,
       });
     }
     
@@ -488,11 +513,17 @@ export class ShippingCalculatorService {
     
     // Paczkomat is not available only if there are gabaryt packages
     // "Paczkomaty i Kurier" tag means paczkomat IS available (just no other carriers)
-    const isPaczkomatAvailable = calculation.isPaczkomatAvailable;
+    // "Tylko kurier" tag means paczkomat is NOT available
+    const hasCourierOnlyPackages = calculation.packages.some(p => p.isCourierOnly);
+    const isPaczkomatAvailable = calculation.isPaczkomatAvailable && !hasCourierOnlyPackages;
     
     let paczkomatMessage: string | undefined;
     if (!isPaczkomatAvailable) {
-      paczkomatMessage = 'Produkty gabarytowe wykluczają dostawę do paczkomatu';
+      if (hasCourierOnlyPackages) {
+        paczkomatMessage = 'Produkt dostępny tylko z dostawą kurierem';
+      } else {
+        paczkomatMessage = 'Produkty gabarytowe wykluczają dostawę do paczkomatu';
+      }
     } else if (calculation.totalPaczkomatPackages > 1) {
       paczkomatMessage = `${calculation.totalPaczkomatPackages} paczki`;
     }
@@ -575,19 +606,23 @@ export class ShippingCalculatorService {
           estimatedDelivery: '1-2 dni',
         });
       } else {
-        // Standard packages - paczkomat is always available for standard packages
-        // isInPostOnly = true means ONLY InPost methods (paczkomat + kurier) - paczkomat IS available
+        // Standard packages
         const paczkomatPackages = pkg.paczkomatPackageCount;
         
         // Use weight-based price if available, otherwise standard price
         const courierPrice = pkg.weightShippingPrice || SHIPPING_PRICES.inpost_kurier;
         
+        // Paczkomat available only if NOT courier-only (tag "Tylko kurier")
+        const isPaczkomatAvailableForPackage = !pkg.isCourierOnly;
+        
         methods.push({
           id: 'inpost_paczkomat',
           name: 'InPost Paczkomat',
           price: paczkomatPackages * SHIPPING_PRICES.inpost_paczkomat,
-          available: true,
-          message: paczkomatPackages > 1 ? `${paczkomatPackages} paczki` : undefined,
+          available: isPaczkomatAvailableForPackage,
+          message: !isPaczkomatAvailableForPackage 
+            ? 'Produkt dostępny tylko z dostawą kurierem'
+            : (paczkomatPackages > 1 ? `${paczkomatPackages} paczki` : undefined),
           estimatedDelivery: '1-2 dni',
         });
         methods.push({
