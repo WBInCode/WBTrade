@@ -7,6 +7,8 @@ interface CreateAddressData {
   type?: AddressType;
   firstName: string;
   lastName: string;
+  companyName?: string;
+  nip?: string;
   street: string;
   city: string;
   postalCode: string;
@@ -165,6 +167,8 @@ export const addressesService = {
         type: addressType,
         firstName: data.firstName.trim(),
         lastName: data.lastName.trim(),
+        companyName: data.companyName?.trim() || null,
+        nip: data.nip?.trim() || null,
         street: data.street.trim(),
         city: data.city.trim(),
         postalCode: data.postalCode.trim(),

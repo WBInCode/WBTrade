@@ -347,6 +347,8 @@ export class BaselinkerOrdersService {
     // Add billing/invoice data
     if (order.billingAddress) {
       blOrder.invoice_fullname = `${order.billingAddress.firstName} ${order.billingAddress.lastName}`;
+      blOrder.invoice_company = order.billingAddress.companyName || '';
+      blOrder.invoice_nip = order.billingAddress.nip || '';
       blOrder.invoice_address = order.billingAddress.street;
       blOrder.invoice_city = order.billingAddress.city;
       blOrder.invoice_postcode = order.billingAddress.postalCode;
