@@ -81,17 +81,9 @@ export default function RefundsPage() {
                         <td className="p-3 border text-secondary-600">PayPo</td>
                         <td className="p-3 border text-secondary-600">Automatyczne anulowanie zobowiązania</td>
                       </tr>
-                      <tr className="bg-secondary-50">
-                        <td className="p-3 border text-secondary-600">Raty</td>
-                        <td className="p-3 border text-secondary-600">Anulowanie umowy ratalnej (14 dni)</td>
-                      </tr>
                       <tr>
                         <td className="p-3 border text-secondary-600">Przelew tradycyjny</td>
                         <td className="p-3 border text-secondary-600">3-5 dni roboczych</td>
-                      </tr>
-                      <tr className="bg-secondary-50">
-                        <td className="p-3 border text-secondary-600">Za pobraniem</td>
-                        <td className="p-3 border text-secondary-600">Przelew na wskazane konto (5-7 dni)</td>
                       </tr>
                     </tbody>
                   </table>

@@ -459,7 +459,6 @@ export class PayUProvider implements IPaymentProvider {
       'PBL': 'Przelew bankowy',
       'GPAY': 'Google Pay',
       'APAY': 'Apple Pay',
-      'INSTALLMENTS': 'Raty PayU',
       'KLARNA_PAY_LATER': 'Klarna',
       'KLARNA_PAY_NOW': 'Klarna',
       'PAYPO': 'PayPo',

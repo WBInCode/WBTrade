@@ -311,57 +311,6 @@ export class BaselinkerOrdersService {
       };
     });
 
-    // Build shipping info for admin comments
-    let shippingInfo = `WBTrade Order: ${order.orderNumber}`;
-    
-    // Add package shipping details if available
-    const packageShipping = order.packageShipping as Array<{
-      packageId?: string;
-      wholesaler?: string;
-      method?: string;
-      price?: number;
-      paczkomatCode?: string;
-      paczkomatAddress?: string;
-    }> | null;
-    
-    if (packageShipping && packageShipping.length > 0) {
-      // Build a map of wholesaler -> shipping method
-      const wholesalerMethods = new Map<string, string>();
-      for (const pkg of packageShipping) {
-        if (pkg.wholesaler) {
-          const methodName = pkg.method === 'inpost_paczkomat' ? 'INPOST PACZKOMAT' : 
-                            pkg.method === 'inpost_kurier' ? 'INPOST KURIER' :
-                            pkg.method === 'dpd_kurier' ? 'DPD KURIER' :
-                            pkg.method === 'gabaryt' ? 'GABARYT' :
-                            pkg.method?.toUpperCase() || '?';
-          const paczkomat = pkg.paczkomatCode ? ` [${pkg.paczkomatCode}]` : '';
-          wholesalerMethods.set(pkg.wholesaler.toLowerCase(), `${methodName}${paczkomat}`);
-        }
-      }
-      
-      // Match each item to its shipping method based on product tags
-      const itemShipping: string[] = [];
-      for (const item of order.items) {
-        const productTags = item.variant?.product?.tags || [];
-        let shippingMethod = 'KURIER'; // default
-        
-        // Find which wholesaler this product belongs to
-        for (const tag of productTags) {
-          const tagLower = tag.toLowerCase();
-          if (wholesalerMethods.has(tagLower)) {
-            shippingMethod = wholesalerMethods.get(tagLower) || 'KURIER';
-            break;
-          }
-        }
-        
-        itemShipping.push(`${item.sku} - ${shippingMethod}`);
-      }
-      
-      if (itemShipping.length > 0) {
-        shippingInfo += ` || WYSYŁKI: ${itemShipping.join(' | ')}`;
-      }
-    }
-
     // Build the order request
     const blOrder: BaselinkerAddOrderRequest = {
       order_status_id: orderStatusId,
@@ -371,7 +320,7 @@ export class BaselinkerOrdersService {
       payment_method_cod: order.paymentMethod === 'cod',
       paid: order.paymentStatus === 'PAID',
       user_comments: order.customerNotes || '',
-      admin_comments: shippingInfo,
+      admin_comments: `WBTrade Order: ${order.orderNumber}`,
       email: order.user?.email || '',
       phone: order.shippingAddress?.phone || order.user?.phone || '',
       delivery_method: deliveryMethod,
@@ -415,7 +364,6 @@ export class BaselinkerOrdersService {
     const mappings: Record<string, string> = {
       'inpost_paczkomat': 'InPost Paczkomaty',
       'inpost_kurier': 'InPost Kurier',
-      'dpd_kurier': 'DPD Kurier',
       'dpd': 'DPD Kurier',
       'dhl': 'DHL Kurier',
       'pocztex': 'Pocztex',
@@ -444,7 +392,6 @@ export class BaselinkerOrdersService {
       'Przelew bankowy': 'Przelew bankowy',
       'Google Pay': 'Google Pay',
       'Apple Pay': 'Apple Pay',
-      'Raty PayU': 'Raty PayU',
       'Klarna': 'Klarna',
       'PayPo': 'PayPo',
       'Twisto': 'Twisto',
