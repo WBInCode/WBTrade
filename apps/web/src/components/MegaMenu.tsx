@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import Link from 'next/link';
 import { CategoryWithChildren } from '../lib/api';
 import { cleanCategoryName } from '../lib/categories';
 
@@ -15,17 +15,6 @@ interface MegaMenuProps {
 export default function MegaMenu({ categories, isOpen, onClose, currentCategorySlug }: MegaMenuProps) {
   const [hoveredCategorySlug, setHoveredCategorySlug] = useState<string | null>(null);
   const [selectedMobileCategory, setSelectedMobileCategory] = useState<string | null>(null);
-  const router = useRouter();
-
-  // Navigate to category and close menu
-  const navigateToCategory = useCallback((slug: string) => {
-    console.log('Navigating to category:', slug);
-    router.push(`/products?category=${slug}`);
-    // Defer closing to allow navigation to complete
-    setTimeout(() => {
-      onClose();
-    }, 50);
-  }, [router, onClose]);
 
   if (!isOpen) return null;
 
@@ -114,19 +103,16 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                       </button>
                     ) : (
                       // Category without subcategories - navigate directly
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          navigateToCategory(category.slug);
-                        }}
+                      <Link
+                        href={`/products?category=${category.slug}`}
+                        onClick={onClose}
                         className="w-full text-left block px-4 py-4 text-sm font-medium text-gray-900 hover:bg-gray-50 active:bg-gray-100"
                       >
                         {cleanCategoryName(category.name)}
                         {totalProducts > 0 && (
                           <span className="text-xs text-gray-500 ml-2">({totalProducts})</span>
                         )}
-                      </button>
+                      </Link>
                     )}
                   </div>
                 );
@@ -136,19 +122,16 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
             // Subcategories list
             <div>
               {/* Category header - view all */}
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  navigateToCategory(mobileCategoryData.slug);
-                }}
+              <Link
+                href={`/products?category=${mobileCategoryData.slug}`}
+                onClick={onClose}
                 className="w-full flex items-center justify-between px-4 py-4 bg-primary-50 text-primary-600 font-semibold text-sm border-b hover:bg-primary-100 active:bg-primary-200"
               >
                 <span>Zobacz wszystko w "{cleanCategoryName(mobileCategoryData.name)}"</span>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
-              </button>
+              </Link>
               
               {/* Subcategories */}
               <div className="divide-y">
@@ -156,13 +139,10 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                   const subProductCount = subCategory.productCount || 0;
                   
                   return (
-                    <button
+                    <Link
                       key={subCategory.slug}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        navigateToCategory(subCategory.slug);
-                      }}
+                      href={`/products?category=${subCategory.slug}`}
+                      onClick={onClose}
                       className="w-full flex items-center justify-between px-4 py-4 text-sm text-gray-900 hover:bg-gray-50 active:bg-gray-100"
                     >
                       <span>
@@ -174,7 +154,7 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
-                    </button>
+                    </Link>
                   );
                 })}
               </div>
@@ -196,13 +176,10 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                 const totalProducts = category.productCount || 0;
 
                 return (
-                  <button
+                  <Link
                     key={category.slug}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      navigateToCategory(category.slug);
-                    }}
+                    href={`/products?category=${category.slug}`}
+                    onClick={onClose}
                     className={`w-full text-left block px-6 py-3 text-sm font-medium transition-colors relative ${
                       isHovered || isActive
                         ? 'text-primary-600 bg-white border-r-3 border-primary-500'
@@ -221,7 +198,7 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                     {(isHovered || isActive) && (
                       <div className="absolute right-0 top-0 bottom-0 w-1 bg-primary-500" />
                     )}
-                  </button>
+                  </Link>
                 );
               })}
             </div>
@@ -241,12 +218,9 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                       
                       return (
                         <div key={subCategory.slug} className="space-y-2">
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              navigateToCategory(subCategory.slug);
-                            }}
+                          <Link
+                            href={`/products?category=${subCategory.slug}`}
+                            onClick={onClose}
                             className="w-full text-left block font-semibold text-sm text-secondary-900 hover:text-primary-600 transition-colors"
                           >
                             <div className="flex items-center justify-between">
@@ -257,7 +231,7 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                                 </span>
                               )}
                             </div>
-                          </button>
+                          </Link>
                           
                           {/* Third level categories */}
                           {subCategory.children && subCategory.children.length > 0 && (
@@ -267,12 +241,9 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                                 
                                 return (
                                   <li key={thirdLevel.slug}>
-                                    <button
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        navigateToCategory(thirdLevel.slug);
-                                      }}
+                                    <Link
+                                      href={`/products?category=${thirdLevel.slug}`}
+                                      onClick={onClose}
                                       className="w-full text-left block text-xs text-secondary-600 hover:text-primary-600 transition-colors"
                                     >
                                       <div className="flex items-center justify-between">
@@ -283,7 +254,7 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                                           </span>
                                         )}
                                       </div>
-                                    </button>
+                                    </Link>
                                   </li>
                                 );
                               })}
@@ -296,18 +267,16 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
 
                   {/* View all link */}
                   <div className="mt-6 pt-4 border-t border-gray-200">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigateToCategory(activeCategory.slug);
-                      }}
+                    <Link
+                      href={`/products?category=${activeCategory.slug}`}
+                      onClick={onClose}
                       className="inline-flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
                     >
                       Zobacz wszystkie produkty w kategorii {cleanCategoryName(activeCategory.name)}
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
-                    </button>
+                    </Link>
                   </div>
                 </div>
               ) : activeCategory ? (
@@ -321,18 +290,16 @@ export default function MegaMenu({ categories, isOpen, onClose, currentCategoryS
                   <p className="text-sm text-gray-500 mb-6">
                     {activeCategory.productCount || 0} produktów
                   </p>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigateToCategory(activeCategory.slug);
-                    }}
+                  <Link
+                    href={`/products?category=${activeCategory.slug}`}
+                    onClick={onClose}
                     className="inline-flex items-center gap-2 px-6 py-3 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-600 transition-colors"
                   >
                     Zobacz produkty
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
-                  </button>
+                  </Link>
                 </div>
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-400 py-12">
