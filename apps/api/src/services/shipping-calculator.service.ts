@@ -21,15 +21,17 @@ const TAG_PATTERNS = {
   // Matches "tylko kurier" tags
   TYLKO_KURIER: /^tylko\s*kurier$/i,
   // Matches wholesaler tags
-  WHOLESALER: /^(hurtownia[:\-_](.+)|Ikonka|BTP|HP|Gastro|Horeca|Hurtownia\s+Przemysłowa)$/i,
-  // Matches paczkomat limit tags like "1 produkt w paczce", "3 produkty w paczce"
-  PACZKOMAT_LIMIT: /^(\d+)\s*produkt(?:y|ów)?\s*w\s*paczce$/i,
+  WHOLESALER: /^(hurtownia[:\-_](.+)|Ikonka|BTP|HP|Gastro|Horeca|Hurtownia\s+Przemysłowa|Leker|Forcetop)$/i,
+  // Matches paczkomat limit tags like "produkt w paczce: 3" or "3 produkty w paczce"
+  PACZKOMAT_LIMIT: /^(?:produkt\s*w\s*paczce[:\s]*(\d+)|(\d+)\s*produkt(?:y|ów)?\s*w\s*paczce)$/i,
   // Matches tags that indicate courier-only delivery
   COURIER_ONLY: /^(tylko\s*kurier)$/i,
   // Matches tags that indicate paczkomat is available
   PACZKOMAT_AVAILABLE: /^(paczkomaty?\s*(i\s*kurier)?|paczkomat)$/i,
   // Matches tags that restrict shipping to InPost only (Paczkomat + Kurier InPost)
   INPOST_ONLY: /^paczkomaty?\s*i\s*kurier$/i,
+  // Matches weight tags like "do 10 kg" or "do 31,5 kg"
+  WEIGHT_KG: /^do\s*(\d+(?:[,\.]\d+)?)\s*kg$/i,
 } as const;
 
 // Shipping method prices (in PLN)
@@ -39,6 +41,15 @@ export const SHIPPING_PRICES = {
   inpost_kurier: 19.99,
   gabaryt_base: 49.99,
   wysylka_gabaryt: 79.99,
+} as const;
+
+// Weight-based shipping prices (brutto, zaokrąglone do .99)
+export const WEIGHT_SHIPPING_PRICES = {
+  2: 20.99,    // do 2 kg
+  5: 22.99,    // do 5 kg
+  10: 23.99,   // do 10 kg
+  20: 25.99,   // do 20 kg
+  31.5: 28.99, // do 31,5 kg
 } as const;
 
 export interface CartItemForShipping {
@@ -60,6 +71,7 @@ export interface ShippingPackageItem {
   quantity: number;
   isGabaryt: boolean;
   gabarytPrice?: number;
+  weightShippingPrice?: number; // Price based on weight tag (e.g., "do 10 kg")
   productImage?: string;
 }
 
@@ -70,6 +82,7 @@ export interface ShippingPackage {
   items: ShippingPackageItem[];
   paczkomatPackageCount: number;
   gabarytPrice?: number;
+  weightShippingPrice?: number; // Highest weight-based price in this package
   isPaczkomatAvailable: boolean;
   isInPostOnly: boolean; // When true, only InPost Paczkomat and Kurier InPost are available
 }
@@ -142,12 +155,15 @@ function getWholesaler(tags: string[]): string | null {
 
 /**
  * Get paczkomat limit from product tags
+ * Supports formats: "produkt w paczce: 3" or "3 produkty w paczce"
  */
 function getPaczkomatLimit(tags: string[]): number {
   for (const tag of tags) {
     const match = tag.match(TAG_PATTERNS.PACZKOMAT_LIMIT);
     if (match) {
-      const limit = parseInt(match[1], 10);
+      // match[1] is from "produkt w paczce: X" format
+      // match[2] is from "X produkty w paczce" format
+      const limit = parseInt(match[1] || match[2], 10);
       if (!isNaN(limit) && limit > 0) {
         return limit;
       }
@@ -162,6 +178,49 @@ function getPaczkomatLimit(tags: string[]): number {
  */
 function isInPostOnly(tags: string[]): boolean {
   return tags.some(tag => TAG_PATTERNS.INPOST_ONLY.test(tag));
+}
+
+/**
+ * Get weight from product tags (e.g., "do 10 kg" returns 10)
+ */
+function getWeightKg(tags: string[]): number | null {
+  for (const tag of tags) {
+    const match = tag.match(TAG_PATTERNS.WEIGHT_KG);
+    if (match && match[1]) {
+      // Replace comma with dot for parsing (e.g., "31,5" -> "31.5")
+      const weight = parseFloat(match[1].replace(',', '.'));
+      if (!isNaN(weight) && weight > 0) {
+        return weight;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Get shipping price based on product weight
+ * Returns the appropriate price tier based on weight tag
+ */
+function getWeightShippingPrice(tags: string[]): number | null {
+  const weight = getWeightKg(tags);
+  if (weight === null) return null;
+  
+  // Find the appropriate price tier
+  const tiers = [2, 5, 10, 20, 31.5];
+  for (const tier of tiers) {
+    if (weight <= tier) {
+      return WEIGHT_SHIPPING_PRICES[tier as keyof typeof WEIGHT_SHIPPING_PRICES];
+    }
+  }
+  // If weight exceeds all tiers, return the highest tier price
+  return WEIGHT_SHIPPING_PRICES[31.5];
+}
+
+/**
+ * Check if product has weight tag (should use weight-based shipping)
+ */
+function hasWeightTag(tags: string[]): boolean {
+  return tags.some(tag => TAG_PATTERNS.WEIGHT_KG.test(tag));
 }
 
 export class ShippingCalculatorService {
@@ -260,18 +319,25 @@ export class ShippingCalculatorService {
     
     // Create packages for standard items by wholesaler
     for (const [wholesaler, wholesalerItems] of standardItemsByWholesaler) {
-      const packageItems = wholesalerItems.map(item => ({
-        productId: item.product.id,
-        productName: item.product.name,
-        variantId: item.variantId,
-        quantity: item.quantity,
-        isGabaryt: false,
-        productImage: item.product.image,
-      }));
+      const packageItems = wholesalerItems.map(item => {
+        const weightPrice = getWeightShippingPrice(item.product.tags);
+        return {
+          productId: item.product.id,
+          productName: item.product.name,
+          variantId: item.variantId,
+          quantity: item.quantity,
+          isGabaryt: false,
+          weightShippingPrice: weightPrice || undefined,
+          productImage: item.product.image,
+        };
+      });
       
       let paczkomatPackageCount = 0;
       // Check if any item in this package requires InPost only
       let packageIsInPostOnly = false;
+      // Track highest weight-based shipping price in this package
+      let maxWeightShippingPrice: number | null = null;
+      
       for (const item of wholesalerItems) {
         const limit = getPaczkomatLimit(item.product.tags);
         const packagesForItem = Math.ceil(item.quantity / limit);
@@ -281,6 +347,14 @@ export class ShippingCalculatorService {
         if (isInPostOnly(item.product.tags)) {
           packageIsInPostOnly = true;
         }
+        
+        // Track highest weight-based price (całość paczki płaci najwyższą cenę wagi)
+        const weightPrice = getWeightShippingPrice(item.product.tags);
+        if (weightPrice !== null) {
+          if (maxWeightShippingPrice === null || weightPrice > maxWeightShippingPrice) {
+            maxWeightShippingPrice = weightPrice;
+          }
+        }
       }
       
       packages.push({
@@ -289,6 +363,7 @@ export class ShippingCalculatorService {
         wholesaler: wholesaler === 'default' ? null : wholesaler,
         items: packageItems,
         paczkomatPackageCount,
+        weightShippingPrice: maxWeightShippingPrice || undefined,
         isPaczkomatAvailable: !packageIsInPostOnly, // Disable paczkomat for "paczkomat i kurier" tagged products
         isInPostOnly: packageIsInPostOnly,
       });
@@ -296,8 +371,9 @@ export class ShippingCalculatorService {
     
     // Calculate costs
     const gabarytPackages = packages.filter(p => p.type === 'gabaryt');
+    const standardPackages = packages.filter(p => p.type === 'standard');
     const gabarytPackageCount = gabarytPackages.length;
-    const standardPackageCount = packages.filter(p => p.type === 'standard').length;
+    const standardPackageCount = standardPackages.length;
     const totalPackages = gabarytPackageCount + standardPackageCount;
     const totalPaczkomatPackages = packages.reduce((sum, p) => sum + p.paczkomatPackageCount, 0);
     const isPaczkomatAvailable = gabarytPackageCount === 0;
@@ -315,13 +391,41 @@ export class ShippingCalculatorService {
       });
     }
     
+    // Calculate standard packages cost - use weight-based price if available
     if (standardPackageCount > 0) {
-      const standardCost = standardPackageCount * SHIPPING_PRICES.inpost_kurier;
-      breakdown.push({
-        description: `Standardowe paczki (${standardPackageCount} hurtowni)`,
-        cost: standardCost,
-        packageCount: standardPackageCount,
-      });
+      let standardCost = 0;
+      let weightBasedCount = 0;
+      let regularCount = 0;
+      
+      for (const pkg of standardPackages) {
+        if (pkg.weightShippingPrice) {
+          standardCost += pkg.weightShippingPrice;
+          weightBasedCount++;
+        } else {
+          standardCost += SHIPPING_PRICES.inpost_kurier;
+          regularCount++;
+        }
+      }
+      
+      if (weightBasedCount > 0 && regularCount > 0) {
+        breakdown.push({
+          description: `Standardowe paczki (${weightBasedCount} wg wagi, ${regularCount} standard)`,
+          cost: standardCost,
+          packageCount: standardPackageCount,
+        });
+      } else if (weightBasedCount > 0) {
+        breakdown.push({
+          description: `Paczki wg wagi (${weightBasedCount} hurtowni)`,
+          cost: standardCost,
+          packageCount: standardPackageCount,
+        });
+      } else {
+        breakdown.push({
+          description: `Standardowe paczki (${standardPackageCount} hurtowni)`,
+          cost: standardCost,
+          packageCount: standardPackageCount,
+        });
+      }
     }
     
     const shippingCost = breakdown.reduce((sum, item) => sum + item.cost, 0);
@@ -372,7 +476,11 @@ export class ShippingCalculatorService {
       .filter(p => p.type === 'gabaryt')
       .reduce((sum, pkg) => sum + (pkg.gabarytPrice || SHIPPING_PRICES.gabaryt_base), 0);
     
-    const standardPackageCount = calculation.packages.filter(p => p.type === 'standard').length;
+    // Calculate standard packages cost with weight-based pricing
+    const standardPackages = calculation.packages.filter(p => p.type === 'standard');
+    const totalStandardCost = standardPackages.reduce((sum, pkg) => {
+      return sum + (pkg.weightShippingPrice || SHIPPING_PRICES.inpost_kurier);
+    }, 0);
     
     // Check if any package has InPost only restriction (paczkomat i kurier tag)
     const hasInPostOnlyPackages = calculation.packages.some(p => p.isInPostOnly);
@@ -404,7 +512,7 @@ export class ShippingCalculatorService {
       {
         id: 'inpost_kurier',
         name: 'Kurier InPost',
-        price: totalGabarytCost + (standardPackageCount * SHIPPING_PRICES.inpost_kurier),
+        price: totalGabarytCost + totalStandardCost,
         available: true,
       },
     ];
@@ -475,6 +583,9 @@ export class ShippingCalculatorService {
         const paczkomatPackages = pkg.paczkomatPackageCount;
         const isPaczkomatDisabled = pkg.isInPostOnly; // Disable paczkomat for "paczkomat i kurier" tagged products
         
+        // Use weight-based price if available, otherwise standard price
+        const courierPrice = pkg.weightShippingPrice || SHIPPING_PRICES.inpost_kurier;
+        
         methods.push({
           id: 'inpost_paczkomat',
           name: 'InPost Paczkomat',
@@ -488,8 +599,9 @@ export class ShippingCalculatorService {
         methods.push({
           id: 'inpost_kurier',
           name: 'Kurier InPost',
-          price: SHIPPING_PRICES.inpost_kurier,
+          price: courierPrice,
           available: true,
+          message: pkg.weightShippingPrice ? `Cena wg wagi: ${courierPrice.toFixed(2)} zł` : undefined,
           estimatedDelivery: '1-2 dni',
         });
       }
