@@ -29,7 +29,7 @@ export interface AddressData {
 }
 
 export interface ShippingData {
-  method: 'inpost_paczkomat' | 'inpost_kurier' | 'wysylka_gabaryt';
+  method: 'inpost_paczkomat' | 'inpost_kurier' | 'dpd_kurier' | 'wysylka_gabaryt';
   paczkomatCode?: string;
   paczkomatAddress?: string;
   price: number;
