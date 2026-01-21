@@ -1001,6 +1001,7 @@ export const checkoutApi = {
           }>;
           isPaczkomatAvailable: boolean;
           isInPostOnly: boolean;
+          isCourierOnly: boolean;
         };
         shippingMethods: Array<{
           id: string;
