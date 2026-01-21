@@ -43,11 +43,13 @@ export const SHIPPING_PRICES = {
   wysylka_gabaryt: 79.99,
 } as const;
 
-// Weight-based shipping prices (brutto, zaokrąglone do .99)
+// Weight-based shipping prices for "Tylko kurier" products (brutto)
+// Wszystkie wagi do 20 kg włącznie = 25.99 zł
+// Waga do 31.5 kg = 28.99 zł
 export const WEIGHT_SHIPPING_PRICES = {
-  2: 20.99,    // do 2 kg
-  5: 22.99,    // do 5 kg
-  10: 23.99,   // do 10 kg
+  2: 25.99,    // do 2 kg
+  5: 25.99,    // do 5 kg
+  10: 25.99,   // do 10 kg
   20: 25.99,   // do 20 kg
   31.5: 28.99, // do 31,5 kg
 } as const;
