@@ -331,6 +331,7 @@ export class BaselinkerOrdersService {
         if (pkg.wholesaler) {
           const methodName = pkg.method === 'inpost_paczkomat' ? 'INPOST PACZKOMAT' : 
                             pkg.method === 'inpost_kurier' ? 'INPOST KURIER' :
+                            pkg.method === 'dpd_kurier' ? 'DPD KURIER' :
                             pkg.method === 'gabaryt' ? 'GABARYT' :
                             pkg.method?.toUpperCase() || '?';
           const paczkomat = pkg.paczkomatCode ? ` [${pkg.paczkomatCode}]` : '';
@@ -414,6 +415,7 @@ export class BaselinkerOrdersService {
     const mappings: Record<string, string> = {
       'inpost_paczkomat': 'InPost Paczkomaty',
       'inpost_kurier': 'InPost Kurier',
+      'dpd_kurier': 'DPD Kurier',
       'dpd': 'DPD Kurier',
       'dhl': 'DHL Kurier',
       'pocztex': 'Pocztex',
