@@ -22,6 +22,8 @@ export interface AddressData {
   postalCode: string;
   city: string;
   differentBillingAddress: boolean;
+  billingCompanyName?: string;
+  billingNip?: string;
   billingStreet?: string;
   billingApartment?: string;
   billingPostalCode?: string;
@@ -278,12 +280,34 @@ function CheckoutPageContent() {
         type: 'SHIPPING' as const,
       };
 
-      // Create address
+      // Create shipping address
       const shippingAddress = await addressesApi.create(addressData);
+
+      // Create billing address if different from shipping
+      let billingAddressId: string | undefined;
+      if (checkoutData.address.differentBillingAddress) {
+        const billingData = {
+          firstName: checkoutData.address.firstName,
+          lastName: checkoutData.address.lastName,
+          companyName: checkoutData.address.billingCompanyName || undefined,
+          nip: checkoutData.address.billingNip || undefined,
+          street: checkoutData.address.billingStreet + (checkoutData.address.billingApartment ? ` ${checkoutData.address.billingApartment}` : ''),
+          city: checkoutData.address.billingCity || '',
+          postalCode: checkoutData.address.billingPostalCode || '',
+          country: 'PL',
+          phone: checkoutData.address.phone,
+          isDefault: false,
+          label: 'Faktura',
+          type: 'BILLING' as const,
+        };
+        const billingAddress = await addressesApi.create(billingData);
+        billingAddressId = billingAddress.id;
+      }
 
       // Create checkout/order
       const checkoutResponse = await checkoutApi.createCheckout({
         shippingAddressId: shippingAddress.id,
+        billingAddressId,
         shippingMethod: checkoutData.shipping.method,
         pickupPointCode: checkoutData.shipping.paczkomatCode,
         pickupPointAddress: checkoutData.shipping.paczkomatAddress,

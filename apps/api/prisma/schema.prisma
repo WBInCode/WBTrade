@@ -43,6 +43,8 @@ model Address {
   userId         String      @map("user_id")
   firstName      String      @map("first_name")
   lastName       String      @map("last_name")
+  companyName    String?     @map("company_name")
+  nip            String?
   street         String
   city           String
   postalCode     String      @map("postal_code")

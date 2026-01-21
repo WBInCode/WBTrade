@@ -700,8 +700,30 @@ export default function AddressForm({ initialData, onSubmit }: AddressFormProps)
         {/* Billing Address */}
         {formData.differentBillingAddress && (
           <div className="px-6 py-4 border-b bg-gray-50">
-            <h3 className="text-sm font-medium text-gray-700 mb-4">Adres do faktury</h3>
+            <h3 className="text-sm font-medium text-gray-700 mb-4">Dane do faktury</h3>
             <div className="space-y-4">
+              {/* Company Name and NIP */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <InputField
+                  id="billingCompanyName"
+                  name="billingCompanyName"
+                  value={formData.billingCompanyName || ''}
+                  onChange={handleChange}
+                  label="Nazwa firmy"
+                  placeholder="np. Firma Sp. z o.o."
+                />
+                <InputField
+                  id="billingNip"
+                  name="billingNip"
+                  value={formData.billingNip || ''}
+                  onChange={handleChange}
+                  label="NIP"
+                  placeholder="np. 1234567890"
+                  maxLength={13}
+                />
+              </div>
+
+              {/* Street and Apartment */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="sm:col-span-2">
                   <InputField
@@ -721,8 +743,8 @@ export default function AddressForm({ initialData, onSubmit }: AddressFormProps)
                   name="billingApartment"
                   value={formData.billingApartment || ''}
                   onChange={handleChange}
-                  label="Mieszkanie"
-                  placeholder="np. m. 5"
+                  label="Lokal"
+                  placeholder="np. lok. 5"
                 />
               </div>
 

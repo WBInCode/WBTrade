@@ -102,6 +102,8 @@ const createAddressSchema = z.object({
   type: addressTypeSchema,
   firstName: nameSchema,
   lastName: nameSchema,
+  companyName: z.string().max(200).optional().transform((val) => val ? sanitizeText(val) : undefined),
+  nip: z.string().max(15).optional().transform((val) => val ? val.replace(/[^0-9]/g, '') : undefined),
   street: streetSchema,
   city: citySchema,
   postalCode: postalCodeSchema,
