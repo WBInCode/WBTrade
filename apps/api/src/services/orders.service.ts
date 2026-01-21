@@ -4,6 +4,7 @@ import { baselinkerOrdersService } from './baselinker-orders.service';
 
 interface PackageShippingItem {
   packageId: string;
+  wholesaler?: string;
   method: string;
   price: number;
   paczkomatCode?: string;

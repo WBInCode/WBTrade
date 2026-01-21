@@ -39,6 +39,7 @@ export interface ShippingData {
 
 export interface PackageShippingSelection {
   packageId: string;
+  wholesaler?: string;
   method: 'inpost_paczkomat' | 'inpost_kurier' | 'wysylka_gabaryt';
   price: number;
   paczkomatCode?: string;
