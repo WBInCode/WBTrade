@@ -196,7 +196,7 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
   // Grid view (default)
 
   return (
-    <div className="group bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow duration-200 flex flex-col h-full relative">
+    <div className="group bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow duration-200 flex flex-col h-full relative overflow-hidden min-w-0">
       {/* Wishlist button */}
       {showWishlist && (
         <button
