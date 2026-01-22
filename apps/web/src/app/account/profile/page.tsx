@@ -558,7 +558,6 @@ export default function ProfilePage() {
                           <option value="">Wybierz</option>
                           <option value="male">Mężczyzna</option>
                           <option value="female">Kobieta</option>
-                          <option value="other">Inna / Wolę nie podawać</option>
                         </select>
                       ) : (
                         <button
@@ -568,9 +567,7 @@ export default function ProfilePage() {
                         >
                           {formData.gender ? (
                             <span className="text-gray-900">
-                              {formData.gender === 'male' ? 'Mężczyzna' : 
-                               formData.gender === 'female' ? 'Kobieta' : 
-                               'Inna / Wolę nie podawać'}
+                              {formData.gender === 'male' ? 'Mężczyzna' : 'Kobieta'}
                             </span>
                           ) : (
                             <span className="text-gray-400 italic">Wybierz płeć</span>
