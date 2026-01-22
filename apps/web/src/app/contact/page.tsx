@@ -248,16 +248,16 @@ export default function ContactPage() {
                   <div className="pt-4 border-t border-secondary-100">
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
+                        <span className="text-secondary-500">KRS:</span>
+                        <p className="font-medium text-secondary-900">0001151642</p>
+                      </div>
+                      <div>
                         <span className="text-secondary-500">NIP:</span>
-                        <p className="font-medium text-secondary-900">8133000000</p>
+                        <p className="font-medium text-secondary-900">5170455185</p>
                       </div>
                       <div>
                         <span className="text-secondary-500">REGON:</span>
-                        <p className="font-medium text-secondary-900">380000000</p>
-                      </div>
-                      <div>
-                        <span className="text-secondary-500">KRS:</span>
-                        <p className="font-medium text-secondary-900">0000000000</p>
+                        <p className="font-medium text-secondary-900">540735769</p>
                       </div>
                     </div>
                   </div>
