@@ -17,6 +17,7 @@ import {
   calculateCartShipping,
   calculateItemsShipping,
   getShippingPerPackage,
+  retryPayment,
 } from '../controllers/checkout.controller';
 import { authGuard, optionalAuth } from '../middleware/auth.middleware';
 
@@ -76,6 +77,12 @@ router.get('/payment/methods', optionalAuth, getPaymentMethods);
  * Verify payment status after redirect from payment gateway
  */
 router.get('/payment/verify/:sessionId', optionalAuth, verifyPayment);
+
+/**
+ * POST /api/checkout/payment/retry/:orderId
+ * Retry payment for an unpaid order - creates new PayU session
+ */
+router.post('/payment/retry/:orderId', authGuard, retryPayment);
 
 // ============================================
 // CHECKOUT ENDPOINTS

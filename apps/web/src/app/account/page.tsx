@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import ProductCard from '../../components/ProductCard';
-import { Product, dashboardApi, DashboardStats, DashboardOrder, RecommendedProduct } from '../../lib/api';
+import { Product, dashboardApi, checkoutApi, DashboardStats, DashboardOrder, RecommendedProduct } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 
 // Sidebar navigation items
@@ -207,31 +207,22 @@ function AccountPageContent() {
     fetchDashboardData();
   }, [isAuthenticated]);
 
-  // Handle payment simulation
-  const handleSimulatePayment = async (orderId: string) => {
+  // Handle payment - redirect to PayU
+  const handlePayNow = async (orderId: string) => {
     try {
       setPayingOrderId(orderId);
-      const response = await dashboardApi.simulatePayment(orderId, 'pay');
+      const response = await checkoutApi.retryPayment(orderId);
       
-      if (response.success) {
-        // Update the order in the list
-        setRecentOrders((prev) =>
-          prev.map((order) =>
-            order.id === orderId
-              ? { ...order, paymentStatus: 'PAID', status: 'CONFIRMED' }
-              : order
-          )
-        );
-        // Update stats
-        setStats((prev) => ({
-          ...prev,
-          unpaidOrders: Math.max(0, prev.unpaidOrders - 1),
-        }));
+      if (response.success && response.paymentUrl) {
+        // Redirect to PayU payment page
+        window.location.href = response.paymentUrl;
+      } else {
+        alert('Nie udało się utworzyć sesji płatności. Spróbuj ponownie.');
+        setPayingOrderId(null);
       }
     } catch (error) {
-      console.error('Error simulating payment:', error);
+      console.error('Error creating payment:', error);
       alert('Nie udało się przetworzyć płatności. Spróbuj ponownie.');
-    } finally {
       setPayingOrderId(null);
     }
   };
@@ -498,11 +489,11 @@ function AccountPageContent() {
                       <div className="flex sm:flex-col gap-2 shrink-0 w-full sm:w-auto">
                         {order.paymentStatus === 'PENDING' && (
                           <button
-                            onClick={() => handleSimulatePayment(order.id)}
+                            onClick={() => handlePayNow(order.id)}
                             disabled={payingOrderId === order.id}
                             className="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {payingOrderId === order.id ? 'Przetwarzanie...' : 'Zapłać teraz'}
+                            {payingOrderId === order.id ? 'Przekierowywanie...' : 'Zapłać teraz'}
                           </button>
                         )}
                         {order.status === 'SHIPPED' && (
