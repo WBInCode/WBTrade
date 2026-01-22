@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useWishlist } from '../contexts/WishlistContext';
 import { categoriesApi, CategoryWithChildren } from '../lib/api';
 import { cleanCategoryName } from '../lib/categories';
+import Image from 'next/image';
 
 function HeaderContent() {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
@@ -94,15 +95,15 @@ function HeaderContent() {
         <div className="container-custom">
           <div className="flex items-center justify-between h-16 gap-4">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 shrink-0">
-              <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
-                </svg>
-              </div>
-              <span className="text-xl font-bold text-secondary-900">
-                WB<span className="text-primary-500">Trade</span>
-              </span>
+            <Link href="/" className="flex items-center shrink-0">
+              <Image 
+                src="/images/logo.png" 
+                alt="WB Trade Group" 
+                width={140} 
+                height={50} 
+                className="h-10 w-auto object-contain"
+                priority
+              />
             </Link>
 
             {/* Category Dropdown - Mega Menu */}

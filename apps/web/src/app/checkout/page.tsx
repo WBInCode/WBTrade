@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -377,8 +378,14 @@ function CheckoutPageContent() {
       <div className="min-h-screen bg-gray-50">
         <header className="bg-white shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <Link href="/" className="text-2xl font-bold text-orange-500">
-              WBTrade
+            <Link href="/">
+              <Image 
+                src="/images/logo.png" 
+                alt="WB Trade Group" 
+                width={140} 
+                height={50} 
+                className="h-10 w-auto object-contain"
+              />
             </Link>
           </div>
         </header>
@@ -403,8 +410,14 @@ function CheckoutPageContent() {
       <div className="min-h-screen bg-gray-50">
         <header className="bg-white shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <Link href="/" className="text-2xl font-bold text-orange-500">
-              WBTrade
+            <Link href="/">
+              <Image 
+                src="/images/logo.png" 
+                alt="WB Trade Group" 
+                width={140} 
+                height={50} 
+                className="h-10 w-auto object-contain"
+              />
             </Link>
           </div>
         </header>
