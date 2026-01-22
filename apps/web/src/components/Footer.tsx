@@ -87,9 +87,13 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
           {/* Brand Column */}
           <div className="col-span-2 md:col-span-4">
             <Link href="/" className="inline-block mb-6">
-              <span className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent">
-                WBTrade
-              </span>
+              <Image 
+                src="/images/logo.png" 
+                alt="WB Trade Group" 
+                width={140} 
+                height={50} 
+                className="h-10 w-auto object-contain"
+              />
             </Link>
             <p className="text-secondary-600 mb-6 leading-relaxed">
               Twoja platforma e-commerce z tysiącami produktów od sprawdzonych sprzedawców. 

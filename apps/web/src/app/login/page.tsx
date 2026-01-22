@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -87,15 +88,14 @@ export default function LoginPage() {
         <div className="mx-auto w-full max-w-sm lg:max-w-md">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/25 group-hover:shadow-orange-500/40 transition-shadow">
-                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
-                </svg>
-              </div>
-              <span className="text-xl font-bold text-gray-900">
-                WB<span className="text-orange-500">Trade</span>
-              </span>
+            <Link href="/" className="flex items-center group">
+              <Image 
+                src="/images/logo.png" 
+                alt="WB Trade Group" 
+                width={140} 
+                height={50} 
+                className="h-10 w-auto object-contain"
+              />
             </Link>
             <Link 
               href="/" 
