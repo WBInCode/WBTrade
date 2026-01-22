@@ -289,9 +289,9 @@ function AccountPageContent() {
           </div>
         )}
 
-        <div className="flex gap-6">
-          {/* Sidebar */}
-          <aside className="w-64 shrink-0">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Sidebar - hidden on mobile */}
+          <aside className="hidden lg:block w-64 shrink-0">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               {/* User Profile */}
               <div className="p-5 border-b border-gray-100">
@@ -329,8 +329,35 @@ function AccountPageContent() {
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
+            {/* Mobile User Card */}
+            <div className="lg:hidden mb-6">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white font-semibold">
+                    {userData.avatar}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{userData.fullName}</h3>
+                  </div>
+                </div>
+                {/* Mobile Navigation */}
+                <div className="grid grid-cols-3 gap-2">
+                  {sidebarItems.slice(1, 4).map((item) => (
+                    <Link
+                      key={item.id}
+                      href={item.href}
+                      className="flex flex-col items-center gap-1 p-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+                    >
+                      <SidebarIcon icon={item.icon} />
+                      <span className="text-xs">{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             {/* Greeting Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-2">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
                   {getGreeting()}, {userData.name}
@@ -346,7 +373,7 @@ function AccountPageContent() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
               <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-gray-500">Nieopłacone</span>
@@ -413,7 +440,7 @@ function AccountPageContent() {
                   </div>
                 ) : (
                   recentOrders.map((order) => (
-                    <div key={order.id} className="p-5 flex items-center gap-4">
+                    <div key={order.id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                       {/* Product Image */}
                       <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
                         {order.image ? (
@@ -460,15 +487,15 @@ function AccountPageContent() {
                         </div>
                       </div>
 
-                      {/* Price */}
-                      <div className="text-right shrink-0">
+                      {/* Price and Actions - row on mobile */}
+                      <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 sm:gap-0 mt-2 sm:mt-0">
                         <span className="font-semibold text-gray-900">
                           {order.total.toFixed(2)} {order.currency}
                         </span>
                       </div>
 
                       {/* Actions */}
-                      <div className="flex flex-col gap-2 shrink-0">
+                      <div className="flex sm:flex-col gap-2 shrink-0 w-full sm:w-auto">
                         {order.paymentStatus === 'PENDING' && (
                           <button
                             onClick={() => handleSimulatePayment(order.id)}
@@ -521,7 +548,7 @@ function AccountPageContent() {
               </div>
 
               {dashboardLoading ? (
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   {[1, 2, 3, 4].map((i) => (
                     <div key={i} className="bg-white rounded-xl border border-gray-100 p-4 animate-pulse">
                       <div className="bg-gray-200 h-40 rounded-lg mb-3"></div>
@@ -531,7 +558,7 @@ function AccountPageContent() {
                   ))}
                 </div>
               ) : recommendations.length > 0 ? (
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   {recommendations.map((product) => (
                     <div key={product.id} className="relative">
                       {/* Recommendation reason badge */}
