@@ -55,9 +55,9 @@ export default function AboutPage() {
 
   const team = [
     {
-      name: 'Daniel Budyka',
+      name: 'Amanda Budyka',
       role: 'CEO & Założyciel',
-      image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=400&fit=crop',
+      image: '',
     }
   ];
 
@@ -184,13 +184,19 @@ export default function AboutPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {team.map((member, index) => (
               <div key={index} className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow">
-                <div className="aspect-square relative">
-                  <Image
-                    src={member.image}
-                    alt={member.name}
-                    fill
-                    className="object-cover"
-                  />
+                <div className="aspect-square relative bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
+                  {member.image ? (
+                    <Image
+                      src={member.image}
+                      alt={member.name}
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <span className="text-6xl font-bold text-primary-600">
+                      {member.name.split(' ').map(n => n[0]).join('')}
+                    </span>
+                  )}
                 </div>
                 <div className="p-6 text-center">
                   <h3 className="text-lg font-semibold text-secondary-900">
