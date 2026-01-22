@@ -602,6 +602,86 @@ export async function shippingWebhook(req: Request, res: Response): Promise<void
 }
 
 /**
+ * Retry payment for an existing unpaid order
+ * Creates a new PayU payment session and returns the redirect URL
+ */
+export async function retryPayment(req: Request, res: Response): Promise<void> {
+  try {
+    const { orderId } = req.params;
+    const userId = (req as any).user?.id;
+
+    if (!userId) {
+      res.status(401).json({ message: 'Authentication required' });
+      return;
+    }
+
+    // Get order and verify ownership
+    const order = await ordersService.getById(orderId);
+    if (!order) {
+      res.status(404).json({ message: 'Order not found' });
+      return;
+    }
+
+    if (order.userId !== userId) {
+      res.status(403).json({ message: 'Access denied' });
+      return;
+    }
+
+    // Check if order is still unpaid
+    if (order.paymentStatus === 'PAID') {
+      res.status(400).json({ message: 'Order is already paid' });
+      return;
+    }
+
+    if (order.status === 'CANCELLED' || order.status === 'REFUNDED') {
+      res.status(400).json({ message: 'Cannot pay for cancelled or refunded order' });
+      return;
+    }
+
+    // Create new payment session with PayU
+    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').split(',')[0].trim();
+    
+    const paymentRequest: CreatePaymentRequest = {
+      orderId: order.id,
+      amount: Number(order.total),
+      currency: 'PLN',
+      paymentMethod: 'blik', // Default to BLIK, PayU allows user to choose
+      providerId: 'payu' as PaymentProviderId,
+      customer: {
+        email: (req as any).user?.email || '',
+        firstName: '',
+        lastName: '',
+      },
+      description: `Zamówienie ${order.orderNumber}`,
+      returnUrl: `${frontendUrl}/order/${order.id}/confirmation`,
+      cancelUrl: `${frontendUrl}/account/orders?cancelled=true`,
+      notifyUrl: `${process.env.APP_URL || 'http://localhost:5000'}/api/webhooks/payu`,
+      metadata: {
+        customerIp: req.ip || req.socket.remoteAddress || '127.0.0.1',
+      },
+    };
+
+    console.log('🔄 Creating retry payment for order:', order.orderNumber);
+    const paymentSession = await paymentService.createPayment(paymentRequest);
+    console.log('✅ PayU payment session created for retry:', paymentSession.sessionId);
+
+    res.json({
+      success: true,
+      paymentUrl: paymentSession.paymentUrl,
+      sessionId: paymentSession.sessionId,
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+    });
+  } catch (error) {
+    console.error('❌ Error creating retry payment:', error);
+    res.status(500).json({ 
+      message: 'Failed to create payment session',
+      error: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
+    });
+  }
+}
+
+/**
  * Get tracking info for an order
  */
 export async function getOrderTracking(req: Request, res: Response): Promise<void> {
