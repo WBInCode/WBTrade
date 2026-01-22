@@ -93,7 +93,7 @@ function HeaderContent() {
       {/* Top Header */}
       <div className="border-b border-gray-100">
         <div className="container-custom">
-          <div className="flex items-center justify-between h-16 gap-4">
+          <div className="flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-4">
             {/* Logo */}
             <Link href="/" className="flex items-center shrink-0">
               <Image 
@@ -101,7 +101,7 @@ function HeaderContent() {
                 alt="WB Trade Group" 
                 width={140} 
                 height={50} 
-                className="h-10 w-auto object-contain"
+                className="h-8 sm:h-10 w-auto object-contain"
                 priority
               />
             </Link>
@@ -134,15 +134,15 @@ function HeaderContent() {
             </div>
 
             {/* Right Icons */}
-            <div className="flex items-center gap-2 sm:gap-6">
+            <div className="flex items-center gap-1 sm:gap-2 md:gap-6">
               {/* Favorites */}
-              <Link href="/wishlist" className="flex flex-col items-center p-2 text-secondary-700 hover:text-primary-500 transition-colors relative group">
+              <Link href="/wishlist" className="flex flex-col items-center p-1.5 sm:p-2 text-secondary-700 hover:text-primary-500 transition-colors relative group">
                 <div className="relative">
-                  <svg className="w-7 h-7 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 sm:w-7 sm:h-7 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                   </svg>
                   {wishlistCount > 0 && (
-                    <span className={`absolute -top-1 -right-1 bg-red-500 text-white text-xs h-5 rounded-full flex items-center justify-center font-bold shadow-sm ${wishlistCount > 99 ? 'w-7 px-1' : 'w-5'}`}>
+                    <span className={`absolute -top-1 -right-1 bg-red-500 text-white text-xs h-4 sm:h-5 rounded-full flex items-center justify-center font-bold shadow-sm ${wishlistCount > 99 ? 'w-6 sm:w-7 px-1' : 'w-4 sm:w-5'}`}>
                       {wishlistCount > 99 ? '99+' : wishlistCount}
                     </span>
                   )}
@@ -156,9 +156,9 @@ function HeaderContent() {
                   <>
                     <button
                       onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                      className="flex flex-col items-center p-2 text-secondary-700 hover:text-primary-500 transition-colors group"
+                      className="flex flex-col items-center p-1.5 sm:p-2 text-secondary-700 hover:text-primary-500 transition-colors group"
                     >
-                      <div className="w-7 h-7 bg-primary-500 rounded-full flex items-center justify-center text-white text-sm font-bold group-hover:scale-110 transition-transform shadow-sm">
+                      <div className="w-6 h-6 sm:w-7 sm:h-7 bg-primary-500 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-bold group-hover:scale-110 transition-transform shadow-sm">
                         {user?.firstName?.[0]}{user?.lastName?.[0]}
                       </div>
                       <span className="text-xs font-medium mt-1 hidden sm:block">{user?.firstName}</span>
@@ -193,8 +193,8 @@ function HeaderContent() {
                     )}
                   </>
                 ) : (
-                  <Link href="/login" className="flex flex-col items-center p-2 text-secondary-700 hover:text-primary-500 transition-colors group">
-                    <svg className="w-7 h-7 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <Link href="/login" className="flex flex-col items-center p-1.5 sm:p-2 text-secondary-700 hover:text-primary-500 transition-colors group">
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                     <span className="text-xs font-medium mt-1 hidden sm:block">Zaloguj</span>
@@ -203,13 +203,13 @@ function HeaderContent() {
               </div>
 
               {/* Cart */}
-              <Link href="/cart" className="flex flex-col items-center p-2 text-secondary-700 hover:text-primary-500 transition-colors relative group">
+              <Link href="/cart" className="flex flex-col items-center p-1.5 sm:p-2 text-secondary-700 hover:text-primary-500 transition-colors relative group">
                 <div className="relative">
-                  <svg className="w-7 h-7 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 sm:w-7 sm:h-7 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                   {itemCount > 0 && (
-                    <span className={`absolute -top-2 -right-2 bg-primary-500 text-white text-xs h-5 rounded-full flex items-center justify-center font-bold shadow-sm ${itemCount > 99 ? 'w-7 px-1' : 'w-5'}`}>
+                    <span className={`absolute -top-2 -right-2 bg-primary-500 text-white text-xs h-4 sm:h-5 rounded-full flex items-center justify-center font-bold shadow-sm ${itemCount > 99 ? 'w-6 sm:w-7 px-1' : 'w-4 sm:w-5'}`}>
                       {itemCount > 99 ? '99+' : itemCount}
                     </span>
                   )}
