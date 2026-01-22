@@ -313,9 +313,9 @@ export default function AddressesPage() {
     <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <main className="container-custom py-6">
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+      <main className="container-custom py-4 sm:py-6">
+        {/* Breadcrumb - hidden on mobile */}
+        <nav className="hidden sm:flex items-center gap-2 text-sm text-gray-500 mb-6">
           <Link href="/" className="hover:text-orange-500">Strona główna</Link>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -327,9 +327,9 @@ export default function AddressesPage() {
           <span className="text-gray-900">Adresy</span>
         </nav>
 
-        <div className="flex gap-6">
-          {/* Sidebar */}
-          <aside className="w-64 shrink-0">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Sidebar - hidden on mobile */}
+          <aside className="hidden lg:block w-64 shrink-0">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               {/* User Profile */}
               <div className="p-5 border-b border-gray-100">
@@ -365,8 +365,21 @@ export default function AddressesPage() {
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
+            {/* Mobile Back Button */}
+            <div className="lg:hidden mb-4">
+              <Link 
+                href="/account" 
+                className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-orange-500"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Powrót do konta
+              </Link>
+            </div>
+
             {/* Page Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Moje adresy</h1>
                 <p className="text-gray-500 text-sm">Zarządzaj adresami dostawy i rozliczeniowymi</p>
