@@ -280,9 +280,9 @@ export default function OrdersPage() {
     <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <main className="container-custom py-6">
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+      <main className="container-custom py-4 sm:py-6">
+        {/* Breadcrumb - hidden on mobile */}
+        <nav className="hidden sm:flex items-center gap-2 text-sm text-gray-500 mb-6">
           <Link href="/" className="hover:text-orange-500">Strona główna</Link>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -294,9 +294,9 @@ export default function OrdersPage() {
           <span className="text-gray-900">Moje zamówienia</span>
         </nav>
 
-        <div className="flex gap-6">
-          {/* Sidebar */}
-          <aside className="w-64 shrink-0">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Sidebar - hidden on mobile */}
+          <aside className="hidden lg:block w-64 shrink-0">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               {/* User Profile */}
               <div className="p-5 border-b border-gray-100">
@@ -332,8 +332,21 @@ export default function OrdersPage() {
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
+            {/* Mobile Back Button */}
+            <div className="lg:hidden mb-4">
+              <Link 
+                href="/account" 
+                className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-orange-500"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Powrót do konta
+              </Link>
+            </div>
+
             {/* Page Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-2">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Moje zamówienia</h1>
                 <p className="text-gray-500 text-sm">Przeglądaj i zarządzaj swoimi zamówieniami</p>
@@ -414,8 +427,8 @@ export default function OrdersPage() {
                 {filteredOrders.map((order) => (
                   <div key={order.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                     {/* Order Header */}
-                    <div className="flex items-center justify-between p-4 bg-gray-50 border-b border-gray-100">
-                      <div className="flex items-center gap-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 border-b border-gray-100 gap-3">
+                      <div className="flex flex-wrap items-center gap-4 sm:gap-6">
                         <div>
                           <span className="text-xs text-gray-500">Numer zamówienia</span>
                           <p className="font-semibold text-gray-900">#{order.orderNumber}</p>
@@ -424,7 +437,7 @@ export default function OrdersPage() {
                           <span className="text-xs text-gray-500">Data zamówienia</span>
                           <p className="text-sm text-gray-700">{formatOrderDate(order.createdAt)}</p>
                         </div>
-                        <div>
+                        <div className="hidden sm:block">
                           <span className="text-xs text-gray-500">Dostawa</span>
                           <p className="text-sm text-gray-700">{order.shippingMethod}</p>
                         </div>
@@ -463,7 +476,7 @@ export default function OrdersPage() {
                     </div>
 
                     {/* Order Footer */}
-                    <div className="flex items-center justify-between p-4 bg-gray-50 border-t border-gray-100">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 border-t border-gray-100 gap-3">
                       <div>
                         {order.trackingNumber && order.status === 'SHIPPED' && (
                           <p className="text-sm text-gray-600">
@@ -471,8 +484,8 @@ export default function OrdersPage() {
                           </p>
                         )}
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+                        <div className="text-left sm:text-right">
                           <span className="text-sm text-gray-500">Suma:</span>
                           <span className="ml-2 text-lg font-bold text-gray-900">{Number(order.total).toFixed(2)} zł</span>
                         </div>
