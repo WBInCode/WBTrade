@@ -214,10 +214,10 @@ function ProductsContent() {
     : null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       <Header />
       
-      <main className="container-custom py-6">
+      <main className="container-custom py-6 overflow-hidden">
         {/* Breadcrumb */}
         <Breadcrumb items={breadcrumbItems} />
         
@@ -267,8 +267,8 @@ function ProductsContent() {
           </aside>
 
           {/* Main Content */}
-          <div className="flex-1">
-            {/* Header with Tabs, Sort, View Toggle */}
+          <div className="flex-1 min-w-0 overflow-hidden">
+            {/* Header with Tabs, Sort, View Toggle */>
             <ProductListHeader 
               totalProducts={totalProducts} 
               activeTab={activeTab}
