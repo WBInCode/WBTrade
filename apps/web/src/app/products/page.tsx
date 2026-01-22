@@ -268,7 +268,7 @@ function ProductsContent() {
 
           {/* Main Content */}
           <div className="flex-1 min-w-0 overflow-hidden">
-            {/* Header with Tabs, Sort, View Toggle */>
+            {/* Header with Tabs, Sort, View Toggle */}
             <ProductListHeader 
               totalProducts={totalProducts} 
               activeTab={activeTab}
