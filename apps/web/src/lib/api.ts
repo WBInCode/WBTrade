@@ -1038,6 +1038,16 @@ export const checkoutApi = {
   verifyPayment: (sessionId: string) =>
     api.get<PaymentVerifyResponse>(`/checkout/payment/verify/${sessionId}`),
   
+  // Retry payment for unpaid order - creates new PayU session
+  retryPayment: (orderId: string) =>
+    api.post<{ 
+      success: boolean; 
+      paymentUrl: string; 
+      sessionId: string; 
+      orderId: string; 
+      orderNumber: string; 
+    }>(`/checkout/payment/retry/${orderId}`, {}),
+  
   // Get order tracking info
   getTracking: (orderId: string) =>
     api.get<TrackingResponse>(`/checkout/tracking/${orderId}`),

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import { useAuth } from '../../../contexts/AuthContext';
-import { ordersApi, Order } from '../../../lib/api';
+import { ordersApi, checkoutApi, Order } from '../../../lib/api';
 
 // Order status types
 type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
@@ -210,29 +210,22 @@ export default function OrdersPage() {
     fetchOrders();
   }, [isAuthenticated, currentPage]);
 
-  // Simulate payment (development only)
-  const handleSimulatePayment = async (orderId: string) => {
+  // Handle payment - redirect to PayU
+  const handlePayNow = async (orderId: string) => {
     try {
       setSimulatingPayment(orderId);
-      const response = await fetch(`http://localhost:5000/api/orders/${orderId}/simulate-payment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Błąd symulacji płatności');
+      const response = await checkoutApi.retryPayment(orderId);
+      
+      if (response.success && response.paymentUrl) {
+        // Redirect to PayU payment page
+        window.location.href = response.paymentUrl;
+      } else {
+        alert('Nie udało się utworzyć sesji płatności. Spróbuj ponownie.');
+        setSimulatingPayment(null);
       }
-
-      // Refresh orders after successful payment
-      await fetchOrders();
-      alert('✅ Płatność zasymulowana pomyślnie! Zamówienie zostało opłacone.');
     } catch (error: any) {
-      console.error('Error simulating payment:', error);
-      alert(`❌ Błąd: ${error.message}`);
-    } finally {
+      console.error('Error creating payment:', error);
+      alert(`Nie udało się przetworzyć płatności: ${error.message || 'Spróbuj ponownie'}`);
       setSimulatingPayment(null);
     }
   };
@@ -497,11 +490,11 @@ export default function OrdersPage() {
                           )}
                           {order.status === 'PENDING' && (
                             <button 
-                              onClick={() => handleSimulatePayment(order.id)}
+                              onClick={() => handlePayNow(order.id)}
                               disabled={simulatingPayment === order.id}
                               className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              {simulatingPayment === order.id ? 'Przetwarzanie...' : 'Zapłać teraz'}
+                              {simulatingPayment === order.id ? 'Przekierowywanie...' : 'Zapłać teraz'}
                             </button>
                           )}
                           {order.status === 'DELIVERED' && (
