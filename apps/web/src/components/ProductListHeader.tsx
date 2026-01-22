@@ -48,26 +48,28 @@ export default function ProductListHeader({
   ];
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-      {/* Tabs */}
-      <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => onTabChange?.(tab.id)}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === tab.id
-                ? 'bg-white text-secondary-900 shadow-sm'
-                : 'text-secondary-500 hover:text-secondary-700'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+    <div className="flex flex-col gap-4 mb-6">
+      {/* Tabs - scrollable on mobile */}
+      <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 w-max sm:w-auto">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => onTabChange?.(tab.id)}
+              className={`px-3 sm:px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
+                activeTab === tab.id
+                  ? 'bg-white text-secondary-900 shadow-sm'
+                  : 'text-secondary-500 hover:text-secondary-700'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Sort & View */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between sm:justify-end gap-4">
         {/* Sort */}
         <div className="flex items-center gap-2">
           <span className="text-sm text-secondary-500">Sortuj:</span>
