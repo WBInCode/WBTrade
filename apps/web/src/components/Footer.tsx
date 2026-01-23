@@ -88,7 +88,7 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
           <div className="col-span-2 md:col-span-4">
             <Link href="/" className="inline-block mb-6">
               <Image 
-                src="/images/logo.png" 
+                src="/images/WB-TRADE.svg" 
                 alt="WB Trade Group" 
                 width={140} 
                 height={50} 
