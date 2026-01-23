@@ -463,28 +463,28 @@ function CheckoutPageContent() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="text-2xl font-bold text-orange-500">
+            <Link href="/" className="text-lg sm:text-2xl font-bold text-orange-500">
               WBTrade
             </Link>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-500">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <span className="hidden sm:inline text-sm text-gray-500">
                 Bezpieczne zakupy 🔒
               </span>
-              <Link href="/cart" className="text-sm text-gray-600 hover:text-orange-500">
-                ← Wróć do koszyka
+              <Link href="/cart" className="text-xs sm:text-sm text-gray-600 hover:text-orange-500">
+                ← <span className="hidden sm:inline">Wróć do </span>Koszyk<span className="hidden sm:inline">a</span>
               </Link>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Steps indicator */}
         <CheckoutSteps currentStep={currentStep} />
 
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="mt-4 sm:mt-6 lg:mt-8 grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Main form area */}
           <div className="lg:col-span-2">
             {/* Payment cancelled message */}
@@ -559,25 +559,25 @@ function CheckoutPageContent() {
 
           {/* Order summary sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
-              <h3 className="text-lg font-semibold mb-2">Twoje zamówienie</h3>
+            <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 lg:sticky lg:top-4">
+              <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-2">Twoje zamówienie</h3>
               
               {/* Info about multiple warehouses */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4">
                 <div className="flex gap-2">
-                  <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <p className="text-xs text-blue-700">
+                  <p className="text-[11px] sm:text-xs text-blue-700">
                     Produkty mogą pochodzić z różnych magazynów. Zamówienie może zostać wysłane w oddzielnych przesyłkach.
                   </p>
                 </div>
               </div>
               
-              <div className="space-y-3 mb-4">
+              <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
                 {displayCart?.items?.map((item: any) => (
-                  <div key={item.id} className="flex gap-3 group relative">
-                    <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0 relative">
+                  <div key={item.id} className="flex gap-2 sm:gap-3 group relative">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-lg flex-shrink-0 relative">
                       {item.variant?.product?.images?.[0] && (
                         <img
                           src={item.variant.product.images[0].url}
@@ -587,29 +587,29 @@ function CheckoutPageContent() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate pr-6">
+                      <p className="text-xs sm:text-sm font-medium truncate pr-6">
                         {item.variant?.product?.name}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-[11px] sm:text-xs text-gray-500">
                         Ilość: {item.quantity}
                       </p>
-                      <p className="text-sm font-semibold text-orange-600">
+                      <p className="text-sm sm:text-base font-semibold text-orange-600">
                         {(item.variant?.price * item.quantity).toFixed(2)} zł
                       </p>
                     </div>
                     <button
                       onClick={() => handleRemoveItem(item.id)}
                       disabled={removingItemId === item.id}
-                      className="absolute top-0 right-0 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                      className="absolute top-0 right-0 w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
                       title="Usuń z koszyka"
                     >
                       {removingItemId === item.id ? (
-                        <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                       ) : (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                       )}
@@ -627,43 +627,43 @@ function CheckoutPageContent() {
                 </div>
               )}
 
-              <div className="border-t pt-4 space-y-2">
-                <div className="flex justify-between text-sm">
+              <div className="border-t pt-3 sm:pt-4 space-y-1.5 sm:space-y-2">
+                <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-gray-600">Produkty</span>
                   <span>{totals.subtotal.toFixed(2)} zł</span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-gray-600">Dostawa</span>
                   <span>{totals.shipping.toFixed(2)} zł</span>
                 </div>
                 {totals.paymentFee > 0 && (
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-xs sm:text-sm">
                     <span className="text-gray-600">Opłata za płatność</span>
                     <span>{totals.paymentFee.toFixed(2)} zł</span>
                   </div>
                 )}
-                <div className="flex justify-between text-lg font-bold pt-2 border-t">
+                <div className="flex justify-between text-base sm:text-lg font-bold pt-2 border-t">
                   <span>Razem</span>
                   <span className="text-orange-600">{totals.total.toFixed(2)} zł</span>
                 </div>
               </div>
 
               {/* Trust badges */}
-              <div className="mt-6 pt-4 border-t">
-                <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
-                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+              <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t">
+                <div className="flex items-center gap-2 text-[11px] sm:text-xs text-gray-500 mb-1.5 sm:mb-2">
+                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   Bezpieczne płatności
                 </div>
-                <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
-                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                <div className="flex items-center gap-2 text-[11px] sm:text-xs text-gray-500 mb-1.5 sm:mb-2">
+                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   14 dni na zwrot
                 </div>
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                <div className="flex items-center gap-2 text-[11px] sm:text-xs text-gray-500">
+                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   Ochrona danych SSL
