@@ -86,17 +86,17 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
         <div className="grid grid-cols-2 md:grid-cols-12 gap-8 lg:gap-12">
           {/* Brand Column */}
           <div className="col-span-2 md:col-span-4">
-            <Link href="/" className="inline-block mb-6">
+            <Link href="/" className="inline-block mb-4">
               <Image 
-                src="/images/WB-TRADE.svg" 
-                alt="WB Trade Group" 
-                width={140} 
-                height={50} 
-                className="h-10 w-auto object-contain"
+                src="/images/WB-TRADE-logo.png" 
+                alt="WB Trade" 
+                width={200} 
+                height={120} 
+                className="h-16 w-auto object-contain"
               />
             </Link>
             {/* Social Media */}
-            <div className="flex items-center gap-4 mt-6">
+            <div className="flex items-center gap-4 mt-4">
               <a href="#" className="hover:opacity-70 transition-opacity">
                 <LogoImage src={getLogoUrl(SOCIAL_LOGOS.facebook)} alt="Facebook" width={28} height={28} className="object-contain" />
               </a>
