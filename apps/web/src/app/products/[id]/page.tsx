@@ -503,18 +503,18 @@ export default function ProductPage({ params }: ProductPageProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       <Header />
       
-      <main className="container-custom py-3 sm:py-6 px-3 sm:px-4">
+      <main className="container-custom py-3 sm:py-6 px-3 sm:px-4 overflow-hidden">
         {/* Breadcrumb */}
         <Breadcrumb items={breadcrumbItems} />
 
         {/* Main Product Section */}
-        <div className="grid lg:grid-cols-3 gap-4 sm:gap-8 mb-6 sm:mb-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
           {/* Left: Image Gallery */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg p-2 sm:p-4 relative">
+          <div className="md:col-span-1 lg:col-span-2 min-w-0">
+            <div className="bg-white rounded-lg p-2 sm:p-4 relative overflow-hidden">
               {/* Badge */}
               {product.badge && (
                 <span className="absolute top-3 left-3 sm:top-6 sm:left-6 bg-orange-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 sm:px-3 sm:py-1.5 rounded z-10 uppercase">
@@ -523,11 +523,11 @@ export default function ProductPage({ params }: ProductPageProps) {
               )}
               
               {/* Main Image */}
-              <div className="aspect-square overflow-hidden rounded-lg mb-3 sm:mb-4">
+              <div className="aspect-square overflow-hidden rounded-lg mb-3 sm:mb-4 max-w-full">
                 <img
                   src={mainImage}
                   alt={product.name}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain max-w-full"
                 />
               </div>
 
@@ -553,10 +553,10 @@ export default function ProductPage({ params }: ProductPageProps) {
           </div>
 
           {/* Right: Product Info Panel */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg p-4 sm:p-6 lg:sticky lg:top-24">
+          <div className="md:col-span-1 lg:col-span-1 min-w-0">
+            <div className="bg-white rounded-lg p-4 sm:p-6 md:sticky md:top-24 overflow-hidden">
               {/* Title */}
-              <h1 className="text-base sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3 leading-snug">
+              <h1 className="text-base sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3 leading-snug break-words">
                 {product.name}
               </h1>
 

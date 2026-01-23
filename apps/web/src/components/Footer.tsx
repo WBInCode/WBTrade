@@ -104,7 +104,7 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
                 <LogoImage src={getLogoUrl(SOCIAL_LOGOS.instagram)} alt="Instagram" width={28} height={28} className="object-contain" />
               </a>
               <a href="#" className="hover:opacity-70 transition-opacity">
-                <LogoImage src={getLogoUrl(SOCIAL_LOGOS.linktree)} alt="Linktree" width={28} height={28} className="object-contain" />
+                <LogoImage src={getLogoUrl(SOCIAL_LOGOS.linktree)} alt="Linktree" width={28} height={28} className="object-contain rounded-lg" />
               </a>
             </div>
           </div>
