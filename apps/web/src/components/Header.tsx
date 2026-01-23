@@ -17,12 +17,15 @@ function HeaderContent() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [categories, setCategories] = useState<CategoryWithChildren[]>([]);
   const [categoryPath, setCategoryPath] = useState<{ id: string; name: string; slug: string }[]>([]);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(false);
   const { itemCount } = useCart();
   const { user, isAuthenticated, logout } = useAuth();
   const { itemCount: wishlistCount } = useWishlist();
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
+  const categoryNavRef = useRef<HTMLElement>(null);
   const megaMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   
@@ -63,6 +66,31 @@ function HeaderContent() {
 
   // Get current main category from path
   const currentMainCategory = categoryPath.length > 0 ? categoryPath[0] : null;
+
+  // Check scroll position for category nav arrows
+  const checkScrollPosition = () => {
+    const nav = categoryNavRef.current;
+    if (nav) {
+      setShowLeftArrow(nav.scrollLeft > 0);
+      setShowRightArrow(nav.scrollLeft < nav.scrollWidth - nav.clientWidth - 10);
+    }
+  };
+
+  // Scroll category nav
+  const scrollCategories = (direction: 'left' | 'right') => {
+    const nav = categoryNavRef.current;
+    if (nav) {
+      const scrollAmount = 200;
+      nav.scrollBy({ left: direction === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  // Initialize scroll check
+  useEffect(() => {
+    checkScrollPosition();
+    window.addEventListener('resize', checkScrollPosition);
+    return () => window.removeEventListener('resize', checkScrollPosition);
+  }, [categories]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -228,9 +256,26 @@ function HeaderContent() {
 
       {/* Category Navigation Bar */}
       <div className="border-b border-gray-200 bg-primary-500">
-        <div className="container-custom">
-          <div className="flex items-center justify-between">
-            <nav className="flex items-center gap-1 overflow-x-auto scrollbar-hide py-2 pr-2">
+        <div className="container-custom overflow-visible">
+          <div className="flex items-center justify-between relative">
+            {/* Left Arrow */}
+            {showLeftArrow && (
+              <button
+                onClick={() => scrollCategories('left')}
+                className="absolute left-0 z-10 h-full px-2 bg-gradient-to-r from-primary-500 via-primary-500 to-transparent flex items-center"
+                aria-label="Przewiń w lewo"
+              >
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            )}
+            
+            <nav 
+              ref={categoryNavRef}
+              onScroll={checkScrollPosition}
+              className="flex items-center gap-1 overflow-x-auto scrollbar-hide py-2 px-1"
+            >
               <button
                 onClick={() => setIsCategoryOpen(!isCategoryOpen)}
                 className="lg:hidden flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 rounded-lg whitespace-nowrap transition-colors"
@@ -257,6 +302,19 @@ function HeaderContent() {
                 );
               })}
             </nav>
+            
+            {/* Right Arrow */}
+            {showRightArrow && (
+              <button
+                onClick={() => scrollCategories('right')}
+                className="absolute right-0 z-10 h-full pl-4 pr-1 bg-gradient-to-l from-primary-500 from-60% to-transparent flex items-center"
+                aria-label="Przewiń w prawo"
+              >
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
       </div>
