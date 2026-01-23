@@ -97,11 +97,11 @@ function HeaderContent() {
             {/* Logo */}
             <Link href="/" className="flex items-center shrink-0">
               <Image 
-                src="/images/WB-TRADE.svg" 
-                alt="WB Trade Group" 
-                width={140} 
-                height={50} 
-                className="h-8 sm:h-10 w-auto object-contain"
+                src="/images/WB-TRADE-logo.png" 
+                alt="WB Trade" 
+                width={180} 
+                height={110} 
+                className="h-12 sm:h-14 w-auto object-contain"
                 priority
               />
             </Link>
