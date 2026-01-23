@@ -230,7 +230,7 @@ function HeaderContent() {
       <div className="border-b border-gray-200 bg-primary-500">
         <div className="container-custom">
           <div className="flex items-center justify-between">
-            <nav className="flex items-center gap-1 overflow-x-auto scrollbar-hide py-2">
+            <nav className="flex items-center gap-1 overflow-x-auto scrollbar-hide py-2 pr-2">
               <button
                 onClick={() => setIsCategoryOpen(!isCategoryOpen)}
                 className="lg:hidden flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600 rounded-lg whitespace-nowrap transition-colors"
