@@ -95,12 +95,8 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
                 className="h-10 w-auto object-contain"
               />
             </Link>
-            <p className="text-secondary-600 mb-6 leading-relaxed">
-              Twoja platforma e-commerce z tysiącami produktów od sprawdzonych sprzedawców. 
-              Kupuj bezpiecznie i wygodnie.
-            </p>
             {/* Social Media */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 mt-6">
               <a href="#" className="hover:opacity-70 transition-opacity">
                 <LogoImage src={getLogoUrl(SOCIAL_LOGOS.facebook)} alt="Facebook" width={28} height={28} className="object-contain" />
               </a>
