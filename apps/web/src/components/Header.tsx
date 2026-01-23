@@ -97,7 +97,7 @@ function HeaderContent() {
             {/* Logo */}
             <Link href="/" className="flex items-center shrink-0">
               <Image 
-                src="/images/logo.png" 
+                src="/images/WB-TRADE.svg" 
                 alt="WB Trade Group" 
                 width={140} 
                 height={50} 

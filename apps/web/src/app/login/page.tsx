@@ -90,7 +90,7 @@ export default function LoginPage() {
           <div className="flex items-center justify-between mb-8">
             <Link href="/" className="flex items-center group">
               <Image 
-                src="/images/logo.png" 
+                src="/images/WB-TRADE.svg" 
                 alt="WB Trade Group" 
                 width={140} 
                 height={50} 
