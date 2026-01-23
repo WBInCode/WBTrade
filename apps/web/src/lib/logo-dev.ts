@@ -37,6 +37,7 @@ export const SOCIAL_LOGOS = {
   instagram: 'instagram.com',
   twitter: 'x.com',
   linkedin: 'linkedin.com',
+  linktree: 'linktr.ee',
   youtube: 'youtube.com',
   tiktok: 'tiktok.com',
 } as const;

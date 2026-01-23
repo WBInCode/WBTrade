@@ -53,14 +53,6 @@ export default function AboutPage() {
     },
   ];
 
-  const team = [
-    {
-      name: 'Amanda Budyka',
-      role: 'CEO & Założyciel',
-      image: '',
-    }
-  ];
-
   return (
     <div className="min-h-screen bg-secondary-50">
       <Header />
@@ -164,46 +156,6 @@ export default function AboutPage() {
                 <p className="text-secondary-600">
                   {value.description}
                 </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Team Section */}
-      <section className="py-16 lg:py-24">
-        <div className="container-custom">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-bold text-secondary-900 mb-4">
-              Nasz zespół zarządzający
-            </h2>
-            <p className="text-secondary-600 max-w-2xl mx-auto">
-              Poznaj człowieka, który stoi za sukcesem WBTrade.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {team.map((member, index) => (
-              <div key={index} className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow">
-                <div className="aspect-square relative bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
-                  {member.image ? (
-                    <Image
-                      src={member.image}
-                      alt={member.name}
-                      fill
-                      className="object-cover"
-                    />
-                  ) : (
-                    <span className="text-6xl font-bold text-primary-600">
-                      {member.name.split(' ').map(n => n[0]).join('')}
-                    </span>
-                  )}
-                </div>
-                <div className="p-6 text-center">
-                  <h3 className="text-lg font-semibold text-secondary-900">
-                    {member.name}
-                  </h3>
-                  <p className="text-primary-600">{member.role}</p>
-                </div>
               </div>
             ))}
           </div>
