@@ -282,6 +282,11 @@ export class SecureAuthService {
       where: { email: normalizedEmail },
     });
 
+    // Check if user exists and has a password (OAuth users don't have passwords)
+    if (user && !user.password) {
+      throw new Error('This account uses Google login. Please sign in with Google.');
+    }
+
     // Always hash password to prevent timing attacks (even if user doesn't exist)
     const dummyHash = '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4.4Oo4AAhJ5gZZ2i';
     const passwordToCompare = user?.password || dummyHash;
@@ -613,6 +618,11 @@ export class SecureAuthService {
       throw new Error('User not found');
     }
 
+    // OAuth users cannot change password this way
+    if (!user.password) {
+      throw new Error('Password change not available for OAuth accounts');
+    }
+
     // Verify current password
     const isValid = await bcrypt.compare(currentPassword, user.password);
     if (!isValid) {
@@ -778,7 +788,7 @@ export class SecureAuthService {
     role: UserRole;
     emailVerified: boolean;
     createdAt: Date;
-    password?: string;
+    password?: string | null;
     failedLoginAttempts?: number;
     lockedUntil?: Date | null;
   }): UserResponse {
