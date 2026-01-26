@@ -5,7 +5,7 @@ services:
     name: wbtrade-api
     runtime: docker
     dockerfilePath: ./Dockerfile
-    plan: free # Darmowy plan - serwis usypia się po 15 min nieaktywności
+    plan: starter # Płatny plan - serwis NIE usypia się
     region: frankfurt # EU region dla lepszej wydajności w Polsce
     branch: main # Branch główny z wszystkimi poprawkami
     healthCheckPath: /health
