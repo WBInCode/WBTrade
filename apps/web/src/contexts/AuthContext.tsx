@@ -27,6 +27,7 @@ interface AuthContextType {
   register: (data: RegisterData) => Promise<{ success: boolean; error?: string; verificationToken?: string }>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<boolean>;
+  setTokens: (accessToken: string, refreshToken: string) => Promise<void>;
 }
 
 interface RegisterData {
@@ -240,6 +241,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(timeout);
   }, [tokens, refreshToken]);
 
+  // Set tokens from OAuth callback
+  const setTokensFromOAuth = async (accessToken: string, refreshToken: string): Promise<void> => {
+    const newTokens: AuthTokens = {
+      accessToken,
+      refreshToken,
+      expiresIn: 3600, // 60 minutes
+      issuedAt: Date.now(),
+    };
+    saveTokens(newTokens);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -250,6 +262,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         register,
         logout,
         refreshToken,
+        setTokens: setTokensFromOAuth,
       }}
     >
       {children}

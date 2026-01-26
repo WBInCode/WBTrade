@@ -109,6 +109,11 @@ export class AuthService {
       throw new Error('Account is deactivated. Please contact support.');
     }
 
+    // OAuth users don't have password
+    if (!user.password) {
+      throw new Error('This account uses Google login. Please sign in with Google.');
+    }
+
     // Verify password
     const isValidPassword = await bcrypt.compare(data.password, user.password);
 
@@ -297,6 +302,11 @@ export class AuthService {
       throw new Error('User not found');
     }
 
+    // OAuth users cannot change password
+    if (!user.password) {
+      throw new Error('Password change not available for OAuth accounts');
+    }
+
     // Verify current password
     const isValid = await bcrypt.compare(currentPassword, user.password);
     if (!isValid) {
@@ -360,7 +370,7 @@ export class AuthService {
     phone: string | null;
     role: UserRole;
     createdAt: Date;
-    password?: string;
+    password?: string | null;
   }): UserResponse {
     const { password, ...sanitized } = user;
     return sanitized as UserResponse;
