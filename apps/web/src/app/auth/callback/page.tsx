@@ -16,8 +16,11 @@ function AuthCallbackContent() {
       try {
         const accessToken = searchParams.get('accessToken');
         const refreshToken = searchParams.get('refreshToken');
-        const redirect = searchParams.get('redirect') || '/account';
+        const redirectParam = searchParams.get('redirect') || '/account';
+        const redirect = decodeURIComponent(redirectParam); // Decode URL-encoded redirect
         const isNewUser = searchParams.get('isNewUser') === 'true';
+
+        console.log('[AuthCallback] Processing OAuth callback, redirect:', redirect);
 
         if (!accessToken || !refreshToken) {
           setStatus('error');
@@ -32,9 +35,10 @@ function AuthCallbackContent() {
         setStatus('success');
         setMessage(isNewUser ? 'Konto utworzone! Przekierowywanie...' : 'Zalogowano! Przekierowywanie...');
         
-        // Redirect after short delay
+        // Redirect after short delay - use replace to avoid back button issues
         setTimeout(() => {
-          router.push(redirect);
+          console.log('[AuthCallback] Redirecting to:', redirect);
+          router.replace(redirect);
         }, 1000);
       } catch (error) {
         console.error('Auth callback error:', error);
