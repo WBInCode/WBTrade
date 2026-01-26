@@ -157,36 +157,19 @@ class CategoryTagMapper {
       };
     }
 
-    // Mamy główną kategorię bez podkategorii
-    // Sprawdź czy główna kategoria ma jakiekolwiek podkategorie
-    const hasSubcategories = mainData.subcategories && Object.keys(mainData.subcategories).length > 0;
-    
-    if (hasSubcategories) {
-      // Główna kategoria ma podkategorie, ale produkt nie ma tagu podkategorii
-      // Przypisz do "Inne" w ramach tej kategorii lub do ogólnego "Inne"
-      return {
-        mainCategory: mainCategoryTag,
-        mainSlug: mainData.slug,
-        subCategory: null,
-        subSlug: null,
-        // Produkt trafia do "Inne" bo główna kategoria ma podkategorie
-        assignToSlug: 'inne',
-        hasSubcategory: false,
-        note: 'Produkt ma tag głównej kategorii ale brak tagu podkategorii'
-      };
-    } else {
-      // Główna kategoria nie ma podkategorii (np. "Zdrowie i uroda", "Biurowe i papiernicze")
-      // Produkt trafia bezpośrednio do głównej kategorii
-      return {
-        mainCategory: mainCategoryTag,
-        mainSlug: mainData.slug,
-        subCategory: null,
-        subSlug: null,
-        // Produkt trafia do głównej kategorii (bo nie ma podkategorii)
-        assignToSlug: mainData.slug,
-        hasSubcategory: false
-      };
-    }
+    // Mamy główną kategorię bez podkategorii w tagach
+    // Produkt trafia bezpośrednio do głównej kategorii
+    // (nawet jeśli główna kategoria ma zdefiniowane podkategorie)
+    return {
+      mainCategory: mainCategoryTag,
+      mainSlug: mainData.slug,
+      subCategory: null,
+      subSlug: null,
+      // Produkt trafia do głównej kategorii
+      assignToSlug: mainData.slug,
+      hasSubcategory: false,
+      note: 'Produkt ma tylko tag głównej kategorii'
+    };
   }
 
   getFallback() {

@@ -474,8 +474,8 @@ async function main() {
   // Pobierz listę magazynów
   const allInventories = await getAllInventories(apiToken);
   
-  // WAŻNE: Synchronizujemy TYLKO BTP
-  const ALLOWED_INVENTORY_IDS = ['22953']; // BTP
+  // WAŻNE: Synchronizujemy TYLKO HP
+  const ALLOWED_INVENTORY_IDS = ['22954']; // HP
   const inventories = allInventories.filter(inv => ALLOWED_INVENTORY_IDS.includes(inv.inventory_id.toString()));
   
   console.log(`\n📦 Synchronizuję ${inventories.length} magazynów: ${inventories.map(i => i.name).join(', ')}\n`);
