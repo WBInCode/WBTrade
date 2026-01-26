@@ -53,6 +53,18 @@ services:
         # Ustaw bezpieczny klucz dla refresh tokenów
         sync: false
         
+      - key: GOOGLE_CLIENT_ID
+        # Google OAuth Client ID z console.cloud.google.com
+        sync: false
+        
+      - key: GOOGLE_CLIENT_SECRET
+        # Google OAuth Client Secret
+        sync: false
+        
+      - key: GOOGLE_REDIRECT_URI
+        # np. https://wbtrade-api.onrender.com/api/auth/google/callback
+        sync: false
+        
       - key: PAYU_POS_ID
         sync: false
         

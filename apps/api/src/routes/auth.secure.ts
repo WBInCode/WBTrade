@@ -7,6 +7,7 @@ import {
   registerRateLimiter,
   passwordResetRateLimiter,
 } from '../middleware/rate-limit.middleware';
+import { googleOAuthService } from '../services/google-oauth.service';
 
 const router = Router();
 
@@ -152,5 +153,97 @@ router.delete(
   authGuard,
   secureAuthController.revokeSession.bind(secureAuthController)
 );
+
+// ============================================
+// GOOGLE OAUTH ROUTES
+// ============================================
+
+/**
+ * @route   GET /api/auth/google
+ * @desc    Initiate Google OAuth flow
+ * @access  Public
+ */
+router.get('/google', (req, res) => {
+  try {
+    const state = req.query.redirect as string || '/account';
+    const authUrl = googleOAuthService.getAuthorizationUrl(state);
+    res.redirect(authUrl);
+  } catch (error: any) {
+    console.error('[GoogleOAuth] Error initiating OAuth:', error);
+    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=oauth_error`);
+  }
+});
+
+/**
+ * @route   GET /api/auth/google/callback
+ * @desc    Google OAuth callback
+ * @access  Public
+ */
+router.get('/google/callback', async (req, res) => {
+  try {
+    const { code, state, error } = req.query;
+
+    if (error) {
+      console.error('[GoogleOAuth] OAuth error:', error);
+      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=oauth_denied`);
+    }
+
+    if (!code || typeof code !== 'string') {
+      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=no_code`);
+    }
+
+    const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip;
+    const userAgent = req.headers['user-agent'];
+
+    const result = await googleOAuthService.authenticateWithGoogle(code, ipAddress, userAgent);
+
+    // Redirect to frontend with tokens in URL params (will be stored by frontend)
+    const redirectPath = (state as string) || '/account';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    
+    // Encode tokens for URL
+    const params = new URLSearchParams({
+      accessToken: result.tokens.accessToken,
+      refreshToken: result.tokens.refreshToken,
+      expiresIn: result.tokens.expiresIn.toString(),
+      isNewUser: result.isNewUser.toString(),
+    });
+
+    res.redirect(`${frontendUrl}/auth/callback?${params.toString()}&redirect=${encodeURIComponent(redirectPath)}`);
+  } catch (error: any) {
+    console.error('[GoogleOAuth] Callback error:', error);
+    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=oauth_failed`);
+  }
+});
+
+/**
+ * @route   POST /api/auth/google/token
+ * @desc    Exchange Google OAuth code for tokens (for mobile/SPA flow)
+ * @access  Public
+ */
+router.post('/google/token', authRateLimiter, async (req, res) => {
+  try {
+    const { code } = req.body;
+
+    if (!code) {
+      return res.status(400).json({ error: 'Authorization code is required' });
+    }
+
+    const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip;
+    const userAgent = req.headers['user-agent'];
+
+    const result = await googleOAuthService.authenticateWithGoogle(code, ipAddress, userAgent);
+
+    res.json({
+      success: true,
+      user: result.user,
+      tokens: result.tokens,
+      isNewUser: result.isNewUser,
+    });
+  } catch (error: any) {
+    console.error('[GoogleOAuth] Token exchange error:', error);
+    res.status(400).json({ error: error.message || 'OAuth authentication failed' });
+  }
+});
 
 export default router;
