@@ -138,8 +138,13 @@ export async function queueProductDelete(productId: string): Promise<void> {
   });
 }
 
+// Flag to control whether to use queue or send emails directly
+// Set to false when email worker is disabled (e.g., Redis limit exceeded)
+const USE_EMAIL_QUEUE = false; // TODO: Set to true when workers are re-enabled
+
 /**
  * Add a job to send an email
+ * When USE_EMAIL_QUEUE is false, sends email directly (synchronously)
  */
 export async function queueEmail(data: {
   to: string;
@@ -147,15 +152,24 @@ export async function queueEmail(data: {
   template: string;
   context: Record<string, any>;
 }): Promise<void> {
-  await emailQueue.add('send-email', data, {
-    removeOnComplete: 100,
-    removeOnFail: 50,
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 1000,
-    },
-  });
+  if (USE_EMAIL_QUEUE) {
+    // Use queue when worker is running
+    await emailQueue.add('send-email', data, {
+      removeOnComplete: 100,
+      removeOnFail: 50,
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 1000,
+      },
+    });
+  } else {
+    // Send email directly when worker is disabled
+    // Import dynamically to avoid circular dependency
+    const { sendEmailDirect } = await import('../workers/email.worker');
+    await sendEmailDirect(data);
+    console.log(`[Queue] Email sent directly to ${data.to} (worker disabled)`);
+  }
 }
 
 // ========================================
