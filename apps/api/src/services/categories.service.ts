@@ -1,5 +1,50 @@
 import { prisma } from '../db';
 
+// Tagi dostawy - produkty MUSZĄ mieć przynajmniej jeden z tych tagów żeby być widoczne
+const DELIVERY_TAGS = [
+  'Paczkomaty i Kurier',
+  'paczkomaty i kurier',
+  'Tylko kurier',
+  'tylko kurier',
+  'do 2 kg',
+  'do 5 kg',
+  'do 10 kg',
+  'do 20 kg',
+  'do 31,5 kg',
+];
+
+// Tagi głównych kategorii
+const CATEGORY_TAGS = [
+  'Elektronika',
+  'Sport',
+  'Zdrowie i uroda',
+  'Dom i ogród',
+  'Motoryzacja',
+  'Dziecko',
+  'Biurowe i papiernicze',
+  'Gastronomiczne',
+  'gastronomia',
+  'Gastronomia',
+];
+
+// Bazowy filtr dla widocznych produktów (taki sam jak w products.service.ts)
+const VISIBLE_PRODUCT_WHERE = {
+  price: { gt: 0 },
+  variants: {
+    some: {
+      inventory: {
+        some: {
+          quantity: { gt: 0 }
+        }
+      }
+    }
+  },
+  AND: [
+    { tags: { hasSome: DELIVERY_TAGS } },
+    { tags: { hasSome: CATEGORY_TAGS } },
+  ],
+};
+
 export interface CategoryWithChildren {
   id: string;
   name: string;
@@ -13,6 +58,43 @@ export interface CategoryWithChildren {
 }
 
 export class CategoriesService {
+  /**
+   * Count visible products for a category (using same filters as products listing)
+   */
+  private async countVisibleProducts(categoryId: string): Promise<number> {
+    return prisma.product.count({
+      where: {
+        ...VISIBLE_PRODUCT_WHERE,
+        categoryId,
+      },
+    });
+  }
+
+  /**
+   * Count visible products for multiple categories at once
+   */
+  private async countVisibleProductsForCategories(categoryIds: string[]): Promise<Map<string, number>> {
+    const counts = new Map<string, number>();
+    
+    // Use raw query for better performance
+    const results = await prisma.product.groupBy({
+      by: ['categoryId'],
+      where: {
+        ...VISIBLE_PRODUCT_WHERE,
+        categoryId: { in: categoryIds },
+      },
+      _count: { id: true },
+    });
+    
+    for (const result of results) {
+      if (result.categoryId) {
+        counts.set(result.categoryId, result._count.id);
+      }
+    }
+    
+    return counts;
+  }
+
   /**
    * Calculate total product count including all descendants
    */
@@ -46,31 +128,33 @@ export class CategoriesService {
       },
       orderBy: { order: 'asc' },
       include: {
-        _count: {
-          select: { products: { where: { price: { gt: 0 } } } }
-        },
         children: {
           where: { isActive: true },
           orderBy: { name: 'asc' },
           include: {
-            _count: {
-              select: { products: { where: { price: { gt: 0 } } } }
-            },
             children: {
               where: { isActive: true },
               orderBy: { name: 'asc' },
-              include: {
-                _count: {
-                  select: { products: { where: { price: { gt: 0 } } } }
-                }
-              }
             }
           }
         }
       }
     });
 
-    // Transform to CategoryWithChildren format
+    // Collect all category IDs to count products
+    const allCategoryIds: string[] = [];
+    const collectIds = (cats: any[]) => {
+      for (const cat of cats) {
+        allCategoryIds.push(cat.id);
+        if (cat.children) collectIds(cat.children);
+      }
+    };
+    collectIds(mainCategories);
+
+    // Get visible product counts for all categories at once
+    const productCounts = await this.countVisibleProductsForCategories(allCategoryIds);
+
+    // Transform to CategoryWithChildren format with correct counts
     const transformCategory = (cat: any): CategoryWithChildren => ({
       id: cat.id,
       name: cat.name,
@@ -79,7 +163,7 @@ export class CategoriesService {
       image: cat.image,
       order: cat.order,
       isActive: cat.isActive,
-      productCount: cat._count.products,
+      productCount: productCounts.get(cat.id) || 0,
       children: cat.children ? cat.children.map(transformCategory) : []
     });
 
@@ -113,42 +197,43 @@ export class CategoriesService {
           where: { isActive: true },
           orderBy: { order: 'asc' },
           include: {
-            _count: {
-              select: { products: { where: { price: { gt: 0 } } } }
-            },
             children: {
               where: { isActive: true },
               orderBy: { order: 'asc' },
-              include: {
-                _count: {
-                  select: { products: { where: { price: { gt: 0 } } } }
-                }
-              }
             }
           }
         },
         parent: true,
-        _count: {
-          select: { products: { where: { price: { gt: 0 } } } }
-        }
       }
     });
 
     if (!category) return null;
 
+    // Collect all category IDs to count products
+    const allCategoryIds: string[] = [category.id];
+    for (const child of category.children) {
+      allCategoryIds.push(child.id);
+      for (const grandchild of child.children) {
+        allCategoryIds.push(grandchild.id);
+      }
+    }
+
+    // Get visible product counts for all categories at once
+    const productCounts = await this.countVisibleProductsForCategories(allCategoryIds);
+
     // Helper to calculate total products including grandchildren
     const calcChildProductCount = (child: typeof category.children[0]): number => {
-      let total = child._count.products;
+      let total = productCounts.get(child.id) || 0;
       if (child.children) {
         for (const grandchild of child.children) {
-          total += grandchild._count.products;
+          total += productCounts.get(grandchild.id) || 0;
         }
       }
       return total;
     };
 
     // Calculate total for all descendants
-    let totalProductCount = category._count.products;
+    let totalProductCount = productCounts.get(category.id) || 0;
     for (const child of category.children) {
       totalProductCount += calcChildProductCount(child);
     }
@@ -179,7 +264,7 @@ export class CategoriesService {
           image: grandchild.image,
           order: grandchild.order,
           isActive: grandchild.isActive,
-          productCount: grandchild._count.products,
+          productCount: productCounts.get(grandchild.id) || 0,
         }))
       }))
     };
@@ -229,34 +314,36 @@ export class CategoriesService {
       },
       orderBy: { order: 'asc' },
       include: {
-        _count: {
-          select: { products: { where: { price: { gt: 0 } } } }
-        },
         children: {
           where: { isActive: true },
           orderBy: { name: 'asc' },
           include: {
-            _count: {
-              select: { products: { where: { price: { gt: 0 } } } }
-            },
             children: {
               where: { isActive: true },
               orderBy: { name: 'asc' },
-              include: {
-                _count: {
-                  select: { products: { where: { price: { gt: 0 } } } }
-                }
-              }
             }
           }
         }
       }
     });
 
+    // Collect all category IDs to count products
+    const allCategoryIds: string[] = [];
+    const collectIds = (cats: any[]) => {
+      for (const cat of cats) {
+        allCategoryIds.push(cat.id);
+        if (cat.children) collectIds(cat.children);
+      }
+    };
+    collectIds(categories);
+
+    // Get visible product counts for all categories at once
+    const productCounts = await this.countVisibleProductsForCategories(allCategoryIds);
+
     // Transform and calculate total product counts
     const transformCategory = (cat: any, parentId: string | null = null): CategoryWithChildren => {
-      const directCount = cat._count?.products || 0;
       const children = cat.children ? cat.children.map((child: any) => transformCategory(child, cat.id)) : [];
+      const directCount = productCounts.get(cat.id) || 0;
       const childrenCount = children.reduce((sum: number, child: CategoryWithChildren) => sum + (child.productCount || 0), 0);
       
       return {

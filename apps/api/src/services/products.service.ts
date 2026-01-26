@@ -29,6 +29,8 @@ const CATEGORY_TAGS = [
   'Dziecko',
   'Biurowe i papiernicze',
   'Gastronomiczne',
+  'gastronomia', // wariant tagu z Baselinkera
+  'Gastronomia',
 ];
 
 interface ProductFilters {
