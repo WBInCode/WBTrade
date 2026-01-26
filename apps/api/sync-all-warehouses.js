@@ -6,7 +6,13 @@
  * Ten skrypt:
  * 1. Pobiera listę wszystkich magazynów (hurtowni) z Baselinker
  * 2. Synchronizuje produkty ze WSZYSTKICH hurtowni (z tagami!)
- * 3. Uruchamia mapowanie kategorii (reassign-all-categories.js)
+ * 3. Uruchamia mapowanie kategorii NA PODSTAWIE TAGÓW (reassign-categories-by-tags.js)
+ * 
+ * NOWA LOGIKA KATEGORII (od 01/2026):
+ * - Produkty mają 2 tagi w Baselinker: główna kategoria + podkategoria
+ * - Kategorie główne: Elektronika, Sport, Zdrowie i uroda, Dom i ogród, Motoryzacja, Dziecko, Biurowe i papiernicze, Gastronomiczne
+ * - Produkty trafiają TYLKO do podkategorii (główne są kontenerami)
+ * - Produkty bez tagów kategorii trafiają do "Inne"
  * 
  * Szczególna uwaga na TAGI - są zawsze nadpisywane z Baselinker!
  * 
@@ -197,9 +203,23 @@ async function getProductDetails(apiToken, inventoryId, productIds) {
   return response.products || {};
 }
 
+// Mapowanie nazwy magazynu na prefix używany w baselinkerProductId
+function getInventoryPrefix(inventoryName) {
+  const prefixMap = {
+    'leker': 'leker-',
+    'btp': 'btp-',
+    'hp': 'hp-',
+    'ikonka': '', // bez prefiksu
+    'główny': ''
+  };
+  const lower = inventoryName.toLowerCase();
+  return prefixMap[lower] || '';
+}
+
 async function syncProductsFromInventory(apiToken, inventory, existingMap) {
   const inventoryId = inventory.inventory_id;
   const inventoryName = inventory.name;
+  const inventoryPrefix = getInventoryPrefix(inventoryName);
   
   // Pobierz listę produktów
   const productList = await getAllProductsFromInventory(apiToken, inventoryId, inventoryName);
@@ -231,7 +251,8 @@ async function syncProductsFromInventory(apiToken, inventory, existingMap) {
           continue;
         }
         
-        const baselinkerProductId = productId;
+        // Tworzenie baselinkerProductId z prefiksem magazynu (jeśli potrzebny)
+        const baselinkerProductId = inventoryPrefix + productId;
         const existingProduct = existingMap.get(baselinkerProductId);
         
         // Pobierz tagi z Baselinker (KLUCZOWE!)
@@ -406,19 +427,30 @@ async function syncStock(apiToken, inventoryId, inventoryName) {
 }
 
 async function runCategoryMapping() {
-  console.log('\n\n🏷️  URUCHAMIAM MAPOWANIE KATEGORII...\n');
+  console.log('\n\n🏷️  URUCHAMIAM MAPOWANIE KATEGORII NA PODSTAWIE TAGÓW...\n');
   console.log('============================================\n');
   
   try {
-    // Uruchom reassign-all-categories.js
-    const scriptPath = path.join(__dirname, 'reassign-all-categories.js');
+    // Uruchom nowy skrypt mapowania na podstawie tagów z Baselinkera
+    const scriptPath = path.join(__dirname, 'reassign-categories-by-tags.js');
     execSync(`node "${scriptPath}"`, { 
       stdio: 'inherit',
       cwd: __dirname
     });
-    console.log('\n✅ Mapowanie kategorii zakończone!');
+    console.log('\n✅ Mapowanie kategorii na podstawie tagów zakończone!');
   } catch (error) {
     console.error('❌ Błąd mapowania kategorii:', error.message);
+    // Fallback do starego skryptu jeśli nowy nie zadziała
+    console.log('⚠️  Próbuję uruchomić stary skrypt mapowania...');
+    try {
+      const fallbackPath = path.join(__dirname, 'reassign-all-categories.js');
+      execSync(`node "${fallbackPath}"`, { 
+        stdio: 'inherit',
+        cwd: __dirname
+      });
+    } catch (e) {
+      console.error('❌ Fallback również nie zadziałał:', e.message);
+    }
   }
 }
 
@@ -440,7 +472,13 @@ async function main() {
   console.log('✅ Token API OK\n');
   
   // Pobierz listę magazynów
-  const inventories = await getAllInventories(apiToken);
+  const allInventories = await getAllInventories(apiToken);
+  
+  // WAŻNE: Synchronizujemy TYLKO BTP
+  const ALLOWED_INVENTORY_IDS = ['22953']; // BTP
+  const inventories = allInventories.filter(inv => ALLOWED_INVENTORY_IDS.includes(inv.inventory_id.toString()));
+  
+  console.log(`\n📦 Synchronizuję ${inventories.length} magazynów: ${inventories.map(i => i.name).join(', ')}\n`);
   
   if (inventories.length === 0) {
     console.log('⚠️ Brak magazynów do synchronizacji!');
