@@ -242,7 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [tokens, refreshToken]);
 
   // Set tokens from OAuth callback
-  const setTokensFromOAuth = async (accessToken: string, refreshToken: string): Promise<void> => {
+  const setTokensFromOAuth = useCallback(async (accessToken: string, refreshToken: string): Promise<void> => {
     const newTokens: AuthTokens = {
       accessToken,
       refreshToken,
@@ -250,7 +250,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       issuedAt: Date.now(),
     };
     saveTokens(newTokens);
-  };
+  }, []);
 
   return (
     <AuthContext.Provider

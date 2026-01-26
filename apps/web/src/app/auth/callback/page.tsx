@@ -1,17 +1,21 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
 function AuthCallbackContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { setTokens } = useAuth();
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [message, setMessage] = useState('Przetwarzanie logowania...');
+  const processedRef = useRef(false);
 
   useEffect(() => {
+    // Prevent double execution in React Strict Mode
+    if (processedRef.current) return;
+    processedRef.current = true;
+
     const processCallback = async () => {
       try {
         const accessToken = searchParams.get('accessToken');
@@ -25,7 +29,9 @@ function AuthCallbackContent() {
         if (!accessToken || !refreshToken) {
           setStatus('error');
           setMessage('Brak danych uwierzytelniających');
-          setTimeout(() => router.push('/login?error=oauth_failed'), 2000);
+          setTimeout(() => {
+            window.location.href = '/login?error=oauth_failed';
+          }, 2000);
           return;
         }
 
@@ -35,21 +41,23 @@ function AuthCallbackContent() {
         setStatus('success');
         setMessage(isNewUser ? 'Konto utworzone! Przekierowywanie...' : 'Zalogowano! Przekierowywanie...');
         
-        // Redirect after short delay - use replace to avoid back button issues
+        // Redirect after short delay - use window.location for reliable redirect
         setTimeout(() => {
           console.log('[AuthCallback] Redirecting to:', redirect);
-          router.replace(redirect);
+          window.location.href = redirect;
         }, 1000);
       } catch (error) {
         console.error('Auth callback error:', error);
         setStatus('error');
         setMessage('Wystąpił błąd podczas logowania');
-        setTimeout(() => router.push('/login?error=oauth_failed'), 2000);
+        setTimeout(() => {
+          window.location.href = '/login?error=oauth_failed';
+        }, 2000);
       }
     };
 
     processCallback();
-  }, [searchParams, router, setTokens]);
+  }, [searchParams, setTokens]);
 
   return (
     <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full mx-4 text-center">
