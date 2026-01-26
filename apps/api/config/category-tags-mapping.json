@@ -1,0 +1,164 @@
+{
+  "description": "Mapowanie kategorii na podstawie tagów z Baselinkera. Każdy produkt ma dwa tagi: główny i podkategorii.",
+  "version": "2.0",
+  
+  "mainCategoryTags": [
+    "Elektronika",
+    "Sport",
+    "Zdrowie i uroda",
+    "Dom i ogród",
+    "Motoryzacja",
+    "Dziecko",
+    "Biurowe i papiernicze",
+    "Gastronomiczne"
+  ],
+  
+  "categoryTree": {
+    "Elektronika": {
+      "slug": "elektronika",
+      "order": 1,
+      "subcategories": {
+        "Akcesoria Komputerowe": { "slug": "akcesoria-komputerowe" },
+        "Etui i akcesoria GSM": { "slug": "etui-i-akcesoria-gsm" },
+        "Smartfony i telefony": { "slug": "smartfony-i-telefony" },
+        "Smartwatche": { "slug": "smartwatche" },
+        "Słuchawki": { "slug": "sluchawki" }
+      }
+    },
+    "Sport": {
+      "slug": "sport",
+      "order": 2,
+      "subcategories": {
+        "Akcesoria sportowe": { "slug": "akcesoria-sportowe" },
+        "Rekreacja": { "slug": "rekreacja" },
+        "Turystyka": { "slug": "turystyka" }
+      }
+    },
+    "Zdrowie i uroda": {
+      "slug": "zdrowie-i-uroda",
+      "order": 3,
+      "subcategories": {}
+    },
+    "Dom i ogród": {
+      "slug": "dom-i-ogrod",
+      "order": 4,
+      "subcategories": {
+        "Akcesoria dla zwierząt": { "slug": "akcesoria-dla-zwierzat" },
+        "Akcesoria domowe": { "slug": "akcesoria-domowe" },
+        "Domowe AGD": { "slug": "domowe-agd" },
+        "Ogród": { "slug": "ogrod" },
+        "Oświetlenie": { "slug": "oswietlenie" },
+        "Wyposażenie wnętrz": { "slug": "wyposazenie-wnetrz" }
+      }
+    },
+    "Motoryzacja": {
+      "slug": "motoryzacja",
+      "order": 5,
+      "subcategories": {
+        "Akcesoria samochodowe": { "slug": "akcesoria-samochodowe" },
+        "Folie samochodowe": { "slug": "folie-samochodowe" }
+      }
+    },
+    "Dziecko": {
+      "slug": "dziecko",
+      "order": 6,
+      "subcategories": {
+        "Kostiumy i przebrania": { "slug": "kostiumy-i-przebrania" },
+        "Zabawki": { "slug": "zabawki" },
+        "Pojazdy dla dzieci": { "slug": "pojazdy-dla-dzieci" },
+        "Artykuły dla dzieci": { "slug": "artykuly-dla-dzieci" },
+        "Artykuły plastyczne": { "slug": "artykuly-plastyczne" },
+        "Artykuły szkolne": { "slug": "artykuly-szkolne" }
+      }
+    },
+    "Biurowe i papiernicze": {
+      "slug": "biurowe-i-papiernicze",
+      "order": 7,
+      "subcategories": {}
+    },
+    "Gastronomiczne": {
+      "slug": "gastronomiczne",
+      "order": 8,
+      "subcategories": {
+        "Naczynia i zastawa": { "slug": "naczynia-i-zastawa" }
+      }
+    }
+  },
+  
+  "ignoreWarehouseTags": [
+    "Ikonka",
+    "Leker",
+    "Forcetop",
+    "BTP",
+    "Hurtownia Przemysłowa",
+    "HP",
+    "Główny"
+  ],
+
+  "ignoreDeliveryTags": [
+    "Paczkomaty i Kurier",
+    "Tylko kurier",
+    "do 5 kg",
+    "do 10 kg",
+    "do 15 kg",
+    "do 20 kg",
+    "do 25 kg",
+    "do 30 kg",
+    "produkt w paczce: 1",
+    "produkt w paczce: 2",
+    "produkt w paczce: 3"
+  ],
+  
+  "tagNormalization": {
+    "description": "Mapowanie wariantów tagów na standardowe nazwy (case-insensitive)",
+    "mappings": {
+      "elektronika": "Elektronika",
+      "sport": "Sport",
+      "zdrowie i uroda": "Zdrowie i uroda",
+      "dom i ogród": "Dom i ogród",
+      "dom i ogrod": "Dom i ogród",
+      "motoryzacja": "Motoryzacja",
+      "dziecko": "Dziecko",
+      "biurowe i papiernicze": "Biurowe i papiernicze",
+      "gastronomiczne": "Gastronomiczne",
+      "gastronomia": "Gastronomiczne",
+      
+      "akcesoria komputerowe": "Akcesoria Komputerowe",
+      "etui i akcesoria gsm": "Etui i akcesoria GSM",
+      "smartfony i telefony": "Smartfony i telefony",
+      "smartwatche": "Smartwatche",
+      "słuchawki": "Słuchawki",
+      "sluchawki": "Słuchawki",
+      
+      "akcesoria sportowe": "Akcesoria sportowe",
+      "rekreacja": "Rekreacja",
+      "turystyka": "Turystyka",
+      
+      "akcesoria dla zwierząt": "Akcesoria dla zwierząt",
+      "akcesoria dla zwierzat": "Akcesoria dla zwierząt",
+      "akcesoria domowe": "Akcesoria domowe",
+      "domowe agd": "Domowe AGD",
+      "ogród": "Ogród",
+      "ogrod": "Ogród",
+      "oświetlenie": "Oświetlenie",
+      "oswietlenie": "Oświetlenie",
+      "wyposażenie wnętrz": "Wyposażenie wnętrz",
+      "wyposazenie wnetrz": "Wyposażenie wnętrz",
+      
+      "akcesoria samochodowe": "Akcesoria samochodowe",
+      "folie samochodowe": "Folie samochodowe",
+      
+      "kostiumy i przebrania": "Kostiumy i przebrania",
+      "zabawki": "Zabawki",
+      "pojazdy dla dzieci": "Pojazdy dla dzieci",
+      "artykuły dla dzieci": "Artykuły dla dzieci",
+      "artykuly dla dzieci": "Artykuły dla dzieci",
+      "artykuły plastyczne": "Artykuły plastyczne",
+      "artykuly plastyczne": "Artykuły plastyczne",
+      "artykuły szkolne": "Artykuły szkolne",
+      "artykuly szkolne": "Artykuły szkolne",
+      
+      "naczynia i zastawa": "Naczynia i zastawa"
+    }
+  }
+}
