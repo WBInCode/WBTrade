@@ -10,7 +10,7 @@ import { QUEUE_NAMES, queueConnection } from '../lib/queue';
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@wb-trade.pl';
 
-interface EmailJobData {
+export interface EmailJobData {
   to: string;
   subject: string;
   template: string;
@@ -18,7 +18,7 @@ interface EmailJobData {
 }
 
 // Email templates
-const EMAIL_TEMPLATES: Record<string, (context: Record<string, any>) => { subject: string; html: string; text: string }> = {
+export const EMAIL_TEMPLATES: Record<string, (context: Record<string, any>) => { subject: string; html: string; text: string }> = {
   'order-confirmation': (ctx) => ({
     subject: `Potwierdzenie zamówienia #${ctx.orderId}`,
     html: `
@@ -119,6 +119,22 @@ async function sendEmail(
     console.error(`[EmailWorker] Failed to send email to ${to}:`, error);
     throw error;
   }
+}
+
+/**
+ * Send email directly (synchronously) - use when worker is disabled
+ * This is the fallback for when background workers are not running
+ */
+export async function sendEmailDirect(data: EmailJobData): Promise<void> {
+  const { to, template, context } = data;
+  
+  const templateFn = EMAIL_TEMPLATES[template];
+  if (!templateFn) {
+    throw new Error(`Unknown email template: ${template}`);
+  }
+  
+  const { subject, html, text } = templateFn(context);
+  await sendEmail(to, subject, html, text);
 }
 
 /**
