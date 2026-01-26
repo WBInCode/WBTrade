@@ -158,6 +158,12 @@ router.delete(
 // GOOGLE OAUTH ROUTES
 // ============================================
 
+// Helper to get frontend URL (handles comma-separated list)
+const getFrontendUrl = (): string => {
+  const urls = process.env.FRONTEND_URL || 'http://localhost:3000';
+  return urls.split(',')[0].trim();
+};
+
 /**
  * @route   GET /api/auth/google
  * @desc    Initiate Google OAuth flow
@@ -170,7 +176,7 @@ router.get('/google', (req, res) => {
     res.redirect(authUrl);
   } catch (error: any) {
     console.error('[GoogleOAuth] Error initiating OAuth:', error);
-    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=oauth_error`);
+    res.redirect(`${getFrontendUrl()}/login?error=oauth_error`);
   }
 });
 
@@ -185,11 +191,11 @@ router.get('/google/callback', async (req, res) => {
 
     if (error) {
       console.error('[GoogleOAuth] OAuth error:', error);
-      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=oauth_denied`);
+      return res.redirect(`${getFrontendUrl()}/login?error=oauth_denied`);
     }
 
     if (!code || typeof code !== 'string') {
-      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=no_code`);
+      return res.redirect(`${getFrontendUrl()}/login?error=no_code`);
     }
 
     const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip;
@@ -199,7 +205,7 @@ router.get('/google/callback', async (req, res) => {
 
     // Redirect to frontend with tokens in URL params (will be stored by frontend)
     const redirectPath = (state as string) || '/account';
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl = getFrontendUrl();
     
     // Encode tokens for URL
     const params = new URLSearchParams({
@@ -212,7 +218,7 @@ router.get('/google/callback', async (req, res) => {
     res.redirect(`${frontendUrl}/auth/callback?${params.toString()}&redirect=${encodeURIComponent(redirectPath)}`);
   } catch (error: any) {
     console.error('[GoogleOAuth] Callback error:', error);
-    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=oauth_failed`);
+    res.redirect(`${getFrontendUrl()}/login?error=oauth_failed`);
   }
 });
 
