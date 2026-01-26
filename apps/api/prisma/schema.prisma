@@ -10,7 +10,7 @@ datasource db {
 model User {
   id                         String             @id @default(cuid())
   email                      String             @unique
-  password                   String
+  password                   String?
   firstName                  String             @map("first_name")
   lastName                   String             @map("last_name")
   phone                      String?
@@ -27,6 +27,10 @@ model User {
   passwordChangedAt          DateTime?          @map("password_changed_at")
   email_verification_expires DateTime?
   email_verification_token   String?            @unique
+  // OAuth fields
+  authProvider               AuthProvider       @default(LOCAL) @map("auth_provider")
+  googleId                   String?            @unique @map("google_id")
+  avatarUrl                  String?            @map("avatar_url")
   addresses                  Address[]
   cart                       Cart?
   orders                     Order[]
@@ -36,6 +40,11 @@ model User {
   wishlistItems              WishlistItem[]
 
   @@map("users")
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
 }
 
 model Address {
