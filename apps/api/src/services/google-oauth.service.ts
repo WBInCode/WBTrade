@@ -115,13 +115,9 @@ class GoogleOAuthService {
       throw new Error('Google OAuth is not configured');
     }
 
-    // Debug logging (remove in production after fixing)
-    console.log('[GoogleOAuth] Token exchange request:', {
-      client_id: GOOGLE_CLIENT_ID?.substring(0, 20) + '...',
-      client_secret_length: GOOGLE_CLIENT_SECRET?.length,
-      redirect_uri: GOOGLE_REDIRECT_URI,
-      code_length: code?.length,
-    });
+    // Debug logging
+    console.log('[GoogleOAuth] Token exchange - redirect_uri:', GOOGLE_REDIRECT_URI);
+    console.log('[GoogleOAuth] Token exchange - client_id starts with:', GOOGLE_CLIENT_ID?.substring(0, 15));
 
     const response = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
