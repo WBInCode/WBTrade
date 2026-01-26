@@ -213,24 +213,9 @@ async function reassignProducts(categoryCache, mainCategoryIds, inneCat) {
         targetCategory = inneCat;
       }
       
-      // Sprawdź czy kategoria docelowa jest główną kategorią z podkategoriami
-      // Jeśli tak, przekieruj do "Inne"
-      if (mainCategoryIds.has(targetCategory.id)) {
-        // Sprawdź czy ta główna kategoria ma podkategorie
-        const mainCatData = Array.from(categoryCache.values())
-          .find(c => c.id === targetCategory.id);
-        
-        // Jeśli produkt ma trafić do głównej która ma podkategorie, 
-        // to znaczy że brakuje tagu podkategorii - kieruj do "Inne"
-        const hasSubcategories = Array.from(categoryCache.values())
-          .some(c => c.parentId === targetCategory.id);
-        
-        if (hasSubcategories) {
-          targetCategory = inneCat;
-          mapping.assignToSlug = 'inne';
-          mapping.note = 'Główna kategoria ma podkategorie, brak tagu podkategorii';
-        }
-      }
+      // USUNIĘTO: Logikę przekierowującą produkty do "Inne" gdy główna kategoria ma podkategorie
+      // Teraz produkty z samym tagiem głównej kategorii (np. "gastronomia") 
+      // trafiają bezpośrednio do tej kategorii głównej
       
       const targetCategoryId = targetCategory.id;
       const catName = mapping.subCategory 

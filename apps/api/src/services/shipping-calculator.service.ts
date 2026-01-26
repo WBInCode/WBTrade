@@ -638,12 +638,15 @@ export class ShippingCalculatorService {
         });
         
         // InPost Kurier - available only if InPost is available
+        // Cena kuriera też mnożona przez liczbę paczek (tak jak paczkomat)
         methods.push({
           id: 'inpost_kurier',
           name: 'Kurier InPost',
-          price: SHIPPING_PRICES.inpost_kurier,
+          price: paczkomatPackages * SHIPPING_PRICES.inpost_kurier,
           available: isInPostAvailable,
-          message: !isInPostAvailable ? 'Produkt dostępny tylko z DPD' : undefined,
+          message: !isInPostAvailable 
+            ? 'Produkt dostępny tylko z DPD' 
+            : (paczkomatPackages > 1 ? `${paczkomatPackages} paczki` : undefined),
           estimatedDelivery: '1-2 dni',
         });
         

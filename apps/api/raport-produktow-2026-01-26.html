@@ -1,0 +1,434 @@
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Raport produktów - WBTrade</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { 
+      font-family: 'Segoe UI', Arial, sans-serif; 
+      margin: 0; 
+      padding: 20px;
+      background: #f5f5f5;
+      color: #333;
+    }
+    .container { 
+      max-width: 900px; 
+      margin: 0 auto; 
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 { 
+      text-align: center; 
+      color: #2c3e50;
+      margin-bottom: 5px;
+    }
+    .date { 
+      text-align: center; 
+      color: #7f8c8d; 
+      margin-bottom: 30px;
+    }
+    h2 { 
+      color: #34495e; 
+      border-bottom: 2px solid #3498db;
+      padding-bottom: 10px;
+      margin-top: 30px;
+    }
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin: 15px 0;
+    }
+    th, td { 
+      padding: 12px 15px; 
+      text-align: left; 
+      border-bottom: 1px solid #ddd;
+    }
+    th { 
+      background: #3498db; 
+      color: white;
+      font-weight: 600;
+    }
+    tr:nth-child(even) { background: #f8f9fa; }
+    tr:hover { background: #e8f4fc; }
+    .number { text-align: right; font-weight: 500; }
+    .highlight { 
+      background: #e8f8f5 !important; 
+      font-weight: bold;
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin: 20px 0;
+    }
+    .summary-box {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+    }
+    .summary-box.green { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+    .summary-box.orange { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .summary-box.blue { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .summary-box .value {
+      font-size: 32px;
+      font-weight: bold;
+      display: block;
+    }
+    .summary-box .label {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    .status-active { color: #27ae60; }
+    .status-hidden { color: #e74c3c; }
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      color: #7f8c8d;
+      font-size: 12px;
+    }
+    @media print {
+      body { background: white; padding: 0; }
+      .container { box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📊 Raport Ilościowy Produktów</h1>
+    <p class="date">Wygenerowano: 26.01.2026, 10:52:45</p>
+
+    <div class="summary-grid">
+      <div class="summary-box">
+        <span class="value">37 345</span>
+        <span class="label">Łącznie w bazie</span>
+      </div>
+      <div class="summary-box green">
+        <span class="value">20 308</span>
+        <span class="label">Widoczne na stronie</span>
+      </div>
+      <div class="summary-box blue">
+        <span class="value">20 308</span>
+        <span class="label">Ze stanem > 0</span>
+      </div>
+      <div class="summary-box orange">
+        <span class="value">17 037</span>
+        <span class="label">Bez stanu</span>
+      </div>
+    </div>
+
+    <h2>📈 Statystyki podstawowe</h2>
+    <table>
+      <tr><td>Produkty ACTIVE</td><td class="number">37 344</td></tr>
+      <tr><td>Produkty DRAFT</td><td class="number">0</td></tr>
+      <tr><td>Produkty ARCHIVED</td><td class="number">1</td></tr>
+      <tr class="highlight"><td>ACTIVE bez stanu magazynowego</td><td class="number">17 036</td></tr>
+    </table>
+
+    <h2>🏭 Podział wg hurtowni</h2>
+    <table>
+      <tr>
+        <th>Hurtownia</th>
+        <th class="number">Łącznie</th>
+        <th class="number">ACTIVE</th>
+        <th class="number">Ze stanem</th>
+        <th class="number">Widoczne</th>
+      </tr>
+      
+          <tr>
+            <td>HP</td>
+            <td class="number">18 870</td>
+            <td class="number">18 870</td>
+            <td class="number">11 135</td>
+            <td class="number">11 135</td>
+          </tr>
+        
+          <tr>
+            <td>BTP</td>
+            <td class="number">11 691</td>
+            <td class="number">11 690</td>
+            <td class="number">6373</td>
+            <td class="number">6373</td>
+          </tr>
+        
+          <tr>
+            <td>Leker</td>
+            <td class="number">3895</td>
+            <td class="number">3895</td>
+            <td class="number">1791</td>
+            <td class="number">1791</td>
+          </tr>
+        
+          <tr>
+            <td>Ikonka</td>
+            <td class="number">2889</td>
+            <td class="number">2889</td>
+            <td class="number">1009</td>
+            <td class="number">1009</td>
+          </tr>
+        
+    </table>
+
+    <h2>📂 Podział wg kategorii</h2>
+    <table>
+      <tr>
+        <th>Kategoria</th>
+        <th class="number">Łącznie</th>
+        <th class="number">Widoczne</th>
+        <th>Status</th>
+      </tr>
+      
+        <tr>
+          <td>Etui i akcesoria GSM</td>
+          <td class="number">14 378</td>
+          <td class="number">9291</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Gastronomiczne</td>
+          <td class="number">7019</td>
+          <td class="number">4979</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Zabawki</td>
+          <td class="number">4969</td>
+          <td class="number">2160</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Inne</td>
+          <td class="number">2019</td>
+          <td class="number">13</td>
+          <td class="status-hidden">❌ ukryta</td>
+        </tr>
+      
+        <tr>
+          <td>Ogród</td>
+          <td class="number">1592</td>
+          <td class="number">520</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Turystyka</td>
+          <td class="number">1288</td>
+          <td class="number">647</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Akcesoria domowe</td>
+          <td class="number">1185</td>
+          <td class="number">616</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Dom i ogród</td>
+          <td class="number">718</td>
+          <td class="number">203</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Zdrowie i uroda</td>
+          <td class="number">681</td>
+          <td class="number">185</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Akcesoria samochodowe</td>
+          <td class="number">631</td>
+          <td class="number">243</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Słuchawki</td>
+          <td class="number">451</td>
+          <td class="number">270</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Pojazdy dla dzieci</td>
+          <td class="number">394</td>
+          <td class="number">144</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Artykuły dla dzieci</td>
+          <td class="number">375</td>
+          <td class="number">220</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Akcesoria sportowe</td>
+          <td class="number">299</td>
+          <td class="number">145</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Artykuły szkolne</td>
+          <td class="number">288</td>
+          <td class="number">175</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Wyposażenie wnętrz</td>
+          <td class="number">201</td>
+          <td class="number">97</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Domowe AGD</td>
+          <td class="number">161</td>
+          <td class="number">44</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Oświetlenie</td>
+          <td class="number">153</td>
+          <td class="number">55</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Naczynia i zastawa</td>
+          <td class="number">121</td>
+          <td class="number">99</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Artykuły plastyczne</td>
+          <td class="number">80</td>
+          <td class="number">13</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Rekreacja</td>
+          <td class="number">68</td>
+          <td class="number">18</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Smartwatche</td>
+          <td class="number">60</td>
+          <td class="number">29</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Akcesoria dla zwierząt</td>
+          <td class="number">57</td>
+          <td class="number">45</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Biurowe i papiernicze</td>
+          <td class="number">52</td>
+          <td class="number">39</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Kostiumy i przebrania</td>
+          <td class="number">38</td>
+          <td class="number">33</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Elektronika</td>
+          <td class="number">24</td>
+          <td class="number">5</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Folie samochodowe</td>
+          <td class="number">23</td>
+          <td class="number">3</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Dziecko</td>
+          <td class="number">16</td>
+          <td class="number">14</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Smartfony i telefony</td>
+          <td class="number">4</td>
+          <td class="number">3</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Motoryzacja</td>
+          <td class="number">0</td>
+          <td class="number">0</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Akcesoria Komputerowe</td>
+          <td class="number">0</td>
+          <td class="number">0</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+        <tr>
+          <td>Sport</td>
+          <td class="number">0</td>
+          <td class="number">0</td>
+          <td class="status-active">✅ aktywna</td>
+        </tr>
+      
+    </table>
+
+    <h2>💰 Statystyki cenowe</h2>
+    <table>
+      <tr><td>Średnia cena</td><td class="number">394.59 PLN</td></tr>
+      <tr><td>Minimalna cena</td><td class="number">0.00 PLN</td></tr>
+      <tr><td>Maksymalna cena</td><td class="number">41733.82 PLN</td></tr>
+    </table>
+
+    <h2>📦 Statystyki stanów magazynowych</h2>
+    <table>
+      <tr><td>Łączny stan magazynowy</td><td class="number">4 033 322 szt.</td></tr>
+      <tr><td>Średni stan na produkt</td><td class="number">198.6 szt.</td></tr>
+      <tr><td>Niski stan (1-5 szt.)</td><td class="number">2705 produktów</td></tr>
+      <tr><td>Średni stan (6-20 szt.)</td><td class="number">3644 produktów</td></tr>
+      <tr><td>Wysoki stan (>20 szt.)</td><td class="number">13 959 produktów</td></tr>
+    </table>
+
+    <div class="footer">
+      <p>WBTrade - Raport wygenerowany automatycznie</p>
+    </div>
+  </div>
+</body>
+</html>
+  
