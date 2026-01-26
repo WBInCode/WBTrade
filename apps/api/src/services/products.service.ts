@@ -18,6 +18,19 @@ const DELIVERY_TAGS = [
   'do 31,5 kg',
 ];
 
+// Tagi głównych kategorii - produkty MUSZĄ mieć przynajmniej jeden z tych tagów
+// żeby być przypisane do kategorii i widoczne na stronie
+const CATEGORY_TAGS = [
+  'Elektronika',
+  'Sport',
+  'Zdrowie i uroda',
+  'Dom i ogród',
+  'Motoryzacja',
+  'Dziecko',
+  'Biurowe i papiernicze',
+  'Gastronomiczne',
+];
+
 interface ProductFilters {
   page?: number;
   limit?: number;
@@ -234,10 +247,23 @@ export class ProductsService {
     const where: Prisma.ProductWhereInput = {
       // Always filter out products with price <= 0
       price: { gt: 0 },
-      // Produkty MUSZĄ mieć tag dostawy - nie pokazuj produktów z tylko tagiem hurtowni
-      tags: {
-        hasSome: DELIVERY_TAGS,
+      // Produkty MUSZĄ mieć stan magazynowy > 0
+      variants: {
+        some: {
+          inventory: {
+            some: {
+              quantity: { gt: 0 }
+            }
+          }
+        }
       },
+      // Produkty MUSZĄ mieć tag dostawy ORAZ tag kategorii
+      AND: [
+        // Tag dostawy - nie pokazuj produktów z tylko tagiem hurtowni
+        { tags: { hasSome: DELIVERY_TAGS } },
+        // Tag kategorii - produkty muszą być przypisane do kategorii
+        { tags: { hasSome: CATEGORY_TAGS } },
+      ],
     };
     
     // Only filter by status if explicitly provided
@@ -360,6 +386,10 @@ export class ProductsService {
       const deliveryTagsFilter = DELIVERY_TAGS.map(tag => `"${tag}"`).join(', ');
       meiliFilters.push(`tags IN [${deliveryTagsFilter}]`);
       
+      // Produkty MUSZĄ mieć tag kategorii
+      const categoryTagsFilter = CATEGORY_TAGS.map(tag => `"${tag}"`).join(', ');
+      meiliFilters.push(`tags IN [${categoryTagsFilter}]`);
+      
       // Only filter by status if explicitly provided
       if (status) {
         meiliFilters.push(`status = "${status}"`);
@@ -425,6 +455,21 @@ export class ProductsService {
       const products = await prisma.product.findMany({
         where: {
           id: { in: productIds },
+          // Dodatkowy filtr: produkty muszą mieć stan > 0
+          variants: {
+            some: {
+              inventory: {
+                some: {
+                  quantity: { gt: 0 }
+                }
+              }
+            }
+          },
+          // Produkty MUSZĄ mieć tag dostawy ORAZ tag kategorii
+          AND: [
+            { tags: { hasSome: DELIVERY_TAGS } },
+            { tags: { hasSome: CATEGORY_TAGS } },
+          ],
         },
         include: {
           images: {
@@ -488,7 +533,25 @@ export class ProductsService {
 
     const skip = (page - 1) * limit;
 
-    const where: Prisma.ProductWhereInput = {};
+    const where: Prisma.ProductWhereInput = {
+      // Produkty MUSZĄ mieć cenę > 0
+      price: { gt: 0 },
+      // Produkty MUSZĄ mieć stan magazynowy > 0
+      variants: {
+        some: {
+          inventory: {
+            some: {
+              quantity: { gt: 0 }
+            }
+          }
+        }
+      },
+      // Produkty MUSZĄ mieć tag dostawy ORAZ tag kategorii
+      AND: [
+        { tags: { hasSome: DELIVERY_TAGS } },
+        { tags: { hasSome: CATEGORY_TAGS } },
+      ],
+    };
     
     // Only filter by status if explicitly provided
     if (status) {

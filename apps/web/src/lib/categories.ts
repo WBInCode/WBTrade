@@ -1,6 +1,12 @@
 // Centralna konfiguracja kategorii - jedno źródło prawdy
 // Uwaga: główne kategorie są teraz pobierane dynamicznie z API (categoriesApi.getMain())
 // Ten plik zawiera definicje typów i helper functions
+//
+// NOWA LOGIKA KATEGORII (01/2026):
+// - Kategorie są mapowane na podstawie TAGÓW z Baselinkera
+// - Każdy produkt ma 2 tagi: główna kategoria + podkategoria
+// - Główne kategorie to KONTENERY - nie wyświetlają produktów bezpośrednio
+// - Produkty wyświetlają się TYLKO w podkategoriach
 
 /**
  * Usuwa prefiksy [BTP], [HP] itp. z nazwy kategorii
@@ -18,131 +24,76 @@ export interface Category {
   children?: Category[];
 }
 
-// Główne kategorie (zsynchronizowane z bazą danych)
+// Główne kategorie (zsynchronizowane z tagami Baselinker)
+// UWAGA: Te kategorie to KONTENERY - produkty wyświetlają się tylko w podkategoriach
 export const mainCategories: Category[] = [
   {
     name: 'Elektronika',
     slug: 'elektronika',
     children: [
-      { name: 'Laptopy i komputery', slug: 'elektronika-laptopy-i-komputery' },
-      { name: 'Smartfony i telefony', slug: 'elektronika-smartfony-i-telefony' },
-      { name: 'Etui i akcesoria GSM', slug: 'elektronika-etui-i-akcesoria-gsm' },
-      { name: 'Ładowarki i kable', slug: 'elektronika-ladowarki-i-kable' },
-      { name: 'Słuchawki i audio', slug: 'elektronika-sluchawki-i-audio' },
-      { name: 'Smartwatche i wearables', slug: 'elektronika-smartwatche-i-wearables' },
-      { name: 'Tablety', slug: 'elektronika-tablety' },
-      { name: 'Telewizory', slug: 'elektronika-telewizory' },
-      { name: 'Konsole i gaming', slug: 'elektronika-konsole-i-gaming' },
-      { name: 'Aparaty i kamery', slug: 'elektronika-aparaty-i-kamery' },
-      { name: 'Akcesoria komputerowe', slug: 'elektronika-akcesoria-komputerowe' },
-      { name: 'Narzędzia elektroniczne', slug: 'elektronika-narzedzia-elektroniczne' },
-    ]
-  },
-  {
-    name: 'Moda',
-    slug: 'moda',
-    children: [
-      { name: 'Odzież damska', slug: 'moda-odziez-damska' },
-      { name: 'Odzież męska', slug: 'moda-odziez-meska' },
-      { name: 'Odzież dziecięca', slug: 'moda-odziez-dziecieca' },
-      { name: 'Buty', slug: 'moda-buty' },
-      { name: 'Akcesoria modowe', slug: 'moda-akcesoria-modowe' },
-    ]
-  },
-  {
-    name: 'Dom i Ogród',
-    slug: 'dom-i-ogrod',
-    children: [
-      { name: 'Meble', slug: 'dom-i-ogrod-meble' },
-      { name: 'Dekoracje', slug: 'dom-i-ogrod-dekoracje' },
-      { name: 'Ogród', slug: 'ogrod' },
-      { name: 'Narzędzia', slug: 'narzedzia' },
-    ]
-  },
-  {
-    name: 'Supermarket',
-    slug: 'supermarket',
-    children: [
-      { name: 'Żywność', slug: 'zywnosc' },
-      { name: 'Napoje', slug: 'napoje' },
-      { name: 'Chemia domowa', slug: 'chemia-domowa' },
-    ]
-  },
-  {
-    name: 'Dziecko',
-    slug: 'dziecko',
-    children: [
-      { name: 'Artykuły dziecięce', slug: 'dziecko-artykuly-dzieciece' },
-      { name: 'Zabawki', slug: 'zabawki' },
-      { name: 'Ubranka', slug: 'ubranka' },
-      { name: 'Wózki', slug: 'wozki' },
-    ]
-  },
-  {
-    name: 'Uroda',
-    slug: 'uroda',
-    children: [
-      { name: 'Pielęgnacja', slug: 'pielegnacja' },
-      { name: 'Makijaż', slug: 'makijaz' },
-      { name: 'Perfumy', slug: 'perfumy' },
-    ]
-  },
-  {
-    name: 'Motoryzacja',
-    slug: 'motoryzacja',
-    children: [
-      { name: 'Części samochodowe', slug: 'motoryzacja-czesci-samochodowe' },
-      { name: 'Akcesoria samochodowe', slug: 'akcesoria-moto' },
-      { name: 'Opony', slug: 'opony' },
-    ]
-  },
-  {
-    name: 'AGD',
-    slug: 'agd',
-    children: [
-      { name: 'Małe AGD kuchenne', slug: 'agd-male-agd-kuchenne' },
-      { name: 'Duże AGD', slug: 'agd-duze-agd' },
-      { name: 'Sprzątanie', slug: 'agd-sprzatanie' },
-      { name: 'Klimatyzacja', slug: 'agd-klimatyzacja' },
-    ]
-  },
-  {
-    name: 'Gastronomia',
-    slug: 'gastronomia',
-    children: [
-      { name: 'Urządzenia gastronomiczne', slug: 'gastronomia-urzadzenia-gastronomiczne' },
-      { name: 'Wyposażenie kuchni', slug: 'gastronomia-wyposazenie-kuchni' },
-      { name: 'Naczynia i sztućce', slug: 'gastronomia-naczynia-i-sztucce' },
-      { name: 'Maszyny do mięsa', slug: 'gastronomia-maszyny-do-miesa' },
-      { name: 'Chłodnictwo', slug: 'gastronomia-chlodnictwo-gastronomiczne' },
-      { name: 'Pakowanie', slug: 'gastronomia-pakowanie-gastronomia' },
-      { name: 'Roboty kuchenne', slug: 'gastronomia-roboty-kuchenne' },
+      { name: 'Akcesoria Komputerowe', slug: 'akcesoria-komputerowe' },
+      { name: 'Etui i akcesoria GSM', slug: 'etui-i-akcesoria-gsm' },
+      { name: 'Smartfony i telefony', slug: 'smartfony-i-telefony' },
+      { name: 'Smartwatche', slug: 'smartwatche' },
+      { name: 'Słuchawki', slug: 'sluchawki' },
     ]
   },
   {
     name: 'Sport',
     slug: 'sport',
     children: [
-      { name: 'Fitness', slug: 'sport-fitness' },
-      { name: 'Rowery', slug: 'sport-rowery' },
-      { name: 'Turystyka', slug: 'sport-turystyka' },
+      { name: 'Akcesoria sportowe', slug: 'akcesoria-sportowe' },
+      { name: 'Rekreacja', slug: 'rekreacja' },
+      { name: 'Turystyka', slug: 'turystyka' },
     ]
   },
   {
-    name: 'Zdrowie i Uroda',
+    name: 'Zdrowie i uroda',
     slug: 'zdrowie-i-uroda',
+    children: []  // Brak podkategorii - produkty trafiają bezpośrednio tutaj
+  },
+  {
+    name: 'Dom i ogród',
+    slug: 'dom-i-ogrod',
     children: [
-      { name: 'Kosmetyki', slug: 'zdrowie-i-uroda-kosmetyki' },
-      { name: 'Higiena', slug: 'zdrowie-i-uroda-higiena' },
+      { name: 'Akcesoria dla zwierząt', slug: 'akcesoria-dla-zwierzat' },
+      { name: 'Akcesoria domowe', slug: 'akcesoria-domowe' },
+      { name: 'Domowe AGD', slug: 'domowe-agd' },
+      { name: 'Ogród', slug: 'ogrod' },
+      { name: 'Oświetlenie', slug: 'oswietlenie' },
+      { name: 'Wyposażenie wnętrz', slug: 'wyposazenie-wnetrz' },
     ]
   },
   {
-    name: 'Zwierzęta',
-    slug: 'zwierzeta',
+    name: 'Motoryzacja',
+    slug: 'motoryzacja',
     children: [
-      { name: 'Dla psa', slug: 'zwierzeta-dla-psa' },
-      { name: 'Dla kota', slug: 'zwierzeta-dla-kota' },
-      { name: 'Akwaria', slug: 'zwierzeta-akwaria' },
+      { name: 'Akcesoria samochodowe', slug: 'akcesoria-samochodowe' },
+      { name: 'Folie samochodowe', slug: 'folie-samochodowe' },
+    ]
+  },
+  {
+    name: 'Dziecko',
+    slug: 'dziecko',
+    children: [
+      { name: 'Kostiumy i przebrania', slug: 'kostiumy-i-przebrania' },
+      { name: 'Zabawki', slug: 'zabawki' },
+      { name: 'Pojazdy dla dzieci', slug: 'pojazdy-dla-dzieci' },
+      { name: 'Artykuły dla dzieci', slug: 'artykuly-dla-dzieci' },
+      { name: 'Artykuły plastyczne', slug: 'artykuly-plastyczne' },
+      { name: 'Artykuły szkolne', slug: 'artykuly-szkolne' },
+    ]
+  },
+  {
+    name: 'Biurowe i papiernicze',
+    slug: 'biurowe-i-papiernicze',
+    children: []  // Brak podkategorii - produkty trafiają bezpośrednio tutaj
+  },
+  {
+    name: 'Gastronomiczne',
+    slug: 'gastronomiczne',
+    children: [
+      { name: 'Naczynia i zastawa', slug: 'naczynia-i-zastawa' },
     ]
   },
   {
@@ -180,6 +131,38 @@ export function getCategoryPath(slug: string, categories: Category[] = mainCateg
 // Helper: sprawdź czy slug jest główną kategorią
 export function isMainCategory(slug: string): boolean {
   return mainCategories.some(cat => cat.slug === slug);
+}
+
+// Helper: sprawdź czy kategoria jest kontenerem (ma podkategorie z produktami)
+// Kontenery nie wyświetlają produktów bezpośrednio - tylko ich podkategorie
+export function isCategoryContainer(slug: string): boolean {
+  const cat = findCategoryBySlug(slug, mainCategories);
+  if (!cat) return false;
+  
+  // Główna kategoria z podkategoriami to kontener
+  if (isMainCategory(slug) && cat.children && cat.children.length > 0) {
+    return true;
+  }
+  
+  return false;
+}
+
+// Helper: sprawdź czy produkty mogą być wyświetlane bezpośrednio w tej kategorii
+export function canShowProductsDirectly(slug: string): boolean {
+  // Jeśli to podkategoria - zawsze może wyświetlać produkty
+  if (!isMainCategory(slug)) {
+    return true;
+  }
+  
+  // Jeśli to główna kategoria bez podkategorii (np. "Zdrowie i uroda", "Biurowe i papiernicze")
+  // - produkty trafiają bezpośrednio tutaj
+  const cat = findCategoryBySlug(slug, mainCategories);
+  if (cat && (!cat.children || cat.children.length === 0)) {
+    return true;
+  }
+  
+  // Główna kategoria z podkategoriami - nie wyświetla produktów bezpośrednio
+  return false;
 }
 
 // Helper: znajdź główną kategorię dla podkategorii
