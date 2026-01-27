@@ -177,7 +177,7 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
         <div className="container-custom py-5">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-gray-300">
-              © 2025 WBTrade. Wszelkie prawa zastrzeżone.
+              © 2025 WB Trade. Wszelkie prawa zastrzeżone.
             </p>
             <div className="flex items-center gap-6">
               <Link href="/privacy" className="text-sm text-gray-300 hover:text-white transition-colors">Polityka prywatności</Link>

@@ -3,8 +3,8 @@ import Footer from '../../../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Zmiana zamówienia - Centrum pomocy - WBTrade',
-  description: 'Dowiedz się jak zmienić szczegóły zamówienia w WBTrade',
+  title: 'Zmiana zamówienia - Centrum pomocy - WB Trade',
+  description: 'Dowiedz się jak zmienić szczegóły zamówienia w WB Trade',
 };
 
 export default function OrderModifyPage() {

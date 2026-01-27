@@ -3,8 +3,8 @@ import Footer from '../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Centrum pomocy - WBTrade',
-  description: 'Znajdź odpowiedzi na najczęściej zadawane pytania i uzyskaj pomoc w WBTrade',
+  title: 'Centrum pomocy - WB Trade',
+  description: 'Znajdź odpowiedzi na najczęściej zadawane pytania i uzyskaj pomoc w WB Trade',
 };
 
 export default function HelpPage() {

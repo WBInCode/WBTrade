@@ -3,8 +3,8 @@ import Footer from '../../../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Problemy z płatnością - Centrum pomocy - WBTrade',
-  description: 'Rozwiązywanie problemów z płatnościami w WBTrade',
+  title: 'Problemy z płatnością - Centrum pomocy - WB Trade',
+  description: 'Rozwiązywanie problemów z płatnościami w WB Trade',
 };
 
 export default function PaymentIssuesPage() {

@@ -3,8 +3,8 @@ import Footer from '../../../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Metody płatności - Centrum pomocy - WBTrade',
-  description: 'Poznaj dostępne metody płatności w WBTrade',
+  title: 'Metody płatności - Centrum pomocy - WB Trade',
+  description: 'Poznaj dostępne metody płatności w WB Trade',
 };
 
 export default function PaymentMethodsPage() {
@@ -31,7 +31,7 @@ export default function PaymentMethodsPage() {
             <div className="bg-white rounded-2xl p-8 shadow-sm">
               <div className="prose prose-lg max-w-none">
                 <p className="text-secondary-600 text-lg mb-8">
-                  W WBTrade oferujemy wiele bezpiecznych i wygodnych metod płatności. Wybierz tę, która najlepiej odpowiada Twoim potrzebom.
+                  W WB Trade oferujemy wiele bezpiecznych i wygodnych metod płatności. Wybierz tę, która najlepiej odpowiada Twoim potrzebom.
                 </p>
 
                 <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">

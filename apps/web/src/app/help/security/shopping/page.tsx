@@ -3,8 +3,8 @@ import Footer from '../../../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Bezpieczeństwo zakupów - Centrum pomocy - WBTrade',
-  description: 'Jak bezpiecznie kupować w WBTrade',
+  title: 'Bezpieczeństwo zakupów - Centrum pomocy - WB Trade',
+  description: 'Jak bezpiecznie kupować w WB Trade',
 };
 
 export default function ShoppingSecurityPage() {
@@ -31,7 +31,7 @@ export default function ShoppingSecurityPage() {
             <div className="bg-white rounded-2xl p-8 shadow-sm">
               <div className="prose prose-lg max-w-none">
                 <p className="text-secondary-600 text-lg mb-8">
-                  W WBTrade bezpieczeństwo Twoich zakupów i danych jest dla nas priorytetem. Dowiedz się, jak chronimy Twoje transakcje.
+                  W WB Trade bezpieczeństwo Twoich zakupów i danych jest dla nas priorytetem. Dowiedz się, jak chronimy Twoje transakcje.
                 </p>
 
                 <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">
@@ -139,7 +139,7 @@ export default function ShoppingSecurityPage() {
                 <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-6">
                   <h4 className="font-semibold text-red-800 mb-2">⚠️ Nasza oficjalna strona to: wbtrade.pl</h4>
                   <p className="text-red-700 text-sm mb-3">
-                    Uważaj na strony podszywające się pod WBTrade:
+                    Uważaj na strony podszywające się pod WB Trade:
                   </p>
                   <ul className="list-disc pl-6 text-red-700 text-sm space-y-1">
                     <li>Sprawdzaj dokładnie adres strony przed zakupem</li>

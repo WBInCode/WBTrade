@@ -152,7 +152,7 @@ export default function RegisterPage() {
 
           <h2 className="text-4xl xl:text-5xl font-bold mb-6 leading-tight">
             Dołącz do<br />
-            WBTrade już dziś!
+            WB Trade już dziś!
           </h2>
 
           <p className="text-xl text-white/80 mb-12 max-w-md">
