@@ -327,3 +327,54 @@ export async function getFilters(req: Request, res: Response): Promise<void> {
     res.status(500).json({ message: 'Error retrieving filters', error });
   }
 }
+
+/**
+ * Get bestseller products based on actual sales data
+ */
+export async function getBestsellers(req: Request, res: Response): Promise<void> {
+  try {
+    const limit = parseInt(req.query.limit as string) || 20;
+    const category = req.query.category as string | undefined;
+    const days = parseInt(req.query.days as string) || 90;
+
+    const products = await productsService.getBestsellers({ limit, category, days });
+    res.status(200).json({ products });
+  } catch (error) {
+    console.error('Error fetching bestsellers:', error);
+    res.status(500).json({ message: 'Error retrieving bestsellers' });
+  }
+}
+
+/**
+ * Get featured products (admin-curated or fallback)
+ */
+export async function getFeatured(req: Request, res: Response): Promise<void> {
+  try {
+    const limit = parseInt(req.query.limit as string) || 20;
+    const productIds = req.query.productIds 
+      ? (req.query.productIds as string).split(',')
+      : undefined;
+
+    const products = await productsService.getFeatured({ limit, productIds });
+    res.status(200).json({ products });
+  } catch (error) {
+    console.error('Error fetching featured products:', error);
+    res.status(500).json({ message: 'Error retrieving featured products' });
+  }
+}
+
+/**
+ * Get seasonal products based on current season or specified season
+ */
+export async function getSeasonal(req: Request, res: Response): Promise<void> {
+  try {
+    const limit = parseInt(req.query.limit as string) || 20;
+    const season = req.query.season as 'spring' | 'summer' | 'autumn' | 'winter' | undefined;
+
+    const products = await productsService.getSeasonal({ limit, season });
+    res.status(200).json({ products });
+  } catch (error) {
+    console.error('Error fetching seasonal products:', error);
+    res.status(500).json({ message: 'Error retrieving seasonal products' });
+  }
+}
