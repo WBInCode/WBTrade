@@ -43,7 +43,7 @@ export default function TermsPage() {
                   <li>
                     Właścicielem i operatorem Sklepu jest WB PARTNERS Sp. z o.o. z siedzibą w Rzeszowie, 
                     ul. Juliusza Słowackiego 24/11, 35-060 Rzeszów, NIP: 5170455185, REGON: 540735769, 
-                    wpisana do rejestru przedsiębiorców KRS (dalej: „Sprzedawca").
+                    wpisana do rejestru przedsiębiorców KRS pod numerem 0001151642 (dalej: „Sprzedawca").
                   </li>
                   <li>
                     Kontakt ze Sprzedawcą możliwy jest pod adresem e-mail: support@wb-partners.pl 
