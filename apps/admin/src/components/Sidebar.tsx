@@ -10,10 +10,20 @@ import {
   LogOut,
   ChevronDown,
   Box,
+  LayoutDashboard,
+  Sparkles,
 } from 'lucide-react';
 import { useState } from 'react';
 
 const menuItems = [
+  {
+    title: 'Strona główna',
+    href: '/homepage',
+    icon: LayoutDashboard,
+    submenu: [
+      { title: 'Karuzele produktów', href: '/homepage/carousels' },
+    ],
+  },
   {
     title: 'Produkty',
     href: '/products',
