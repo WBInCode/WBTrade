@@ -42,7 +42,7 @@ export default function PrivacyPolicyPage() {
                 <p className="text-secondary-600 mb-6">
                   Administratorem danych osobowych jest WB PARTNERS Sp. z o.o. z siedzibą w Rzeszowie, 
                   ul. Juliusza Słowackiego 24/11, 35-060 Rzeszów, wpisana do rejestru przedsiębiorców 
-                  Krajowego Rejestru Sądowego, NIP: 8133000000, REGON: 380000000.
+                  Krajowego Rejestru Sądowego pod numerem 0001151642, NIP: 5170455185, REGON: 540735769.
                 </p>
 
                 <h2 className="text-2xl font-bold text-secondary-900 mt-10 mb-4">
