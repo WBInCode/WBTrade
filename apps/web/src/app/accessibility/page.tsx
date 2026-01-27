@@ -36,21 +36,21 @@ export default function AccessibilityPage() {
                   Nasze zobowiązanie
                 </h2>
                 <p className="text-secondary-600 mb-6">
-                  WBTrade zobowiązuje się do zapewnienia dostępności cyfrowej swojego serwisu 
-                  zgodnie z przepisami ustawy z dnia 4 kwietnia 2019 r. o dostępności cyfrowej 
-                  stron internetowych i aplikacji mobilnych podmiotów publicznych.
+                  WBTrade zobowiązuje się do&nbsp;zapewnienia dostępności cyfrowej swojego serwisu 
+                  zgodnie z&nbsp;przepisami ustawy z&nbsp;dnia 4&nbsp;kwietnia 2019&nbsp;r. o&nbsp;dostępności cyfrowej 
+                  stron internetowych i&nbsp;aplikacji mobilnych podmiotów publicznych.
                 </p>
                 <p className="text-secondary-600 mb-6">
                   Dokładamy wszelkich starań, aby nasz serwis był dostępny dla wszystkich 
-                  użytkowników, niezależnie od ich możliwości czy używanej technologii.
+                  użytkowników, niezależnie od&nbsp;ich możliwości czy używanej technologii.
                 </p>
 
                 <h2 className="text-2xl font-bold text-secondary-900 mt-10 mb-4">
                   Status zgodności
                 </h2>
                 <p className="text-secondary-600 mb-6">
-                  Serwis WBTrade jest częściowo zgodny z wytycznymi WCAG 2.1 na poziomie AA. 
-                  Nieustannie pracujemy nad poprawą dostępności i usuwaniem barier.
+                  Serwis WBTrade jest częściowo zgodny z&nbsp;wytycznymi WCAG&nbsp;2.1 na&nbsp;poziomie AA. 
+                  Nieustannie pracujemy nad poprawą dostępności i&nbsp;usuwaniem barier.
                 </p>
 
                 <h2 className="text-2xl font-bold text-secondary-900 mt-10 mb-4">
@@ -60,11 +60,11 @@ export default function AccessibilityPage() {
                   Nasz serwis zawiera następujące udogodnienia:
                 </p>
                 <ul className="list-disc pl-6 text-secondary-600 mb-6 space-y-2">
-                  <li>Możliwość nawigacji za pomocą klawiatury</li>
+                  <li>Możliwość nawigacji za&nbsp;pomocą klawiatury</li>
                   <li>Teksty alternatywne dla obrazów</li>
                   <li>Odpowiedni kontrast kolorów</li>
                   <li>Czytelna struktura nagłówków</li>
-                  <li>Responsywny design dostosowany do różnych urządzeń</li>
+                  <li>Responsywny design dostosowany do&nbsp;różnych urządzeń</li>
                   <li>Możliwość powiększania tekstu bez utraty funkcjonalności</li>
                   <li>Widoczny fokus przy nawigacji klawiaturą</li>
                   <li>Etykiety dla pól formularzy</li>
@@ -86,7 +86,7 @@ export default function AccessibilityPage() {
                   Skróty klawiaturowe
                 </h2>
                 <p className="text-secondary-600 mb-4">
-                  W serwisie można używać standardowych skrótów klawiaturowych:
+                  W&nbsp;serwisie można używać standardowych skrótów klawiaturowych:
                 </p>
                 <div className="bg-secondary-50 rounded-xl p-6 mb-6">
                   <ul className="list-none text-secondary-600 space-y-3">
@@ -113,24 +113,24 @@ export default function AccessibilityPage() {
                   Informacje zwrotne i dane kontaktowe
                 </h2>
                 <p className="text-secondary-600 mb-4">
-                  Jeśli zauważysz problemy z dostępnością lub potrzebujesz informacji 
-                  w alternatywnym formacie, skontaktuj się z nami:
+                  Jeśli zauważysz problemy z&nbsp;dostępnością lub potrzebujesz informacji 
+                  w&nbsp;alternatywnym formacie, skontaktuj się z&nbsp;nami:
                 </p>
                 <ul className="list-none text-secondary-600 mb-6 space-y-2">
                   <li>📧 E-mail: support@wb-partners.pl</li>
-                  <li>📞 Telefon: +48 570 034 367</li>
-                  <li>🏢 Adres: ul. Juliusza Słowackiego 24/11, 35-060 Rzeszów</li>
+                  <li>📞 Telefon: +48&nbsp;570&nbsp;034&nbsp;367</li>
+                  <li>🏢 Adres: ul.&nbsp;Juliusza Słowackiego 24/11, 35-060 Rzeszów</li>
                 </ul>
                 <p className="text-secondary-600 mb-6">
-                  Staramy się odpowiadać na zgłoszenia dotyczące dostępności w ciągu 7 dni roboczych.
+                  Staramy się odpowiadać na&nbsp;zgłoszenia dotyczące dostępności w&nbsp;ciągu 7&nbsp;dni roboczych.
                 </p>
 
                 <h2 className="text-2xl font-bold text-secondary-900 mt-10 mb-4">
                   Procedura skargowa
                 </h2>
                 <p className="text-secondary-600 mb-6">
-                  W przypadku braku satysfakcjonującej odpowiedzi na zgłoszenie dotyczące 
-                  dostępności, możesz złożyć skargę do Rzecznika Praw Obywatelskich 
+                  W&nbsp;przypadku braku satysfakcjonującej odpowiedzi na&nbsp;zgłoszenie dotyczące 
+                  dostępności, możesz złożyć skargę do&nbsp;Rzecznika Praw Obywatelskich 
                   (www.rpo.gov.pl).
                 </p>
 
@@ -141,8 +141,8 @@ export default function AccessibilityPage() {
                   Deklaracja została sporządzona dnia: 18 grudnia 2025
                 </p>
                 <p className="text-secondary-600 mb-6">
-                  Deklaracja została przygotowana na podstawie samooceny przeprowadzonej 
-                  przez WB PARTNERS Sp. z o.o.
+                  Deklaracja została przygotowana na&nbsp;podstawie samooceny przeprowadzonej 
+                  przez WB&nbsp;PARTNERS Sp.&nbsp;z&nbsp;o.o.
                 </p>
 
               </div>
