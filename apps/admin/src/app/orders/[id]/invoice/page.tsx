@@ -192,11 +192,12 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
             <div>
               <p className="text-xs text-gray-500 font-bold mb-2 uppercase tracking-wider">Sprzedawca</p>
               <div className="border-l-4 border-orange-500 pl-4">
-                <p className="font-bold text-lg">WBTrade Sp. z o.o.</p>
-                <p className="text-gray-600">ul. Magazynowa 1</p>
-                <p className="text-gray-600">00-001 Warszawa</p>
-                <p className="text-gray-600 mt-2">NIP: 1234567890</p>
-                <p className="text-gray-600">REGON: 123456789</p>
+                <p className="font-bold text-lg">WB PARTNERS Sp. z o.o.</p>
+                <p className="text-gray-600">ul. Juliusza Słowackiego 24/11</p>
+                <p className="text-gray-600">35-060 Rzeszów</p>
+                <p className="text-gray-600 mt-2">NIP: 5170455185</p>
+                <p className="text-gray-600">REGON: 540735769</p>
+                <p className="text-gray-600">KRS: 0001151642</p>
               </div>
             </div>
             
