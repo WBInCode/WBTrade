@@ -151,7 +151,7 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
                 <svg className="w-5 h-5 text-primary-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span className="text-secondary-600 whitespace-nowrap">Pon-Pt: 9:00 - 17:00</span>
+                <span className="text-secondary-600 whitespace-nowrap">Pon. - Pt.: 9:00 - 17:00</span>
               </li>
             </ul>
           </div>
