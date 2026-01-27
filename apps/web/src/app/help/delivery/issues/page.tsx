@@ -3,8 +3,8 @@ import Footer from '../../../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Problemy z dostawą - Centrum pomocy - WBTrade',
-  description: 'Rozwiązywanie problemów z dostawą w WBTrade',
+  title: 'Problemy z dostawą - Centrum pomocy - WB Trade',
+  description: 'Rozwiązywanie problemów z dostawą w WB Trade',
 };
 
 export default function DeliveryIssuesPage() {

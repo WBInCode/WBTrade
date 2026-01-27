@@ -3,8 +3,8 @@ import Footer from '../../../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Status zamówienia - Centrum pomocy - WBTrade',
-  description: 'Dowiedz się jak sprawdzić status swojego zamówienia w WBTrade',
+  title: 'Status zamówienia - Centrum pomocy - WB Trade',
+  description: 'Dowiedz się jak sprawdzić status swojego zamówienia w WB Trade',
 };
 
 export default function OrderStatusPage() {

@@ -4,14 +4,14 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 export const metadata = {
-  title: 'Dla prasy - WBTrade',
-  description: 'Materiały prasowe, informacje o firmie i kontakt dla mediów - WBTrade',
+  title: 'Dla prasy - WB Trade',
+  description: 'Materiały prasowe, informacje o firmie i kontakt dla mediów - WB Trade',
 };
 
 export default function PressPage() {
   const mediaAssets = [
     {
-      title: 'Logo WBTrade',
+      title: 'Logo WB Trade',
       description: 'Oficjalne logo w różnych formatach i wariantach kolorystycznych.',
       formats: ['SVG', 'PNG', 'PDF'],
       icon: (
@@ -22,7 +22,7 @@ export default function PressPage() {
     },
     {
       title: 'Zdjęcia zespołu',
-      description: 'Profesjonalne zdjęcia zarządu i zespołu WBTrade.',
+      description: 'Profesjonalne zdjęcia zarządu i zespołu WB Trade.',
       formats: ['JPG', 'PNG'],
       icon: (
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -92,7 +92,7 @@ export default function PressPage() {
               Dla prasy i mediów
             </h1>
             <p className="text-xl text-secondary-300 leading-relaxed">
-              Znajdziesz tutaj najnowsze informacje o WBTrade, materiały do pobrania 
+              Znajdziesz tutaj najnowsze informacje o WB Trade, materiały do pobrania 
               oraz dane kontaktowe do naszego zespołu PR.
             </p>
           </div>
@@ -102,7 +102,7 @@ export default function PressPage() {
       {/* Quick Facts */}
       <section className="py-12 bg-white border-b">
         <div className="container-custom">
-          <h2 className="text-lg font-semibold text-secondary-900 mb-6 text-center">Fakty o WBTrade</h2>
+          <h2 className="text-lg font-semibold text-secondary-900 mb-6 text-center">Fakty o WB Trade</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
             {facts.map((fact, index) => (
               <div key={index} className="text-center">
@@ -122,7 +122,7 @@ export default function PressPage() {
               Komunikaty prasowe
             </h2>
             <p className="text-secondary-600">
-              Najnowsze informacje i ogłoszenia od WBTrade.
+              Najnowsze informacje i ogłoszenia od WB Trade.
             </p>
           </div>
           
@@ -153,7 +153,7 @@ export default function PressPage() {
               Materiały do pobrania
             </h2>
             <p className="text-secondary-600 max-w-2xl mx-auto">
-              Pobierz oficjalne materiały marki WBTrade do wykorzystania w publikacjach.
+              Pobierz oficjalne materiały marki WB Trade do wykorzystania w publikacjach.
             </p>
           </div>
           

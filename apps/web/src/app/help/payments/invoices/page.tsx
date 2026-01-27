@@ -3,8 +3,8 @@ import Footer from '../../../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Faktury - Centrum pomocy - WBTrade',
-  description: 'Informacje o fakturach i dokumentach sprzedaży w WBTrade',
+  title: 'Faktury - Centrum pomocy - WB Trade',
+  description: 'Informacje o fakturach i dokumentach sprzedaży w WB Trade',
 };
 
 export default function InvoicesPage() {

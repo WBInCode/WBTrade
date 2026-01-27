@@ -260,7 +260,7 @@ function AccountPageContent() {
             </svg>
             <div>
               <h4 className="font-medium text-green-800">Konto utworzone pomyślnie!</h4>
-              <p className="text-sm text-green-700">Witamy w WBTrade, {userData.name}!</p>
+              <p className="text-sm text-green-700">Witamy w WB Trade, {userData.name}!</p>
             </div>
           </div>
         )}

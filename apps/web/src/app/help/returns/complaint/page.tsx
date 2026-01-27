@@ -3,8 +3,8 @@ import Footer from '../../../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Reklamacja - Centrum pomocy - WBTrade',
-  description: 'Jak złożyć reklamację w WBTrade',
+  title: 'Reklamacja - Centrum pomocy - WB Trade',
+  description: 'Jak złożyć reklamację w WB Trade',
 };
 
 export default function ComplaintPage() {
@@ -68,7 +68,7 @@ export default function ComplaintPage() {
                 </h2>
                 <ol className="list-decimal pl-6 text-secondary-600 space-y-3 mb-6">
                   <li>
-                    <strong>Zaloguj się</strong> na swoje konto WBTrade
+                    <strong>Zaloguj się</strong> na swoje konto WB Trade
                   </li>
                   <li>
                     <strong>Przejdź do zamówienia:</strong> Moje konto → Zamówienia → Wybierz zamówienie
