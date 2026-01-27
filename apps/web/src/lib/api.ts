@@ -351,6 +351,22 @@ export const productsApi = {
     
   delete: (id: string) =>
     api.delete<void>(`/products/${id}`),
+
+  // Get bestsellers based on actual sales data
+  getBestsellers: (options?: { limit?: number; category?: string; days?: number }) =>
+    api.get<{ products: Product[] }>('/products/bestsellers', options as Record<string, string | number | boolean>),
+
+  // Get featured products (admin-curated or fallback)
+  getFeatured: (options?: { limit?: number; productIds?: string[] }) => {
+    const params: Record<string, string | number | boolean> = {};
+    if (options?.limit) params.limit = options.limit;
+    if (options?.productIds) params.productIds = options.productIds.join(',');
+    return api.get<{ products: Product[] }>('/products/featured', params);
+  },
+
+  // Get seasonal products
+  getSeasonal: (options?: { limit?: number; season?: 'spring' | 'summer' | 'autumn' | 'winter' }) =>
+    api.get<{ products: Product[] }>('/products/seasonal', options as Record<string, string | number | boolean>),
 };
 
 // ============================================

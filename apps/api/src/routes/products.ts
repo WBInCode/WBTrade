@@ -6,7 +6,10 @@ import {
   createProduct, 
   updateProduct, 
   deleteProduct,
-  getFilters
+  getFilters,
+  getBestsellers,
+  getFeatured,
+  getSeasonal
 } from '../controllers/products.controller';
 import { reviewsController } from '../controllers/reviews.controller';
 import { optionalAuth, authGuard, adminOnly } from '../middleware/auth.middleware';
@@ -22,6 +25,15 @@ router.get('/', getProducts);
 
 // Route to get available filters for products
 router.get('/filters', getFilters);
+
+// Route to get bestsellers (based on actual sales data)
+router.get('/bestsellers', getBestsellers);
+
+// Route to get featured products (admin-curated or fallback)
+router.get('/featured', getFeatured);
+
+// Route to get seasonal products
+router.get('/seasonal', getSeasonal);
 
 // Route to get a specific product by slug (SEO-friendly)
 router.get('/slug/:slug', getProductBySlug);
