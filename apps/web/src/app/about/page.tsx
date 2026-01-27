@@ -10,7 +10,7 @@ export const metadata = {
 export default function AboutPage() {
   const stats = [
     { value: 'tysiące', label: 'Zadowolonych klientów' },
-    { value: '40K+', label: 'Produktów w ofercie' },
+    { value: '50tyś+', label: 'Produktów w ofercie' },
     { value: '99.8%', label: 'Pozytywnych opinii' },
   ];
 
@@ -22,7 +22,7 @@ export default function AboutPage() {
         </svg>
       ),
       title: 'Zaufanie',
-      description: 'Budujemy długotrwałe relacje oparte na uczciwości i transparentności.',
+      description: 'Budujemy długotrwałe relacje oparte na\u00A0uczciwości i\u00A0transparentności.',
     },
     {
       icon: (
@@ -49,7 +49,7 @@ export default function AboutPage() {
         </svg>
       ),
       title: 'Zrównoważony rozwój',
-      description: 'Dbamy o środowisko i promujemy odpowiedzialne zakupy.',
+      description: 'Dbamy o\u00A0środowisko i\u00A0promujemy odpowiedzialne zakupy.',
     },
   ];
 
@@ -66,7 +66,7 @@ export default function AboutPage() {
               Tworzymy przyszłość <span className="text-primary-200">e-commerce</span>
             </h1>
             <p className="text-xl text-primary-100 leading-relaxed">
-              WBTrade to więcej niż platforma zakupowa. To społeczność tysięcy  użytkowników, 
+              WBTrade to&nbsp;więcej niż platforma zakupowa. To&nbsp;społeczność tysięcy użytkowników, 
               którzy każdego dnia ufają nam swoje zakupy online.
             </p>
           </div>
@@ -99,18 +99,18 @@ export default function AboutPage() {
               </h2>
               <div className="space-y-4 text-secondary-600 leading-relaxed">
                 <p>
-                  WBTrade powstało w 2025 roku z prostej idei – stworzyć miejsce, gdzie każdy 
-                  może bezpiecznie i wygodnie kupować online. Zaczęliśmy jako mały startup 
-                  z zespołem pięciu osób i marzeniem o zmianie sposobu, w jaki Polacy robią zakupy.
+                  WBTrade powstało w&nbsp;2025&nbsp;roku z&nbsp;prostej idei – stworzyć miejsce, gdzie każdy 
+                  może bezpiecznie i&nbsp;wygodnie kupować online. Zaczęliśmy jako mały startup 
+                  z&nbsp;zespołem pięciu osób i&nbsp;marzeniem o&nbsp;zmianie sposobu, w&nbsp;jaki Polacy robią zakupy.
                 </p>
                 <p>
-                  Dziś jesteśmy bardzo szybko rozwijającą się platformą e-commerce w Polsce. 
-                  Na naszej platformie znajdziesz ponad 50 000 produktów od sprawdzonych sprzedawców.
+                  Dziś jesteśmy bardzo szybko rozwijającą się platformą e-commerce w&nbsp;Polsce. 
+                  Na&nbsp;naszej platformie znajdziesz ponad 50&nbsp;000 produktów od&nbsp;sprawdzonych sprzedawców.
                 </p>
                 <p>
-                  Sukces zawdzięczamy przede wszystkim naszym klientom i partnerom, którzy 
-                  zaufali nam i wspierają nas na każdym kroku. To dla Was nieustannie się rozwijamy 
-                  i wprowadzamy innowacje.
+                  Sukces zawdzięczamy przede wszystkim naszym klientom i&nbsp;partnerom, którzy 
+                  zaufali nam i&nbsp;wspierają nas na&nbsp;każdym kroku. To&nbsp;dla Was nieustannie się rozwijamy 
+                  i&nbsp;wprowadzamy innowacje.
                 </p>
               </div>
             </div>
@@ -169,7 +169,7 @@ export default function AboutPage() {
             Dołącz do naszej społeczności
           </h2>
           <p className="text-primary-100 mb-8 max-w-2xl mx-auto">
-            Zostań częścią WBTrade i odkryj nowy wymiar zakupów online.
+            Zostań częścią WBTrade i&nbsp;odkryj nowy wymiar zakupów online.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a

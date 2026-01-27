@@ -30,6 +30,19 @@
     @apply bg-white text-secondary-900 antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+
+  /* Typografia - unikanie sierotek (krótkich słów na końcu linii) */
+  p, li, td, th {
+    text-wrap: pretty;
+    text-wrap: balance;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    text-wrap: balance;
+  }
 }
 
 @layer components {

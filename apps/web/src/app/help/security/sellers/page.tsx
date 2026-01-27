@@ -43,7 +43,7 @@ export default function SellersPage() {
                     <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 font-bold">1</div>
                     <div>
                       <h4 className="font-medium text-secondary-900">Weryfikacja tożsamości</h4>
-                      <p className="text-secondary-600 text-sm">Sprawdzamy dokumenty rejestrowe firmy, NIP, REGON oraz dane właścicieli.</p>
+                      <p className="text-secondary-600 text-sm">Sprawdzamy dokumenty rejestrowe firmy, NIP, REGON oraz\u00A0dane właścicieli.</p>
                     </div>
                   </div>
                   
@@ -51,7 +51,7 @@ export default function SellersPage() {
                     <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 font-bold">2</div>
                     <div>
                       <h4 className="font-medium text-secondary-900">Weryfikacja adresu</h4>
-                      <p className="text-secondary-600 text-sm">Potwierdzamy adres siedziby firmy i magazynu.</p>
+                      <p className="text-secondary-600 text-sm">Potwierdzamy adres siedziby firmy i\u00A0magazynu.</p>
                     </div>
                   </div>
                   
@@ -59,7 +59,7 @@ export default function SellersPage() {
                     <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 font-bold">3</div>
                     <div>
                       <h4 className="font-medium text-secondary-900">Weryfikacja konta bankowego</h4>
-                      <p className="text-secondary-600 text-sm">Sprawdzamy czy konto firmowe należy do zarejestrowanej działalności.</p>
+                      <p className="text-secondary-600 text-sm">Sprawdzamy czy konto firmowe należy do\u00A0zarejestrowanej działalności.</p>
                     </div>
                   </div>
                   
@@ -67,7 +67,7 @@ export default function SellersPage() {
                     <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 font-bold">4</div>
                     <div>
                       <h4 className="font-medium text-secondary-900">Weryfikacja produktów</h4>
-                      <p className="text-secondary-600 text-sm">Sprawdzamy legalność i jakość oferowanych produktów.</p>
+                      <p className="text-secondary-600 text-sm">Sprawdzamy legalność i\u00A0jakość oferowanych produktów.</p>
                     </div>
                   </div>
                   
@@ -75,7 +75,7 @@ export default function SellersPage() {
                     <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 font-bold">5</div>
                     <div>
                       <h4 className="font-medium text-secondary-900">Podpisanie umowy</h4>
-                      <p className="text-secondary-600 text-sm">Sprzedawca podpisuje umowę zobowiązującą do przestrzegania naszych standardów.</p>
+                      <p className="text-secondary-600 text-sm">Sprzedawca podpisuje umowę zobowiązującą do\u00A0przestrzegania naszych standardów.</p>
                     </div>
                   </div>
                 </div>
