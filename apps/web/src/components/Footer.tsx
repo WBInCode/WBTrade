@@ -124,11 +124,11 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
           <div className="col-span-1 md:col-span-2">
             <h5 className="font-bold text-secondary-900 mb-5 text-sm uppercase tracking-wider">Pomoc</h5>
             <ul className="space-y-3">
-              <li><Link href="/help" className="text-secondary-600 hover:text-primary-500 transition-colors">Centrum pomocy</Link></li>
+              {/* <li><Link href="/help" className="text-secondary-600 hover:text-primary-500 transition-colors">Centrum pomocy</Link></li> */}
               <li><Link href="/returns" className="text-secondary-600 hover:text-primary-500 transition-colors">Zwroty i reklamacje</Link></li>
               <li><Link href="/shipping" className="text-secondary-600 hover:text-primary-500 transition-colors">Dostawa</Link></li>
               <li><Link href="/contact" className="text-secondary-600 hover:text-primary-500 transition-colors">Kontakt</Link></li>
-              <li><Link href="/faq" className="text-secondary-600 hover:text-primary-500 transition-colors">FAQ</Link></li>
+              {/* <li><Link href="/faq" className="text-secondary-600 hover:text-primary-500 transition-colors">FAQ</Link></li> */}
             </ul>
           </div>
 
@@ -183,7 +183,7 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
               <Link href="/privacy" className="text-sm text-gray-300 hover:text-white transition-colors">Polityka prywatności</Link>
               <Link href="/terms" className="text-sm text-gray-300 hover:text-white transition-colors">Regulamin</Link>
               <Link href="/cookies" className="text-sm text-gray-300 hover:text-white transition-colors">Cookies</Link>
-              <Link href="/accessibility" className="text-sm text-gray-300 hover:text-white transition-colors">Dostępność</Link>
+              {/* <Link href="/accessibility" className="text-sm text-gray-300 hover:text-white transition-colors">Dostępność</Link> */}
             </div>
           </div>
         </div>
