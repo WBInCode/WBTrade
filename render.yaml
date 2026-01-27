@@ -93,7 +93,7 @@ services:
         sync: false
         
       - key: FROM_EMAIL
-        value: "WBTrade <noreply@wb-trade.pl>"
+        value: "WB Trade <noreply@wb-trade.pl>"
         
       # Legacy SMTP (nie używane - aplikacja używa Resend)
       - key: SMTP_HOST
@@ -110,7 +110,7 @@ services:
         sync: false
         
       - key: SMTP_FROM
-        value: "WBTrade <noreply@wbtrade.pl>"
+        value: "WB Trade <noreply@wbtrade.pl>"
 
   # Meilisearch (opcjonalnie - możesz użyć zewnętrznego serwisu)
   - type: web

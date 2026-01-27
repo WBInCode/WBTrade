@@ -568,9 +568,9 @@ export default function CartPage() {
           </div>
         )}
 
-        {/* Why WBTrade Section */}
+        {/* Why WB Trade Section */}
         <div className="mt-8 sm:mt-12 lg:mt-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-4 sm:p-6 lg:p-10 text-white">
-          <h2 className="text-lg sm:text-xl lg:text-2xl font-bold mb-4 sm:mb-6 lg:mb-8 text-center">Dlaczego warto kupić w WBTrade?</h2>
+          <h2 className="text-lg sm:text-xl lg:text-2xl font-bold mb-4 sm:mb-6 lg:mb-8 text-center">Dlaczego warto kupić w WB Trade?</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
             <div className="text-center">
               <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-2 sm:mb-3 lg:mb-4">

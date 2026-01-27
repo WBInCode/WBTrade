@@ -3,8 +3,8 @@ import Footer from '../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Zwroty i reklamacje - WBTrade',
-  description: 'Informacje o zwrotach i reklamacjach w WBTrade. Sprawdź jak zwrócić produkt lub zgłosić reklamację.',
+  title: 'Zwroty i reklamacje - WB Trade',
+  description: 'Informacje o zwrotach i reklamacjach w WB Trade. Sprawdź jak zwrócić produkt lub zgłosić reklamację.',
 };
 
 export default function ReturnsPage() {
