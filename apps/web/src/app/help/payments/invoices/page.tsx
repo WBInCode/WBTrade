@@ -31,7 +31,7 @@ export default function InvoicesPage() {
             <div className="bg-white rounded-2xl p-8 shadow-sm">
               <div className="prose prose-lg max-w-none">
                 <p className="text-secondary-600 text-lg mb-8">
-                  Potrzebujesz faktury do zamówienia? Dowiedz się jak ją uzyskać i jakie dokumenty wystawiamy.
+                  Potrzebujesz faktury do\u00A0zamówienia? Dowiedz się jak ją uzyskać i\u00A0jakie dokumenty wystawiamy.
                 </p>
 
                 <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">
@@ -40,8 +40,8 @@ export default function InvoicesPage() {
                 
                 <h3 className="text-lg font-medium text-secondary-800 mt-6 mb-3">Podczas składania zamówienia:</h3>
                 <ol className="list-decimal pl-6 text-secondary-600 space-y-2 mb-6">
-                  <li>W formularzu zamówienia zaznacz opcję "Chcę otrzymać fakturę VAT"</li>
-                  <li>Wypełnij dane do faktury (nazwa firmy, NIP, adres)</li>
+                  <li>W\u00A0formularzu zamówienia zaznacz opcję "Chcę otrzymać fakturę VAT"</li>
+                  <li>Wypełnij dane do\u00A0faktury (nazwa firmy, NIP, adres)</li>
                   <li>Dokończ składanie zamówienia</li>
                   <li>Faktura zostanie wystawiona automatycznie</li>
                 </ol>
@@ -51,9 +51,9 @@ export default function InvoicesPage() {
                   Jeśli zapomniałeś zaznaczyć opcję faktury przy zamówieniu:
                 </p>
                 <ol className="list-decimal pl-6 text-secondary-600 space-y-2 mb-6">
-                  <li>Skontaktuj się z nami w ciągu 7 dni od zakupu</li>
-                  <li>Podaj numer zamówienia i dane do faktury (NIP, nazwa firmy, adres)</li>
-                  <li>Faktura zostanie wystawiona i wysłana e-mailem</li>
+                  <li>Skontaktuj się z\u00A0nami w\u00A0ciągu 7\u00A0dni od\u00A0zakupu</li>
+                  <li>Podaj numer zamówienia i\u00A0dane do\u00A0faktury (NIP, nazwa firmy, adres)</li>
+                  <li>Faktura zostanie wystawiona i\u00A0wysłana e-mailem</li>
                 </ol>
 
                 <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">
@@ -72,9 +72,9 @@ export default function InvoicesPage() {
                   Gdzie znajdę fakturę?
                 </h2>
                 <ul className="list-disc pl-6 text-secondary-600 space-y-2 mb-6">
-                  <li><strong>E-mail:</strong> Faktura jest wysyłana na adres podany przy zamówieniu</li>
+                  <li><strong>E-mail:</strong> Faktura jest wysyłana na\u00A0adres podany przy zamówieniu</li>
                   <li><strong>Panel klienta:</strong> Zaloguj się → Moje konto → Zamówienia → Pobierz fakturę</li>
-                  <li><strong>W paczce:</strong> Wydrukowana faktura jest dołączona do przesyłki</li>
+                  <li><strong>W\u00A0paczce:</strong> Wydrukowana faktura jest dołączona do\u00A0przesyłki</li>
                 </ul>
 
                 <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">
@@ -85,21 +85,21 @@ export default function InvoicesPage() {
                   <div className="p-4 bg-secondary-50 rounded-lg">
                     <h4 className="font-medium text-secondary-900 mb-2">Paragon fiskalny</h4>
                     <p className="text-secondary-600 text-sm">
-                      Wystawiany standardowo dla zamówień bez żądania faktury. Dołączany do paczki.
+                      Wystawiany standardowo dla zamówień bez żądania faktury. Dołączany do\u00A0paczki.
                     </p>
                   </div>
                   
                   <div className="p-4 bg-secondary-50 rounded-lg">
                     <h4 className="font-medium text-secondary-900 mb-2">Faktura VAT</h4>
                     <p className="text-secondary-600 text-sm">
-                      Wystawiana na życzenie klienta. Zawiera dane firmy i NIP nabywcy.
+                      Wystawiana na\u00A0życzenie klienta. Zawiera dane firmy i\u00A0NIP nabywcy.
                     </p>
                   </div>
                   
                   <div className="p-4 bg-secondary-50 rounded-lg">
                     <h4 className="font-medium text-secondary-900 mb-2">Faktura korygująca</h4>
                     <p className="text-secondary-600 text-sm">
-                      Wystawiana w przypadku zwrotu towaru lub błędnych danych na fakturze.
+                      Wystawiana w\u00A0przypadku zwrotu towaru lub błędnych danych na\u00A0fakturze.
                     </p>
                   </div>
                 </div>
@@ -108,7 +108,7 @@ export default function InvoicesPage() {
                   Korekta faktury
                 </h2>
                 <p className="text-secondary-600 mb-4">
-                  Jeśli dane na fakturze są błędne, skontaktuj się z nami podając:
+                  Jeśli dane na\u00A0fakturze są błędne, skontaktuj się z\u00A0nami podając:
                 </p>
                 <ul className="list-disc pl-6 text-secondary-600 space-y-2 mb-6">
                   <li>Numer faktury do korekty</li>
@@ -119,14 +119,14 @@ export default function InvoicesPage() {
                 <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mt-8">
                   <h3 className="font-semibold text-yellow-800 mb-2">⚠️ Ważne</h3>
                   <p className="text-yellow-700">
-                    Zgodnie z przepisami, nie możemy wystawić faktury na firmę jeśli wcześniej został wystawiony paragon bez NIP. Zadbaj o podanie danych do faktury przed złożeniem zamówienia.
+                    Zgodnie z\u00A0przepisami, nie możemy wystawić faktury na\u00A0firmę jeśli wcześniej został wystawiony paragon bez NIP. Zadbaj o\u00A0podanie danych do\u00A0faktury przed złożeniem zamówienia.
                   </p>
                 </div>
 
                 <div className="bg-primary-50 border border-primary-200 rounded-xl p-6 mt-6">
                   <h3 className="font-semibold text-primary-900 mb-2">💡 Wskazówka</h3>
                   <p className="text-primary-700">
-                    Jako zalogowany użytkownik możesz zapisać dane do faktury w profilu - będą automatycznie uzupełniane przy kolejnych zamówieniach.
+                    Jako zalogowany użytkownik możesz zapisać dane do\u00A0faktury w\u00A0profilu – będą automatycznie uzupełniane przy kolejnych zamówieniach.
                   </p>
                 </div>
               </div>

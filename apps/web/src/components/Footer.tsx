@@ -97,13 +97,13 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
             </Link>
             {/* Social Media */}
             <div className="flex items-center gap-4 mt-4">
-              <a href="#" className="hover:opacity-70 transition-opacity">
+              <a href="https://www.facebook.com/people/WB-Trade/61578263513701/" target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
                 <LogoImage src={getLogoUrl(SOCIAL_LOGOS.facebook)} alt="Facebook" width={28} height={28} className="object-contain" />
               </a>
-              <a href="#" className="hover:opacity-70 transition-opacity">
+              <a href="https://www.instagram.com/wbtrade.pl" target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
                 <LogoImage src={getLogoUrl(SOCIAL_LOGOS.instagram)} alt="Instagram" width={28} height={28} className="object-contain" />
               </a>
-              <a href="#" className="hover:opacity-70 transition-opacity">
+              <a href="https://linktr.ee/wbpartners" target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
                 <LogoImage src={getLogoUrl(SOCIAL_LOGOS.linktree)} alt="Linktree" width={28} height={28} className="object-contain rounded-lg" />
               </a>
             </div>

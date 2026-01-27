@@ -16,7 +16,7 @@ export default function ContactPage() {
       ),
       title: 'E-mail',
       value: 'support@wb-partners.pl',
-      description: 'Odpowiadamy w ciągu 24 godzin',
+      description: 'Odpowiadamy w\u00A0ciągu 24\u00A0godzin',
       href: 'mailto:support@wb-partners.pl',
     },
     {
@@ -105,7 +105,7 @@ export default function ContactPage() {
                 Wyślij wiadomość
               </h2>
               <p className="text-secondary-600 mb-8">
-                Wypełnij formularz, a nasz zespół skontaktuje się z Tobą jak najszybciej.
+                Wypełnij formularz, a\u00A0nasz zespół skontaktuje się z\u00A0Tobą jak najszybciej.
               </p>
               
               <form className="space-y-6">
@@ -220,7 +220,7 @@ export default function ContactPage() {
                     className="mt-1 w-4 h-4 text-primary-600 border-secondary-300 rounded focus:ring-primary-500"
                   />
                   <label htmlFor="privacy" className="text-sm text-secondary-600">
-                    Wyrażam zgodę na przetwarzanie moich danych osobowych w celu udzielenia odpowiedzi na moje zapytanie. *
+                    Wyrażam zgodę na\u00A0przetwarzanie moich danych osobowych w\u00A0celu udzielenia odpowiedzi na\u00A0moje zapytanie. *
                   </label>
                 </div>
                 
@@ -241,8 +241,8 @@ export default function ContactPage() {
                 </h3>
                 <div className="space-y-4">
                   <div>
-                    <h4 className="font-medium text-secondary-900">WB PARTNERS Sp. z o.o.</h4>
-                    <p className="text-secondary-600">ul. Juliusza Słowackiego 24/11</p>
+                    <h4 className="font-medium text-secondary-900">WB\u00A0PARTNERS Sp.\u00A0z\u00A0o.o.</h4>
+                    <p className="text-secondary-600">ul.\u00A0Juliusza Słowackiego 24/11</p>
                     <p className="text-secondary-600">35-060 Rzeszów</p>
                   </div>
                   <div className="pt-4 border-t border-secondary-100">
