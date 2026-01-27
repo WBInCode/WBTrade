@@ -3,8 +3,8 @@ import Footer from '../../../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Status zwrotu - Centrum pomocy - WBTrade',
-  description: 'Sprawdź status zwrotu lub reklamacji w WBTrade',
+  title: 'Status zwrotu - Centrum pomocy - WB Trade',
+  description: 'Sprawdź status zwrotu lub reklamacji w WB Trade',
 };
 
 export default function ReturnStatusPage() {
@@ -38,7 +38,7 @@ export default function ReturnStatusPage() {
                   Jak sprawdzić status?
                 </h2>
                 <ol className="list-decimal pl-6 text-secondary-600 space-y-2 mb-6">
-                  <li>Zaloguj się na swoje konto WBTrade</li>
+                  <li>Zaloguj się na swoje konto WB Trade</li>
                   <li>Przejdź do sekcji "Moje konto"</li>
                   <li>Wybierz zakładkę "Zwroty i reklamacje"</li>
                   <li>Znajdź swoje zgłoszenie na liście</li>

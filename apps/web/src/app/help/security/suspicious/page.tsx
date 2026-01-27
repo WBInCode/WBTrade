@@ -3,8 +3,8 @@ import Footer from '../../../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Podejrzana aktywność - Centrum pomocy - WBTrade',
-  description: 'Co zrobić w przypadku podejrzanej aktywności na koncie WBTrade',
+  title: 'Podejrzana aktywność - Centrum pomocy - WB Trade',
+  description: 'Co zrobić w przypadku podejrzanej aktywności na koncie WB Trade',
 };
 
 export default function SuspiciousPage() {
@@ -63,7 +63,7 @@ export default function SuspiciousPage() {
                   
                   <div className="p-4 bg-yellow-50 rounded-lg border-l-4 border-yellow-500">
                     <h4 className="font-medium text-yellow-800">💳 Nieautoryzowane płatności</h4>
-                    <p className="text-yellow-700 text-sm">Na koncie bankowym widzisz płatności do WBTrade, których nie wykonywałeś.</p>
+                    <p className="text-yellow-700 text-sm">Na koncie bankowym widzisz płatności do WB Trade, których nie wykonywałeś.</p>
                   </div>
                   
                   <div className="p-4 bg-yellow-50 rounded-lg border-l-4 border-yellow-500">

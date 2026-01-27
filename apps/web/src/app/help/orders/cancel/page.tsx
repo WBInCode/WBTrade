@@ -3,8 +3,8 @@ import Footer from '../../../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Anulowanie zamówienia - Centrum pomocy - WBTrade',
-  description: 'Dowiedz się jak anulować zamówienie w WBTrade',
+  title: 'Anulowanie zamówienia - Centrum pomocy - WB Trade',
+  description: 'Dowiedz się jak anulować zamówienie w WB Trade',
 };
 
 export default function OrderCancelPage() {
@@ -63,7 +63,7 @@ export default function OrderCancelPage() {
                 
                 <h3 className="text-lg font-medium text-secondary-800 mt-6 mb-3">Krok po kroku:</h3>
                 <ol className="list-decimal pl-6 text-secondary-600 space-y-3 mb-6">
-                  <li>Zaloguj się na swoje konto w WBTrade</li>
+                  <li>Zaloguj się na swoje konto w WB Trade</li>
                   <li>Przejdź do sekcji "Moje konto" → "Zamówienia"</li>
                   <li>Znajdź zamówienie, które chcesz anulować</li>
                   <li>Kliknij przycisk "Szczegóły"</li>

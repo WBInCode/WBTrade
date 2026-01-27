@@ -3,8 +3,8 @@ import Footer from '../../components/Footer';
 import Image from 'next/image';
 
 export const metadata = {
-  title: 'O nas - WBTrade',
-  description: 'Poznaj historię WBTrade - Twojej zaufanej platformy e-commerce',
+  title: 'O nas - WB Trade',
+  description: 'Poznaj historię WB Trade - Twojej zaufanej platformy e-commerce',
 };
 
 export default function AboutPage() {
@@ -66,7 +66,7 @@ export default function AboutPage() {
               Tworzymy przyszłość <span className="text-primary-200">e-commerce</span>
             </h1>
             <p className="text-xl text-primary-100 leading-relaxed">
-              WBTrade to&nbsp;więcej niż platforma zakupowa. To&nbsp;społeczność tysięcy użytkowników, 
+              WB Trade to&nbsp;więcej niż platforma zakupowa. To&nbsp;społeczność tysięcy użytkowników, 
               którzy każdego dnia ufają nam swoje zakupy online.
             </p>
           </div>
@@ -99,7 +99,7 @@ export default function AboutPage() {
               </h2>
               <div className="space-y-4 text-secondary-600 leading-relaxed">
                 <p>
-                  WBTrade powstało w&nbsp;2025&nbsp;roku z&nbsp;prostej idei – stworzyć miejsce, gdzie każdy 
+                  WB Trade powstało w&nbsp;2025&nbsp;roku z&nbsp;prostej idei – stworzyć miejsce, gdzie każdy 
                   może bezpiecznie i&nbsp;wygodnie kupować online. Zaczęliśmy jako mały startup 
                   z&nbsp;zespołem pięciu osób i&nbsp;marzeniem o&nbsp;zmianie sposobu, w&nbsp;jaki Polacy robią zakupy.
                 </p>
@@ -118,7 +118,7 @@ export default function AboutPage() {
               <div className="aspect-square rounded-2xl overflow-hidden shadow-2xl">
                 <Image
                   src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&h=600&fit=crop"
-                  alt="Zespół WBTrade"
+                  alt="Zespół WB Trade"
                   width={600}
                   height={600}
                   className="object-cover w-full h-full"
@@ -169,7 +169,7 @@ export default function AboutPage() {
             Dołącz do naszej społeczności
           </h2>
           <p className="text-primary-100 mb-8 max-w-2xl mx-auto">
-            Zostań częścią WBTrade i&nbsp;odkryj nowy wymiar zakupów online.
+            Zostań częścią WB Trade i&nbsp;odkryj nowy wymiar zakupów online.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
