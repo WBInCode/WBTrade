@@ -2,6 +2,7 @@ import '../styles/globals.css';
 import { CartProvider } from '../contexts/CartContext';
 import { AuthProvider } from '../contexts/AuthContext';
 import { WishlistProvider } from '../contexts/WishlistContext';
+import { WelcomeDiscountPopup } from '../components/WelcomeDiscountPopup';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -36,6 +37,7 @@ export default function RootLayout({
           <CartProvider>
             <WishlistProvider>
               {children}
+              <WelcomeDiscountPopup />
             </WishlistProvider>
           </CartProvider>
         </AuthProvider>

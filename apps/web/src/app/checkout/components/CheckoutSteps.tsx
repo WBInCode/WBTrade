@@ -14,6 +14,11 @@ const steps = [
 ];
 
 export default function CheckoutSteps({ currentStep }: CheckoutStepsProps) {
+  // Don't show steps when on auth choice (step 0)
+  if (currentStep === 0) {
+    return null;
+  }
+
   return (
     <nav aria-label="Progress">
       <ol className="flex items-center justify-center">

@@ -6,6 +6,7 @@ import { AddressData } from '../page';
 interface AddressFormProps {
   initialData: AddressData;
   onSubmit: (data: AddressData) => void;
+  isGuestCheckout?: boolean;
 }
 
 interface SavedAddress {
@@ -102,7 +103,7 @@ function InputField({
   );
 }
 
-export default function AddressForm({ initialData, onSubmit }: AddressFormProps) {
+export default function AddressForm({ initialData, onSubmit, isGuestCheckout = false }: AddressFormProps) {
   const [formData, setFormData] = useState<AddressData>(initialData);
   const [errors, setErrors] = useState<Partial<Record<keyof AddressData, string>>>({});
   const [selectedCountry, setSelectedCountry] = useState(countries[0]);
@@ -116,8 +117,13 @@ export default function AddressForm({ initialData, onSubmit }: AddressFormProps)
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loadingAddresses, setLoadingAddresses] = useState(false);
 
-  // Check if user is logged in and fetch saved addresses
+  // Check if user is logged in and fetch saved addresses (skip for guest checkout)
   useEffect(() => {
+    if (isGuestCheckout) {
+      setIsLoggedIn(false);
+      return;
+    }
+    
     const checkAuthAndFetchAddresses = async () => {
       const storedTokens = localStorage.getItem('auth_tokens');
       let token = null;

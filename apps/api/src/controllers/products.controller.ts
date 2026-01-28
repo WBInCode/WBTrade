@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { ProductsService } from '../services/products.service';
+import { PriceChangeSource } from '@prisma/client';
 
 const productsService = new ProductsService();
 
@@ -275,7 +276,15 @@ export async function updateProduct(req: Request, res: Response): Promise<void> 
       }),
     };
     
-    const product = await productsService.update(id, prismaData);
+    // Get user info from request (if auth middleware adds it)
+    const userId = (req as any).user?.id;
+    
+    // Update with Omnibus-compliant price tracking (source: API)
+    const product = await productsService.update(id, prismaData, {
+      source: PriceChangeSource.API,
+      changedBy: userId,
+      reason: 'API product update',
+    });
 
     if (!product) {
       res.status(404).json({ message: 'Product not found' });
