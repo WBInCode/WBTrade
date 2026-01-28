@@ -127,11 +127,11 @@ function filterOldZeroStockProducts(products: any[], days: number = 14): any[] {
 
 /**
  * Filter products: if product has "Paczkomaty i Kurier" tag, it MUST also have "produkt w paczce" tag
- * Products without proper package info should not be displayed
+ * Products without proper package info should not be displayed (incomplete data from Baselinker)
  */
 function filterProductsWithPackageInfo(products: any[]): any[] {
   const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
-  const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce|produkty?\s*w\s*paczce/i;
+  const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce/i;
   
   return products.filter(product => {
     const tags = product.tags || [];

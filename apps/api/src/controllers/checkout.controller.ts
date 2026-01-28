@@ -232,6 +232,12 @@ export async function getShippingPerPackage(req: Request, res: Response): Promis
           wholesaler: pkgOpt.package.wholesaler,
           items: pkgOpt.package.items,
           isPaczkomatAvailable: pkgOpt.package.isPaczkomatAvailable,
+          // Fields for split shipments
+          shipmentIndex: (pkgOpt.package as any).shipmentIndex,
+          totalShipments: (pkgOpt.package as any).totalShipments,
+          // Fields for paczkomat vs courier display
+          isPaczkomatShipment: (pkgOpt.package as any).isPaczkomatShipment,
+          isCourierAlternative: (pkgOpt.package as any).isCourierAlternative,
         },
         shippingMethods: pkgOpt.shippingMethods.map(method => ({
           id: method.id,
@@ -244,6 +250,7 @@ export async function getShippingPerPackage(req: Request, res: Response): Promis
         selectedMethod: pkgOpt.selectedMethod,
       })),
       totalShippingCost: result.totalShippingCost,
+      minShippingCost: result.minShippingCost,
       warnings: result.warnings,
     });
   } catch (error) {

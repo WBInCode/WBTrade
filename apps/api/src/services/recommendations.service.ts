@@ -9,7 +9,7 @@ import { prisma } from '../db';
 // Tags for products that can be shipped via paczkomat/courier
 const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
 // Pattern to match "produkt w paczce X" tag
-const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce|produkty?\s*w\s*paczce/i;
+const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce/i;
 
 /**
  * Check if product should be visible based on delivery tags

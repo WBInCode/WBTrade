@@ -78,6 +78,7 @@ export interface ShippingPackageItem {
   gabarytPrice?: number;
   weightShippingPrice?: number; // Price based on weight tag (e.g., "do 10 kg")
   productImage?: string;
+  tags?: string[]; // Product tags for paczkomat limit calculation
 }
 
 export interface ShippingPackage {
@@ -353,6 +354,7 @@ export class ShippingCalculatorService {
             isGabaryt: true,
             gabarytPrice: gabarytPrice || undefined,
             productImage: gabarytItem.product.image,
+            tags: gabarytItem.product.tags || [],
           }],
           paczkomatPackageCount: 0,
           gabarytPrice: gabarytPrice || SHIPPING_PRICES.gabaryt_base,
@@ -401,33 +403,31 @@ export class ShippingCalculatorService {
           isGabaryt: false,
           weightShippingPrice: weightPrice || undefined,
           productImage: item.product.image,
+          tags: item.product.tags || [], // Include tags for package distribution
         };
       });
       
       // Calculate how many packages are needed for this shipment
-      // RULE: Products with the SAME "produkt w paczce" limit can be packed together
-      // Products with DIFFERENT limits go in separate packages
-      // Example: 
-      //   - 3 products with "produkt w paczce: 3" = 1 package (3/3 = 1)
-      //   - 4 products with "produkt w paczce: 3" = 2 packages (ceil(4/3) = 2)
-      //   - 2 products with "produkt w paczce: 2" = 1 package (2/2 = 1)
-      //   - Mixed: 3x(limit 3) + 2x(limit 2) = 1 + 1 = 2 packages
+      // NEW FRACTIONAL LOGIC:
+      // Tag "produkt w paczce: N" means 1 item takes 1/N of package capacity
+      // Package capacity = 1.0
+      // Sum all fractions, then ceil() = number of packages needed
+      //
+      // Examples:
+      //   - 1x(paczka:3) + 2x(paczka:4) = 1/3 + 2/4 = 0.333 + 0.5 = 0.833 → 1 package
+      //   - 2x(paczka:3) + 2x(paczka:4) = 2/3 + 2/4 = 0.667 + 0.5 = 1.167 → 2 packages
+      //   - 3x(paczka:1) = 3/1 = 3.0 → 3 packages (each item is separate)
       
-      // Group items by their paczkomat limit
-      const itemsByLimit = new Map<number, number>(); // limit -> total quantity
+      let totalFraction = 0;
       for (const item of groupItems) {
         const limit = getPaczkomatLimit(item.product.tags);
-        const currentQty = itemsByLimit.get(limit) || 0;
-        itemsByLimit.set(limit, currentQty + item.quantity);
+        // Each item takes 1/limit of package capacity
+        const fractionPerItem = 1 / limit;
+        totalFraction += fractionPerItem * item.quantity;
       }
       
-      // Calculate packages needed for each limit group
-      let paczkomatPackageCount = 0;
-      for (const [limit, totalQty] of itemsByLimit) {
-        // Products with same limit are packed together
-        // e.g., 5 items with limit 3 = ceil(5/3) = 2 packages
-        paczkomatPackageCount += Math.ceil(totalQty / limit);
-      }
+      // Number of packages = ceil of total fraction
+      const paczkomatPackageCount = Math.ceil(totalFraction);
       
       // Track highest weight-based shipping price in this package
       let maxWeightShippingPrice: number | null = null;
@@ -689,50 +689,57 @@ export class ShippingCalculatorService {
   /**
    * Get shipping options per package (for per-product shipping selection)
    * Each package gets its own list of available shipping methods
+   * If paczkomatPackageCount > 1, creates multiple shipments for paczkomat option
    */
   async getShippingOptionsPerPackage(items: CartItemForShipping[]): Promise<{
     packagesWithOptions: PackageWithShippingOptions[];
     totalShippingCost: number;
+    minShippingCost: number;
     warnings: string[];
   }> {
     const calculation = await this.calculateShipping(items);
     const packagesWithOptions: PackageWithShippingOptions[] = [];
     
     for (const pkg of calculation.packages) {
-      const methods: ShippingMethodForPackage[] = [];
       const isFree = pkg.hasFreeShipping;
       
       if (pkg.type === 'gabaryt') {
         // Gabaryt packages - wymuszona opcja "Wysyłka gabaryt" + inne kurierskie
         const gabarytPrice = isFree ? 0 : (pkg.gabarytPrice || SHIPPING_PRICES.gabaryt_base);
         
-        // Dodaj wymuszoną opcję "Wysyłka gabaryt" na początek
-        methods.push({
-          id: 'wysylka_gabaryt',
-          name: 'Wysyłka gabaryt',
-          price: gabarytPrice,
-          available: true,
-          message: isFree 
-            ? `Darmowa dostawa! (zamówienie powyżej ${FREE_SHIPPING_THRESHOLD} zł)` 
-            : 'Wymagana dla produktów gabarytowych',
-          estimatedDelivery: '2-5 dni roboczych',
-        });
+        const methods: ShippingMethodForPackage[] = [
+          {
+            id: 'wysylka_gabaryt',
+            name: 'Wysyłka gabaryt',
+            price: gabarytPrice,
+            available: true,
+            message: isFree 
+              ? `Darmowa dostawa! (zamówienie powyżej ${FREE_SHIPPING_THRESHOLD} zł)` 
+              : 'Wymagana dla produktów gabarytowych',
+            estimatedDelivery: '2-5 dni roboczych',
+          },
+          {
+            id: 'inpost_paczkomat',
+            name: 'InPost Paczkomat',
+            price: 0,
+            available: false,
+            message: 'Produkt gabarytowy - tylko kurier',
+            estimatedDelivery: '1-2 dni',
+          },
+          {
+            id: 'inpost_kurier',
+            name: 'Kurier InPost',
+            price: gabarytPrice,
+            available: false,
+            message: 'Wymagana wysyłka gabaryt',
+            estimatedDelivery: '1-2 dni',
+          },
+        ];
         
-        methods.push({
-          id: 'inpost_paczkomat',
-          name: 'InPost Paczkomat',
-          price: 0,
-          available: false,
-          message: 'Produkt gabarytowy - tylko kurier',
-          estimatedDelivery: '1-2 dni',
-        });
-        methods.push({
-          id: 'inpost_kurier',
-          name: 'Kurier InPost',
-          price: gabarytPrice,
-          available: false,
-          message: 'Wymagana wysyłka gabaryt',
-          estimatedDelivery: '1-2 dni',
+        packagesWithOptions.push({
+          package: pkg,
+          shippingMethods: methods,
+          selectedMethod: 'wysylka_gabaryt',
         });
       } else {
         // Standard packages
@@ -741,72 +748,196 @@ export class ShippingCalculatorService {
         // Use weight-based price if available, otherwise standard price
         const dpdPrice = isFree ? 0 : (pkg.weightShippingPrice || SHIPPING_PRICES.dpd_kurier);
         
-        // Shipping availability based on tags:
-        // - isInPostOnly (tag "Paczkomaty i Kurier") = only InPost (paczkomat + kurier), NO DPD
-        // - isCourierOnly (tag "Tylko kurier") = only DPD, NO InPost
-        // - No tags = all options available
+        const isInPostAvailable = !pkg.isCourierOnly;
+        const isDpdAvailable = !pkg.isInPostOnly;
         
-        const isInPostAvailable = !pkg.isCourierOnly; // InPost available unless "Tylko kurier"
-        const isDpdAvailable = !pkg.isInPostOnly;     // DPD available unless "Paczkomaty i Kurier"
-        
-        // InPost Paczkomat - price based on how many paczkomat packages are needed
-        // If items don't fit in 1 paczkomat package, multiple packages = higher price
-        const paczkomatPrice = isFree ? 0 : paczkomatPackages * SHIPPING_PRICES.inpost_paczkomat;
         const freeMessage = isFree ? `Darmowa dostawa! (zamówienie powyżej ${FREE_SHIPPING_THRESHOLD} zł)` : undefined;
         
-        methods.push({
-          id: 'inpost_paczkomat',
-          name: 'InPost Paczkomat',
-          price: paczkomatPrice,
-          available: isInPostAvailable,
-          message: !isInPostAvailable 
-            ? 'Produkt dostępny tylko z DPD'
-            : (freeMessage || (paczkomatPackages > 1 ? `${paczkomatPackages} paczki` : undefined)),
-          estimatedDelivery: '1-2 dni',
-        });
-        
-        // InPost Kurier - also charged per package (same logic as paczkomat)
-        const kurierPrice = isFree ? 0 : paczkomatPackages * SHIPPING_PRICES.inpost_kurier;
-        
-        methods.push({
-          id: 'inpost_kurier',
-          name: 'Kurier InPost',
-          price: kurierPrice,
-          available: isInPostAvailable,
-          message: !isInPostAvailable 
-            ? 'Produkt dostępny tylko z DPD' 
-            : (freeMessage || (paczkomatPackages > 1 ? `${paczkomatPackages} paczki` : undefined)),
-          estimatedDelivery: '1-2 dni',
-        });
-        
-        // DPD Kurier - available only if DPD is available
-        methods.push({
-          id: 'dpd_kurier',
-          name: 'Kurier DPD',
-          price: dpdPrice,
-          available: isDpdAvailable,
-          message: !isDpdAvailable 
-            ? 'Produkt dostępny tylko z InPost' 
-            : (freeMessage || (pkg.weightShippingPrice && !isFree ? `Cena wg wagi: ${dpdPrice.toFixed(2)} zł` : undefined)),
-          estimatedDelivery: '1-2 dni',
-        });
+        // If paczkomatPackageCount > 1, we need to create multiple shipments for paczkomat
+        // Each shipment = 1 paczkomat package with its own price
+        // Courier options are shown separately at the end (one courier takes everything)
+        if (paczkomatPackages > 1 && isInPostAvailable) {
+          // Distribute items across paczkomat packages based on their fractions
+          // Each package has capacity = 1.0
+          // We fill packages until they're full (capacity >= 1.0)
+          
+          const itemsWithFractions = pkg.items.map(item => {
+            // Find the original product to get tags and calculate fraction
+            const limit = getPaczkomatLimit(item.tags || []);
+            const fractionPerItem = 1 / limit;
+            return {
+              ...item,
+              fractionPerItem,
+              remainingQty: item.quantity,
+            };
+          });
+          
+          const distributedPackages: Array<typeof pkg.items> = [];
+          
+          // Fill packages one by one
+          for (let packageIndex = 0; packageIndex < paczkomatPackages; packageIndex++) {
+            const currentPackageItems: typeof pkg.items = [];
+            let currentCapacity = 0;
+            
+            for (const item of itemsWithFractions) {
+              if (item.remainingQty <= 0) continue;
+              
+              // How many of this item can fit in remaining capacity?
+              const remainingCapacity = 1.0 - currentCapacity;
+              const maxItemsThatFit = Math.floor(remainingCapacity / item.fractionPerItem);
+              const itemsToAdd = Math.min(maxItemsThatFit, item.remainingQty);
+              
+              if (itemsToAdd > 0) {
+                currentPackageItems.push({
+                  ...item,
+                  quantity: itemsToAdd,
+                });
+                item.remainingQty -= itemsToAdd;
+                currentCapacity += itemsToAdd * item.fractionPerItem;
+              }
+              
+              // If package is full (or nearly full), stop adding
+              if (currentCapacity >= 0.99) break;
+            }
+            
+            // If package is empty but we still have items, add remaining (last package gets everything left)
+            if (currentPackageItems.length === 0) {
+              for (const item of itemsWithFractions) {
+                if (item.remainingQty > 0) {
+                  currentPackageItems.push({
+                    ...item,
+                    quantity: item.remainingQty,
+                  });
+                  item.remainingQty = 0;
+                }
+              }
+            }
+            
+            distributedPackages.push(currentPackageItems);
+          }
+          
+          // Create multiple shipments for paczkomat ONLY
+          for (let i = 0; i < paczkomatPackages; i++) {
+            const shipmentId = `${pkg.id}-paczkomat-${i + 1}`;
+            const paczkomatPrice = isFree ? 0 : SHIPPING_PRICES.inpost_paczkomat;
+            
+            const methods: ShippingMethodForPackage[] = [
+              {
+                id: 'inpost_paczkomat',
+                name: 'InPost Paczkomat',
+                price: paczkomatPrice,
+                available: true,
+                message: freeMessage || `Paczka ${i + 1} z ${paczkomatPackages}`,
+                estimatedDelivery: '1-2 dni',
+              },
+            ];
+            
+            // Create a virtual package for this shipment with distributed items
+            const shipmentPackage = {
+              ...pkg,
+              id: shipmentId,
+              paczkomatPackageCount: 1,
+              shipmentIndex: i + 1,
+              totalShipments: paczkomatPackages,
+              isPaczkomatShipment: true, // Mark as paczkomat-only shipment
+              items: distributedPackages[i] || [], // Each package gets its distributed items
+            };
+            
+            packagesWithOptions.push({
+              package: shipmentPackage as any,
+              shippingMethods: methods,
+              selectedMethod: 'inpost_paczkomat',
+            });
+          }
+          
+          // Add courier options as separate section (one courier takes all)
+          const courierShipmentId = `${pkg.id}-courier`;
+          const kurierInpostPrice = isFree ? 0 : SHIPPING_PRICES.inpost_kurier;
+          
+          const courierMethods: ShippingMethodForPackage[] = [
+            {
+              id: 'inpost_kurier',
+              name: 'Kurier InPost',
+              price: kurierInpostPrice,
+              available: isInPostAvailable,
+              message: freeMessage || 'Wszystkie produkty w jednej przesyłce',
+              estimatedDelivery: '1-2 dni',
+            },
+          ];
+          
+          if (isDpdAvailable) {
+            courierMethods.push({
+              id: 'dpd_kurier',
+              name: 'Kurier DPD',
+              price: dpdPrice,
+              available: true,
+              message: freeMessage || 'Wszystkie produkty w jednej przesyłce',
+              estimatedDelivery: '1-2 dni',
+            });
+          }
+          
+          const courierPackage = {
+            ...pkg,
+            id: courierShipmentId,
+            paczkomatPackageCount: 1,
+            isCourierAlternative: true, // Mark as courier alternative section
+            items: pkg.items, // Show all items
+          };
+          
+          packagesWithOptions.push({
+            package: courierPackage as any,
+            shippingMethods: courierMethods,
+            selectedMethod: '', // No default - user must choose paczkomat or courier
+          });
+        } else {
+          // Single package - standard flow
+          const paczkomatPrice = isFree ? 0 : paczkomatPackages * SHIPPING_PRICES.inpost_paczkomat;
+          const kurierPrice = isFree ? 0 : paczkomatPackages * SHIPPING_PRICES.inpost_kurier;
+          
+          const methods: ShippingMethodForPackage[] = [
+            {
+              id: 'inpost_paczkomat',
+              name: 'InPost Paczkomat',
+              price: paczkomatPrice,
+              available: isInPostAvailable,
+              message: !isInPostAvailable 
+                ? 'Produkt dostępny tylko z DPD'
+                : freeMessage,
+              estimatedDelivery: '1-2 dni',
+            },
+            {
+              id: 'inpost_kurier',
+              name: 'Kurier InPost',
+              price: kurierPrice,
+              available: isInPostAvailable,
+              message: !isInPostAvailable 
+                ? 'Produkt dostępny tylko z DPD' 
+                : freeMessage,
+              estimatedDelivery: '1-2 dni',
+            },
+            {
+              id: 'dpd_kurier',
+              name: 'Kurier DPD',
+              price: dpdPrice,
+              available: isDpdAvailable,
+              message: !isDpdAvailable 
+                ? 'Produkt dostępny tylko z InPost' 
+                : (freeMessage || (pkg.weightShippingPrice && !isFree ? `Cena wg wagi: ${dpdPrice.toFixed(2)} zł` : undefined)),
+              estimatedDelivery: '1-2 dni',
+            },
+          ];
+          
+          const defaultMethod = pkg.isCourierOnly 
+            ? 'dpd_kurier'
+            : (pkg.isPaczkomatAvailable ? 'inpost_paczkomat' : 'inpost_kurier');
+          
+          packagesWithOptions.push({
+            package: pkg,
+            shippingMethods: methods,
+            selectedMethod: defaultMethod,
+          });
+        }
       }
-      
-      // Set default selected method
-      // Dla paczek gabarytowych - wymuszona wysyłka gabaryt
-      // Dla standardowych z "Tylko kurier" - DPD
-      // Dla standardowych z "Paczkomaty i Kurier" lub bez tagów - paczkomat jeśli dostępny
-      const defaultMethod = pkg.type === 'gabaryt' 
-        ? 'wysylka_gabaryt' 
-        : pkg.isCourierOnly 
-          ? 'dpd_kurier'
-          : (pkg.isPaczkomatAvailable ? 'inpost_paczkomat' : 'inpost_kurier');
-      
-      packagesWithOptions.push({
-        package: pkg,
-        shippingMethods: methods,
-        selectedMethod: defaultMethod,
-      });
     }
     
     // Calculate initial total with default methods
@@ -818,9 +949,51 @@ export class ShippingCalculatorService {
       }
     }
     
+    // Calculate minimum possible shipping cost
+    // For split shipments, we need to compare paczkomat total vs courier total
+    let minShippingCost = totalShippingCost;
+    
+    // Separate paczkomat shipments and courier alternatives
+    const paczkomatShipments = packagesWithOptions.filter(p => (p.package as any).isPaczkomatShipment);
+    const courierAlternatives = packagesWithOptions.filter(p => (p.package as any).isCourierAlternative);
+    const regularPackages = packagesWithOptions.filter(p => !(p.package as any).isPaczkomatShipment && !(p.package as any).isCourierAlternative);
+    
+    if (paczkomatShipments.length > 0 && courierAlternatives.length > 0) {
+      // Calculate paczkomat option total
+      const paczkomatTotal = paczkomatShipments.reduce((sum, p) => {
+        const method = p.shippingMethods.find(m => m.id === 'inpost_paczkomat' && m.available);
+        return sum + (method?.price || 0);
+      }, 0);
+      
+      // Calculate courier option total (cheapest courier for each alternative)
+      const courierTotal = courierAlternatives.reduce((sum, p) => {
+        const availableMethods = p.shippingMethods.filter(m => m.available);
+        const cheapest = availableMethods.reduce((min, m) => m.price < min ? m.price : min, Infinity);
+        return sum + (cheapest === Infinity ? 0 : cheapest);
+      }, 0);
+      
+      // Regular packages (non-split) - use cheapest available method
+      const regularTotal = regularPackages.reduce((sum, p) => {
+        const availableMethods = p.shippingMethods.filter(m => m.available);
+        const cheapest = availableMethods.reduce((min, m) => m.price < min ? m.price : min, Infinity);
+        return sum + (cheapest === Infinity ? 0 : cheapest);
+      }, 0);
+      
+      // Minimum is the lower of paczkomat or courier option, plus regular packages
+      minShippingCost = Math.min(paczkomatTotal, courierTotal) + regularTotal;
+    } else {
+      // No split shipments - minimum is cheapest method for each package
+      minShippingCost = packagesWithOptions.reduce((sum, p) => {
+        const availableMethods = p.shippingMethods.filter(m => m.available);
+        const cheapest = availableMethods.reduce((min, m) => m.price < min ? m.price : min, Infinity);
+        return sum + (cheapest === Infinity ? 0 : cheapest);
+      }, 0);
+    }
+    
     return {
       packagesWithOptions,
       totalShippingCost,
+      minShippingCost,
       warnings: calculation.warnings,
     };
   }
