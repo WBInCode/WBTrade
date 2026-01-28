@@ -309,6 +309,18 @@ export default function CartPackageView({
                             </svg>
                           </button>
                         </div>
+                        
+                        {/* Mobile only: Remove button */}
+                        <button
+                          onClick={() => handleRemove(item.id)}
+                          disabled={isUpdating}
+                          className="sm:hidden flex items-center gap-1 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors px-2 py-1.5 rounded-lg border border-red-200"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          Usuń
+                        </button>
                       </div>
                     </div>
 
@@ -343,23 +355,61 @@ export default function CartPackageView({
           </div>
 
           {/* Shipping Info */}
-          <div className="bg-orange-50 px-3 sm:px-4 py-2.5 sm:py-3 border-t border-orange-100">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
-                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                </svg>
-                <span className="text-gray-700">Dostawa</span>
-              </div>
-              <div className="text-right">
-                {pkg.shippingPrice > 0 ? (
-                  <span className="font-semibold text-orange-600 text-sm sm:text-base">od {pkg.shippingPrice.toFixed(2)} zł</span>
-                ) : (
-                  <span className="text-gray-500 text-xs sm:text-sm">Przy zamówieniu</span>
+          {(() => {
+            const FREE_SHIPPING_THRESHOLD = 300;
+            const selectedSubtotal = pkg.items
+              .filter(item => item.selected)
+              .reduce((sum, item) => sum + (item.variant.price * item.quantity), 0);
+            const hasFreeShipping = selectedSubtotal >= FREE_SHIPPING_THRESHOLD;
+            const amountToFreeShipping = FREE_SHIPPING_THRESHOLD - selectedSubtotal;
+            const hasSelectedItems = pkg.items.some(item => item.selected);
+            
+            return (
+              <div className="bg-orange-50 px-3 sm:px-4 py-2.5 sm:py-3 border-t border-orange-100">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                    </svg>
+                    <span className="text-gray-700">Dostawa</span>
+                  </div>
+                  <div className="text-right">
+                    {/* Only show shipping price if any item in package is selected */}
+                    {hasSelectedItems ? (
+                      hasFreeShipping ? (
+                        <span className="font-semibold text-green-600 text-sm sm:text-base">Darmowa! 🎉</span>
+                      ) : pkg.shippingPrice > 0 ? (
+                        <span className="font-semibold text-orange-600 text-sm sm:text-base">od {pkg.shippingPrice.toFixed(2)} zł</span>
+                      ) : (
+                        <span className="text-gray-500 text-xs sm:text-sm">Przy zamówieniu</span>
+                      )
+                    ) : (
+                      <span className="text-gray-500 text-xs sm:text-sm">Przy zamówieniu</span>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Free shipping progress */}
+                {hasSelectedItems && !hasFreeShipping && (
+                  <div className="mt-2 pt-2 border-t border-orange-200">
+                    <div className="flex items-center gap-2 text-xs">
+                      <div className="flex-1">
+                        <div className="h-1.5 bg-orange-200 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-green-500 rounded-full transition-all duration-300"
+                            style={{ width: `${Math.min(100, (selectedSubtotal / FREE_SHIPPING_THRESHOLD) * 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                      <span className="text-gray-600 whitespace-nowrap">
+                        <span className="text-green-600 font-medium">{amountToFreeShipping.toFixed(2)} zł</span> do darmowej dostawy
+                      </span>
+                    </div>
+                  </div>
                 )}
               </div>
-            </div>
-          </div>
+            );
+          })()}
         </div>
       ))}
     </div>

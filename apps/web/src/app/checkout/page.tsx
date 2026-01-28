@@ -102,13 +102,18 @@ const initialPayment: PaymentData = {
 function CheckoutPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { cart, itemCount, loading: cartLoading, removeFromCart, updateQuantity, applyCoupon, removeCoupon } = useCart();
+  const { cart, selectedCart, itemCount, selectedItems, loading: cartLoading, removeFromCart, updateQuantity, applyCoupon, removeCoupon } = useCart();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  
+  // Use selectedCart for checkout (only selected items from cart)
+  const checkoutCart = selectedCart;
+  const checkoutItemCount = checkoutCart?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
   
   // Step 0 = auth choice, Step 1-4 = checkout steps
   const [currentStep, setCurrentStep] = useState(0);
   const [isGuestCheckout, setIsGuestCheckout] = useState(false);
   const [removingItemId, setRemovingItemId] = useState<string | null>(null);
+  const [minShippingCost, setMinShippingCost] = useState<number>(0);
   const [checkoutData, setCheckoutData] = useState<CheckoutData>({
     address: initialAddress,
     shipping: initialShipping,
@@ -152,10 +157,10 @@ function CheckoutPageContent() {
   // Fetch shipping prices from API as soon as cart is loaded
   useEffect(() => {
     async function fetchShippingPrices() {
-      if (cartLoading || !cart?.items || cart.items.length === 0) return;
+      if (cartLoading || !checkoutCart?.items || checkoutCart.items.length === 0) return;
       
       try {
-        const items = cart.items.map(item => ({
+        const items = checkoutCart.items.map(item => ({
           variantId: item.variant.id,
           quantity: item.quantity,
         }));
@@ -165,7 +170,9 @@ function CheckoutPageContent() {
         
         // Use the total shipping cost from API (calculated correctly based on package weights)
         const totalShipping = response.totalShippingCost || 0;
+        const minShipping = response.minShippingCost || totalShipping;
         
+        setMinShippingCost(minShipping);
         setCheckoutData(prev => ({
           ...prev,
           shipping: {
@@ -179,7 +186,7 @@ function CheckoutPageContent() {
     }
     
     fetchShippingPrices();
-  }, [cartLoading, cart?.items]);
+  }, [cartLoading, checkoutCart?.items]);
 
   // Pre-fill address if user is logged in
   useEffect(() => {
@@ -197,8 +204,8 @@ function CheckoutPageContent() {
   }, [isAuthenticated, user]);
 
   // Show message if cart is empty
-  const displayCart = cart;
-  const isCartEmpty = !cartLoading && itemCount === 0;
+  const displayCart = checkoutCart;
+  const isCartEmpty = !cartLoading && checkoutItemCount === 0;
 
   // Guest checkout handlers
   const handleGuestCheckout = () => {
@@ -262,14 +269,14 @@ function CheckoutPageContent() {
   };
 
   const calculateTotal = () => {
-    const subtotal = cart?.items?.reduce((sum: number, item: any) => {
+    const subtotal = checkoutCart?.items?.reduce((sum: number, item: any) => {
       const price = item.variant?.price || 0;
       return sum + price * item.quantity;
     }, 0) || 0;
     
     const shipping = checkoutData.shipping.price;
     const paymentFee = checkoutData.payment.extraFee;
-    const discount = cart?.discount || 0;
+    const discount = checkoutCart?.discount || 0;
     
     return {
       subtotal,
@@ -578,7 +585,7 @@ function CheckoutPageContent() {
                 onSubmit={handleShippingSubmit}
                 onBack={handleBack}
                 onPriceChange={handleShippingPriceChange}
-                cartItems={cart?.items}
+                cartItems={checkoutCart?.items}
               />
             )}
 
@@ -647,8 +654,12 @@ function CheckoutPageContent() {
                   <span>{totals.subtotal.toFixed(2)} zł</span>
                 </div>
                 <div className="flex justify-between text-xs sm:text-sm">
-                  <span className="text-gray-600">Dostawa</span>
-                  <span>{totals.shipping.toFixed(2)} zł</span>
+                  <span className="text-gray-600">
+                    {currentStep >= 3 ? 'Dostawa' : 'Szacowana dostawa'}
+                  </span>
+                  <span className={currentStep >= 3 ? '' : 'text-gray-500'}>
+                    {currentStep >= 3 ? `${totals.shipping.toFixed(2)} zł` : `od ${minShippingCost.toFixed(2)} zł`}
+                  </span>
                 </div>
                 {totals.paymentFee > 0 && (
                   <div className="flex justify-between text-xs sm:text-sm">

@@ -3,7 +3,7 @@ import { getProductsIndex, PRODUCTS_INDEX, meiliClient } from '../lib/meilisearc
 
 // Tags that require "produkt w paczce" tag to be visible
 const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
-const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce|produkty?\s*w\s*paczce/i;
+const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce/i;
 
 /**
  * Check if product should be visible based on delivery tags
