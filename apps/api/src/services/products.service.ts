@@ -1187,8 +1187,9 @@ export class ProductsService {
         where: { key: 'carousel_exclusions' },
       });
       
-      if (settings?.value && typeof settings.value === 'object') {
-        const exclusions = settings.value as { excludedProductIds?: string[] };
+      if (settings?.value) {
+        const parsed = typeof settings.value === 'string' ? JSON.parse(settings.value) : settings.value;
+        const exclusions = parsed as { excludedProductIds?: string[] };
         return exclusions.excludedProductIds || [];
       }
     } catch (error) {
@@ -1222,8 +1223,9 @@ export class ProductsService {
           where: { key: 'homepage_carousels' },
         });
         
-        if (settings?.value && typeof settings.value === 'object') {
-          const carousels = settings.value as Record<string, { productIds?: string[]; isAutomatic?: boolean }>;
+        if (settings?.value) {
+          const parsed = typeof settings.value === 'string' ? JSON.parse(settings.value) : settings.value;
+          const carousels = parsed as Record<string, { productIds?: string[]; isAutomatic?: boolean }>;
           const bestsellerIds = carousels.bestsellers?.productIds;
           if (bestsellerIds && bestsellerIds.length > 0) {
             manualProductIds = bestsellerIds;
@@ -1351,8 +1353,9 @@ export class ProductsService {
         where: { key: 'homepage_carousels' },
       });
       
-      if (settings?.value && typeof settings.value === 'object') {
-        const carousels = settings.value as Record<string, { productIds?: string[]; isAutomatic?: boolean }>;
+      if (settings?.value) {
+        const parsed = typeof settings.value === 'string' ? JSON.parse(settings.value) : settings.value;
+        const carousels = parsed as Record<string, { productIds?: string[]; isAutomatic?: boolean }>;
         const adminFeaturedIds = carousels.featured?.productIds;
         if (adminFeaturedIds && adminFeaturedIds.length > 0) {
           manualProductIds = adminFeaturedIds;
@@ -1498,8 +1501,9 @@ export class ProductsService {
         where: { key: 'homepage_carousels' },
       });
       
-      if (settings?.value && typeof settings.value === 'object') {
-        const carousels = settings.value as Record<string, { productIds?: string[]; isAutomatic?: boolean }>;
+      if (settings?.value) {
+        const parsed = typeof settings.value === 'string' ? JSON.parse(settings.value) : settings.value;
+        const carousels = parsed as Record<string, { productIds?: string[]; isAutomatic?: boolean }>;
         const seasonalIds = carousels.seasonal?.productIds;
         if (seasonalIds && seasonalIds.length > 0) {
           manualProductIds = seasonalIds;
@@ -1632,8 +1636,9 @@ export class ProductsService {
         where: { key: 'homepage_carousels' },
       });
       
-      if (settings?.value && typeof settings.value === 'object') {
-        const carousels = settings.value as Record<string, { productIds?: string[]; isAutomatic?: boolean }>;
+      if (settings?.value) {
+        const parsed = typeof settings.value === 'string' ? JSON.parse(settings.value) : settings.value;
+        const carousels = parsed as Record<string, { productIds?: string[]; isAutomatic?: boolean }>;
         const newProductIds = carousels.newProducts?.productIds;
         if (newProductIds && newProductIds.length > 0) {
           manualProductIds = newProductIds;
