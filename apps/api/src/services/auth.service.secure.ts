@@ -5,6 +5,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../db';
 import { UserRole } from '@prisma/client';
 import { queueEmail } from '../lib/queue';
+import { discountService } from './discount.service';
+import { emailService } from './email.service';
 import {
   blacklistToken,
   isTokenBlacklisted,
@@ -256,11 +258,47 @@ export class SecureAuthService {
       },
     });
 
+    // Generate welcome discount code and send email (async, don't block registration)
+    console.log(`[SecureAuthService] Starting welcome discount for ${user.email}...`);
+    this.sendWelcomeDiscount(user.id, user.email, user.firstName || '').catch((err) => {
+      console.error('[SecureAuthService] Failed to send welcome discount:', err.message);
+    });
+
     return {
       user: this.sanitizeUser(user),
       tokens,
       verificationToken: process.env.NODE_ENV !== 'production' ? verificationToken : undefined, // Only in dev
     };
+  }
+
+  /**
+   * Generate welcome discount and send email
+   * Called after successful registration (async)
+   */
+  private async sendWelcomeDiscount(userId: string, email: string, firstName: string): Promise<void> {
+    try {
+      console.log(`[SecureAuthService] Generating discount for user ${userId}...`);
+      const discount = await discountService.generateWelcomeDiscount(userId, email);
+      console.log(`[SecureAuthService] Discount generated: ${discount.couponCode}`);
+      
+      console.log(`[SecureAuthService] Sending email to ${email}...`);
+      const result = await emailService.sendWelcomeDiscountEmail(
+        email,
+        firstName || email.split('@')[0],
+        discount.couponCode,
+        discount.discountPercent,
+        discount.expiresAt
+      );
+      
+      if (result.success) {
+        console.log(`✅ [SecureAuthService] Welcome discount sent to ${email}: ${discount.couponCode}`);
+      } else {
+        console.error(`❌ [SecureAuthService] Email failed for ${email}: ${result.error}`);
+      }
+    } catch (err: any) {
+      console.error(`[SecureAuthService] Welcome discount error for ${email}:`, err.message);
+      // Don't throw - registration should succeed even if discount email fails
+    }
   }
 
   /**
@@ -281,6 +319,11 @@ export class SecureAuthService {
     const user = await prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
+
+    // Check if user exists and has a password (OAuth users don't have passwords)
+    if (user && !user.password) {
+      throw new Error('This account uses Google login. Please sign in with Google.');
+    }
 
     // Always hash password to prevent timing attacks (even if user doesn't exist)
     const dummyHash = '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4.4Oo4AAhJ5gZZ2i';
@@ -613,6 +656,11 @@ export class SecureAuthService {
       throw new Error('User not found');
     }
 
+    // OAuth users cannot change password this way
+    if (!user.password) {
+      throw new Error('Password change not available for OAuth accounts');
+    }
+
     // Verify current password
     const isValid = await bcrypt.compare(currentPassword, user.password);
     if (!isValid) {
@@ -778,7 +826,7 @@ export class SecureAuthService {
     role: UserRole;
     emailVerified: boolean;
     createdAt: Date;
-    password?: string;
+    password?: string | null;
     failedLoginAttempts?: number;
     lockedUntil?: Date | null;
   }): UserResponse {

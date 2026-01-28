@@ -223,9 +223,9 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <main className="container-custom py-6">
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+      <main className="container-custom py-4 sm:py-6">
+        {/* Breadcrumb - hidden on mobile */}
+        <nav className="hidden sm:flex items-center gap-2 text-sm text-gray-500 mb-6">
           <Link href="/" className="hover:text-orange-500">Strona główna</Link>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -237,9 +237,9 @@ export default function ProfilePage() {
           <span className="text-gray-900">Dane osobowe</span>
         </nav>
 
-        <div className="flex gap-6">
-          {/* Sidebar */}
-          <aside className="w-64 shrink-0">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Sidebar - hidden on mobile */}
+          <aside className="hidden lg:block w-64 shrink-0">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               {/* User Profile */}
               <div className="p-5 border-b border-gray-100">
@@ -275,8 +275,21 @@ export default function ProfilePage() {
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
+            {/* Mobile Back Button */}
+            <div className="lg:hidden mb-4">
+              <Link 
+                href="/account" 
+                className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-orange-500"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Powrót do konta
+              </Link>
+            </div>
+
             {/* Page Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Dane osobowe</h1>
                 <p className="text-gray-500 text-sm">Zarządzaj swoimi danymi osobowymi</p>
@@ -349,7 +362,7 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Name Fields */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
                         Imię <span className="text-red-500">*</span>
@@ -512,7 +525,7 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Birth Date & Gender */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 mb-1">
                         Data urodzenia
@@ -558,7 +571,6 @@ export default function ProfilePage() {
                           <option value="">Wybierz</option>
                           <option value="male">Mężczyzna</option>
                           <option value="female">Kobieta</option>
-                          <option value="other">Inna / Wolę nie podawać</option>
                         </select>
                       ) : (
                         <button
@@ -568,9 +580,7 @@ export default function ProfilePage() {
                         >
                           {formData.gender ? (
                             <span className="text-gray-900">
-                              {formData.gender === 'male' ? 'Mężczyzna' : 
-                               formData.gender === 'female' ? 'Kobieta' : 
-                               'Inna / Wolę nie podawać'}
+                              {formData.gender === 'male' ? 'Mężczyzna' : 'Kobieta'}
                             </span>
                           ) : (
                             <span className="text-gray-400 italic">Wybierz płeć</span>
@@ -667,7 +677,7 @@ export default function ProfilePage() {
 
               {/* Form Actions */}
               {isEditing && (
-                <div className="flex items-center justify-end gap-3">
+                <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3">
                   <button
                     type="button"
                     onClick={handleCancel}

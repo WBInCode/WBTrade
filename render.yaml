@@ -5,7 +5,7 @@ services:
     name: wbtrade-api
     runtime: docker
     dockerfilePath: ./Dockerfile
-    plan: free # Darmowy plan - serwis usypia się po 15 min nieaktywności
+    plan: starter # Płatny plan - serwis NIE usypia się
     region: frankfurt # EU region dla lepszej wydajności w Polsce
     branch: main # Branch główny z wszystkimi poprawkami
     healthCheckPath: /health
@@ -53,6 +53,18 @@ services:
         # Ustaw bezpieczny klucz dla refresh tokenów
         sync: false
         
+      - key: GOOGLE_CLIENT_ID
+        # Google OAuth Client ID z console.cloud.google.com
+        sync: false
+        
+      - key: GOOGLE_CLIENT_SECRET
+        # Google OAuth Client Secret
+        sync: false
+        
+      - key: GOOGLE_REDIRECT_URI
+        # np. https://wbtrade-api.onrender.com/api/auth/google/callback
+        sync: false
+        
       - key: PAYU_POS_ID
         sync: false
         
@@ -76,6 +88,14 @@ services:
         # Bezpieczny klucz do Meilisearch
         sync: false
         
+      - key: RESEND_API_KEY
+        # Klucz API Resend do wysyłania emaili (wymagany!)
+        sync: false
+        
+      - key: FROM_EMAIL
+        value: "WB Trade <noreply@wb-trade.pl>"
+        
+      # Legacy SMTP (nie używane - aplikacja używa Resend)
       - key: SMTP_HOST
         # Konfiguracja email (np. SendGrid, Postmark)
         sync: false
@@ -90,7 +110,7 @@ services:
         sync: false
         
       - key: SMTP_FROM
-        value: "WBTrade <noreply@wbtrade.pl>"
+        value: "WB Trade <noreply@wbtrade.pl>"
 
   # Meilisearch (opcjonalnie - możesz użyć zewnętrznego serwisu)
   - type: web

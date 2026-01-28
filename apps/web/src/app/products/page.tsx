@@ -92,8 +92,32 @@ function ProductsContent() {
     async function fetchProducts() {
       setLoading(true);
       try {
+        // For bestsellers tab, use dedicated bestsellers endpoint (same as carousel on homepage)
+        // Always show global bestsellers, ignore category filter
+        if (activeTab === 'bestsellers') {
+          const response = await productsApi.getBestsellers({
+            limit: 20,
+            days: 90,
+          });
+          
+          setProducts(response.products);
+          setTotalProducts(response.products.length);
+          setTotalPages(1); // Bestsellers is a fixed list of 20 products
+        }
+        // For new products tab, use dedicated new-arrivals endpoint (same as carousel on homepage)
+        // Shows products from last 14 days only
+        else if (activeTab === 'new') {
+          const response = await productsApi.getNewProducts({
+            limit: 20,
+            days: 14,
+          });
+          
+          setProducts(response.products);
+          setTotalProducts(response.products.length);
+          setTotalPages(1); // New products is a fixed list
+        }
         // For discounted tab, we need to fetch more and filter client-side
-        if (activeTab === 'discounted') {
+        else if (activeTab === 'discounted') {
           const response = await productsApi.getAll({
             page: 1,
             limit: 100,
@@ -214,10 +238,10 @@ function ProductsContent() {
     : null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       <Header />
       
-      <main className="container-custom py-6">
+      <main className="container-custom py-6 overflow-hidden">
         {/* Breadcrumb */}
         <Breadcrumb items={breadcrumbItems} />
         
@@ -267,7 +291,7 @@ function ProductsContent() {
           </aside>
 
           {/* Main Content */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0 overflow-hidden">
             {/* Header with Tabs, Sort, View Toggle */}
             <ProductListHeader 
               totalProducts={totalProducts} 
@@ -281,10 +305,10 @@ function ProductsContent() {
 
             {/* Loading State */}
             {loading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4">
                 {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="bg-white rounded-lg border border-gray-200 p-4 animate-pulse">
-                    <div className="bg-gray-200 h-48 rounded-lg mb-4"></div>
+                  <div key={i} className="bg-white rounded-lg border border-gray-200 p-2 sm:p-4 animate-pulse">
+                    <div className="bg-gray-200 aspect-square rounded-lg mb-2 sm:mb-4"></div>
                     <div className="bg-gray-200 h-4 rounded w-3/4 mb-2"></div>
                     <div className="bg-gray-200 h-4 rounded w-1/2 mb-2"></div>
                     <div className="bg-gray-200 h-6 rounded w-1/3"></div>
@@ -306,8 +330,8 @@ function ProductsContent() {
               <>
                 {/* Product Grid/List */}
                 <div className={viewMode === 'grid' 
-                  ? "grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"
-                  : "flex flex-col gap-4"
+                  ? "grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4"
+                  : "flex flex-col gap-2 sm:gap-4"
                 }>
                   {products.map((product) => (
                     <ProductListCard key={product.id} product={product} viewMode={viewMode} />

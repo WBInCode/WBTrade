@@ -49,7 +49,7 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
                 </div>
                 <div>
                   <h4 className="font-semibold text-secondary-900">Szybka Dostawa</h4>
-                  <p className="text-sm text-secondary-500">Nawet następnego dnia</p>
+                  <p className="text-sm text-secondary-500">Wysyłka w ciągu 24-72h</p>
                 </div>
               </div>
 
@@ -86,29 +86,25 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
         <div className="grid grid-cols-2 md:grid-cols-12 gap-8 lg:gap-12">
           {/* Brand Column */}
           <div className="col-span-2 md:col-span-4">
-            <Link href="/" className="inline-block mb-6">
+            <Link href="/" className="inline-block mb-4">
               <Image 
-                src="/images/logo.png" 
-                alt="WB Trade Group" 
-                width={140} 
-                height={50} 
-                className="h-10 w-auto object-contain"
+                src="/images/WB-TRADE-logo.png" 
+                alt="WB Trade" 
+                width={300} 
+                height={180} 
+                className="h-24 w-auto object-contain mix-blend-multiply"
               />
             </Link>
-            <p className="text-secondary-600 mb-6 leading-relaxed">
-              Twoja platforma e-commerce z tysiącami produktów od sprawdzonych sprzedawców. 
-              Kupuj bezpiecznie i wygodnie.
-            </p>
             {/* Social Media */}
-            <div className="flex items-center gap-4">
-              <a href="#" className="hover:opacity-70 transition-opacity">
+            <div className="flex items-center gap-4 mt-4">
+              <a href="https://www.facebook.com/people/WB-Trade/61578263513701/" target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
                 <LogoImage src={getLogoUrl(SOCIAL_LOGOS.facebook)} alt="Facebook" width={28} height={28} className="object-contain" />
               </a>
-              <a href="#" className="hover:opacity-70 transition-opacity">
+              <a href="https://www.instagram.com/wbtrade.pl" target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
                 <LogoImage src={getLogoUrl(SOCIAL_LOGOS.instagram)} alt="Instagram" width={28} height={28} className="object-contain" />
               </a>
-              <a href="#" className="hover:opacity-70 transition-opacity">
-                <LogoImage src={getLogoUrl(SOCIAL_LOGOS.linkedin)} alt="LinkedIn" width={28} height={28} className="object-contain" />
+              <a href="https://linktr.ee/wbpartners" target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
+                <LogoImage src={getLogoUrl(SOCIAL_LOGOS.linktree)} alt="Linktree" width={28} height={28} className="object-contain rounded-lg" />
               </a>
             </div>
           </div>
@@ -128,34 +124,34 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
           <div className="col-span-1 md:col-span-2">
             <h5 className="font-bold text-secondary-900 mb-5 text-sm uppercase tracking-wider">Pomoc</h5>
             <ul className="space-y-3">
-              <li><Link href="/help" className="text-secondary-600 hover:text-primary-500 transition-colors">Centrum pomocy</Link></li>
+              {/* <li><Link href="/help" className="text-secondary-600 hover:text-primary-500 transition-colors">Centrum pomocy</Link></li> */}
               <li><Link href="/returns" className="text-secondary-600 hover:text-primary-500 transition-colors">Zwroty i reklamacje</Link></li>
               <li><Link href="/shipping" className="text-secondary-600 hover:text-primary-500 transition-colors">Dostawa</Link></li>
               <li><Link href="/contact" className="text-secondary-600 hover:text-primary-500 transition-colors">Kontakt</Link></li>
-              <li><Link href="/faq" className="text-secondary-600 hover:text-primary-500 transition-colors">FAQ</Link></li>
+              {/* <li><Link href="/faq" className="text-secondary-600 hover:text-primary-500 transition-colors">FAQ</Link></li> */}
             </ul>
           </div>
 
-          <div className="col-span-1 md:col-span-2">
+          <div className="col-span-2 md:col-span-4">
             <h5 className="font-bold text-secondary-900 mb-5 text-sm uppercase tracking-wider">Kontakt</h5>
             <ul className="space-y-3">
               <li className="flex items-start gap-2">
                 <svg className="w-5 h-5 text-primary-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                <span className="text-secondary-600">support@wb-partners.pl</span>
+                <span className="text-secondary-600 whitespace-nowrap">support@wb-partners.pl</span>
               </li>
               <li className="flex items-start gap-2">
                 <svg className="w-5 h-5 text-primary-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                 </svg>
-                <span className="text-secondary-600">+48 570 028 761</span>
+                <span className="text-secondary-600 whitespace-nowrap">+48 570 028 761</span>
               </li>
               <li className="flex items-start gap-2">
                 <svg className="w-5 h-5 text-primary-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span className="text-secondary-600">Pon-Pt: 9:00 - 17:00</span>
+                <span className="text-secondary-600 whitespace-nowrap">Pon. - Pt.: 9:00 - 17:00</span>
               </li>
             </ul>
           </div>
@@ -168,9 +164,9 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-secondary-500">Akceptowane metody płatności</p>
             <div className="flex items-center gap-4">
-              <LogoImage src={getLogoUrl(PAYMENT_LOGOS.visa)} alt="Visa" width={40} height={28} className="object-contain rounded-md" />
-              <LogoImage src={getLogoUrl(PAYMENT_LOGOS.blik)} alt="BLIK" width={40} height={28} className="object-contain rounded-md" />
-              <LogoImage src={getLogoUrl(PAYMENT_LOGOS.przelewy24)} alt="Przelewy24" width={40} height={28} className="object-contain rounded-md" />
+              <LogoImage src={getLogoUrl(PAYMENT_LOGOS.visa)} alt="Visa" width={40} height={28} className="object-contain rounded-md mix-blend-multiply" />
+              <LogoImage src={getLogoUrl(PAYMENT_LOGOS.blik)} alt="BLIK" width={40} height={28} className="object-contain rounded-md mix-blend-multiply" />
+              <LogoImage src={getLogoUrl(PAYMENT_LOGOS.przelewy24)} alt="Przelewy24" width={40} height={28} className="object-contain rounded-md mix-blend-multiply" />
             </div>
           </div>
         </div>
@@ -181,13 +177,13 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
         <div className="container-custom py-5">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-gray-300">
-              © 2025 WBTrade. Wszelkie prawa zastrzeżone.
+              © 2025 WB Trade. Wszelkie prawa zastrzeżone.
             </p>
             <div className="flex items-center gap-6">
               <Link href="/privacy" className="text-sm text-gray-300 hover:text-white transition-colors">Polityka prywatności</Link>
               <Link href="/terms" className="text-sm text-gray-300 hover:text-white transition-colors">Regulamin</Link>
               <Link href="/cookies" className="text-sm text-gray-300 hover:text-white transition-colors">Cookies</Link>
-              <Link href="/accessibility" className="text-sm text-gray-300 hover:text-white transition-colors">Dostępność</Link>
+              {/* <Link href="/accessibility" className="text-sm text-gray-300 hover:text-white transition-colors">Dostępność</Link> */}
             </div>
           </div>
         </div>

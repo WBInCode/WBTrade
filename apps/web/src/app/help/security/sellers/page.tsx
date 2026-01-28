@@ -3,8 +3,8 @@ import Footer from '../../../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Weryfikacja sprzedawców - Centrum pomocy - WBTrade',
-  description: 'Jak weryfikujemy sprzedawców w WBTrade',
+  title: 'Weryfikacja sprzedawców - Centrum pomocy - WB Trade',
+  description: 'Jak weryfikujemy sprzedawców w WB Trade',
 };
 
 export default function SellersPage() {
@@ -31,7 +31,7 @@ export default function SellersPage() {
             <div className="bg-white rounded-2xl p-8 shadow-sm">
               <div className="prose prose-lg max-w-none">
                 <p className="text-secondary-600 text-lg mb-8">
-                  W WBTrade dbamy o to, abyś kupował od zweryfikowanych i godnych zaufania sprzedawców. Dowiedz się, jak weryfikujemy naszych partnerów.
+                  W WB Trade dbamy o to, abyś kupował od zweryfikowanych i godnych zaufania sprzedawców. Dowiedz się, jak weryfikujemy naszych partnerów.
                 </p>
 
                 <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">
@@ -43,7 +43,7 @@ export default function SellersPage() {
                     <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 font-bold">1</div>
                     <div>
                       <h4 className="font-medium text-secondary-900">Weryfikacja tożsamości</h4>
-                      <p className="text-secondary-600 text-sm">Sprawdzamy dokumenty rejestrowe firmy, NIP, REGON oraz dane właścicieli.</p>
+                      <p className="text-secondary-600 text-sm">Sprawdzamy dokumenty rejestrowe firmy, NIP, REGON oraz\u00A0dane właścicieli.</p>
                     </div>
                   </div>
                   
@@ -51,7 +51,7 @@ export default function SellersPage() {
                     <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 font-bold">2</div>
                     <div>
                       <h4 className="font-medium text-secondary-900">Weryfikacja adresu</h4>
-                      <p className="text-secondary-600 text-sm">Potwierdzamy adres siedziby firmy i magazynu.</p>
+                      <p className="text-secondary-600 text-sm">Potwierdzamy adres siedziby firmy i\u00A0magazynu.</p>
                     </div>
                   </div>
                   
@@ -59,7 +59,7 @@ export default function SellersPage() {
                     <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 font-bold">3</div>
                     <div>
                       <h4 className="font-medium text-secondary-900">Weryfikacja konta bankowego</h4>
-                      <p className="text-secondary-600 text-sm">Sprawdzamy czy konto firmowe należy do zarejestrowanej działalności.</p>
+                      <p className="text-secondary-600 text-sm">Sprawdzamy czy konto firmowe należy do\u00A0zarejestrowanej działalności.</p>
                     </div>
                   </div>
                   
@@ -67,7 +67,7 @@ export default function SellersPage() {
                     <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 font-bold">4</div>
                     <div>
                       <h4 className="font-medium text-secondary-900">Weryfikacja produktów</h4>
-                      <p className="text-secondary-600 text-sm">Sprawdzamy legalność i jakość oferowanych produktów.</p>
+                      <p className="text-secondary-600 text-sm">Sprawdzamy legalność i\u00A0jakość oferowanych produktów.</p>
                     </div>
                   </div>
                   
@@ -75,7 +75,7 @@ export default function SellersPage() {
                     <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 font-bold">5</div>
                     <div>
                       <h4 className="font-medium text-secondary-900">Podpisanie umowy</h4>
-                      <p className="text-secondary-600 text-sm">Sprzedawca podpisuje umowę zobowiązującą do przestrzegania naszych standardów.</p>
+                      <p className="text-secondary-600 text-sm">Sprzedawca podpisuje umowę zobowiązującą do\u00A0przestrzegania naszych standardów.</p>
                     </div>
                   </div>
                 </div>
@@ -107,7 +107,7 @@ export default function SellersPage() {
                       <li>• Przeszedł pełną weryfikację</li>
                       <li>• Aktywny na platformie</li>
                       <li>• Regularne transakcje</li>
-                      <li>• Spełnia standardy WBTrade</li>
+                      <li>• Spełnia standardy WB Trade</li>
                     </ul>
                   </div>
                 </div>
@@ -129,7 +129,7 @@ export default function SellersPage() {
                 </h2>
                 <div className="bg-primary-50 border border-primary-200 rounded-xl p-6 mb-6">
                   <p className="text-primary-700 mb-3">
-                    <strong>Gwarancja WBTrade:</strong>
+                    <strong>Gwarancja WB Trade:</strong>
                   </p>
                   <ul className="list-disc pl-6 text-primary-700 text-sm space-y-1">
                     <li>Jeśli produkt nie dotrze - zwrot pieniędzy</li>

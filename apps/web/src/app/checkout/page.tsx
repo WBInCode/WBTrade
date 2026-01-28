@@ -8,10 +8,13 @@ import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { checkoutApi, addressesApi, ApiClientError } from '@/lib/api';
 import CheckoutSteps from './components/CheckoutSteps';
+import CheckoutAuthChoice from './components/CheckoutAuthChoice';
 import AddressForm from './components/AddressForm';
 import ShippingPerPackage from './components/ShippingPerPackage';
 import PaymentMethod from './components/PaymentMethod';
 import OrderSummary from './components/OrderSummary';
+import CheckoutPackagesList from './components/CheckoutPackagesList';
+import CouponInput from './components/CouponInput';
 
 export interface AddressData {
   firstName: string;
@@ -99,10 +102,12 @@ const initialPayment: PaymentData = {
 function CheckoutPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { cart, itemCount, loading: cartLoading, removeFromCart, updateQuantity } = useCart();
+  const { cart, itemCount, loading: cartLoading, removeFromCart, updateQuantity, applyCoupon, removeCoupon } = useCart();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   
-  const [currentStep, setCurrentStep] = useState(1);
+  // Step 0 = auth choice, Step 1-4 = checkout steps
+  const [currentStep, setCurrentStep] = useState(0);
+  const [isGuestCheckout, setIsGuestCheckout] = useState(false);
   const [removingItemId, setRemovingItemId] = useState<string | null>(null);
   const [checkoutData, setCheckoutData] = useState<CheckoutData>({
     address: initialAddress,
@@ -114,6 +119,13 @@ function CheckoutPageContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [paymentCancelledMessage, setPaymentCancelledMessage] = useState<string | null>(null);
+
+  // If user is authenticated, skip to step 1
+  useEffect(() => {
+    if (isAuthenticated && currentStep === 0) {
+      setCurrentStep(1);
+    }
+  }, [isAuthenticated, currentStep]);
 
   // Check if payment was cancelled (redirected back from PayU)
   useEffect(() => {
@@ -148,22 +160,19 @@ function CheckoutPageContent() {
           quantity: item.quantity,
         }));
         
-        const response = await checkoutApi.calculateItemsShipping(items);
+        // Use per-package shipping to get accurate initial prices
+        const response = await checkoutApi.getShippingPerPackage(items);
         
-        // Update shipping price with API value for default method
-        const currentMethodPrice = response.shippingMethods.find(
-          (m: any) => m.id === checkoutData.shipping.method
-        )?.price;
+        // Use the total shipping cost from API (calculated correctly based on package weights)
+        const totalShipping = response.totalShippingCost || 0;
         
-        if (currentMethodPrice !== undefined) {
-          setCheckoutData(prev => ({
-            ...prev,
-            shipping: {
-              ...prev.shipping,
-              price: currentMethodPrice,
-            }
-          }));
-        }
+        setCheckoutData(prev => ({
+          ...prev,
+          shipping: {
+            ...prev.shipping,
+            price: totalShipping,
+          }
+        }));
       } catch {
         // Silently ignore errors - prices will be calculated on step 2
       }
@@ -190,6 +199,18 @@ function CheckoutPageContent() {
   // Show message if cart is empty
   const displayCart = cart;
   const isCartEmpty = !cartLoading && itemCount === 0;
+
+  // Guest checkout handlers
+  const handleGuestCheckout = () => {
+    setIsGuestCheckout(true);
+    setCurrentStep(1);
+    window.scrollTo(0, 0);
+  };
+
+  const handleLoginClick = () => {
+    // Redirect to login page with return URL
+    router.push('/login?redirect=/checkout');
+  };
 
   const handleAddressSubmit = (address: AddressData) => {
     setCheckoutData(prev => ({ ...prev, address }));
@@ -248,12 +269,14 @@ function CheckoutPageContent() {
     
     const shipping = checkoutData.shipping.price;
     const paymentFee = checkoutData.payment.extraFee;
+    const discount = cart?.discount || 0;
     
     return {
       subtotal,
       shipping,
       paymentFee,
-      total: subtotal + shipping + paymentFee,
+      discount,
+      total: subtotal + shipping + paymentFee - discount,
     };
   };
 
@@ -267,7 +290,69 @@ function CheckoutPageContent() {
     setError('');
 
     try {
-      // First, create or get shipping address
+      let shippingAddressId: string | undefined;
+      let billingAddressId: string | undefined;
+
+      // For guest checkout, we don't create address via API - we send data directly
+      if (isGuestCheckout) {
+        // Guest checkout - send address data directly in createCheckout
+        const checkoutResponse = await checkoutApi.createCheckout({
+          shippingMethod: checkoutData.shipping.method,
+          pickupPointCode: checkoutData.shipping.paczkomatCode,
+          pickupPointAddress: checkoutData.shipping.paczkomatAddress,
+          paymentMethod: checkoutData.payment.method,
+          customerNotes: '',
+          acceptTerms: checkoutData.acceptTerms,
+          packageShipping: checkoutData.shipping.packageShipping?.map(pkg => ({
+            packageId: pkg.packageId,
+            method: pkg.method,
+            price: pkg.price,
+            paczkomatCode: pkg.paczkomatCode,
+            paczkomatAddress: pkg.paczkomatAddress,
+            useCustomAddress: pkg.useCustomAddress,
+            customAddress: pkg.customAddress,
+          })),
+          // Guest checkout fields
+          guestEmail: checkoutData.address.email,
+          guestFirstName: checkoutData.address.firstName,
+          guestLastName: checkoutData.address.lastName,
+          guestPhone: checkoutData.address.phone,
+          // Guest address data
+          guestAddress: {
+            firstName: checkoutData.address.firstName,
+            lastName: checkoutData.address.lastName,
+            street: checkoutData.address.street + (checkoutData.address.apartment ? ` ${checkoutData.address.apartment}` : ''),
+            city: checkoutData.address.city,
+            postalCode: checkoutData.address.postalCode,
+            country: 'PL',
+            phone: checkoutData.address.phone,
+            differentBillingAddress: checkoutData.address.differentBillingAddress,
+            billingAddress: checkoutData.address.differentBillingAddress ? {
+              firstName: checkoutData.address.firstName,
+              lastName: checkoutData.address.lastName,
+              companyName: checkoutData.address.billingCompanyName,
+              nip: checkoutData.address.billingNip,
+              street: (checkoutData.address.billingStreet || '') + (checkoutData.address.billingApartment ? ` ${checkoutData.address.billingApartment}` : ''),
+              city: checkoutData.address.billingCity || '',
+              postalCode: checkoutData.address.billingPostalCode || '',
+              country: 'PL',
+              phone: checkoutData.address.phone,
+            } : undefined,
+          },
+        });
+
+        // If payment URL is provided, redirect to payment gateway
+        if (checkoutResponse.paymentUrl) {
+          window.location.href = checkoutResponse.paymentUrl;
+          return;
+        }
+
+        // Otherwise redirect to order confirmation
+        router.push(`/order/${checkoutResponse.orderId}/confirmation`);
+        return;
+      }
+
+      // Logged in user flow - create addresses via API
       const addressData = {
         firstName: checkoutData.address.firstName,
         lastName: checkoutData.address.lastName,
@@ -283,9 +368,9 @@ function CheckoutPageContent() {
 
       // Create shipping address
       const shippingAddress = await addressesApi.create(addressData);
+      shippingAddressId = shippingAddress.id;
 
       // Create billing address if different from shipping
-      let billingAddressId: string | undefined;
       if (checkoutData.address.differentBillingAddress) {
         const billingData = {
           firstName: checkoutData.address.firstName,
@@ -307,7 +392,7 @@ function CheckoutPageContent() {
 
       // Create checkout/order
       const checkoutResponse = await checkoutApi.createCheckout({
-        shippingAddressId: shippingAddress.id,
+        shippingAddressId,
         billingAddressId,
         shippingMethod: checkoutData.shipping.method,
         pickupPointCode: checkoutData.shipping.paczkomatCode,
@@ -380,7 +465,7 @@ function CheckoutPageContent() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <Link href="/">
               <Image 
-                src="/images/logo.png" 
+                src="/images/WB-TRADE.svg" 
                 alt="WB Trade Group" 
                 width={140} 
                 height={50} 
@@ -404,58 +489,8 @@ function CheckoutPageContent() {
     );
   }
 
-  // Check if user is logged in - required for checkout
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <header className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <Link href="/">
-              <Image 
-                src="/images/logo.png" 
-                alt="WB Trade Group" 
-                width={140} 
-                height={50} 
-                className="h-10 w-auto object-contain"
-              />
-            </Link>
-          </div>
-        </header>
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="max-w-md mx-auto bg-white rounded-xl shadow-sm p-8 text-center">
-            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-3">Zaloguj się, aby złożyć zamówienie</h1>
-            <p className="text-gray-600 mb-8">
-              Aby kontynuować składanie zamówienia, musisz być zalogowany na swoje konto. Dzięki temu możesz śledzić status zamówienia i mieć dostęp do historii zakupów.
-            </p>
-            <div className="space-y-3">
-              <Link
-                href="/login?redirect=/checkout"
-                className="block w-full px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-medium transition-colors"
-              >
-                Zaloguj się
-              </Link>
-              <Link
-                href="/register?redirect=/checkout"
-                className="block w-full px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
-              >
-                Utwórz konto
-              </Link>
-            </div>
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <Link href="/cart" className="text-sm text-gray-500 hover:text-orange-500">
-                ← Wróć do koszyka
-              </Link>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
+  // For non-authenticated users, we show auth choice at step 0
+  // This block is no longer needed - we handle it in the main render with CheckoutAuthChoice
 
   const totals = calculateTotal();
 
@@ -463,28 +498,35 @@ function CheckoutPageContent() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="text-2xl font-bold text-orange-500">
-              WBTrade
+            <Link href="/" className="flex items-center shrink-0">
+              <Image 
+                src="/images/WB-TRADE-logo.png" 
+                alt="WB Trade" 
+                width={280} 
+                height={160} 
+                className="h-14 sm:h-18 lg:h-20 w-auto object-contain"
+                priority
+              />
             </Link>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-500">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <span className="hidden sm:inline text-sm text-gray-500">
                 Bezpieczne zakupy 🔒
               </span>
-              <Link href="/cart" className="text-sm text-gray-600 hover:text-orange-500">
-                ← Wróć do koszyka
+              <Link href="/cart" className="text-xs sm:text-sm text-gray-600 hover:text-orange-500">
+                ← <span className="hidden sm:inline">Wróć do </span>Koszyk<span className="hidden sm:inline">a</span>
               </Link>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Steps indicator */}
         <CheckoutSteps currentStep={currentStep} />
 
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="mt-4 sm:mt-6 lg:mt-8 grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Main form area */}
           <div className="lg:col-span-2">
             {/* Payment cancelled message */}
@@ -514,10 +556,19 @@ function CheckoutPageContent() {
               </div>
             )}
 
+            {/* Step 0: Auth choice for non-authenticated users */}
+            {currentStep === 0 && !isAuthenticated && (
+              <CheckoutAuthChoice
+                onGuestCheckout={handleGuestCheckout}
+                onLoginClick={handleLoginClick}
+              />
+            )}
+
             {currentStep === 1 && (
               <AddressForm
                 initialData={checkoutData.address}
                 onSubmit={handleAddressSubmit}
+                isGuestCheckout={isGuestCheckout}
               />
             )}
 
@@ -559,64 +610,27 @@ function CheckoutPageContent() {
 
           {/* Order summary sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
-              <h3 className="text-lg font-semibold mb-2">Twoje zamówienie</h3>
+            <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 lg:sticky lg:top-4">
+              <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-2">Twoje zamówienie</h3>
               
               {/* Info about multiple warehouses */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4">
                 <div className="flex gap-2">
-                  <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <p className="text-xs text-blue-700">
+                  <p className="text-[11px] sm:text-xs text-blue-700">
                     Produkty mogą pochodzić z różnych magazynów. Zamówienie może zostać wysłane w oddzielnych przesyłkach.
                   </p>
                 </div>
               </div>
               
-              <div className="space-y-3 mb-4">
-                {displayCart?.items?.map((item: any) => (
-                  <div key={item.id} className="flex gap-3 group relative">
-                    <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0 relative">
-                      {item.variant?.product?.images?.[0] && (
-                        <img
-                          src={item.variant.product.images[0].url}
-                          alt={item.variant.product.name}
-                          className="w-full h-full object-cover rounded-lg"
-                        />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate pr-6">
-                        {item.variant?.product?.name}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Ilość: {item.quantity}
-                      </p>
-                      <p className="text-sm font-semibold text-orange-600">
-                        {(item.variant?.price * item.quantity).toFixed(2)} zł
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleRemoveItem(item.id)}
-                      disabled={removingItemId === item.id}
-                      className="absolute top-0 right-0 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                      title="Usuń z koszyka"
-                    >
-                      {removingItemId === item.id ? (
-                        <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                      ) : (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                ))}
-              </div>
+              {/* Products grouped by warehouse */}
+              <CheckoutPackagesList 
+                items={displayCart?.items || []} 
+                onRemoveItem={handleRemoveItem}
+                removingItemId={removingItemId}
+              />
 
               {isCartEmpty && (
                 <div className="text-center py-4">
@@ -627,43 +641,57 @@ function CheckoutPageContent() {
                 </div>
               )}
 
-              <div className="border-t pt-4 space-y-2">
-                <div className="flex justify-between text-sm">
+              <div className="border-t pt-3 sm:pt-4 space-y-1.5 sm:space-y-2">
+                <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-gray-600">Produkty</span>
                   <span>{totals.subtotal.toFixed(2)} zł</span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-gray-600">Dostawa</span>
                   <span>{totals.shipping.toFixed(2)} zł</span>
                 </div>
                 {totals.paymentFee > 0 && (
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-xs sm:text-sm">
                     <span className="text-gray-600">Opłata za płatność</span>
                     <span>{totals.paymentFee.toFixed(2)} zł</span>
                   </div>
                 )}
-                <div className="flex justify-between text-lg font-bold pt-2 border-t">
+                {totals.discount > 0 && (
+                  <div className="flex justify-between text-xs sm:text-sm text-green-600">
+                    <span>Rabat</span>
+                    <span>-{totals.discount.toFixed(2)} zł</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-base sm:text-lg font-bold pt-2 border-t">
                   <span>Razem</span>
                   <span className="text-orange-600">{totals.total.toFixed(2)} zł</span>
                 </div>
               </div>
 
+              {/* Coupon input */}
+              <CouponInput
+                appliedCoupon={cart?.couponCode || null}
+                discount={totals.discount}
+                onApplyCoupon={applyCoupon}
+                onRemoveCoupon={removeCoupon}
+              />
+
               {/* Trust badges */}
-              <div className="mt-6 pt-4 border-t">
-                <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
-                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+              <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t">
+                <div className="flex items-center gap-2 text-[11px] sm:text-xs text-gray-500 mb-1.5 sm:mb-2">
+                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   Bezpieczne płatności
                 </div>
-                <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
-                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                <div className="flex items-center gap-2 text-[11px] sm:text-xs text-gray-500 mb-1.5 sm:mb-2">
+                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   14 dni na zwrot
                 </div>
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                <div className="flex items-center gap-2 text-[11px] sm:text-xs text-gray-500">
+                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   Ochrona danych SSL

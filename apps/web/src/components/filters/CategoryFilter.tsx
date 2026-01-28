@@ -157,6 +157,18 @@ function CategoryFilterContent() {
     <div className="mb-6">
       <h3 className="font-semibold text-secondary-900 mb-3">Kategorie</h3>
       
+      {/* "All products" link - always visible, highlighted when no category selected */}
+      <Link 
+        href="/products"
+        className={`flex items-center text-sm mb-3 py-1.5 ${
+          !currentCategorySlug 
+            ? 'text-primary-500 font-medium' 
+            : 'text-secondary-700 hover:text-primary-500'
+        }`}
+      >
+        Wszystkie produkty
+      </Link>
+      
       {/* Back link when in subcategory */}
       {!showAllMainCategories && (
         <Link 

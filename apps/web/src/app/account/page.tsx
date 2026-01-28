@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import ProductCard from '../../components/ProductCard';
-import { Product, dashboardApi, DashboardStats, DashboardOrder, RecommendedProduct } from '../../lib/api';
+import { Product, dashboardApi, checkoutApi, productsApi, DashboardStats, DashboardOrder, RecommendedProduct } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 
 // Sidebar navigation items
@@ -188,15 +188,22 @@ function AccountPageContent() {
       try {
         setDashboardLoading(true);
         
-        // Fetch dashboard overview and recommendations in parallel
-        const [overviewRes, recsRes] = await Promise.all([
+        // Fetch dashboard overview and bestsellers in parallel
+        const [overviewRes, bestsellersRes] = await Promise.all([
           dashboardApi.getOverview(),
-          dashboardApi.getRecommendations(4),
+          productsApi.getBestsellers({ limit: 4 }),
         ]);
         
         setStats(overviewRes.stats);
         setRecentOrders(overviewRes.recentOrders);
-        setRecommendations(recsRes.recommendations);
+        // Map bestsellers to recommendation format
+        setRecommendations(bestsellersRes.products.map(p => ({
+          id: p.id,
+          name: p.name,
+          price: Number(p.price),
+          images: p.images || [],
+          reason: 'bestseller' as const,
+        })));
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -207,31 +214,22 @@ function AccountPageContent() {
     fetchDashboardData();
   }, [isAuthenticated]);
 
-  // Handle payment simulation
-  const handleSimulatePayment = async (orderId: string) => {
+  // Handle payment - redirect to PayU
+  const handlePayNow = async (orderId: string) => {
     try {
       setPayingOrderId(orderId);
-      const response = await dashboardApi.simulatePayment(orderId, 'pay');
+      const response = await checkoutApi.retryPayment(orderId);
       
-      if (response.success) {
-        // Update the order in the list
-        setRecentOrders((prev) =>
-          prev.map((order) =>
-            order.id === orderId
-              ? { ...order, paymentStatus: 'PAID', status: 'CONFIRMED' }
-              : order
-          )
-        );
-        // Update stats
-        setStats((prev) => ({
-          ...prev,
-          unpaidOrders: Math.max(0, prev.unpaidOrders - 1),
-        }));
+      if (response.success && response.paymentUrl) {
+        // Redirect to PayU payment page
+        window.location.href = response.paymentUrl;
+      } else {
+        alert('Nie udało się utworzyć sesji płatności. Spróbuj ponownie.');
+        setPayingOrderId(null);
       }
     } catch (error) {
-      console.error('Error simulating payment:', error);
+      console.error('Error creating payment:', error);
       alert('Nie udało się przetworzyć płatności. Spróbuj ponownie.');
-    } finally {
       setPayingOrderId(null);
     }
   };
@@ -269,7 +267,7 @@ function AccountPageContent() {
             </svg>
             <div>
               <h4 className="font-medium text-green-800">Konto utworzone pomyślnie!</h4>
-              <p className="text-sm text-green-700">Witamy w WBTrade, {userData.name}!</p>
+              <p className="text-sm text-green-700">Witamy w WB Trade, {userData.name}!</p>
             </div>
           </div>
         )}
@@ -289,9 +287,9 @@ function AccountPageContent() {
           </div>
         )}
 
-        <div className="flex gap-6">
-          {/* Sidebar */}
-          <aside className="w-64 shrink-0">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Sidebar - hidden on mobile */}
+          <aside className="hidden lg:block w-64 shrink-0">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               {/* User Profile */}
               <div className="p-5 border-b border-gray-100">
@@ -329,8 +327,35 @@ function AccountPageContent() {
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
+            {/* Mobile User Card */}
+            <div className="lg:hidden mb-6">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white font-semibold">
+                    {userData.avatar}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{userData.fullName}</h3>
+                  </div>
+                </div>
+                {/* Mobile Navigation */}
+                <div className="grid grid-cols-3 gap-2">
+                  {sidebarItems.slice(1, 4).map((item) => (
+                    <Link
+                      key={item.id}
+                      href={item.href}
+                      className="flex flex-col items-center gap-1 p-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+                    >
+                      <SidebarIcon icon={item.icon} />
+                      <span className="text-xs">{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             {/* Greeting Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-2">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
                   {getGreeting()}, {userData.name}
@@ -346,7 +371,7 @@ function AccountPageContent() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
               <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-gray-500">Nieopłacone</span>
@@ -413,7 +438,7 @@ function AccountPageContent() {
                   </div>
                 ) : (
                   recentOrders.map((order) => (
-                    <div key={order.id} className="p-5 flex items-center gap-4">
+                    <div key={order.id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                       {/* Product Image */}
                       <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
                         {order.image ? (
@@ -460,22 +485,22 @@ function AccountPageContent() {
                         </div>
                       </div>
 
-                      {/* Price */}
-                      <div className="text-right shrink-0">
+                      {/* Price and Actions - row on mobile */}
+                      <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 sm:gap-0 mt-2 sm:mt-0">
                         <span className="font-semibold text-gray-900">
                           {order.total.toFixed(2)} {order.currency}
                         </span>
                       </div>
 
                       {/* Actions */}
-                      <div className="flex flex-col gap-2 shrink-0">
+                      <div className="flex sm:flex-col gap-2 shrink-0 w-full sm:w-auto">
                         {order.paymentStatus === 'PENDING' && (
                           <button
-                            onClick={() => handleSimulatePayment(order.id)}
+                            onClick={() => handlePayNow(order.id)}
                             disabled={payingOrderId === order.id}
                             className="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {payingOrderId === order.id ? 'Przetwarzanie...' : 'Zapłać teraz'}
+                            {payingOrderId === order.id ? 'Przekierowywanie...' : 'Zapłać teraz'}
                           </button>
                         )}
                         {order.status === 'SHIPPED' && (
@@ -499,29 +524,26 @@ function AccountPageContent() {
               </div>
             </div>
 
-            {/* Recommended Products */}
+            {/* Bestsellers */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Polecane dla Ciebie</h2>
-                  <p className="text-sm text-gray-500">Na podstawie Twoich wyszukiwań i zakupów</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">🔥</span>
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">Bestsellery</h2>
+                    <p className="text-sm text-gray-500">Najchętniej kupowane produkty</p>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <button className="w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors">
-                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </button>
-                  <button className="w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors">
-                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
+                <Link href="/products/bestsellers" className="text-orange-500 hover:text-orange-600 text-sm font-medium flex items-center gap-1">
+                  Zobacz więcej
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
               </div>
 
               {dashboardLoading ? (
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   {[1, 2, 3, 4].map((i) => (
                     <div key={i} className="bg-white rounded-xl border border-gray-100 p-4 animate-pulse">
                       <div className="bg-gray-200 h-40 rounded-lg mb-3"></div>
@@ -531,20 +553,13 @@ function AccountPageContent() {
                   ))}
                 </div>
               ) : recommendations.length > 0 ? (
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   {recommendations.map((product) => (
                     <div key={product.id} className="relative">
-                      {/* Recommendation reason badge */}
-                      {product.reason === 'search' && (
-                        <div className="absolute top-2 left-2 z-10 bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-full">
-                          Na podstawie wyszukiwań
-                        </div>
-                      )}
-                      {product.reason === 'similar' && (
-                        <div className="absolute top-2 left-2 z-10 bg-purple-500 text-white text-[10px] px-2 py-0.5 rounded-full">
-                          Podobne do zakupów
-                        </div>
-                      )}
+                      {/* Bestseller badge */}
+                      <div className="absolute top-2 left-2 z-10 bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span>🔥</span> Bestseller
+                      </div>
                       <ProductCard
                         product={{
                           id: product.id,
@@ -578,6 +593,10 @@ function AccountPageContent() {
         </div>
       </main>
 
+      {/* Separator */}
+      <div className="border-t border-gray-200 bg-gray-50">
+        <div className="h-6 sm:h-8"></div>
+      </div>
       <Footer hideTrustBadges />
     </div>
   );

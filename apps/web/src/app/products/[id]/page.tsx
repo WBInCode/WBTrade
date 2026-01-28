@@ -6,9 +6,10 @@ import Link from 'next/link';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import Breadcrumb from '../../../components/Breadcrumb';
-import { productsApi, reviewsApi, Product, Review, ReviewStats, CanReviewResult } from '../../../lib/api';
+import { productsApi, reviewsApi, cartApi, Product, Review, ReviewStats, CanReviewResult } from '../../../lib/api';
 import ProductCard from '../../../components/ProductCard';
 import { useCart } from '../../../contexts/CartContext';
+import { useWishlist } from '../../../contexts/WishlistContext';
 import { cleanCategoryName } from '../../../lib/categories';
 
 interface ProductPageProps {
@@ -86,6 +87,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   const [quantity, setQuantity] = useState(1);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const { addToCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const router = useRouter();
 
   // Cart error state for displaying error messages
@@ -208,7 +210,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   }, [cartError]);
 
   const handleAddToCart = async () => {
-    if (!selectedVariant) return;
+    if (!selectedVariant || !product) return;
     if (isOutOfStock) {
       setCartError('Produkt jest niedostępny (brak na stanie)');
       return;
@@ -217,8 +219,14 @@ export default function ProductPage({ params }: ProductPageProps) {
     setAddingToCart(true);
     setCartError(null);
     try {
-      await addToCart(selectedVariant.id, quantity);
-      // Could show a toast notification here
+      const productImage = product.images?.[0]?.url || '';
+      await addToCart(selectedVariant.id, quantity, {
+        name: product.name,
+        image: productImage,
+        price: String(selectedVariant.price || product.price),
+        quantity: quantity,
+        productId: product.id,
+      });
     } catch (err: any) {
       console.error('Failed to add to cart:', err);
       setCartError(err?.message || 'Nie udało się dodać produktu do koszyka');
@@ -228,7 +236,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   };
 
   const handleBuyNow = async () => {
-    if (!selectedVariant) return;
+    if (!selectedVariant || !product) return;
     if (isOutOfStock) {
       setCartError('Produkt jest niedostępny (brak na stanie)');
       return;
@@ -237,8 +245,9 @@ export default function ProductPage({ params }: ProductPageProps) {
     setBuyingNow(true);
     setCartError(null);
     try {
+      // Add to cart and redirect to cart page
       await addToCart(selectedVariant.id, quantity);
-      router.push('/checkout');
+      router.push('/cart');
     } catch (err: any) {
       console.error('Failed to buy now:', err);
       setCartError(err?.message || 'Nie udało się dodać produktu do koszyka');
@@ -290,15 +299,13 @@ export default function ProductPage({ params }: ProductPageProps) {
     fetchProduct();
   }, [id]);
 
-  // Fetch related products
+  // Fetch bestsellers for recommendations
   useEffect(() => {
-    async function fetchRelatedProducts() {
+    async function fetchBestsellers() {
       try {
-        // Fetch products from the same category, or just random products if no category
-        const categorySlug = product?.category?.slug;
-        const response = await productsApi.getAll({
-          category: categorySlug,
-          limit: 5,
+        // Fetch bestsellers instead of category products
+        const response = await productsApi.getBestsellers({
+          limit: 10,
         });
         // Filter out current product and take up to 5
         const filtered = response.products
@@ -306,12 +313,24 @@ export default function ProductPage({ params }: ProductPageProps) {
           .slice(0, 5);
         setRelatedProducts(filtered);
       } catch (error) {
-        console.error('Failed to fetch related products:', error);
+        console.error('Failed to fetch bestsellers:', error);
+        // Fallback to category products
+        try {
+          const categorySlug = product?.category?.slug;
+          const fallbackResponse = await productsApi.getAll({
+            category: categorySlug,
+            limit: 5,
+          });
+          const filtered = fallbackResponse.products
+            .filter((p) => p.id !== id)
+            .slice(0, 5);
+          setRelatedProducts(filtered);
+        } catch (fallbackError) {
+          console.error('Fallback also failed:', fallbackError);
+        }
       }
     }
-    if (product) {
-      fetchRelatedProducts();
-    }
+    fetchBestsellers();
   }, [product, id]);
 
   // Fetch reviews, stats, and can-review status
@@ -503,18 +522,18 @@ export default function ProductPage({ params }: ProductPageProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       <Header />
       
-      <main className="container-custom py-3 sm:py-6 px-3 sm:px-4">
+      <main className="container-custom py-3 sm:py-6 px-3 sm:px-4 overflow-hidden">
         {/* Breadcrumb */}
         <Breadcrumb items={breadcrumbItems} />
 
         {/* Main Product Section */}
-        <div className="grid lg:grid-cols-3 gap-4 sm:gap-8 mb-6 sm:mb-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
           {/* Left: Image Gallery */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg p-2 sm:p-4 relative">
+          <div className="md:col-span-1 lg:col-span-2 min-w-0">
+            <div className="bg-white rounded-lg p-2 sm:p-4 relative overflow-hidden">
               {/* Badge */}
               {product.badge && (
                 <span className="absolute top-3 left-3 sm:top-6 sm:left-6 bg-orange-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 sm:px-3 sm:py-1.5 rounded z-10 uppercase">
@@ -523,11 +542,11 @@ export default function ProductPage({ params }: ProductPageProps) {
               )}
               
               {/* Main Image */}
-              <div className="aspect-square overflow-hidden rounded-lg mb-3 sm:mb-4">
+              <div className="aspect-square overflow-hidden rounded-lg mb-3 sm:mb-4 max-w-full">
                 <img
                   src={mainImage}
                   alt={product.name}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain max-w-full"
                 />
               </div>
 
@@ -553,10 +572,10 @@ export default function ProductPage({ params }: ProductPageProps) {
           </div>
 
           {/* Right: Product Info Panel */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg p-4 sm:p-6 lg:sticky lg:top-24">
+          <div className="md:col-span-1 lg:col-span-1 min-w-0">
+            <div className="bg-white rounded-lg p-4 sm:p-6 md:sticky md:top-24 overflow-hidden">
               {/* Title */}
-              <h1 className="text-base sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3 leading-snug">
+              <h1 className="text-base sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3 leading-snug break-words">
                 {product.name}
               </h1>
 
@@ -603,9 +622,9 @@ export default function ProductPage({ params }: ProductPageProps) {
                 )}
               </div>
 
-              {/* Lowest Price Info */}
+              {/* Lowest Price Info - Omnibus Directive */}
               <p className="text-[11px] sm:text-xs text-gray-500 mb-3 sm:mb-4">
-                Najniższa cena w ostatnich 30 dniach: {Number(product.compareAtPrice || effectivePrice).toFixed(2).replace('.', ',')} zł
+                Najniższa cena w ostatnich 30 dniach: {Number(product.lowestPrice30Days || effectivePrice).toFixed(2).replace('.', ',')} zł
               </p>
 
               {/* Variants */}
@@ -765,13 +784,39 @@ export default function ProductPage({ params }: ProductPageProps) {
                 </button>
               )}
 
+              {/* Add to Wishlist Button */}
+              <button 
+                onClick={() => {
+                  if (!product) return;
+                  const mainImage = product?.images?.[0]?.url || '';
+                  toggleWishlist({
+                    id: product.id,
+                    variantId: selectedVariant?.id,
+                    name: product.name,
+                    price: String(product.price),
+                    compareAtPrice: product.compareAtPrice ? String(product.compareAtPrice) : undefined,
+                    image: mainImage,
+                  });
+                }}
+                className={`w-full border-2 font-semibold py-2.5 sm:py-3 rounded-lg mb-3 sm:mb-4 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base ${
+                  product && isInWishlist(product.id)
+                    ? 'border-red-500 bg-red-50 text-red-500 hover:bg-red-100' 
+                    : 'border-gray-300 text-gray-600 hover:border-gray-400 hover:bg-gray-50'
+                }`}
+              >
+                <svg className="w-5 h-5" fill={product && isInWishlist(product.id) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                {product && isInWishlist(product.id) ? 'W ulubionych' : 'Dodaj do ulubionych'}
+              </button>
+
               {/* Stock Status */}
               {!isOutOfStock ? (
                 <div className="flex items-center gap-2 text-xs sm:text-sm text-green-600 mb-2 sm:mb-3">
                   <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  <span className="font-medium">W magazynie: Wysyłka natychmiast</span>
+                  <span className="font-medium">W magazynie: Wysyłka w ciągu 24-72h</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-xs sm:text-sm text-red-600 mb-2 sm:mb-3">
@@ -812,25 +857,6 @@ export default function ProductPage({ params }: ProductPageProps) {
               {/* Delivery Info */}
               
               <div className="border-t pt-3 sm:pt-4 space-y-2 sm:space-y-3">
-                <div className="flex items-start gap-2 sm:gap-3">
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                  </svg>
-                  <div>
-                    <p className="text-xs sm:text-sm font-medium text-gray-900">Jak najszybsza dostawa</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-2 sm:gap-3">
-                  <div className="w-4 h-4 sm:w-5 sm:h-5 bg-green-500 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0">
-                    <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-xs sm:text-sm font-medium text-gray-900">Tania i szybka dostawa i darmowe zwroty</p>
-                  </div>
-                </div>
               </div>
 
               {/* Seller Info */}
@@ -1253,23 +1279,23 @@ export default function ProductPage({ params }: ProductPageProps) {
           </div>
         </div>
 
-        {/* Customers Also Viewed */}
+        {/* Polecane dla Ciebie - Bestsellery */}
         {relatedProducts.length > 0 && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">Inni klienci oglądali</h2>
-              <div className="flex gap-2">
-                <button className="w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors">
-                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <button className="w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors">
-                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🔥</span>
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">Bestsellery</h2>
+                  <p className="text-sm text-gray-500">Najchętniej kupowane produkty</p>
+                </div>
               </div>
+              <Link href="/products/bestsellers" className="text-orange-500 hover:text-orange-600 text-sm font-medium flex items-center gap-1">
+                Zobacz więcej
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">

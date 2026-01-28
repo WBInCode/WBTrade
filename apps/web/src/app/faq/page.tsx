@@ -3,8 +3,8 @@ import Footer from '../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'FAQ - Najczęściej zadawane pytania - WBTrade',
-  description: 'Odpowiedzi na najczęściej zadawane pytania dotyczące zakupów, dostawy, płatności i zwrotów w WBTrade',
+  title: 'FAQ - Najczęściej zadawane pytania - WB Trade',
+  description: 'Odpowiedzi na najczęściej zadawane pytania dotyczące zakupów, dostawy, płatności i zwrotów w WB Trade',
 };
 
 export default function FAQPage() {
@@ -20,23 +20,23 @@ export default function FAQPage() {
       questions: [
         {
           question: 'Jak złożyć zamówienie?',
-          answer: 'Aby złożyć zamówienie, dodaj wybrane produkty do koszyka, a następnie przejdź do kasy. Uzupełnij dane dostawy, wybierz metodę płatności i potwierdź zamówienie. Po złożeniu zamówienia otrzymasz e-mail z potwierdzeniem.',
+          answer: 'Aby złożyć zamówienie, dodaj wybrane produkty do\u00A0koszyka, a\u00A0następnie przejdź do\u00A0kasy. Uzupełnij dane dostawy, wybierz metodę płatności i\u00A0potwierdź zamówienie. Po\u00A0złożeniu zamówienia otrzymasz e-mail z\u00A0potwierdzeniem.',
         },
         {
           question: 'Jak sprawdzić status mojego zamówienia?',
-          answer: 'Status zamówienia możesz sprawdzić po zalogowaniu się na swoje konto w zakładce "Moje zamówienia". Znajdziesz tam informacje o etapie realizacji oraz link do śledzenia przesyłki. Otrzymasz także powiadomienia e-mail i SMS o zmianach statusu.',
+          answer: 'Status zamówienia możesz sprawdzić po\u00A0zalogowaniu się na\u00A0swoje konto w\u00A0zakładce "Moje zamówienia". Znajdziesz tam informacje o\u00A0etapie realizacji oraz\u00A0link do\u00A0śledzenia przesyłki. Otrzymasz także powiadomienia e-mail i\u00A0SMS o\u00A0zmianach statusu.',
         },
         {
           question: 'Czy mogę anulować zamówienie?',
-          answer: 'Tak, możesz anulować zamówienie, o ile nie zostało jeszcze wysłane. Przejdź do "Moje zamówienia" i kliknij "Anuluj zamówienie". Jeśli zamówienie zostało już nadane, będziesz musiał poczekać na dostawę i skorzystać z procedury zwrotu.',
+          answer: 'Tak, możesz anulować zamówienie, o\u00A0ile nie zostało jeszcze wysłane. Przejdź do\u00A0"Moje zamówienia" i\u00A0kliknij "Anuluj zamówienie". Jeśli zamówienie zostało już nadane, będziesz musiał poczekać na\u00A0dostawę i\u00A0skorzystać z\u00A0procedury zwrotu.',
         },
         {
           question: 'Czy mogę zmienić adres dostawy po złożeniu zamówienia?',
-          answer: 'Zmiana adresu dostawy jest możliwa tylko przed wysyłką zamówienia. Skontaktuj się z nami jak najszybciej przez formularz kontaktowy lub telefonicznie, podając numer zamówienia i nowy adres.',
+          answer: 'Zmiana adresu dostawy jest możliwa tylko przed wysyłką zamówienia. Skontaktuj się z\u00A0nami jak najszybciej przez formularz kontaktowy lub telefonicznie, podając numer zamówienia i\u00A0nowy adres.',
         },
         {
           question: 'Jak otrzymam fakturę?',
-          answer: 'Faktura jest generowana automatycznie i wysyłana na adres e-mail podany przy zamówieniu. Możesz ją również pobrać z zakładki "Moje zamówienia" po zalogowaniu. Jeśli potrzebujesz faktury na firmę, podaj dane firmy podczas składania zamówienia.',
+          answer: 'Faktura jest generowana automatycznie i\u00A0wysyłana na\u00A0adres e-mail podany przy zamówieniu. Możesz ją również pobrać z\u00A0zakładki "Moje zamówienia" po\u00A0zalogowaniu. Jeśli potrzebujesz faktury na\u00A0firmę, podaj dane firmy podczas składania zamówienia.',
         },
       ],
     },
@@ -51,23 +51,23 @@ export default function FAQPage() {
       questions: [
         {
           question: 'Jakie są dostępne metody dostawy?',
-          answer: 'Oferujemy dostawę kurierską InPost, dostawę do Paczkomatów InPost oraz specjalną wysyłkę dla produktów gabarytowych. Szczegółowe informacje o cenach i czasie dostawy znajdziesz na stronie "Dostawa".',
+          answer: 'Oferujemy dostawę kurierską InPost, dostawę do\u00A0Paczkomatów InPost oraz\u00A0specjalną wysyłkę dla produktów gabarytowych. Szczegółowe informacje o\u00A0cenach i\u00A0czasie dostawy znajdziesz na\u00A0stronie "Dostawa".',
         },
         {
           question: 'Ile kosztuje dostawa?',
-          answer: 'Koszt dostawy zależy od wybranej metody: Paczkomaty InPost od 9,99 zł, Kurier InPost od 19,99 zł. Darmowa dostawa dostępna przy zamówieniach powyżej określonej kwoty (od 100 zł dla Paczkomatów).',
+          answer: 'Koszt dostawy zależy od\u00A0wybranej metody: Paczkomaty InPost od\u00A09,99\u00A0zł, Kurier InPost od\u00A019,99\u00A0zł. Darmowa dostawa dostępna przy zamówieniach powyżej określonej kwoty (od\u00A0100\u00A0zł dla Paczkomatów).',
         },
         {
           question: 'Jak długo trwa dostawa?',
-          answer: 'Standardowy czas dostawy to 1-3 dni robocze od momentu nadania przesyłki. Zamówienia złożone do godziny 14:00 w dni robocze są wysyłane tego samego dnia.',
+          answer: 'Standardowy czas dostawy to\u00A01–3 dni robocze od\u00A0momentu nadania przesyłki. Zamówienia złożone do\u00A0godziny 14:00 w\u00A0dni robocze są wysyłane tego samego dnia.',
         },
         {
           question: 'Jak śledzić przesyłkę?',
-          answer: 'Po nadaniu przesyłki otrzymasz e-mail i SMS z numerem śledzenia. Możesz również sprawdzić status w zakładce "Moje zamówienia". Link prowadzi bezpośrednio na stronę przewoźnika.',
+          answer: 'Po nadaniu przesyłki otrzymasz e-mail i\u00A0SMS z\u00A0numerem śledzenia. Możesz również sprawdzić status w\u00A0zakładce "Moje zamówienia". Link prowadzi bezpośrednio na\u00A0stronę przewoźnika.',
         },
         {
           question: 'Co zrobić, jeśli przesyłka jest uszkodzona?',
-          answer: 'W przypadku widocznych uszkodzeń paczki, sporządź protokół szkody w obecności kuriera i zrób zdjęcia. Następnie skontaktuj się z nami, a rozpatrzymy reklamację. Masz również prawo odmówić przyjęcia uszkodzonej przesyłki.',
+          answer: 'W\u00A0przypadku widocznych uszkodzeń paczki, sporządź protokół szkody w\u00A0obecności kuriera i\u00A0zrób zdjęcia. Następnie skontaktuj się z\u00A0nami, a\u00A0rozpatrzymy reklamację. Masz również prawo odmówić przyjęcia uszkodzonej przesyłki.',
         },
       ],
     },
@@ -82,23 +82,23 @@ export default function FAQPage() {
       questions: [
         {
           question: 'Jakie metody płatności są dostępne?',
-          answer: 'Akceptujemy: karty płatnicze (Visa, Mastercard), BLIK, szybkie przelewy online (PayU, Przelewy24), tradycyjny przelew bankowy oraz płatność przy odbiorze (dla wybranych zamówień).',
+          answer: 'Akceptujemy: karty płatnicze (Visa, Mastercard), BLIK, szybkie przelewy online (PayU, Przelewy24), tradycyjny przelew bankowy oraz\u00A0płatność przy odbiorze (dla wybranych zamówień).',
         },
         {
           question: 'Czy płatności są bezpieczne?',
-          answer: 'Tak, wszystkie płatności są szyfrowane i przetwarzane przez certyfikowanych operatorów płatności. Nie przechowujemy danych Twoich kart płatniczych. Strona jest zabezpieczona certyfikatem SSL.',
+          answer: 'Tak, wszystkie płatności są szyfrowane i\u00A0przetwarzane przez certyfikowanych operatorów płatności. Nie przechowujemy danych Twoich kart płatniczych. Strona jest zabezpieczona certyfikatem SSL.',
         },
         {
           question: 'Co zrobić, gdy płatność nie przeszła?',
-          answer: 'Jeśli płatność nie została zrealizowana, sprawdź saldo konta i limity karty. Spróbuj ponownie lub wybierz inną metodę płatności. Jeśli problem się powtarza, skontaktuj się z nami lub ze swoim bankiem.',
+          answer: 'Jeśli płatność nie została zrealizowana, sprawdź saldo konta i\u00A0limity karty. Spróbuj ponownie lub wybierz inną metodę płatności. Jeśli problem się powtarza, skontaktuj się z\u00A0nami lub ze\u00A0swoim bankiem.',
         },
         {
           question: 'Kiedy zostanie pobrana płatność?',
-          answer: 'Płatność jest pobierana natychmiast po potwierdzeniu zamówienia. W przypadku przelewu tradycyjnego, zamówienie jest realizowane po zaksięgowaniu wpłaty na naszym koncie (1-2 dni robocze).',
+          answer: 'Płatność jest pobierana natychmiast po\u00A0potwierdzeniu zamówienia. W\u00A0przypadku przelewu tradycyjnego, zamówienie jest realizowane po\u00A0zaksięgowaniu wpłaty na\u00A0naszym koncie (1–2 dni robocze).',
         },
         {
           question: 'Czy mogę otrzymać fakturę VAT?',
-          answer: 'Tak, podczas składania zamówienia zaznacz opcję "Faktura VAT" i podaj dane firmy (NIP, nazwa, adres). Faktura zostanie wygenerowana automatycznie i wysłana na podany adres e-mail.',
+          answer: 'Tak, podczas składania zamówienia zaznacz opcję "Faktura VAT" i\u00A0podaj dane firmy (NIP, nazwa, adres). Faktura zostanie wygenerowana automatycznie i\u00A0wysłana na\u00A0podany adres e-mail.',
         },
       ],
     },
@@ -113,23 +113,23 @@ export default function FAQPage() {
       questions: [
         {
           question: 'Ile mam czasu na zwrot produktu?',
-          answer: 'Masz 14 dni kalendarzowych od daty otrzymania przesyłki na dokonanie zwrotu bez podania przyczyny. Wystarczy zgłosić zwrot przez formularz w zakładce "Moje zamówienia".',
+          answer: 'Masz 14\u00A0dni kalendarzowych od\u00A0daty otrzymania przesyłki na\u00A0dokonanie zwrotu bez podania przyczyny. Wystarczy zgłosić zwrot przez formularz w\u00A0zakładce "Moje zamówienia".',
         },
         {
           question: 'Jak zwrócić produkt?',
-          answer: 'Zaloguj się na konto, przejdź do "Moje zamówienia", wybierz produkt i kliknij "Zgłoś zwrot". Postępuj zgodnie z instrukcjami - spakuj produkt i nadaj przesyłkę. Po otrzymaniu i weryfikacji, zwrócimy środki.',
+          answer: 'Zaloguj się na\u00A0konto, przejdź do\u00A0"Moje zamówienia", wybierz produkt i\u00A0kliknij "Zgłoś zwrot". Postępuj zgodnie z\u00A0instrukcjami – spakuj produkt i\u00A0nadaj przesyłkę. Po\u00A0otrzymaniu i\u00A0weryfikacji, zwrócimy środki.',
         },
         {
           question: 'Kto pokrywa koszty zwrotu?',
-          answer: 'W przypadku zwrotu z tytułu odstąpienia od umowy (bez podania przyczyny), koszty przesyłki zwrotnej pokrywa kupujący. Przy reklamacji uznanej lub błędzie po naszej stronie - pokrywamy koszty.',
+          answer: 'W\u00A0przypadku zwrotu z\u00A0tytułu odstąpienia od\u00A0umowy (bez podania przyczyny), koszty przesyłki zwrotnej pokrywa kupujący. Przy reklamacji uznanej lub błędzie po\u00A0naszej stronie – pokrywamy koszty.',
         },
         {
           question: 'Jak długo trwa zwrot pieniędzy?',
-          answer: 'Zwrot środków następuje w ciągu 14 dni roboczych od momentu otrzymania i pozytywnej weryfikacji zwróconego produktu. Pieniądze wracają tą samą metodą, którą dokonano płatności.',
+          answer: 'Zwrot środków następuje w\u00A0ciągu 14\u00A0dni roboczych od\u00A0momentu otrzymania i\u00A0pozytywnej weryfikacji zwróconego produktu. Pieniądze wracają tą samą metodą, którą dokonano płatności.',
         },
         {
           question: 'Jak złożyć reklamację?',
-          answer: 'Reklamację można złożyć przez formularz na stronie lub kontaktując się z nami mailowo. Podaj numer zamówienia, opis problemu i dołącz zdjęcia. Reklamacje rozpatrujemy w ciągu 14 dni kalendarzowych.',
+          answer: 'Reklamację można złożyć przez formularz na\u00A0stronie lub kontaktując się z\u00A0nami mailowo. Podaj numer zamówienia, opis problemu i\u00A0dołącz zdjęcia. Reklamacje rozpatrujemy w\u00A0ciągu 14\u00A0dni kalendarzowych.',
         },
       ],
     },
@@ -144,23 +144,23 @@ export default function FAQPage() {
       questions: [
         {
           question: 'Jak założyć konto?',
-          answer: 'Kliknij "Zarejestruj się" w prawym górnym rogu strony. Podaj adres e-mail, utwórz hasło i uzupełnij dane. Możesz również zarejestrować się podczas składania pierwszego zamówienia.',
+          answer: 'Kliknij "Zarejestruj się" w\u00A0prawym górnym rogu strony. Podaj adres e-mail, utwórz hasło i\u00A0uzupełnij dane. Możesz również zarejestrować się podczas składania pierwszego zamówienia.',
         },
         {
           question: 'Zapomniałem hasła, co zrobić?',
-          answer: 'Kliknij "Zaloguj się", a następnie "Zapomniałem hasła". Podaj adres e-mail powiązany z kontem, a wyślemy link do zresetowania hasła. Link jest ważny przez 24 godziny.',
+          answer: 'Kliknij "Zaloguj się", a\u00A0następnie "Zapomniałem hasła". Podaj adres e-mail powiązany z\u00A0kontem, a\u00A0wyślemy link do\u00A0zresetowania hasła. Link jest ważny przez 24\u00A0godziny.',
         },
         {
           question: 'Jak zmienić dane w koncie?',
-          answer: 'Po zalogowaniu przejdź do "Moje konto" > "Ustawienia". Możesz tam zmienić dane osobowe, adres dostawy, hasło oraz preferencje powiadomień.',
+          answer: 'Po zalogowaniu przejdź do\u00A0"Moje konto" > "Ustawienia". Możesz tam zmienić dane osobowe, adres dostawy, hasło oraz\u00A0preferencje powiadomień.',
         },
         {
           question: 'Czy mogę usunąć swoje konto?',
-          answer: 'Tak, możesz zażądać usunięcia konta kontaktując się z nami. Pamiętaj, że utracisz dostęp do historii zamówień i zgromadzonych punktów. Proces usunięcia trwa do 30 dni.',
+          answer: 'Tak, możesz zażądać usunięcia konta kontaktując się z\u00A0nami. Pamiętaj, że utracisz dostęp do\u00A0historii zamówień i\u00A0zgromadzonych punktów. Proces usunięcia trwa do\u00A030\u00A0dni.',
         },
         {
           question: 'Czy moje dane są bezpieczne?',
-          answer: 'Tak, dbamy o bezpieczeństwo Twoich danych. Stosujemy szyfrowanie SSL, nie udostępniamy danych osobom trzecim bez Twojej zgody i przestrzegamy przepisów RODO.',
+          answer: 'Tak, dbamy o\u00A0bezpieczeństwo Twoich danych. Stosujemy szyfrowanie SSL, nie udostępniamy danych osobom trzecim bez Twojej zgody i\u00A0przestrzegamy przepisów RODO.',
         },
       ],
     },
@@ -178,7 +178,7 @@ export default function FAQPage() {
               Najczęściej zadawane pytania
             </h1>
             <p className="text-xl text-primary-100">
-              Znajdź szybkie odpowiedzi na najczęstsze pytania dotyczące zakupów w WBTrade.
+              Znajdź szybkie odpowiedzi na najczęstsze pytania dotyczące zakupów w WB Trade.
             </p>
           </div>
         </div>

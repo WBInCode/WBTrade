@@ -10,7 +10,8 @@
     "Motoryzacja",
     "Dziecko",
     "Biurowe i papiernicze",
-    "Gastronomiczne"
+    "Gastronomiczne",
+    "gastronomia"
   ],
   
   "categoryTree": {
@@ -82,6 +83,11 @@
       "subcategories": {
         "Naczynia i zastawa": { "slug": "naczynia-i-zastawa" }
       }
+    },
+    "gastronomia": {
+      "slug": "gastronomiczne",
+      "order": 8,
+      "subcategories": {}
     }
   },
   

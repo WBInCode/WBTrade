@@ -2,6 +2,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../db';
 import { UserRole } from '@prisma/client';
+import { discountService } from './discount.service';
+import { emailService } from './email.service';
 
 // Types
 interface RegisterData {
@@ -85,10 +87,38 @@ export class AuthService {
       role: user.role,
     });
 
+    // Generate welcome discount code and send email (async, don't block registration)
+    this.sendWelcomeDiscount(user.id, user.email, user.firstName).catch((err) => {
+      console.error('[AuthService] Failed to send welcome discount:', err.message);
+    });
+
     return {
       user: this.sanitizeUser(user),
       tokens,
     };
+  }
+
+  /**
+   * Generate welcome discount and send email
+   * Called after successful registration (async)
+   */
+  private async sendWelcomeDiscount(userId: string, email: string, firstName: string): Promise<void> {
+    try {
+      const discount = await discountService.generateWelcomeDiscount(userId, email);
+      
+      await emailService.sendWelcomeDiscountEmail(
+        email,
+        firstName,
+        discount.couponCode,
+        discount.discountPercent,
+        discount.expiresAt
+      );
+      
+      console.log(`✅ [AuthService] Welcome discount sent to ${email}: ${discount.couponCode}`);
+    } catch (err: any) {
+      console.error(`[AuthService] Welcome discount error for ${email}:`, err.message);
+      // Don't throw - registration should succeed even if discount email fails
+    }
   }
 
   /**
@@ -107,6 +137,11 @@ export class AuthService {
     // Check if user is active
     if (!user.isActive) {
       throw new Error('Account is deactivated. Please contact support.');
+    }
+
+    // OAuth users don't have password
+    if (!user.password) {
+      throw new Error('This account uses Google login. Please sign in with Google.');
     }
 
     // Verify password
@@ -297,6 +332,11 @@ export class AuthService {
       throw new Error('User not found');
     }
 
+    // OAuth users cannot change password
+    if (!user.password) {
+      throw new Error('Password change not available for OAuth accounts');
+    }
+
     // Verify current password
     const isValid = await bcrypt.compare(currentPassword, user.password);
     if (!isValid) {
@@ -360,7 +400,7 @@ export class AuthService {
     phone: string | null;
     role: UserRole;
     createdAt: Date;
-    password?: string;
+    password?: string | null;
   }): UserResponse {
     const { password, ...sanitized } = user;
     return sanitized as UserResponse;

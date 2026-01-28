@@ -3,8 +3,8 @@ import Footer from '../../../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Usunięcie konta - Centrum pomocy - WBTrade',
-  description: 'Jak usunąć konto w WBTrade',
+  title: 'Usunięcie konta - Centrum pomocy - WB Trade',
+  description: 'Jak usunąć konto w WB Trade',
 };
 
 export default function DeleteAccountPage() {

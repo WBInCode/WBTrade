@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import { useAuth } from '../../../contexts/AuthContext';
-import { ordersApi, Order } from '../../../lib/api';
+import { ordersApi, checkoutApi, Order } from '../../../lib/api';
 
 // Order status types
 type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
@@ -210,29 +210,22 @@ export default function OrdersPage() {
     fetchOrders();
   }, [isAuthenticated, currentPage]);
 
-  // Simulate payment (development only)
-  const handleSimulatePayment = async (orderId: string) => {
+  // Handle payment - redirect to PayU
+  const handlePayNow = async (orderId: string) => {
     try {
       setSimulatingPayment(orderId);
-      const response = await fetch(`http://localhost:5000/api/orders/${orderId}/simulate-payment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Błąd symulacji płatności');
+      const response = await checkoutApi.retryPayment(orderId);
+      
+      if (response.success && response.paymentUrl) {
+        // Redirect to PayU payment page
+        window.location.href = response.paymentUrl;
+      } else {
+        alert('Nie udało się utworzyć sesji płatności. Spróbuj ponownie.');
+        setSimulatingPayment(null);
       }
-
-      // Refresh orders after successful payment
-      await fetchOrders();
-      alert('✅ Płatność zasymulowana pomyślnie! Zamówienie zostało opłacone.');
     } catch (error: any) {
-      console.error('Error simulating payment:', error);
-      alert(`❌ Błąd: ${error.message}`);
-    } finally {
+      console.error('Error creating payment:', error);
+      alert(`Nie udało się przetworzyć płatności: ${error.message || 'Spróbuj ponownie'}`);
       setSimulatingPayment(null);
     }
   };
@@ -280,9 +273,9 @@ export default function OrdersPage() {
     <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <main className="container-custom py-6">
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+      <main className="container-custom py-4 sm:py-6">
+        {/* Breadcrumb - hidden on mobile */}
+        <nav className="hidden sm:flex items-center gap-2 text-sm text-gray-500 mb-6">
           <Link href="/" className="hover:text-orange-500">Strona główna</Link>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -294,9 +287,9 @@ export default function OrdersPage() {
           <span className="text-gray-900">Moje zamówienia</span>
         </nav>
 
-        <div className="flex gap-6">
-          {/* Sidebar */}
-          <aside className="w-64 shrink-0">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Sidebar - hidden on mobile */}
+          <aside className="hidden lg:block w-64 shrink-0">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               {/* User Profile */}
               <div className="p-5 border-b border-gray-100">
@@ -332,8 +325,21 @@ export default function OrdersPage() {
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
+            {/* Mobile Back Button */}
+            <div className="lg:hidden mb-4">
+              <Link 
+                href="/account" 
+                className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-orange-500"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Powrót do konta
+              </Link>
+            </div>
+
             {/* Page Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-2">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Moje zamówienia</h1>
                 <p className="text-gray-500 text-sm">Przeglądaj i zarządzaj swoimi zamówieniami</p>
@@ -414,8 +420,8 @@ export default function OrdersPage() {
                 {filteredOrders.map((order) => (
                   <div key={order.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                     {/* Order Header */}
-                    <div className="flex items-center justify-between p-4 bg-gray-50 border-b border-gray-100">
-                      <div className="flex items-center gap-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 border-b border-gray-100 gap-3">
+                      <div className="flex flex-wrap items-center gap-4 sm:gap-6">
                         <div>
                           <span className="text-xs text-gray-500">Numer zamówienia</span>
                           <p className="font-semibold text-gray-900">#{order.orderNumber}</p>
@@ -424,7 +430,7 @@ export default function OrdersPage() {
                           <span className="text-xs text-gray-500">Data zamówienia</span>
                           <p className="text-sm text-gray-700">{formatOrderDate(order.createdAt)}</p>
                         </div>
-                        <div>
+                        <div className="hidden sm:block">
                           <span className="text-xs text-gray-500">Dostawa</span>
                           <p className="text-sm text-gray-700">{order.shippingMethod}</p>
                         </div>
@@ -463,7 +469,7 @@ export default function OrdersPage() {
                     </div>
 
                     {/* Order Footer */}
-                    <div className="flex items-center justify-between p-4 bg-gray-50 border-t border-gray-100">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 border-t border-gray-100 gap-3">
                       <div>
                         {order.trackingNumber && order.status === 'SHIPPED' && (
                           <p className="text-sm text-gray-600">
@@ -471,8 +477,8 @@ export default function OrdersPage() {
                           </p>
                         )}
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+                        <div className="text-left sm:text-right">
                           <span className="text-sm text-gray-500">Suma:</span>
                           <span className="ml-2 text-lg font-bold text-gray-900">{Number(order.total).toFixed(2)} zł</span>
                         </div>
@@ -484,11 +490,11 @@ export default function OrdersPage() {
                           )}
                           {order.status === 'PENDING' && (
                             <button 
-                              onClick={() => handleSimulatePayment(order.id)}
+                              onClick={() => handlePayNow(order.id)}
                               disabled={simulatingPayment === order.id}
                               className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              {simulatingPayment === order.id ? 'Przetwarzanie...' : 'Zapłać teraz'}
+                              {simulatingPayment === order.id ? 'Przekierowywanie...' : 'Zapłać teraz'}
                             </button>
                           )}
                           {order.status === 'DELIVERED' && (
