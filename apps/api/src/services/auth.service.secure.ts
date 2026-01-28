@@ -5,6 +5,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../db';
 import { UserRole } from '@prisma/client';
 import { queueEmail } from '../lib/queue';
+import { discountService } from './discount.service';
+import { emailService } from './email.service';
 import {
   blacklistToken,
   isTokenBlacklisted,
@@ -256,11 +258,39 @@ export class SecureAuthService {
       },
     });
 
+    // Generate welcome discount code and send email (async, don't block registration)
+    this.sendWelcomeDiscount(user.id, user.email, user.firstName || '').catch((err) => {
+      console.error('[SecureAuthService] Failed to send welcome discount:', err.message);
+    });
+
     return {
       user: this.sanitizeUser(user),
       tokens,
       verificationToken: process.env.NODE_ENV !== 'production' ? verificationToken : undefined, // Only in dev
     };
+  }
+
+  /**
+   * Generate welcome discount and send email
+   * Called after successful registration (async)
+   */
+  private async sendWelcomeDiscount(userId: string, email: string, firstName: string): Promise<void> {
+    try {
+      const discount = await discountService.generateWelcomeDiscount(userId, email);
+      
+      await emailService.sendWelcomeDiscountEmail(
+        email,
+        firstName || email.split('@')[0],
+        discount.couponCode,
+        discount.discountPercent,
+        discount.expiresAt
+      );
+      
+      console.log(`✅ [SecureAuthService] Welcome discount sent to ${email}: ${discount.couponCode}`);
+    } catch (err: any) {
+      console.error(`[SecureAuthService] Welcome discount error for ${email}:`, err.message);
+      // Don't throw - registration should succeed even if discount email fails
+    }
   }
 
   /**
