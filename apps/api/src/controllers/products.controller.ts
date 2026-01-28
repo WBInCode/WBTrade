@@ -44,7 +44,7 @@ const productQuerySchema = z.object({
     return isNaN(num) || num < 0 ? undefined : num;
   }),
   search: z.string().max(200).optional().transform((val) => val ? sanitizeText(val) : undefined),
-  sort: z.enum(['price_asc', 'price_desc', 'name_asc', 'name_desc', 'newest', 'oldest', 'popular', 'random']).optional(),
+  sort: z.enum(['price_asc', 'price_desc', 'price-asc', 'price-desc', 'name_asc', 'name_desc', 'newest', 'oldest', 'popular', 'random', 'popularity', 'relevance']).optional(),
   status: z.enum(['ACTIVE', 'DRAFT', 'ARCHIVED']).optional(),
   // Ukryj produkty ze stanem 0 starsze niż 14 dni (domyślnie false - trzeba jawnie włączyć)
   hideOldZeroStock: z.string().optional().transform((val) => val === 'true'),
