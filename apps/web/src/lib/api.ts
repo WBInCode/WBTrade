@@ -314,7 +314,7 @@ export interface ProductFilters {
   minPrice?: number;
   maxPrice?: number;
   search?: string;
-  sort?: 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'newest';
+  sort?: 'price_asc' | 'price_desc' | 'price-asc' | 'price-desc' | 'name_asc' | 'name_desc' | 'relevance' | 'popularity';
   status?: 'active' | 'draft' | 'archived';
   brand?: string;
   [key: string]: string | number | boolean | undefined; // Allow dynamic specification filters

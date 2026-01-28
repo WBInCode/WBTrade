@@ -101,7 +101,7 @@ function ProductsContent() {
             minPrice: minPrice ? parseFloat(minPrice) : undefined,
             maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
             search: searchQuery || undefined,
-            sort: sort as 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'newest',
+            sort: sort as 'price-asc' | 'price-desc' | 'relevance' | 'popularity',
             brand: brand || undefined,
           });
           
@@ -119,7 +119,7 @@ function ProductsContent() {
           setTotalPages(Math.ceil(discountedProducts.length / ITEMS_PER_PAGE));
         } else {
           // Use the sort value from URL params directly (already in API format)
-          const sortValue = sort as 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'newest';
+          const sortValue = sort as 'price-asc' | 'price-desc' | 'relevance' | 'popularity';
           
           const response = await productsApi.getAll({
             page: currentPage,
