@@ -338,9 +338,11 @@ export class ProductsService {
     
     switch (sort) {
       case 'price_asc':
+      case 'price-asc':
         orderBy = { price: 'asc' };
         break;
       case 'price_desc':
+      case 'price-desc':
         orderBy = { price: 'desc' };
         break;
       case 'name_asc':
@@ -353,6 +355,11 @@ export class ProductsService {
         // For random sort, we'll fetch more and shuffle client-side
         useRandomSort = true;
         orderBy = { id: 'asc' }; // Temporary, will be shuffled
+        break;
+      case 'popularity':
+      case 'relevance':
+        // Sort by popularity score (salesCount*3 + viewCount*0.1)
+        orderBy = { popularityScore: 'desc' };
         break;
       case 'newest':
       default:

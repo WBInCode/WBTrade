@@ -118,6 +118,10 @@ model Product {
   average_rating         Decimal?         @db.Decimal(2, 1)
   review_count           Int              @default(0)
   tags                   String[]         @default([])
+  // Popularity tracking
+  viewCount              Int              @default(0) @map("view_count")
+  salesCount             Int              @default(0) @map("sales_count")
+  popularityScore        Float            @default(0) @map("popularity_score")
   images                 ProductImage[]
   variants               ProductVariant[]
   priceHistory           PriceHistory[]

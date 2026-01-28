@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import { ProductsService } from '../services/products.service';
 import { PriceChangeSource } from '@prisma/client';
+import { popularityService } from '../services/popularity.service';
 
 const productsService = new ProductsService();
 
@@ -138,6 +139,11 @@ export async function getProductById(req: Request, res: Response): Promise<void>
       return;
     }
 
+    // Increment view count asynchronously (don't wait)
+    popularityService.incrementViewCount(id).catch(err => 
+      console.error('Error incrementing view count:', err)
+    );
+
     res.status(200).json(product);
   } catch (error) {
     console.error('Error fetching product:', error);
@@ -157,6 +163,11 @@ export async function getProductBySlug(req: Request, res: Response): Promise<voi
       res.status(404).json({ message: 'Product not found' });
       return;
     }
+
+    // Increment view count asynchronously (don't wait)
+    popularityService.incrementViewCount(product.id).catch(err => 
+      console.error('Error incrementing view count:', err)
+    );
 
     res.status(200).json(product);
   } catch (error) {

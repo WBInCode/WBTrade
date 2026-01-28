@@ -146,8 +146,9 @@ function DealsContent() {
       filtered.sort((a, b) => Number(a.price) - Number(b.price));
     } else if (sort === 'price_desc') {
       filtered.sort((a, b) => Number(b.price) - Number(a.price));
-    } else if (sort === 'newest') {
-      filtered.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    } else if (sort === 'popularity') {
+      // Sortowanie po popularności - używamy domyślnej kolejności z API (popularityScore)
+      // Produkty są już posortowane po popularności z backendu
     }
 
     // Paginate
@@ -347,9 +348,9 @@ function DealsContent() {
                   className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   <option value="discount">Największa zniżka</option>
+                  <option value="popularity">Popularność</option>
                   <option value="price_asc">Cena: od najniższej</option>
                   <option value="price_desc">Cena: od najwyższej</option>
-                  <option value="newest">Najnowsze</option>
                 </select>
               </div>
 

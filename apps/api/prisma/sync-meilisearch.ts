@@ -61,12 +61,14 @@ async function syncProductsToMeilisearch() {
       'categoryName',
       'price',
       'status',
+      'tags',
     ]);
 
     await meiliClient.index(PRODUCTS_INDEX).updateSortableAttributes([
       'price',
       'name',
       'createdAt',
+      'popularityScore',
     ]);
 
     await meiliClient.index(PRODUCTS_INDEX).updateTypoTolerance({
@@ -110,6 +112,8 @@ async function syncProductsToMeilisearch() {
         image: product.images[0]?.url || null,
         status: product.status,
         createdAt: product.createdAt.getTime(),
+        tags: product.tags || [],
+        popularityScore: product.popularityScore || 0,
       }));
 
       const task = await meiliClient.index(PRODUCTS_INDEX).addDocuments(documents);
