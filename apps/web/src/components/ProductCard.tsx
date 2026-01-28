@@ -139,7 +139,7 @@ export default function ProductCard({ product, showDelivery = false, showWishlis
           </div>
 
           {/* Delivery info */}
-          <p className="text-[10px] sm:text-xs text-primary-600 mt-1 sm:mt-1.5">
+          <p className="text-[10px] sm:text-xs text-green-600 mt-1 sm:mt-1.5">
             Wysyłka 24-72h
           </p>
         </div>
