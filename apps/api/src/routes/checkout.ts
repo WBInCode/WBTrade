@@ -91,6 +91,7 @@ router.post('/payment/retry/:orderId', authGuard, retryPayment);
 /**
  * POST /api/checkout
  * Create order and initiate payment
+ * Supports both authenticated users and guest checkout
  * Body: {
  *   shippingAddressId: string,
  *   billingAddressId?: string,
@@ -98,10 +99,15 @@ router.post('/payment/retry/:orderId', authGuard, retryPayment);
  *   pickupPointCode?: string,
  *   paymentMethod: string,
  *   customerNotes?: string,
- *   acceptTerms: boolean
+ *   acceptTerms: boolean,
+ *   // Guest checkout fields (required if not authenticated):
+ *   guestEmail?: string,
+ *   guestFirstName?: string,
+ *   guestLastName?: string,
+ *   guestPhone?: string
  * }
  */
-router.post('/', authGuard, createCheckout);
+router.post('/', optionalAuth, createCheckout);
 
 /**
  * GET /api/checkout/tracking/:orderId

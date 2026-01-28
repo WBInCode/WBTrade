@@ -49,7 +49,7 @@ enum AuthProvider {
 
 model Address {
   id             String      @id @default(cuid())
-  userId         String      @map("user_id")
+  userId         String?     @map("user_id")
   firstName      String      @map("first_name")
   lastName       String      @map("last_name")
   companyName    String?     @map("company_name")
@@ -64,7 +64,7 @@ model Address {
   updatedAt      DateTime    @updatedAt @map("updated_at")
   label          String?
   type           AddressType @default(SHIPPING)
-  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
   billingOrders  Order[]     @relation("BillingAddress")
   shippingOrders Order[]     @relation("ShippingAddress")
 
@@ -104,6 +104,9 @@ model Product {
   status                 ProductStatus    @default(DRAFT)
   price                  Decimal          @db.Decimal(10, 2)
   compareAtPrice         Decimal?         @map("compare_at_price") @db.Decimal(10, 2)
+  // Omnibus: najniższa cena z ostatnich 30 dni (rolling window UTC)
+  lowestPrice30Days      Decimal?         @map("lowest_price_30_days") @db.Decimal(10, 2)
+  lowestPrice30DaysAt    DateTime?        @map("lowest_price_30_days_at")
   metaTitle              String?          @map("meta_title")
   metaDescription        String?          @map("meta_description")
   createdAt              DateTime         @default(now()) @map("created_at")
@@ -117,6 +120,7 @@ model Product {
   tags                   String[]         @default([])
   images                 ProductImage[]
   variants               ProductVariant[]
+  priceHistory           PriceHistory[]
   category               Category?        @relation(fields: [categoryId], references: [id])
   reviews                Review[]
   wishlistItems          WishlistItem[]
@@ -188,6 +192,9 @@ model ProductVariant {
   barcode             String?
   price               Decimal         @db.Decimal(10, 2)
   compareAtPrice      Decimal?        @map("compare_at_price") @db.Decimal(10, 2)
+  // Omnibus: najniższa cena z ostatnich 30 dni per wariant (rolling window UTC)
+  lowestPrice30Days   Decimal?        @map("lowest_price_30_days") @db.Decimal(10, 2)
+  lowestPrice30DaysAt DateTime?       @map("lowest_price_30_days_at")
   attributes          Json            @default("{}")
   createdAt           DateTime        @default(now()) @map("created_at")
   updatedAt           DateTime        @updatedAt @map("updated_at")
@@ -195,6 +202,7 @@ model ProductVariant {
   cartItems           CartItem[]
   inventory           Inventory[]
   orderItems          OrderItem[]
+  priceHistory        PriceHistory[]
   product             Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
   stockMovements      StockMovement[]
   wishlistItems       WishlistItem[]
@@ -317,6 +325,11 @@ model Order {
   packageShipping     Json?                @map("package_shipping")
   baselinkerOrderId   String?              @unique @map("baselinker_order_id")
   baselinkerSyncedAt  DateTime?            @map("baselinker_synced_at")
+  // Guest checkout fields (used when userId is null)
+  guestEmail          String?              @map("guest_email")
+  guestFirstName      String?              @map("guest_first_name")
+  guestLastName       String?              @map("guest_last_name")
+  guestPhone          String?              @map("guest_phone")
   items               OrderItem[]
   statusHistory       OrderStatusHistory[]
   billingAddress      Address?             @relation("BillingAddress", fields: [billingAddressId], references: [id])
@@ -363,22 +376,34 @@ model OrderStatusHistory {
 }
 
 model Coupon {
-  id            String     @id @default(cuid())
-  code          String     @unique
+  id            String       @id @default(cuid())
+  code          String       @unique
   description   String?
-  type          CouponType @default(PERCENTAGE)
-  value         Decimal    @db.Decimal(10, 2)
-  minimumAmount Decimal?   @map("minimum_amount") @db.Decimal(10, 2)
-  maximumUses   Int?       @map("maximum_uses")
-  usedCount     Int        @default(0) @map("used_count")
-  startsAt      DateTime?  @map("starts_at")
-  expiresAt     DateTime?  @map("expires_at")
-  isActive      Boolean    @default(true) @map("is_active")
-  createdAt     DateTime   @default(now()) @map("created_at")
-  updatedAt     DateTime   @updatedAt @map("updated_at")
+  type          CouponType   @default(PERCENTAGE)
+  value         Decimal      @db.Decimal(10, 2)
+  minimumAmount Decimal?     @map("minimum_amount") @db.Decimal(10, 2)
+  maximumUses   Int?         @map("maximum_uses")
+  usedCount     Int          @default(0) @map("used_count")
+  startsAt      DateTime?    @map("starts_at")
+  expiresAt     DateTime?    @map("expires_at")
+  isActive      Boolean      @default(true) @map("is_active")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  // Welcome discount - coupon generated for specific user on registration
+  userId        String?      @map("user_id")
+  couponSource  CouponSource @default(MANUAL)
 
   @@index([code])
+  @@index([userId])
   @@map("coupons")
+}
+
+// Source of coupon creation
+enum CouponSource {
+  MANUAL           // Admin created
+  WELCOME_DISCOUNT // Auto-generated on registration (-20%)
+  REFERRAL         // Referral program (future)
+  CAMPAIGN         // Marketing campaign
 }
 
 model TaxRate {
@@ -605,6 +630,45 @@ enum NewsletterCampaignStatus {
   SENDING
   SENT
   FAILED
+}
+
+// ============================================
+// OMNIBUS: Źródło zmiany ceny (audit trail)
+// ============================================
+enum PriceChangeSource {
+  ADMIN       // Zmiana przez panel administracyjny
+  API         // Zmiana przez REST API
+  BASELINKER  // Synchronizacja z BaseLinker
+  IMPORT      // Import CSV/XLSX
+  SCRIPT      // Ręczny skrypt
+  SYSTEM      // Automatyczna zmiana systemowa
+}
+
+// ============================================
+// OMNIBUS: Historia cen (Dyrektywa 2019/2161)
+// ============================================
+// Tabela przechowuje każdą zmianę ceny produktu/wariantu
+// Używana do wyliczania "najniższej ceny z ostatnich 30 dni"
+// Okno czasowe: rolling 30*24h w strefie UTC
+model PriceHistory {
+  id          String            @id @default(cuid())
+  productId   String            @map("product_id")
+  variantId   String?           @map("variant_id")
+  oldPrice    Decimal           @map("old_price") @db.Decimal(10, 2)
+  newPrice    Decimal           @map("new_price") @db.Decimal(10, 2)
+  source      PriceChangeSource
+  changedBy   String?           @map("changed_by")  // userId lub null dla SYSTEM/BASELINKER
+  reason      String?           // Opcjonalny powód zmiany
+  changedAt   DateTime          @default(now()) @map("changed_at")
+  
+  product     Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant     ProductVariant?   @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  
+  @@index([productId, changedAt])
+  @@index([variantId, changedAt])
+  @@index([changedAt])
+  @@index([source])
+  @@map("price_history")
 }
 
 // ============================================

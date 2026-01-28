@@ -4,11 +4,13 @@
  */
 
 import { Request, Response } from 'express';
+import { prisma } from '../db';
 import { shippingService } from '../services/shipping.service';
 import { shippingCalculatorService } from '../services/shipping-calculator.service';
 import { paymentService } from '../services/payment.service';
 import { OrdersService } from '../services/orders.service';
 import { CartService } from '../services/cart.service';
+import { addressesService } from '../services/addresses.service';
 import { ShippingProviderId } from '../types/shipping.types';
 import { CreatePaymentRequest, PaymentMethodType, PaymentProviderId } from '../types/payment.types';
 
@@ -301,6 +303,7 @@ export async function getPaymentMethods(req: Request, res: Response): Promise<vo
 
 /**
  * Create order and initiate payment
+ * Supports both authenticated users and guest checkout
  */
 export async function createCheckout(req: Request, res: Response): Promise<void> {
   try {
@@ -313,12 +316,7 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
     console.log('👤 User ID:', userId);
     console.log('🆔 Session ID:', sessionId);
     
-    if (!userId) {
-      console.log('❌ No user ID - auth required');
-      res.status(401).json({ message: 'Authentication required' });
-      return;
-    }
-
+    // Extract guest checkout fields
     const {
       shippingAddressId,
       billingAddressId,
@@ -329,7 +327,27 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       customerNotes,
       acceptTerms,
       packageShipping,
+      // Guest checkout fields
+      guestEmail,
+      guestFirstName,
+      guestLastName,
+      guestPhone,
+      // Guest address data (when not using saved address)
+      guestAddress,
     } = req.body;
+
+    // For guest checkout, validate required guest fields
+    const isGuestCheckout = !userId;
+    if (isGuestCheckout) {
+      console.log('🛒 Guest checkout detected');
+      if (!guestEmail || !guestFirstName || !guestLastName) {
+        console.log('❌ Missing guest checkout fields');
+        res.status(400).json({ 
+          message: 'Email, imię i nazwisko są wymagane dla zakupów bez konta' 
+        });
+        return;
+      }
+    }
 
     console.log('📦 Shipping Address ID:', shippingAddressId);
     console.log('🚚 Shipping Method:', shippingMethod);
@@ -345,21 +363,26 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       return;
     }
 
-    // Get user's cart - try both userId and sessionId
-    // First try by userId, then by sessionId if user has session cart
-    console.log('🛒 Getting cart for user:', userId);
-    let cart = await cartService.getOrCreateCart(userId);
-    console.log('🛒 Cart found:', cart?.id, 'Items:', cart?.items?.length);
-    
-    // If cart by userId is empty but we have sessionId, try to merge or get session cart
-    if ((!cart || !cart.items.length) && sessionId) {
-      console.log('🔄 Trying session cart merge...');
-      // Try to get cart by sessionId
-      const sessionCart = await cartService.getOrCreateCart(undefined, sessionId);
-      if (sessionCart && sessionCart.items.length > 0) {
-        // Merge session cart to user cart
-        cart = await cartService.mergeCarts(userId, sessionId);
+    // Get cart - for logged in users by userId, for guests by sessionId
+    let cart;
+    if (userId) {
+      console.log('🛒 Getting cart for user:', userId);
+      cart = await cartService.getOrCreateCart(userId);
+      console.log('🛒 Cart found:', cart?.id, 'Items:', cart?.items?.length);
+      
+      // If cart by userId is empty but we have sessionId, try to merge or get session cart
+      if ((!cart || !cart.items.length) && sessionId) {
+        console.log('🔄 Trying session cart merge...');
+        const sessionCart = await cartService.getOrCreateCart(undefined, sessionId);
+        if (sessionCart && sessionCart.items.length > 0) {
+          cart = await cartService.mergeCarts(userId, sessionId);
+        }
       }
+    } else if (sessionId) {
+      // Guest checkout - get cart by sessionId only
+      console.log('🛒 Getting cart for guest session:', sessionId);
+      cart = await cartService.getOrCreateCart(undefined, sessionId);
+      console.log('🛒 Guest cart found:', cart?.id, 'Items:', cart?.items?.length);
     }
     
     if (!cart || !cart.items.length) {
@@ -426,11 +449,53 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
 
     const total = subtotal + shippingCost + paymentFee;
 
-    // Create order
+    // For guest checkout, create shipping address from guestAddress data
+    let finalShippingAddressId = shippingAddressId;
+    let finalBillingAddressId = billingAddressId;
+    
+    if (isGuestCheckout && guestAddress) {
+      console.log('📍 Creating guest shipping address...');
+      const guestShippingAddress = await addressesService.create({
+        userId: undefined, // Guest address has no user
+        firstName: guestAddress.firstName || guestFirstName,
+        lastName: guestAddress.lastName || guestLastName,
+        street: guestAddress.street,
+        city: guestAddress.city,
+        postalCode: guestAddress.postalCode,
+        country: guestAddress.country || 'PL',
+        phone: guestAddress.phone || guestPhone,
+        type: 'SHIPPING',
+        label: 'Guest Shipping',
+      });
+      finalShippingAddressId = guestShippingAddress.id;
+      console.log('📍 Guest shipping address created:', guestShippingAddress.id);
+      
+      // Create billing address if provided and different
+      if (guestAddress.differentBillingAddress && guestAddress.billingAddress) {
+        const guestBillingAddress = await addressesService.create({
+          userId: undefined,
+          firstName: guestAddress.billingAddress.firstName || guestFirstName,
+          lastName: guestAddress.billingAddress.lastName || guestLastName,
+          companyName: guestAddress.billingAddress.companyName,
+          nip: guestAddress.billingAddress.nip,
+          street: guestAddress.billingAddress.street,
+          city: guestAddress.billingAddress.city,
+          postalCode: guestAddress.billingAddress.postalCode,
+          country: guestAddress.billingAddress.country || 'PL',
+          phone: guestAddress.billingAddress.phone || guestPhone,
+          type: 'BILLING',
+          label: 'Guest Billing',
+        });
+        finalBillingAddressId = guestBillingAddress.id;
+        console.log('📍 Guest billing address created:', guestBillingAddress.id);
+      }
+    }
+
+    // Create order - include guest data if guest checkout
     const order = await ordersService.create({
-      userId,
-      shippingAddressId,
-      billingAddressId: billingAddressId || shippingAddressId,
+      userId: userId || undefined,
+      shippingAddressId: finalShippingAddressId,
+      billingAddressId: finalBillingAddressId || finalShippingAddressId,
       shippingMethod,
       paymentMethod,
       items,
@@ -438,6 +503,11 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       paczkomatCode: pickupPointCode,
       paczkomatAddress: pickupPointAddress,
       packageShipping: packageShipping,
+      // Guest checkout fields
+      guestEmail: isGuestCheckout ? guestEmail : undefined,
+      guestFirstName: isGuestCheckout ? guestFirstName : undefined,
+      guestLastName: isGuestCheckout ? guestLastName : undefined,
+      guestPhone: isGuestCheckout ? guestPhone : undefined,
     });
 
     // Clear cart after order creation
@@ -465,6 +535,24 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       const mappedPaymentMethod = mapPaymentMethod(paymentMethod);
       console.log(`💳 Payment method mapping: ${paymentMethod} → ${mappedPaymentMethod}`);
       
+      // Get customer email - from user if logged in, otherwise from guest data
+      const customerEmail = req.user?.email || guestEmail || '';
+      
+      // For logged in users, fetch firstName/lastName from database
+      let customerFirstName = guestFirstName || '';
+      let customerLastName = guestLastName || '';
+      
+      if (userId) {
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { firstName: true, lastName: true }
+        });
+        if (user) {
+          customerFirstName = user.firstName || '';
+          customerLastName = user.lastName || '';
+        }
+      }
+      
       const paymentRequest: CreatePaymentRequest = {
         orderId: order.id,
         amount: total,
@@ -472,9 +560,9 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
         paymentMethod: mappedPaymentMethod,
         providerId: 'payu' as PaymentProviderId, // Force PayU for testing
         customer: {
-          email: req.user?.email || '',
-          firstName: '',
-          lastName: '',
+          email: customerEmail,
+          firstName: customerFirstName,
+          lastName: customerLastName,
         },
         description: `Zamówienie ${order.orderNumber}`,
         returnUrl: `${frontendUrl}/order/${order.id}/confirmation`,
