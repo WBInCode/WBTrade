@@ -1108,12 +1108,12 @@ export interface DashboardOverviewResponse {
 export interface RecommendedProduct {
   id: string;
   name: string;
-  slug: string;
+  slug?: string;
   price: number;
-  compareAtPrice: number | null;
+  compareAtPrice?: number | null;
   images: { url: string; alt: string | null }[];
-  category: { id: string; name: string } | null;
-  reason: 'search' | 'category' | 'popular' | 'similar';
+  category?: { id: string; name: string } | null;
+  reason: 'search' | 'category' | 'popular' | 'similar' | 'bestseller';
 }
 
 export interface RecommendationsResponse {
