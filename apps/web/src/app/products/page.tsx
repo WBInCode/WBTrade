@@ -44,7 +44,7 @@ function ProductsContent() {
   const minPrice = searchParams.get('minPrice');
   const maxPrice = searchParams.get('maxPrice');
   const brand = searchParams.get('brand');
-  const sort = searchParams.get('sort') || 'newest';
+  const sort = searchParams.get('sort') || 'relevance';
 
   // State for products and filters
   const [products, setProducts] = useState<Product[]>([]);
@@ -203,12 +203,14 @@ function ProductsContent() {
   // Map API sort values back to UI sort values for dropdown display
   const apiToUiSortMapping: Record<string, string> = {
     'newest': 'newest',
+    'relevance': 'relevance',
+    'popularity': 'popularity',
+    'price-asc': 'price-asc',
+    'price-desc': 'price-desc',
     'price_asc': 'price-asc',
     'price_desc': 'price-desc',
-    'name_asc': 'relevance',
-    'name_desc': 'relevance',
   };
-  const uiSort = apiToUiSortMapping[sort] || 'newest';
+  const uiSort = apiToUiSortMapping[sort] || 'relevance';
 
   // Build breadcrumb dynamically based on category path
   const breadcrumbItems = useMemo(() => {
