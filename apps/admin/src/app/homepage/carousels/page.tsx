@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, X, GripVertical, Save, Trash2, Eye, Star, Flame, Gift, Snowflake } from 'lucide-react';
+import { Search, Plus, X, GripVertical, Save, Trash2, Eye, Star, Flame, Gift, Snowflake, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 
 interface Product {
@@ -43,6 +43,15 @@ export default function CarouselsPage() {
       description: 'Automatycznie: najczęściej kupowane produkty z ostatnich 90 dni. Możesz ręcznie nadpisać.',
       icon: <Flame className="w-5 h-5" />,
       color: 'from-orange-500 to-red-600',
+      productIds: [],
+      isAutomatic: true,
+    },
+    {
+      id: 'newProducts',
+      name: 'Nowości',
+      description: 'Automatycznie: produkty dodane w ostatnich 2 tygodniach. Po 2 tygodniach znikają. Możesz ręcznie nadpisać.',
+      icon: <Sparkles className="w-5 h-5" />,
+      color: 'from-emerald-500 to-teal-600',
       productIds: [],
       isAutomatic: true,
     },

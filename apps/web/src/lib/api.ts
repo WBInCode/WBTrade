@@ -314,7 +314,7 @@ export interface ProductFilters {
   minPrice?: number;
   maxPrice?: number;
   search?: string;
-  sort?: 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'newest';
+  sort?: 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'newest' | 'random';
   status?: 'active' | 'draft' | 'archived';
   brand?: string;
   [key: string]: string | number | boolean | undefined; // Allow dynamic specification filters
@@ -367,6 +367,10 @@ export const productsApi = {
   // Get seasonal products
   getSeasonal: (options?: { limit?: number; season?: 'spring' | 'summer' | 'autumn' | 'winter' }) =>
     api.get<{ products: Product[] }>('/products/seasonal', options as Record<string, string | number | boolean>),
+
+  // Get new products (added in last X days)
+  getNewProducts: (options?: { limit?: number; days?: number }) =>
+    api.get<{ products: Product[] }>('/products/new-arrivals', options as Record<string, string | number | boolean>),
 };
 
 // ============================================
