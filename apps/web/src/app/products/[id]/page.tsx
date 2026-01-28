@@ -6,9 +6,10 @@ import Link from 'next/link';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import Breadcrumb from '../../../components/Breadcrumb';
-import { productsApi, reviewsApi, Product, Review, ReviewStats, CanReviewResult } from '../../../lib/api';
+import { productsApi, reviewsApi, cartApi, Product, Review, ReviewStats, CanReviewResult } from '../../../lib/api';
 import ProductCard from '../../../components/ProductCard';
 import { useCart } from '../../../contexts/CartContext';
+import { useWishlist } from '../../../contexts/WishlistContext';
 import { cleanCategoryName } from '../../../lib/categories';
 
 interface ProductPageProps {
@@ -86,6 +87,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   const [quantity, setQuantity] = useState(1);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const { addToCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const router = useRouter();
 
   // Cart error state for displaying error messages
@@ -208,7 +210,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   }, [cartError]);
 
   const handleAddToCart = async () => {
-    if (!selectedVariant) return;
+    if (!selectedVariant || !product) return;
     if (isOutOfStock) {
       setCartError('Produkt jest niedostępny (brak na stanie)');
       return;
@@ -217,8 +219,13 @@ export default function ProductPage({ params }: ProductPageProps) {
     setAddingToCart(true);
     setCartError(null);
     try {
-      await addToCart(selectedVariant.id, quantity);
-      // Could show a toast notification here
+      const productImage = product.images?.[0]?.url || '';
+      await addToCart(selectedVariant.id, quantity, {
+        name: product.name,
+        image: productImage,
+        price: String(selectedVariant.price || product.price),
+        quantity: quantity,
+      });
     } catch (err: any) {
       console.error('Failed to add to cart:', err);
       setCartError(err?.message || 'Nie udało się dodać produktu do koszyka');
@@ -228,7 +235,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   };
 
   const handleBuyNow = async () => {
-    if (!selectedVariant) return;
+    if (!selectedVariant || !product) return;
     if (isOutOfStock) {
       setCartError('Produkt jest niedostępny (brak na stanie)');
       return;
@@ -237,7 +244,8 @@ export default function ProductPage({ params }: ProductPageProps) {
     setBuyingNow(true);
     setCartError(null);
     try {
-      await addToCart(selectedVariant.id, quantity);
+      // Don't show modal for buy now - go directly to checkout
+      const updatedCart = await cartApi.addItem(selectedVariant.id, quantity);
       router.push('/checkout');
     } catch (err: any) {
       console.error('Failed to buy now:', err);
@@ -290,15 +298,13 @@ export default function ProductPage({ params }: ProductPageProps) {
     fetchProduct();
   }, [id]);
 
-  // Fetch related products
+  // Fetch bestsellers for recommendations
   useEffect(() => {
-    async function fetchRelatedProducts() {
+    async function fetchBestsellers() {
       try {
-        // Fetch products from the same category, or just random products if no category
-        const categorySlug = product?.category?.slug;
-        const response = await productsApi.getAll({
-          category: categorySlug,
-          limit: 5,
+        // Fetch bestsellers instead of category products
+        const response = await productsApi.getBestsellers({
+          limit: 10,
         });
         // Filter out current product and take up to 5
         const filtered = response.products
@@ -306,12 +312,24 @@ export default function ProductPage({ params }: ProductPageProps) {
           .slice(0, 5);
         setRelatedProducts(filtered);
       } catch (error) {
-        console.error('Failed to fetch related products:', error);
+        console.error('Failed to fetch bestsellers:', error);
+        // Fallback to category products
+        try {
+          const categorySlug = product?.category?.slug;
+          const fallbackResponse = await productsApi.getAll({
+            category: categorySlug,
+            limit: 5,
+          });
+          const filtered = fallbackResponse.products
+            .filter((p) => p.id !== id)
+            .slice(0, 5);
+          setRelatedProducts(filtered);
+        } catch (fallbackError) {
+          console.error('Fallback also failed:', fallbackError);
+        }
       }
     }
-    if (product) {
-      fetchRelatedProducts();
-    }
+    fetchBestsellers();
   }, [product, id]);
 
   // Fetch reviews, stats, and can-review status
@@ -765,13 +783,39 @@ export default function ProductPage({ params }: ProductPageProps) {
                 </button>
               )}
 
+              {/* Add to Wishlist Button */}
+              <button 
+                onClick={() => {
+                  if (!product) return;
+                  const mainImage = product?.images?.[0]?.url || '';
+                  toggleWishlist({
+                    id: product.id,
+                    variantId: selectedVariant?.id,
+                    name: product.name,
+                    price: String(product.price),
+                    compareAtPrice: product.compareAtPrice ? String(product.compareAtPrice) : undefined,
+                    image: mainImage,
+                  });
+                }}
+                className={`w-full border-2 font-semibold py-2.5 sm:py-3 rounded-lg mb-3 sm:mb-4 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base ${
+                  product && isInWishlist(product.id)
+                    ? 'border-red-500 bg-red-50 text-red-500 hover:bg-red-100' 
+                    : 'border-gray-300 text-gray-600 hover:border-gray-400 hover:bg-gray-50'
+                }`}
+              >
+                <svg className="w-5 h-5" fill={product && isInWishlist(product.id) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                {product && isInWishlist(product.id) ? 'W ulubionych' : 'Dodaj do ulubionych'}
+              </button>
+
               {/* Stock Status */}
               {!isOutOfStock ? (
                 <div className="flex items-center gap-2 text-xs sm:text-sm text-green-600 mb-2 sm:mb-3">
                   <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  <span className="font-medium">W magazynie: Wysyłka natychmiast</span>
+                  <span className="font-medium">W magazynie: Wysyłka w ciągu 24-72h</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-xs sm:text-sm text-red-600 mb-2 sm:mb-3">
@@ -1234,23 +1278,23 @@ export default function ProductPage({ params }: ProductPageProps) {
           </div>
         </div>
 
-        {/* Customers Also Viewed */}
+        {/* Polecane dla Ciebie - Bestsellery */}
         {relatedProducts.length > 0 && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">Inni klienci oglądali</h2>
-              <div className="flex gap-2">
-                <button className="w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors">
-                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <button className="w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors">
-                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🔥</span>
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">Bestsellery</h2>
+                  <p className="text-sm text-gray-500">Najchętniej kupowane produkty</p>
+                </div>
               </div>
+              <Link href="/products/bestsellers" className="text-orange-500 hover:text-orange-600 text-sm font-medium flex items-center gap-1">
+                Zobacz więcej
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">

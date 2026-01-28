@@ -2,19 +2,29 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { cartApi, Cart, CartItem } from '../lib/api';
+import AddToCartModal from '../components/AddToCartModal';
+
+interface AddedProductInfo {
+  name: string;
+  image: string;
+  price: string;
+  quantity: number;
+}
 
 interface CartContextType {
   cart: Cart | null;
   loading: boolean;
   error: string | null;
   itemCount: number;
-  addToCart: (variantId: string, quantity?: number) => Promise<void>;
+  addToCart: (variantId: string, quantity?: number, productInfo?: AddedProductInfo) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   removeFromCart: (itemId: string) => Promise<void>;
   clearCart: () => Promise<void>;
   applyCoupon: (code: string) => Promise<void>;
   removeCoupon: () => Promise<void>;
   refreshCart: () => Promise<void>;
+  showAddToCartModal: (product: AddedProductInfo) => void;
+  hideAddToCartModal: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -23,8 +33,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [addedProduct, setAddedProduct] = useState<AddedProductInfo | null>(null);
 
   const itemCount = cart?.items.reduce((sum, item) => sum + item.quantity, 0) || 0;
+
+  const showAddToCartModal = useCallback((product: AddedProductInfo) => {
+    setAddedProduct(product);
+    setIsModalOpen(true);
+  }, []);
+
+  const hideAddToCartModal = useCallback(() => {
+    setIsModalOpen(false);
+    setAddedProduct(null);
+  }, []);
 
   const refreshCart = useCallback(async () => {
     try {
@@ -44,16 +66,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
     refreshCart();
   }, [refreshCart]);
 
-  const addToCart = useCallback(async (variantId: string, quantity: number = 1) => {
+  const addToCart = useCallback(async (variantId: string, quantity: number = 1, productInfo?: AddedProductInfo) => {
     try {
       setError(null);
       const updatedCart = await cartApi.addItem(variantId, quantity);
       setCart(updatedCart);
+      
+      // Show modal if product info is provided
+      if (productInfo) {
+        showAddToCartModal(productInfo);
+      }
     } catch (err: any) {
       setError(err.message);
       throw err;
     }
-  }, []);
+  }, [showAddToCartModal]);
 
   const updateQuantity = useCallback(async (itemId: string, quantity: number) => {
     try {
@@ -124,9 +151,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
         applyCoupon,
         removeCoupon,
         refreshCart,
+        showAddToCartModal,
+        hideAddToCartModal,
       }}
     >
       {children}
+      <AddToCartModal
+        isOpen={isModalOpen}
+        product={addedProduct}
+        onClose={hideAddToCartModal}
+      />
     </CartContext.Provider>
   );
 }
