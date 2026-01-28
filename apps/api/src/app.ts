@@ -30,6 +30,7 @@ import baselinkerRoutes from './routes/baselinker';
 import reportsRoutes from './routes/reports';
 import uploadRoutes from './routes/upload';
 import priceHistoryRoutes from './routes/price-history';
+import adminSettingsRoutes from './routes/admin-settings';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
 import { initializeMeilisearch } from './lib/meilisearch';
 import { startSearchIndexWorker } from './workers/search-index.worker';
@@ -155,6 +156,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reviews', reviewsRoutes);
 app.use('/api/webhooks', checkoutRoutes); // Webhook routes
 app.use('/api/admin/dashboard', adminDashboardRoutes); // Admin dashboard
+app.use('/api/admin/settings', adminSettingsRoutes); // Admin settings (carousels, etc.)
 app.use('/api/admin/baselinker', baselinkerRoutes); // Baselinker integration
 app.use('/api/reports', reportsRoutes); // Reports
 app.use('/api/locations', locationsRoutes); // Warehouse locations

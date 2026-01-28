@@ -3,8 +3,8 @@ import Footer from '../../../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Ochrona prywatności - Centrum pomocy - WBTrade',
-  description: 'Jak chronimy Twoje dane osobowe w WBTrade',
+  title: 'Ochrona prywatności - Centrum pomocy - WB Trade',
+  description: 'Jak chronimy Twoje dane osobowe w WB Trade',
 };
 
 export default function PrivacyPage() {

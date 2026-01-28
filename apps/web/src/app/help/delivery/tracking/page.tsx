@@ -3,8 +3,8 @@ import Footer from '../../../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Śledzenie przesyłki - Centrum pomocy - WBTrade',
-  description: 'Jak śledzić przesyłkę w WBTrade',
+  title: 'Śledzenie przesyłki - Centrum pomocy - WB Trade',
+  description: 'Jak śledzić przesyłkę w WB Trade',
 };
 
 export default function TrackingPage() {
@@ -49,7 +49,7 @@ export default function TrackingPage() {
                 
                 <h3 className="text-lg font-medium text-secondary-800 mt-6 mb-3">Przez panel klienta:</h3>
                 <ol className="list-decimal pl-6 text-secondary-600 space-y-2 mb-6">
-                  <li>Zaloguj się na konto WBTrade</li>
+                  <li>Zaloguj się na konto WB Trade</li>
                   <li>Przejdź do "Moje konto" → "Zamówienia"</li>
                   <li>Znajdź zamówienie ze statusem "Wysłane"</li>
                   <li>Kliknij "Śledź przesyłkę"</li>

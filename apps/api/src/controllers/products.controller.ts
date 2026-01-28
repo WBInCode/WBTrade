@@ -43,7 +43,7 @@ const productQuerySchema = z.object({
     return isNaN(num) || num < 0 ? undefined : num;
   }),
   search: z.string().max(200).optional().transform((val) => val ? sanitizeText(val) : undefined),
-  sort: z.enum(['price_asc', 'price_desc', 'name_asc', 'name_desc', 'newest', 'oldest', 'popular']).optional(),
+  sort: z.enum(['price_asc', 'price_desc', 'name_asc', 'name_desc', 'newest', 'oldest', 'popular', 'random']).optional(),
   status: z.enum(['ACTIVE', 'DRAFT', 'ARCHIVED']).optional(),
   // Ukryj produkty ze stanem 0 starsze niż 14 dni (domyślnie false - trzeba jawnie włączyć)
   hideOldZeroStock: z.string().optional().transform((val) => val === 'true'),
@@ -334,5 +334,72 @@ export async function getFilters(req: Request, res: Response): Promise<void> {
   } catch (error) {
     console.error('Error fetching filters:', error);
     res.status(500).json({ message: 'Error retrieving filters', error });
+  }
+}
+
+/**
+ * Get bestseller products based on actual sales data
+ */
+export async function getBestsellers(req: Request, res: Response): Promise<void> {
+  try {
+    const limit = parseInt(req.query.limit as string) || 20;
+    const category = req.query.category as string | undefined;
+    const days = parseInt(req.query.days as string) || 90;
+
+    const products = await productsService.getBestsellers({ limit, category, days });
+    res.status(200).json({ products });
+  } catch (error) {
+    console.error('Error fetching bestsellers:', error);
+    res.status(500).json({ message: 'Error retrieving bestsellers' });
+  }
+}
+
+/**
+ * Get featured products (admin-curated or fallback)
+ */
+export async function getFeatured(req: Request, res: Response): Promise<void> {
+  try {
+    const limit = parseInt(req.query.limit as string) || 20;
+    const productIds = req.query.productIds 
+      ? (req.query.productIds as string).split(',')
+      : undefined;
+
+    const products = await productsService.getFeatured({ limit, productIds });
+    res.status(200).json({ products });
+  } catch (error) {
+    console.error('Error fetching featured products:', error);
+    res.status(500).json({ message: 'Error retrieving featured products' });
+  }
+}
+
+/**
+ * Get seasonal products based on current season or specified season
+ */
+export async function getSeasonal(req: Request, res: Response): Promise<void> {
+  try {
+    const limit = parseInt(req.query.limit as string) || 20;
+    const season = req.query.season as 'spring' | 'summer' | 'autumn' | 'winter' | undefined;
+
+    const products = await productsService.getSeasonal({ limit, season });
+    res.status(200).json({ products });
+  } catch (error) {
+    console.error('Error fetching seasonal products:', error);
+    res.status(500).json({ message: 'Error retrieving seasonal products' });
+  }
+}
+
+/**
+ * Get new products (added in the last 14 days, admin-curated or automatic)
+ */
+export async function getNewProducts(req: Request, res: Response): Promise<void> {
+  try {
+    const limit = parseInt(req.query.limit as string) || 20;
+    const days = parseInt(req.query.days as string) || 14;
+
+    const products = await productsService.getNewProducts({ limit, days });
+    res.status(200).json({ products });
+  } catch (error) {
+    console.error('Error fetching new products:', error);
+    res.status(500).json({ message: 'Error retrieving new products' });
   }
 }

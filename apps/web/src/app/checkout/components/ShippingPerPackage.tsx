@@ -357,6 +357,18 @@ export default function ShippingPerPackage({
     return `${itemCount} ${itemCount === 1 ? 'produkt' : itemCount < 5 ? 'produkty' : 'produktów'}`;
   };
 
+  // Warehouse display config
+  const getWarehouseConfig = (wholesaler: string | null) => {
+    const configs: Record<string, { name: string; color: string; bgColor: string }> = {
+      'HP': { name: 'Magazyn Zielona Góra', color: 'text-blue-700', bgColor: 'bg-blue-50 border-blue-200' },
+      'Hurtownia Przemysłowa': { name: 'Magazyn Zielona Góra', color: 'text-blue-700', bgColor: 'bg-blue-50 border-blue-200' },
+      'Ikonka': { name: 'Magazyn Białystok', color: 'text-purple-700', bgColor: 'bg-purple-50 border-purple-200' },
+      'BTP': { name: 'Magazyn Chotów', color: 'text-green-700', bgColor: 'bg-green-50 border-green-200' },
+      'Leker': { name: 'Magazyn Chynów', color: 'text-red-700', bgColor: 'bg-red-50 border-red-200' },
+    };
+    return configs[wholesaler || ''] || { name: 'Magazyn WB Trade', color: 'text-gray-700', bgColor: 'bg-gray-50 border-gray-200' };
+  };
+
   if (isLoading) {
     return (
       <div className="bg-white rounded-lg shadow-sm p-6">
@@ -377,10 +389,27 @@ export default function ShippingPerPackage({
 
   return (
     <div className="bg-white rounded-lg shadow-sm">
-      <div className="px-4 sm:px-6 py-3 sm:py-4 border-b">
-        <h2 className="text-base sm:text-lg font-semibold text-gray-900">Dostawa</h2>
-        <p className="text-xs sm:text-sm text-gray-500 mt-1">
-          Wybierz metodę dostawy dla każdej przesyłki
+      {/* Header with summary */}
+      <div className="px-4 sm:px-6 py-4 sm:py-5 border-b bg-gradient-to-r from-orange-50 to-white">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900">Wybór dostawy</h2>
+        <div className="flex flex-wrap items-center gap-2 mt-2">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+            {packagesWithOptions.length} {packagesWithOptions.length === 1 ? 'przesyłka' : packagesWithOptions.length < 5 ? 'przesyłki' : 'przesyłek'}
+          </span>
+          {packagesWithOptions.some(p => p.package.type === 'gabaryt') && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm font-medium">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              Zawiera gabaryty
+            </span>
+          )}
+        </div>
+        <p className="text-sm text-gray-500 mt-2">
+          Produkty zostaną wysłane z różnych magazynów. Wybierz sposób dostawy dla każdej przesyłki.
         </p>
       </div>
 
@@ -409,56 +438,82 @@ export default function ShippingPerPackage({
 
       <form onSubmit={handleSubmit}>
         {/* Packages with shipping options */}
-        <div className="divide-y divide-gray-200">
-          {packagesWithOptions.map((pkgOpt, pkgIndex) => (
-            <div key={pkgOpt.package.id} className="p-3 sm:p-4 lg:p-6">
-              {/* Package header */}
-              <div className="flex items-start gap-2 sm:gap-3 lg:gap-4 mb-3 sm:mb-4">
-                <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <span className="text-sm sm:text-base text-orange-600 font-semibold">{pkgIndex + 1}</span>
+        <div className="p-3 sm:p-4 lg:p-6 space-y-4">
+          {packagesWithOptions.map((pkgOpt, pkgIndex) => {
+            const warehouseConfig = getWarehouseConfig(pkgOpt.package.wholesaler);
+            const isGabaryt = pkgOpt.package.type === 'gabaryt';
+            const selectedMethod = pkgOpt.shippingMethods.find(m => m.id === selectedMethods[pkgOpt.package.id] && m.available);
+            
+            return (
+            <div key={pkgOpt.package.id} className={`rounded-xl border-2 overflow-hidden ${warehouseConfig.bgColor}`}>
+              {/* Package header with warehouse info */}
+              <div className="px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center font-bold text-lg ${warehouseConfig.color}`}>
+                    {pkgIndex + 1}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className={`font-semibold ${warehouseConfig.color}`}>{warehouseConfig.name}</span>
+                      {isGabaryt && (
+                        <span className="px-2 py-0.5 bg-amber-500 text-white text-xs font-bold rounded-full">
+                          GABARYT
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-500">
+                      {pkgOpt.package.items.reduce((sum, item) => sum + item.quantity, 0)} {pkgOpt.package.items.length === 1 ? 'produkt' : 'produktów'}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-sm sm:text-base font-medium text-gray-900 line-clamp-2">{getPackageTitle(pkgOpt)}</h3>
-                  <p className="text-xs sm:text-sm text-gray-500">{getPackageDescription(pkgOpt)}</p>
-                </div>
+                {selectedMethod && (
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-gray-900">{selectedMethod.price.toFixed(2)} zł</div>
+                    <div className="text-xs text-gray-500">{selectedMethod.name}</div>
+                  </div>
+                )}
               </div>
-
-              {/* Products in this package */}
-              <div className="ml-10 sm:ml-13 lg:ml-14 mb-3 sm:mb-4">
-                <div className="flex flex-wrap gap-1.5 sm:gap-2">
+              
+              {/* Products - collapsed view */}
+              <div className="px-4 pb-3">
+                <div className="flex flex-wrap gap-2">
                   {pkgOpt.package.items.map((item, itemIndex) => (
                     <div
                       key={`${item.variantId}-${itemIndex}`}
-                      className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-50 rounded-lg text-xs sm:text-sm"
+                      className="flex items-center gap-2 px-2 py-1 bg-white/80 rounded-lg border border-white/50"
                     >
                       {item.productImage && (
                         <img
                           src={item.productImage}
-                          alt={item.productName}
-                          className="w-5 h-5 sm:w-6 sm:h-6 object-cover rounded"
+                          alt=""
+                          className="w-8 h-8 object-cover rounded"
                         />
                       )}
-                      <span className="truncate max-w-[100px] sm:max-w-[150px]">{item.productName}</span>
-                      {item.quantity > 1 && (
-                        <span className="text-gray-500">x{item.quantity}</span>
-                      )}
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-gray-900 truncate max-w-[120px] sm:max-w-[180px]">
+                          {item.productName}
+                        </p>
+                        {item.quantity > 1 && (
+                          <p className="text-[10px] text-gray-500">{item.quantity} szt.</p>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Shipping methods for this package */}
-              <div className="ml-10 sm:ml-13 lg:ml-14 space-y-2">
-                {pkgOpt.shippingMethods.map(method => (
+              {/* Shipping methods */}
+              <div className="bg-white px-4 py-3 space-y-2">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Wybierz sposób dostawy:</p>
+                
+                {pkgOpt.shippingMethods.filter(method => method.available).map(method => (
                   <div key={method.id}>
                     <label
                       className={`
-                        block p-2.5 sm:p-3 rounded-lg border transition-colors
-                        ${!method.available
-                          ? 'opacity-50 cursor-not-allowed bg-gray-50 border-gray-200'
-                          : selectedMethods[pkgOpt.package.id] === method.id
-                            ? 'bg-orange-50 border-orange-300 cursor-pointer'
-                            : 'bg-white border-gray-200 hover:border-orange-200 cursor-pointer'
+                        block p-2.5 sm:p-3 rounded-lg border-2 transition-all
+                        ${selectedMethods[pkgOpt.package.id] === method.id
+                          ? 'bg-orange-50 border-orange-400 shadow-sm'
+                          : 'bg-white border-gray-200 hover:border-orange-200 cursor-pointer'
                         }
                       `}
                     >
@@ -467,15 +522,17 @@ export default function ShippingPerPackage({
                         {/* Radio */}
                         <div
                           className={`
-                            w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0
+                            w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0
                             ${selectedMethods[pkgOpt.package.id] === method.id
-                              ? 'border-orange-500'
+                              ? 'border-orange-500 bg-orange-500'
                               : 'border-gray-300'
                             }
                           `}
                         >
                           {selectedMethods[pkgOpt.package.id] === method.id && (
-                            <div className="w-2 h-2 rounded-full bg-orange-500" />
+                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
                           )}
                         </div>
 
@@ -485,41 +542,32 @@ export default function ShippingPerPackage({
                           value={method.id}
                           checked={selectedMethods[pkgOpt.package.id] === method.id}
                           onChange={() =>
-                            method.available && handleMethodChange(pkgOpt.package.id, method.id as ShippingMethodId)
+                            handleMethodChange(pkgOpt.package.id, method.id as ShippingMethodId)
                           }
-                          disabled={!method.available}
                           className="sr-only"
                         />
 
+                        {/* Icon */}
+                        <ShippingIcon id={method.id} />
+
                         {/* Name and delivery time */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-gray-900 text-xs sm:text-sm font-medium">{method.name}</span>
-                            {!method.available && (
-                              <span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 text-[10px] font-medium rounded whitespace-nowrap">
-                                Niedostępne
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-[10px] sm:text-xs text-gray-500 block">
-                            {!method.available && method.message ? method.message : method.estimatedDelivery}
+                          <span className="text-gray-900 text-sm font-medium block">{method.name}</span>
+                          <span className="text-xs text-gray-500">
+                            {method.estimatedDelivery}
                           </span>
                         </div>
 
-                        {/* Icon + Price */}
-                        <div className="flex items-center gap-2 shrink-0">
-                          <ShippingIcon id={method.id} />
-                          <span className="text-gray-900 font-semibold text-sm whitespace-nowrap">
-                            {method.price.toFixed(2)} zł
-                          </span>
-                        </div>
+                        {/* Price */}
+                        <span className="text-gray-900 font-bold text-base whitespace-nowrap">
+                          {method.price.toFixed(2)} zł
+                        </span>
                       </div>
                     </label>
 
                     {/* Paczkomat selector for this package */}
                     {method.id === 'inpost_paczkomat' &&
-                      selectedMethods[pkgOpt.package.id] === 'inpost_paczkomat' &&
-                      method.available && (
+                      selectedMethods[pkgOpt.package.id] === 'inpost_paczkomat' && (
                         <div className="mt-2 p-2.5 sm:p-3 bg-[#FFF9E6] border border-[#FFCD00] rounded-lg">
                           {paczkomatSelections[pkgOpt.package.id]?.code ? (
                             <div className="flex items-center gap-2 sm:gap-3">
@@ -581,20 +629,19 @@ export default function ShippingPerPackage({
                       )}
                   </div>
                 ))}
-              </div>
-              
-              {/* Custom address option - only for courier deliveries */}
-              {selectedMethods[pkgOpt.package.id] && selectedMethods[pkgOpt.package.id] !== 'inpost_paczkomat' && (
-                <div className="ml-10 sm:ml-13 lg:ml-14 mt-3 sm:mt-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={useCustomAddress[pkgOpt.package.id] || false}
-                      onChange={() => handleToggleCustomAddress(pkgOpt.package.id)}
-                      className="w-4 h-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded"
-                    />
-                    <span className="text-xs sm:text-sm text-gray-700">Wyślij pod inny adres</span>
-                  </label>
+                
+                {/* Custom address option - only for courier deliveries */}
+                {selectedMethods[pkgOpt.package.id] && selectedMethods[pkgOpt.package.id] !== 'inpost_paczkomat' && (
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={useCustomAddress[pkgOpt.package.id] || false}
+                        onChange={() => handleToggleCustomAddress(pkgOpt.package.id)}
+                        className="w-4 h-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded"
+                      />
+                      <span className="text-xs sm:text-sm text-gray-700">Wyślij pod inny adres</span>
+                    </label>
                   
                   {/* Custom address form */}
                   {useCustomAddress[pkgOpt.package.id] && (
@@ -676,8 +723,23 @@ export default function ShippingPerPackage({
                   )}
                 </div>
               )}
+              </div>
             </div>
-          ))}
+          );
+          })}
+        </div>
+
+        {/* Shipping summary */}
+        <div className="px-4 sm:px-6 py-4 bg-gray-50 border-t">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-gray-600">Łączny koszt dostawy:</span>
+            <span className="text-xl font-bold text-gray-900">
+              {calculateTotalPrice(packagesWithOptions, selectedMethods).toFixed(2)} zł
+            </span>
+          </div>
+          <div className="text-xs text-gray-500">
+            {packagesWithOptions.length} {packagesWithOptions.length === 1 ? 'przesyłka' : packagesWithOptions.length < 5 ? 'przesyłki' : 'przesyłek'} • Otrzymasz numer śledzenia dla każdej
+          </div>
         </div>
 
         {/* Error message */}
@@ -686,20 +748,6 @@ export default function ShippingPerPackage({
             <p className="text-xs sm:text-sm text-red-700">{error}</p>
           </div>
         )}
-
-        {/* Info */}
-        <div className="px-3 sm:px-6 py-2.5 sm:py-3 border-t bg-gray-50">
-          <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
-            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <span>Otrzymasz numer śledzenia dla każdej przesyłki</span>
-          </div>
-        </div>
 
         {/* Navigation buttons */}
         <div className="flex justify-between px-3 sm:px-6 py-3 sm:py-4 border-t">

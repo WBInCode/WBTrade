@@ -3,8 +3,8 @@ import Footer from '../../../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Rejestracja konta - Centrum pomocy - WBTrade',
-  description: 'Jak założyć konto w WBTrade',
+  title: 'Rejestracja konta - Centrum pomocy - WB Trade',
+  description: 'Jak założyć konto w WB Trade',
 };
 
 export default function RegisterPage() {
@@ -31,7 +31,7 @@ export default function RegisterPage() {
             <div className="bg-white rounded-2xl p-8 shadow-sm">
               <div className="prose prose-lg max-w-none">
                 <p className="text-secondary-600 text-lg mb-8">
-                  Załóż konto w WBTrade i korzystaj z wielu udogodnień - śledzenie zamówień, historia zakupów, lista życzeń i więcej!
+                  Załóż konto w WB Trade i korzystaj z wielu udogodnień - śledzenie zamówień, historia zakupów, lista życzeń i więcej!
                 </p>
 
                 <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">

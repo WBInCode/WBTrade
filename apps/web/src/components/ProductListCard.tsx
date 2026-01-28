@@ -64,7 +64,12 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
     
     setIsAdding(true);
     try {
-      await addToCart(firstVariant.id, 1);
+      await addToCart(firstVariant.id, 1, {
+        name: product.name,
+        image: mainImage,
+        price: String(product.price),
+        quantity: 1,
+      });
       setAdded(true);
       setTimeout(() => setAdded(false), 2000);
     } catch (error) {

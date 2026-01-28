@@ -3,8 +3,8 @@ import Footer from '../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Kariera - WBTrade',
-  description: 'Dołącz do zespołu WBTrade i rozwijaj swoją karierę w dynamicznym środowisku e-commerce',
+  title: 'Kariera - WB Trade',
+  description: 'Dołącz do zespołu WB Trade i rozwijaj swoją karierę w dynamicznym środowisku e-commerce',
 };
 
 export default function CareersPage() {
@@ -78,7 +78,7 @@ export default function CareersPage() {
               🚀 Dołącz do nas
             </span>
             <h1 className="text-4xl lg:text-6xl font-bold mb-6">
-              Rozwijaj karierę w <span className="text-primary-200">WBTrade</span>
+              Rozwijaj karierę w <span className="text-primary-200">WB Trade</span>
             </h1>
             <p className="text-xl text-primary-100 leading-relaxed mb-8">
               Budujemy przyszłość e-commerce w Polsce. Szukamy ambitnych osób, 
@@ -137,7 +137,7 @@ export default function CareersPage() {
                 <div className="rounded-2xl overflow-hidden shadow-lg">
                   <img
                     src="https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=400&h=300&fit=crop"
-                    alt="Zespół WBTrade"
+                    alt="Zespół WB Trade"
                     className="w-full h-48 object-cover"
                   />
                 </div>
@@ -172,7 +172,7 @@ export default function CareersPage() {
               </h2>
               <div className="space-y-4 text-secondary-600 leading-relaxed">
                 <p>
-                  W WBTrade wierzymy, że najlepsze pomysły rodzą się w atmosferze 
+                  W WB Trade wierzymy, że najlepsze pomysły rodzą się w atmosferze 
                   wzajemnego szacunku i otwartości. Każdy głos się liczy, a hierarchia 
                   nie stoi na przeszkodzie innowacjom.
                 </p>

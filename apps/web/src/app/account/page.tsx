@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import ProductCard from '../../components/ProductCard';
-import { Product, dashboardApi, checkoutApi, DashboardStats, DashboardOrder, RecommendedProduct } from '../../lib/api';
+import { Product, dashboardApi, checkoutApi, productsApi, DashboardStats, DashboardOrder, RecommendedProduct } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 
 // Sidebar navigation items
@@ -188,15 +188,22 @@ function AccountPageContent() {
       try {
         setDashboardLoading(true);
         
-        // Fetch dashboard overview and recommendations in parallel
-        const [overviewRes, recsRes] = await Promise.all([
+        // Fetch dashboard overview and bestsellers in parallel
+        const [overviewRes, bestsellersRes] = await Promise.all([
           dashboardApi.getOverview(),
-          dashboardApi.getRecommendations(4),
+          productsApi.getBestsellers({ limit: 4 }),
         ]);
         
         setStats(overviewRes.stats);
         setRecentOrders(overviewRes.recentOrders);
-        setRecommendations(recsRes.recommendations);
+        // Map bestsellers to recommendation format
+        setRecommendations(bestsellersRes.products.map(p => ({
+          id: p.id,
+          name: p.name,
+          price: Number(p.price),
+          images: p.images || [],
+          reason: 'bestseller' as const,
+        })));
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -260,7 +267,7 @@ function AccountPageContent() {
             </svg>
             <div>
               <h4 className="font-medium text-green-800">Konto utworzone pomyślnie!</h4>
-              <p className="text-sm text-green-700">Witamy w WBTrade, {userData.name}!</p>
+              <p className="text-sm text-green-700">Witamy w WB Trade, {userData.name}!</p>
             </div>
           </div>
         )}
@@ -517,25 +524,22 @@ function AccountPageContent() {
               </div>
             </div>
 
-            {/* Recommended Products */}
+            {/* Bestsellers */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Polecane dla Ciebie</h2>
-                  <p className="text-sm text-gray-500">Na podstawie Twoich wyszukiwań i zakupów</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">🔥</span>
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">Bestsellery</h2>
+                    <p className="text-sm text-gray-500">Najchętniej kupowane produkty</p>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <button className="w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors">
-                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </button>
-                  <button className="w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors">
-                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
+                <Link href="/products/bestsellers" className="text-orange-500 hover:text-orange-600 text-sm font-medium flex items-center gap-1">
+                  Zobacz więcej
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
               </div>
 
               {dashboardLoading ? (
@@ -552,17 +556,10 @@ function AccountPageContent() {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   {recommendations.map((product) => (
                     <div key={product.id} className="relative">
-                      {/* Recommendation reason badge */}
-                      {product.reason === 'search' && (
-                        <div className="absolute top-2 left-2 z-10 bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-full">
-                          Na podstawie wyszukiwań
-                        </div>
-                      )}
-                      {product.reason === 'similar' && (
-                        <div className="absolute top-2 left-2 z-10 bg-purple-500 text-white text-[10px] px-2 py-0.5 rounded-full">
-                          Podobne do zakupów
-                        </div>
-                      )}
+                      {/* Bestseller badge */}
+                      <div className="absolute top-2 left-2 z-10 bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span>🔥</span> Bestseller
+                      </div>
                       <ProductCard
                         product={{
                           id: product.id,
@@ -596,6 +593,10 @@ function AccountPageContent() {
         </div>
       </main>
 
+      {/* Separator */}
+      <div className="border-t border-gray-200 bg-gray-50">
+        <div className="h-6 sm:h-8"></div>
+      </div>
       <Footer hideTrustBadges />
     </div>
   );

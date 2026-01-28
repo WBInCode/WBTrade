@@ -330,7 +330,7 @@ export default function LoginPage() {
           </div>
 
           <h2 className="text-4xl xl:text-5xl font-bold mb-6 leading-tight">
-            Zakupy w WBTrade<br />
+            Zakupy w WB Trade<br />
             to czysta przyjemność!
           </h2>
 

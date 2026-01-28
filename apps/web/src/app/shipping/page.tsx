@@ -3,8 +3,8 @@ import Footer from '../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Dostawa - WBTrade',
-  description: 'Informacje o opcjach dostawy, kosztach wysyłki i czasie realizacji w WBTrade',
+  title: 'Dostawa - WB Trade',
+  description: 'Informacje o opcjach dostawy, kosztach wysyłki i czasie realizacji w WB Trade',
 };
 
 export default function ShippingPage() {

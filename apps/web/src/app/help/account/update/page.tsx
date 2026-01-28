@@ -3,8 +3,8 @@ import Footer from '../../../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Zmiana danych konta - Centrum pomocy - WBTrade',
-  description: 'Jak zmienić dane konta w WBTrade',
+  title: 'Zmiana danych konta - Centrum pomocy - WB Trade',
+  description: 'Jak zmienić dane konta w WB Trade',
 };
 
 export default function UpdateAccountPage() {

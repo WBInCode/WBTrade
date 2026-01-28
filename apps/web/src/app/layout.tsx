@@ -3,10 +3,11 @@ import { CartProvider } from '../contexts/CartContext';
 import { AuthProvider } from '../contexts/AuthContext';
 import { WishlistProvider } from '../contexts/WishlistContext';
 import { WelcomeDiscountPopup } from '../components/WelcomeDiscountPopup';
+import CookieConsent from '../components/CookieConsent';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'WBTrade - Shop Everything',
+  title: 'WB Trade - Shop Everything',
   description: 'Najniższe ceny na rynku na tysiące produktów. Sprawdź nasze oferty i oszczędzaj więcej przy każdym zakupie. Kupuj teraz.',
   icons: {
     icon: [
@@ -16,10 +17,10 @@ export const metadata: Metadata = {
     apple: '/apple-icon.png',
   },
   openGraph: {
-    title: 'WBTrade - Shop Everything',
+    title: 'WB Trade - Shop Everything',
     description: 'Najniższe ceny na rynku na tysiące produktów. Sprawdź nasze oferty i oszczędzaj więcej przy każdym zakupie.',
     url: 'https://www.wb-trade.pl',
-    siteName: 'WBTrade',
+    siteName: 'WB Trade',
     locale: 'pl_PL',
     type: 'website',
   },
@@ -38,6 +39,7 @@ export default function RootLayout({
             <WishlistProvider>
               {children}
               <WelcomeDiscountPopup />
+              <CookieConsent />
             </WishlistProvider>
           </CartProvider>
         </AuthProvider>

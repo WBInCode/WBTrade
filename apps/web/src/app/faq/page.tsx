@@ -3,8 +3,8 @@ import Footer from '../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'FAQ - Najczęściej zadawane pytania - WBTrade',
-  description: 'Odpowiedzi na najczęściej zadawane pytania dotyczące zakupów, dostawy, płatności i zwrotów w WBTrade',
+  title: 'FAQ - Najczęściej zadawane pytania - WB Trade',
+  description: 'Odpowiedzi na najczęściej zadawane pytania dotyczące zakupów, dostawy, płatności i zwrotów w WB Trade',
 };
 
 export default function FAQPage() {
@@ -178,7 +178,7 @@ export default function FAQPage() {
               Najczęściej zadawane pytania
             </h1>
             <p className="text-xl text-primary-100">
-              Znajdź szybkie odpowiedzi na najczęstsze pytania dotyczące zakupów w WBTrade.
+              Znajdź szybkie odpowiedzi na najczęstsze pytania dotyczące zakupów w WB Trade.
             </p>
           </div>
         </div>

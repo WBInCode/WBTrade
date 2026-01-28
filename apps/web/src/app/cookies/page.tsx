@@ -2,8 +2,8 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 
 export const metadata = {
-  title: 'Polityka cookies - WBTrade',
-  description: 'Polityka plików cookies w serwisie WBTrade',
+  title: 'Polityka cookies - WB Trade',
+  description: 'Polityka plików cookies w serwisie WB Trade',
 };
 
 export default function CookiesPage() {

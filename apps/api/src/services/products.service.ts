@@ -41,6 +41,7 @@ interface ProductFilters {
   minPrice?: number;
   maxPrice?: number;
   search?: string;
+  sku?: string; // Direct SKU search
   sort?: string;
   status?: string;
   hideOldZeroStock?: boolean; // Ukryj produkty ze stanem 0 starsze niż 14 dni
@@ -240,7 +241,38 @@ export class ProductsService {
     } = filters;
 
     // If search is provided, use Meilisearch for better results
+    // But also check if the search looks like a SKU (numeric or alphanumeric code)
     if (search && search.trim()) {
+      // First try to find by exact SKU match
+      const skuMatch = await prisma.product.findMany({
+        where: {
+          sku: { contains: search.trim(), mode: 'insensitive' },
+          status: 'ACTIVE',
+          price: { gt: 0 },
+        },
+        take: 10,
+        include: {
+          images: { orderBy: { order: 'asc' } },
+          category: true,
+          variants: { include: { inventory: true } },
+        },
+      });
+      
+      if (skuMatch.length > 0) {
+        // Found by SKU - return these first, then search for more
+        const meilisearchResults = await this.searchWithMeilisearch(filters);
+        const skuIds = skuMatch.map(p => p.id);
+        const combinedProducts = [
+          ...transformProducts(skuMatch),
+          ...meilisearchResults.products.filter(p => !skuIds.includes(p.id)),
+        ].slice(0, limit);
+        
+        return {
+          ...meilisearchResults,
+          products: combinedProducts,
+        };
+      }
+      
       return this.searchWithMeilisearch(filters);
     }
 
@@ -301,7 +333,9 @@ export class ProductsService {
     }
 
     // Build orderBy clause
-    let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };
+    let orderBy: Prisma.ProductOrderByWithRelationInput | Prisma.ProductOrderByWithRelationInput[] = { createdAt: 'desc' };
+    let useRandomSort = false;
+    
     switch (sort) {
       case 'price_asc':
         orderBy = { price: 'asc' };
@@ -315,17 +349,26 @@ export class ProductsService {
       case 'name_desc':
         orderBy = { name: 'desc' };
         break;
+      case 'random':
+        // For random sort, we'll fetch more and shuffle client-side
+        useRandomSort = true;
+        orderBy = { id: 'asc' }; // Temporary, will be shuffled
+        break;
       case 'newest':
       default:
         orderBy = { createdAt: 'desc' };
     }
 
     // Execute queries in parallel
-    const [products, total] = await Promise.all([
+    // For random sort, we need to fetch more products and shuffle them
+    const fetchLimit = useRandomSort ? 500 : limit;
+    const fetchSkip = useRandomSort ? 0 : skip;
+    
+    const [products, totalCount] = await Promise.all([
       prisma.product.findMany({
         where,
-        skip,
-        take: limit,
+        skip: fetchSkip,
+        take: fetchLimit,
         orderBy,
         include: {
           images: {
@@ -345,6 +388,36 @@ export class ProductsService {
     // Transform products
     let transformedProducts = transformProducts(products);
     
+    // Apply random shuffle if requested (seeded by day for consistency)
+    if (useRandomSort && transformedProducts.length > 0) {
+      // Use date as seed for consistent daily shuffle
+      const today = new Date();
+      const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+      
+      // Seeded shuffle function
+      const seededShuffle = (array: any[], seedValue: number) => {
+        const shuffled = [...array];
+        let currentSeed = seedValue;
+        
+        const random = () => {
+          currentSeed = (currentSeed * 9301 + 49297) % 233280;
+          return currentSeed / 233280;
+        };
+        
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+      };
+      
+      transformedProducts = seededShuffle(transformedProducts, seed);
+      
+      // Apply pagination after shuffle
+      const startIndex = (page - 1) * limit;
+      transformedProducts = transformedProducts.slice(startIndex, startIndex + limit);
+    }
+    
     // Filter out old zero-stock products if requested
     if (hideOldZeroStock) {
       transformedProducts = filterOldZeroStockProducts(transformedProducts, 14);
@@ -352,10 +425,10 @@ export class ProductsService {
 
     return {
       products: transformedProducts,
-      total: hideOldZeroStock ? transformedProducts.length : total,
+      total: hideOldZeroStock ? transformedProducts.length : totalCount,
       page,
       limit,
-      totalPages: Math.ceil((hideOldZeroStock ? transformedProducts.length : total) / limit),
+      totalPages: Math.ceil((hideOldZeroStock ? transformedProducts.length : totalCount) / limit),
     };
   }
 
@@ -1096,6 +1169,524 @@ export class ProductsService {
     });
 
     return Array.from(specs);
+  }
+
+  /**
+   * Get excluded product IDs from carousel settings
+   */
+  private async getExcludedProductIds(): Promise<string[]> {
+    try {
+      const settings = await prisma.settings.findUnique({
+        where: { key: 'carousel_exclusions' },
+      });
+      
+      if (settings?.value && typeof settings.value === 'object') {
+        const exclusions = settings.value as { excludedProductIds?: string[] };
+        return exclusions.excludedProductIds || [];
+      }
+    } catch (error) {
+      console.error('Error reading carousel exclusions:', error);
+    }
+    return [];
+  }
+
+  /**
+   * Get bestsellers based on actual sales data from OrderItems
+   * Returns products sorted by number of units sold
+   */
+  async getBestsellers(options: {
+    limit?: number;
+    category?: string;
+    days?: number; // How many days back to look for sales
+  } = {}): Promise<any[]> {
+    const { limit = 20, category, days = 90 } = options;
+
+    // Get excluded product IDs
+    const excludedProductIds = await this.getExcludedProductIds();
+
+    // Check if admin has manually selected some bestsellers (they go first)
+    // Only apply manual products when NOT filtering by category (category filter = different carousel like Toys)
+    let manualProducts: any[] = [];
+    let manualProductIds: string[] = [];
+    
+    if (!category) {
+      try {
+        const settings = await prisma.settings.findUnique({
+          where: { key: 'homepage_carousels' },
+        });
+        
+        if (settings?.value && typeof settings.value === 'object') {
+          const carousels = settings.value as Record<string, { productIds?: string[]; isAutomatic?: boolean }>;
+          const bestsellerIds = carousels.bestsellers?.productIds;
+          if (bestsellerIds && bestsellerIds.length > 0) {
+            manualProductIds = bestsellerIds;
+            
+            const products = await prisma.product.findMany({
+              where: {
+                id: { in: bestsellerIds },
+                status: 'ACTIVE',
+              },
+              include: {
+                images: { orderBy: { order: 'asc' } },
+                category: true,
+                variants: { include: { inventory: true } },
+              },
+            });
+            
+            // Sort to match order in productIds
+            manualProducts = bestsellerIds
+              .map(id => products.find(p => p.id === id))
+              .filter(Boolean);
+            manualProducts = transformProducts(manualProducts);
+          }
+        }
+      } catch (error) {
+        console.error('Error reading carousel settings:', error);
+      }
+    }
+
+    // If we already have enough manual products, return them
+    if (manualProducts.length >= limit) {
+      return manualProducts.slice(0, limit);
+    }
+
+    // Get automatic bestsellers to fill remaining slots
+    const remainingSlots = limit - manualProducts.length;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    // Get order items from completed orders in the time period
+    const orderItems = await prisma.orderItem.findMany({
+      where: {
+        order: {
+          createdAt: { gte: startDate },
+          status: { notIn: ['CANCELLED', 'REFUNDED'] },
+          paymentStatus: 'PAID',
+        },
+      },
+      include: {
+        variant: {
+          include: {
+            product: {
+              include: {
+                images: { orderBy: { order: 'asc' } },
+                category: true,
+                variants: {
+                  include: { inventory: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Aggregate sales by product
+    const productSalesMap = new Map<string, { product: any; soldCount: number }>();
+
+    for (const item of orderItems) {
+      const product = item.variant.product;
+      
+      // Skip if category filter doesn't match
+      if (category && product.category?.slug !== category) {
+        continue;
+      }
+
+      // Skip draft/archived products
+      if (product.status !== 'ACTIVE') {
+        continue;
+      }
+
+      const existing = productSalesMap.get(product.id);
+      if (existing) {
+        existing.soldCount += item.quantity;
+      } else {
+        productSalesMap.set(product.id, {
+          product: transformProduct(product),
+          soldCount: item.quantity,
+        });
+      }
+    }
+
+    // Sort by sold count and get automatic bestsellers (excluding manual ones and excluded ones)
+    const automaticBestsellers = Array.from(productSalesMap.values())
+      .filter(item => !manualProductIds.includes(item.product.id)) // Exclude already added manual products
+      .filter(item => !excludedProductIds.includes(item.product.id)) // Exclude admin-excluded products
+      .sort((a, b) => b.soldCount - a.soldCount)
+      .slice(0, remainingSlots)
+      .map(item => ({
+        ...item.product,
+        soldCount: item.soldCount,
+      }));
+
+    // Combine: manual products first, then automatic bestsellers
+    return [...manualProducts, ...automaticBestsellers];
+  }
+
+  /**
+   * Get featured products - either manually curated from Settings or fallback to newest
+   */
+  async getFeatured(options: {
+    limit?: number;
+    productIds?: string[]; // Manually selected product IDs (override)
+  } = {}): Promise<any[]> {
+    const { limit = 20, productIds } = options;
+
+    // Get excluded product IDs
+    const excludedProductIds = await this.getExcludedProductIds();
+
+    // Check Settings for admin-curated products (they go first)
+    let manualProducts: any[] = [];
+    let manualProductIds: string[] = [];
+    
+    try {
+      const settings = await prisma.settings.findUnique({
+        where: { key: 'homepage_carousels' },
+      });
+      
+      if (settings?.value && typeof settings.value === 'object') {
+        const carousels = settings.value as Record<string, { productIds?: string[]; isAutomatic?: boolean }>;
+        const adminFeaturedIds = carousels.featured?.productIds;
+        if (adminFeaturedIds && adminFeaturedIds.length > 0) {
+          manualProductIds = adminFeaturedIds;
+          
+          const products = await prisma.product.findMany({
+            where: {
+              id: { in: adminFeaturedIds },
+              status: 'ACTIVE',
+            },
+            include: {
+              images: { orderBy: { order: 'asc' } },
+              category: true,
+              variants: { include: { inventory: true } },
+            },
+          });
+          
+          manualProducts = adminFeaturedIds
+            .map(id => products.find(p => p.id === id))
+            .filter(Boolean);
+          manualProducts = transformProducts(manualProducts);
+        }
+      }
+    } catch (error) {
+      console.error('Error reading carousel settings:', error);
+    }
+
+    // Override with directly passed productIds if provided
+    if (productIds && productIds.length > 0) {
+      manualProductIds = productIds;
+      const products = await prisma.product.findMany({
+        where: {
+          id: { in: productIds },
+          status: 'ACTIVE',
+        },
+        include: {
+          images: { orderBy: { order: 'asc' } },
+          category: true,
+          variants: { include: { inventory: true } },
+        },
+      });
+      manualProducts = productIds
+        .map(id => products.find(p => p.id === id))
+        .filter(Boolean);
+      manualProducts = transformProducts(manualProducts);
+    }
+
+    // If we already have enough manual products, return them
+    if (manualProducts.length >= limit) {
+      return manualProducts.slice(0, limit);
+    }
+
+    // Get diverse automatic products from various categories
+    // Exclude boring items like phone cases, covers, etc.
+    const boringKeywords = ['etui', 'case', 'pokrowiec', 'folia', 'szkło', 'kabel', 'ładowarka', 'adapter'];
+    const remainingSlots = limit - manualProducts.length;
+    
+    // Get products from different categories for diversity
+    const categories = await prisma.category.findMany({
+      where: { parentId: null },
+      select: { id: true, slug: true },
+    });
+    
+    const productsPerCategory = Math.ceil(remainingSlots / Math.max(categories.length, 1)) + 2;
+    let allCandidates: any[] = [];
+    
+    for (const category of categories) {
+      const categoryProducts = await prisma.product.findMany({
+        where: {
+          status: 'ACTIVE',
+          price: { gt: 10 }, // Skip very cheap items
+          categoryId: category.id,
+          id: { notIn: [...manualProductIds, ...excludedProductIds] },
+          // Exclude boring product names
+          NOT: {
+            OR: boringKeywords.map(keyword => ({
+              name: { contains: keyword, mode: 'insensitive' as const },
+            })),
+          },
+        },
+        orderBy: [
+          { compareAtPrice: 'desc' }, // Products with discounts first
+          { createdAt: 'desc' },
+        ],
+        take: productsPerCategory,
+        include: {
+          images: { orderBy: { order: 'asc' } },
+          category: true,
+          variants: { include: { inventory: true } },
+        },
+      });
+      allCandidates.push(...categoryProducts);
+    }
+    
+    // Shuffle and pick diverse products
+    const shuffled = allCandidates.sort(() => Math.random() - 0.5);
+    
+    // Ensure diversity - don't pick too many from same category
+    const picked: any[] = [];
+    const categoryCount: Record<string, number> = {};
+    const maxPerCategory = Math.ceil(remainingSlots / 3);
+    
+    for (const product of shuffled) {
+      if (picked.length >= remainingSlots) break;
+      const catId = product.categoryId || 'none';
+      if ((categoryCount[catId] || 0) < maxPerCategory) {
+        picked.push(product);
+        categoryCount[catId] = (categoryCount[catId] || 0) + 1;
+      }
+    }
+    
+    // If not enough, fill with remaining
+    if (picked.length < remainingSlots) {
+      for (const product of shuffled) {
+        if (picked.length >= remainingSlots) break;
+        if (!picked.some(p => p.id === product.id)) {
+          picked.push(product);
+        }
+      }
+    }
+
+    // Combine: manual products first, then diverse automatic
+    return [...manualProducts, ...transformProducts(picked)];
+  }
+
+  /**
+   * Get seasonal products based on tags or settings
+   */
+  async getSeasonal(options: {
+    limit?: number;
+    season?: 'spring' | 'summer' | 'autumn' | 'winter';
+  } = {}): Promise<any[]> {
+    const { limit = 20 } = options;
+
+    // Get excluded product IDs
+    const excludedProductIds = await this.getExcludedProductIds();
+
+    // Check if admin has manually selected some seasonal products (they go first)
+    let manualProducts: any[] = [];
+    let manualProductIds: string[] = [];
+    
+    try {
+      const settings = await prisma.settings.findUnique({
+        where: { key: 'homepage_carousels' },
+      });
+      
+      if (settings?.value && typeof settings.value === 'object') {
+        const carousels = settings.value as Record<string, { productIds?: string[]; isAutomatic?: boolean }>;
+        const seasonalIds = carousels.seasonal?.productIds;
+        if (seasonalIds && seasonalIds.length > 0) {
+          manualProductIds = seasonalIds;
+          
+          const products = await prisma.product.findMany({
+            where: {
+              id: { in: seasonalIds },
+              status: 'ACTIVE',
+            },
+            include: {
+              images: { orderBy: { order: 'asc' } },
+              category: true,
+              variants: { include: { inventory: true } },
+            },
+          });
+          
+          manualProducts = seasonalIds
+            .map(id => products.find(p => p.id === id))
+            .filter(Boolean);
+          manualProducts = transformProducts(manualProducts);
+        }
+      }
+    } catch (error) {
+      console.error('Error reading carousel settings:', error);
+    }
+
+    // If we already have enough manual products, return them
+    if (manualProducts.length >= limit) {
+      return manualProducts.slice(0, limit);
+    }
+
+    // Get automatic seasonal products to fill remaining slots
+    const remainingSlots = limit - manualProducts.length;
+
+    // Determine current season if not provided
+    const month = new Date().getMonth() + 1;
+    let season = options.season;
+    if (!season) {
+      if (month >= 3 && month <= 5) season = 'spring';
+      else if (month >= 6 && month <= 8) season = 'summer';
+      else if (month >= 9 && month <= 11) season = 'autumn';
+      else season = 'winter';
+    }
+
+    // Map season to Polish tags that might be in the database
+    const seasonTags: Record<string, string[]> = {
+      spring: ['wiosna', 'wiosenny', 'wiosenne', 'spring'],
+      summer: ['lato', 'letni', 'letnie', 'summer', 'plaża', 'wakacje'],
+      autumn: ['jesień', 'jesien', 'jesienny', 'jesienne', 'autumn'],
+      winter: ['zima', 'zimowy', 'zimowe', 'winter', 'święta', 'boże narodzenie', 'choinka', 'śnieg'],
+    };
+
+    // Winter-specific categories for better results
+    const winterCategories = ['dziecko', 'zabawki', 'elektronika', 'dom-i-ogrod'];
+
+    const tags = seasonTags[season] || [];
+
+    // Try to find products with seasonal tags (excluding manual and admin-excluded ones)
+    let automaticProducts = await prisma.product.findMany({
+      where: {
+        status: 'ACTIVE',
+        price: { gt: 0 },
+        tags: { hasSome: tags },
+        id: { notIn: [...manualProductIds, ...excludedProductIds] },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: remainingSlots,
+      include: {
+        images: { orderBy: { order: 'asc' } },
+        category: true,
+        variants: {
+          include: { inventory: true },
+        },
+      },
+    });
+
+    // If no tagged products, fallback to products from relevant categories
+    if (automaticProducts.length < remainingSlots) {
+      const fallbackCategories = season === 'winter' ? winterCategories : [];
+      
+      const additionalProducts = await prisma.product.findMany({
+        where: {
+          status: 'ACTIVE',
+          price: { gt: 0 },
+          id: { notIn: [...manualProductIds, ...excludedProductIds, ...automaticProducts.map(p => p.id)] },
+          ...(fallbackCategories.length > 0 && {
+            category: { slug: { in: fallbackCategories } },
+          }),
+        },
+        orderBy: [
+          { compareAtPrice: 'desc' }, // Products on sale first
+          { createdAt: 'desc' },
+        ],
+        take: remainingSlots - automaticProducts.length,
+        include: {
+          images: { orderBy: { order: 'asc' } },
+          category: true,
+          variants: {
+            include: { inventory: true },
+          },
+        },
+      });
+
+      automaticProducts = [...automaticProducts, ...additionalProducts];
+    }
+
+    // Combine: manual products first, then automatic
+    return [...manualProducts, ...transformProducts(automaticProducts)];
+  }
+
+  /**
+   * Get new products - products added in the last 14 days
+   * Supports admin-curated manual selection with automatic fallback
+   */
+  async getNewProducts(options: {
+    limit?: number;
+    days?: number; // How many days back to look (default 14)
+  } = {}): Promise<any[]> {
+    const { limit = 20, days = 14 } = options;
+
+    // Get excluded product IDs
+    const excludedProductIds = await this.getExcludedProductIds();
+
+    // Check if admin has manually selected some new products (they go first)
+    let manualProducts: any[] = [];
+    let manualProductIds: string[] = [];
+    
+    try {
+      const settings = await prisma.settings.findUnique({
+        where: { key: 'homepage_carousels' },
+      });
+      
+      if (settings?.value && typeof settings.value === 'object') {
+        const carousels = settings.value as Record<string, { productIds?: string[]; isAutomatic?: boolean }>;
+        const newProductIds = carousels.newProducts?.productIds;
+        if (newProductIds && newProductIds.length > 0) {
+          manualProductIds = newProductIds;
+          
+          const products = await prisma.product.findMany({
+            where: {
+              id: { in: newProductIds },
+              status: 'ACTIVE',
+            },
+            include: {
+              images: { orderBy: { order: 'asc' } },
+              category: true,
+              variants: { include: { inventory: true } },
+            },
+          });
+          
+          // Maintain order from settings
+          manualProducts = newProductIds
+            .map(id => products.find(p => p.id === id))
+            .filter(Boolean);
+          manualProducts = transformProducts(manualProducts);
+        }
+      }
+    } catch (error) {
+      console.error('Error reading carousel settings:', error);
+    }
+
+    // If we already have enough manual products, return them
+    if (manualProducts.length >= limit) {
+      return manualProducts.slice(0, limit);
+    }
+
+    // Get automatic new products to fill remaining slots
+    const remainingSlots = limit - manualProducts.length;
+
+    // Calculate the date threshold (products from last X days)
+    const dateThreshold = new Date();
+    dateThreshold.setDate(dateThreshold.getDate() - days);
+
+    // Fetch products added in the last X days (excluding manual and admin-excluded ones)
+    const automaticProducts = await prisma.product.findMany({
+      where: {
+        status: 'ACTIVE',
+        price: { gt: 0 },
+        createdAt: { gte: dateThreshold },
+        id: { notIn: [...manualProductIds, ...excludedProductIds] },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: remainingSlots,
+      include: {
+        images: { orderBy: { order: 'asc' } },
+        category: true,
+        variants: {
+          include: { inventory: true },
+        },
+      },
+    });
+
+    // Combine: manual products first, then automatic new products
+    return [...manualProducts, ...transformProducts(automaticProducts)];
   }
 }
 
