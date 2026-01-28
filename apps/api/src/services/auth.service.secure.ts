@@ -259,6 +259,7 @@ export class SecureAuthService {
     });
 
     // Generate welcome discount code and send email (async, don't block registration)
+    console.log(`[SecureAuthService] Starting welcome discount for ${user.email}...`);
     this.sendWelcomeDiscount(user.id, user.email, user.firstName || '').catch((err) => {
       console.error('[SecureAuthService] Failed to send welcome discount:', err.message);
     });
@@ -276,9 +277,12 @@ export class SecureAuthService {
    */
   private async sendWelcomeDiscount(userId: string, email: string, firstName: string): Promise<void> {
     try {
+      console.log(`[SecureAuthService] Generating discount for user ${userId}...`);
       const discount = await discountService.generateWelcomeDiscount(userId, email);
+      console.log(`[SecureAuthService] Discount generated: ${discount.couponCode}`);
       
-      await emailService.sendWelcomeDiscountEmail(
+      console.log(`[SecureAuthService] Sending email to ${email}...`);
+      const result = await emailService.sendWelcomeDiscountEmail(
         email,
         firstName || email.split('@')[0],
         discount.couponCode,
@@ -286,7 +290,11 @@ export class SecureAuthService {
         discount.expiresAt
       );
       
-      console.log(`✅ [SecureAuthService] Welcome discount sent to ${email}: ${discount.couponCode}`);
+      if (result.success) {
+        console.log(`✅ [SecureAuthService] Welcome discount sent to ${email}: ${discount.couponCode}`);
+      } else {
+        console.error(`❌ [SecureAuthService] Email failed for ${email}: ${result.error}`);
+      }
     } catch (err: any) {
       console.error(`[SecureAuthService] Welcome discount error for ${email}:`, err.message);
       // Don't throw - registration should succeed even if discount email fails
