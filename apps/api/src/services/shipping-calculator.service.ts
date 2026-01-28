@@ -54,6 +54,9 @@ export const WEIGHT_SHIPPING_PRICES = {
   31.5: 28.99, // do 31,5 kg
 } as const;
 
+// Free shipping threshold per warehouse (in PLN)
+export const FREE_SHIPPING_THRESHOLD = 300;
+
 export interface CartItemForShipping {
   variantId: string;
   quantity: number;
@@ -88,6 +91,8 @@ export interface ShippingPackage {
   isPaczkomatAvailable: boolean;
   isInPostOnly: boolean; // When true, only InPost (Paczkomat + Kurier InPost) - no DPD
   isCourierOnly: boolean; // When true, only DPD Kurier - no InPost (tag "Tylko kurier")
+  warehouseValue: number; // Total value of products from this warehouse
+  hasFreeShipping: boolean; // True if warehouse value >= FREE_SHIPPING_THRESHOLD
 }
 
 export interface ShippingMethodForPackage {
@@ -182,7 +187,7 @@ function getPaczkomatLimit(tags: string[]): number {
       }
     }
   }
-  return 10; // Default limit
+  return 1; // Default: each product = 1 package (safest assumption)
 }
 
 /**
@@ -244,7 +249,7 @@ export class ShippingCalculatorService {
     const warnings: string[] = [];
     const packages: ShippingPackage[] = [];
     
-    // Fetch products with tags and images
+    // Fetch products with tags, images, and prices
     const variantIds = items.map(item => item.variantId);
     const variants = await prisma.productVariant.findMany({
       where: { id: { in: variantIds } },
@@ -254,6 +259,7 @@ export class ShippingCalculatorService {
             id: true,
             name: true,
             tags: true,
+            price: true,
             images: {
               take: 1,
               orderBy: { order: 'asc' },
@@ -264,20 +270,21 @@ export class ShippingCalculatorService {
       },
     });
     
-    const variantToProduct = new Map<string, ProductWithTags & { image?: string }>();
+    const variantToProduct = new Map<string, ProductWithTags & { image?: string; price: number }>();
     for (const variant of variants) {
       variantToProduct.set(variant.id, {
         id: variant.product.id,
         name: variant.product.name,
         tags: variant.product.tags,
         image: variant.product.images[0]?.url,
+        price: Number(variant.product.price) || 0,
       });
     }
     
     // Categorize items
-    const gabarytItems: Array<{ product: ProductWithTags; variantId: string; quantity: number }> = [];
+    const gabarytItems: Array<{ product: ProductWithTags & { price: number }; variantId: string; quantity: number }> = [];
     // Group by wholesaler only - shipping restrictions will be determined per package
-    const standardItemsByWholesaler = new Map<string, Array<{ product: ProductWithTags; variantId: string; quantity: number }>>();
+    const standardItemsByWholesaler = new Map<string, Array<{ product: ProductWithTags & { price: number }; variantId: string; quantity: number }>>();
     
     for (const item of items) {
       const product = variantToProduct.get(item.variantId);
@@ -304,16 +311,40 @@ export class ShippingCalculatorService {
       }
     }
     
+    // Calculate total value per warehouse (for free shipping calculation)
+    // Includes both gabaryt and standard items
+    const valueByWholesaler = new Map<string, number>();
+    
+    for (const item of gabarytItems) {
+      const wholesaler = getWholesaler(item.product.tags) || 'default';
+      const itemValue = item.product.price * item.quantity;
+      const currentValue = valueByWholesaler.get(wholesaler) || 0;
+      valueByWholesaler.set(wholesaler, currentValue + itemValue);
+    }
+    
+    for (const [wholesaler, groupItems] of standardItemsByWholesaler) {
+      let totalValue = 0;
+      for (const item of groupItems) {
+        totalValue += item.product.price * item.quantity;
+      }
+      const currentValue = valueByWholesaler.get(wholesaler) || 0;
+      valueByWholesaler.set(wholesaler, currentValue + totalValue);
+    }
+    
     // Create packages for gabaryt items (each one is a separate shipment)
     let packageId = 1;
     for (const gabarytItem of gabarytItems) {
       const gabarytPrice = getGabarytPrice(gabarytItem.product.tags);
       const productIsInPostOnly = isInPostOnly(gabarytItem.product.tags);
+      const wholesaler = getWholesaler(gabarytItem.product.tags) || 'default';
+      const warehouseValue = valueByWholesaler.get(wholesaler) || 0;
+      const hasFreeShipping = warehouseValue >= FREE_SHIPPING_THRESHOLD;
+      
       for (let i = 0; i < gabarytItem.quantity; i++) {
         packages.push({
           id: `gabaryt-${packageId++}`,
           type: 'gabaryt',
-          wholesaler: getWholesaler(gabarytItem.product.tags) || null,
+          wholesaler: wholesaler === 'default' ? null : wholesaler,
           items: [{
             productId: gabarytItem.product.id,
             productName: gabarytItem.product.name,
@@ -328,6 +359,8 @@ export class ShippingCalculatorService {
           isPaczkomatAvailable: false, // Gabaryt cannot use paczkomat
           isInPostOnly: productIsInPostOnly,
           isCourierOnly: false, // Gabaryt has its own shipping method
+          warehouseValue,
+          hasFreeShipping,
         });
       }
     }
@@ -371,24 +404,30 @@ export class ShippingCalculatorService {
         };
       });
       
-      // Calculate how many paczkomat packages are needed for this shipment
-      // Group all items from same wholesaler together and count based on limits
-      // If ANY item has a restrictive limit (e.g. "1 produkt w paczce"), we need more packages
+      // Calculate how many packages are needed for this shipment
+      // RULE: Products with the SAME "produkt w paczce" limit can be packed together
+      // Products with DIFFERENT limits go in separate packages
+      // Example: 
+      //   - 3 products with "produkt w paczce: 3" = 1 package (3/3 = 1)
+      //   - 4 products with "produkt w paczce: 3" = 2 packages (ceil(4/3) = 2)
+      //   - 2 products with "produkt w paczce: 2" = 1 package (2/2 = 1)
+      //   - Mixed: 3x(limit 3) + 2x(limit 2) = 1 + 1 = 2 packages
       
-      // Find the most restrictive (lowest) paczkomat limit in this package
-      let minPaczkomatLimit = 10; // Default
+      // Group items by their paczkomat limit
+      const itemsByLimit = new Map<number, number>(); // limit -> total quantity
       for (const item of groupItems) {
         const limit = getPaczkomatLimit(item.product.tags);
-        if (limit < minPaczkomatLimit) {
-          minPaczkomatLimit = limit;
-        }
+        const currentQty = itemsByLimit.get(limit) || 0;
+        itemsByLimit.set(limit, currentQty + item.quantity);
       }
       
-      // Calculate total items in this package
-      const totalItemsInPackage = groupItems.reduce((sum, item) => sum + item.quantity, 0);
-      
-      // Number of paczkomat packages needed
-      const paczkomatPackageCount = Math.ceil(totalItemsInPackage / minPaczkomatLimit);
+      // Calculate packages needed for each limit group
+      let paczkomatPackageCount = 0;
+      for (const [limit, totalQty] of itemsByLimit) {
+        // Products with same limit are packed together
+        // e.g., 5 items with limit 3 = ceil(5/3) = 2 packages
+        paczkomatPackageCount += Math.ceil(totalQty / limit);
+      }
       
       // Track highest weight-based shipping price in this package
       let maxWeightShippingPrice: number | null = null;
@@ -405,6 +444,10 @@ export class ShippingCalculatorService {
       // Paczkomat available only if NOT courier-only (DPD only)
       const isPaczkomatAvailableForPackage = !packageIsCourierOnly;
       
+      // Calculate warehouse value and check for free shipping
+      const warehouseValue = valueByWholesaler.get(wholesaler) || 0;
+      const hasFreeShipping = warehouseValue >= FREE_SHIPPING_THRESHOLD;
+      
       packages.push({
         id: `standard-${packageId++}`,
         type: 'standard',
@@ -415,10 +458,12 @@ export class ShippingCalculatorService {
         isPaczkomatAvailable: isPaczkomatAvailableForPackage,
         isInPostOnly: packageIsInPostOnly,
         isCourierOnly: packageIsCourierOnly,
+        warehouseValue,
+        hasFreeShipping,
       });
     }
     
-    // Calculate costs
+    // Calculate costs (considering free shipping)
     const gabarytPackages = packages.filter(p => p.type === 'gabaryt');
     const standardPackages = packages.filter(p => p.type === 'standard');
     const gabarytPackageCount = gabarytPackages.length;
@@ -429,24 +474,49 @@ export class ShippingCalculatorService {
     
     const breakdown: Array<{ description: string; cost: number; packageCount: number }> = [];
     
-    // Sum gabaryt costs from individual prices
-    const totalGabarytCost = gabarytPackages.reduce((sum, pkg) => sum + (pkg.gabarytPrice || SHIPPING_PRICES.gabaryt_base), 0);
+    // Sum gabaryt costs from individual prices (considering free shipping)
+    const totalGabarytCost = gabarytPackages.reduce((sum, pkg) => {
+      if (pkg.hasFreeShipping) return sum; // Free shipping for this warehouse
+      return sum + (pkg.gabarytPrice || SHIPPING_PRICES.gabaryt_base);
+    }, 0);
+    
+    const freeGabarytCount = gabarytPackages.filter(p => p.hasFreeShipping).length;
+    const paidGabarytCount = gabarytPackageCount - freeGabarytCount;
     
     if (gabarytPackageCount > 0) {
-      breakdown.push({
-        description: `Produkty gabarytowe (${gabarytPackageCount} szt.)`,
-        cost: totalGabarytCost,
-        packageCount: gabarytPackageCount,
-      });
+      if (freeGabarytCount > 0 && paidGabarytCount > 0) {
+        breakdown.push({
+          description: `Produkty gabarytowe (${paidGabarytCount} płatne, ${freeGabarytCount} darmowe)`,
+          cost: totalGabarytCost,
+          packageCount: gabarytPackageCount,
+        });
+      } else if (freeGabarytCount > 0) {
+        breakdown.push({
+          description: `Produkty gabarytowe (${gabarytPackageCount} szt.) - DARMOWA DOSTAWA`,
+          cost: 0,
+          packageCount: gabarytPackageCount,
+        });
+      } else {
+        breakdown.push({
+          description: `Produkty gabarytowe (${gabarytPackageCount} szt.)`,
+          cost: totalGabarytCost,
+          packageCount: gabarytPackageCount,
+        });
+      }
     }
     
-    // Calculate standard packages cost - use weight-based price if available
+    // Calculate standard packages cost - use weight-based price if available (considering free shipping)
     if (standardPackageCount > 0) {
       let standardCost = 0;
       let weightBasedCount = 0;
       let regularCount = 0;
+      let freeCount = 0;
       
       for (const pkg of standardPackages) {
+        if (pkg.hasFreeShipping) {
+          freeCount++;
+          continue; // Skip cost for free shipping packages
+        }
         if (pkg.weightShippingPrice) {
           standardCost += pkg.weightShippingPrice;
           weightBasedCount++;
@@ -456,32 +526,49 @@ export class ShippingCalculatorService {
         }
       }
       
-      if (weightBasedCount > 0 && regularCount > 0) {
-        breakdown.push({
-          description: `Standardowe paczki (${weightBasedCount} wg wagi, ${regularCount} standard)`,
-          cost: standardCost,
-          packageCount: standardPackageCount,
-        });
+      let description = '';
+      if (freeCount > 0) {
+        if (freeCount === standardPackageCount) {
+          description = `Standardowe paczki (${standardPackageCount}) - DARMOWA DOSTAWA`;
+        } else {
+          const paidCount = standardPackageCount - freeCount;
+          description = `Standardowe paczki (${paidCount} płatne, ${freeCount} darmowe)`;
+        }
+      } else if (weightBasedCount > 0 && regularCount > 0) {
+        description = `Standardowe paczki (${weightBasedCount} wg wagi, ${regularCount} standard)`;
       } else if (weightBasedCount > 0) {
-        breakdown.push({
-          description: `Paczki wg wagi (${weightBasedCount} hurtowni)`,
-          cost: standardCost,
-          packageCount: standardPackageCount,
-        });
+        description = `Paczki wg wagi (${weightBasedCount} hurtowni)`;
       } else {
-        breakdown.push({
-          description: `Standardowe paczki (${standardPackageCount} hurtowni)`,
-          cost: standardCost,
-          packageCount: standardPackageCount,
-        });
+        description = `Standardowe paczki (${standardPackageCount} hurtowni)`;
       }
+      
+      breakdown.push({
+        description,
+        cost: standardCost,
+        packageCount: standardPackageCount,
+      });
     }
     
     const shippingCost = breakdown.reduce((sum, item) => sum + item.cost, 0);
-    const paczkomatCost = isPaczkomatAvailable ? totalPaczkomatPackages * SHIPPING_PRICES.inpost_paczkomat : 0;
+    
+    // Calculate paczkomat cost (considering free shipping)
+    let paczkomatCost = 0;
+    if (isPaczkomatAvailable) {
+      for (const pkg of standardPackages) {
+        if (!pkg.hasFreeShipping) {
+          paczkomatCost += pkg.paczkomatPackageCount * SHIPPING_PRICES.inpost_paczkomat;
+        }
+      }
+    }
     
     if (!isPaczkomatAvailable) {
       warnings.push('Produkty gabarytowe nie mogą być wysłane do paczkomatu. Dostępna tylko dostawa kurierem.');
+    }
+    
+    // Add info about free shipping
+    const freeShippingWarehouses = [...new Set(packages.filter(p => p.hasFreeShipping).map(p => p.wholesaler).filter(Boolean))];
+    if (freeShippingWarehouses.length > 0) {
+      warnings.push(`Darmowa dostawa dla zamówień powyżej ${FREE_SHIPPING_THRESHOLD} zł z: ${freeShippingWarehouses.join(', ')}`);
     }
     
     return {
@@ -520,16 +607,28 @@ export class ShippingCalculatorService {
   }>> {
     const calculation = await this.calculateShipping(items);
     
-    // Get total gabaryt cost from individual package prices
+    // Get total gabaryt cost from individual package prices (considering free shipping)
     const totalGabarytCost = calculation.packages
       .filter(p => p.type === 'gabaryt')
-      .reduce((sum, pkg) => sum + (pkg.gabarytPrice || SHIPPING_PRICES.gabaryt_base), 0);
+      .reduce((sum, pkg) => {
+        if (pkg.hasFreeShipping) return sum;
+        return sum + (pkg.gabarytPrice || SHIPPING_PRICES.gabaryt_base);
+      }, 0);
     
-    // Calculate standard packages cost with weight-based pricing
+    // Calculate standard packages cost with weight-based pricing (considering free shipping)
     const standardPackages = calculation.packages.filter(p => p.type === 'standard');
     const totalStandardCost = standardPackages.reduce((sum, pkg) => {
+      if (pkg.hasFreeShipping) return sum;
       return sum + (pkg.weightShippingPrice || SHIPPING_PRICES.inpost_kurier);
     }, 0);
+    
+    // Calculate InPost kurier cost (considering free shipping)
+    let inpostKurierCost = totalGabarytCost;
+    for (const pkg of standardPackages) {
+      if (!pkg.hasFreeShipping) {
+        inpostKurierCost += pkg.paczkomatPackageCount * SHIPPING_PRICES.inpost_kurier;
+      }
+    }
     
     // Check if any package has InPost only restriction (paczkomat i kurier tag)
     // isInPostOnly = true means ONLY InPost methods are available (paczkomat + kurier), NOT that paczkomat is disabled
@@ -558,13 +657,16 @@ export class ShippingCalculatorService {
         name: 'InPost Paczkomat',
         price: calculation.paczkomatCost,
         available: isPaczkomatAvailable,
-        message: paczkomatMessage,
+        message: calculation.paczkomatCost === 0 && isPaczkomatAvailable ? 'Darmowa dostawa!' : paczkomatMessage,
       },
       {
         id: 'inpost_kurier',
         name: 'Kurier InPost',
-        price: totalGabarytCost + totalStandardCost,
+        price: inpostKurierCost,
         available: true,
+        message: inpostKurierCost === 0 
+          ? 'Darmowa dostawa!' 
+          : (calculation.totalPaczkomatPackages > 1 ? `${calculation.totalPaczkomatPackages} paczki` : undefined),
       },
     ];
     
@@ -598,10 +700,11 @@ export class ShippingCalculatorService {
     
     for (const pkg of calculation.packages) {
       const methods: ShippingMethodForPackage[] = [];
+      const isFree = pkg.hasFreeShipping;
       
       if (pkg.type === 'gabaryt') {
         // Gabaryt packages - wymuszona opcja "Wysyłka gabaryt" + inne kurierskie
-        const gabarytPrice = pkg.gabarytPrice || SHIPPING_PRICES.gabaryt_base;
+        const gabarytPrice = isFree ? 0 : (pkg.gabarytPrice || SHIPPING_PRICES.gabaryt_base);
         
         // Dodaj wymuszoną opcję "Wysyłka gabaryt" na początek
         methods.push({
@@ -609,7 +712,9 @@ export class ShippingCalculatorService {
           name: 'Wysyłka gabaryt',
           price: gabarytPrice,
           available: true,
-          message: 'Wymagana dla produktów gabarytowych',
+          message: isFree 
+            ? `Darmowa dostawa! (zamówienie powyżej ${FREE_SHIPPING_THRESHOLD} zł)` 
+            : 'Wymagana dla produktów gabarytowych',
           estimatedDelivery: '2-5 dni roboczych',
         });
         
@@ -634,7 +739,7 @@ export class ShippingCalculatorService {
         const paczkomatPackages = pkg.paczkomatPackageCount;
         
         // Use weight-based price if available, otherwise standard price
-        const dpdPrice = pkg.weightShippingPrice || SHIPPING_PRICES.dpd_kurier;
+        const dpdPrice = isFree ? 0 : (pkg.weightShippingPrice || SHIPPING_PRICES.dpd_kurier);
         
         // Shipping availability based on tags:
         // - isInPostOnly (tag "Paczkomaty i Kurier") = only InPost (paczkomat + kurier), NO DPD
@@ -646,9 +751,8 @@ export class ShippingCalculatorService {
         
         // InPost Paczkomat - price based on how many paczkomat packages are needed
         // If items don't fit in 1 paczkomat package, multiple packages = higher price
-        const paczkomatPrice = paczkomatPackages > 1 
-          ? paczkomatPackages * SHIPPING_PRICES.inpost_paczkomat 
-          : SHIPPING_PRICES.inpost_paczkomat;
+        const paczkomatPrice = isFree ? 0 : paczkomatPackages * SHIPPING_PRICES.inpost_paczkomat;
+        const freeMessage = isFree ? `Darmowa dostawa! (zamówienie powyżej ${FREE_SHIPPING_THRESHOLD} zł)` : undefined;
         
         methods.push({
           id: 'inpost_paczkomat',
@@ -657,19 +761,21 @@ export class ShippingCalculatorService {
           available: isInPostAvailable,
           message: !isInPostAvailable 
             ? 'Produkt dostępny tylko z DPD'
-            : (paczkomatPackages > 1 ? `${paczkomatPackages} paczki` : undefined),
+            : (freeMessage || (paczkomatPackages > 1 ? `${paczkomatPackages} paczki` : undefined)),
           estimatedDelivery: '1-2 dni',
         });
         
-        // InPost Kurier - single price per package (wholesaler), not per paczkomat package count
+        // InPost Kurier - also charged per package (same logic as paczkomat)
+        const kurierPrice = isFree ? 0 : paczkomatPackages * SHIPPING_PRICES.inpost_kurier;
+        
         methods.push({
           id: 'inpost_kurier',
           name: 'Kurier InPost',
-          price: SHIPPING_PRICES.inpost_kurier,
+          price: kurierPrice,
           available: isInPostAvailable,
           message: !isInPostAvailable 
             ? 'Produkt dostępny tylko z DPD' 
-            : undefined,
+            : (freeMessage || (paczkomatPackages > 1 ? `${paczkomatPackages} paczki` : undefined)),
           estimatedDelivery: '1-2 dni',
         });
         
@@ -681,7 +787,7 @@ export class ShippingCalculatorService {
           available: isDpdAvailable,
           message: !isDpdAvailable 
             ? 'Produkt dostępny tylko z InPost' 
-            : (pkg.weightShippingPrice ? `Cena wg wagi: ${dpdPrice.toFixed(2)} zł` : undefined),
+            : (freeMessage || (pkg.weightShippingPrice && !isFree ? `Cena wg wagi: ${dpdPrice.toFixed(2)} zł` : undefined)),
           estimatedDelivery: '1-2 dni',
         });
       }
