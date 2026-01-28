@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { ProductsService } from '../services/products.service';
+import { PriceChangeSource } from '@prisma/client';
 import { popularityService } from '../services/popularity.service';
 
 const productsService = new ProductsService();
@@ -43,7 +44,7 @@ const productQuerySchema = z.object({
     return isNaN(num) || num < 0 ? undefined : num;
   }),
   search: z.string().max(200).optional().transform((val) => val ? sanitizeText(val) : undefined),
-  sort: z.enum(['price_asc', 'price_desc', 'name_asc', 'name_desc', 'newest', 'oldest', 'popular']).optional(),
+  sort: z.enum(['price_asc', 'price_desc', 'name_asc', 'name_desc', 'newest', 'oldest', 'popular', 'random']).optional(),
   status: z.enum(['ACTIVE', 'DRAFT', 'ARCHIVED']).optional(),
   // Ukryj produkty ze stanem 0 starsze niż 14 dni (domyślnie false - trzeba jawnie włączyć)
   hideOldZeroStock: z.string().optional().transform((val) => val === 'true'),
@@ -138,10 +139,10 @@ export async function getProductById(req: Request, res: Response): Promise<void>
       return;
     }
 
-    // Zwiększ licznik wyświetleń (async, nie blokuje response)
-    popularityService.incrementViewCount(id).catch((err) => {
-      console.error('Error incrementing view count:', err);
-    });
+    // Increment view count asynchronously (don't wait)
+    popularityService.incrementViewCount(id).catch(err => 
+      console.error('Error incrementing view count:', err)
+    );
 
     res.status(200).json(product);
   } catch (error) {
@@ -163,10 +164,10 @@ export async function getProductBySlug(req: Request, res: Response): Promise<voi
       return;
     }
 
-    // Zwiększ licznik wyświetleń (async, nie blokuje response)
-    popularityService.incrementViewCount(product.id).catch((err) => {
-      console.error('Error incrementing view count:', err);
-    });
+    // Increment view count asynchronously (don't wait)
+    popularityService.incrementViewCount(product.id).catch(err => 
+      console.error('Error incrementing view count:', err)
+    );
 
     res.status(200).json(product);
   } catch (error) {
@@ -286,7 +287,15 @@ export async function updateProduct(req: Request, res: Response): Promise<void> 
       }),
     };
     
-    const product = await productsService.update(id, prismaData);
+    // Get user info from request (if auth middleware adds it)
+    const userId = (req as any).user?.id;
+    
+    // Update with Omnibus-compliant price tracking (source: API)
+    const product = await productsService.update(id, prismaData, {
+      source: PriceChangeSource.API,
+      changedBy: userId,
+      reason: 'API product update',
+    });
 
     if (!product) {
       res.status(404).json({ message: 'Product not found' });
@@ -336,5 +345,94 @@ export async function getFilters(req: Request, res: Response): Promise<void> {
   } catch (error) {
     console.error('Error fetching filters:', error);
     res.status(500).json({ message: 'Error retrieving filters', error });
+  }
+}
+
+/**
+ * Get bestseller products based on actual sales data
+ */
+export async function getBestsellers(req: Request, res: Response): Promise<void> {
+  try {
+    const limit = parseInt(req.query.limit as string) || 20;
+    const category = req.query.category as string | undefined;
+    const days = parseInt(req.query.days as string) || 90;
+
+    const products = await productsService.getBestsellers({ limit, category, days });
+    res.status(200).json({ products });
+  } catch (error) {
+    console.error('Error fetching bestsellers:', error);
+    res.status(500).json({ message: 'Error retrieving bestsellers' });
+  }
+}
+
+/**
+ * Get featured products (admin-curated or fallback)
+ */
+export async function getFeatured(req: Request, res: Response): Promise<void> {
+  try {
+    const limit = parseInt(req.query.limit as string) || 20;
+    const productIds = req.query.productIds 
+      ? (req.query.productIds as string).split(',')
+      : undefined;
+
+    const products = await productsService.getFeatured({ limit, productIds });
+    res.status(200).json({ products });
+  } catch (error) {
+    console.error('Error fetching featured products:', error);
+    res.status(500).json({ message: 'Error retrieving featured products' });
+  }
+}
+
+/**
+ * Get seasonal products based on current season or specified season
+ */
+export async function getSeasonal(req: Request, res: Response): Promise<void> {
+  try {
+    const limit = parseInt(req.query.limit as string) || 20;
+    const season = req.query.season as 'spring' | 'summer' | 'autumn' | 'winter' | undefined;
+
+    const products = await productsService.getSeasonal({ limit, season });
+    res.status(200).json({ products });
+  } catch (error) {
+    console.error('Error fetching seasonal products:', error);
+    res.status(500).json({ message: 'Error retrieving seasonal products' });
+  }
+}
+
+/**
+ * Get new products (added in the last 14 days, admin-curated or automatic)
+ */
+export async function getNewProducts(req: Request, res: Response): Promise<void> {
+  try {
+    const limit = parseInt(req.query.limit as string) || 20;
+    const days = parseInt(req.query.days as string) || 14;
+
+    const products = await productsService.getNewProducts({ limit, days });
+    res.status(200).json({ products });
+  } catch (error) {
+    console.error('Error fetching new products:', error);
+    res.status(500).json({ message: 'Error retrieving new products' });
+  }
+}
+
+/**
+ * Get products from the same warehouse as the given product
+ * Used for "Zamów w jednej przesyłce" recommendations in add-to-cart modal
+ */
+export async function getSameWarehouseProducts(req: Request, res: Response): Promise<void> {
+  try {
+    const { productId } = req.params;
+    const limit = parseInt(req.query.limit as string) || 6;
+
+    if (!productId) {
+      res.status(400).json({ message: 'Product ID is required' });
+      return;
+    }
+
+    const result = await productsService.getSameWarehouseProducts(productId, { limit });
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('Error fetching same warehouse products:', error);
+    res.status(500).json({ message: 'Error retrieving same warehouse products' });
   }
 }

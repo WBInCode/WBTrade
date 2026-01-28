@@ -333,8 +333,8 @@ export class ProductsService {
     }
 
     // Build orderBy clause
-    // Default: popularność (relevance bez wyszukiwania = popularity)
-    let orderBy: Prisma.ProductOrderByWithRelationInput = { popularityScore: 'desc' };
+    let orderBy: Prisma.ProductOrderByWithRelationInput | Prisma.ProductOrderByWithRelationInput[] = { createdAt: 'desc' };
+    let useRandomSort = false;
     
     switch (sort) {
       case 'price_asc':
@@ -351,19 +351,31 @@ export class ProductsService {
       case 'name_desc':
         orderBy = { name: 'desc' };
         break;
+      case 'random':
+        // For random sort, we'll fetch more and shuffle client-side
+        useRandomSort = true;
+        orderBy = { id: 'asc' }; // Temporary, will be shuffled
+        break;
       case 'popularity':
       case 'relevance':
-      default:
-        // Trafność i popularność bez wyszukiwania = sortowanie po popularityScore
+        // Sort by popularity score (salesCount*3 + viewCount*0.1)
         orderBy = { popularityScore: 'desc' };
+        break;
+      case 'newest':
+      default:
+        orderBy = { createdAt: 'desc' };
     }
 
     // Execute queries in parallel
+    // For random sort, we need to fetch more products and shuffle them
+    const fetchLimit = useRandomSort ? 500 : limit;
+    const fetchSkip = useRandomSort ? 0 : skip;
+    
     const [products, totalCount] = await Promise.all([
       prisma.product.findMany({
         where,
-        skip,
-        take: limit,
+        skip: fetchSkip,
+        take: fetchLimit,
         orderBy,
         include: {
           images: {
@@ -381,26 +393,49 @@ export class ProductsService {
     ]);
 
     // Transform products
-    const transformedProducts = transformProducts(products);
+    let transformedProducts = transformProducts(products);
+    
+    // Apply random shuffle if requested (seeded by day for consistency)
+    if (useRandomSort && transformedProducts.length > 0) {
+      // Use date as seed for consistent daily shuffle
+      const today = new Date();
+      const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+      
+      // Seeded shuffle function
+      const seededShuffle = (array: any[], seedValue: number) => {
+        const shuffled = [...array];
+        let currentSeed = seedValue;
+        
+        const random = () => {
+          currentSeed = (currentSeed * 9301 + 49297) % 233280;
+          return currentSeed / 233280;
+        };
+        
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+      };
+      
+      transformedProducts = seededShuffle(transformedProducts, seed);
+      
+      // Apply pagination after shuffle
+      const startIndex = (page - 1) * limit;
+      transformedProducts = transformedProducts.slice(startIndex, startIndex + limit);
+    }
     
     // Filter out old zero-stock products if requested
     if (hideOldZeroStock) {
-      const filtered = filterOldZeroStockProducts(transformedProducts, 14);
-      return {
-        products: filtered,
-        total: filtered.length,
-        page,
-        limit,
-        totalPages: Math.ceil(filtered.length / limit),
-      };
+      transformedProducts = filterOldZeroStockProducts(transformedProducts, 14);
     }
 
     return {
       products: transformedProducts,
-      total: totalCount,
+      total: hideOldZeroStock ? transformedProducts.length : totalCount,
       page,
       limit,
-      totalPages: Math.ceil(totalCount / limit),
+      totalPages: Math.ceil((hideOldZeroStock ? transformedProducts.length : totalCount) / limit),
     };
   }
 
@@ -458,16 +493,12 @@ export class ProductsService {
       }
 
       // Build sort
-      // Dla 'relevance' przy wyszukiwaniu - używamy domyślnego sortowania Meilisearch (relevance score)
-      // które uwzględnia dopasowanie do frazy wyszukiwania
       let meiliSort: string[] = [];
       switch (sort) {
         case 'price_asc':
-        case 'price-asc':
           meiliSort = ['price:asc'];
           break;
         case 'price_desc':
-        case 'price-desc':
           meiliSort = ['price:desc'];
           break;
         case 'name_asc':
@@ -476,14 +507,9 @@ export class ProductsService {
         case 'name_desc':
           meiliSort = ['name:desc'];
           break;
-        case 'popularity':
-          meiliSort = ['popularityScore:desc'];
-          break;
-        case 'relevance':
+        case 'newest':
         default:
-          // Dla trafności przy wyszukiwaniu - pusta tablica = Meilisearch używa relevance score
-          // który uwzględnia dopasowanie tekstu, popularność słów, pozycję dopasowania
-          meiliSort = [];
+          meiliSort = ['createdAt:desc'];
       }
 
       const results = await index.search<MeiliProduct>(search || '', {
