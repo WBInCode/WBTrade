@@ -496,9 +496,11 @@ export class ProductsService {
       let meiliSort: string[] = [];
       switch (sort) {
         case 'price_asc':
+        case 'price-asc':
           meiliSort = ['price:asc'];
           break;
         case 'price_desc':
+        case 'price-desc':
           meiliSort = ['price:desc'];
           break;
         case 'name_asc':
@@ -506,6 +508,11 @@ export class ProductsService {
           break;
         case 'name_desc':
           meiliSort = ['name:desc'];
+          break;
+        case 'popularity':
+        case 'relevance':
+          // Sort by popularityScore (salesCount*3 + viewCount*0.1)
+          meiliSort = ['popularityScore:desc'];
           break;
         case 'newest':
         default:
