@@ -132,7 +132,7 @@ export default function CartPage() {
     for (const itemId of itemsToRemove) {
       await removeFromCart(itemId);
     }
-    setSelectedItems(new Set());
+    deselectAllItems();
   };
 
   // Calculate totals for selected items

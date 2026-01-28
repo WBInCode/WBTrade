@@ -1073,6 +1073,7 @@ export const checkoutApi = {
         selectedMethod: string;
       }>;
       totalShippingCost: number;
+      minShippingCost: number;
       warnings: string[];
     }>('/checkout/shipping/per-package', { items }),
   

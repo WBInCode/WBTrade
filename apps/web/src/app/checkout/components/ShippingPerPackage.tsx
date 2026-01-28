@@ -91,7 +91,7 @@ export default function ShippingPerPackage({
   cartItems,
 }: ShippingPerPackageProps) {
   const [packagesWithOptions, setPackagesWithOptions] = useState<PackageWithOptions[]>([]);
-  const [selectedMethods, setSelectedMethods] = useState<Record<string, ShippingMethodId>>({});
+  const [selectedMethods, setSelectedMethods] = useState<Record<string, ShippingMethodId | undefined>>({});
   const [paczkomatSelections, setPaczkomatSelections] = useState<Record<string, { code: string; address: string }>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -183,7 +183,7 @@ export default function ShippingPerPackage({
 
   const calculateTotalPrice = (
     packages: PackageWithOptions[],
-    methods: Record<string, ShippingMethodId>
+    methods: Record<string, ShippingMethodId | undefined>
   ): number => {
     let total = 0;
     for (const pkgOpt of packages) {
@@ -286,7 +286,7 @@ export default function ShippingPerPackage({
     
     // Check which option is selected for split shipments
     const courierAlternativeSelected = courierAlternatives.some(p => 
-      selectedMethods[p.package.id] && selectedMethods[p.package.id] !== ''
+      selectedMethods[p.package.id] !== undefined
     );
     const paczkomatSelected = paczkomatShipments.length > 0 && 
       paczkomatShipments.some(p => selectedMethods[p.package.id] === 'inpost_paczkomat');
@@ -333,9 +333,9 @@ export default function ShippingPerPackage({
       : packagesWithOptions;
 
     const packageShipping: PackageShippingSelection[] = activePackages
-      .filter(pkgOpt => selectedMethods[pkgOpt.package.id]) // Only packages with selected methods
+      .filter(pkgOpt => selectedMethods[pkgOpt.package.id] !== undefined) // Only packages with selected methods
       .map(pkgOpt => {
-        const methodId = selectedMethods[pkgOpt.package.id];
+        const methodId = selectedMethods[pkgOpt.package.id]!; // We filtered, so it's defined
         const method = pkgOpt.shippingMethods.find(m => m.id === methodId);
         const paczkomat = paczkomatSelections[pkgOpt.package.id];
         const hasCustomAddr = useCustomAddress[pkgOpt.package.id] && methodId !== 'inpost_paczkomat';
@@ -566,7 +566,7 @@ export default function ShippingPerPackage({
             
             // Check if user chose courier alternative (any courier method selected on courier alternative package)
             const courierAlternativeSelected = courierAlternatives.some(p => 
-              selectedMethods[p.package.id] && selectedMethods[p.package.id] !== ''
+              selectedMethods[p.package.id] !== undefined
             );
             
             // Check if user chose paczkomat (all paczkomat shipments have method selected)
@@ -656,7 +656,7 @@ export default function ShippingPerPackage({
                             handleMethodChange(ps.package.id, 'inpost_paczkomat');
                           });
                           courierAlternatives.forEach(ca => {
-                            setSelectedMethods(prev => ({ ...prev, [ca.package.id]: '' as ShippingMethodId }));
+                            setSelectedMethods(prev => ({ ...prev, [ca.package.id]: undefined }));
                           });
                         }}
                         className="sr-only"
@@ -804,7 +804,7 @@ export default function ShippingPerPackage({
                                   handleMethodChange(pkgOpt.package.id, firstMethod.id as ShippingMethodId);
                                 }
                                 paczkomatShipments.forEach(ps => {
-                                  setSelectedMethods(prev => ({ ...prev, [ps.package.id]: '' as ShippingMethodId }));
+                                  setSelectedMethods(prev => ({ ...prev, [ps.package.id]: undefined }));
                                   setPaczkomatSelections(prev => {
                                     const { [ps.package.id]: _, ...rest } = prev;
                                     return rest;
@@ -906,7 +906,7 @@ export default function ShippingPerPackage({
               const regularPackages = packagesWithOptions.filter(p => !p.package.isPaczkomatShipment && !p.package.isCourierAlternative);
               
               const courierAlternativeSelected = courierAlternatives.some(p => 
-                selectedMethods[p.package.id] && selectedMethods[p.package.id] !== ''
+                selectedMethods[p.package.id] !== undefined
               );
               
               let shipmentCount = regularPackages.length;
