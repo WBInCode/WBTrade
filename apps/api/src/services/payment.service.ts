@@ -319,7 +319,7 @@ export class PaymentService {
 
     const order = await prisma.order.findFirst({
       where: { id: result.orderId },
-    });
+    }) as any; // Cast to any to access couponCode until Prisma Client is regenerated
 
     if (order) {
       const updateData: any = {
@@ -356,6 +356,20 @@ export class PaymentService {
       // only AFTER payment is confirmed
       if (result.status === 'succeeded') {
         console.log(`[PaymentService] Payment succeeded, triggering Baselinker sync for order ${order.id}`);
+        
+        // Mark coupon as used (increment usedCount) - only after successful payment
+        if (order.couponCode) {
+          try {
+            await prisma.coupon.update({
+              where: { code: order.couponCode },
+              data: { usedCount: { increment: 1 } },
+            });
+            console.log(`[PaymentService] Coupon ${order.couponCode} marked as used for order ${order.id}`);
+          } catch (couponError) {
+            console.error(`[PaymentService] Error marking coupon as used:`, couponError);
+            // Don't fail payment confirmation if coupon update fails
+          }
+        }
         
         // Update product sales count for popularity tracking
         const orderItems = await prisma.orderItem.findMany({
@@ -399,6 +413,11 @@ export class PaymentService {
    * Handle Cash on Delivery orders
    */
   async createCODPayment(orderId: string, amount: number): Promise<PaymentSession> {
+    // Get order to check for coupon
+    const order = await (prisma.order.findUnique({
+      where: { id: orderId },
+    }) as any); // Cast to any to access couponCode until Prisma Client is regenerated
+
     // COD is handled differently - no external payment session
     await prisma.order.update({
       where: { id: orderId },
@@ -407,6 +426,19 @@ export class PaymentService {
         status: 'PROCESSING', // Move to processing without payment
       },
     });
+
+    // Mark coupon as used for COD orders (since they're immediately confirmed)
+    if (order?.couponCode) {
+      try {
+        await prisma.coupon.update({
+          where: { code: order.couponCode },
+          data: { usedCount: { increment: 1 } },
+        });
+        console.log(`[PaymentService] Coupon ${order.couponCode} marked as used for COD order ${orderId}`);
+      } catch (couponError) {
+        console.error(`[PaymentService] Error marking coupon as used for COD:`, couponError);
+      }
+    }
 
     return {
       id: `cod_${orderId}`,

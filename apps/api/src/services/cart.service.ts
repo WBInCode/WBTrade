@@ -259,6 +259,10 @@ export class CartService {
       throw new Error('Nieprawidłowy kod kuponu');
     }
 
+    if (!coupon.isActive) {
+      throw new Error('Kupon jest nieaktywny');
+    }
+
     if (coupon.expiresAt && coupon.expiresAt < new Date()) {
       throw new Error('Kupon wygasł');
     }

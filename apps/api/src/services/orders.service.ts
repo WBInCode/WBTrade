@@ -165,19 +165,16 @@ export class OrdersService {
     const total = subtotal + shipping - discount;
 
     return prisma.$transaction(async (tx) => {
-      // If coupon is used, mark it as used
-      if (data.couponCode) {
-        await tx.coupon.update({
-          where: { code: data.couponCode },
-          data: { usedCount: { increment: 1 } },
-        });
-      }
+      // NOTE: Coupon usedCount is now incremented AFTER payment confirmation
+      // (in payment.service.ts -> updateOrderPaymentStatus)
+      // This prevents coupon "waste" when customer doesn't complete payment
       
       // Create order
       const order = await tx.order.create({
         data: {
           orderNumber,
           userId: data.userId,
+          couponCode: data.couponCode || null,
           shippingAddressId: data.shippingAddressId,
           billingAddressId: data.billingAddressId,
           shippingMethod: data.shippingMethod,
