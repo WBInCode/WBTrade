@@ -149,7 +149,7 @@ export default function ProductCarousel({
               key={product.id} 
               className="flex-shrink-0 w-[145px] xs:w-[160px] sm:w-[180px] md:w-[200px] lg:w-[220px] snap-start"
             >
-              <ProductCard product={product} showWishlist={true} />
+              <ProductCard product={product} showWishlist={true} showAddToCart={true} />
             </div>
           ))}
         </div>
