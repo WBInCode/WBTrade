@@ -45,6 +45,7 @@ function ProductsContent() {
   const maxPrice = searchParams.get('maxPrice');
   const brand = searchParams.get('brand');
   const sort = searchParams.get('sort') || 'relevance';
+  const tabFromUrl = searchParams.get('tab') || 'all';
 
   // State for products and filters
   const [products, setProducts] = useState<Product[]>([]);
@@ -53,8 +54,13 @@ function ProductsContent() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<ProductFiltersResponse | null>(null);
   const [categoryPath, setCategoryPath] = useState<{ id: string; name: string; slug: string }[]>([]);
-  const [activeTab, setActiveTab] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<string>(tabFromUrl);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // Sync activeTab with URL param
+  useEffect(() => {
+    setActiveTab(tabFromUrl);
+  }, [tabFromUrl]);
 
   // Fetch filters when category changes
   useEffect(() => {
@@ -175,6 +181,15 @@ function ProductsContent() {
   // Handle tab change
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
+    // Update URL with tab parameter
+    const params = new URLSearchParams(searchParams.toString());
+    if (tab === 'all') {
+      params.delete('tab');
+    } else {
+      params.set('tab', tab);
+    }
+    params.set('page', '1'); // Reset to first page when tab changes
+    router.push(`?${params.toString()}`);
   };
 
   // Handle sort change
