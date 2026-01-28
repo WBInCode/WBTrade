@@ -332,7 +332,9 @@ export class ProductsService {
     }
 
     // Build orderBy clause
-    let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };
+    let orderBy: Prisma.ProductOrderByWithRelationInput | Prisma.ProductOrderByWithRelationInput[] = { createdAt: 'desc' };
+    let useRandomSort = false;
+    
     switch (sort) {
       case 'price_asc':
         orderBy = { price: 'asc' };
@@ -346,17 +348,26 @@ export class ProductsService {
       case 'name_desc':
         orderBy = { name: 'desc' };
         break;
+      case 'random':
+        // For random sort, we'll fetch more and shuffle client-side
+        useRandomSort = true;
+        orderBy = { id: 'asc' }; // Temporary, will be shuffled
+        break;
       case 'newest':
       default:
         orderBy = { createdAt: 'desc' };
     }
 
     // Execute queries in parallel
-    const [products, total] = await Promise.all([
+    // For random sort, we need to fetch more products and shuffle them
+    const fetchLimit = useRandomSort ? 500 : limit;
+    const fetchSkip = useRandomSort ? 0 : skip;
+    
+    const [products, totalCount] = await Promise.all([
       prisma.product.findMany({
         where,
-        skip,
-        take: limit,
+        skip: fetchSkip,
+        take: fetchLimit,
         orderBy,
         include: {
           images: {
@@ -376,6 +387,36 @@ export class ProductsService {
     // Transform products
     let transformedProducts = transformProducts(products);
     
+    // Apply random shuffle if requested (seeded by day for consistency)
+    if (useRandomSort && transformedProducts.length > 0) {
+      // Use date as seed for consistent daily shuffle
+      const today = new Date();
+      const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+      
+      // Seeded shuffle function
+      const seededShuffle = (array: any[], seedValue: number) => {
+        const shuffled = [...array];
+        let currentSeed = seedValue;
+        
+        const random = () => {
+          currentSeed = (currentSeed * 9301 + 49297) % 233280;
+          return currentSeed / 233280;
+        };
+        
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+      };
+      
+      transformedProducts = seededShuffle(transformedProducts, seed);
+      
+      // Apply pagination after shuffle
+      const startIndex = (page - 1) * limit;
+      transformedProducts = transformedProducts.slice(startIndex, startIndex + limit);
+    }
+    
     // Filter out old zero-stock products if requested
     if (hideOldZeroStock) {
       transformedProducts = filterOldZeroStockProducts(transformedProducts, 14);
@@ -383,10 +424,10 @@ export class ProductsService {
 
     return {
       products: transformedProducts,
-      total: hideOldZeroStock ? transformedProducts.length : total,
+      total: hideOldZeroStock ? transformedProducts.length : totalCount,
       page,
       limit,
-      totalPages: Math.ceil((hideOldZeroStock ? transformedProducts.length : total) / limit),
+      totalPages: Math.ceil((hideOldZeroStock ? transformedProducts.length : totalCount) / limit),
     };
   }
 
@@ -1453,6 +1494,92 @@ export class ProductsService {
     }
 
     // Combine: manual products first, then automatic
+    return [...manualProducts, ...transformProducts(automaticProducts)];
+  }
+
+  /**
+   * Get new products - products added in the last 14 days
+   * Supports admin-curated manual selection with automatic fallback
+   */
+  async getNewProducts(options: {
+    limit?: number;
+    days?: number; // How many days back to look (default 14)
+  } = {}): Promise<any[]> {
+    const { limit = 20, days = 14 } = options;
+
+    // Get excluded product IDs
+    const excludedProductIds = await this.getExcludedProductIds();
+
+    // Check if admin has manually selected some new products (they go first)
+    let manualProducts: any[] = [];
+    let manualProductIds: string[] = [];
+    
+    try {
+      const settings = await prisma.settings.findUnique({
+        where: { key: 'homepage_carousels' },
+      });
+      
+      if (settings?.value && typeof settings.value === 'object') {
+        const carousels = settings.value as Record<string, { productIds?: string[]; isAutomatic?: boolean }>;
+        const newProductIds = carousels.newProducts?.productIds;
+        if (newProductIds && newProductIds.length > 0) {
+          manualProductIds = newProductIds;
+          
+          const products = await prisma.product.findMany({
+            where: {
+              id: { in: newProductIds },
+              status: 'ACTIVE',
+            },
+            include: {
+              images: { orderBy: { order: 'asc' } },
+              category: true,
+              variants: { include: { inventory: true } },
+            },
+          });
+          
+          // Maintain order from settings
+          manualProducts = newProductIds
+            .map(id => products.find(p => p.id === id))
+            .filter(Boolean);
+          manualProducts = transformProducts(manualProducts);
+        }
+      }
+    } catch (error) {
+      console.error('Error reading carousel settings:', error);
+    }
+
+    // If we already have enough manual products, return them
+    if (manualProducts.length >= limit) {
+      return manualProducts.slice(0, limit);
+    }
+
+    // Get automatic new products to fill remaining slots
+    const remainingSlots = limit - manualProducts.length;
+
+    // Calculate the date threshold (products from last X days)
+    const dateThreshold = new Date();
+    dateThreshold.setDate(dateThreshold.getDate() - days);
+
+    // Fetch products added in the last X days (excluding manual and admin-excluded ones)
+    const automaticProducts = await prisma.product.findMany({
+      where: {
+        status: 'ACTIVE',
+        price: { gt: 0 },
+        createdAt: { gte: dateThreshold },
+        id: { notIn: [...manualProductIds, ...excludedProductIds] },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: remainingSlots,
+      include: {
+        images: { orderBy: { order: 'asc' } },
+        category: true,
+        variants: {
+          include: { inventory: true },
+        },
+      },
+    });
+
+    // Combine: manual products first, then automatic new products
     return [...manualProducts, ...transformProducts(automaticProducts)];
   }
 }

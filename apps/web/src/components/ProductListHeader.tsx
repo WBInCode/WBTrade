@@ -10,7 +10,6 @@ const sortOptions: SortOption[] = [
   { value: 'price-asc', label: 'Cena: od najniższej' },
   { value: 'price-desc', label: 'Cena: od najwyższej' },
   { value: 'newest', label: 'Najnowsze' },
-  { value: 'rating', label: 'Najlepiej oceniane' },
 ];
 
 interface ProductListHeaderProps {
