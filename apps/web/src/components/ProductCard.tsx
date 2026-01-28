@@ -55,17 +55,14 @@ export default function ProductCard({ product, showDelivery = false, showWishlis
     const firstVariant = product.variants?.[0];
     if (firstVariant) {
       addToCart(
-        {
-          productId: product.id,
-          variantId: firstVariant.id,
-          quantity: 1,
-        },
+        firstVariant.id,
+        1,
         {
           productId: product.id,
           name: product.name,
           price: String(product.price),
           image: mainImage,
-          variantName: firstVariant.name || undefined,
+          quantity: 1,
         }
       );
     }

@@ -1,5 +1,5 @@
 import express from 'express';
-import { prisma } from '../db/prisma';
+import { prisma } from '../db';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 
