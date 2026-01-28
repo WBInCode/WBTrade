@@ -12,7 +12,8 @@ import { prisma } from '../db';
 import { encryptToken, decryptToken, maskToken } from '../lib/encryption';
 import { createBaselinkerProvider, BaselinkerProvider, BaselinkerInventory } from '../providers/baselinker';
 import { meiliClient, PRODUCTS_INDEX } from '../lib/meilisearch';
-import { BaselinkerSyncType, BaselinkerSyncStatus, Prisma } from '@prisma/client';
+import { BaselinkerSyncType, BaselinkerSyncStatus, Prisma, PriceChangeSource } from '@prisma/client';
+import { priceHistoryService } from './price-history.service';
 
 // ============================================
 // Types
@@ -928,35 +929,63 @@ export class BaselinkerService {
               // Get tags (trim whitespace from each tag)
               const productTags = (blProduct.tags || []).map((tag: string) => tag.trim()).filter(Boolean);
 
-              // Upsert product
-              const product = await tx.product.upsert({
+              // Check if product exists
+              const existingProduct = await tx.product.findUnique({
                 where: { baselinkerProductId },
-                update: {
-                  name,
-                  slug,
-                  description,
-                  sku: await this.ensureUniqueSku(sku, baselinkerProductId),
-                  barcode: productEan,
-                  price: productPrice,
-                  categoryId: category?.id || null,
-                  status: 'ACTIVE',
-                  specifications: blProduct.features || {},
-                  tags: productTags,
-                },
-                create: {
-                  baselinkerProductId,
-                  name,
-                  slug,
-                  description,
-                  sku: await this.ensureUniqueSku(sku, baselinkerProductId),
-                  barcode: productEan,
-                  price: productPrice,
-                  categoryId: category?.id || null,
-                  status: 'ACTIVE',
-                  specifications: blProduct.features || {},
-                  tags: productTags,
-                },
+                select: { id: true, price: true },
               });
+
+              let product;
+              
+              if (existingProduct) {
+                // Product exists - update without price first
+                product = await tx.product.update({
+                  where: { baselinkerProductId },
+                  data: {
+                    name,
+                    slug,
+                    description,
+                    sku: await this.ensureUniqueSku(sku, baselinkerProductId),
+                    barcode: productEan,
+                    categoryId: category?.id || null,
+                    status: 'ACTIVE',
+                    specifications: blProduct.features || {},
+                    tags: productTags,
+                  },
+                });
+                
+                // Handle price change with Omnibus compliance (outside transaction)
+                // Note: We track price changes after the transaction
+                const currentPrice = Number(existingProduct.price);
+                if (currentPrice !== productPrice) {
+                  // Schedule price update with history (will be executed after tx)
+                  await priceHistoryService.updateProductPrice({
+                    productId: existingProduct.id,
+                    newPrice: productPrice,
+                    source: PriceChangeSource.BASELINKER,
+                    reason: 'Baselinker sync',
+                  });
+                }
+              } else {
+                // New product - create with initial price (no history needed)
+                product = await tx.product.create({
+                  data: {
+                    baselinkerProductId,
+                    name,
+                    slug,
+                    description,
+                    sku: await this.ensureUniqueSku(sku, baselinkerProductId),
+                    barcode: productEan,
+                    price: productPrice,
+                    lowestPrice30Days: productPrice, // Initial lowest = current price
+                    lowestPrice30DaysAt: new Date(),
+                    categoryId: category?.id || null,
+                    status: 'ACTIVE',
+                    specifications: blProduct.features || {},
+                    tags: productTags,
+                  },
+                });
+              }
 
               // Sync images
               if (blProduct.images && Object.keys(blProduct.images).length > 0) {
@@ -987,44 +1016,95 @@ export class BaselinkerService {
                   const variantPrice = blVariant.price_brutto || productPrice;
                   const variantEan = blVariant.ean ? String(blVariant.ean).trim() : null;
 
-                  await tx.productVariant.upsert({
+                  // Check if variant exists
+                  const existingVariant = await tx.productVariant.findUnique({
                     where: { baselinkerVariantId: variantId },
-                    update: {
-                      name: blVariant.name,
-                      sku: await this.ensureUniqueVariantSku(variantSku, variantId),
-                      barcode: variantEan,
-                      price: variantPrice,
-                    },
-                    create: {
-                      baselinkerVariantId: variantId,
-                      productId: product.id,
-                      name: blVariant.name,
-                      sku: await this.ensureUniqueVariantSku(variantSku, variantId),
-                      barcode: variantEan,
-                      price: variantPrice,
-                    },
+                    select: { id: true, price: true },
                   });
+
+                  if (existingVariant) {
+                    // Variant exists - update without price
+                    await tx.productVariant.update({
+                      where: { baselinkerVariantId: variantId },
+                      data: {
+                        name: blVariant.name,
+                        sku: await this.ensureUniqueVariantSku(variantSku, variantId),
+                        barcode: variantEan,
+                      },
+                    });
+                    
+                    // Handle price change with Omnibus compliance
+                    const currentVariantPrice = Number(existingVariant.price);
+                    if (currentVariantPrice !== variantPrice) {
+                      await priceHistoryService.updateVariantPrice({
+                        variantId: existingVariant.id,
+                        newPrice: variantPrice,
+                        source: PriceChangeSource.BASELINKER,
+                        reason: 'Baselinker sync',
+                      });
+                    }
+                  } else {
+                    // New variant - create with initial price
+                    await tx.productVariant.create({
+                      data: {
+                        baselinkerVariantId: variantId,
+                        productId: product.id,
+                        name: blVariant.name,
+                        sku: await this.ensureUniqueVariantSku(variantSku, variantId),
+                        barcode: variantEan,
+                        price: variantPrice,
+                        lowestPrice30Days: variantPrice,
+                        lowestPrice30DaysAt: new Date(),
+                      },
+                    });
+                  }
                 }
               } else {
                 // Create default variant for product without variants
                 const defaultVariantId = `default-${baselinkerProductId}`;
-                await tx.productVariant.upsert({
+                
+                // Check if default variant exists
+                const existingDefaultVariant = await tx.productVariant.findUnique({
                   where: { baselinkerVariantId: defaultVariantId },
-                  update: {
-                    name: 'Domyślny',
-                    sku: await this.ensureUniqueVariantSku(`${sku}-DEFAULT`, defaultVariantId),
-                    barcode: productEan,
-                    price: productPrice,
-                  },
-                  create: {
-                    baselinkerVariantId: defaultVariantId,
-                    productId: product.id,
-                    name: 'Domyślny',
-                    sku: await this.ensureUniqueVariantSku(`${sku}-DEFAULT`, defaultVariantId),
-                    barcode: productEan,
-                    price: productPrice,
-                  },
+                  select: { id: true, price: true },
                 });
+
+                if (existingDefaultVariant) {
+                  // Update default variant without price
+                  await tx.productVariant.update({
+                    where: { baselinkerVariantId: defaultVariantId },
+                    data: {
+                      name: 'Domyślny',
+                      sku: await this.ensureUniqueVariantSku(`${sku}-DEFAULT`, defaultVariantId),
+                      barcode: productEan,
+                    },
+                  });
+                  
+                  // Handle price change with Omnibus compliance
+                  const currentDefaultPrice = Number(existingDefaultVariant.price);
+                  if (currentDefaultPrice !== productPrice) {
+                    await priceHistoryService.updateVariantPrice({
+                      variantId: existingDefaultVariant.id,
+                      newPrice: productPrice,
+                      source: PriceChangeSource.BASELINKER,
+                      reason: 'Baselinker sync - default variant',
+                    });
+                  }
+                } else {
+                  // Create new default variant
+                  await tx.productVariant.create({
+                    data: {
+                      baselinkerVariantId: defaultVariantId,
+                      productId: product.id,
+                      name: 'Domyślny',
+                      sku: await this.ensureUniqueVariantSku(`${sku}-DEFAULT`, defaultVariantId),
+                      barcode: productEan,
+                      price: productPrice,
+                      lowestPrice30Days: productPrice,
+                      lowestPrice30DaysAt: new Date(),
+                    },
+                  });
+                }
               }
 
               processed++;

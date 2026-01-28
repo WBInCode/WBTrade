@@ -44,6 +44,11 @@ interface CreateOrderData {
   paczkomatCode?: string;
   paczkomatAddress?: string;
   packageShipping?: PackageShippingItem[];
+  // Guest checkout fields
+  guestEmail?: string;
+  guestFirstName?: string;
+  guestLastName?: string;
+  guestPhone?: string;
 }
 
 interface GetAllOrdersParams {
@@ -171,6 +176,11 @@ export class OrdersService {
           tax,
           total,
           customerNotes: data.customerNotes,
+          // Guest checkout fields
+          guestEmail: data.guestEmail,
+          guestFirstName: data.guestFirstName,
+          guestLastName: data.guestLastName,
+          guestPhone: data.guestPhone,
           items: {
             create: await Promise.all(
               data.items.map(async (item) => {

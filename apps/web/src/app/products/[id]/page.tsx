@@ -621,9 +621,9 @@ export default function ProductPage({ params }: ProductPageProps) {
                 )}
               </div>
 
-              {/* Lowest Price Info */}
+              {/* Lowest Price Info - Omnibus Directive */}
               <p className="text-[11px] sm:text-xs text-gray-500 mb-3 sm:mb-4">
-                Najniższa cena w ostatnich 30 dniach: {Number(product.compareAtPrice || effectivePrice).toFixed(2).replace('.', ',')} zł
+                Najniższa cena w ostatnich 30 dniach: {Number(product.lowestPrice30Days || effectivePrice).toFixed(2).replace('.', ',')} zł
               </p>
 
               {/* Variants */}
