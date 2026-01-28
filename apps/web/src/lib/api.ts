@@ -672,6 +672,8 @@ export interface CartItem {
       name: string;
       slug: string;
       images: { url: string; alt: string | null }[];
+      tags?: string[];
+      wholesaler?: string | null;
     };
     inventory: { quantity: number; reserved: number }[];
   };
@@ -1106,12 +1108,12 @@ export interface DashboardOverviewResponse {
 export interface RecommendedProduct {
   id: string;
   name: string;
-  slug: string;
+  slug?: string;
   price: number;
-  compareAtPrice: number | null;
-  images: { url: string; alt: string | null }[];
-  category: { id: string; name: string } | null;
-  reason: 'search' | 'category' | 'popular' | 'similar';
+  compareAtPrice?: number | null;
+  images: ProductImage[];
+  category?: { id: string; name: string } | null;
+  reason: 'search' | 'category' | 'popular' | 'similar' | 'bestseller';
 }
 
 export interface RecommendationsResponse {
