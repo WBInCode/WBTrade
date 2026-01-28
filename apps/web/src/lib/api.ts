@@ -374,6 +374,13 @@ export const productsApi = {
   // Get new products (added in last X days)
   getNewProducts: (options?: { limit?: number; days?: number }) =>
     api.get<{ products: Product[] }>('/products/new-arrivals', options as Record<string, string | number | boolean>),
+
+  // Get products from the same warehouse (for "Zamów w jednej przesyłce")
+  getSameWarehouseProducts: (productId: string, options?: { limit?: number }) =>
+    api.get<{ products: Product[]; wholesaler: string | null }>(
+      `/products/same-warehouse/${productId}`, 
+      options as Record<string, string | number | boolean>
+    ),
 };
 
 // ============================================

@@ -1688,6 +1688,97 @@ export class ProductsService {
     // Combine: manual products first, then automatic new products
     return [...manualProducts, ...transformProducts(automaticProducts)];
   }
+
+  /**
+   * Get products from the same warehouse/wholesaler as the given product
+   * Used for "Zamów w jednej przesyłce" recommendations
+   */
+  async getSameWarehouseProducts(productId: string, options: { limit?: number } = {}) {
+    const { limit = 6 } = options;
+
+    // First get the source product to find its wholesaler tag
+    const sourceProduct = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { id: true, tags: true },
+    });
+
+    if (!sourceProduct) {
+      return { products: [], wholesaler: null };
+    }
+
+    // Extract wholesaler from tags
+    const wholesaler = this.extractWholesalerFromTags(sourceProduct.tags);
+    
+    if (!wholesaler) {
+      return { products: [], wholesaler: null };
+    }
+
+    // Find other products with the same wholesaler tag
+    const products = await prisma.product.findMany({
+      where: {
+        status: 'ACTIVE',
+        price: { gt: 0 },
+        id: { not: productId }, // Exclude the source product
+        tags: { has: wholesaler }, // Same wholesaler tag
+        // Must have at least one delivery tag to be visible
+        OR: DELIVERY_TAGS.map(tag => ({ tags: { has: tag } })),
+      },
+      orderBy: [
+        { review_count: 'desc' }, // Popular products first
+        { createdAt: 'desc' },
+      ],
+      take: limit,
+      include: {
+        images: { orderBy: { order: 'asc' } },
+        category: true,
+        variants: {
+          include: { inventory: true },
+        },
+      },
+    });
+
+    return {
+      products: transformProducts(products),
+      wholesaler: this.getWholesalerDisplayName(wholesaler),
+    };
+  }
+
+  /**
+   * Extract wholesaler tag from product tags
+   */
+  private extractWholesalerFromTags(tags: string[]): string | null {
+    const WHOLESALER_TAGS = ['Ikonka', 'BTP', 'HP', 'Gastro', 'Horeca', 'Hurtownia Przemysłowa', 'Leker', 'Forcetop'];
+    
+    for (const tag of tags) {
+      // Direct match
+      if (WHOLESALER_TAGS.includes(tag)) {
+        return tag;
+      }
+      // Match pattern like "hurtownia:HP"
+      const match = tag.match(/^hurtownia[:\-_](.+)$/i);
+      if (match) {
+        return match[1];
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Get human-readable warehouse display name
+   */
+  private getWholesalerDisplayName(wholesaler: string): string {
+    const DISPLAY_NAMES: Record<string, string> = {
+      'HP': 'Magazyn Zielona Góra',
+      'Hurtownia Przemysłowa': 'Magazyn Zielona Góra',
+      'Ikonka': 'Magazyn Białystok',
+      'BTP': 'Magazyn Chotów',
+      'Leker': 'Magazyn Chynów',
+      'Gastro': 'Magazyn Centralny',
+      'Horeca': 'Magazyn Centralny',
+      'Forcetop': 'Magazyn Centralny',
+    };
+    return DISPLAY_NAMES[wholesaler] || wholesaler;
+  }
 }
 
 export const productsService = new ProductsService();
