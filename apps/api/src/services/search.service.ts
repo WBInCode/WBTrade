@@ -1,6 +1,28 @@
 import { prisma } from '../db';
 import { getProductsIndex, PRODUCTS_INDEX, meiliClient } from '../lib/meilisearch';
 
+// Tags that require "produkt w paczce" tag to be visible
+const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
+const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce|produkty?\s*w\s*paczce/i;
+
+/**
+ * Check if product should be visible based on delivery tags
+ * Products with "Paczkomaty i Kurier" must also have "produkt w paczce" tag
+ */
+function shouldProductBeVisible(tags: string[]): boolean {
+  const hasPaczkomatTag = tags.some((tag: string) => 
+    PACZKOMAT_TAGS.some(pt => tag.toLowerCase() === pt.toLowerCase())
+  );
+  
+  if (!hasPaczkomatTag) return true;
+  
+  const hasPackageLimitTag = tags.some((tag: string) => 
+    PACKAGE_LIMIT_PATTERN.test(tag)
+  );
+  
+  return hasPackageLimitTag;
+}
+
 export interface MeiliProduct {
   id: string;
   name: string;
@@ -34,8 +56,9 @@ export class SearchService {
         filters.push(`price <= ${maxPrice}`);
       }
 
+      // Fetch more results to account for post-filtering
       const results = await index.search<MeiliProduct>(query, {
-        limit,
+        limit: limit * 2, // Fetch extra to filter out hidden products
         filter: filters.join(' AND '),
         attributesToRetrieve: [
           'id',
@@ -49,8 +72,21 @@ export class SearchService {
         ],
       });
 
+      // Get product IDs to fetch tags for filtering
+      const productIds = results.hits.map(hit => hit.id);
+      const productsWithTags = await prisma.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, tags: true },
+      });
+      const tagsMap = new Map(productsWithTags.map(p => [p.id, p.tags]));
+
+      // Filter products based on visibility rules
+      const visibleHits = results.hits
+        .filter(hit => shouldProductBeVisible(tagsMap.get(hit.id) || []))
+        .slice(0, limit);
+
       return {
-        products: results.hits.map((hit) => ({
+        products: visibleHits.map((hit) => ({
           id: hit.id,
           name: hit.name,
           slug: hit.slug,
@@ -60,7 +96,7 @@ export class SearchService {
           category: { name: hit.categoryName },
           images: hit.image ? [{ url: hit.image }] : [],
         })),
-        total: results.estimatedTotalHits || results.hits.length,
+        total: visibleHits.length,
         processingTimeMs: results.processingTimeMs,
       };
     } catch (error) {
@@ -93,12 +129,15 @@ export class SearchService {
         images: { orderBy: { order: 'asc' }, take: 1 },
         category: true,
       },
-      take: 50,
+      take: 100, // Fetch more to account for filtering
     });
 
+    // Filter products based on visibility rules
+    const visibleProducts = products.filter(p => shouldProductBeVisible(p.tags));
+
     return {
-      products,
-      total: products.length,
+      products: visibleProducts.slice(0, 50),
+      total: visibleProducts.length,
       processingTimeMs: 0,
     };
   }
@@ -111,10 +150,27 @@ export class SearchService {
       const index = getProductsIndex();
       
       const results = await index.search<MeiliProduct>(query, {
-        limit: 8,
+        limit: 20, // Fetch more to account for filtering
         filter: 'status = "ACTIVE"',
         attributesToRetrieve: ['id', 'name', 'slug', 'image', 'price', 'categoryName'],
       });
+
+      // Get product IDs to fetch tags from database
+      const productIds = results.hits.map(hit => hit.id);
+      
+      // Fetch tags for these products
+      const productsWithTags = await prisma.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, tags: true },
+      });
+      
+      const tagsMap = new Map(productsWithTags.map(p => [p.id, p.tags]));
+      
+      // Filter products based on delivery tag rules
+      const filteredHits = results.hits.filter(hit => {
+        const tags = tagsMap.get(hit.id) || [];
+        return shouldProductBeVisible(tags);
+      }).slice(0, 8); // Limit to 8 after filtering
 
       // Also get category suggestions from Prisma
       const categories = await prisma.category.findMany({
@@ -131,7 +187,7 @@ export class SearchService {
       });
 
       return {
-        products: results.hits.map((hit) => ({
+        products: filteredHits.map((hit) => ({
           type: 'product' as const,
           id: hit.id,
           name: hit.name,
@@ -166,11 +222,15 @@ export class SearchService {
         name: true,
         slug: true,
         price: true,
+        tags: true,
         images: { orderBy: { order: 'asc' }, take: 1 },
         category: { select: { name: true } },
       },
-      take: 8,
+      take: 20, // Fetch more to account for filtering
     });
+
+    // Filter products based on delivery tag rules
+    const filteredProducts = products.filter(p => shouldProductBeVisible(p.tags)).slice(0, 8);
 
     const categories = await prisma.category.findMany({
       where: {
@@ -186,7 +246,7 @@ export class SearchService {
     });
 
     return {
-      products: products.map((p) => ({
+      products: filteredProducts.map((p) => ({
         type: 'product' as const,
         id: p.id,
         name: p.name,
