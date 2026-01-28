@@ -19,20 +19,8 @@ const DELIVERY_TAGS = [
   'do 31,5 kg',
 ];
 
-// Tagi głównych kategorii - produkty MUSZĄ mieć przynajmniej jeden z tych tagów
-// żeby być przypisane do kategorii i widoczne na stronie
-const CATEGORY_TAGS = [
-  'Elektronika',
-  'Sport',
-  'Zdrowie i uroda',
-  'Dom i ogród',
-  'Motoryzacja',
-  'Dziecko',
-  'Biurowe i papiernicze',
-  'Gastronomiczne',
-  'gastronomia', // wariant tagu z Baselinkera
-  'Gastronomia',
-];
+// Kategorie są teraz zarządzane przez Baselinker, nie przez tagi
+// Produkty muszą mieć categoryId ustawione przez synchronizację z Baselinker
 
 interface ProductFilters {
   page?: number;
@@ -292,12 +280,16 @@ export class ProductsService {
           }
         }
       },
-      // Produkty MUSZĄ mieć tag dostawy ORAZ tag kategorii
+      // Produkty MUSZĄ mieć tag dostawy ORAZ kategorię z Baselinker
       AND: [
         // Tag dostawy - nie pokazuj produktów z tylko tagiem hurtowni
         { tags: { hasSome: DELIVERY_TAGS } },
-        // Tag kategorii - produkty muszą być przypisane do kategorii
-        { tags: { hasSome: CATEGORY_TAGS } },
+        // Kategoria z Baselinker - musi być przypisana
+        { 
+          category: { 
+            baselinkerCategoryId: { not: null } 
+          } 
+        },
       ],
     };
     
@@ -469,9 +461,9 @@ export class ProductsService {
       const deliveryTagsFilter = DELIVERY_TAGS.map(tag => `"${tag}"`).join(', ');
       meiliFilters.push(`tags IN [${deliveryTagsFilter}]`);
       
-      // Produkty MUSZĄ mieć tag kategorii
-      const categoryTagsFilter = CATEGORY_TAGS.map(tag => `"${tag}"`).join(', ');
-      meiliFilters.push(`tags IN [${categoryTagsFilter}]`);
+      // Produkty MUSZĄ mieć przypisaną kategorię z Baselinker
+      // hasBaselinkerCategory jest indeksowany w Meilisearch jako filterable
+      meiliFilters.push('hasBaselinkerCategory = true');
       
       // Only filter by status if explicitly provided
       if (status) {
@@ -555,10 +547,14 @@ export class ProductsService {
               }
             }
           },
-          // Produkty MUSZĄ mieć tag dostawy ORAZ tag kategorii
+          // Produkty MUSZĄ mieć tag dostawy ORAZ kategorię z Baselinker
           AND: [
             { tags: { hasSome: DELIVERY_TAGS } },
-            { tags: { hasSome: CATEGORY_TAGS } },
+            { 
+              category: { 
+                baselinkerCategoryId: { not: null } 
+              } 
+            },
           ],
         },
         include: {
@@ -636,10 +632,14 @@ export class ProductsService {
           }
         }
       },
-      // Produkty MUSZĄ mieć tag dostawy ORAZ tag kategorii
+      // Produkty MUSZĄ mieć tag dostawy ORAZ kategorię z Baselinker
       AND: [
         { tags: { hasSome: DELIVERY_TAGS } },
-        { tags: { hasSome: CATEGORY_TAGS } },
+        { 
+          category: { 
+            baselinkerCategoryId: { not: null } 
+          } 
+        },
       ],
     };
     

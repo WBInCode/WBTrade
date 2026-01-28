@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { SearchService } from '../services/search.service';
+import { prisma } from '../db';
 
 const searchService = new SearchService();
 
@@ -132,5 +133,64 @@ export async function getSearchStats(req: Request, res: Response): Promise<void>
   } catch (error) {
     console.error('Stats error:', error);
     res.status(500).json({ message: 'Failed to get stats' });
+  }
+}
+
+/**
+ * Get popular searches from the last 30 days
+ * Returns most frequently searched terms
+ */
+export async function getPopularSearches(req: Request, res: Response): Promise<void> {
+  try {
+    const limit = Math.min(parseInt(req.query.limit as string) || 5, 20);
+    const days = Math.min(parseInt(req.query.days as string) || 30, 90);
+    
+    const dateThreshold = new Date();
+    dateThreshold.setDate(dateThreshold.getDate() - days);
+
+    // Get most common search queries from SearchHistory
+    const popularSearches = await prisma.searchHistory.groupBy({
+      by: ['query'],
+      where: {
+        createdAt: { gte: dateThreshold },
+        query: { not: '' },
+      },
+      _count: { query: true },
+      orderBy: { _count: { query: 'desc' } },
+      take: limit,
+    });
+
+    // If no search history, return default popular searches
+    if (popularSearches.length === 0) {
+      res.status(200).json({
+        searches: [
+          'Zabawki',
+          'Przytulanka',
+          'Dekoracje',
+          'Kuchnia',
+          'Akcesoria',
+        ],
+        isDefault: true,
+      });
+      return;
+    }
+
+    res.status(200).json({
+      searches: popularSearches.map(s => s.query),
+      isDefault: false,
+    });
+  } catch (error) {
+    console.error('Popular searches error:', error);
+    // Return defaults on error
+    res.status(200).json({
+      searches: [
+        'Zabawki',
+        'Przytulanka',
+        'Dekoracje',
+        'Kuchnia',
+        'Akcesoria',
+      ],
+      isDefault: true,
+    });
   }
 }

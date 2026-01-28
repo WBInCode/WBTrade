@@ -464,7 +464,9 @@ export class BaselinkerService {
         select: {
           id: true,
           baselinkerCategoryId: true,
+          baselinkerCategoryPath: true,
           name: true,
+          slug: true,
           parentId: true,
         },
       });
@@ -473,85 +475,144 @@ export class BaselinkerService {
         existingCategories.map(c => [c.baselinkerCategoryId as string, c])
       );
 
-      // Pre-build parent ID lookup
-      const blCategoryIdToDbId = new Map<string, string>();
-      for (const cat of existingCategories) {
-        if (cat.baselinkerCategoryId) {
-          blCategoryIdToDbId.set(cat.baselinkerCategoryId, cat.id);
-        }
-      }
-
-      // Helper to extract last segment from path-like name
-      const getDisplayName = (fullName: string): string => {
-        const parts = fullName.split('/');
-        return parts[parts.length - 1].trim() || fullName;
-      };
-
-      // Helper to create a unique slug from the full path
-      const createSlugFromPath = (fullName: string): string => {
-        // Create slug from full path but make it readable with dashes between segments
-        const parts = fullName.split('/').map(p => slugify(p.trim())).filter(Boolean);
-        return parts.join('-') || 'category';
-      };
-
-      // Process only new or changed categories
-      const categoriesToProcess: typeof categories = [];
+      // Map to store main category name -> category id (for parent lookup)
+      const mainCategoryMap = new Map<string, string>();
       
-      for (const blCategory of categories) {
-        const categoryId = blCategory.category_id.toString();
-        const existing = existingMap.get(categoryId);
-        const displayName = getDisplayName(blCategory.name);
-        const expectedParentId = blCategory.parent_id 
-          ? blCategoryIdToDbId.get(blCategory.parent_id.toString()) || null
-          : null;
+      // First, find or create all main categories (those without | in name OR parent_id = 0)
+      const mainCategories = categories.filter(c => 
+        !c.name.includes('|') || c.parent_id === 0
+      );
+      
+      console.log(`[BaselinkerSync] Found ${mainCategories.length} main categories (without | separator)`);
 
-        if (existing) {
-          // Check if changed (compare with display name, not full path)
-          if (existing.name === displayName && existing.parentId === expectedParentId) {
-            skipped++;
-            continue; // No changes, skip
-          }
+      // Process main categories first
+      for (const blCategory of mainCategories) {
+        const categoryId = blCategory.category_id.toString();
+        const categoryName = blCategory.name.trim();
+        const existing = existingMap.get(categoryId);
+        
+        // Check if unchanged
+        if (existing && existing.name === categoryName && existing.parentId === null) {
+          mainCategoryMap.set(categoryName, existing.id);
+          skipped++;
+          continue;
         }
         
-        categoriesToProcess.push(blCategory);
-      }
-
-      console.log(`[BaselinkerSync] Processing ${categoriesToProcess.length} changed/new categories (${skipped} unchanged)`);
-
-      // Process only changed categories
-      for (const blCategory of categoriesToProcess) {
         try {
-          const categoryId = blCategory.category_id.toString();
-          const displayName = getDisplayName(blCategory.name);
-          const slug = createSlugFromPath(blCategory.name);
-
+          const slug = slugify(categoryName) || `category-${categoryId}`;
+          
           const result = await prisma.category.upsert({
             where: { baselinkerCategoryId: categoryId },
             update: {
-              name: displayName,
+              name: categoryName,
               slug: await this.ensureUniqueSlug(slug, categoryId),
-              parentId: blCategory.parent_id
-                ? (await this.findCategoryByBaselinkerIdcatId(blCategory.parent_id.toString()))?.id || null
-                : null,
+              parentId: null, // Main categories have no parent
+              baselinkerCategoryPath: categoryName, // Path is just the name for main categories
             },
             create: {
               baselinkerCategoryId: categoryId,
-              name: displayName,
+              name: categoryName,
               slug: await this.ensureUniqueSlug(slug, categoryId),
-              parentId: blCategory.parent_id
-                ? (await this.findCategoryByBaselinkerIdcatId(blCategory.parent_id.toString()))?.id || null
-                : null,
+              parentId: null,
+              baselinkerCategoryPath: categoryName,
               isActive: true,
             },
           });
           
-          // Update lookup for subsequent parent references
-          blCategoryIdToDbId.set(categoryId, result.id);
+          mainCategoryMap.set(categoryName, result.id);
           processed++;
         } catch (error) {
-          errors.push(`Category ${blCategory.category_id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          errors.push(`Main category ${categoryId} (${categoryName}): ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       }
+
+      // Now process subcategories (those with | separator)
+      const subCategories = categories.filter(c => c.name.includes('|'));
+      console.log(`[BaselinkerSync] Found ${subCategories.length} subcategories (with | separator)`);
+
+      for (const blCategory of subCategories) {
+        const categoryId = blCategory.category_id.toString();
+        const fullPath = blCategory.name.trim(); // e.g. "Gastronomia|Naczynia i przybory kuchenne"
+        
+        // Parse the category path
+        const parts = fullPath.split('|').map(p => p.trim());
+        const mainCategoryName = parts[0]; // "Gastronomia"
+        const subCategoryName = parts.slice(1).join('|'); // "Naczynia i przybory kuchenne" (or further nested)
+        
+        const existing = existingMap.get(categoryId);
+        
+        // Find parent category by name (case-insensitive)
+        let parentId = mainCategoryMap.get(mainCategoryName) || null;
+        
+        // If parent not found in map, try case-insensitive lookup
+        if (!parentId) {
+          // Try case-insensitive lookup in our map
+          for (const [name, id] of mainCategoryMap.entries()) {
+            if (name.toLowerCase() === mainCategoryName.toLowerCase()) {
+              parentId = id;
+              mainCategoryMap.set(mainCategoryName, parentId); // Cache for future lookups
+              break;
+            }
+          }
+        }
+        
+        // If still not found, try to find by name in DB (case-insensitive)
+        if (!parentId) {
+          const parentCategory = await prisma.category.findFirst({
+            where: { 
+              name: { equals: mainCategoryName, mode: 'insensitive' },
+              parentId: null, // Must be a main category
+            },
+          });
+          if (parentCategory) {
+            parentId = parentCategory.id;
+            mainCategoryMap.set(mainCategoryName, parentId);
+          }
+        }
+        
+        // Check if unchanged
+        if (existing && 
+            existing.name === subCategoryName && 
+            existing.parentId === parentId &&
+            existing.baselinkerCategoryPath === fullPath) {
+          skipped++;
+          continue;
+        }
+        
+        try {
+          // Create slug from subcategory name only (parent is in hierarchy)
+          const slug = slugify(subCategoryName) || `subcategory-${categoryId}`;
+          
+          const result = await prisma.category.upsert({
+            where: { baselinkerCategoryId: categoryId },
+            update: {
+              name: subCategoryName, // Only the subcategory part
+              slug: await this.ensureUniqueSlug(slug, categoryId),
+              parentId: parentId,
+              baselinkerCategoryPath: fullPath, // Full path for reference
+            },
+            create: {
+              baselinkerCategoryId: categoryId,
+              name: subCategoryName,
+              slug: await this.ensureUniqueSlug(slug, categoryId),
+              parentId: parentId,
+              baselinkerCategoryPath: fullPath,
+              isActive: true,
+            },
+          });
+          
+          processed++;
+          
+          // Log if parent not found
+          if (!parentId) {
+            console.warn(`[BaselinkerSync] Warning: Parent category "${mainCategoryName}" not found for subcategory "${subCategoryName}" (ID: ${categoryId})`);
+          }
+        } catch (error) {
+          errors.push(`Subcategory ${categoryId} (${fullPath}): ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+      
+      console.log(`[BaselinkerSync] Categories sync complete. Processed: ${processed}, Skipped: ${skipped}, Errors: ${errors.length}`);
     } catch (error) {
       errors.push(`Failed to fetch categories: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -582,6 +643,47 @@ export class BaselinkerService {
     category = await prisma.category.findUnique({
       where: { baselinkerCategoryId: `hp-${baselinkerCategoryId}` },
     });
+    
+    return category;
+  }
+  
+  /**
+   * Find category by Baselinker category path (e.g. "Gastronomia|Naczynia i przybory kuchenne")
+   */
+  async findCategoryByPath(categoryPath: string): Promise<{ id: string } | null> {
+    // First try to find by exact path
+    let category = await prisma.category.findFirst({
+      where: { baselinkerCategoryPath: categoryPath },
+      select: { id: true },
+    });
+    
+    if (category) return category;
+    
+    // If not found and path contains |, try to find the subcategory by name
+    if (categoryPath.includes('|')) {
+      const parts = categoryPath.split('|').map(p => p.trim());
+      const subCategoryName = parts.slice(1).join('|');
+      const mainCategoryName = parts[0];
+      
+      // Find parent first
+      const parent = await prisma.category.findFirst({
+        where: { 
+          name: mainCategoryName,
+          parentId: null,
+        },
+        select: { id: true },
+      });
+      
+      if (parent) {
+        category = await prisma.category.findFirst({
+          where: { 
+            name: subCategoryName,
+            parentId: parent.id,
+          },
+          select: { id: true },
+        });
+      }
+    }
     
     return category;
   }
@@ -921,10 +1023,21 @@ export class BaselinkerService {
               
               const slug = await this.ensureUniqueProductSlug(slugify(name) || `product-${baselinkerProductId}`, baselinkerProductId);
 
-              // Find category
+              // Find category by Baselinker category_id
+              // Category in Baselinker has ID, and our Category has baselinkerCategoryId field
               const category = blProduct.category_id
                 ? await this.findCategoryByBaselinkerIdcatId(blProduct.category_id.toString())
                 : null;
+              
+              // Get baselinker category path for product record (from the category if found)
+              let baselinkerCategoryPath: string | null = null;
+              if (category) {
+                const catWithPath = await prisma.category.findUnique({
+                  where: { id: category.id },
+                  select: { baselinkerCategoryPath: true },
+                });
+                baselinkerCategoryPath = catWithPath?.baselinkerCategoryPath || null;
+              }
 
               // Get tags (trim whitespace from each tag)
               const productTags = (blProduct.tags || []).map((tag: string) => tag.trim()).filter(Boolean);
@@ -948,6 +1061,7 @@ export class BaselinkerService {
                     sku: await this.ensureUniqueSku(sku, baselinkerProductId),
                     barcode: productEan,
                     categoryId: category?.id || null,
+                    baselinkerCategoryPath: baselinkerCategoryPath,
                     status: 'ACTIVE',
                     specifications: blProduct.features || {},
                     tags: productTags,
@@ -980,6 +1094,7 @@ export class BaselinkerService {
                     lowestPrice30Days: productPrice, // Initial lowest = current price
                     lowestPrice30DaysAt: new Date(),
                     categoryId: category?.id || null,
+                    baselinkerCategoryPath: baselinkerCategoryPath,
                     status: 'ACTIVE',
                     specifications: blProduct.features || {},
                     tags: productTags,
