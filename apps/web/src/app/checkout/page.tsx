@@ -14,6 +14,7 @@ import ShippingPerPackage from './components/ShippingPerPackage';
 import PaymentMethod from './components/PaymentMethod';
 import OrderSummary from './components/OrderSummary';
 import CheckoutPackagesList from './components/CheckoutPackagesList';
+import CouponInput from './components/CouponInput';
 
 export interface AddressData {
   firstName: string;
@@ -101,7 +102,7 @@ const initialPayment: PaymentData = {
 function CheckoutPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { cart, itemCount, loading: cartLoading, removeFromCart, updateQuantity } = useCart();
+  const { cart, itemCount, loading: cartLoading, removeFromCart, updateQuantity, applyCoupon, removeCoupon } = useCart();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   
   // Step 0 = auth choice, Step 1-4 = checkout steps
@@ -268,12 +269,14 @@ function CheckoutPageContent() {
     
     const shipping = checkoutData.shipping.price;
     const paymentFee = checkoutData.payment.extraFee;
+    const discount = cart?.discount || 0;
     
     return {
       subtotal,
       shipping,
       paymentFee,
-      total: subtotal + shipping + paymentFee,
+      discount,
+      total: subtotal + shipping + paymentFee - discount,
     };
   };
 
@@ -653,11 +656,25 @@ function CheckoutPageContent() {
                     <span>{totals.paymentFee.toFixed(2)} zł</span>
                   </div>
                 )}
+                {totals.discount > 0 && (
+                  <div className="flex justify-between text-xs sm:text-sm text-green-600">
+                    <span>Rabat</span>
+                    <span>-{totals.discount.toFixed(2)} zł</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-base sm:text-lg font-bold pt-2 border-t">
                   <span>Razem</span>
                   <span className="text-orange-600">{totals.total.toFixed(2)} zł</span>
                 </div>
               </div>
+
+              {/* Coupon input */}
+              <CouponInput
+                appliedCoupon={cart?.couponCode || null}
+                discount={totals.discount}
+                onApplyCoupon={applyCoupon}
+                onRemoveCoupon={removeCoupon}
+              />
 
               {/* Trust badges */}
               <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t">
