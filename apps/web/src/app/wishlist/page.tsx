@@ -74,7 +74,12 @@ export default function WishlistPage() {
         }
       }
       
-      await addToCart(variantId, 1);
+      await addToCart(variantId, 1, {
+        name: item.name,
+        image: item.image,
+        price: item.price,
+        quantity: 1,
+      });
       setAddedToCartIds(prev => new Set(prev).add(item.id));
       // Don't auto-remove for individual items unless not adding all
       if (!addingAll) {

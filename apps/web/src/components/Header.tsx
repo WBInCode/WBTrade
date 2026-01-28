@@ -121,15 +121,15 @@ function HeaderContent() {
       {/* Top Header */}
       <div className="border-b border-gray-100">
         <div className="container-custom">
-          <div className="flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-4">
+          <div className="flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
             {/* Logo */}
             <Link href="/" className="flex items-center shrink-0">
               <Image 
                 src="/images/WB-TRADE-logo.png" 
                 alt="WB Trade" 
-                width={180} 
-                height={110} 
-                className="h-12 sm:h-14 w-auto object-contain"
+                width={200} 
+                height={120} 
+                className="h-12 sm:h-14 lg:h-16 w-auto object-contain"
                 priority
               />
             </Link>

@@ -90,9 +90,9 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
               <Image 
                 src="/images/WB-TRADE-logo.png" 
                 alt="WB Trade" 
-                width={200} 
-                height={120} 
-                className="h-16 w-auto object-contain mix-blend-multiply"
+                width={300} 
+                height={180} 
+                className="h-24 w-auto object-contain mix-blend-multiply"
               />
             </Link>
             {/* Social Media */}

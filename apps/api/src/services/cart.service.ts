@@ -26,6 +26,8 @@ export interface CartItemWithProduct {
       name: string;
       slug: string;
       images: { url: string; alt: string | null }[];
+      tags: string[];
+      wholesaler: string | null;
     };
     inventory: { quantity: number; reserved: number }[];
   };
@@ -376,7 +378,12 @@ export class CartService {
         variant: {
           include: {
             product: {
-              include: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                price: true,
+                tags: true,
                 images: {
                   orderBy: { order: 'asc' as const },
                   take: 1,
@@ -391,6 +398,21 @@ export class CartService {
   };
 
   /**
+   * Get wholesaler from product tags
+   */
+  private getWholesaler(tags: string[]): string | null {
+    const WHOLESALER_PATTERN = /^(hurtownia[:\-_](.+)|Ikonka|BTP|HP|Gastro|Horeca|Hurtownia\s+Przemysłowa|Leker|Forcetop)$/i;
+    for (const tag of tags) {
+      const match = tag.match(WHOLESALER_PATTERN);
+      if (match) {
+        // Return the captured group if present (e.g., "HP" from "hurtownia:HP"), or the whole match
+        return match[2] || match[1];
+      }
+    }
+    return null;
+  }
+
+  /**
    * Format cart with calculated totals
    */
   private formatCart(cart: any): CartWithItems {
@@ -399,6 +421,8 @@ export class CartService {
       const variantPrice = Number(item.variant.price);
       const productPrice = Number(item.variant.product.price || 0);
       const effectivePrice = variantPrice > 0 ? variantPrice : productPrice;
+      const tags = item.variant.product.tags || [];
+      const wholesaler = this.getWholesaler(tags);
       
       return {
         id: item.id,
@@ -417,6 +441,8 @@ export class CartService {
             name: item.variant.product.name,
             slug: item.variant.product.slug,
             images: item.variant.product.images,
+            tags: tags,
+            wholesaler: wholesaler,
           },
           inventory: item.variant.inventory.map((inv: any) => ({
             quantity: inv.quantity,
