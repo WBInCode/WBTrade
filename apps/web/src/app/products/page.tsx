@@ -44,7 +44,7 @@ function ProductsContent() {
   const minPrice = searchParams.get('minPrice');
   const maxPrice = searchParams.get('maxPrice');
   const brand = searchParams.get('brand');
-  const sort = searchParams.get('sort') || 'newest';
+  const sort = searchParams.get('sort') || 'relevance';
   const tabFromUrl = searchParams.get('tab') || 'all';
 
   // State for products and filters
@@ -149,10 +149,8 @@ function ProductsContent() {
           setTotalPages(Math.ceil(discountedProducts.length / ITEMS_PER_PAGE));
         } else {
           // "All" tab - show all products with filters
-          // Use random sort for "all" tab to increase product discovery, unless user explicitly chose a sort
-          const sortValue = (activeTab === 'all' && sort === 'newest') 
-            ? 'random' as const
-            : sort as 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'newest' | 'random';
+          // Use popularity sort by default for better discovery
+          const sortValue = sort as 'price-asc' | 'price-desc' | 'newest' | 'relevance' | 'popularity';
           
           const response = await productsApi.getAll({
             page: currentPage,
@@ -198,11 +196,11 @@ function ProductsContent() {
   const handleSortChange = (value: string) => {
     // Map UI sort values to API sort values
     const sortMapping: Record<string, string> = {
-      'relevance': 'newest',
-      'price-asc': 'price_asc',
-      'price-desc': 'price_desc',
+      'relevance': 'relevance',
+      'popularity': 'popularity',
+      'price-asc': 'price-asc',
+      'price-desc': 'price-desc',
       'newest': 'newest',
-      'rating': 'newest', // API doesn't support rating sort, fallback to newest
     };
     const apiSort = sortMapping[value] || 'newest';
     
@@ -220,12 +218,14 @@ function ProductsContent() {
   // Map API sort values back to UI sort values for dropdown display
   const apiToUiSortMapping: Record<string, string> = {
     'newest': 'newest',
+    'relevance': 'relevance',
+    'popularity': 'popularity',
+    'price-asc': 'price-asc',
+    'price-desc': 'price-desc',
     'price_asc': 'price-asc',
     'price_desc': 'price-desc',
-    'name_asc': 'relevance',
-    'name_desc': 'relevance',
   };
-  const uiSort = apiToUiSortMapping[sort] || 'newest';
+  const uiSort = apiToUiSortMapping[sort] || 'relevance';
 
   // Build breadcrumb dynamically based on category path
   const breadcrumbItems = useMemo(() => {
