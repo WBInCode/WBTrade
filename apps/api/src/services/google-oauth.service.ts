@@ -213,6 +213,7 @@ class GoogleOAuthService {
       console.log(`[GoogleOAuth] New user created: ${user.email}`);
       
       // Generate welcome discount code and send email (async, don't block registration)
+      console.log(`[GoogleOAuth] Starting welcome discount for ${user.email}...`);
       this.sendWelcomeDiscount(user.id, user.email, user.firstName).catch((err) => {
         console.error('[GoogleOAuth] Failed to send welcome discount:', err.message);
       });
