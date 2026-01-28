@@ -300,12 +300,15 @@ export class ProductsService {
     }
 
     // Build orderBy clause
-    let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };
+    // Default: popularność (relevance bez wyszukiwania = popularity)
+    let orderBy: Prisma.ProductOrderByWithRelationInput = { popularityScore: 'desc' };
     switch (sort) {
       case 'price_asc':
+      case 'price-asc':
         orderBy = { price: 'asc' };
         break;
       case 'price_desc':
+      case 'price-desc':
         orderBy = { price: 'desc' };
         break;
       case 'name_asc':
@@ -314,9 +317,11 @@ export class ProductsService {
       case 'name_desc':
         orderBy = { name: 'desc' };
         break;
-      case 'newest':
+      case 'popularity':
+      case 'relevance':
       default:
-        orderBy = { createdAt: 'desc' };
+        // Trafność i popularność bez wyszukiwania = sortowanie po popularityScore
+        orderBy = { popularityScore: 'desc' };
     }
 
     // Execute queries in parallel
@@ -412,12 +417,16 @@ export class ProductsService {
       }
 
       // Build sort
+      // Dla 'relevance' przy wyszukiwaniu - używamy domyślnego sortowania Meilisearch (relevance score)
+      // które uwzględnia dopasowanie do frazy wyszukiwania
       let meiliSort: string[] = [];
       switch (sort) {
         case 'price_asc':
+        case 'price-asc':
           meiliSort = ['price:asc'];
           break;
         case 'price_desc':
+        case 'price-desc':
           meiliSort = ['price:desc'];
           break;
         case 'name_asc':
@@ -426,9 +435,14 @@ export class ProductsService {
         case 'name_desc':
           meiliSort = ['name:desc'];
           break;
-        case 'newest':
+        case 'popularity':
+          meiliSort = ['popularityScore:desc'];
+          break;
+        case 'relevance':
         default:
-          meiliSort = ['createdAt:desc'];
+          // Dla trafności przy wyszukiwaniu - pusta tablica = Meilisearch używa relevance score
+          // który uwzględnia dopasowanie tekstu, popularność słów, pozycję dopasowania
+          meiliSort = [];
       }
 
       const results = await index.search<MeiliProduct>(search || '', {
