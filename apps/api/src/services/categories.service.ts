@@ -15,7 +15,7 @@ const DELIVERY_TAGS = [
 
 // Tagi wymagające "produkt w paczce"
 const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
-const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce|produkty?\s*w\s*paczce/i;
+const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce/i;
 
 /**
  * Check if product should be visible based on delivery tags

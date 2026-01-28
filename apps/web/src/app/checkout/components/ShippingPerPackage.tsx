@@ -33,8 +33,14 @@ interface PackageWithOptions {
     wholesaler: string | null;
     items: PackageItem[];
     isPaczkomatAvailable: boolean;
-    isInPostOnly: boolean;
-    isCourierOnly: boolean;
+    isInPostOnly?: boolean;
+    isCourierOnly?: boolean;
+    // Fields for split shipments
+    shipmentIndex?: number;
+    totalShipments?: number;
+    // Fields for paczkomat vs courier display
+    isPaczkomatShipment?: boolean;
+    isCourierAlternative?: boolean;
   };
   shippingMethods: ShippingMethodOption[];
   selectedMethod: string;
@@ -271,15 +277,34 @@ export default function ShippingPerPackage({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate all packages have selections
-    for (const pkgOpt of packagesWithOptions) {
+    // Separate package types
+    const paczkomatShipments = packagesWithOptions.filter(p => p.package.isPaczkomatShipment);
+    const courierAlternatives = packagesWithOptions.filter(p => p.package.isCourierAlternative);
+    const regularPackages = packagesWithOptions.filter(p => !p.package.isPaczkomatShipment && !p.package.isCourierAlternative);
+    
+    const hasSplitShipments = paczkomatShipments.length > 0 && courierAlternatives.length > 0;
+    
+    // Check which option is selected for split shipments
+    const courierAlternativeSelected = courierAlternatives.some(p => 
+      selectedMethods[p.package.id] && selectedMethods[p.package.id] !== ''
+    );
+    const paczkomatSelected = paczkomatShipments.length > 0 && 
+      paczkomatShipments.some(p => selectedMethods[p.package.id] === 'inpost_paczkomat');
+
+    // Validate split shipments - must choose one option
+    if (hasSplitShipments && !courierAlternativeSelected && !paczkomatSelected) {
+      setError('Wybierz sposób dostawy: Paczkomat lub Kurier');
+      return;
+    }
+
+    // Validate regular packages
+    for (const pkgOpt of regularPackages) {
       const methodId = selectedMethods[pkgOpt.package.id];
       if (!methodId) {
         setError(`Wybierz metodę dostawy dla paczki: ${getPackageTitle(pkgOpt)}`);
         return;
       }
 
-      // Check paczkomat selection if needed
       if (methodId === 'inpost_paczkomat') {
         const paczkomat = paczkomatSelections[pkgOpt.package.id];
         if (!paczkomat?.code) {
@@ -287,39 +312,49 @@ export default function ShippingPerPackage({
           return;
         }
       }
-      
-      // Validate custom address if enabled
-      if (useCustomAddress[pkgOpt.package.id] && methodId !== 'inpost_paczkomat') {
-        const addr = customAddresses[pkgOpt.package.id];
-        if (!addr?.firstName || !addr?.lastName || !addr?.street || !addr?.postalCode || !addr?.city || !addr?.phone) {
-          setError(`Uzupełnij adres dostawy dla paczki: ${getPackageTitle(pkgOpt)}`);
+    }
+
+    // Validate paczkomat selections if paczkomat option chosen
+    if (hasSplitShipments && paczkomatSelected && !courierAlternativeSelected) {
+      for (const pkgOpt of paczkomatShipments) {
+        const paczkomat = paczkomatSelections[pkgOpt.package.id];
+        if (!paczkomat?.code) {
+          setError(`Wybierz paczkomat dla przesyłki ${pkgOpt.package.shipmentIndex}`);
           return;
         }
       }
     }
 
-    // Build package shipping selections
-    const packageShipping: PackageShippingSelection[] = packagesWithOptions.map(pkgOpt => {
-      const methodId = selectedMethods[pkgOpt.package.id];
-      const method = pkgOpt.shippingMethods.find(m => m.id === methodId);
-      const paczkomat = paczkomatSelections[pkgOpt.package.id];
-      const hasCustomAddr = useCustomAddress[pkgOpt.package.id] && methodId !== 'inpost_paczkomat';
+    // Build package shipping selections - only include active packages
+    const activePackages = hasSplitShipments
+      ? courierAlternativeSelected
+        ? [...regularPackages, ...courierAlternatives]
+        : [...regularPackages, ...paczkomatShipments]
+      : packagesWithOptions;
 
-      return {
-        packageId: pkgOpt.package.id,
-        wholesaler: pkgOpt.package.wholesaler || undefined,
-        method: methodId,
-        price: method?.price || 0,
-        paczkomatCode: methodId === 'inpost_paczkomat' ? paczkomat?.code : undefined,
-        paczkomatAddress: methodId === 'inpost_paczkomat' ? paczkomat?.address : undefined,
-        useCustomAddress: hasCustomAddr,
-        customAddress: hasCustomAddr ? customAddresses[pkgOpt.package.id] : undefined,
-      };
-    });
+    const packageShipping: PackageShippingSelection[] = activePackages
+      .filter(pkgOpt => selectedMethods[pkgOpt.package.id]) // Only packages with selected methods
+      .map(pkgOpt => {
+        const methodId = selectedMethods[pkgOpt.package.id];
+        const method = pkgOpt.shippingMethods.find(m => m.id === methodId);
+        const paczkomat = paczkomatSelections[pkgOpt.package.id];
+        const hasCustomAddr = useCustomAddress[pkgOpt.package.id] && methodId !== 'inpost_paczkomat';
 
-    const totalPrice = calculateTotalPrice(packagesWithOptions, selectedMethods);
+        return {
+          packageId: pkgOpt.package.id,
+          wholesaler: pkgOpt.package.wholesaler || undefined,
+          method: methodId,
+          price: method?.price || 0,
+          paczkomatCode: methodId === 'inpost_paczkomat' ? paczkomat?.code : undefined,
+          paczkomatAddress: methodId === 'inpost_paczkomat' ? paczkomat?.address : undefined,
+          useCustomAddress: hasCustomAddr,
+          customAddress: hasCustomAddr ? customAddresses[pkgOpt.package.id] : undefined,
+        };
+      });
 
-    // Determine overall method (for backward compatibility) - use most common or first
+    const totalPrice = packageShipping.reduce((sum, p) => sum + p.price, 0);
+
+    // Determine overall method
     const methodCounts: Record<string, number> = {};
     for (const selection of packageShipping) {
       methodCounts[selection.method] = (methodCounts[selection.method] || 0) + 1;
@@ -330,7 +365,6 @@ export default function ShippingPerPackage({
       method: primaryMethod as ShippingData['method'],
       price: totalPrice,
       packageShipping,
-      // If all packages use same paczkomat method, pass the first one for backward compat
       paczkomatCode: packageShipping.find(p => p.paczkomatCode)?.paczkomatCode,
       paczkomatAddress: packageShipping.find(p => p.paczkomatAddress)?.paczkomatAddress,
     });
@@ -367,6 +401,89 @@ export default function ShippingPerPackage({
       'Leker': { name: 'Magazyn Chynów', color: 'text-red-700', bgColor: 'bg-red-50 border-red-200' },
     };
     return configs[wholesaler || ''] || { name: 'Magazyn WB Trade', color: 'text-gray-700', bgColor: 'bg-gray-50 border-gray-200' };
+  };
+
+  // Render shipping methods for a package
+  const renderShippingMethods = (pkgOpt: PackageWithOptions) => {
+    return pkgOpt.shippingMethods.filter(method => method.available).map(method => (
+      <div key={method.id}>
+        <label
+          className={`
+            block p-2.5 sm:p-3 rounded-lg border-2 transition-all
+            ${selectedMethods[pkgOpt.package.id] === method.id
+              ? 'bg-orange-50 border-orange-400 shadow-sm'
+              : 'bg-white border-gray-200 hover:border-orange-200 cursor-pointer'
+            }
+          `}
+        >
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div
+              className={`
+                w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0
+                ${selectedMethods[pkgOpt.package.id] === method.id
+                  ? 'border-orange-500 bg-orange-500'
+                  : 'border-gray-300'
+                }
+              `}
+            >
+              {selectedMethods[pkgOpt.package.id] === method.id && (
+                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              )}
+            </div>
+            <input
+              type="radio"
+              name={`shipping-${pkgOpt.package.id}`}
+              value={method.id}
+              checked={selectedMethods[pkgOpt.package.id] === method.id}
+              onChange={() => handleMethodChange(pkgOpt.package.id, method.id as ShippingMethodId)}
+              className="sr-only"
+            />
+            <ShippingIcon id={method.id} />
+            <div className="flex-1 min-w-0">
+              <span className="text-gray-900 text-sm font-medium block">{method.name}</span>
+              <span className="text-xs text-gray-500">{method.estimatedDelivery}</span>
+            </div>
+            <span className="text-gray-900 font-bold text-base whitespace-nowrap">{method.price.toFixed(2)} zł</span>
+          </div>
+        </label>
+
+        {/* Paczkomat selector */}
+        {method.id === 'inpost_paczkomat' && selectedMethods[pkgOpt.package.id] === 'inpost_paczkomat' && (
+          <div className="mt-2 p-2.5 sm:p-3 bg-[#FFF9E6] border border-[#FFCD00] rounded-lg">
+            {paczkomatSelections[pkgOpt.package.id]?.code ? (
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 bg-[#FFCD00] rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#1D1D1B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900 text-xs sm:text-sm">{paczkomatSelections[pkgOpt.package.id].code}</p>
+                  <p className="text-[10px] sm:text-xs text-gray-500 truncate">{paczkomatSelections[pkgOpt.package.id].address}</p>
+                </div>
+                <button type="button" onClick={() => openPaczkomatWidget(pkgOpt.package.id)} className="text-[10px] sm:text-xs text-orange-600 hover:text-orange-700 font-medium shrink-0">
+                  Zmień
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => openPaczkomatWidget(pkgOpt.package.id)}
+                className="w-full flex items-center justify-center gap-1.5 sm:gap-2 px-3 py-2 bg-[#FFCD00] text-[#1D1D1B] text-xs sm:text-sm font-semibold rounded-lg hover:bg-[#E6B800] transition-colors"
+              >
+                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                </svg>
+                Wybierz paczkomat
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    ));
   };
 
   if (isLoading) {
@@ -439,294 +556,338 @@ export default function ShippingPerPackage({
       <form onSubmit={handleSubmit}>
         {/* Packages with shipping options */}
         <div className="p-3 sm:p-4 lg:p-6 space-y-4">
-          {packagesWithOptions.map((pkgOpt, pkgIndex) => {
-            const warehouseConfig = getWarehouseConfig(pkgOpt.package.wholesaler);
-            const isGabaryt = pkgOpt.package.type === 'gabaryt';
-            const selectedMethod = pkgOpt.shippingMethods.find(m => m.id === selectedMethods[pkgOpt.package.id] && m.available);
+          {(() => {
+            // Separate paczkomat shipments from courier alternatives and regular packages
+            const paczkomatShipments = packagesWithOptions.filter(p => p.package.isPaczkomatShipment);
+            const courierAlternatives = packagesWithOptions.filter(p => p.package.isCourierAlternative);
+            const regularPackages = packagesWithOptions.filter(p => !p.package.isPaczkomatShipment && !p.package.isCourierAlternative);
+            
+            const hasSplitShipments = paczkomatShipments.length > 0 && courierAlternatives.length > 0;
+            
+            // Check if user chose courier alternative (any courier method selected on courier alternative package)
+            const courierAlternativeSelected = courierAlternatives.some(p => 
+              selectedMethods[p.package.id] && selectedMethods[p.package.id] !== ''
+            );
+            
+            // Check if user chose paczkomat (all paczkomat shipments have method selected)
+            const paczkomatSelected = paczkomatShipments.length > 0 && 
+              paczkomatShipments.every(p => selectedMethods[p.package.id] === 'inpost_paczkomat');
             
             return (
-            <div key={pkgOpt.package.id} className={`rounded-xl border-2 overflow-hidden ${warehouseConfig.bgColor}`}>
-              {/* Package header with warehouse info */}
-              <div className="px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center font-bold text-lg ${warehouseConfig.color}`}>
-                    {pkgIndex + 1}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className={`font-semibold ${warehouseConfig.color}`}>{warehouseConfig.name}</span>
-                      {isGabaryt && (
-                        <span className="px-2 py-0.5 bg-amber-500 text-white text-xs font-bold rounded-full">
-                          GABARYT
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-xs text-gray-500">
-                      {pkgOpt.package.items.reduce((sum, item) => sum + item.quantity, 0)} {pkgOpt.package.items.length === 1 ? 'produkt' : 'produktów'}
-                    </span>
-                  </div>
-                </div>
-                {selectedMethod && (
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-gray-900">{selectedMethod.price.toFixed(2)} zł</div>
-                    <div className="text-xs text-gray-500">{selectedMethod.name}</div>
-                  </div>
-                )}
-              </div>
-              
-              {/* Products - collapsed view */}
-              <div className="px-4 pb-3">
-                <div className="flex flex-wrap gap-2">
-                  {pkgOpt.package.items.map((item, itemIndex) => (
-                    <div
-                      key={`${item.variantId}-${itemIndex}`}
-                      className="flex items-center gap-2 px-2 py-1 bg-white/80 rounded-lg border border-white/50"
-                    >
-                      {item.productImage && (
-                        <img
-                          src={item.productImage}
-                          alt=""
-                          className="w-8 h-8 object-cover rounded"
-                        />
-                      )}
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium text-gray-900 truncate max-w-[120px] sm:max-w-[180px]">
-                          {item.productName}
-                        </p>
-                        {item.quantity > 1 && (
-                          <p className="text-[10px] text-gray-500">{item.quantity} szt.</p>
+              <>
+                {/* Regular packages (no split shipments) */}
+                {regularPackages.map((pkgOpt, pkgIndex) => {
+                  const warehouseConfig = getWarehouseConfig(pkgOpt.package.wholesaler);
+                  const isGabaryt = pkgOpt.package.type === 'gabaryt';
+                  const selectedMethod = pkgOpt.shippingMethods.find(m => m.id === selectedMethods[pkgOpt.package.id] && m.available);
+                  
+                  return (
+                    <div key={pkgOpt.package.id} className={`rounded-xl border-2 overflow-hidden ${warehouseConfig.bgColor}`}>
+                      {/* Package header */}
+                      <div className="px-4 py-3 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center font-bold text-lg ${warehouseConfig.color}`}>
+                            {pkgIndex + 1}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className={`font-semibold ${warehouseConfig.color}`}>{warehouseConfig.name}</span>
+                              {isGabaryt && (
+                                <span className="px-2 py-0.5 bg-amber-500 text-white text-xs font-bold rounded-full">GABARYT</span>
+                              )}
+                            </div>
+                            <span className="text-xs text-gray-500">
+                              {pkgOpt.package.items.reduce((sum, item) => sum + item.quantity, 0)} {pkgOpt.package.items.length === 1 ? 'produkt' : 'produktów'}
+                            </span>
+                          </div>
+                        </div>
+                        {selectedMethod && (
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-gray-900">{selectedMethod.price.toFixed(2)} zł</div>
+                            <div className="text-xs text-gray-500">{selectedMethod.name}</div>
+                          </div>
                         )}
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                      
+                      {/* Products */}
+                      {pkgOpt.package.items.length > 0 && (
+                        <div className="px-4 pb-3">
+                          <div className="flex flex-wrap gap-2">
+                            {pkgOpt.package.items.map((item, itemIndex) => (
+                              <div key={`${item.variantId}-${itemIndex}`} className="flex items-center gap-2 px-2 py-1 bg-white/80 rounded-lg border border-white/50">
+                                {item.productImage && <img src={item.productImage} alt="" className="w-8 h-8 object-cover rounded" />}
+                                <div className="min-w-0">
+                                  <p className="text-xs font-medium text-gray-900 truncate max-w-[120px] sm:max-w-[180px]">{item.productName}</p>
+                                  {item.quantity > 1 && <p className="text-[10px] text-gray-500">{item.quantity} szt.</p>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
-              {/* Shipping methods */}
-              <div className="bg-white px-4 py-3 space-y-2">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Wybierz sposób dostawy:</p>
-                
-                {pkgOpt.shippingMethods.filter(method => method.available).map(method => (
-                  <div key={method.id}>
-                    <label
-                      className={`
-                        block p-2.5 sm:p-3 rounded-lg border-2 transition-all
-                        ${selectedMethods[pkgOpt.package.id] === method.id
-                          ? 'bg-orange-50 border-orange-400 shadow-sm'
-                          : 'bg-white border-gray-200 hover:border-orange-200 cursor-pointer'
-                        }
-                      `}
+                      {/* Shipping methods for regular packages */}
+                      <div className="bg-white px-4 py-3 space-y-2">
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Wybierz sposób dostawy:</p>
+                        {renderShippingMethods(pkgOpt)}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Split shipments - choice between Paczkomat or Courier */}
+                {hasSplitShipments && (
+                  <>
+                    {/* Option 1: Paczkomat */}
+                    <label 
+                      className={`block rounded-xl border-2 overflow-hidden transition-all cursor-pointer ${
+                        !courierAlternativeSelected 
+                          ? 'border-orange-400 ring-2 ring-orange-200' 
+                          : 'border-gray-200 hover:border-orange-300'
+                      }`}
                     >
-                      {/* Main row: radio + name + badge + icon + price */}
-                      <div className="flex items-center gap-2 sm:gap-3">
-                        {/* Radio */}
-                        <div
-                          className={`
-                            w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0
-                            ${selectedMethods[pkgOpt.package.id] === method.id
-                              ? 'border-orange-500 bg-orange-500'
-                              : 'border-gray-300'
-                            }
-                          `}
-                        >
-                          {selectedMethods[pkgOpt.package.id] === method.id && (
+                      <input
+                        type="radio"
+                        name="shipping-choice"
+                        checked={!courierAlternativeSelected}
+                        onChange={() => {
+                          // Select paczkomat, clear courier
+                          paczkomatShipments.forEach(ps => {
+                            handleMethodChange(ps.package.id, 'inpost_paczkomat');
+                          });
+                          courierAlternatives.forEach(ca => {
+                            setSelectedMethods(prev => ({ ...prev, [ca.package.id]: '' as ShippingMethodId }));
+                          });
+                        }}
+                        className="sr-only"
+                      />
+                      <div className={`px-4 py-3 flex items-center gap-3 ${!courierAlternativeSelected ? 'bg-orange-50' : 'bg-gray-50'}`}>
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                          !courierAlternativeSelected ? 'border-orange-500 bg-orange-500' : 'border-gray-300'
+                        }`}>
+                          {!courierAlternativeSelected && (
                             <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
                           )}
                         </div>
-
-                        <input
-                          type="radio"
-                          name={`shipping-${pkgOpt.package.id}`}
-                          value={method.id}
-                          checked={selectedMethods[pkgOpt.package.id] === method.id}
-                          onChange={() =>
-                            handleMethodChange(pkgOpt.package.id, method.id as ShippingMethodId)
-                          }
-                          className="sr-only"
-                        />
-
-                        {/* Icon */}
-                        <ShippingIcon id={method.id} />
-
-                        {/* Name and delivery time */}
-                        <div className="flex-1 min-w-0">
-                          <span className="text-gray-900 text-sm font-medium block">{method.name}</span>
-                          <span className="text-xs text-gray-500">
-                            {method.estimatedDelivery}
-                          </span>
+                        <div className="w-12 h-7 bg-[#FFCD00] rounded flex items-center justify-center flex-shrink-0">
+                          <span className="text-[#1D1D1B] text-[10px] font-bold">InPost</span>
                         </div>
-
-                        {/* Price */}
-                        <span className="text-gray-900 font-bold text-base whitespace-nowrap">
-                          {method.price.toFixed(2)} zł
-                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-900">Paczkomat InPost</span>
+                            <span className="px-2 py-0.5 bg-orange-500 text-white text-[10px] font-bold rounded-full">
+                              {paczkomatShipments.length} przesyłki
+                            </span>
+                          </div>
+                          <span className="text-xs text-gray-500">Produkty nie mieszczą się w jednej paczce</span>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="text-lg font-bold text-gray-900">{(paczkomatShipments.length * 15.99).toFixed(2)} zł</div>
+                        </div>
                       </div>
-                    </label>
-
-                    {/* Paczkomat selector for this package */}
-                    {method.id === 'inpost_paczkomat' &&
-                      selectedMethods[pkgOpt.package.id] === 'inpost_paczkomat' && (
-                        <div className="mt-2 p-2.5 sm:p-3 bg-[#FFF9E6] border border-[#FFCD00] rounded-lg">
-                          {paczkomatSelections[pkgOpt.package.id]?.code ? (
-                            <div className="flex items-center gap-2 sm:gap-3">
-                              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-[#FFCD00] rounded-lg flex items-center justify-center flex-shrink-0">
-                                <svg
-                                  className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#1D1D1B]"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
+                      
+                      {/* Paczkomat details - show when selected */}
+                      {!courierAlternativeSelected && (
+                        <div className="bg-white border-t border-orange-100">
+                          {paczkomatShipments.map((pkgOpt, idx) => {
+                            // Get items for this specific package
+                            const packageItems = pkgOpt.package.items || [];
+                            
+                            return (
+                              <div key={pkgOpt.package.id} className="px-4 py-3 border-b border-gray-100 last:border-b-0">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="w-6 h-6 bg-orange-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                                      {idx + 1}
+                                    </span>
+                                    <span className="text-sm font-medium text-gray-700">
+                                      Paczka {idx + 1} z {paczkomatShipments.length}
+                                    </span>
+                                  </div>
+                                  <span className="text-sm font-bold text-gray-900">15.99 zł</span>
+                                </div>
+                                
+                                {/* Show products in this package */}
+                                {packageItems.length > 0 && (
+                                  <div className="mb-2 flex flex-wrap gap-1">
+                                    {packageItems.map((item, itemIdx) => (
+                                      <div key={itemIdx} className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded text-xs">
+                                        {item.productImage && (
+                                          <img src={item.productImage} alt="" className="w-5 h-5 rounded object-cover" />
+                                        )}
+                                        <span className="text-gray-700 truncate max-w-[100px]">{item.productName}</span>
+                                        {item.quantity > 1 && <span className="text-gray-500">×{item.quantity}</span>}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                
+                                {/* Paczkomat selector */}
+                                <div 
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="p-2.5 bg-[#FFF9E6] border border-[#FFCD00] rounded-lg"
                                 >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                                  />
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                                  />
-                                </svg>
+                                  {paczkomatSelections[pkgOpt.package.id]?.code ? (
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-7 h-7 bg-[#FFCD00] rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <svg className="w-3.5 h-3.5 text-[#1D1D1B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="font-medium text-gray-900 text-xs">{paczkomatSelections[pkgOpt.package.id].code}</p>
+                                        <p className="text-[10px] text-gray-500 truncate">{paczkomatSelections[pkgOpt.package.id].address}</p>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => openPaczkomatWidget(pkgOpt.package.id)}
+                                        className="text-[10px] text-orange-600 hover:text-orange-700 font-medium"
+                                      >
+                                        Zmień
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => openPaczkomatWidget(pkgOpt.package.id)}
+                                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-[#FFCD00] text-[#1D1D1B] text-xs font-semibold rounded-lg hover:bg-[#E6B800] transition-colors"
+                                    >
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                                      </svg>
+                                      Wybierz paczkomat
+                                    </button>
+                                  )}
+                                </div>
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-gray-900 text-xs sm:text-sm">
-                                  {paczkomatSelections[pkgOpt.package.id].code}
-                                </p>
-                                <p className="text-[10px] sm:text-xs text-gray-500 truncate">
-                                  {paczkomatSelections[pkgOpt.package.id].address}
-                                </p>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => openPaczkomatWidget(pkgOpt.package.id)}
-                                className="text-[10px] sm:text-xs text-orange-600 hover:text-orange-700 font-medium shrink-0"
-                              >
-                                Zmień
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => openPaczkomatWidget(pkgOpt.package.id)}
-                              className="w-full flex items-center justify-center gap-1.5 sm:gap-2 px-3 py-2 bg-[#FFCD00] text-[#1D1D1B] text-xs sm:text-sm font-semibold rounded-lg hover:bg-[#E6B800] transition-colors"
-                            >
-                              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-                                />
-                              </svg>
-                              Wybierz paczkomat
-                            </button>
-                          )}
+                            );
+                          })}
                         </div>
                       )}
-                  </div>
-                ))}
-                
-                {/* Custom address option - only for courier deliveries */}
-                {selectedMethods[pkgOpt.package.id] && selectedMethods[pkgOpt.package.id] !== 'inpost_paczkomat' && (
-                  <div className="mt-3 pt-3 border-t border-gray-100">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={useCustomAddress[pkgOpt.package.id] || false}
-                        onChange={() => handleToggleCustomAddress(pkgOpt.package.id)}
-                        className="w-4 h-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded"
-                      />
-                      <span className="text-xs sm:text-sm text-gray-700">Wyślij pod inny adres</span>
                     </label>
-                  
-                  {/* Custom address form */}
-                  {useCustomAddress[pkgOpt.package.id] && (
-                    <div className="mt-2 sm:mt-3 p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200">
-                      <h4 className="text-xs sm:text-sm font-medium text-gray-900 mb-2 sm:mb-3">Adres dostawy dla tej przesyłki</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                        <div>
-                          <label className="block text-[10px] sm:text-xs text-gray-600 mb-1">Imię *</label>
-                          <input
-                            type="text"
-                            value={customAddresses[pkgOpt.package.id]?.firstName || ''}
-                            onChange={(e) => handleCustomAddressChange(pkgOpt.package.id, 'firstName', e.target.value)}
-                            className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                            placeholder="Jan"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] sm:text-xs text-gray-600 mb-1">Nazwisko *</label>
-                          <input
-                            type="text"
-                            value={customAddresses[pkgOpt.package.id]?.lastName || ''}
-                            onChange={(e) => handleCustomAddressChange(pkgOpt.package.id, 'lastName', e.target.value)}
-                            className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                            placeholder="Kowalski"
-                          />
-                        </div>
-                        <div className="sm:col-span-2">
-                          <label className="block text-[10px] sm:text-xs text-gray-600 mb-1">Telefon *</label>
-                          <input
-                            type="tel"
-                            value={customAddresses[pkgOpt.package.id]?.phone || ''}
-                            onChange={(e) => handleCustomAddressChange(pkgOpt.package.id, 'phone', e.target.value)}
-                            className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                            placeholder="+48 123 456 789"
-                          />
-                        </div>
-                        <div className="sm:col-span-2">
-                          <label className="block text-[10px] sm:text-xs text-gray-600 mb-1">Ulica i numer *</label>
-                          <input
-                            type="text"
-                            value={customAddresses[pkgOpt.package.id]?.street || ''}
-                            onChange={(e) => handleCustomAddressChange(pkgOpt.package.id, 'street', e.target.value)}
-                            className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                            placeholder="ul. Przykładowa 10"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] sm:text-xs text-gray-600 mb-1">Nr mieszkania</label>
-                          <input
-                            type="text"
-                            value={customAddresses[pkgOpt.package.id]?.apartment || ''}
-                            onChange={(e) => handleCustomAddressChange(pkgOpt.package.id, 'apartment', e.target.value)}
-                            className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                            placeholder="5A"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] sm:text-xs text-gray-600 mb-1">Kod pocztowy *</label>
-                          <input
-                            type="text"
-                            value={customAddresses[pkgOpt.package.id]?.postalCode || ''}
-                            onChange={(e) => handleCustomAddressChange(pkgOpt.package.id, 'postalCode', e.target.value)}
-                            className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                            placeholder="00-001"
-                          />
-                        </div>
-                        <div className="sm:col-span-2">
-                          <label className="block text-[10px] sm:text-xs text-gray-600 mb-1">Miasto *</label>
-                          <input
-                            type="text"
-                            value={customAddresses[pkgOpt.package.id]?.city || ''}
-                            onChange={(e) => handleCustomAddressChange(pkgOpt.package.id, 'city', e.target.value)}
-                            className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                            placeholder="Warszawa"
-                          />
-                        </div>
-                      </div>
+
+                    {/* OR separator */}
+                    <div className="flex items-center gap-4 py-2">
+                      <div className="flex-1 h-px bg-gray-300"></div>
+                      <span className="text-sm font-bold text-gray-500 uppercase">lub</span>
+                      <div className="flex-1 h-px bg-gray-300"></div>
                     </div>
-                  )}
-                </div>
-              )}
-              </div>
-            </div>
-          );
-          })}
+
+                    {/* Option 2: Courier */}
+                    {courierAlternatives.map((pkgOpt) => {
+                      const courierMethods = pkgOpt.shippingMethods.filter(m => m.available);
+                      const selectedMethod = courierMethods.find(m => m.id === selectedMethods[pkgOpt.package.id]);
+                      const defaultPrice = courierMethods[0]?.price || 19.99;
+                      
+                      return (
+                        <div 
+                          key={pkgOpt.package.id} 
+                          className={`rounded-xl border-2 overflow-hidden transition-all ${
+                            courierAlternativeSelected 
+                              ? 'border-orange-400 ring-2 ring-orange-200' 
+                              : 'border-gray-200 hover:border-orange-300'
+                          }`}
+                        >
+                          {/* Courier header - clickable to select first courier option */}
+                          <label className="block cursor-pointer">
+                            <input
+                              type="radio"
+                              name="shipping-choice"
+                              checked={courierAlternativeSelected}
+                              onChange={() => {
+                                // Select first courier method, clear paczkomat
+                                const firstMethod = courierMethods[0];
+                                if (firstMethod) {
+                                  handleMethodChange(pkgOpt.package.id, firstMethod.id as ShippingMethodId);
+                                }
+                                paczkomatShipments.forEach(ps => {
+                                  setSelectedMethods(prev => ({ ...prev, [ps.package.id]: '' as ShippingMethodId }));
+                                  setPaczkomatSelections(prev => {
+                                    const { [ps.package.id]: _, ...rest } = prev;
+                                    return rest;
+                                  });
+                                });
+                              }}
+                              className="sr-only"
+                            />
+                            <div className={`px-4 py-3 flex items-center gap-3 ${courierAlternativeSelected ? 'bg-orange-50' : 'bg-gray-50'}`}>
+                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                                courierAlternativeSelected ? 'border-orange-500 bg-orange-500' : 'border-gray-300'
+                              }`}>
+                                {courierAlternativeSelected && (
+                                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                )}
+                              </div>
+                              <div className="w-12 h-7 bg-red-500 rounded flex items-center justify-center flex-shrink-0">
+                                <span className="text-white text-[10px] font-bold">Kurier</span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-gray-900">Kurier</span>
+                                  <span className="px-2 py-0.5 bg-green-500 text-white text-[10px] font-bold rounded-full">
+                                    1 przesyłka
+                                  </span>
+                                </div>
+                                <span className="text-xs text-gray-500">Wszystkie produkty w jednej przesyłce</span>
+                              </div>
+                              <div className="text-right flex-shrink-0">
+                                <div className="text-lg font-bold text-gray-900">{(selectedMethod?.price || defaultPrice).toFixed(2)} zł</div>
+                              </div>
+                            </div>
+                          </label>
+                          
+                          {/* Courier options - show when selected */}
+                          {courierAlternativeSelected && (
+                            <div className="bg-white border-t border-orange-100 px-4 py-3 space-y-2">
+                              {courierMethods.map(method => (
+                                <label
+                                  key={method.id}
+                                  className={`
+                                    flex items-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer
+                                    ${selectedMethods[pkgOpt.package.id] === method.id
+                                      ? 'bg-orange-50 border-orange-400'
+                                      : 'bg-white border-gray-200 hover:border-orange-200'
+                                    }
+                                  `}
+                                >
+                                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                                    selectedMethods[pkgOpt.package.id] === method.id ? 'border-orange-500 bg-orange-500' : 'border-gray-300'
+                                  }`}>
+                                    {selectedMethods[pkgOpt.package.id] === method.id && (
+                                      <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                                    )}
+                                  </div>
+                                  <input
+                                    type="radio"
+                                    name={`courier-${pkgOpt.package.id}`}
+                                    value={method.id}
+                                    checked={selectedMethods[pkgOpt.package.id] === method.id}
+                                    onChange={() => handleMethodChange(pkgOpt.package.id, method.id as ShippingMethodId)}
+                                    className="sr-only"
+                                  />
+                                  <ShippingIcon id={method.id} />
+                                  <div className="flex-1 min-w-0">
+                                    <span className="text-gray-900 text-sm font-medium">{method.name}</span>
+                                    <span className="text-xs text-gray-500 block">{method.estimatedDelivery}</span>
+                                  </div>
+                                  <span className="text-gray-900 font-bold">{method.price.toFixed(2)} zł</span>
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
+              </>
+            );
+          })()}
         </div>
 
         {/* Shipping summary */}
@@ -738,7 +899,25 @@ export default function ShippingPerPackage({
             </span>
           </div>
           <div className="text-xs text-gray-500">
-            {packagesWithOptions.length} {packagesWithOptions.length === 1 ? 'przesyłka' : packagesWithOptions.length < 5 ? 'przesyłki' : 'przesyłek'} • Otrzymasz numer śledzenia dla każdej
+            {(() => {
+              // Count actual shipments (exclude courier alternatives if paczkomat selected)
+              const paczkomatShipments = packagesWithOptions.filter(p => p.package.isPaczkomatShipment);
+              const courierAlternatives = packagesWithOptions.filter(p => p.package.isCourierAlternative);
+              const regularPackages = packagesWithOptions.filter(p => !p.package.isPaczkomatShipment && !p.package.isCourierAlternative);
+              
+              const courierAlternativeSelected = courierAlternatives.some(p => 
+                selectedMethods[p.package.id] && selectedMethods[p.package.id] !== ''
+              );
+              
+              let shipmentCount = regularPackages.length;
+              if (courierAlternativeSelected) {
+                shipmentCount += 1; // Courier = 1 shipment
+              } else if (paczkomatShipments.length > 0) {
+                shipmentCount += paczkomatShipments.length;
+              }
+              
+              return `${shipmentCount} ${shipmentCount === 1 ? 'przesyłka' : shipmentCount < 5 ? 'przesyłki' : 'przesyłek'} • Otrzymasz numer śledzenia dla każdej`;
+            })()}
           </div>
         </div>
 

@@ -9,19 +9,24 @@ import { useCart } from '../../contexts/CartContext';
 import { productsApi, checkoutApi, Product } from '../../lib/api';
 
 export default function CartPage() {
-  const { cart, loading, error, updateQuantity, removeFromCart, clearCart, addToCart } = useCart();
-  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const { 
+    cart, 
+    loading, 
+    error, 
+    updateQuantity, 
+    removeFromCart, 
+    clearCart, 
+    addToCart,
+    selectedItems,
+    setItemSelection,
+    selectAllItems,
+    deselectAllItems,
+  } = useCart();
   const [suggestedProducts, setSuggestedProducts] = useState<Product[]>([]);
   const [shippingPrices, setShippingPrices] = useState<Record<string, number>>({});
   const [totalShippingCost, setTotalShippingCost] = useState<number>(0);
+  const [minShippingCost, setMinShippingCost] = useState<number>(0);
   const [loadingShipping, setLoadingShipping] = useState(false);
-
-  // Initialize all items as selected
-  useEffect(() => {
-    if (cart?.items) {
-      setSelectedItems(new Set(cart.items.map(item => item.id)));
-    }
-  }, [cart?.items]);
 
   // Fetch bestseller products
   useEffect(() => {
@@ -43,14 +48,25 @@ export default function CartPage() {
     fetchBestsellers();
   }, []);
 
-  // Fetch shipping prices for each package
+  // Fetch shipping prices for each package - only for selected items
   useEffect(() => {
     async function fetchShippingPrices() {
       if (!cart?.items || cart.items.length === 0) return;
       
+      // Filter only selected items
+      const selectedCartItems = cart.items.filter(item => selectedItems.has(item.id));
+      
+      if (selectedCartItems.length === 0) {
+        setShippingPrices({});
+        setTotalShippingCost(0);
+        setMinShippingCost(0);
+        setLoadingShipping(false);
+        return;
+      }
+      
       setLoadingShipping(true);
       try {
-        const items = cart.items.map(item => ({
+        const items = selectedCartItems.map(item => ({
           variantId: item.variant.id,
           quantity: item.quantity,
         }));
@@ -70,6 +86,8 @@ export default function CartPage() {
         setShippingPrices(prices);
         // Use the total from API which is calculated correctly
         setTotalShippingCost(response.totalShippingCost || 0);
+        // Use minimum shipping cost for "from" display
+        setMinShippingCost(response.minShippingCost || response.totalShippingCost || 0);
       } catch (err) {
         console.error('Failed to fetch shipping prices:', err);
       } finally {
@@ -78,25 +96,17 @@ export default function CartPage() {
     }
     
     fetchShippingPrices();
-  }, [cart?.items]);
+  }, [cart?.items, selectedItems]);
 
   const handleSelectionChange = (itemId: string, selected: boolean) => {
-    setSelectedItems(prev => {
-      const next = new Set(prev);
-      if (selected) {
-        next.add(itemId);
-      } else {
-        next.delete(itemId);
-      }
-      return next;
-    });
+    setItemSelection(itemId, selected);
   };
 
   const handleSelectAll = (selected: boolean) => {
-    if (selected && cart?.items) {
-      setSelectedItems(new Set(cart.items.map(item => item.id)));
+    if (selected) {
+      selectAllItems();
     } else {
-      setSelectedItems(new Set());
+      deselectAllItems();
     }
   };
 
@@ -112,11 +122,6 @@ export default function CartPage() {
   const handleRemoveItem = async (itemId: string) => {
     try {
       await removeFromCart(itemId);
-      setSelectedItems(prev => {
-        const next = new Set(prev);
-        next.delete(itemId);
-        return next;
-      });
     } catch (err) {
       console.error('Failed to remove item:', err);
     }
@@ -254,11 +259,11 @@ export default function CartPage() {
                     <span className="font-medium">{totals.subtotal.toFixed(2)} zł</span>
                   </div>
                   <div className="flex justify-between text-sm sm:text-base">
-                    <span className="text-gray-600">Dostawa od</span>
+                    <span className="text-gray-600">Szacowana dostawa</span>
                     {loadingShipping ? (
                       <span className="text-gray-400">Obliczanie...</span>
-                    ) : totals.shipping > 0 ? (
-                      <span className="font-medium">{totals.shipping.toFixed(2)} zł</span>
+                    ) : minShippingCost > 0 ? (
+                      <span className="font-medium text-gray-500">od {minShippingCost.toFixed(2)} zł</span>
                     ) : (
                       <span className="text-gray-500 text-xs sm:text-sm">Wybierz przy zamówieniu</span>
                     )}
