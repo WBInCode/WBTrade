@@ -51,7 +51,7 @@ export class CartService {
       });
     }
 
-    return this.formatCart(cart);
+    return await this.formatCart(cart);
   }
 
   /**
@@ -153,7 +153,7 @@ export class CartService {
       include: this.cartInclude,
     });
 
-    return this.formatCart(cart!);
+    return await this.formatCart(cart!);
   }
 
   /**
@@ -211,7 +211,7 @@ export class CartService {
       include: this.cartInclude,
     });
 
-    return this.formatCart(cart!);
+    return await this.formatCart(cart!);
   }
 
   /**
@@ -227,7 +227,7 @@ export class CartService {
       include: this.cartInclude,
     });
 
-    return this.formatCart(cart!);
+    return await this.formatCart(cart!);
   }
 
   /**
@@ -243,7 +243,7 @@ export class CartService {
       include: this.cartInclude,
     });
 
-    return this.formatCart(cart!);
+    return await this.formatCart(cart!);
   }
 
   /**
@@ -277,7 +277,7 @@ export class CartService {
       include: this.cartInclude,
     });
 
-    return this.formatCart(cart!);
+    return await this.formatCart(cart!);
   }
 
   /**
@@ -294,7 +294,7 @@ export class CartService {
       include: this.cartInclude,
     });
 
-    return this.formatCart(cart!);
+    return await this.formatCart(cart!);
   }
 
   /**
@@ -315,7 +315,7 @@ export class CartService {
     if (!guestCart) {
       // No guest cart to merge
       if (userCart) {
-        return this.formatCart(userCart);
+        return await this.formatCart(userCart);
       }
       return this.getOrCreateCart(userId);
     }
@@ -331,7 +331,7 @@ export class CartService {
         },
         include: this.cartInclude,
       });
-      return this.formatCart(updatedCart);
+      return await this.formatCart(updatedCart);
     }
 
     // Merge items from guest cart to user cart
@@ -365,7 +365,7 @@ export class CartService {
       include: this.cartInclude,
     });
 
-    return this.formatCart(mergedCart!);
+    return await this.formatCart(mergedCart!);
   }
 
   /**
@@ -415,7 +415,7 @@ export class CartService {
   /**
    * Format cart with calculated totals
    */
-  private formatCart(cart: any): CartWithItems {
+  private async formatCart(cart: any): Promise<CartWithItems> {
     const items: CartItemWithProduct[] = cart.items.map((item: any) => {
       // Use variant price, but fallback to product price if variant price is 0
       const variantPrice = Number(item.variant.price);
@@ -468,7 +468,7 @@ export class CartService {
         if (coupon.type === 'PERCENTAGE') {
           // Percentage discount
           discount = Math.round(subtotal * Number(coupon.value) / 100 * 100) / 100;
-        } else if (coupon.type === 'FIXED') {
+        } else if (coupon.type === 'FIXED_AMOUNT') {
           // Fixed amount discount
           discount = Math.min(Number(coupon.value), subtotal);
         }
