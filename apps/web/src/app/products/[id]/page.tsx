@@ -830,19 +830,21 @@ export default function ProductPage({ params }: ProductPageProps) {
               {/* Warehouse Location based on tags */}
               {(() => {
                 const tags = product?.tags || [];
+                const lowerTags = tags.map(t => t.toLowerCase());
                 let warehouseCity = '';
                 
-                if (tags.some(t => t.toLowerCase().includes('hurtownia przemysłowa'))) {
+                if (lowerTags.some(t => t.includes('hurtownia przemysłowa') || t === 'hp')) {
                   warehouseCity = 'Zielonej Górze';
-                } else if (tags.some(t => t.toLowerCase() === 'ikonka')) {
+                } else if (lowerTags.includes('ikonka') || lowerTags.includes('forcetop')) {
                   warehouseCity = 'Białymstoku';
-                } else if (tags.some(t => t.toLowerCase() === 'leker')) {
+                } else if (lowerTags.includes('leker')) {
                   warehouseCity = 'Chynowie';
-                } else if (tags.some(t => t.toLowerCase() === 'btp')) {
+                } else if (lowerTags.includes('btp')) {
                   warehouseCity = 'Chotowie';
+                } else {
+                  // Default warehouse if no specific tag found
+                  warehouseCity = 'Zielonej Górze';
                 }
-                
-                if (!warehouseCity) return null;
                 
                 return (
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">
