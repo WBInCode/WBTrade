@@ -244,9 +244,9 @@ export default function ProductPage({ params }: ProductPageProps) {
     setBuyingNow(true);
     setCartError(null);
     try {
-      // Don't show modal for buy now - go directly to checkout
-      const updatedCart = await cartApi.addItem(selectedVariant.id, quantity);
-      router.push('/checkout');
+      // Add to cart and redirect to cart page
+      await addToCart(selectedVariant.id, quantity);
+      router.push('/cart');
     } catch (err: any) {
       console.error('Failed to buy now:', err);
       setCartError(err?.message || 'Nie udało się dodać produktu do koszyka');
