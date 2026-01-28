@@ -18,12 +18,31 @@ export default function Newsletter() {
 
     setStatus('loading');
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setStatus('success');
-    setMessage('Dziękujemy! Potwierdź subskrypcję w mailu.');
-    setEmail('');
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/newsletter/subscribe`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setStatus('success');
+        setMessage(data.message);
+        setEmail('');
+      } else {
+        setStatus('error');
+        setMessage(data.message || 'Wystąpił błąd');
+      }
+    } catch (error) {
+      console.error('Newsletter error:', error);
+      setStatus('error');
+      setMessage('Wystąpił błąd. Spróbuj ponownie później.');
+    }
     
     // Reset after 5 seconds
     setTimeout(() => {

@@ -43,23 +43,15 @@ export default function BestsellersCarousel({
 
   if (loading) {
     return (
-      <section className="my-8">
-        <div className="container-custom">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-orange-500 to-red-600 px-6 py-5">
-              <div className="animate-pulse flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl"></div>
-                <div className="h-6 bg-white/20 rounded w-48"></div>
-              </div>
-            </div>
-            <div className="p-6">
-              <div className="flex gap-4">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="w-[220px] h-[300px] bg-gray-100 rounded-lg animate-pulse"></div>
-                ))}
-              </div>
-            </div>
-          </div>
+      <section className="py-4 sm:py-6 md:py-8">
+        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary-100 rounded-lg sm:rounded-xl animate-pulse"></div>
+          <div className="h-4 sm:h-5 bg-gray-200 rounded w-24 sm:w-32 animate-pulse"></div>
+        </div>
+        <div className="flex gap-2.5 sm:gap-3 md:gap-4 overflow-hidden -mx-4 sm:-mx-6 md:mx-0 px-4 sm:px-6 md:px-0">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="flex-shrink-0 w-[140px] sm:w-[170px] md:w-[200px] lg:w-[220px] h-[200px] sm:h-[240px] md:h-[280px] bg-gray-100 rounded-xl sm:rounded-2xl animate-pulse"></div>
+          ))}
         </div>
       </section>
     );
@@ -71,7 +63,7 @@ export default function BestsellersCarousel({
       subtitle="Najchętniej kupowane produkty"
       products={products}
       viewAllLink="/products/bestsellers"
-      accentColor="from-orange-500 to-red-600"
+      accentColor="orange"
       icon={<span>🔥</span>}
     />
   );
