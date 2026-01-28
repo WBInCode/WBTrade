@@ -78,6 +78,7 @@ export interface ShippingPackageItem {
   gabarytPrice?: number;
   weightShippingPrice?: number; // Price based on weight tag (e.g., "do 10 kg")
   productImage?: string;
+  tags?: string[]; // Product tags for paczkomat limit calculation
 }
 
 export interface ShippingPackage {
@@ -353,6 +354,7 @@ export class ShippingCalculatorService {
             isGabaryt: true,
             gabarytPrice: gabarytPrice || undefined,
             productImage: gabarytItem.product.image,
+            tags: gabarytItem.product.tags || [],
           }],
           paczkomatPackageCount: 0,
           gabarytPrice: gabarytPrice || SHIPPING_PRICES.gabaryt_base,
@@ -692,6 +694,7 @@ export class ShippingCalculatorService {
   async getShippingOptionsPerPackage(items: CartItemForShipping[]): Promise<{
     packagesWithOptions: PackageWithShippingOptions[];
     totalShippingCost: number;
+    minShippingCost: number;
     warnings: string[];
   }> {
     const calculation = await this.calculateShipping(items);
