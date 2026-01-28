@@ -143,10 +143,8 @@ function ProductsContent() {
           setTotalPages(Math.ceil(discountedProducts.length / ITEMS_PER_PAGE));
         } else {
           // "All" tab - show all products with filters
-          // Use random sort for "all" tab to increase product discovery, unless user explicitly chose a sort
-          const sortValue = (activeTab === 'all' && sort === 'newest') 
-            ? 'random' as const
-            : sort as 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'newest' | 'random';
+          // Use popularity sort by default for better discovery
+          const sortValue = sort as 'price-asc' | 'price-desc' | 'newest' | 'relevance' | 'popularity';
           
           const response = await productsApi.getAll({
             page: currentPage,
@@ -183,11 +181,11 @@ function ProductsContent() {
   const handleSortChange = (value: string) => {
     // Map UI sort values to API sort values
     const sortMapping: Record<string, string> = {
-      'relevance': 'newest',
-      'price-asc': 'price_asc',
-      'price-desc': 'price_desc',
+      'relevance': 'relevance',
+      'popularity': 'popularity',
+      'price-asc': 'price-asc',
+      'price-desc': 'price-desc',
       'newest': 'newest',
-      'rating': 'newest', // API doesn't support rating sort, fallback to newest
     };
     const apiSort = sortMapping[value] || 'newest';
     
