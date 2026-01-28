@@ -8,6 +8,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { checkoutApi, addressesApi, ApiClientError } from '@/lib/api';
 import CheckoutSteps from './components/CheckoutSteps';
+import CheckoutAuthChoice from './components/CheckoutAuthChoice';
 import AddressForm from './components/AddressForm';
 import ShippingPerPackage from './components/ShippingPerPackage';
 import PaymentMethod from './components/PaymentMethod';
@@ -102,7 +103,9 @@ function CheckoutPageContent() {
   const { cart, itemCount, loading: cartLoading, removeFromCart, updateQuantity } = useCart();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   
-  const [currentStep, setCurrentStep] = useState(1);
+  // Step 0 = auth choice, Step 1-4 = checkout steps
+  const [currentStep, setCurrentStep] = useState(0);
+  const [isGuestCheckout, setIsGuestCheckout] = useState(false);
   const [removingItemId, setRemovingItemId] = useState<string | null>(null);
   const [checkoutData, setCheckoutData] = useState<CheckoutData>({
     address: initialAddress,
@@ -114,6 +117,13 @@ function CheckoutPageContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [paymentCancelledMessage, setPaymentCancelledMessage] = useState<string | null>(null);
+
+  // If user is authenticated, skip to step 1
+  useEffect(() => {
+    if (isAuthenticated && currentStep === 0) {
+      setCurrentStep(1);
+    }
+  }, [isAuthenticated, currentStep]);
 
   // Check if payment was cancelled (redirected back from PayU)
   useEffect(() => {
@@ -191,6 +201,18 @@ function CheckoutPageContent() {
   const displayCart = cart;
   const isCartEmpty = !cartLoading && itemCount === 0;
 
+  // Guest checkout handlers
+  const handleGuestCheckout = () => {
+    setIsGuestCheckout(true);
+    setCurrentStep(1);
+    window.scrollTo(0, 0);
+  };
+
+  const handleLoginClick = () => {
+    // Redirect to login page with return URL
+    router.push('/login?redirect=/checkout');
+  };
+
   const handleAddressSubmit = (address: AddressData) => {
     setCheckoutData(prev => ({ ...prev, address }));
     setCurrentStep(2);
@@ -267,7 +289,69 @@ function CheckoutPageContent() {
     setError('');
 
     try {
-      // First, create or get shipping address
+      let shippingAddressId: string | undefined;
+      let billingAddressId: string | undefined;
+
+      // For guest checkout, we don't create address via API - we send data directly
+      if (isGuestCheckout) {
+        // Guest checkout - send address data directly in createCheckout
+        const checkoutResponse = await checkoutApi.createCheckout({
+          shippingMethod: checkoutData.shipping.method,
+          pickupPointCode: checkoutData.shipping.paczkomatCode,
+          pickupPointAddress: checkoutData.shipping.paczkomatAddress,
+          paymentMethod: checkoutData.payment.method,
+          customerNotes: '',
+          acceptTerms: checkoutData.acceptTerms,
+          packageShipping: checkoutData.shipping.packageShipping?.map(pkg => ({
+            packageId: pkg.packageId,
+            method: pkg.method,
+            price: pkg.price,
+            paczkomatCode: pkg.paczkomatCode,
+            paczkomatAddress: pkg.paczkomatAddress,
+            useCustomAddress: pkg.useCustomAddress,
+            customAddress: pkg.customAddress,
+          })),
+          // Guest checkout fields
+          guestEmail: checkoutData.address.email,
+          guestFirstName: checkoutData.address.firstName,
+          guestLastName: checkoutData.address.lastName,
+          guestPhone: checkoutData.address.phone,
+          // Guest address data
+          guestAddress: {
+            firstName: checkoutData.address.firstName,
+            lastName: checkoutData.address.lastName,
+            street: checkoutData.address.street + (checkoutData.address.apartment ? ` ${checkoutData.address.apartment}` : ''),
+            city: checkoutData.address.city,
+            postalCode: checkoutData.address.postalCode,
+            country: 'PL',
+            phone: checkoutData.address.phone,
+            differentBillingAddress: checkoutData.address.differentBillingAddress,
+            billingAddress: checkoutData.address.differentBillingAddress ? {
+              firstName: checkoutData.address.firstName,
+              lastName: checkoutData.address.lastName,
+              companyName: checkoutData.address.billingCompanyName,
+              nip: checkoutData.address.billingNip,
+              street: (checkoutData.address.billingStreet || '') + (checkoutData.address.billingApartment ? ` ${checkoutData.address.billingApartment}` : ''),
+              city: checkoutData.address.billingCity || '',
+              postalCode: checkoutData.address.billingPostalCode || '',
+              country: 'PL',
+              phone: checkoutData.address.phone,
+            } : undefined,
+          },
+        });
+
+        // If payment URL is provided, redirect to payment gateway
+        if (checkoutResponse.paymentUrl) {
+          window.location.href = checkoutResponse.paymentUrl;
+          return;
+        }
+
+        // Otherwise redirect to order confirmation
+        router.push(`/order/${checkoutResponse.orderId}/confirmation`);
+        return;
+      }
+
+      // Logged in user flow - create addresses via API
       const addressData = {
         firstName: checkoutData.address.firstName,
         lastName: checkoutData.address.lastName,
@@ -283,9 +367,9 @@ function CheckoutPageContent() {
 
       // Create shipping address
       const shippingAddress = await addressesApi.create(addressData);
+      shippingAddressId = shippingAddress.id;
 
       // Create billing address if different from shipping
-      let billingAddressId: string | undefined;
       if (checkoutData.address.differentBillingAddress) {
         const billingData = {
           firstName: checkoutData.address.firstName,
@@ -307,7 +391,7 @@ function CheckoutPageContent() {
 
       // Create checkout/order
       const checkoutResponse = await checkoutApi.createCheckout({
-        shippingAddressId: shippingAddress.id,
+        shippingAddressId,
         billingAddressId,
         shippingMethod: checkoutData.shipping.method,
         pickupPointCode: checkoutData.shipping.paczkomatCode,
@@ -404,58 +488,8 @@ function CheckoutPageContent() {
     );
   }
 
-  // Check if user is logged in - required for checkout
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <header className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <Link href="/">
-              <Image 
-                src="/images/WB-TRADE.svg" 
-                alt="WB Trade Group" 
-                width={140} 
-                height={50} 
-                className="h-10 w-auto object-contain"
-              />
-            </Link>
-          </div>
-        </header>
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="max-w-md mx-auto bg-white rounded-xl shadow-sm p-8 text-center">
-            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-3">Zaloguj się, aby złożyć zamówienie</h1>
-            <p className="text-gray-600 mb-8">
-              Aby kontynuować składanie zamówienia, musisz być zalogowany na swoje konto. Dzięki temu możesz śledzić status zamówienia i mieć dostęp do historii zakupów.
-            </p>
-            <div className="space-y-3">
-              <Link
-                href="/login?redirect=/checkout"
-                className="block w-full px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-medium transition-colors"
-              >
-                Zaloguj się
-              </Link>
-              <Link
-                href="/register?redirect=/checkout"
-                className="block w-full px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
-              >
-                Utwórz konto
-              </Link>
-            </div>
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <Link href="/cart" className="text-sm text-gray-500 hover:text-orange-500">
-                ← Wróć do koszyka
-              </Link>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
+  // For non-authenticated users, we show auth choice at step 0
+  // This block is no longer needed - we handle it in the main render with CheckoutAuthChoice
 
   const totals = calculateTotal();
 
@@ -514,10 +548,19 @@ function CheckoutPageContent() {
               </div>
             )}
 
+            {/* Step 0: Auth choice for non-authenticated users */}
+            {currentStep === 0 && !isAuthenticated && (
+              <CheckoutAuthChoice
+                onGuestCheckout={handleGuestCheckout}
+                onLoginClick={handleLoginClick}
+              />
+            )}
+
             {currentStep === 1 && (
               <AddressForm
                 initialData={checkoutData.address}
                 onSubmit={handleAddressSubmit}
+                isGuestCheckout={isGuestCheckout}
               />
             )}
 

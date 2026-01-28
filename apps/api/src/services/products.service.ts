@@ -1,8 +1,9 @@
 import { prisma } from '../db';
-import { Prisma } from '@prisma/client';
+import { Prisma, PriceChangeSource } from '@prisma/client';
 import { getProductsIndex } from '../lib/meilisearch';
 import { MeiliProduct } from './search.service';
 import { queueProductIndex, queueProductDelete } from '../lib/queue';
+import { priceHistoryService } from './price-history.service';
 
 // Tagi dostawy - produkty MUSZĄ mieć przynajmniej jeden z tych tagów żeby być widoczne
 // Produkty z TYLKO tagiem hurtowni (Ikonka, BTP, HP, Leker) nie będą wyświetlane
@@ -725,11 +726,53 @@ export class ProductsService {
 
   /**
    * Update an existing product
+   * Handles price changes through PriceHistoryService for Omnibus compliance
    */
-  async update(id: string, data: Prisma.ProductUpdateInput) {
-    const product = await prisma.product.update({
+  async update(
+    id: string, 
+    data: Prisma.ProductUpdateInput,
+    options?: {
+      source?: PriceChangeSource;
+      changedBy?: string;
+      reason?: string;
+    }
+  ) {
+    // Check if price is being updated
+    const newPrice = data.price;
+    const hasNewPrice = newPrice !== undefined;
+    
+    // If price is changing, use PriceHistoryService for Omnibus compliance
+    if (hasNewPrice && typeof newPrice === 'number') {
+      // Extract price from update data - it will be handled by priceHistoryService
+      const { price: _extractedPrice, ...dataWithoutPrice } = data as any;
+      
+      // First update other fields (without price)
+      if (Object.keys(dataWithoutPrice).length > 0) {
+        await prisma.product.update({
+          where: { id },
+          data: dataWithoutPrice,
+        });
+      }
+      
+      // Then update price with history tracking (Omnibus)
+      await priceHistoryService.updateProductPrice({
+        productId: id,
+        newPrice,
+        source: options?.source || PriceChangeSource.ADMIN,
+        changedBy: options?.changedBy,
+        reason: options?.reason,
+      });
+    } else {
+      // No price change - standard update
+      await prisma.product.update({
+        where: { id },
+        data,
+      });
+    }
+    
+    // Fetch updated product with relations
+    const product = await prisma.product.findUnique({
       where: { id },
-      data,
       include: {
         images: true,
         category: true,
@@ -742,11 +785,74 @@ export class ProductsService {
     });
     
     // Queue product for Meilisearch reindexing
-    await queueProductIndex(product.id).catch(err => 
+    if (product) {
+      await queueProductIndex(product.id).catch(err => 
+        console.error('Failed to queue product reindex:', err)
+      );
+    }
+    
+    return product;
+  }
+
+  /**
+   * Update product price with full Omnibus compliance
+   * Use this method when you need explicit control over price changes
+   */
+  async updatePrice(
+    productId: string,
+    newPrice: number,
+    source: PriceChangeSource,
+    changedBy?: string,
+    reason?: string
+  ) {
+    const result = await priceHistoryService.updateProductPrice({
+      productId,
+      newPrice,
+      source,
+      changedBy,
+      reason,
+    });
+    
+    // Queue for reindexing
+    await queueProductIndex(productId).catch(err => 
       console.error('Failed to queue product reindex:', err)
     );
     
-    return product;
+    return result;
+  }
+
+  /**
+   * Update variant price with full Omnibus compliance
+   */
+  async updateVariantPrice(
+    variantId: string,
+    newPrice: number,
+    source: PriceChangeSource,
+    changedBy?: string,
+    reason?: string
+  ) {
+    // Get variant to find product ID for reindexing
+    const variant = await prisma.productVariant.findUnique({
+      where: { id: variantId },
+      select: { productId: true },
+    });
+    
+    const result = await priceHistoryService.updateVariantPrice({
+      variantId,
+      newPrice,
+      source,
+      changedBy,
+      reason,
+    });
+    
+    // Queue parent product for reindexing
+    if (variant?.productId) {
+      await queueProductIndex(variant.productId).catch(err => 
+        console.error('Failed to queue product reindex:', err)
+      );
+    }
+    
+    return result;
   }
 
   /**

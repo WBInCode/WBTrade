@@ -256,6 +256,8 @@ export interface Product {
   specifications?: Record<string, string>;
   price: string | number;
   compareAtPrice?: string | number;
+  lowestPrice30Days?: string | number; // Omnibus - najniższa cena z ostatnich 30 dni
+  lowestPrice30DaysAt?: string; // Kiedy odnotowano najniższą cenę
   sku?: string;
   barcode?: string;
   status: 'active' | 'draft' | 'archived';
@@ -287,6 +289,7 @@ export interface ProductVariant {
   name: string;
   sku: string;
   price: number;
+  lowestPrice30Days?: number; // Omnibus - najniższa cena z ostatnich 30 dni
   stock: number;
   attributes: Record<string, string>;
 }
@@ -891,7 +894,7 @@ export interface PackageShippingRequest {
 }
 
 export interface CheckoutRequest {
-  shippingAddressId: string;
+  shippingAddressId?: string;
   billingAddressId?: string;
   shippingMethod: string;
   pickupPointCode?: string;
@@ -900,6 +903,32 @@ export interface CheckoutRequest {
   customerNotes?: string;
   acceptTerms: boolean;
   packageShipping?: PackageShippingRequest[];
+  // Guest checkout fields
+  guestEmail?: string;
+  guestFirstName?: string;
+  guestLastName?: string;
+  guestPhone?: string;
+  guestAddress?: {
+    firstName: string;
+    lastName: string;
+    street: string;
+    city: string;
+    postalCode: string;
+    country: string;
+    phone?: string;
+    differentBillingAddress?: boolean;
+    billingAddress?: {
+      firstName: string;
+      lastName: string;
+      companyName?: string;
+      nip?: string;
+      street: string;
+      city: string;
+      postalCode: string;
+      country: string;
+      phone?: string;
+    };
+  };
 }
 
 export interface CheckoutResponse {
