@@ -188,7 +188,6 @@ export class OrdersService {
           subtotal,
           shipping,
           discount,
-          couponCode: data.couponCode,
           tax,
           total,
           customerNotes: data.customerNotes,
