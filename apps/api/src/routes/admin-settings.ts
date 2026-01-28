@@ -3,6 +3,16 @@ import { prisma } from '../db';
 
 const router = Router();
 
+// Helper to safely parse JSON string
+const parseJsonValue = (value: string | null | undefined): any => {
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+};
+
 // Note: These endpoints are under /api/admin/settings, accessed only from admin panel
 // The admin panel has its own authentication (ADMIN_ACCESS_SECRET)
 
@@ -17,10 +27,11 @@ router.get('/carousels', async (req, res) => {
       prisma.settings.findUnique({ where: { key: 'carousel_exclusions' } }),
     ]);
 
-    const exclusions = exclusionsSetting?.value as { excludedProductIds?: string[] } | null;
+    const carousels = parseJsonValue(carouselSetting?.value);
+    const exclusions = parseJsonValue(exclusionsSetting?.value) as { excludedProductIds?: string[] } | null;
 
     res.json({
-      carousels: carouselSetting?.value || {},
+      carousels: carousels || {},
       excludedProductIds: exclusions?.excludedProductIds || [],
     });
   } catch (error) {
@@ -40,16 +51,16 @@ router.post('/carousels', async (req, res) => {
     // Save carousels
     await prisma.settings.upsert({
       where: { key: 'homepage_carousels' },
-      update: { value: carousels },
-      create: { key: 'homepage_carousels', value: carousels },
+      update: { value: JSON.stringify(carousels) },
+      create: { key: 'homepage_carousels', value: JSON.stringify(carousels) },
     });
 
     // Save exclusions
     if (excludedProductIds !== undefined) {
       await prisma.settings.upsert({
         where: { key: 'carousel_exclusions' },
-        update: { value: { excludedProductIds } },
-        create: { key: 'carousel_exclusions', value: { excludedProductIds } },
+        update: { value: JSON.stringify({ excludedProductIds }) },
+        create: { key: 'carousel_exclusions', value: JSON.stringify({ excludedProductIds }) },
       });
     }
 
@@ -76,7 +87,7 @@ router.get('/:key', async (req, res) => {
       return;
     }
 
-    res.json({ key: setting.key, value: setting.value });
+    res.json({ key: setting.key, value: parseJsonValue(setting.value) });
   } catch (error) {
     console.error('Error fetching setting:', error);
     res.status(500).json({ message: 'Error fetching setting' });
@@ -92,10 +103,12 @@ router.post('/:key', async (req, res) => {
     const { key } = req.params;
     const { value } = req.body;
 
+    const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
+
     await prisma.settings.upsert({
       where: { key },
-      update: { value },
-      create: { key, value },
+      update: { value: stringValue },
+      create: { key, value: stringValue },
     });
 
     res.json({ success: true, message: 'Setting saved successfully' });
