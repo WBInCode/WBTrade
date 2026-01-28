@@ -225,6 +225,7 @@ export default function ProductPage({ params }: ProductPageProps) {
         image: productImage,
         price: String(selectedVariant.price || product.price),
         quantity: quantity,
+        productId: product.id,
       });
     } catch (err: any) {
       console.error('Failed to add to cart:', err);

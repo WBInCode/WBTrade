@@ -403,3 +403,25 @@ export async function getNewProducts(req: Request, res: Response): Promise<void>
     res.status(500).json({ message: 'Error retrieving new products' });
   }
 }
+
+/**
+ * Get products from the same warehouse as the given product
+ * Used for "Zamów w jednej przesyłce" recommendations in add-to-cart modal
+ */
+export async function getSameWarehouseProducts(req: Request, res: Response): Promise<void> {
+  try {
+    const { productId } = req.params;
+    const limit = parseInt(req.query.limit as string) || 6;
+
+    if (!productId) {
+      res.status(400).json({ message: 'Product ID is required' });
+      return;
+    }
+
+    const result = await productsService.getSameWarehouseProducts(productId, { limit });
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('Error fetching same warehouse products:', error);
+    res.status(500).json({ message: 'Error retrieving same warehouse products' });
+  }
+}

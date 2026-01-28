@@ -69,6 +69,7 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
         image: mainImage,
         price: String(product.price),
         quantity: 1,
+        productId: product.id,
       });
       setAdded(true);
       setTimeout(() => setAdded(false), 2000);
