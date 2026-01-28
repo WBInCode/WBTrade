@@ -2,7 +2,7 @@ import prisma from '../db';
 import { AddressType } from '@prisma/client';
 
 interface CreateAddressData {
-  userId: string;
+  userId?: string;
   label?: string;
   type?: AddressType;
   firstName: string;
@@ -96,10 +96,32 @@ export const addressesService = {
 
   /**
    * Create a new address
+   * For guest checkout, userId can be undefined
    */
   async create(data: CreateAddressData) {
     const addressType = data.type || 'SHIPPING';
     const country = data.country || 'PL';
+    
+    // For guest checkout (no userId), just create the address without dedup logic
+    if (!data.userId) {
+      return prisma.address.create({
+        data: {
+          userId: null,
+          label: data.label || 'Guest',
+          type: addressType,
+          firstName: data.firstName.trim(),
+          lastName: data.lastName.trim(),
+          companyName: data.companyName?.trim() || null,
+          nip: data.nip?.trim() || null,
+          street: data.street.trim(),
+          city: data.city.trim(),
+          postalCode: data.postalCode.trim(),
+          country: country,
+          phone: data.phone?.trim(),
+          isDefault: false,
+        },
+      });
+    }
     
     // Get all existing addresses of this type for the user
     const existingAddresses = await prisma.address.findMany({

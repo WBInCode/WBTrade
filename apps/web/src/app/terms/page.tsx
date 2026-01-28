@@ -2,8 +2,8 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 
 export const metadata = {
-  title: 'Regulamin - WBTrade',
-  description: 'Regulamin sklepu internetowego WBTrade - zasady korzystania z serwisu',
+  title: 'Regulamin - WB Trade',
+  description: 'Regulamin sklepu internetowego WB Trade - zasady korzystania z serwisu',
 };
 
 export default function TermsPage() {
@@ -37,17 +37,17 @@ export default function TermsPage() {
                 </h2>
                 <ol className="list-decimal pl-6 text-secondary-600 mb-6 space-y-3">
                   <li>
-                    Niniejszy Regulamin określa zasady korzystania ze sklepu internetowego WBTrade 
+                    Niniejszy Regulamin określa zasady korzystania ze&nbsp;sklepu internetowego WB Trade 
                     dostępnego pod adresem www.wbtrade.pl (dalej: „Sklep").
                   </li>
                   <li>
-                    Właścicielem i operatorem Sklepu jest WB PARTNERS Sp. z o.o. z siedzibą w Rzeszowie, 
-                    ul. Juliusza Słowackiego 24/11, 35-060 Rzeszów, NIP: 5170455185, REGON: 540735769, 
-                    wpisana do rejestru przedsiębiorców KRS (dalej: „Sprzedawca").
+                    Właścicielem i&nbsp;operatorem Sklepu jest WB&nbsp;PARTNERS Sp.&nbsp;z&nbsp;o.o. z&nbsp;siedzibą w&nbsp;Rzeszowie, 
+                    ul.&nbsp;Juliusza Słowackiego 24/11, 35-060 Rzeszów, NIP:&nbsp;5170455185, REGON:&nbsp;540735769, 
+                    wpisana do&nbsp;rejestru przedsiębiorców KRS pod numerem 0001151642 (dalej: „Sprzedawca").
                   </li>
                   <li>
-                    Kontakt ze Sprzedawcą możliwy jest pod adresem e-mail: support@wb-partners.pl 
-                    lub telefonicznie: +48 570 028 761 (pon.-pt. 9:00-17:00).
+                    Kontakt ze&nbsp;Sprzedawcą możliwy jest pod adresem e-mail: support@wb-partners.pl 
+                    lub telefonicznie: +48&nbsp;570&nbsp;028&nbsp;761 (pon.–pt. 9:00–17:00).
                   </li>
                   <li>
                     Korzystanie ze Sklepu oznacza akceptację niniejszego Regulaminu.
@@ -58,11 +58,11 @@ export default function TermsPage() {
                   § 2. Definicje
                 </h2>
                 <ul className="list-disc pl-6 text-secondary-600 mb-6 space-y-3">
-                  <li><strong>Klient</strong> – osoba fizyczna, prawna lub jednostka organizacyjna korzystająca ze Sklepu.</li>
-                  <li><strong>Konsument</strong> – osoba fizyczna dokonująca zakupu niezwiązanego z działalnością gospodarczą.</li>
-                  <li><strong>Konto</strong> – indywidualne konto Klienta w Sklepie.</li>
-                  <li><strong>Produkt</strong> – towar dostępny w ofercie Sklepu.</li>
-                  <li><strong>Zamówienie</strong> – oświadczenie woli Klienta zmierzające do zawarcia umowy sprzedaży.</li>
+                  <li><strong>Klient</strong> – osoba fizyczna, prawna lub jednostka organizacyjna korzystająca ze&nbsp;Sklepu.</li>
+                  <li><strong>Konsument</strong> – osoba fizyczna dokonująca zakupu niezwiązanego z&nbsp;działalnością gospodarczą.</li>
+                  <li><strong>Konto</strong> – indywidualne konto Klienta w&nbsp;Sklepie.</li>
+                  <li><strong>Produkt</strong> – towar dostępny w&nbsp;ofercie Sklepu.</li>
+                  <li><strong>Zamówienie</strong> – oświadczenie woli Klienta zmierzające do&nbsp;zawarcia umowy sprzedaży.</li>
                   <li><strong>Koszyk</strong> – funkcjonalność Sklepu umożliwiająca gromadzenie wybranych Produktów.</li>
                 </ul>
 
@@ -70,15 +70,15 @@ export default function TermsPage() {
                   § 3. Rejestracja i konto
                 </h2>
                 <ol className="list-decimal pl-6 text-secondary-600 mb-6 space-y-3">
-                  <li>Rejestracja w Sklepie jest dobrowolna i bezpłatna.</li>
+                  <li>Rejestracja w&nbsp;Sklepie jest dobrowolna i&nbsp;bezpłatna.</li>
                   <li>
-                    Do rejestracji wymagane jest podanie adresu e-mail oraz utworzenie hasła. 
-                    Klient zobowiązany jest do podania prawdziwych danych.
+                    Do&nbsp;rejestracji wymagane jest podanie adresu e-mail oraz&nbsp;utworzenie hasła. 
+                    Klient zobowiązany jest do&nbsp;podania prawdziwych danych.
                   </li>
-                  <li>Klient odpowiada za zachowanie poufności hasła do swojego Konta.</li>
-                  <li>Zakupy w Sklepie można dokonywać również bez rejestracji (jako gość).</li>
+                  <li>Klient odpowiada za&nbsp;zachowanie poufności hasła do&nbsp;swojego Konta.</li>
+                  <li>Zakupy w&nbsp;Sklepie można dokonywać również bez rejestracji (jako gość).</li>
                   <li>
-                    Sprzedawca może usunąć Konto w przypadku naruszenia Regulaminu lub przepisów prawa.
+                    Sprzedawca może usunąć Konto w&nbsp;przypadku naruszenia Regulaminu lub przepisów prawa.
                   </li>
                 </ol>
 
@@ -86,22 +86,22 @@ export default function TermsPage() {
                   § 4. Składanie zamówień
                 </h2>
                 <ol className="list-decimal pl-6 text-secondary-600 mb-6 space-y-3">
-                  <li>Zamówienia można składać 24 godziny na dobę, 7 dni w tygodniu.</li>
+                  <li>Zamówienia można składać 24&nbsp;godziny na&nbsp;dobę, 7&nbsp;dni w&nbsp;tygodniu.</li>
                   <li>
-                    W celu złożenia Zamówienia należy:
+                    W&nbsp;celu złożenia Zamówienia należy:
                     <ul className="list-disc pl-6 mt-2 space-y-1">
-                      <li>dodać Produkt do Koszyka,</li>
-                      <li>wybrać sposób dostawy i płatności,</li>
-                      <li>podać dane do wysyłki,</li>
+                      <li>dodać Produkt do&nbsp;Koszyka,</li>
+                      <li>wybrać sposób dostawy i&nbsp;płatności,</li>
+                      <li>podać dane do&nbsp;wysyłki,</li>
                       <li>potwierdzić Zamówienie.</li>
                     </ul>
                   </li>
                   <li>
                     Złożenie Zamówienia stanowi ofertę zawarcia umowy sprzedaży. 
-                    Umowa zostaje zawarta z chwilą potwierdzenia przyjęcia Zamówienia przez Sprzedawcę.
+                    Umowa zostaje zawarta z&nbsp;chwilą potwierdzenia przyjęcia Zamówienia przez Sprzedawcę.
                   </li>
                   <li>
-                    Potwierdzenie Zamówienia wysyłane jest na adres e-mail podany przez Klienta.
+                    Potwierdzenie Zamówienia wysyłane jest na&nbsp;adres e-mail podany przez Klienta.
                   </li>
                 </ol>
 
@@ -109,8 +109,8 @@ export default function TermsPage() {
                   § 5. Ceny i płatności
                 </h2>
                 <ol className="list-decimal pl-6 text-secondary-600 mb-6 space-y-3">
-                  <li>Ceny Produktów podane są w złotych polskich i zawierają podatek VAT.</li>
-                  <li>Cena podana przy Produkcie jest wiążąca w chwili składania Zamówienia.</li>
+                  <li>Ceny Produktów podane są w&nbsp;złotych polskich i&nbsp;zawierają podatek VAT.</li>
+                  <li>Cena podana przy Produkcie jest wiążąca w&nbsp;chwili składania Zamówienia.</li>
                   <li>
                     Dostępne metody płatności:
                     <ul className="list-disc pl-6 mt-2 space-y-1">
@@ -122,8 +122,8 @@ export default function TermsPage() {
                     </ul>
                   </li>
                   <li>
-                    W przypadku płatności przelewem tradycyjnym, Zamówienie realizowane jest 
-                    po zaksięgowaniu wpłaty na koncie Sprzedawcy.
+                    W&nbsp;przypadku płatności przelewem tradycyjnym, Zamówienie realizowane jest 
+                    po&nbsp;zaksięgowaniu wpłaty na&nbsp;koncie Sprzedawcy.
                   </li>
                 </ol>
 
@@ -131,18 +131,18 @@ export default function TermsPage() {
                   § 6. Dostawa
                 </h2>
                 <ol className="list-decimal pl-6 text-secondary-600 mb-6 space-y-3">
-                  <li>Dostawa realizowana jest na terenie Polski.</li>
+                  <li>Dostawa realizowana jest na&nbsp;terenie Polski.</li>
                   <li>
                     Dostępne metody dostawy: Kurier InPost, Paczkomaty InPost, wysyłka gabaryt.
                   </li>
                   <li>Koszty dostawy podawane są podczas składania Zamówienia.</li>
                   <li>
-                    Czas realizacji Zamówienia wynosi od 1 do 5 dni roboczych od momentu 
+                    Czas realizacji Zamówienia wynosi od&nbsp;1 do&nbsp;5 dni roboczych od&nbsp;momentu 
                     potwierdzenia płatności.
                   </li>
                   <li>
-                    Klient zobowiązany jest do sprawdzenia stanu przesyłki przy odbiorze. 
-                    W przypadku uszkodzenia należy sporządzić protokół szkody.
+                    Klient zobowiązany jest do&nbsp;sprawdzenia stanu przesyłki przy odbiorze. 
+                    W&nbsp;przypadku uszkodzenia należy sporządzić protokół szkody.
                   </li>
                 </ol>
 
@@ -151,17 +151,17 @@ export default function TermsPage() {
                 </h2>
                 <ol className="list-decimal pl-6 text-secondary-600 mb-6 space-y-3">
                   <li>
-                    Konsument ma prawo odstąpić od umowy w terminie 14 dni kalendarzowych 
-                    od dnia otrzymania Produktu, bez podania przyczyny.
+                    Konsument ma prawo odstąpić od&nbsp;umowy w&nbsp;terminie 14&nbsp;dni kalendarzowych 
+                    od&nbsp;dnia otrzymania Produktu, bez podania przyczyny.
                   </li>
                   <li>
-                    W celu odstąpienia od umowy należy złożyć oświadczenie (formularz dostępny w Sklepie 
-                    lub w formie dowolnej) i odesłać Produkt na adres Sprzedawcy.
+                    W&nbsp;celu odstąpienia od&nbsp;umowy należy złożyć oświadczenie (formularz dostępny w&nbsp;Sklepie 
+                    lub w&nbsp;formie dowolnej) i&nbsp;odesłać Produkt na&nbsp;adres Sprzedawcy.
                   </li>
-                  <li>Produkt powinien być zwrócony w stanie nienaruszonym, kompletny.</li>
+                  <li>Produkt powinien być zwrócony w&nbsp;stanie nienaruszonym, kompletny.</li>
                   <li>
-                    Sprzedawca zwróci wszystkie otrzymane płatności (w tym koszty dostawy) 
-                    w terminie 14 dni od otrzymania oświadczenia o odstąpieniu.
+                    Sprzedawca zwróci wszystkie otrzymane płatności (w&nbsp;tym koszty dostawy) 
+                    w&nbsp;terminie 14&nbsp;dni od&nbsp;otrzymania oświadczenia o&nbsp;odstąpieniu.
                   </li>
                   <li>Koszty odesłania Produktu ponosi Konsument.</li>
                 </ol>
@@ -171,21 +171,21 @@ export default function TermsPage() {
                 </h2>
                 <ol className="list-decimal pl-6 text-secondary-600 mb-6 space-y-3">
                   <li>
-                    Sprzedawca odpowiada za wady Produktu na podstawie przepisów o rękojmi 
-                    (art. 556 i nast. Kodeksu cywilnego).
+                    Sprzedawca odpowiada za&nbsp;wady Produktu na&nbsp;podstawie przepisów o&nbsp;rękojmi 
+                    (art.&nbsp;556 i&nbsp;nast. Kodeksu cywilnego).
                   </li>
                   <li>
-                    Reklamację można złożyć drogą elektroniczną (e-mail) lub pisemnie na adres Sprzedawcy.
+                    Reklamację można złożyć drogą elektroniczną (e-mail) lub pisemnie na&nbsp;adres Sprzedawcy.
                   </li>
                   <li>
                     Reklamacja powinna zawierać: dane Klienta, numer Zamówienia, opis wady, 
-                    żądanie (naprawa, wymiana, obniżenie ceny lub odstąpienie od umowy).
+                    żądanie (naprawa, wymiana, obniżenie ceny lub odstąpienie od&nbsp;umowy).
                   </li>
                   <li>
-                    Sprzedawca rozpatrzy reklamację w terminie 14 dni kalendarzowych od jej otrzymania.
+                    Sprzedawca rozpatrzy reklamację w&nbsp;terminie 14&nbsp;dni kalendarzowych od&nbsp;jej otrzymania.
                   </li>
                   <li>
-                    W przypadku uznania reklamacji, Sprzedawca pokrywa koszty zwrotu Produktu.
+                    W&nbsp;przypadku uznania reklamacji, Sprzedawca pokrywa koszty zwrotu Produktu.
                   </li>
                 </ol>
 
@@ -194,13 +194,13 @@ export default function TermsPage() {
                 </h2>
                 <ol className="list-decimal pl-6 text-secondary-600 mb-6 space-y-3">
                   <li>
-                    Administratorem danych osobowych jest WB PARTNERS Sp. z o.o.
+                    Administratorem danych osobowych jest WB&nbsp;PARTNERS Sp.&nbsp;z&nbsp;o.o.
                   </li>
                   <li>
-                    Dane osobowe przetwarzane są zgodnie z RODO oraz ustawą o ochronie danych osobowych.
+                    Dane osobowe przetwarzane są zgodnie z&nbsp;RODO oraz&nbsp;ustawą o&nbsp;ochronie danych osobowych.
                   </li>
                   <li>
-                    Szczegółowe informacje zawarte są w Polityce Prywatności dostępnej w Sklepie.
+                    Szczegółowe informacje zawarte są w&nbsp;Polityce Prywatności dostępnej w&nbsp;Sklepie.
                   </li>
                 </ol>
 
@@ -209,8 +209,8 @@ export default function TermsPage() {
                 </h2>
                 <ol className="list-decimal pl-6 text-secondary-600 mb-6 space-y-3">
                   <li>
-                    Wszystkie treści dostępne w Sklepie (teksty, grafiki, zdjęcia, logotypy) 
-                    są własnością Sprzedawcy lub wykorzystywane na podstawie licencji.
+                    Wszystkie treści dostępne w&nbsp;Sklepie (teksty, grafiki, zdjęcia, logotypy) 
+                    są własnością Sprzedawcy lub wykorzystywane na&nbsp;podstawie licencji.
                   </li>
                   <li>
                     Kopiowanie, rozpowszechnianie lub wykorzystywanie treści bez zgody Sprzedawcy jest zabronione.
@@ -222,23 +222,23 @@ export default function TermsPage() {
                 </h2>
                 <ol className="list-decimal pl-6 text-secondary-600 mb-6 space-y-3">
                   <li>
-                    Sprzedawca zastrzega sobie prawo do zmiany Regulaminu. Zmiany wchodzą w życie 
-                    z dniem publikacji w Sklepie.
+                    Sprzedawca zastrzega sobie prawo do&nbsp;zmiany Regulaminu. Zmiany wchodzą w&nbsp;życie 
+                    z&nbsp;dniem publikacji w&nbsp;Sklepie.
                   </li>
                   <li>
-                    Do Zamówień złożonych przed zmianą Regulaminu stosuje się Regulamin obowiązujący 
-                    w dniu złożenia Zamówienia.
+                    Do&nbsp;Zamówień złożonych przed zmianą Regulaminu stosuje się Regulamin obowiązujący 
+                    w&nbsp;dniu złożenia Zamówienia.
                   </li>
                   <li>
-                    W sprawach nieuregulowanych Regulaminem zastosowanie mają przepisy prawa polskiego.
+                    W&nbsp;sprawach nieuregulowanych Regulaminem zastosowanie mają przepisy prawa polskiego.
                   </li>
                   <li>
                     Ewentualne spory rozstrzygane będą przez sąd właściwy dla siedziby Sprzedawcy, 
-                    z zastrzeżeniem przepisów chroniących Konsumentów.
+                    z&nbsp;zastrzeżeniem przepisów chroniących Konsumentów.
                   </li>
                   <li>
-                    Konsument ma możliwość skorzystania z pozasądowych sposobów rozpatrywania reklamacji 
-                    i dochodzenia roszczeń, w tym z platformy ODR: 
+                    Konsument ma możliwość skorzystania z&nbsp;pozasądowych sposobów rozpatrywania reklamacji 
+                    i&nbsp;dochodzenia roszczeń, w&nbsp;tym z&nbsp;platformy ODR: 
                     <a href="https://ec.europa.eu/consumers/odr" className="text-primary-600 hover:underline ml-1">
                       https://ec.europa.eu/consumers/odr
                     </a>

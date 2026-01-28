@@ -256,6 +256,8 @@ export interface Product {
   specifications?: Record<string, string>;
   price: string | number;
   compareAtPrice?: string | number;
+  lowestPrice30Days?: string | number; // Omnibus - najniższa cena z ostatnich 30 dni
+  lowestPrice30DaysAt?: string; // Kiedy odnotowano najniższą cenę
   sku?: string;
   barcode?: string;
   status: 'active' | 'draft' | 'archived';
@@ -287,6 +289,7 @@ export interface ProductVariant {
   name: string;
   sku: string;
   price: number;
+  lowestPrice30Days?: number; // Omnibus - najniższa cena z ostatnich 30 dni
   stock: number;
   attributes: Record<string, string>;
 }
@@ -351,6 +354,33 @@ export const productsApi = {
     
   delete: (id: string) =>
     api.delete<void>(`/products/${id}`),
+
+  // Get bestsellers based on actual sales data
+  getBestsellers: (options?: { limit?: number; category?: string; days?: number }) =>
+    api.get<{ products: Product[] }>('/products/bestsellers', options as Record<string, string | number | boolean>),
+
+  // Get featured products (admin-curated or fallback)
+  getFeatured: (options?: { limit?: number; productIds?: string[] }) => {
+    const params: Record<string, string | number | boolean> = {};
+    if (options?.limit) params.limit = options.limit;
+    if (options?.productIds) params.productIds = options.productIds.join(',');
+    return api.get<{ products: Product[] }>('/products/featured', params);
+  },
+
+  // Get seasonal products
+  getSeasonal: (options?: { limit?: number; season?: 'spring' | 'summer' | 'autumn' | 'winter' }) =>
+    api.get<{ products: Product[] }>('/products/seasonal', options as Record<string, string | number | boolean>),
+
+  // Get new products (added in last X days)
+  getNewProducts: (options?: { limit?: number; days?: number }) =>
+    api.get<{ products: Product[] }>('/products/new-arrivals', options as Record<string, string | number | boolean>),
+
+  // Get products from the same warehouse (for "Zamów w jednej przesyłce")
+  getSameWarehouseProducts: (productId: string, options?: { limit?: number }) =>
+    api.get<{ products: Product[]; wholesaler: string | null }>(
+      `/products/same-warehouse/${productId}`, 
+      options as Record<string, string | number | boolean>
+    ),
 };
 
 // ============================================
@@ -652,6 +682,8 @@ export interface CartItem {
       name: string;
       slug: string;
       images: { url: string; alt: string | null }[];
+      tags?: string[];
+      wholesaler?: string | null;
     };
     inventory: { quantity: number; reserved: number }[];
   };
@@ -891,7 +923,7 @@ export interface PackageShippingRequest {
 }
 
 export interface CheckoutRequest {
-  shippingAddressId: string;
+  shippingAddressId?: string;
   billingAddressId?: string;
   shippingMethod: string;
   pickupPointCode?: string;
@@ -900,6 +932,32 @@ export interface CheckoutRequest {
   customerNotes?: string;
   acceptTerms: boolean;
   packageShipping?: PackageShippingRequest[];
+  // Guest checkout fields
+  guestEmail?: string;
+  guestFirstName?: string;
+  guestLastName?: string;
+  guestPhone?: string;
+  guestAddress?: {
+    firstName: string;
+    lastName: string;
+    street: string;
+    city: string;
+    postalCode: string;
+    country: string;
+    phone?: string;
+    differentBillingAddress?: boolean;
+    billingAddress?: {
+      firstName: string;
+      lastName: string;
+      companyName?: string;
+      nip?: string;
+      street: string;
+      city: string;
+      postalCode: string;
+      country: string;
+      phone?: string;
+    };
+  };
 }
 
 export interface CheckoutResponse {
@@ -1038,6 +1096,16 @@ export const checkoutApi = {
   verifyPayment: (sessionId: string) =>
     api.get<PaymentVerifyResponse>(`/checkout/payment/verify/${sessionId}`),
   
+  // Retry payment for unpaid order - creates new PayU session
+  retryPayment: (orderId: string) =>
+    api.post<{ 
+      success: boolean; 
+      paymentUrl: string; 
+      sessionId: string; 
+      orderId: string; 
+      orderNumber: string; 
+    }>(`/checkout/payment/retry/${orderId}`, {}),
+  
   // Get order tracking info
   getTracking: (orderId: string) =>
     api.get<TrackingResponse>(`/checkout/tracking/${orderId}`),
@@ -1076,12 +1144,12 @@ export interface DashboardOverviewResponse {
 export interface RecommendedProduct {
   id: string;
   name: string;
-  slug: string;
+  slug?: string;
   price: number;
-  compareAtPrice: number | null;
-  images: { url: string; alt: string | null }[];
-  category: { id: string; name: string } | null;
-  reason: 'search' | 'category' | 'popular' | 'similar';
+  compareAtPrice?: number | null;
+  images: ProductImage[];
+  category?: { id: string; name: string } | null;
+  reason: 'search' | 'category' | 'popular' | 'similar' | 'bestseller';
 }
 
 export interface RecommendationsResponse {

@@ -2,8 +2,8 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 
 export const metadata = {
-  title: 'Polityka cookies - WBTrade',
-  description: 'Polityka plików cookies w serwisie WBTrade',
+  title: 'Polityka cookies - WB Trade',
+  description: 'Polityka plików cookies w serwisie WB Trade',
 };
 
 export default function CookiesPage() {
@@ -36,9 +36,9 @@ export default function CookiesPage() {
                   1. Czym są pliki cookies?
                 </h2>
                 <p className="text-secondary-600 mb-6">
-                  Pliki cookies (ciasteczka) to małe pliki tekstowe, które są zapisywane na Twoim 
-                  urządzeniu podczas korzystania z naszego serwisu. Pozwalają one na rozpoznanie 
-                  Twojej przeglądarki i zapamiętanie określonych informacji.
+                  Pliki cookies (ciasteczka) to&nbsp;małe pliki tekstowe, które są zapisywane na&nbsp;Twoim 
+                  urządzeniu podczas korzystania z&nbsp;naszego serwisu. Pozwalają one na&nbsp;rozpoznanie 
+                  Twojej przeglądarki i&nbsp;zapamiętanie określonych informacji.
                 </p>
 
                 <h2 className="text-2xl font-bold text-secondary-900 mt-10 mb-4">
@@ -52,8 +52,8 @@ export default function CookiesPage() {
                   Cookies niezbędne
                 </h3>
                 <p className="text-secondary-600 mb-4">
-                  Są konieczne do prawidłowego funkcjonowania serwisu. Umożliwiają poruszanie się 
-                  po stronie, korzystanie z koszyka zakupowego, logowanie do konta oraz realizację 
+                  Są konieczne do&nbsp;prawidłowego funkcjonowania serwisu. Umożliwiają poruszanie się 
+                  po&nbsp;stronie, korzystanie z&nbsp;koszyka zakupowego, logowanie do&nbsp;konta oraz&nbsp;realizację 
                   zamówień. Bez tych plików serwis nie może działać prawidłowo.
                 </p>
 
@@ -61,24 +61,24 @@ export default function CookiesPage() {
                   Cookies funkcjonalne
                 </h3>
                 <p className="text-secondary-600 mb-4">
-                  Pozwalają zapamiętać Twoje preferencje (np. język, region, rozmiar czcionki) 
-                  i dostosować serwis do Twoich indywidualnych potrzeb.
+                  Pozwalają zapamiętać Twoje preferencje (np.&nbsp;język, region, rozmiar czcionki) 
+                  i&nbsp;dostosować serwis do&nbsp;Twoich indywidualnych potrzeb.
                 </p>
 
                 <h3 className="text-xl font-semibold text-secondary-800 mt-6 mb-3">
                   Cookies analityczne
                 </h3>
                 <p className="text-secondary-600 mb-4">
-                  Pomagają nam zrozumieć, w jaki sposób użytkownicy korzystają z serwisu. 
-                  Zbierają anonimowe informacje o odwiedzanych stronach, czasie spędzonym 
-                  w serwisie i ewentualnych błędach.
+                  Pomagają nam zrozumieć, w&nbsp;jaki sposób użytkownicy korzystają z&nbsp;serwisu. 
+                  Zbierają anonimowe informacje o&nbsp;odwiedzanych stronach, czasie spędzonym 
+                  w&nbsp;serwisie i&nbsp;ewentualnych błędach.
                 </p>
 
                 <h3 className="text-xl font-semibold text-secondary-800 mt-6 mb-3">
                   Cookies marketingowe
                 </h3>
                 <p className="text-secondary-600 mb-6">
-                  Służą do wyświetlania spersonalizowanych reklam oraz mierzenia skuteczności 
+                  Służą do&nbsp;wyświetlania spersonalizowanych reklam oraz&nbsp;mierzenia skuteczności 
                   kampanii marketingowych. Mogą być wykorzystywane przez naszych partnerów reklamowych.
                 </p>
 
@@ -91,15 +91,15 @@ export default function CookiesPage() {
                 <ul className="list-disc pl-6 text-secondary-600 mb-6 space-y-2">
                   <li>
                     <strong>Ustawienia przeglądarki</strong> – większość przeglądarek pozwala 
-                    na blokowanie lub usuwanie plików cookies w ustawieniach.
+                    na&nbsp;blokowanie lub usuwanie plików cookies w&nbsp;ustawieniach.
                   </li>
                   <li>
                     <strong>Panel preferencji cookies</strong> – możesz zmienić swoje preferencje 
-                    klikając przycisk „Ustawienia cookies" w stopce strony.
+                    klikając przycisk „Ustawienia cookies" w&nbsp;stopce strony.
                   </li>
                   <li>
-                    <strong>Tryb prywatny</strong> – korzystanie z trybu incognito/prywatnego 
-                    w przeglądarce ogranicza zapisywanie plików cookies.
+                    <strong>Tryb prywatny</strong> – korzystanie z&nbsp;trybu incognito/prywatnego 
+                    w&nbsp;przeglądarce ogranicza zapisywanie plików cookies.
                   </li>
                 </ul>
 
@@ -120,11 +120,11 @@ export default function CookiesPage() {
                   5. Okres przechowywania
                 </h2>
                 <p className="text-secondary-600 mb-6">
-                  Pliki cookies mogą być przechowywane przez różny czas w zależności od ich rodzaju:
+                  Pliki cookies mogą być przechowywane przez różny czas w&nbsp;zależności od&nbsp;ich rodzaju:
                 </p>
                 <ul className="list-disc pl-6 text-secondary-600 mb-6 space-y-2">
-                  <li><strong>Cookies sesyjne</strong> – usuwane po zamknięciu przeglądarki</li>
-                  <li><strong>Cookies trwałe</strong> – przechowywane od 30 dni do 2 lat</li>
+                  <li><strong>Cookies sesyjne</strong> – usuwane po&nbsp;zamknięciu przeglądarki</li>
+                  <li><strong>Cookies trwałe</strong> – przechowywane od&nbsp;30&nbsp;dni do&nbsp;2&nbsp;lat</li>
                 </ul>
 
                 <h2 className="text-2xl font-bold text-secondary-900 mt-10 mb-4">

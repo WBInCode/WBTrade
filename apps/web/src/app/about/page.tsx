@@ -3,14 +3,14 @@ import Footer from '../../components/Footer';
 import Image from 'next/image';
 
 export const metadata = {
-  title: 'O nas - WBTrade',
-  description: 'Poznaj historię WBTrade - Twojej zaufanej platformy e-commerce',
+  title: 'O nas - WB Trade',
+  description: 'Poznaj historię WB Trade - Twojej zaufanej platformy e-commerce',
 };
 
 export default function AboutPage() {
   const stats = [
     { value: 'tysiące', label: 'Zadowolonych klientów' },
-    { value: '40K+', label: 'Produktów w ofercie' },
+    { value: '50tyś+', label: 'Produktów w ofercie' },
     { value: '99.8%', label: 'Pozytywnych opinii' },
   ];
 
@@ -22,7 +22,7 @@ export default function AboutPage() {
         </svg>
       ),
       title: 'Zaufanie',
-      description: 'Budujemy długotrwałe relacje oparte na uczciwości i transparentności.',
+      description: 'Budujemy długotrwałe relacje oparte na\u00A0uczciwości i\u00A0transparentności.',
     },
     {
       icon: (
@@ -49,16 +49,8 @@ export default function AboutPage() {
         </svg>
       ),
       title: 'Zrównoważony rozwój',
-      description: 'Dbamy o środowisko i promujemy odpowiedzialne zakupy.',
+      description: 'Dbamy o\u00A0środowisko i\u00A0promujemy odpowiedzialne zakupy.',
     },
-  ];
-
-  const team = [
-    {
-      name: 'Daniel Budyka',
-      role: 'CEO & Założyciel',
-      image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=400&fit=crop',
-    }
   ];
 
   return (
@@ -74,7 +66,7 @@ export default function AboutPage() {
               Tworzymy przyszłość <span className="text-primary-200">e-commerce</span>
             </h1>
             <p className="text-xl text-primary-100 leading-relaxed">
-              WBTrade to więcej niż platforma zakupowa. To społeczność tysięcy  użytkowników, 
+              WB Trade to&nbsp;więcej niż platforma zakupowa. To&nbsp;społeczność tysięcy użytkowników, 
               którzy każdego dnia ufają nam swoje zakupy online.
             </p>
           </div>
@@ -107,18 +99,18 @@ export default function AboutPage() {
               </h2>
               <div className="space-y-4 text-secondary-600 leading-relaxed">
                 <p>
-                  WBTrade powstało w 2025 roku z prostej idei – stworzyć miejsce, gdzie każdy 
-                  może bezpiecznie i wygodnie kupować online. Zaczęliśmy jako mały startup 
-                  z zespołem pięciu osób i marzeniem o zmianie sposobu, w jaki Polacy robią zakupy.
+                  WB Trade powstało w&nbsp;2025&nbsp;roku z&nbsp;prostej idei – stworzyć miejsce, gdzie każdy 
+                  może bezpiecznie i&nbsp;wygodnie kupować online. Zaczęliśmy jako mały startup 
+                  z&nbsp;zespołem pięciu osób i&nbsp;marzeniem o&nbsp;zmianie sposobu, w&nbsp;jaki Polacy robią zakupy.
                 </p>
                 <p>
-                  Dziś jesteśmy bardzo szybko rozwijającą się platformą e-commerce w Polsce. 
-                  Na naszej platformie znajdziesz ponad 50 000 produktów od sprawdzonych sprzedawców.
+                  Dziś jesteśmy bardzo szybko rozwijającą się platformą e-commerce w&nbsp;Polsce. 
+                  Na&nbsp;naszej platformie znajdziesz ponad 50&nbsp;000 produktów od&nbsp;sprawdzonych sprzedawców.
                 </p>
                 <p>
-                  Sukces zawdzięczamy przede wszystkim naszym klientom i partnerom, którzy 
-                  zaufali nam i wspierają nas na każdym kroku. To dla Was nieustannie się rozwijamy 
-                  i wprowadzamy innowacje.
+                  Sukces zawdzięczamy przede wszystkim naszym klientom i&nbsp;partnerom, którzy 
+                  zaufali nam i&nbsp;wspierają nas na&nbsp;każdym kroku. To&nbsp;dla Was nieustannie się rozwijamy 
+                  i&nbsp;wprowadzamy innowacje.
                 </p>
               </div>
             </div>
@@ -126,7 +118,7 @@ export default function AboutPage() {
               <div className="aspect-square rounded-2xl overflow-hidden shadow-2xl">
                 <Image
                   src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&h=600&fit=crop"
-                  alt="Zespół WBTrade"
+                  alt="Zespół WB Trade"
                   width={600}
                   height={600}
                   className="object-cover w-full h-full"
@@ -170,40 +162,6 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Team Section */}
-      <section className="py-16 lg:py-24">
-        <div className="container-custom">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-bold text-secondary-900 mb-4">
-              Nasz zespół zarządzający
-            </h2>
-            <p className="text-secondary-600 max-w-2xl mx-auto">
-              Poznaj człowieka, który stoi za sukcesem WBTrade.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {team.map((member, index) => (
-              <div key={index} className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow">
-                <div className="aspect-square relative">
-                  <Image
-                    src={member.image}
-                    alt={member.name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <div className="p-6 text-center">
-                  <h3 className="text-lg font-semibold text-secondary-900">
-                    {member.name}
-                  </h3>
-                  <p className="text-primary-600">{member.role}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
       <section className="py-16 bg-gradient-to-r from-primary-600 to-primary-700">
         <div className="container-custom text-center">
@@ -211,7 +169,7 @@ export default function AboutPage() {
             Dołącz do naszej społeczności
           </h2>
           <p className="text-primary-100 mb-8 max-w-2xl mx-auto">
-            Zostań częścią WBTrade i odkryj nowy wymiar zakupów online.
+            Zostań częścią WB Trade i&nbsp;odkryj nowy wymiar zakupów online.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a

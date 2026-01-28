@@ -3,8 +3,8 @@ import Footer from '../../../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Jak złożyć zamówienie? - Centrum pomocy - WBTrade',
-  description: 'Dowiedz się jak złożyć zamówienie w sklepie WBTrade krok po kroku',
+  title: 'Jak złożyć zamówienie? - Centrum pomocy - WB Trade',
+  description: 'Dowiedz się jak złożyć zamówienie w sklepie WB Trade krok po kroku',
 };
 
 export default function HowToOrderPage() {
@@ -33,7 +33,7 @@ export default function HowToOrderPage() {
             <div className="bg-white rounded-2xl p-8 shadow-sm">
               <div className="prose prose-lg max-w-none">
                 <p className="text-secondary-600 text-lg mb-8">
-                  Składanie zamówień w WBTrade jest proste i intuicyjne. Poniżej znajdziesz szczegółową instrukcję krok po kroku.
+                  Składanie zamówień w WB Trade jest proste i intuicyjne. Poniżej znajdziesz szczegółową instrukcję krok po kroku.
                 </p>
 
                 <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">

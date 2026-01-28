@@ -7,6 +7,8 @@ import { Worker, Job } from 'bullmq';
 import { QUEUE_NAMES, queueConnection, queueEmail, ImportJobData, ExportJobData } from '../lib/queue';
 import { prisma } from '../db';
 import { queueProductIndex } from '../lib/queue';
+import { priceHistoryService } from '../services/price-history.service';
+import { PriceChangeSource } from '@prisma/client';
 
 /**
  * Process product import from CSV/XLSX
@@ -38,17 +40,31 @@ async function processProductImport(
       // Check if product exists
       const existing = await prisma.product.findUnique({
         where: { sku: productData.sku },
+        select: { id: true, price: true },
       });
       
       if (existing) {
         if (updateExisting) {
+          // Update product (without price - handled separately for Omnibus)
           await prisma.product.update({
             where: { id: existing.id },
             data: {
               name: productData.name,
-              price: productData.price,
             },
           });
+          
+          // Handle price change with Omnibus compliance
+          const currentPrice = Number(existing.price);
+          if (currentPrice !== productData.price) {
+            await priceHistoryService.updateProductPrice({
+              productId: existing.id,
+              newPrice: productData.price,
+              source: PriceChangeSource.IMPORT,
+              changedBy: userId,
+              reason: `CSV/XLSX import from ${fileUrl}`,
+            });
+          }
+          
           updated++;
           
           // Queue for search indexing
@@ -63,6 +79,8 @@ async function processProductImport(
             name: productData.name,
             slug: productData.sku.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
             price: productData.price,
+            lowestPrice30Days: productData.price, // Initial lowest = current
+            lowestPrice30DaysAt: new Date(),
             status: 'DRAFT',
           },
         });

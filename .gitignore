@@ -52,5 +52,18 @@ apps/api/test-baselinker-categories.js
 apps/api/check-count.js
 apps/api/sync-images.js
 
-# md
+# ============================================
+# 🔒 SECURITY - Sensitive files
+# ============================================
+NEON_CONNECTION_REPORT.md
+*CONNECTION_REPORT*
+*_CREDENTIALS*
+*_SECRETS*
+
+# Production env files (keep only .example)
+apps/*/.env.production
+apps/*/.env.staging
+
+# md (internal docs)
 *.md
+!README.md

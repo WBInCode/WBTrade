@@ -17,6 +17,7 @@ import {
   calculateCartShipping,
   calculateItemsShipping,
   getShippingPerPackage,
+  retryPayment,
 } from '../controllers/checkout.controller';
 import { authGuard, optionalAuth } from '../middleware/auth.middleware';
 
@@ -77,6 +78,12 @@ router.get('/payment/methods', optionalAuth, getPaymentMethods);
  */
 router.get('/payment/verify/:sessionId', optionalAuth, verifyPayment);
 
+/**
+ * POST /api/checkout/payment/retry/:orderId
+ * Retry payment for an unpaid order - creates new PayU session
+ */
+router.post('/payment/retry/:orderId', authGuard, retryPayment);
+
 // ============================================
 // CHECKOUT ENDPOINTS
 // ============================================
@@ -84,6 +91,7 @@ router.get('/payment/verify/:sessionId', optionalAuth, verifyPayment);
 /**
  * POST /api/checkout
  * Create order and initiate payment
+ * Supports both authenticated users and guest checkout
  * Body: {
  *   shippingAddressId: string,
  *   billingAddressId?: string,
@@ -91,10 +99,15 @@ router.get('/payment/verify/:sessionId', optionalAuth, verifyPayment);
  *   pickupPointCode?: string,
  *   paymentMethod: string,
  *   customerNotes?: string,
- *   acceptTerms: boolean
+ *   acceptTerms: boolean,
+ *   // Guest checkout fields (required if not authenticated):
+ *   guestEmail?: string,
+ *   guestFirstName?: string,
+ *   guestLastName?: string,
+ *   guestPhone?: string
  * }
  */
-router.post('/', authGuard, createCheckout);
+router.post('/', optionalAuth, createCheckout);
 
 /**
  * GET /api/checkout/tracking/:orderId

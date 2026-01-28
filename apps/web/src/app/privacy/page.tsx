@@ -2,8 +2,8 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 
 export const metadata = {
-  title: 'Polityka prywatności - WBTrade',
-  description: 'Polityka prywatności i ochrony danych osobowych w WBTrade',
+  title: 'Polityka prywatności - WB Trade',
+  description: 'Polityka prywatności i ochrony danych osobowych w WB Trade',
 };
 
 export default function PrivacyPolicyPage() {
@@ -36,13 +36,13 @@ export default function PrivacyPolicyPage() {
                   1. Informacje ogólne
                 </h2>
                 <p className="text-secondary-600 mb-6">
-                  Niniejsza Polityka Prywatności określa zasady przetwarzania i ochrony danych osobowych 
-                  przekazanych przez Użytkowników w związku z korzystaniem z serwisu WBTrade.
+                  Niniejsza Polityka Prywatności określa zasady przetwarzania i&nbsp;ochrony danych osobowych 
+                  przekazanych przez Użytkowników w&nbsp;związku z&nbsp;korzystaniem z&nbsp;serwisu WB Trade.
                 </p>
                 <p className="text-secondary-600 mb-6">
-                  Administratorem danych osobowych jest WB PARTNERS Sp. z o.o. z siedzibą w Rzeszowie, 
-                  ul. Juliusza Słowackiego 24/11, 35-060 Rzeszów, wpisana do rejestru przedsiębiorców 
-                  Krajowego Rejestru Sądowego, NIP: 8133000000, REGON: 380000000.
+                  Administratorem danych osobowych jest WB&nbsp;PARTNERS Sp.&nbsp;z&nbsp;o.o. z&nbsp;siedzibą w&nbsp;Rzeszowie, 
+                  ul.&nbsp;Juliusza Słowackiego 24/11, 35-060 Rzeszów, wpisana do&nbsp;rejestru przedsiębiorców 
+                  KRS pod numerem 0001151642, NIP:&nbsp;5170455185, REGON:&nbsp;540735769.
                 </p>
 
                 <h2 className="text-2xl font-bold text-secondary-900 mt-10 mb-4">
@@ -93,10 +93,10 @@ export default function PrivacyPolicyPage() {
                   5. Okres przechowywania danych
                 </h2>
                 <p className="text-secondary-600 mb-6">
-                  Dane osobowe przechowywane są przez okres niezbędny do realizacji celów, dla których 
-                  zostały zebrane, a następnie przez okres wymagany przepisami prawa (np. przepisami 
-                  podatkowymi - 5 lat od końca roku, w którym powstał obowiązek podatkowy). 
-                  Dane przetwarzane na podstawie zgody przechowujemy do momentu jej wycofania.
+                  Dane osobowe przechowywane są przez okres niezbędny do&nbsp;realizacji celów, dla których 
+                  zostały zebrane, a&nbsp;następnie przez okres wymagany przepisami prawa (np.&nbsp;przepisami 
+                  podatkowymi – 5&nbsp;lat od&nbsp;końca roku, w&nbsp;którym powstał obowiązek podatkowy). 
+                  Dane przetwarzane na&nbsp;podstawie zgody przechowujemy do&nbsp;momentu jej wycofania.
                 </p>
 
                 <h2 className="text-2xl font-bold text-secondary-900 mt-10 mb-4">
@@ -151,9 +151,9 @@ export default function PrivacyPolicyPage() {
                   9. Bezpieczeństwo danych
                 </h2>
                 <p className="text-secondary-600 mb-6">
-                  Stosujemy odpowiednie środki techniczne i organizacyjne w celu ochrony danych osobowych 
+                  Stosujemy odpowiednie środki techniczne i&nbsp;organizacyjne w&nbsp;celu ochrony danych osobowych 
                   przed nieuprawnionym dostępem, utratą lub zniszczeniem. Wykorzystujemy szyfrowanie SSL, 
-                  kontrolę dostępu oraz regularne kopie zapasowe.
+                  kontrolę dostępu oraz&nbsp;regularne kopie zapasowe.
                 </p>
 
                 <h2 className="text-2xl font-bold text-secondary-900 mt-10 mb-4">
@@ -172,9 +172,9 @@ export default function PrivacyPolicyPage() {
                   11. Zmiany polityki prywatności
                 </h2>
                 <p className="text-secondary-600 mb-6">
-                  Administrator zastrzega sobie prawo do wprowadzania zmian w Polityce Prywatności. 
-                  O wszelkich zmianach użytkownicy będą informowani poprzez publikację nowej wersji 
-                  na stronie internetowej. Korzystanie z serwisu po wprowadzeniu zmian oznacza ich akceptację.
+                  Administrator zastrzega sobie prawo do&nbsp;wprowadzania zmian w&nbsp;Polityce Prywatności. 
+                  O&nbsp;wszelkich zmianach użytkownicy będą informowani poprzez publikację nowej wersji 
+                  na&nbsp;stronie internetowej. Korzystanie z&nbsp;serwisu po&nbsp;wprowadzeniu zmian oznacza ich akceptację.
                 </p>
 
               </div>
