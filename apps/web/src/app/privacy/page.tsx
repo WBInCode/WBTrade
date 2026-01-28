@@ -2,8 +2,8 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 
 export const metadata = {
-  title: 'Polityka prywatności - WBTrade',
-  description: 'Polityka prywatności i ochrony danych osobowych w WBTrade',
+  title: 'Polityka prywatności - WB Trade',
+  description: 'Polityka prywatności i ochrony danych osobowych w WB Trade',
 };
 
 export default function PrivacyPolicyPage() {
@@ -37,7 +37,7 @@ export default function PrivacyPolicyPage() {
                 </h2>
                 <p className="text-secondary-600 mb-6">
                   Niniejsza Polityka Prywatności określa zasady przetwarzania i&nbsp;ochrony danych osobowych 
-                  przekazanych przez Użytkowników w&nbsp;związku z&nbsp;korzystaniem z&nbsp;serwisu WBTrade.
+                  przekazanych przez Użytkowników w&nbsp;związku z&nbsp;korzystaniem z&nbsp;serwisu WB Trade.
                 </p>
                 <p className="text-secondary-600 mb-6">
                   Administratorem danych osobowych jest WB&nbsp;PARTNERS Sp.&nbsp;z&nbsp;o.o. z&nbsp;siedzibą w&nbsp;Rzeszowie, 

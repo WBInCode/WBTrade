@@ -2,8 +2,8 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 
 export const metadata = {
-  title: 'Kontakt - WBTrade',
-  description: 'Skontaktuj się z nami - WBTrade. Obsługa klienta, pytania i pomoc.',
+  title: 'Kontakt - WB Trade',
+  description: 'Skontaktuj się z nami - WB Trade. Obsługa klienta, pytania i pomoc.',
 };
 
 export default function ContactPage() {

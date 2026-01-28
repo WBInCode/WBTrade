@@ -334,7 +334,7 @@ function OrderConfirmationPageContent() {
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <Link href="/" className="text-2xl font-bold text-orange-500">
-            WBTrade
+            WB Trade
           </Link>
         </div>
       </header>

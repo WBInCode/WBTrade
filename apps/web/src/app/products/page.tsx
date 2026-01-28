@@ -92,8 +92,32 @@ function ProductsContent() {
     async function fetchProducts() {
       setLoading(true);
       try {
+        // For bestsellers tab, use dedicated bestsellers endpoint (same as carousel on homepage)
+        // Always show global bestsellers, ignore category filter
+        if (activeTab === 'bestsellers') {
+          const response = await productsApi.getBestsellers({
+            limit: 20,
+            days: 90,
+          });
+          
+          setProducts(response.products);
+          setTotalProducts(response.products.length);
+          setTotalPages(1); // Bestsellers is a fixed list of 20 products
+        }
+        // For new products tab, use dedicated new-arrivals endpoint (same as carousel on homepage)
+        // Shows products from last 14 days only
+        else if (activeTab === 'new') {
+          const response = await productsApi.getNewProducts({
+            limit: 20,
+            days: 14,
+          });
+          
+          setProducts(response.products);
+          setTotalProducts(response.products.length);
+          setTotalPages(1); // New products is a fixed list
+        }
         // For discounted tab, we need to fetch more and filter client-side
-        if (activeTab === 'discounted') {
+        else if (activeTab === 'discounted') {
           const response = await productsApi.getAll({
             page: 1,
             limit: 100,
@@ -118,8 +142,11 @@ function ProductsContent() {
           setTotalProducts(discountedProducts.length);
           setTotalPages(Math.ceil(discountedProducts.length / ITEMS_PER_PAGE));
         } else {
-          // Use the sort value from URL params directly (already in API format)
-          const sortValue = sort as 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'newest';
+          // "All" tab - show all products with filters
+          // Use random sort for "all" tab to increase product discovery, unless user explicitly chose a sort
+          const sortValue = (activeTab === 'all' && sort === 'newest') 
+            ? 'random' as const
+            : sort as 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'newest' | 'random';
           
           const response = await productsApi.getAll({
             page: currentPage,

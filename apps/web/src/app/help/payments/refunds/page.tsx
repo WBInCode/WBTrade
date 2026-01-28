@@ -3,8 +3,8 @@ import Footer from '../../../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Zwroty płatności - Centrum pomocy - WBTrade',
-  description: 'Informacje o zwrotach płatności w WBTrade',
+  title: 'Zwroty płatności - Centrum pomocy - WB Trade',
+  description: 'Informacje o zwrotach płatności w WB Trade',
 };
 
 export default function RefundsPage() {

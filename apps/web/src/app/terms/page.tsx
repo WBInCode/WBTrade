@@ -2,8 +2,8 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 
 export const metadata = {
-  title: 'Regulamin - WBTrade',
-  description: 'Regulamin sklepu internetowego WBTrade - zasady korzystania z serwisu',
+  title: 'Regulamin - WB Trade',
+  description: 'Regulamin sklepu internetowego WB Trade - zasady korzystania z serwisu',
 };
 
 export default function TermsPage() {
@@ -37,7 +37,7 @@ export default function TermsPage() {
                 </h2>
                 <ol className="list-decimal pl-6 text-secondary-600 mb-6 space-y-3">
                   <li>
-                    Niniejszy Regulamin określa zasady korzystania ze&nbsp;sklepu internetowego WBTrade 
+                    Niniejszy Regulamin określa zasady korzystania ze&nbsp;sklepu internetowego WB Trade 
                     dostępnego pod adresem www.wbtrade.pl (dalej: „Sklep").
                   </li>
                   <li>

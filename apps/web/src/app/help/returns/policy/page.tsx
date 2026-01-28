@@ -3,8 +3,8 @@ import Footer from '../../../../components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Polityka zwrotów - Centrum pomocy - WBTrade',
-  description: 'Zasady zwrotów towarów w WBTrade',
+  title: 'Polityka zwrotów - Centrum pomocy - WB Trade',
+  description: 'Zasady zwrotów towarów w WB Trade',
 };
 
 export default function ReturnsPolicyPage() {
@@ -31,7 +31,7 @@ export default function ReturnsPolicyPage() {
             <div className="bg-white rounded-2xl p-8 shadow-sm">
               <div className="prose prose-lg max-w-none">
                 <p className="text-secondary-600 text-lg mb-8">
-                  W WBTrade masz prawo do zwrotu zakupionego towaru w ciągu 14 dni bez podania przyczyny. Poniżej znajdziesz szczegółowe informacje o naszej polityce zwrotów.
+                  W WB Trade masz prawo do zwrotu zakupionego towaru w ciągu 14 dni bez podania przyczyny. Poniżej znajdziesz szczegółowe informacje o naszej polityce zwrotów.
                 </p>
 
                 <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">
@@ -81,7 +81,7 @@ export default function ReturnsPolicyPage() {
                 </h2>
                 <div className="bg-secondary-50 p-4 rounded-lg mb-6">
                   <p className="text-secondary-700">
-                    <strong>WBTrade Sp. z o.o.</strong><br />
+                    <strong>WB Trade Sp. z o.o.</strong><br />
                     Magazyn zwrotów<br />
                     ul. Przykładowa 123<br />
                     00-001 Warszawa<br />
@@ -95,7 +95,7 @@ export default function ReturnsPolicyPage() {
                 </h2>
                 <ul className="list-disc pl-6 text-secondary-600 space-y-2 mb-6">
                   <li><strong>Zwrot z własnej woli:</strong> Koszt odesłania pokrywa klient</li>
-                  <li><strong>Towar wadliwy/niezgodny:</strong> Koszt odesłania pokrywa WBTrade</li>
+                  <li><strong>Towar wadliwy/niezgodny:</strong> Koszt odesłania pokrywa WB Trade</li>
                   <li><strong>Przesyłka kurierska:</strong> Możesz zamówić kuriera przez naszą stronę</li>
                 </ul>
 

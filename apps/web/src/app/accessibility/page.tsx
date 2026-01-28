@@ -2,8 +2,8 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 
 export const metadata = {
-  title: 'Dostępność - WBTrade',
-  description: 'Deklaracja dostępności serwisu WBTrade',
+  title: 'Dostępność - WB Trade',
+  description: 'Deklaracja dostępności serwisu WB Trade',
 };
 
 export default function AccessibilityPage() {
@@ -19,7 +19,7 @@ export default function AccessibilityPage() {
               Dostępność
             </h1>
             <p className="text-secondary-500">
-              Deklaracja dostępności serwisu WBTrade
+              Deklaracja dostępności serwisu WB Trade
             </p>
           </div>
         </div>
@@ -36,7 +36,7 @@ export default function AccessibilityPage() {
                   Nasze zobowiązanie
                 </h2>
                 <p className="text-secondary-600 mb-6">
-                  WBTrade zobowiązuje się do&nbsp;zapewnienia dostępności cyfrowej swojego serwisu 
+                  WB Trade zobowiązuje się do&nbsp;zapewnienia dostępności cyfrowej swojego serwisu 
                   zgodnie z&nbsp;przepisami ustawy z&nbsp;dnia 4&nbsp;kwietnia 2019&nbsp;r. o&nbsp;dostępności cyfrowej 
                   stron internetowych i&nbsp;aplikacji mobilnych podmiotów publicznych.
                 </p>
@@ -49,7 +49,7 @@ export default function AccessibilityPage() {
                   Status zgodności
                 </h2>
                 <p className="text-secondary-600 mb-6">
-                  Serwis WBTrade jest częściowo zgodny z&nbsp;wytycznymi WCAG&nbsp;2.1 na&nbsp;poziomie AA. 
+                  Serwis WB Trade jest częściowo zgodny z&nbsp;wytycznymi WCAG&nbsp;2.1 na&nbsp;poziomie AA. 
                   Nieustannie pracujemy nad poprawą dostępności i&nbsp;usuwaniem barier.
                 </p>
 
