@@ -1111,7 +1111,7 @@ export interface RecommendedProduct {
   slug?: string;
   price: number;
   compareAtPrice?: number | null;
-  images: { url: string; alt: string | null }[];
+  images: ProductImage[];
   category?: { id: string; name: string } | null;
   reason: 'search' | 'category' | 'popular' | 'similar' | 'bestseller';
 }
