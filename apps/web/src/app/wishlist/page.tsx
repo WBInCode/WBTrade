@@ -79,6 +79,7 @@ export default function WishlistPage() {
         image: item.image,
         price: item.price,
         quantity: 1,
+        productId: item.id,
       });
       setAddedToCartIds(prev => new Set(prev).add(item.id));
       // Don't auto-remove for individual items unless not adding all
