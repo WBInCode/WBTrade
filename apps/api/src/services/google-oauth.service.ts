@@ -11,6 +11,8 @@ import {
   storeSession,
 } from '../lib/redis';
 import { logLoginSuccess, logRegistration } from '../lib/audit';
+import { discountService } from './discount.service';
+import { emailService } from './email.service';
 
 // ============================================
 // CONFIGURATION
@@ -209,6 +211,11 @@ class GoogleOAuthService {
       isNewUser = true;
       await logRegistration(user.id, user.email, ipAddress, userAgent);
       console.log(`[GoogleOAuth] New user created: ${user.email}`);
+      
+      // Generate welcome discount code and send email (async, don't block registration)
+      this.sendWelcomeDiscount(user.id, user.email, user.firstName).catch((err) => {
+        console.error('[GoogleOAuth] Failed to send welcome discount:', err.message);
+      });
     } else {
       // Update existing user with Google info if not already linked
       if (!user.googleId) {
@@ -306,6 +313,29 @@ class GoogleOAuthService {
       refreshToken,
       expiresIn: 3600, // 60 minutes in seconds
     };
+  }
+
+  /**
+   * Generate welcome discount and send email
+   * Called after successful Google OAuth registration (async)
+   */
+  private async sendWelcomeDiscount(userId: string, email: string, firstName: string): Promise<void> {
+    try {
+      const discount = await discountService.generateWelcomeDiscount(userId, email);
+      
+      await emailService.sendWelcomeDiscountEmail(
+        email,
+        firstName || email.split('@')[0],
+        discount.couponCode,
+        discount.discountPercent,
+        discount.expiresAt
+      );
+      
+      console.log(`✅ [GoogleOAuth] Welcome discount sent to ${email}: ${discount.couponCode}`);
+    } catch (err: any) {
+      console.error(`[GoogleOAuth] Welcome discount error for ${email}:`, err.message);
+      // Don't throw - registration should succeed even if discount email fails
+    }
   }
 }
 

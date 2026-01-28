@@ -503,6 +503,9 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       paczkomatCode: pickupPointCode,
       paczkomatAddress: pickupPointAddress,
       packageShipping: packageShipping,
+      // Discount/coupon from cart
+      couponCode: cart.couponCode || undefined,
+      discount: cart.discount || 0,
       // Guest checkout fields
       guestEmail: isGuestCheckout ? guestEmail : undefined,
       guestFirstName: isGuestCheckout ? guestFirstName : undefined,

@@ -457,8 +457,23 @@ export class CartService {
       0
     );
 
-    const discount = 0;
-    // TODO: Calculate discount based on coupon
+    // Calculate discount based on coupon
+    let discount = 0;
+    if (cart.couponCode) {
+      const coupon = await prisma.coupon.findUnique({
+        where: { code: cart.couponCode },
+      });
+      
+      if (coupon && coupon.isActive && (!coupon.expiresAt || coupon.expiresAt > new Date())) {
+        if (coupon.type === 'PERCENTAGE') {
+          // Percentage discount
+          discount = Math.round(subtotal * Number(coupon.value) / 100 * 100) / 100;
+        } else if (coupon.type === 'FIXED') {
+          // Fixed amount discount
+          discount = Math.min(Number(coupon.value), subtotal);
+        }
+      }
+    }
 
     const total = subtotal - discount;
 

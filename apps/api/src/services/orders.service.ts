@@ -44,6 +44,9 @@ interface CreateOrderData {
   paczkomatCode?: string;
   paczkomatAddress?: string;
   packageShipping?: PackageShippingItem[];
+  // Discount/coupon fields
+  couponCode?: string;
+  discount?: number;
   // Guest checkout fields
   guestEmail?: string;
   guestFirstName?: string;
@@ -152,12 +155,23 @@ export class OrdersService {
       shipping = data.packageShipping.reduce((sum, pkg) => sum + (pkg.price || 0), 0);
     }
     
+    // Get discount from data (calculated in checkout controller)
+    const discount = data.discount || 0;
+    
     // VAT is already included in product prices (Polish prices are gross)
     // We calculate VAT for display purposes only (23% is already in the price)
     const tax = 0; // VAT already included in prices
-    const total = subtotal + shipping;
+    const total = subtotal + shipping - discount;
 
     return prisma.$transaction(async (tx) => {
+      // If coupon is used, mark it as used
+      if (data.couponCode) {
+        await tx.coupon.update({
+          where: { code: data.couponCode },
+          data: { usedCount: { increment: 1 } },
+        });
+      }
+      
       // Create order
       const order = await tx.order.create({
         data: {
@@ -173,6 +187,8 @@ export class OrdersService {
           status: 'OPEN', // Order is OPEN until payment is completed
           subtotal,
           shipping,
+          discount,
+          couponCode: data.couponCode,
           tax,
           total,
           customerNotes: data.customerNotes,
