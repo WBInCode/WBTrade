@@ -6,6 +6,25 @@
 
 import { prisma } from '../db';
 
+// Tags for products that can be shipped via paczkomat/courier
+const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
+// Pattern to match "produkt w paczce X" tag
+const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce|produkty?\s*w\s*paczce/i;
+
+/**
+ * Check if product should be visible based on delivery tags
+ * Products with "Paczkomaty i Kurier" MUST also have "produkt w paczce" tag
+ */
+function shouldProductBeVisible(tags: string[]): boolean {
+  const hasPaczkomatTag = tags.some(tag => 
+    PACZKOMAT_TAGS.some(pt => tag.toLowerCase() === pt.toLowerCase())
+  );
+  
+  if (!hasPaczkomatTag) return true;
+  
+  return tags.some(tag => PACKAGE_LIMIT_PATTERN.test(tag));
+}
+
 interface RecommendedProduct {
   id: string;
   name: string;
@@ -88,10 +107,12 @@ export class RecommendationsService {
           images: { orderBy: { order: 'asc' }, take: 1 },
           category: true,
         },
-        take: limit,
+        take: limit * 2, // Fetch more to account for filtering
       });
 
       for (const product of searchProducts) {
+        // Skip products that should be hidden (Paczkomaty i Kurier without produkt w paczce)
+        if (!shouldProductBeVisible(product.tags)) continue;
         if (!addedProductIds.has(product.id)) {
           addedProductIds.add(product.id);
           recommendations.push({
@@ -194,11 +215,13 @@ export class RecommendationsService {
             images: { orderBy: { order: 'asc' }, take: 1 },
             category: true,
           },
-          take: limit - recommendations.length,
+          take: (limit - recommendations.length) * 2, // Fetch more to account for filtering
           orderBy: { createdAt: 'desc' },
         });
 
         for (const product of similarProducts) {
+          // Skip products that should be hidden (Paczkomaty i Kurier without produkt w paczce)
+          if (!shouldProductBeVisible(product.tags)) continue;
           if (!addedProductIds.has(product.id)) {
             addedProductIds.add(product.id);
             recommendations.push({
@@ -229,11 +252,13 @@ export class RecommendationsService {
           images: { orderBy: { order: 'asc' }, take: 1 },
           category: true,
         },
-        take: limit - recommendations.length,
+        take: (limit - recommendations.length) * 2, // Fetch more to account for filtering
         orderBy: { createdAt: 'desc' },
       });
 
       for (const product of popularProducts) {
+        // Skip products that should be hidden (Paczkomaty i Kurier without produkt w paczce)
+        if (!shouldProductBeVisible(product.tags)) continue;
         if (!addedProductIds.has(product.id)) {
           addedProductIds.add(product.id);
           recommendations.push({

@@ -125,6 +125,34 @@ function filterOldZeroStockProducts(products: any[], days: number = 14): any[] {
   });
 }
 
+/**
+ * Filter products: if product has "Paczkomaty i Kurier" tag, it MUST also have "produkt w paczce" tag
+ * Products without proper package info should not be displayed
+ */
+function filterProductsWithPackageInfo(products: any[]): any[] {
+  const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
+  const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce|produkty?\s*w\s*paczce/i;
+  
+  return products.filter(product => {
+    const tags = product.tags || [];
+    
+    // Check if product has paczkomat tag
+    const hasPaczkomatTag = tags.some((tag: string) => 
+      PACZKOMAT_TAGS.some(pt => tag.toLowerCase() === pt.toLowerCase())
+    );
+    
+    // If no paczkomat tag, product is OK (might have "Tylko kurier" or weight tags)
+    if (!hasPaczkomatTag) return true;
+    
+    // Product has paczkomat tag - must also have "produkt w paczce" tag
+    const hasPackageLimitTag = tags.some((tag: string) => 
+      PACKAGE_LIMIT_PATTERN.test(tag)
+    );
+    
+    return hasPackageLimitTag;
+  });
+}
+
 export class ProductsService {
   /**
    * Check if a category exists by ID
@@ -250,10 +278,14 @@ export class ProductsService {
         // Found by SKU - return these first, then search for more
         const meilisearchResults = await this.searchWithMeilisearch(filters);
         const skuIds = skuMatch.map(p => p.id);
-        const combinedProducts = [
+        let combinedProducts = [
           ...transformProducts(skuMatch),
           ...meilisearchResults.products.filter(p => !skuIds.includes(p.id)),
-        ].slice(0, limit);
+        ];
+        
+        // Filter products: "Paczkomaty i Kurier" requires "produkt w paczce" tag
+        combinedProducts = filterProductsWithPackageInfo(combinedProducts);
+        combinedProducts = combinedProducts.slice(0, limit);
         
         return {
           ...meilisearchResults,
@@ -421,6 +453,9 @@ export class ProductsService {
     if (hideOldZeroStock) {
       transformedProducts = filterOldZeroStockProducts(transformedProducts, 14);
     }
+    
+    // Filter products: "Paczkomaty i Kurier" requires "produkt w paczce" tag
+    transformedProducts = filterProductsWithPackageInfo(transformedProducts);
 
     return {
       products: transformedProducts,
@@ -586,6 +621,9 @@ export class ProductsService {
       if (hideOldZeroStock) {
         transformedProducts = filterOldZeroStockProducts(transformedProducts, 14);
       }
+      
+      // Filter products: "Paczkomaty i Kurier" requires "produkt w paczce" tag
+      transformedProducts = filterProductsWithPackageInfo(transformedProducts);
 
       return {
         products: transformedProducts,
@@ -708,6 +746,9 @@ export class ProductsService {
     if (hideOldZeroStock) {
       transformedProducts = filterOldZeroStockProducts(transformedProducts, 14);
     }
+    
+    // Filter products: "Paczkomaty i Kurier" requires "produkt w paczce" tag
+    transformedProducts = filterProductsWithPackageInfo(transformedProducts);
 
     return {
       products: transformedProducts,
@@ -757,6 +798,29 @@ export class ProductsService {
         },
       },
     });
+    
+    if (!product) return null;
+    
+    // Check if product should be visible
+    // Products with "Paczkomaty i Kurier" tag MUST also have "produkt w paczce" tag
+    const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
+    const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce|produkty?\s*w\s*paczce/i;
+    const tags = product.tags || [];
+    
+    const hasPaczkomatTag = tags.some((tag: string) => 
+      PACZKOMAT_TAGS.some(pt => tag.toLowerCase() === pt.toLowerCase())
+    );
+    
+    if (hasPaczkomatTag) {
+      const hasPackageLimitTag = tags.some((tag: string) => 
+        PACKAGE_LIMIT_PATTERN.test(tag)
+      );
+      if (!hasPackageLimitTag) {
+        // Product has paczkomat tag but no package limit - should not be visible
+        return null;
+      }
+    }
+    
     return transformProduct(product);
   }
 
@@ -1336,7 +1400,8 @@ export class ProductsService {
       }));
 
     // Combine: manual products first, then automatic bestsellers
-    return [...manualProducts, ...automaticBestsellers];
+    // Filter out products with "Paczkomaty i Kurier" but no "produkt w paczce" tag
+    return filterProductsWithPackageInfo([...manualProducts, ...automaticBestsellers]);
   }
 
   /**
@@ -1484,7 +1549,8 @@ export class ProductsService {
     }
 
     // Combine: manual products first, then diverse automatic
-    return [...manualProducts, ...transformProducts(picked)];
+    // Filter out products with "Paczkomaty i Kurier" but no "produkt w paczce" tag
+    return filterProductsWithPackageInfo([...manualProducts, ...transformProducts(picked)]);
   }
 
   /**
@@ -1618,7 +1684,8 @@ export class ProductsService {
     }
 
     // Combine: manual products first, then automatic
-    return [...manualProducts, ...transformProducts(automaticProducts)];
+    // Filter out products with "Paczkomaty i Kurier" but no "produkt w paczce" tag
+    return filterProductsWithPackageInfo([...manualProducts, ...transformProducts(automaticProducts)]);
   }
 
   /**
@@ -1705,7 +1772,8 @@ export class ProductsService {
     });
 
     // Combine: manual products first, then automatic new products
-    return [...manualProducts, ...transformProducts(automaticProducts)];
+    // Filter out products with "Paczkomaty i Kurier" but no "produkt w paczce" tag
+    return filterProductsWithPackageInfo([...manualProducts, ...transformProducts(automaticProducts)]);
   }
 
   /**
@@ -1757,7 +1825,7 @@ export class ProductsService {
     });
 
     return {
-      products: transformProducts(products),
+      products: filterProductsWithPackageInfo(transformProducts(products)),
       wholesaler: this.getWholesalerDisplayName(wholesaler),
     };
   }
