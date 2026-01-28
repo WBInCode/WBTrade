@@ -7,6 +7,7 @@ interface SortOption {
 
 const sortOptions: SortOption[] = [
   { value: 'relevance', label: 'Trafność' },
+  { value: 'popularity', label: 'Popularność' },
   { value: 'price-asc', label: 'Cena: od najniższej' },
   { value: 'price-desc', label: 'Cena: od najwyższej' },
   { value: 'newest', label: 'Najnowsze' },

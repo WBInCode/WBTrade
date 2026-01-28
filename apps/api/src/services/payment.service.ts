@@ -19,6 +19,7 @@ import { Przelewy24Provider } from '../providers/payment/przelewy24.provider';
 import { PayUProvider } from '../providers/payment/payu.provider';
 import { prisma } from '../db';
 import { baselinkerOrdersService } from './baselinker-orders.service';
+import { popularityService } from './popularity.service';
 
 // Provider configurations from environment
 const providerConfigs: Record<PaymentProviderId, Partial<PaymentProviderConfig>> = {
@@ -355,6 +356,19 @@ export class PaymentService {
       // only AFTER payment is confirmed
       if (result.status === 'succeeded') {
         console.log(`[PaymentService] Payment succeeded, triggering Baselinker sync for order ${order.id}`);
+        
+        // Update product sales count for popularity tracking
+        const orderItems = await prisma.orderItem.findMany({
+          where: { orderId: order.id },
+          include: { variant: { include: { product: true } } },
+        });
+        
+        for (const item of orderItems) {
+          if (item.variant?.product?.id) {
+            popularityService.incrementSalesCount(item.variant.product.id, item.quantity)
+              .catch((err) => console.error(`[PaymentService] Error updating sales count for product ${item.variant?.product?.id}:`, err));
+          }
+        }
         
         // Sync to Baselinker asynchronously (don't block payment confirmation)
         baselinkerOrdersService.syncOrderToBaselinker(order.id)

@@ -1,6 +1,7 @@
 import { prisma } from '../db';
 import { OrderStatus, Prisma } from '@prisma/client';
 import { baselinkerOrdersService } from './baselinker-orders.service';
+import { popularityService } from './popularity.service';
 
 interface PackageShippingItem {
   packageId: string;
@@ -527,6 +528,19 @@ export class OrdersService {
     // After successful payment simulation, sync to Baselinker
     if (updatedOrder) {
       console.log(`[DEV] Triggering Baselinker sync for simulated payment, order ${id}`);
+      
+      // Update product sales count for popularity tracking
+      for (const item of updatedOrder.items) {
+        const variant = await prisma.productVariant.findUnique({
+          where: { id: item.variantId },
+          include: { product: true },
+        });
+        if (variant?.product?.id) {
+          popularityService.incrementSalesCount(variant.product.id, item.quantity)
+            .catch((err) => console.error(`[DEV] Error updating sales count for product ${variant?.product?.id}:`, err));
+        }
+      }
+      
       baselinkerOrdersService.syncOrderToBaselinker(id)
         .then((syncResult) => {
           if (syncResult.success) {
