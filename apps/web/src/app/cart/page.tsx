@@ -384,6 +384,7 @@ export default function CartPage() {
                           image: product.images?.[0]?.url || '',
                           price: String(product.price),
                           quantity: 1,
+                          productId: product.id,
                         });
                       }
                     }}

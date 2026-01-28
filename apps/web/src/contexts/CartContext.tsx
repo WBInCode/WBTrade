@@ -9,6 +9,7 @@ interface AddedProductInfo {
   image: string;
   price: string;
   quantity: number;
+  productId?: string; // Added for same-warehouse recommendations
 }
 
 interface CartContextType {
@@ -160,6 +161,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         isOpen={isModalOpen}
         product={addedProduct}
         onClose={hideAddToCartModal}
+        onAddToCart={addToCart}
       />
     </CartContext.Provider>
   );
