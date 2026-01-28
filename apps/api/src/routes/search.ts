@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { searchProducts, getSuggestions, reindexProducts, getSearchStats } from '../controllers/search.controller';
+import { searchProducts, getSuggestions, reindexProducts, getSearchStats, getPopularSearches } from '../controllers/search.controller';
 
 const router = Router();
 
@@ -8,6 +8,9 @@ router.get('/', searchProducts);
 
 // Route for search suggestions (autocomplete)
 router.get('/suggest', getSuggestions);
+
+// Route for popular searches (trending)
+router.get('/popular', getPopularSearches);
 
 // Route for reindexing products to Meilisearch
 router.post('/reindex', reindexProducts);

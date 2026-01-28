@@ -14,6 +14,7 @@ export interface MeiliProduct {
   image: string | null;
   status: string;
   createdAt: number;
+  hasBaselinkerCategory: boolean; // true if category has baselinkerCategoryId
 }
 
 export class SearchService {
@@ -226,6 +227,7 @@ export class SearchService {
       image: product.images[0]?.url || null,
       status: product.status,
       createdAt: product.createdAt.getTime(),
+      hasBaselinkerCategory: !!product.category?.baselinkerCategoryId,
     }));
 
     const index = getProductsIndex();
@@ -264,6 +266,7 @@ export class SearchService {
       image: product.images[0]?.url || null,
       status: product.status,
       createdAt: product.createdAt.getTime(),
+      hasBaselinkerCategory: !!product.category?.baselinkerCategoryId,
     };
 
     const index = getProductsIndex();

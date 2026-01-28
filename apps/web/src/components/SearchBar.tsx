@@ -7,12 +7,13 @@ import { dashboardApi } from '../lib/api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
-const popularSearches = [
-  'iPhone 15',
-  'Laptopy gamingowe',
-  'Słuchawki bezprzewodowe',
-  'Apple Watch',
-  'PlayStation 5',
+// Default popular searches (fallback)
+const defaultPopularSearches = [
+  'Zabawki',
+  'Przytulanka',
+  'Dekoracje',
+  'Kuchnia',
+  'Akcesoria',
 ];
 
 const RECENT_SEARCHES_KEY = 'wbtrade_recent_searches';
@@ -55,6 +56,7 @@ export default function SearchBar() {
   const [isOpen, setIsOpen] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [popularSearches, setPopularSearches] = useState<string[]>(defaultPopularSearches);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   
@@ -63,7 +65,7 @@ export default function SearchBar() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
-  // Load recent searches from localStorage
+  // Load recent searches from localStorage and fetch popular searches
   useEffect(() => {
     const saved = localStorage.getItem(RECENT_SEARCHES_KEY);
     if (saved) {
@@ -73,6 +75,23 @@ export default function SearchBar() {
         console.error('Failed to parse recent searches');
       }
     }
+    
+    // Fetch popular searches from API
+    const fetchPopularSearches = async () => {
+      try {
+        const response = await fetch(`${API_URL}/search/popular?limit=5&days=30`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.searches && data.searches.length > 0) {
+            setPopularSearches(data.searches);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to fetch popular searches');
+      }
+    };
+    
+    fetchPopularSearches();
   }, []);
 
   // Save recent search

@@ -74,20 +74,21 @@ model Address {
 }
 
 model Category {
-  id                   String          @id @default(cuid())
-  name                 String
-  slug                 String          @unique
-  parentId             String?         @map("parent_id")
-  image                String?
-  order                Int             @default(0)
-  isActive             Boolean         @default(true) @map("is_active")
-  createdAt            DateTime        @default(now()) @map("created_at")
-  updatedAt            DateTime        @updatedAt @map("updated_at")
-  baselinkerCategoryId String?         @unique @map("baselinker_category_id")
-  parent               Category?       @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children             Category[]      @relation("CategoryHierarchy")
-  products             Product[]
-  searchHistory        SearchHistory[]
+  id                     String          @id @default(cuid())
+  name                   String
+  slug                   String          @unique
+  parentId               String?         @map("parent_id")
+  image                  String?
+  order                  Int             @default(0)
+  isActive               Boolean         @default(true) @map("is_active")
+  createdAt              DateTime        @default(now()) @map("created_at")
+  updatedAt              DateTime        @updatedAt @map("updated_at")
+  baselinkerCategoryId   String?         @unique @map("baselinker_category_id")
+  baselinkerCategoryPath String?         @map("baselinker_category_path") // Pełna ścieżka z Baselinker np. "Gastronomia|Naczynia i przybory kuchenne"
+  parent                 Category?       @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children               Category[]      @relation("CategoryHierarchy")
+  products               Product[]
+  searchHistory          SearchHistory[]
 
   @@index([slug])
   @@index([parentId])

@@ -1,0 +1,746 @@
+{
+  "generatedAt": "2026-01-28T07:57:48.176Z",
+  "totalCategories": 145,
+  "mainCategories": [
+    {
+      "name": "Chemia przemysłowa",
+      "category_id": 2806557,
+      "subcategories": [
+        {
+          "name": "Alkohole niespożywcze",
+          "category_id": 2806558,
+          "full_name": "Chemia przemysłowa|Alkohole niespożywcze"
+        },
+        {
+          "name": "Chemia dla gastronomii",
+          "category_id": 2806559,
+          "full_name": "Chemia przemysłowa|Chemia dla gastronomii"
+        },
+        {
+          "name": "Chemia samochodowa",
+          "category_id": 2806567,
+          "full_name": "Chemia przemysłowa|Chemia samochodowa"
+        },
+        {
+          "name": "Chemia warsztatowa",
+          "category_id": 2806570,
+          "full_name": "Chemia przemysłowa|Chemia warsztatowa"
+        },
+        {
+          "name": "Gazy i paliwa",
+          "category_id": 2806571,
+          "full_name": "Chemia przemysłowa|Gazy i paliwa"
+        },
+        {
+          "name": "Rozpuszczalniki",
+          "category_id": 2806572,
+          "full_name": "Chemia przemysłowa|Rozpuszczalniki"
+        },
+        {
+          "name": "Woda demineralizowana",
+          "category_id": 2806573,
+          "full_name": "Chemia przemysłowa|Woda demineralizowana"
+        }
+      ]
+    },
+    {
+      "name": "Dom i ogród",
+      "category_id": 2804024,
+      "subcategories": [
+        {
+          "name": "Budownictwo i akcesoria",
+          "category_id": 2806574,
+          "full_name": "Dom i ogród|Budownictwo i akcesoria"
+        },
+        {
+          "name": "Majsterkowanie",
+          "category_id": 2806577,
+          "full_name": "Dom i ogród|Majsterkowanie"
+        },
+        {
+          "name": "Ogród",
+          "category_id": 2806578,
+          "full_name": "Dom i ogród|Ogród"
+        },
+        {
+          "name": "Rolnictwo",
+          "category_id": 2806579,
+          "full_name": "Dom i ogród|Rolnictwo"
+        },
+        {
+          "name": "Sprzęt AGD",
+          "category_id": 2806580,
+          "full_name": "Dom i ogród|Sprzęt AGD"
+        },
+        {
+          "name": "Środki czystości",
+          "category_id": 2806581,
+          "full_name": "Dom i ogród|Środki czystości"
+        },
+        {
+          "name": "Akcesoria do sprzątania domu",
+          "category_id": 2806582,
+          "full_name": "Dom i ogród|Akcesoria do sprzątania domu "
+        },
+        {
+          "name": "Łazienka",
+          "category_id": 2806583,
+          "full_name": "Dom i ogród|Łazienka"
+        },
+        {
+          "name": "Smart Home",
+          "category_id": 2806801,
+          "full_name": "Dom i ogród |Smart Home"
+        },
+        {
+          "name": "Baseny i akcesoria",
+          "category_id": 2806807,
+          "full_name": "Dom i ogród|Baseny i akcesoria "
+        },
+        {
+          "name": "Oświetlenie",
+          "category_id": 2806810,
+          "full_name": "Dom i ogród|Oświetlenie "
+        },
+        {
+          "name": "Wyposażenie wnętrz",
+          "category_id": 2806817,
+          "full_name": "Dom i ogród|Wyposażenie wnętrz "
+        },
+        {
+          "name": "Zabezpieczenia",
+          "category_id": 2806822,
+          "full_name": "Dom i ogród|Zabezpieczenia"
+        },
+        {
+          "name": "Okleiny Folie",
+          "category_id": 2806825,
+          "full_name": "Dom i ogród|Okleiny Folie "
+        },
+        {
+          "name": "Gadżety",
+          "category_id": 2806829,
+          "full_name": "Dom i ogród|Gadżety"
+        },
+        {
+          "name": "Akcesoria dla zwierząt",
+          "category_id": 2806830,
+          "full_name": "Dom i ogród|Akcesoria dla zwierząt"
+        },
+        {
+          "name": "Akcesoria i narzędzia ogrodowe",
+          "category_id": 2806847,
+          "full_name": "Dom i ogród|Akcesoria i narzędzia ogrodowe"
+        },
+        {
+          "name": "Akcesoria pszczelarskie",
+          "category_id": 2806854,
+          "full_name": "Dom i ogród |Akcesoria pszczelarskie"
+        },
+        {
+          "name": "Nawadnianie",
+          "category_id": 2806858,
+          "full_name": "Dom i ogród |Nawadnianie"
+        },
+        {
+          "name": "Meble ogrodowe",
+          "category_id": 2806861,
+          "full_name": "Dom i ogród |Meble ogrodowe"
+        }
+      ]
+    },
+    {
+      "name": "Dziecko",
+      "category_id": 2804034,
+      "subcategories": [
+        {
+          "name": "Zabawki",
+          "category_id": 2804079,
+          "full_name": "Dziecko|Zabawki"
+        },
+        {
+          "name": "Pojazdy dla dzieci",
+          "category_id": 2804111,
+          "full_name": "Dziecko|Pojazdy dla dzieci"
+        },
+        {
+          "name": "Kostiumy i przebrania",
+          "category_id": 2804121,
+          "full_name": "Dziecko|Kostiumy i przebrania"
+        },
+        {
+          "name": "Artykuły papiernicze",
+          "category_id": 2804123,
+          "full_name": "Dziecko|Artykuły papiernicze"
+        },
+        {
+          "name": "Gadżety",
+          "category_id": 2804280,
+          "full_name": "Dziecko|Gadżety"
+        },
+        {
+          "name": "Gry edukacyjne i planszowe",
+          "category_id": 2804306,
+          "full_name": "Dziecko|Gry edukacyjne i planszowe"
+        },
+        {
+          "name": "Domki dla lalek i akcesoria",
+          "category_id": 2805536,
+          "full_name": "Dziecko|Domki dla lalek i akcesoria "
+        },
+        {
+          "name": "Maty dla dzieci",
+          "category_id": 2805754,
+          "full_name": "Dziecko|Maty dla dzieci "
+        },
+        {
+          "name": "Zabawki ogrodowe",
+          "category_id": 2805763,
+          "full_name": "Dziecko|Zabawki ogrodowe "
+        },
+        {
+          "name": "Zabawki do piasku i piaskownice",
+          "category_id": 2805766,
+          "full_name": "Dziecko|Zabawki do piasku i piaskownice"
+        },
+        {
+          "name": "Tablice",
+          "category_id": 2805818,
+          "full_name": "Dziecko|Tablice"
+        },
+        {
+          "name": "Zabawki do wody",
+          "category_id": 2805821,
+          "full_name": "Dziecko|Zabawki do wody"
+        },
+        {
+          "name": "Deski balansowe i bujaki",
+          "category_id": 2805826,
+          "full_name": "Dziecko|Deski balansowe i bujaki "
+        },
+        {
+          "name": "Części zamienne do zabawek",
+          "category_id": 2805827,
+          "full_name": "Dziecko|Części zamienne do zabawek "
+        },
+        {
+          "name": "Piasek kinetyczny, masy plastyczne i akcesoria",
+          "category_id": 2805828,
+          "full_name": "Dziecko|Piasek kinetyczny, masy plastyczne i akcesoria "
+        },
+        {
+          "name": "Pluszaki",
+          "category_id": 2806551,
+          "full_name": "Dziecko|Pluszaki "
+        },
+        {
+          "name": "Domki ogrodowe i akcesoria",
+          "category_id": 2806656,
+          "full_name": "Dziecko|Domki ogrodowe i akcesoria "
+        },
+        {
+          "name": "Place zabaw",
+          "category_id": 2806660,
+          "full_name": "Dziecko|Place zabaw "
+        },
+        {
+          "name": "Zjeżdżalnie",
+          "category_id": 2806661,
+          "full_name": "Dziecko|Zjeżdżalnie"
+        },
+        {
+          "name": "Stoliki ogrodowe dla dzieci",
+          "category_id": 2806662,
+          "full_name": "Dziecko|Stoliki ogrodowe dla dzieci"
+        },
+        {
+          "name": "Zabawki do Piasku i Wody",
+          "category_id": 2806665,
+          "full_name": "Dziecko|Zabawki do Piasku i Wody"
+        },
+        {
+          "name": "Pchacz",
+          "category_id": 2806766,
+          "full_name": "Dziecko|Pchacz "
+        },
+        {
+          "name": "Akcesoria do pojazdów dla dzieci",
+          "category_id": 2806795,
+          "full_name": "Dziecko|Akcesoria do pojazdów dla dzieci "
+        }
+      ]
+    },
+    {
+      "name": "Elektronarzędzia",
+      "category_id": 2806584,
+      "subcategories": [
+        {
+          "name": "Maszyny budowlane",
+          "category_id": 2806585,
+          "full_name": "Elektronarzędzia|Maszyny budowlane"
+        },
+        {
+          "name": "Nożyce wyżynarki",
+          "category_id": 2806586,
+          "full_name": "Elektronarzędzia|Nożyce wyżynarki"
+        },
+        {
+          "name": "Palniki opalarki lutownice",
+          "category_id": 2806587,
+          "full_name": "Elektronarzędzia|Palniki opalarki lutownice"
+        },
+        {
+          "name": "Piły pilarki",
+          "category_id": 2806588,
+          "full_name": "Elektronarzędzia|Piły pilarki"
+        },
+        {
+          "name": "Szlifierki polerki",
+          "category_id": 2806590,
+          "full_name": "Elektronarzędzia|Szlifierki polerki"
+        },
+        {
+          "name": "Urządzenia specjalistyczne",
+          "category_id": 2806591,
+          "full_name": "Elektronarzędzia|Urządzenia specjalistyczne"
+        },
+        {
+          "name": "Wiertarki młoty udarowe",
+          "category_id": 2806595,
+          "full_name": "Elektronarzędzia|Wiertarki młoty udarowe"
+        },
+        {
+          "name": "Materiały ścierne i polerskie",
+          "category_id": 2806597,
+          "full_name": "Elektronarzędzia|Materiały ścierne i polerskie"
+        },
+        {
+          "name": "Narzędzia dla elektroników",
+          "category_id": 2806601,
+          "full_name": "Elektronarzędzia|Narzędzia dla elektroników"
+        },
+        {
+          "name": "Spawalnictwo",
+          "category_id": 2806602,
+          "full_name": "Elektronarzędzia|Spawalnictwo"
+        }
+      ]
+    },
+    {
+      "name": "Elektronika i GSM",
+      "category_id": 2804021,
+      "subcategories": [
+        {
+          "name": "Etui do telefonów",
+          "category_id": 2804212,
+          "full_name": "Elektronika i GSM|Etui do telefonów"
+        },
+        {
+          "name": "Słuchawki i głośniki",
+          "category_id": 2804213,
+          "full_name": "Elektronika i GSM|Słuchawki i głośniki"
+        },
+        {
+          "name": "Akcesoria do smartwatchy",
+          "category_id": 2804214,
+          "full_name": "Elektronika i GSM|Akcesoria do smartwatchy"
+        },
+        {
+          "name": "Komputery i akcesoria",
+          "category_id": 2804267,
+          "full_name": "Elektronika i GSM|Komputery i akcesoria"
+        },
+        {
+          "name": "Zasilacze i  ładowarki",
+          "category_id": 2804269,
+          "full_name": "Elektronika i GSM|Zasilacze i  ładowarki"
+        },
+        {
+          "name": "szkła i folie ochronne do telefonów",
+          "category_id": 2804339,
+          "full_name": "Elektronika i GSM|szkła i folie ochronne do telefonów"
+        },
+        {
+          "name": "Etui do słuchawek",
+          "category_id": 2805770,
+          "full_name": "Elektronika i GSM|Etui do słuchawek"
+        },
+        {
+          "name": "Etui do Tabletów i laptopów",
+          "category_id": 2805806,
+          "full_name": "Elektronika i GSM|Etui do Tabletów i laptopów"
+        },
+        {
+          "name": "Etui do konsoli",
+          "category_id": 2805807,
+          "full_name": "Elektronika i GSM|Etui do konsoli"
+        },
+        {
+          "name": "Etui do smartwatchy",
+          "category_id": 2805833,
+          "full_name": "Elektronika i GSM|Etui do smartwatchy"
+        },
+        {
+          "name": "szkła i folie ochronne do smartwatchy",
+          "category_id": 2806699,
+          "full_name": "Elektronika i GSM|szkła i folie ochronne do smartwatchy "
+        },
+        {
+          "name": "szkła i folia ochronne do tabletów i laptopów",
+          "category_id": 2806703,
+          "full_name": "Elektronika i GSM|szkła i folia ochronne do tabletów i laptopów"
+        },
+        {
+          "name": "szkła i folie ochronne do kamery",
+          "category_id": 2806778,
+          "full_name": "Elektronika i GSM|szkła i folie ochronne do kamery"
+        },
+        {
+          "name": "Etui na akcesoria",
+          "category_id": 2806780,
+          "full_name": "Elektronika i GSM|Etui na akcesoria "
+        },
+        {
+          "name": "Kamery monitoring",
+          "category_id": 2806799,
+          "full_name": "Elektronika i GSM|Kamery monitoring"
+        },
+        {
+          "name": "Przejściówki adaptery",
+          "category_id": 2806800,
+          "full_name": "Elektronika i GSM|Przejściówki adaptery"
+        },
+        {
+          "name": "Kable przewody",
+          "category_id": 2806803,
+          "full_name": "Elektronika i GSM|Kable przewody"
+        },
+        {
+          "name": "ładowarki samochodowe",
+          "category_id": 2806815,
+          "full_name": "Elektronika i GSM|ładowarki samochodowe"
+        },
+        {
+          "name": "Akcesoria do kabli",
+          "category_id": 2806834,
+          "full_name": "Elektronika i GSM|Akcesoria do kabli "
+        },
+        {
+          "name": "Akcesoria do telefonu",
+          "category_id": 2806846,
+          "full_name": "Elektronika i GSM|Akcesoria do telefonu "
+        },
+        {
+          "name": "Ładowarki solarne stacje zasilania",
+          "category_id": 2806859,
+          "full_name": "Elektronika i GSM|Ładowarki solarne stacje zasilania"
+        }
+      ]
+    },
+    {
+      "name": "Gastronomia",
+      "category_id": 2804050,
+      "subcategories": [
+        {
+          "name": "Cukiernia kawiarnia",
+          "category_id": 2804313,
+          "full_name": "Gastronomia|Cukiernia kawiarnia"
+        },
+        {
+          "name": "Bar",
+          "category_id": 2804314,
+          "full_name": "Gastronomia|Bar"
+        },
+        {
+          "name": "Pizzeria",
+          "category_id": 2804315,
+          "full_name": "Gastronomia|Pizzeria"
+        },
+        {
+          "name": "Hotelarstwo",
+          "category_id": 2804316,
+          "full_name": "Gastronomia|Hotelarstwo"
+        },
+        {
+          "name": "Catering i transport żywności",
+          "category_id": 2804318,
+          "full_name": "Gastronomia|Catering i transport żywności"
+        },
+        {
+          "name": "Restauracja",
+          "category_id": 2806606,
+          "full_name": "Gastronomia|Restauracja"
+        },
+        {
+          "name": "Chłodnictwo",
+          "category_id": 2806607,
+          "full_name": "Gastronomia|Chłodnictwo"
+        },
+        {
+          "name": "Naczynia i przybory kuchenne",
+          "category_id": 2806608,
+          "full_name": "Gastronomia|Naczynia i przybory kuchenne"
+        },
+        {
+          "name": "Roboty kuchenne",
+          "category_id": 2806609,
+          "full_name": "Gastronomia|Roboty kuchenne"
+        },
+        {
+          "name": "Bemary i podgrzewacze",
+          "category_id": 2806610,
+          "full_name": "Gastronomia|Bemary i podgrzewacze"
+        },
+        {
+          "name": "Higiena i utrzymanie czystości",
+          "category_id": 2806612,
+          "full_name": "Gastronomia|Higiena i utrzymanie czystości"
+        },
+        {
+          "name": "Środki chemiczne",
+          "category_id": 2806613,
+          "full_name": "Gastronomia|Środki chemiczne"
+        },
+        {
+          "name": "Destylatory i warzelnie piwa",
+          "category_id": 2806669,
+          "full_name": "Gastronomia|Destylatory i warzelnie piwa"
+        },
+        {
+          "name": "Pakowarki próżniowe",
+          "category_id": 2806671,
+          "full_name": "Gastronomia|Pakowarki próżniowe"
+        },
+        {
+          "name": "Pojemniki GN",
+          "category_id": 2806672,
+          "full_name": "Gastronomia|Pojemniki GN"
+        },
+        {
+          "name": "Suszarki do żywności",
+          "category_id": 2806673,
+          "full_name": "Gastronomia|Suszarki do żywności"
+        },
+        {
+          "name": "Urządzenia do wina",
+          "category_id": 2806674,
+          "full_name": "Gastronomia|Urządzenia do wina"
+        },
+        {
+          "name": "Wagi, timery i termometry kuchenne",
+          "category_id": 2806675,
+          "full_name": "Gastronomia|Wagi, timery i termometry kuchenne"
+        },
+        {
+          "name": "Wędzarnie",
+          "category_id": 2806676,
+          "full_name": "Gastronomia|Wędzarnie"
+        },
+        {
+          "name": "Urządzenia i akcesoria grzewcze",
+          "category_id": 2806677,
+          "full_name": "Gastronomia|Urządzenia i akcesoria grzewcze"
+        },
+        {
+          "name": "Zmywarki i polerki do naczyń",
+          "category_id": 2806678,
+          "full_name": "Gastronomia|Zmywarki i polerki do naczyń"
+        },
+        {
+          "name": "Meble technologiczne",
+          "category_id": 2806679,
+          "full_name": "Gastronomia|Meble technologiczne"
+        },
+        {
+          "name": "Obróbka ręczna i mechaniczna",
+          "category_id": 2806680,
+          "full_name": "Gastronomia|Obróbka ręczna i mechaniczna"
+        }
+      ]
+    },
+    {
+      "name": "Sport i turystyka",
+      "category_id": 2804033,
+      "subcategories": [
+        {
+          "name": "Akcesoria do rowerów",
+          "category_id": 2804321,
+          "full_name": "Sport i turystyka|Akcesoria do rowerów"
+        },
+        {
+          "name": "Domowe SPA sauny jacuzzi",
+          "category_id": 2806614,
+          "full_name": "Sport i turystyka|Domowe SPA sauny jacuzzi"
+        },
+        {
+          "name": "Fitness gimnastyka",
+          "category_id": 2806615,
+          "full_name": "Sport i turystyka|Fitness gimnastyka"
+        },
+        {
+          "name": "Lornetki lunety",
+          "category_id": 2806616,
+          "full_name": "Sport i turystyka|Lornetki lunety"
+        },
+        {
+          "name": "Sporty walki",
+          "category_id": 2806617,
+          "full_name": "Sport i turystyka|Sporty walki"
+        },
+        {
+          "name": "Sporty wodne",
+          "category_id": 2806618,
+          "full_name": "Sport i turystyka|Sporty wodne"
+        },
+        {
+          "name": "Sprzęt turystyczny",
+          "category_id": 2806620,
+          "full_name": "Sport i turystyka|Sprzęt turystyczny"
+        },
+        {
+          "name": "Trening siłowy",
+          "category_id": 2806621,
+          "full_name": "Sport i turystyka|Trening siłowy"
+        },
+        {
+          "name": "Wykrywacze metalu",
+          "category_id": 2806622,
+          "full_name": "Sport i turystyka|Wykrywacze metalu"
+        },
+        {
+          "name": "Turystyka i kemping",
+          "category_id": 2806623,
+          "full_name": "Sport i turystyka|Turystyka i kemping"
+        }
+      ]
+    },
+    {
+      "name": "Wagi",
+      "category_id": 2806625,
+      "subcategories": [
+        {
+          "name": "Wagi elektroniczne",
+          "category_id": 2806626,
+          "full_name": "Wagi|Wagi elektroniczne"
+        },
+        {
+          "name": "Wzorce masy",
+          "category_id": 2806627,
+          "full_name": "Wagi|Wzorce masy"
+        }
+      ]
+    },
+    {
+      "name": "Warsztat pracownia garaż",
+      "category_id": 2806628,
+      "subcategories": [
+        {
+          "name": "Maszyny do pelletu",
+          "category_id": 2806629,
+          "full_name": "Warsztat pracownia garaż|Maszyny do pelletu"
+        },
+        {
+          "name": "Myjki i czyściwa warsztatowe",
+          "category_id": 2806630,
+          "full_name": "Warsztat pracownia garaż|Myjki i czyściwa warsztatowe"
+        },
+        {
+          "name": "Pojemniki na śmieci i odpady",
+          "category_id": 2806631,
+          "full_name": "Warsztat pracownia garaż|Pojemniki na śmieci i odpady"
+        },
+        {
+          "name": "Pokrowce na samochody i łodzie",
+          "category_id": 2806632,
+          "full_name": "Warsztat pracownia garaż|Pokrowce na samochody i łodzie"
+        },
+        {
+          "name": "Sprzęt motorowodny i żeglarski",
+          "category_id": 2806634,
+          "full_name": "Warsztat pracownia garaż|Sprzęt motorowodny i żeglarski"
+        },
+        {
+          "name": "Sprzęt warsztatowy",
+          "category_id": 2806635,
+          "full_name": "Warsztat pracownia garaż|Sprzęt warsztatowy"
+        },
+        {
+          "name": "Transport i przechowywanie",
+          "category_id": 2806636,
+          "full_name": "Warsztat pracownia garaż|Transport i przechowywanie"
+        },
+        {
+          "name": "Warsztat samochodowy",
+          "category_id": 2806638,
+          "full_name": "Warsztat pracownia garaż|Warsztat samochodowy"
+        },
+        {
+          "name": "Wyposażenie sklepu",
+          "category_id": 2806640,
+          "full_name": "Warsztat pracownia garaż|Wyposażenie sklepu"
+        },
+        {
+          "name": "Wciągarki wyciągarki",
+          "category_id": 2806641,
+          "full_name": "Warsztat pracownia garaż|Wciągarki wyciągarki"
+        },
+        {
+          "name": "Chemia",
+          "category_id": 2806642,
+          "full_name": "Warsztat pracownia garaż|Chemia"
+        }
+      ]
+    },
+    {
+      "name": "Zdrowie i uroda",
+      "category_id": 2806643,
+      "subcategories": []
+    },
+    {
+      "name": "Zdrowie i Uroda",
+      "category_id": null,
+      "subcategories": [
+        {
+          "name": "Balkoniki chodziki podpórki",
+          "category_id": 2806644,
+          "full_name": "Zdrowie i Uroda|Balkoniki chodziki podpórki"
+        },
+        {
+          "name": "Gabinet masażu",
+          "category_id": 2806645,
+          "full_name": "Zdrowie i Uroda|Gabinet masażu"
+        },
+        {
+          "name": "Generatory ozonu",
+          "category_id": 2806646,
+          "full_name": "Zdrowie i Uroda|Generatory ozonu"
+        },
+        {
+          "name": "Meble do gabinetu",
+          "category_id": 2806647,
+          "full_name": "Zdrowie i Uroda|Meble do gabinetu"
+        },
+        {
+          "name": "Modele anatomiczne",
+          "category_id": 2806648,
+          "full_name": "Zdrowie i Uroda|Modele anatomiczne"
+        },
+        {
+          "name": "Oczyszczacze powietrza",
+          "category_id": 2806650,
+          "full_name": "Zdrowie i Uroda|Oczyszczacze powietrza"
+        },
+        {
+          "name": "Salon kosmetyczny",
+          "category_id": 2806653,
+          "full_name": "Zdrowie i Uroda|Salon kosmetyczny"
+        },
+        {
+          "name": "Stoły groomerskie",
+          "category_id": 2806655,
+          "full_name": "Zdrowie i Uroda|Stoły groomerskie"
+        }
+      ]
+    }
+  ]
+}

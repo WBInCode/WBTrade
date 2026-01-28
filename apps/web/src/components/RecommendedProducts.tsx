@@ -37,11 +37,10 @@ export default function RecommendedProducts({ initialProducts }: RecommendedProd
             return;
 
           case 'bestsellers':
-            // Bestsellers - for now, we'll fetch products sorted by name (as a proxy)
-            // In a real app, this would be based on order count or a bestseller flag
-            const bestsellersResponse = await productsApi.getAll({
+            // Bestsellers - based on actual sales data from last 90 days
+            const bestsellersResponse = await productsApi.getBestsellers({
               limit: 12,
-              sort: 'name_asc',
+              days: 90,
             });
             fetchedProducts = bestsellersResponse.products;
             break;

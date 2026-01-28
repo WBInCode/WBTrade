@@ -13,21 +13,7 @@ const DELIVERY_TAGS = [
   'do 31,5 kg',
 ];
 
-// Tagi głównych kategorii
-const CATEGORY_TAGS = [
-  'Elektronika',
-  'Sport',
-  'Zdrowie i uroda',
-  'Dom i ogród',
-  'Motoryzacja',
-  'Dziecko',
-  'Biurowe i papiernicze',
-  'Gastronomiczne',
-  'gastronomia',
-  'Gastronomia',
-];
-
-// Bazowy filtr dla widocznych produktów (taki sam jak w products.service.ts)
+// Bazowy filtr dla widocznych produktów (bez filtrowania po tagach kategorii - teraz używamy baselinkerCategoryPath)
 const VISIBLE_PRODUCT_WHERE = {
   price: { gt: 0 },
   variants: {
@@ -39,10 +25,7 @@ const VISIBLE_PRODUCT_WHERE = {
       }
     }
   },
-  AND: [
-    { tags: { hasSome: DELIVERY_TAGS } },
-    { tags: { hasSome: CATEGORY_TAGS } },
-  ],
+  tags: { hasSome: DELIVERY_TAGS },
 };
 
 export interface CategoryWithChildren {
@@ -110,30 +93,31 @@ export class CategoriesService {
 
   /**
    * Get all categories in a tree structure
-   * Filters only main categories (order > 0) and their children (all levels)
+   * Now returns only categories from Baselinker (with baselinkerCategoryId)
+   * Structure: main categories (parentId = null) with their subcategories
    */
   async getCategoryTree(): Promise<CategoryWithChildren[]> {
-    // First get main categories (order > 0)
-    const mainCategoryIds = await prisma.category.findMany({
-      where: { isActive: true, parentId: null, order: { gt: 0 } },
-      select: { id: true }
-    });
-    const mainIds = mainCategoryIds.map(c => c.id);
-
-    // Get main categories with their full hierarchy (3 levels)
+    // Get main categories from Baselinker (parentId = null, has baselinkerCategoryId)
     const mainCategories = await prisma.category.findMany({
       where: { 
         isActive: true,
-        id: { in: mainIds }
+        parentId: null,
+        baselinkerCategoryId: { not: null }, // Only Baselinker categories
       },
-      orderBy: { order: 'asc' },
+      orderBy: { name: 'asc' },
       include: {
         children: {
-          where: { isActive: true },
+          where: { 
+            isActive: true,
+            baselinkerCategoryId: { not: null }, // Only Baselinker subcategories
+          },
           orderBy: { name: 'asc' },
           include: {
             children: {
-              where: { isActive: true },
+              where: { 
+                isActive: true,
+                baselinkerCategoryId: { not: null },
+              },
               orderBy: { name: 'asc' },
             }
           }
@@ -182,6 +166,17 @@ export class CategoriesService {
       }
     };
     updateProductCounts(rootCategories);
+
+    // Filter out categories with 0 products (optional - uncomment if needed)
+    // const filterEmptyCategories = (cats: CategoryWithChildren[]): CategoryWithChildren[] => {
+    //   return cats
+    //     .filter(cat => (cat.productCount || 0) > 0)
+    //     .map(cat => ({
+    //       ...cat,
+    //       children: cat.children ? filterEmptyCategories(cat.children) : []
+    //     }));
+    // };
+    // return filterEmptyCategories(rootCategories);
 
     return rootCategories;
   }
@@ -303,23 +298,29 @@ export class CategoriesService {
 
   /**
    * Get main (root) categories only
-   * Filters by order > 0 to exclude old BaseLinker categories
+   * Filters by baselinkerCategoryId to return only Baselinker categories
    */
   async getMainCategories(): Promise<CategoryWithChildren[]> {
     const categories = await prisma.category.findMany({
       where: { 
         isActive: true,
         parentId: null,
-        order: { gt: 0 } // Only unified main categories have order > 0
+        baselinkerCategoryId: { not: null } // Only Baselinker categories
       },
-      orderBy: { order: 'asc' },
+      orderBy: { name: 'asc' },
       include: {
         children: {
-          where: { isActive: true },
+          where: { 
+            isActive: true,
+            baselinkerCategoryId: { not: null }
+          },
           orderBy: { name: 'asc' },
           include: {
             children: {
-              where: { isActive: true },
+              where: { 
+                isActive: true,
+                baselinkerCategoryId: { not: null }
+              },
               orderBy: { name: 'asc' },
             }
           }
