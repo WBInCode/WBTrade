@@ -4,6 +4,7 @@
  */
 
 import { Request, Response } from 'express';
+import { prisma } from '../db';
 import { shippingService } from '../services/shipping.service';
 import { shippingCalculatorService } from '../services/shipping-calculator.service';
 import { paymentService } from '../services/payment.service';
@@ -536,8 +537,21 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       
       // Get customer email - from user if logged in, otherwise from guest data
       const customerEmail = req.user?.email || guestEmail || '';
-      const customerFirstName = req.user?.firstName || guestFirstName || '';
-      const customerLastName = req.user?.lastName || guestLastName || '';
+      
+      // For logged in users, fetch firstName/lastName from database
+      let customerFirstName = guestFirstName || '';
+      let customerLastName = guestLastName || '';
+      
+      if (userId) {
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { firstName: true, lastName: true }
+        });
+        if (user) {
+          customerFirstName = user.firstName || '';
+          customerLastName = user.lastName || '';
+        }
+      }
       
       const paymentRequest: CreatePaymentRequest = {
         orderId: order.id,
