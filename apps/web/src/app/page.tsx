@@ -6,6 +6,7 @@ import FeaturedCarousel from '../components/FeaturedCarousel';
 import BestsellersCarousel from '../components/BestsellersCarousel';
 import ToysCarousel from '../components/ToysCarousel';
 import SeasonalCarousel from '../components/SeasonalCarousel';
+import NewProductsCarousel from '../components/NewProductsCarousel';
 import Link from 'next/link';
 
 // Force dynamic rendering to avoid build-time API calls
@@ -23,6 +24,7 @@ export default function HomePage() {
         {/* Carousels Section */}
         <FeaturedCarousel />
         <BestsellersCarousel />
+        <NewProductsCarousel />
         <ToysCarousel />
         <SeasonalCarousel />
 

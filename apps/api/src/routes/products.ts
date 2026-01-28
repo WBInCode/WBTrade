@@ -9,7 +9,8 @@ import {
   getFilters,
   getBestsellers,
   getFeatured,
-  getSeasonal
+  getSeasonal,
+  getNewProducts
 } from '../controllers/products.controller';
 import { reviewsController } from '../controllers/reviews.controller';
 import { optionalAuth, authGuard, adminOnly } from '../middleware/auth.middleware';
@@ -34,6 +35,9 @@ router.get('/featured', getFeatured);
 
 // Route to get seasonal products
 router.get('/seasonal', getSeasonal);
+
+// Route to get new products (added in last 14 days)
+router.get('/new-arrivals', getNewProducts);
 
 // Route to get a specific product by slug (SEO-friendly)
 router.get('/slug/:slug', getProductBySlug);
