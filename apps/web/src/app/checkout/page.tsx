@@ -12,6 +12,7 @@ import AddressForm from './components/AddressForm';
 import ShippingPerPackage from './components/ShippingPerPackage';
 import PaymentMethod from './components/PaymentMethod';
 import OrderSummary from './components/OrderSummary';
+import CheckoutPackagesList from './components/CheckoutPackagesList';
 
 export interface AddressData {
   firstName: string;
@@ -148,22 +149,19 @@ function CheckoutPageContent() {
           quantity: item.quantity,
         }));
         
-        const response = await checkoutApi.calculateItemsShipping(items);
+        // Use per-package shipping to get accurate initial prices
+        const response = await checkoutApi.getShippingPerPackage(items);
         
-        // Update shipping price with API value for default method
-        const currentMethodPrice = response.shippingMethods.find(
-          (m: any) => m.id === checkoutData.shipping.method
-        )?.price;
+        // Use the total shipping cost from API (calculated correctly based on package weights)
+        const totalShipping = response.totalShippingCost || 0;
         
-        if (currentMethodPrice !== undefined) {
-          setCheckoutData(prev => ({
-            ...prev,
-            shipping: {
-              ...prev.shipping,
-              price: currentMethodPrice,
-            }
-          }));
-        }
+        setCheckoutData(prev => ({
+          ...prev,
+          shipping: {
+            ...prev.shipping,
+            price: totalShipping,
+          }
+        }));
       } catch {
         // Silently ignore errors - prices will be calculated on step 2
       }
@@ -465,8 +463,15 @@ function CheckoutPageContent() {
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="text-lg sm:text-2xl font-bold text-orange-500">
-              WB Trade
+            <Link href="/" className="flex items-center shrink-0">
+              <Image 
+                src="/images/WB-TRADE-logo.png" 
+                alt="WB Trade" 
+                width={280} 
+                height={160} 
+                className="h-14 sm:h-18 lg:h-20 w-auto object-contain"
+                priority
+              />
             </Link>
             <div className="flex items-center gap-2 sm:gap-4">
               <span className="hidden sm:inline text-sm text-gray-500">
@@ -574,49 +579,12 @@ function CheckoutPageContent() {
                 </div>
               </div>
               
-              <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
-                {displayCart?.items?.map((item: any) => (
-                  <div key={item.id} className="flex gap-2 sm:gap-3 group relative">
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-lg flex-shrink-0 relative">
-                      {item.variant?.product?.images?.[0] && (
-                        <img
-                          src={item.variant.product.images[0].url}
-                          alt={item.variant.product.name}
-                          className="w-full h-full object-cover rounded-lg"
-                        />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm font-medium truncate pr-6">
-                        {item.variant?.product?.name}
-                      </p>
-                      <p className="text-[11px] sm:text-xs text-gray-500">
-                        Ilość: {item.quantity}
-                      </p>
-                      <p className="text-sm sm:text-base font-semibold text-orange-600">
-                        {(item.variant?.price * item.quantity).toFixed(2)} zł
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleRemoveItem(item.id)}
-                      disabled={removingItemId === item.id}
-                      className="absolute top-0 right-0 w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                      title="Usuń z koszyka"
-                    >
-                      {removingItemId === item.id ? (
-                        <svg className="animate-spin w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                      ) : (
-                        <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                ))}
-              </div>
+              {/* Products grouped by warehouse */}
+              <CheckoutPackagesList 
+                items={displayCart?.items || []} 
+                onRemoveItem={handleRemoveItem}
+                removingItemId={removingItemId}
+              />
 
               {isCartEmpty && (
                 <div className="text-center py-4">

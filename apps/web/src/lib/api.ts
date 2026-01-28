@@ -672,6 +672,8 @@ export interface CartItem {
       name: string;
       slug: string;
       images: { url: string; alt: string | null }[];
+      tags?: string[];
+      wholesaler?: string | null;
     };
     inventory: { quantity: number; reserved: number }[];
   };
