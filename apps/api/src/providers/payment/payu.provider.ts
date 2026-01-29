@@ -395,11 +395,32 @@ export class PayUProvider implements IPaymentProvider {
    */
   validateWebhook(payload: string, signature: string): boolean {
     // PayU sends signature in OpenPayU-Signature header
-    // Format: signature=<md5>;algorithm=MD5;sender=checkout
+    // Format can be: sender=checkout;signature=<md5>;algorithm=MD5;content=DOCUMENT
+    // or: signature=<md5>;algorithm=MD5;sender=checkout
+    // We need to find the signature= part regardless of position
+    
     const signatureParts = signature.split(';');
-    const receivedSignature = signatureParts[0]?.replace('signature=', '');
+    let receivedSignature = '';
+    
+    for (const part of signatureParts) {
+      if (part.startsWith('signature=')) {
+        receivedSignature = part.replace('signature=', '');
+        break;
+      }
+    }
+    
+    if (!receivedSignature) {
+      console.error('[PayU] No signature found in header:', signature);
+      return false;
+    }
     
     const expectedSignature = this.generateSignature(payload);
+    
+    console.log('[PayU] Signature validation:', {
+      received: receivedSignature,
+      expected: expectedSignature,
+      match: receivedSignature === expectedSignature,
+    });
     
     return receivedSignature === expectedSignature;
   }
