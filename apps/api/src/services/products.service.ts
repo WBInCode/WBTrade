@@ -439,9 +439,8 @@ export class ProductsService {
     }
 
     // Execute queries in parallel
-    // For random sort, we need to fetch ALL matching products and shuffle them
-    // to ensure consistent pagination across pages
-    const fetchLimit = useRandomSort ? undefined : limit; // undefined = no limit (fetch all)
+    // For random sort, we need to fetch more products and shuffle them
+    const fetchLimit = useRandomSort ? 500 : limit;
     const fetchSkip = useRandomSort ? 0 : skip;
     
     const [products, totalCount] = await Promise.all([
