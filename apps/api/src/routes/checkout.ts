@@ -81,8 +81,9 @@ router.get('/payment/verify/:sessionId', optionalAuth, verifyPayment);
 /**
  * POST /api/checkout/payment/retry/:orderId
  * Retry payment for an unpaid order - creates new PayU session
+ * Supports both authenticated users and guest checkout (via email verification)
  */
-router.post('/payment/retry/:orderId', authGuard, retryPayment);
+router.post('/payment/retry/:orderId', optionalAuth, retryPayment);
 
 // ============================================
 // CHECKOUT ENDPOINTS
