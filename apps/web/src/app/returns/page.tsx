@@ -99,40 +99,40 @@ export default function ReturnsPage() {
       </section>
 
       {/* Return Policy Highlights */}
-      <section className="py-12 bg-white border-b">
+      <section className="py-12 bg-white dark:bg-secondary-800 border-b dark:border-secondary-700">
         <div className="container-custom">
           <div className="grid md:grid-cols-3 gap-8">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 shrink-0">
+              <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center text-emerald-600 shrink-0">
                 <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-secondary-900">14 dni na zwrot</h3>
-                <p className="text-sm text-secondary-600">Bez podania przyczyny</p>
+                <h3 className="font-semibold text-secondary-900 dark:text-white">14 dni na zwrot</h3>
+                <p className="text-sm text-secondary-600 dark:text-secondary-400">Bez podania przyczyny</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-primary-100 rounded-xl flex items-center justify-center text-primary-600 shrink-0">
+              <div className="w-14 h-14 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center text-primary-600 shrink-0">
                 <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-secondary-900">Łatwy proces</h3>
-                <p className="text-sm text-secondary-600">Wszystko załatwisz online</p>
+                <h3 className="font-semibold text-secondary-900 dark:text-white">Łatwy proces</h3>
+                <p className="text-sm text-secondary-600 dark:text-secondary-400">Wszystko załatwisz online</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-violet-100 rounded-xl flex items-center justify-center text-violet-600 shrink-0">
+              <div className="w-14 h-14 bg-violet-100 dark:bg-violet-900/30 rounded-xl flex items-center justify-center text-violet-600 shrink-0">
                 <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-secondary-900">Szybki zwrot środków</h3>
-                <p className="text-sm text-secondary-600">Do 14 dni roboczych</p>
+                <h3 className="font-semibold text-secondary-900 dark:text-white">Szybki zwrot środków</h3>
+                <p className="text-sm text-secondary-600 dark:text-secondary-400">Do 14 dni roboczych</p>
               </div>
             </div>
           </div>
@@ -142,29 +142,29 @@ export default function ReturnsPage() {
       {/* Return Steps */}
       <section className="py-16 lg:py-24">
         <div className="container-custom">
-          <h2 className="text-2xl lg:text-3xl font-bold text-secondary-900 mb-4 text-center">
+          <h2 className="text-2xl lg:text-3xl font-bold text-secondary-900 dark:text-white mb-4 text-center">
             Jak zwrócić produkt?
           </h2>
-          <p className="text-secondary-600 text-center mb-12 max-w-2xl mx-auto">
+          <p className="text-secondary-600 dark:text-secondary-400 text-center mb-12 max-w-2xl mx-auto">
             Proces zwrotu jest prosty i zajmuje tylko kilka minut. Postępuj zgodnie z poniższymi krokami.
           </p>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {returnSteps.map((step, index) => (
               <div key={index} className="relative">
-                <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all h-full">
+                <div className="bg-white dark:bg-secondary-800 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all h-full">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold">
                       {step.step}
                     </div>
-                    <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center text-primary-600">
+                    <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center text-primary-600">
                       {step.icon}
                     </div>
                   </div>
-                  <h3 className="text-lg font-semibold text-secondary-900 mb-2">
+                  <h3 className="text-lg font-semibold text-secondary-900 dark:text-white mb-2">
                     {step.title}
                   </h3>
-                  <p className="text-secondary-600 text-sm">
+                  <p className="text-secondary-600 dark:text-secondary-400 text-sm">
                     {step.description}
                   </p>
                 </div>
@@ -194,50 +194,50 @@ export default function ReturnsPage() {
       </section>
 
       {/* Complaint Section */}
-      <section className="py-16 lg:py-24 bg-white">
+      <section className="py-16 lg:py-24 bg-white dark:bg-secondary-800">
         <div className="container-custom">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-2xl lg:text-3xl font-bold text-secondary-900 mb-6">
+              <h2 className="text-2xl lg:text-3xl font-bold text-secondary-900 dark:text-white mb-6">
                 Reklamacje
               </h2>
-              <p className="text-secondary-600 mb-6">
+              <p className="text-secondary-600 dark:text-secondary-400 mb-6">
                 Jeśli otrzymałeś produkt uszkodzony, niezgodny z opisem lub z wadą fabryczną, 
                 masz prawo do złożenia reklamacji. Rozpatrujemy reklamacje w ciągu 14 dni kalendarzowych.
               </p>
               
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 shrink-0 mt-0.5">
+                  <div className="w-6 h-6 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center text-emerald-600 shrink-0 mt-0.5">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-secondary-900">Uszkodzenie w transporcie</h4>
-                    <p className="text-sm text-secondary-600">Zrób zdjęcia uszkodzonej paczki i produktu przy kurierze</p>
+                    <h4 className="font-semibold text-secondary-900 dark:text-white">Uszkodzenie w transporcie</h4>
+                    <p className="text-sm text-secondary-600 dark:text-secondary-400">Zrób zdjęcia uszkodzonej paczki i produktu przy kurierze</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 shrink-0 mt-0.5">
+                  <div className="w-6 h-6 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center text-emerald-600 shrink-0 mt-0.5">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-secondary-900">Wada fabryczna</h4>
-                    <p className="text-sm text-secondary-600">Zgłoś problem w ciągu 2 lat od zakupu (rękojmia)</p>
+                    <h4 className="font-semibold text-secondary-900 dark:text-white">Wada fabryczna</h4>
+                    <p className="text-sm text-secondary-600 dark:text-secondary-400">Zgłoś problem w ciągu 2 lat od zakupu (rękojmia)</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 shrink-0 mt-0.5">
+                  <div className="w-6 h-6 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center text-emerald-600 shrink-0 mt-0.5">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-secondary-900">Produkt niezgodny z opisem</h4>
-                    <p className="text-sm text-secondary-600">Masz prawo do zwrotu lub wymiany na właściwy produkt</p>
+                    <h4 className="font-semibold text-secondary-900 dark:text-white">Produkt niezgodny z opisem</h4>
+                    <p className="text-sm text-secondary-600 dark:text-secondary-400">Masz prawo do zwrotu lub wymiany na właściwy produkt</p>
                   </div>
                 </div>
               </div>
@@ -255,42 +255,42 @@ export default function ReturnsPage() {
               </div>
             </div>
             
-            <div className="bg-secondary-50 rounded-2xl p-8">
-              <h3 className="text-xl font-semibold text-secondary-900 mb-6">
+            <div className="bg-secondary-50 dark:bg-secondary-900 rounded-2xl p-8">
+              <h3 className="text-xl font-semibold text-secondary-900 dark:text-white mb-6">
                 Co potrzebujesz do reklamacji?
               </h3>
               <ul className="space-y-4">
                 <li className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center text-primary-600">
+                  <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center text-primary-600">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <span className="text-secondary-700">Numer zamówienia</span>
+                  <span className="text-secondary-700 dark:text-secondary-300">Numer zamówienia</span>
                 </li>
                 <li className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center text-primary-600">
+                  <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center text-primary-600">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <span className="text-secondary-700">Zdjęcia produktu/uszkodzenia</span>
+                  <span className="text-secondary-700 dark:text-secondary-300">Zdjęcia produktu/uszkodzenia</span>
                 </li>
                 <li className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center text-primary-600">
+                  <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center text-primary-600">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                     </svg>
                   </div>
-                  <span className="text-secondary-700">Opis problemu</span>
+                  <span className="text-secondary-700 dark:text-secondary-300">Opis problemu</span>
                 </li>
                 <li className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center text-primary-600">
+                  <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center text-primary-600">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
                   </div>
-                  <span className="text-secondary-700">Preferowane rozwiązanie (zwrot/wymiana/naprawa)</span>
+                  <span className="text-secondary-700 dark:text-secondary-300">Preferowane rozwiązanie (zwrot/wymiana/naprawa)</span>
                 </li>
               </ul>
             </div>
@@ -301,17 +301,17 @@ export default function ReturnsPage() {
       {/* FAQ Section */}
       <section className="py-16 lg:py-24">
         <div className="container-custom">
-          <h2 className="text-2xl lg:text-3xl font-bold text-secondary-900 mb-10 text-center">
+          <h2 className="text-2xl lg:text-3xl font-bold text-secondary-900 dark:text-white mb-10 text-center">
             Często zadawane pytania
           </h2>
           <div className="max-w-3xl mx-auto space-y-4">
             {faqItems.map((item, index) => (
               <details
                 key={index}
-                className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                className="group bg-white dark:bg-secondary-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
               >
                 <summary className="flex items-center justify-between p-6 cursor-pointer transition-colors">
-                  <span className="font-semibold text-secondary-900 pr-4">
+                  <span className="font-semibold text-secondary-900 dark:text-white pr-4">
                     {item.question}
                   </span>
                   <svg
@@ -323,7 +323,7 @@ export default function ReturnsPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </summary>
-                <div className="px-6 pb-6 pt-0 text-secondary-600 border-t border-secondary-100">
+                <div className="px-6 pb-6 pt-0 text-secondary-600 dark:text-secondary-400 border-t border-secondary-100 dark:border-secondary-700">
                   {item.answer}
                 </div>
               </details>

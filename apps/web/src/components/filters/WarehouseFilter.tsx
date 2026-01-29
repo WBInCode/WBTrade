@@ -49,7 +49,7 @@ function WarehouseFilterContent({ warehouseCounts }: WarehouseFilterProps) {
 
   return (
     <div className="mb-6">
-      <h3 className="font-semibold text-secondary-900 mb-3 flex items-center gap-2">
+      <h3 className="font-semibold text-secondary-900 dark:text-white mb-3 flex items-center gap-2">
         <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -73,7 +73,7 @@ function WarehouseFilterContent({ warehouseCounts }: WarehouseFilterProps) {
                   className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors cursor-pointer ${
                     isChecked 
                       ? 'bg-primary-500 border-primary-500' 
-                      : 'border-gray-300 group-hover:border-primary-400'
+                      : 'border-gray-300 dark:border-secondary-600 group-hover:border-primary-400'
                   }`}
                 >
                   {isChecked && (
@@ -85,14 +85,14 @@ function WarehouseFilterContent({ warehouseCounts }: WarehouseFilterProps) {
                 <span 
                   onClick={() => toggleWarehouse(warehouse.id)}
                   className={`text-sm cursor-pointer ${
-                    isChecked ? 'text-primary-600 font-medium' : 'text-secondary-700 group-hover:text-primary-500'
+                    isChecked ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-secondary-700 dark:text-secondary-300 group-hover:text-primary-500'
                   }`}
                 >
                   {warehouse.location}
                 </span>
               </div>
               {count !== undefined && (
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-gray-400 dark:text-secondary-500">
                   ({count.toLocaleString()})
                 </span>
               )}
@@ -108,9 +108,9 @@ export default function WarehouseFilter(props: WarehouseFilterProps) {
   return (
     <Suspense fallback={
       <div className="mb-6 animate-pulse">
-        <div className="h-5 bg-gray-200 rounded w-1/2 mb-3"></div>
+        <div className="h-5 bg-gray-200 dark:bg-secondary-700 rounded w-1/2 mb-3"></div>
         <div className="space-y-2">
-          {[1, 2, 3].map(i => <div key={i} className="h-6 bg-gray-200 rounded w-3/4"></div>)}
+          {[1, 2, 3].map(i => <div key={i} className="h-6 bg-gray-200 dark:bg-secondary-700 rounded w-3/4"></div>)}
         </div>
       </div>
     }>

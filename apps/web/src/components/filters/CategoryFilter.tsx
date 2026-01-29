@@ -100,12 +100,12 @@ function CategoryFilterContent() {
                 ? 'text-primary-500 font-medium' 
                 : isInPath 
                   ? 'text-primary-400'
-                  : 'text-secondary-700 hover:text-primary-500'
+                  : 'text-secondary-700 dark:text-secondary-300 hover:text-primary-500'
             }`}
           >
             {cleanCategoryName(category.name)}
             {category.productCount !== undefined && category.productCount > 0 && (
-              <span className="text-gray-400 text-xs ml-1">({category.productCount})</span>
+              <span className="text-gray-400 dark:text-gray-500 text-xs ml-1">({category.productCount})</span>
             )}
           </Link>
           {hasChildren && (
@@ -114,10 +114,10 @@ function CategoryFilterContent() {
                 e.preventDefault();
                 toggleExpand(category.slug);
               }}
-              className="p-1 hover:bg-gray-100 rounded"
+              className="p-1 hover:bg-gray-100 dark:hover:bg-secondary-700 rounded"
             >
               <svg 
-                className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
+                className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
                 fill="none" 
                 stroke="currentColor" 
                 viewBox="0 0 24 24"
@@ -128,7 +128,7 @@ function CategoryFilterContent() {
           )}
         </div>
         {hasChildren && isExpanded && (
-          <div className="ml-2 border-l border-gray-200">
+          <div className="ml-2 border-l border-gray-200 dark:border-secondary-600">
             {category.children!.map(child => renderCategory(child, level + 1))}
           </div>
         )}
@@ -143,10 +143,10 @@ function CategoryFilterContent() {
   if (loading) {
     return (
       <div className="mb-6">
-        <h3 className="font-semibold text-secondary-900 mb-3">Kategorie</h3>
+        <h3 className="font-semibold text-secondary-900 dark:text-white mb-3">Kategorie</h3>
         <div className="animate-pulse space-y-2">
           {[1, 2, 3, 4, 5].map(i => (
-            <div key={i} className="h-6 bg-gray-200 rounded w-3/4"></div>
+            <div key={i} className="h-6 bg-gray-200 dark:bg-secondary-700 rounded w-3/4"></div>
           ))}
         </div>
       </div>
@@ -155,7 +155,7 @@ function CategoryFilterContent() {
 
   return (
     <div className="mb-6">
-      <h3 className="font-semibold text-secondary-900 mb-3">Kategorie</h3>
+      <h3 className="font-semibold text-secondary-900 dark:text-white mb-3">Kategorie</h3>
       
       {/* "All products" link - always visible, highlighted when no category selected */}
       <Link 
@@ -163,7 +163,7 @@ function CategoryFilterContent() {
         className={`flex items-center text-sm mb-3 py-1.5 ${
           !currentCategorySlug 
             ? 'text-primary-500 font-medium' 
-            : 'text-secondary-700 hover:text-primary-500'
+            : 'text-secondary-700 dark:text-secondary-300 hover:text-primary-500'
         }`}
       >
         Wszystkie produkty
@@ -192,7 +192,7 @@ function CategoryFilterContent() {
 
 export default function CategoryFilter() {
   return (
-    <Suspense fallback={<div className="mb-6 animate-pulse"><div className="h-6 bg-gray-200 rounded w-1/3 mb-3"></div><div className="space-y-2">{[1,2,3,4,5].map(i => <div key={i} className="h-6 bg-gray-200 rounded w-3/4"></div>)}</div></div>}>
+    <Suspense fallback={<div className="mb-6 animate-pulse"><div className="h-6 bg-gray-200 dark:bg-secondary-700 rounded w-1/3 mb-3"></div><div className="space-y-2">{[1,2,3,4,5].map(i => <div key={i} className="h-6 bg-gray-200 dark:bg-secondary-700 rounded w-3/4"></div>)}</div></div>}>
       <CategoryFilterContent />
     </Suspense>
   );

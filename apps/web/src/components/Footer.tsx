@@ -7,7 +7,7 @@ function LogoImage({ src, alt, width, height, className }: { src: string | null;
   if (!src) {
     return (
       <div 
-        className={`bg-secondary-200 rounded flex items-center justify-center text-secondary-500 text-xs ${className || ''}`}
+        className={`bg-secondary-200 dark:bg-secondary-700 rounded flex items-center justify-center text-secondary-500 dark:text-secondary-400 text-xs font-medium ${className || ''}`}
         style={{ width, height }}
       >
         {alt.charAt(0)}
@@ -23,10 +23,10 @@ interface FooterProps {
 
 export default function Footer({ hideTrustBadges = false }: FooterProps) {
   return (
-    <footer className="bg-gradient-to-b from-secondary-50 to-secondary-100 mt-12">
+    <footer className="bg-gradient-to-b from-secondary-50 to-secondary-100 dark:from-secondary-900 dark:to-secondary-950 mt-12">
       {/* Trust Badges */}
       {!hideTrustBadges && (
-        <div className="border-b border-secondary-200/50">
+        <div className="border-b border-secondary-200/50 dark:border-secondary-700/50">
           <div className="container-custom py-8">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="flex items-center gap-4 group">
@@ -36,8 +36,8 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
                   </svg>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-secondary-900">Ochrona Kupującego</h4>
-                  <p className="text-sm text-secondary-500">Gwarancja zwrotu pieniędzy</p>
+                  <h4 className="font-semibold text-secondary-900 dark:text-secondary-100">Ochrona Kupującego</h4>
+                  <p className="text-sm text-secondary-500 dark:text-secondary-400">Gwarancja zwrotu pieniędzy</p>
                 </div>
               </div>
 
@@ -48,8 +48,8 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
                   </svg>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-secondary-900">Szybka Dostawa</h4>
-                  <p className="text-sm text-secondary-500">Wysyłka w ciągu 24-72h</p>
+                  <h4 className="font-semibold text-secondary-900 dark:text-secondary-100">Szybka Dostawa</h4>
+                  <p className="text-sm text-secondary-500 dark:text-secondary-400">Wysyłka w ciągu 24-72h</p>
                 </div>
               </div>
 
@@ -60,8 +60,8 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
                   </svg>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-secondary-900">Bezpieczne Płatności</h4>
-                  <p className="text-sm text-secondary-500">Szyfrowane połączenie SSL</p>
+                  <h4 className="font-semibold text-secondary-900 dark:text-secondary-100">Bezpieczne Płatności</h4>
+                  <p className="text-sm text-secondary-500 dark:text-secondary-400">Szyfrowane połączenie SSL</p>
                 </div>
               </div>
 
@@ -72,8 +72,8 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
                   </svg>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-secondary-900">Najwyższa Jakość</h4>
-                  <p className="text-sm text-secondary-500">Sprawdzone produkty</p>
+                  <h4 className="font-semibold text-secondary-900 dark:text-secondary-100">Najwyższa Jakość</h4>
+                  <p className="text-sm text-secondary-500 dark:text-secondary-400">Sprawdzone produkty</p>
                 </div>
               </div>
             </div>
@@ -92,28 +92,28 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
                 alt="WB Trade" 
                 width={300} 
                 height={180} 
-                className="h-24 w-auto object-contain mix-blend-multiply"
+                className="h-24 w-auto object-contain mix-blend-multiply dark:mix-blend-normal dark:brightness-0 dark:invert"
               />
             </Link>
             {/* Social Media */}
             <div className="flex items-center gap-4 mt-4">
               <a href="https://www.facebook.com/people/WB-Trade/61578263513701/" target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
-                <LogoImage src={getLogoUrl(SOCIAL_LOGOS.facebook)} alt="Facebook" width={28} height={28} className="object-contain" />
+                <LogoImage src={getLogoUrl(SOCIAL_LOGOS.facebook)} alt="Facebook" width={28} height={28} className="object-contain dark:brightness-0 dark:invert" />
               </a>
               <a href="https://www.instagram.com/wbtrade.pl" target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
-                <LogoImage src={getLogoUrl(SOCIAL_LOGOS.instagram)} alt="Instagram" width={28} height={28} className="object-contain" />
+                <LogoImage src={getLogoUrl(SOCIAL_LOGOS.instagram)} alt="Instagram" width={28} height={28} className="object-contain dark:brightness-0 dark:invert" />
               </a>
               <a href="https://linktr.ee/wbpartners" target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
-                <LogoImage src={getLogoUrl(SOCIAL_LOGOS.linktree)} alt="Linktree" width={28} height={28} className="object-contain rounded-lg" />
+                <LogoImage src={getLogoUrl(SOCIAL_LOGOS.linktree)} alt="Linktree" width={28} height={28} className="object-contain rounded-lg dark:brightness-0 dark:invert" />
               </a>
             </div>
           </div>
 
           {/* Links Columns */}
           <div className="col-span-1 md:col-span-2">
-            <h5 className="font-bold text-secondary-900 mb-5 text-sm uppercase tracking-wider">O firmie</h5>
+            <h5 className="font-bold text-secondary-900 dark:text-secondary-100 mb-5 text-sm uppercase tracking-wider">O firmie</h5>
             <ul className="space-y-3">
-              <li><Link href="/about" className="text-secondary-600 hover:text-primary-500 transition-colors">O nas</Link></li>
+              <li><Link href="/about" className="text-secondary-600 dark:text-secondary-400 hover:text-primary-500 transition-colors">O nas</Link></li>
               {/* <li><Link href="/careers" className="text-secondary-600 hover:text-primary-500 transition-colors">Kariera</Link></li> */}
               {/* <li><Link href="/press" className="text-secondary-600 hover:text-primary-500 transition-colors">Dla prasy</Link></li> */}
               {/* <li><Link href="/sustainability" className="text-secondary-600 hover:text-primary-500 transition-colors">Zrównoważony rozwój</Link></li> */}
@@ -122,36 +122,36 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
           </div>
 
           <div className="col-span-1 md:col-span-2">
-            <h5 className="font-bold text-secondary-900 mb-5 text-sm uppercase tracking-wider">Pomoc</h5>
+            <h5 className="font-bold text-secondary-900 dark:text-secondary-100 mb-5 text-sm uppercase tracking-wider">Pomoc</h5>
             <ul className="space-y-3">
               {/* <li><Link href="/help" className="text-secondary-600 hover:text-primary-500 transition-colors">Centrum pomocy</Link></li> */}
-              <li><Link href="/returns" className="text-secondary-600 hover:text-primary-500 transition-colors">Zwroty i reklamacje</Link></li>
-              <li><Link href="/shipping" className="text-secondary-600 hover:text-primary-500 transition-colors">Dostawa</Link></li>
-              <li><Link href="/contact" className="text-secondary-600 hover:text-primary-500 transition-colors">Kontakt</Link></li>
+              <li><Link href="/returns" className="text-secondary-600 dark:text-secondary-400 hover:text-primary-500 transition-colors">Zwroty i reklamacje</Link></li>
+              <li><Link href="/shipping" className="text-secondary-600 dark:text-secondary-400 hover:text-primary-500 transition-colors">Dostawa</Link></li>
+              <li><Link href="/contact" className="text-secondary-600 dark:text-secondary-400 hover:text-primary-500 transition-colors">Kontakt</Link></li>
               {/* <li><Link href="/faq" className="text-secondary-600 hover:text-primary-500 transition-colors">FAQ</Link></li> */}
             </ul>
           </div>
 
           <div className="col-span-2 md:col-span-4">
-            <h5 className="font-bold text-secondary-900 mb-5 text-sm uppercase tracking-wider">Kontakt</h5>
+            <h5 className="font-bold text-secondary-900 dark:text-secondary-100 mb-5 text-sm uppercase tracking-wider">Kontakt</h5>
             <ul className="space-y-3">
               <li className="flex items-start gap-2">
                 <svg className="w-5 h-5 text-primary-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                <span className="text-secondary-600 whitespace-nowrap">support@wb-partners.pl</span>
+                <span className="text-secondary-600 dark:text-secondary-400 whitespace-nowrap">support@wb-partners.pl</span>
               </li>
               <li className="flex items-start gap-2">
                 <svg className="w-5 h-5 text-primary-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                 </svg>
-                <span className="text-secondary-600 whitespace-nowrap">+48 570 028 761</span>
+                <span className="text-secondary-600 dark:text-secondary-400 whitespace-nowrap">+48 570 028 761</span>
               </li>
               <li className="flex items-start gap-2">
                 <svg className="w-5 h-5 text-primary-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span className="text-secondary-600 whitespace-nowrap">Pon. - Pt.: 9:00 - 17:00</span>
+                <span className="text-secondary-600 dark:text-secondary-400 whitespace-nowrap">Pon. - Pt.: 9:00 - 17:00</span>
               </li>
             </ul>
           </div>
@@ -159,10 +159,10 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
       </div>
 
       {/* Payment Methods */}
-      <div className="border-t border-secondary-200/50">
+      <div className="border-t border-secondary-200/50 dark:border-secondary-700/50">
         <div className="container-custom py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-secondary-500">Akceptowane metody płatności</p>
+            <p className="text-sm text-secondary-500 dark:text-secondary-400">Akceptowane metody płatności</p>
             <div className="flex items-center gap-4">
               <LogoImage src={getLogoUrl(PAYMENT_LOGOS.visa)} alt="Visa" width={40} height={28} className="object-contain rounded-md mix-blend-multiply" />
               <LogoImage src={getLogoUrl(PAYMENT_LOGOS.blik)} alt="BLIK" width={40} height={28} className="object-contain rounded-md mix-blend-multiply" />
@@ -173,7 +173,7 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
       </div>
 
       {/* Bottom Bar */}
-      <div className="bg-gray-700">
+      <div className="bg-gray-700 dark:bg-secondary-950">
         <div className="container-custom py-5">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-gray-300">

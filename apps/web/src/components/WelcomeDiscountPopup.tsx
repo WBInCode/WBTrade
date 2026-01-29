@@ -73,13 +73,13 @@ export function WelcomeDiscountPopup() {
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div 
-          className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full pointer-events-auto animate-slideUp overflow-hidden"
+          className="relative bg-white dark:bg-secondary-800 rounded-2xl shadow-2xl max-w-md w-full pointer-events-auto animate-slideUp overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Close button */}
           <button
             onClick={handleDismiss}
-            className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors z-10"
+            className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-secondary-700 rounded-full transition-colors z-10"
             aria-label="Zamknij"
           >
             <X size={20} />
@@ -107,18 +107,18 @@ export function WelcomeDiscountPopup() {
                   -20%
                 </span>
               </div>
-              <p className="text-gray-600 mt-2 text-lg">
+              <p className="text-gray-600 dark:text-gray-400 mt-2 text-lg">
                 na pierwsze zakupy
               </p>
             </div>
 
             {/* How it works */}
-            <div className="bg-orange-50 rounded-xl p-4 mb-6">
-              <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <div className="bg-orange-50 dark:bg-orange-900/30 rounded-xl p-4 mb-6">
+              <h3 className="font-semibold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
                 <Mail size={18} className="text-orange-500" />
                 Jak to działa?
               </h3>
-              <ol className="space-y-2 text-sm text-gray-600">
+              <ol className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                 <li className="flex items-start gap-2">
                   <span className="flex-shrink-0 w-5 h-5 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
                   <span>Załóż bezpłatne konto</span>
@@ -151,7 +151,7 @@ export function WelcomeDiscountPopup() {
             </Link>
 
             {/* Already have account */}
-            <p className="text-center text-sm text-gray-500 mt-4">
+            <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
               Masz już konto?{' '}
               <Link 
                 href="/login" 

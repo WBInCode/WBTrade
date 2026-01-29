@@ -236,7 +236,7 @@ function AccountPageContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
       </div>
     );
@@ -255,7 +255,7 @@ function AccountPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-secondary-900">
       <Header />
 
       <main className="container-custom py-6">
@@ -290,15 +290,15 @@ function AccountPageContent() {
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar - hidden on mobile */}
           <aside className="hidden lg:block w-64 shrink-0">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-100 dark:border-secondary-700 overflow-hidden">
               {/* User Profile */}
-              <div className="p-5 border-b border-gray-100">
+              <div className="p-5 border-b border-gray-100 dark:border-secondary-700">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white font-semibold">
                     {userData.avatar}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">{userData.fullName}</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">{userData.fullName}</h3>
                   </div>
                 </div>
               </div>
@@ -312,7 +312,7 @@ function AccountPageContent() {
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                       item.id === 'overview'
                         ? 'bg-orange-500 text-white'
-                        : 'text-gray-600 hover:bg-gray-50'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-secondary-700'
                     }`}
                   >
                     <SidebarIcon icon={item.icon} />
@@ -329,13 +329,13 @@ function AccountPageContent() {
           <div className="flex-1 min-w-0">
             {/* Mobile User Card */}
             <div className="lg:hidden mb-6">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+              <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-100 dark:border-secondary-700 p-4">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white font-semibold">
                     {userData.avatar}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">{userData.fullName}</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">{userData.fullName}</h3>
                   </div>
                 </div>
                 {/* Mobile Navigation */}
@@ -344,7 +344,7 @@ function AccountPageContent() {
                     <Link
                       key={item.id}
                       href={item.href}
-                      className="flex flex-col items-center gap-1 p-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+                      className="flex flex-col items-center gap-1 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors"
                     >
                       <SidebarIcon icon={item.icon} />
                       <span className="text-xs">{item.label}</span>
@@ -357,10 +357,10 @@ function AccountPageContent() {
             {/* Greeting Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-2">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                   {getGreeting()}, {userData.name}
                 </h1>
-                <p className="text-gray-500 text-sm">Oto co się dziś dzieje na Twoim koncie.</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">Oto co się dziś dzieje na Twoim koncie.</p>
               </div>
               {/* <Link href="/account/report" className="text-orange-500 hover:text-orange-600 text-sm font-medium flex items-center gap-1"> */}
                 {/* Zobacz pełny raport */}
@@ -372,65 +372,65 @@ function AccountPageContent() {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+              <div className="bg-white dark:bg-secondary-800 rounded-xl p-4 border border-gray-100 dark:border-secondary-700 shadow-sm">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-500">Nieopłacone</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Nieopłacone</span>
                   <StatIcon icon="package" />
                 </div>
-                <span className="text-3xl font-bold text-gray-900">
+                <span className="text-3xl font-bold text-gray-900 dark:text-white">
                   {dashboardLoading ? '...' : stats.unpaidOrders}
                 </span>
               </div>
-              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+              <div className="bg-white dark:bg-secondary-800 rounded-xl p-4 border border-gray-100 dark:border-secondary-700 shadow-sm">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-500">W drodze</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">W drodze</span>
                   <StatIcon icon="truck" />
                 </div>
-                <span className="text-3xl font-bold text-gray-900">
+                <span className="text-3xl font-bold text-gray-900 dark:text-white">
                   {dashboardLoading ? '...' : stats.inTransitOrders}
                 </span>
               </div>
-              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hidden">
+              <div className="bg-white dark:bg-secondary-800 rounded-xl p-4 border border-gray-100 dark:border-secondary-700 shadow-sm hidden">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-500">Nieprzeczytane</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Nieprzeczytane</span>
                   <StatIcon icon="message" />
                 </div>
-                <span className="text-3xl font-bold text-gray-900">
+                <span className="text-3xl font-bold text-gray-900 dark:text-white">
                   {dashboardLoading ? '...' : stats.unreadMessages}
                 </span>
               </div>
-              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hidden">
+              <div className="bg-white dark:bg-secondary-800 rounded-xl p-4 border border-gray-100 dark:border-secondary-700 shadow-sm hidden">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-500">Punkty lojalnościowe</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Punkty lojalnościowe</span>
                   <StatIcon icon="coin" />
                 </div>
-                <span className="text-3xl font-bold text-gray-900">
+                <span className="text-3xl font-bold text-gray-900 dark:text-white">
                   {dashboardLoading ? '...' : stats.loyaltyPoints}
                 </span>
               </div>
             </div>
 
             {/* Recent Orders */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm mb-8">
-              <div className="flex items-center justify-between p-5 border-b border-gray-100">
-                <h2 className="text-lg font-semibold text-gray-900">Ostatnie zamówienia</h2>
+            <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-100 dark:border-secondary-700 shadow-sm mb-8">
+              <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-secondary-700">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Ostatnie zamówienia</h2>
                 <Link href="/account/orders" className="text-orange-500 hover:text-orange-600 text-sm font-medium">
                   Zobacz wszystkie
                 </Link>
               </div>
 
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-100 dark:divide-secondary-700">
                 {dashboardLoading ? (
-                  <div className="p-8 text-center text-gray-500">
+                  <div className="p-8 text-center text-gray-500 dark:text-gray-400">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-2"></div>
                     Ładowanie zamówień...
                   </div>
                 ) : recentOrders.length === 0 ? (
-                  <div className="p-8 text-center text-gray-500">
-                    <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                    <svg className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                     </svg>
-                    <p className="font-medium text-gray-600">Brak zamówień</p>
+                    <p className="font-medium text-gray-600 dark:text-gray-400">Brak zamówień</p>
                     <p className="text-sm">Nie masz jeszcze żadnych zamówień</p>
                     <Link href="/products" className="inline-block mt-4 text-orange-500 hover:text-orange-600 font-medium">
                       Zacznij zakupy →
@@ -440,7 +440,7 @@ function AccountPageContent() {
                   recentOrders.map((order) => (
                     <div key={order.id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                       {/* Product Image */}
-                      <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                      <div className="w-16 h-16 bg-gray-100 dark:bg-secondary-700 rounded-lg overflow-hidden shrink-0">
                         {order.image ? (
                           <img
                             src={order.image}
@@ -458,15 +458,15 @@ function AccountPageContent() {
 
                       {/* Order Info */}
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-gray-900 mb-1">
+                        <h3 className="font-medium text-gray-900 dark:text-white mb-1">
                           {order.name}
                           {order.itemsCount > 1 && (
-                            <span className="text-gray-500 text-sm font-normal">
+                            <span className="text-gray-500 dark:text-gray-400 text-sm font-normal">
                               {' '}+{order.itemsCount - 1} więcej
                             </span>
                           )}
                         </h3>
-                        <p className="text-sm text-gray-500 mb-2">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
                           Zamówienie #{order.orderNumber} • Złożone {formatOrderDate(order.orderDate)}
                         </p>
                         <div className="flex items-center gap-2">
@@ -478,7 +478,7 @@ function AccountPageContent() {
                             {getStatusLabel(order.status, order.paymentStatus)}
                           </span>
                           {order.status === 'SHIPPED' && order.trackingNumber && (
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
                               Numer śledzenia: {order.trackingNumber}
                             </span>
                           )}
@@ -487,7 +487,7 @@ function AccountPageContent() {
 
                       {/* Price and Actions - row on mobile */}
                       <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 sm:gap-0 mt-2 sm:mt-0">
-                        <span className="font-semibold text-gray-900">
+                        <span className="font-semibold text-gray-900 dark:text-white">
                           {order.total.toFixed(2)} {order.currency}
                         </span>
                       </div>
@@ -513,7 +513,7 @@ function AccountPageContent() {
                         )}
                         <Link
                           href={`/account/orders/${order.id}`}
-                          className="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors border border-gray-300 text-gray-700 hover:bg-gray-50 text-center"
+                          className="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors border border-gray-300 dark:border-secondary-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 text-center"
                         >
                           Szczegóły
                         </Link>
@@ -530,8 +530,8 @@ function AccountPageContent() {
                 <div className="flex items-center gap-2">
                   <span className="text-xl">🔥</span>
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900">Bestsellery</h2>
-                    <p className="text-sm text-gray-500">Najchętniej kupowane produkty</p>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Bestsellery</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Najchętniej kupowane produkty</p>
                   </div>
                 </div>
                 <Link href="/products/bestsellers" className="text-orange-500 hover:text-orange-600 text-sm font-medium flex items-center gap-1">
@@ -545,10 +545,10 @@ function AccountPageContent() {
               {dashboardLoading ? (
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="bg-white rounded-xl border border-gray-100 p-4 animate-pulse">
-                      <div className="bg-gray-200 h-40 rounded-lg mb-3"></div>
-                      <div className="bg-gray-200 h-4 rounded w-3/4 mb-2"></div>
-                      <div className="bg-gray-200 h-4 rounded w-1/2"></div>
+                    <div key={i} className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-100 dark:border-secondary-700 p-4 animate-pulse">
+                      <div className="bg-gray-200 dark:bg-secondary-700 h-40 rounded-lg mb-3"></div>
+                      <div className="bg-gray-200 dark:bg-secondary-700 h-4 rounded w-3/4 mb-2"></div>
+                      <div className="bg-gray-200 dark:bg-secondary-700 h-4 rounded w-1/2"></div>
                     </div>
                   ))}
                 </div>
@@ -580,12 +580,12 @@ function AccountPageContent() {
                   ))}
                 </div>
               ) : (
-                <div className="bg-gray-50 rounded-xl p-8 text-center">
-                  <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-gray-50 dark:bg-secondary-800 rounded-xl p-8 text-center">
+                  <svg className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                   </svg>
-                  <p className="font-medium text-gray-600">Brak rekomendacji</p>
-                  <p className="text-sm text-gray-500">Wyszukuj produkty, aby otrzymać spersonalizowane polecenia</p>
+                  <p className="font-medium text-gray-600 dark:text-gray-400">Brak rekomendacji</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Wyszukuj produkty, aby otrzymać spersonalizowane polecenia</p>
                 </div>
               )}
             </div>
@@ -594,7 +594,7 @@ function AccountPageContent() {
       </main>
 
       {/* Separator */}
-      <div className="border-t border-gray-200 bg-gray-50">
+      <div className="border-t border-gray-200 dark:border-secondary-700 bg-gray-50 dark:bg-secondary-900">
         <div className="h-6 sm:h-8"></div>
       </div>
       <Footer hideTrustBadges />
@@ -604,7 +604,7 @@ function AccountPageContent() {
 
 export default function AccountPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 dark:bg-secondary-900 flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div></div>}>
       <AccountPageContent />
     </Suspense>
   );

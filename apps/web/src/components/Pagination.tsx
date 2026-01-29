@@ -80,7 +80,7 @@ function PaginationContent({
     <div className="mt-8 space-y-4">
       {/* Pagination info */}
       {showInfo && totalItems && (
-        <p className="text-center text-sm text-gray-500">
+        <p className="text-center text-sm text-gray-500 dark:text-gray-400">
           Wyświetlanie {startItem}-{endItem} z {totalItems.toLocaleString()} produktów
         </p>
       )}
@@ -91,7 +91,7 @@ function PaginationContent({
           <Link
             href={buildPageUrl(1)}
             onClick={() => handlePageClick(1)}
-            className="p-2 rounded-lg text-secondary-500 hover:bg-gray-100 transition-colors hidden sm:flex"
+            className="p-2 rounded-lg text-secondary-500 dark:text-secondary-400 hover:bg-gray-100 dark:hover:bg-secondary-700 transition-colors hidden sm:flex"
             title="Pierwsza strona"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -105,7 +105,7 @@ function PaginationContent({
           <Link
             href={buildPageUrl(currentPage - 1)}
             onClick={() => handlePageClick(currentPage - 1)}
-            className="p-2 rounded-lg text-secondary-500 hover:bg-gray-100 transition-colors flex items-center gap-1"
+            className="p-2 rounded-lg text-secondary-500 dark:text-secondary-400 hover:bg-gray-100 dark:hover:bg-secondary-700 transition-colors flex items-center gap-1"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -113,7 +113,7 @@ function PaginationContent({
             <span className="hidden sm:inline text-sm font-medium">Poprzednia</span>
           </Link>
         ) : (
-          <span className="p-2 rounded-lg text-gray-300 cursor-not-allowed flex items-center gap-1">
+          <span className="p-2 rounded-lg text-gray-300 dark:text-secondary-600 cursor-not-allowed flex items-center gap-1">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -137,13 +137,13 @@ function PaginationContent({
                   key={index}
                   href={buildPageUrl(page)}
                   onClick={() => handlePageClick(page)}
-                  className="w-10 h-10 rounded-lg text-sm font-medium text-secondary-700 hover:bg-gray-100 transition-colors flex items-center justify-center"
+                  className="w-10 h-10 rounded-lg text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-gray-100 dark:hover:bg-secondary-700 transition-colors flex items-center justify-center"
                 >
                   {page}
                 </Link>
               )
             ) : (
-              <span key={index} className="px-2 text-gray-400 select-none">
+              <span key={index} className="px-2 text-gray-400 dark:text-secondary-500 select-none">
                 {page}
               </span>
             )
@@ -155,7 +155,7 @@ function PaginationContent({
           <Link
             href={buildPageUrl(currentPage + 1)}
             onClick={() => handlePageClick(currentPage + 1)}
-            className="p-2 rounded-lg text-secondary-500 hover:bg-gray-100 transition-colors flex items-center gap-1"
+            className="p-2 rounded-lg text-secondary-500 dark:text-secondary-400 hover:bg-gray-100 dark:hover:bg-secondary-700 transition-colors flex items-center gap-1"
           >
             <span className="hidden sm:inline text-sm font-medium">Następna</span>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,7 +163,7 @@ function PaginationContent({
             </svg>
           </Link>
         ) : (
-          <span className="p-2 rounded-lg text-gray-300 cursor-not-allowed flex items-center gap-1">
+          <span className="p-2 rounded-lg text-gray-300 dark:text-secondary-600 cursor-not-allowed flex items-center gap-1">
             <span className="hidden sm:inline text-sm font-medium">Następna</span>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -176,7 +176,7 @@ function PaginationContent({
           <Link
             href={buildPageUrl(totalPages)}
             onClick={() => handlePageClick(totalPages)}
-            className="p-2 rounded-lg text-secondary-500 hover:bg-gray-100 transition-colors hidden sm:flex"
+            className="p-2 rounded-lg text-secondary-500 dark:text-secondary-400 hover:bg-gray-100 dark:hover:bg-secondary-700 transition-colors hidden sm:flex"
             title="Ostatnia strona"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -188,7 +188,7 @@ function PaginationContent({
 
       {/* Quick page jump (for many pages) */}
       {totalPages > 10 && (
-        <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+        <div className="flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">
           <span>Przejdź do strony:</span>
           <select
             value={currentPage}
@@ -197,7 +197,7 @@ function PaginationContent({
               handlePageClick(page);
               window.location.href = buildPageUrl(page);
             }}
-            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="border border-gray-300 dark:border-secondary-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-secondary-800 dark:text-white"
           >
             {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
               <option key={page} value={page}>
@@ -213,7 +213,7 @@ function PaginationContent({
 
 export default function Pagination(props: PaginationProps) {
   return (
-    <Suspense fallback={<div className="mt-8 flex justify-center"><div className="h-10 w-64 bg-gray-200 rounded animate-pulse"></div></div>}>
+    <Suspense fallback={<div className="mt-8 flex justify-center"><div className="h-10 w-64 bg-gray-200 dark:bg-secondary-700 rounded animate-pulse"></div></div>}>
       <PaginationContent {...props} />
     </Suspense>
   );

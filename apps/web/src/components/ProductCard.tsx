@@ -100,7 +100,7 @@ export default function ProductCard({ product, showDelivery = false, showWishlis
   };
 
   return (
-    <div className="group bg-white rounded-xl sm:rounded-2xl overflow-hidden relative h-full flex flex-col shadow-sm hover:shadow-lg transition-all duration-200">
+    <div className="group bg-white dark:bg-secondary-800 rounded-xl sm:rounded-2xl overflow-hidden relative h-full flex flex-col shadow-sm hover:shadow-lg dark:shadow-secondary-950/50 transition-all duration-200">
       {/* Wishlist button */}
       {showWishlist && (
         <button
@@ -108,7 +108,7 @@ export default function ProductCard({ product, showDelivery = false, showWishlis
           className={`absolute top-1.5 right-1.5 sm:top-2.5 sm:right-2.5 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-200
             ${inWishlist 
               ? 'bg-red-500 text-white' 
-              : 'bg-white text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-500 shadow-md'
+              : 'bg-white dark:bg-secondary-700 text-gray-400 dark:text-secondary-300 opacity-0 group-hover:opacity-100 hover:text-red-500 shadow-md'
             }`}
           title={inWishlist ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'}
         >
@@ -130,7 +130,7 @@ export default function ProductCard({ product, showDelivery = false, showWishlis
 
       <Link href={`/products/${product.id}`} className="flex flex-col flex-grow">
         {/* Image */}
-        <div className="relative aspect-square overflow-hidden bg-white">
+        <div className="relative aspect-square overflow-hidden bg-white dark:bg-secondary-700">
           <img
             src={mainImage}
             alt={product.name}
@@ -148,22 +148,22 @@ export default function ProductCard({ product, showDelivery = false, showWishlis
         </div>
 
         {/* Info */}
-        <div className="p-2 sm:p-3 flex flex-col flex-grow border-t border-gray-100">
+        <div className="p-2 sm:p-3 flex flex-col flex-grow border-t border-gray-100 dark:border-secondary-700">
           {/* Product Name */}
-          <h3 className="text-xs sm:text-sm leading-snug font-medium text-gray-800 line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem] group-hover:text-primary-600 transition-colors">
+          <h3 className="text-xs sm:text-sm leading-snug font-medium text-gray-800 dark:text-secondary-100 line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem] group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
             {product.name}
           </h3>
           
           {/* Price Section */}
           <div className="mt-1.5 sm:mt-2">
             <div className="flex items-baseline gap-0.5 sm:gap-1">
-              <span className="text-sm sm:text-lg font-bold text-gray-900">
+              <span className="text-sm sm:text-lg font-bold text-gray-900 dark:text-secondary-100">
                 {Number(product.price).toFixed(2)}
               </span>
-              <span className="text-xs sm:text-sm font-semibold text-gray-900">zł</span>
+              <span className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-secondary-100">zł</span>
             </div>
             {hasDiscount && (
-              <span className="text-[10px] sm:text-xs text-gray-400 line-through">
+              <span className="text-[10px] sm:text-xs text-gray-400 dark:text-secondary-500 line-through">
                 {Number(product.compareAtPrice).toFixed(2)} zł
               </span>
             )}
@@ -171,11 +171,11 @@ export default function ProductCard({ product, showDelivery = false, showWishlis
 
           {/* Delivery info */}
           <div className="flex flex-col gap-0.5 mt-1 sm:mt-1.5">
-            <p className="text-[10px] sm:text-xs text-primary-600">
+            <p className="text-[10px] sm:text-xs text-primary-600 dark:text-primary-400">
               Wysyłka 24-72h
             </p>
             {warehouseLocation && (
-              <span className="text-[9px] sm:text-[10px] text-gray-500 flex items-center gap-0.5">
+              <span className="text-[9px] sm:text-[10px] text-gray-500 dark:text-secondary-400 flex items-center gap-0.5">
                 <LocationIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 Magazyn {warehouseLocation}
               </span>

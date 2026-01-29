@@ -131,11 +131,11 @@ export default function AddToCartModal({ isOpen, product, onClose, onAddToCart }
         />
 
         {/* Modal - full width on mobile, centered on desktop */}
-        <div className="relative bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full sm:max-w-lg p-4 sm:p-6 text-left transform transition-all animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto">
+        <div className="relative bg-white dark:bg-secondary-800 rounded-t-2xl sm:rounded-xl shadow-xl w-full sm:max-w-lg p-4 sm:p-6 text-left transform transition-all animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto">
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-400 hover:text-gray-600 transition-colors z-10 p-1"
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors z-10 p-1"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -152,13 +152,13 @@ export default function AddToCartModal({ isOpen, product, onClose, onAddToCart }
           </div>
 
           {/* Title */}
-          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 text-center mb-3 sm:mb-4">
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white text-center mb-3 sm:mb-4">
             Produkt dodany do koszyka!
           </h3>
 
           {/* Product info */}
-          <div className="flex items-center gap-3 sm:gap-4 bg-gray-50 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
-            <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 bg-white rounded-lg overflow-hidden">
+          <div className="flex items-center gap-3 sm:gap-4 bg-gray-50 dark:bg-secondary-700 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+            <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 bg-white dark:bg-secondary-600 rounded-lg overflow-hidden">
               <img
                 src={product.image}
                 alt={product.name}
@@ -166,8 +166,8 @@ export default function AddToCartModal({ isOpen, product, onClose, onAddToCart }
               />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 line-clamp-2">{product.name}</p>
-              <p className="text-xs text-gray-500 mt-1">Ilość: {product.quantity}</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2">{product.name}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Ilość: {product.quantity}</p>
               <p className="text-sm font-semibold text-primary-600 mt-1">{product.price} zł</p>
             </div>
           </div>
@@ -183,9 +183,9 @@ export default function AddToCartModal({ isOpen, product, onClose, onAddToCart }
                     </svg>
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs sm:text-sm font-semibold text-gray-900">Zamów w jednej przesyłce</p>
+                    <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">Zamów w jednej przesyłce</p>
                     {warehouseName && (
-                      <p className="text-[10px] sm:text-xs text-gray-500 truncate">z {warehouseName}</p>
+                      <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">z {warehouseName}</p>
                     )}
                   </div>
                 </div>
@@ -208,10 +208,10 @@ export default function AddToCartModal({ isOpen, product, onClose, onAddToCart }
               {loadingProducts ? (
                 <div className="grid grid-cols-2 gap-2">
                   {[1, 2].map((i) => (
-                    <div key={i} className="bg-gray-100 rounded-lg p-3 animate-pulse">
-                      <div className="aspect-square bg-gray-200 rounded-lg mb-2"></div>
-                      <div className="h-3 bg-gray-200 rounded mb-1"></div>
-                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                    <div key={i} className="bg-gray-100 dark:bg-secondary-700 rounded-lg p-3 animate-pulse">
+                      <div className="aspect-square bg-gray-200 dark:bg-secondary-600 rounded-lg mb-2"></div>
+                      <div className="h-3 bg-gray-200 dark:bg-secondary-600 rounded mb-1"></div>
+                      <div className="h-3 bg-gray-200 dark:bg-secondary-600 rounded w-1/2"></div>
                     </div>
                   ))}
                 </div>
@@ -220,21 +220,21 @@ export default function AddToCartModal({ isOpen, product, onClose, onAddToCart }
                   {sameWarehouseProducts.map((p) => (
                     <div 
                       key={p.id} 
-                      className="bg-gray-50 hover:bg-gray-100 rounded-lg p-2 sm:p-3 transition-colors group"
+                      className="bg-gray-50 dark:bg-secondary-700 hover:bg-gray-100 dark:hover:bg-secondary-600 rounded-lg p-2 sm:p-3 transition-colors group"
                     >
                       <Link href={`/products/${p.id}`} onClick={onClose}>
-                        <div className="aspect-square bg-white rounded-lg overflow-hidden mb-1.5 sm:mb-2">
+                        <div className="aspect-square bg-white dark:bg-secondary-600 rounded-lg overflow-hidden mb-1.5 sm:mb-2">
                           <img
                             src={p.image || '/placeholder.png'}
                             alt={p.name}
                             className="w-full h-full object-contain group-hover:scale-105 transition-transform"
                           />
                         </div>
-                        <p className="text-[10px] sm:text-xs font-medium text-gray-900 line-clamp-2 mb-1 min-h-[1.75rem] sm:min-h-[2rem]">
+                        <p className="text-[10px] sm:text-xs font-medium text-gray-900 dark:text-white line-clamp-2 mb-1 min-h-[1.75rem] sm:min-h-[2rem]">
                           {p.name}
                         </p>
                       </Link>
-                      <p className="text-xs sm:text-sm font-bold text-gray-900 mb-1.5 sm:mb-2">
+                      <p className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white mb-1.5 sm:mb-2">
                         {p.price.toFixed(2)} zł
                       </p>
                       <button
@@ -270,7 +270,7 @@ export default function AddToCartModal({ isOpen, product, onClose, onAddToCart }
           <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg text-gray-700 text-sm sm:text-base font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5 sm:gap-2"
+              className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-secondary-600 rounded-lg text-gray-700 dark:text-gray-300 text-sm sm:text-base font-medium hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors flex items-center justify-center gap-1.5 sm:gap-2"
             >
               <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />

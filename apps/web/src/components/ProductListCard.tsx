@@ -110,15 +110,15 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
   // List view
   if (viewMode === 'list') {
     return (
-      <div className="group bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow duration-200 relative">
+      <div className="group bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 hover:shadow-lg dark:hover:shadow-secondary-950/50 transition-shadow duration-200 relative">
         {/* Wishlist button */}
         {showWishlist && (
           <button
             onClick={handleWishlistClick}
             className={`absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200
               ${inWishlist 
-                ? 'bg-red-50 text-red-500' 
-                : 'bg-white/80 text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-50'
+                ? 'bg-red-50 dark:bg-red-900/30 text-red-500' 
+                : 'bg-white/80 dark:bg-secondary-700/80 text-gray-400 dark:text-secondary-300 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30'
               }`}
             title={inWishlist ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'}
           >
@@ -140,7 +140,7 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
 
         <Link href={`/products/${product.id}`} className="flex">
           {/* Image */}
-          <div className="relative w-48 h-48 flex-shrink-0 overflow-hidden rounded-l-lg bg-gray-50 p-4">
+          <div className="relative w-48 h-48 flex-shrink-0 overflow-hidden rounded-l-lg bg-gray-50 dark:bg-secondary-700 p-4">
             <img
               src={mainImage}
               alt={product.name}
@@ -159,17 +159,17 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
           {/* Info */}
           <div className="p-4 flex flex-col flex-grow">
             {/* Product Name */}
-            <h3 className="text-base font-medium text-secondary-800 mb-2">
+            <h3 className="text-base font-medium text-secondary-800 dark:text-secondary-100 mb-2">
               {product.name}
             </h3>
 
             {/* Price */}
             <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-xl font-bold text-secondary-900">
+              <span className="text-xl font-bold text-secondary-900 dark:text-white">
                 {Number(product.price).toFixed(2).replace('.', ',')} zł
               </span>
               {hasDiscount && (
-                <span className="text-base text-gray-400 line-through">
+                <span className="text-base text-gray-400 dark:text-secondary-500 line-through">
                   {Number(product.compareAtPrice).toFixed(2).replace('.', ',')} zł
                 </span>
               )}
@@ -177,9 +177,9 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
 
             {/* Delivery Info */}
             <div className="flex flex-col gap-0.5 mt-auto">
-              <span className="text-sm text-green-600">{deliveryInfo}</span>
+              <span className="text-sm text-green-600 dark:text-green-400">{deliveryInfo}</span>
               {warehouseLocation && (
-                <span className="text-xs text-gray-500 flex items-center gap-1">
+                <span className="text-xs text-gray-500 dark:text-secondary-400 flex items-center gap-1">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -236,15 +236,15 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
   // Grid view (default)
 
   return (
-    <div className="group bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow duration-200 flex flex-col h-full relative overflow-hidden min-w-0">
+    <div className="group bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 hover:shadow-lg dark:hover:shadow-secondary-950/50 transition-shadow duration-200 flex flex-col h-full relative overflow-hidden min-w-0">
       {/* Wishlist button */}
       {showWishlist && (
         <button
           onClick={handleWishlistClick}
           className={`absolute top-1 right-1 sm:top-2 sm:right-2 z-10 w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-200
             ${inWishlist 
-              ? 'bg-red-50 text-red-500' 
-              : 'bg-white/80 text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-50'
+              ? 'bg-red-50 dark:bg-red-900/30 text-red-500' 
+              : 'bg-white/80 dark:bg-secondary-700/80 text-gray-400 dark:text-secondary-300 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30'
             }`}
           title={inWishlist ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'}
         >
@@ -266,7 +266,7 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
 
       <Link href={`/products/${product.id}`} className="flex flex-col h-full">
         {/* Image */}
-        <div className="relative aspect-square overflow-hidden rounded-t-lg bg-gray-50 p-2 sm:p-4">
+        <div className="relative aspect-square overflow-hidden rounded-t-lg bg-gray-50 dark:bg-secondary-700 p-2 sm:p-4">
           <img
             src={mainImage}
             alt={product.name}
@@ -285,17 +285,17 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
         {/* Info */}
         <div className="p-2 sm:p-3 flex flex-col flex-grow">
           {/* Product Name */}
-          <h3 className="text-xs sm:text-sm text-secondary-800 line-clamp-2 mb-1 sm:mb-2 min-h-[2rem] sm:min-h-[2.5rem]">
+          <h3 className="text-xs sm:text-sm text-secondary-800 dark:text-secondary-100 line-clamp-2 mb-1 sm:mb-2 min-h-[2rem] sm:min-h-[2.5rem]">
             {product.name}
           </h3>
 
           {/* Price */}
           <div className="flex flex-wrap items-baseline gap-1 sm:gap-2 mb-1 sm:mb-2">
-            <span className="text-sm sm:text-lg font-bold text-secondary-900">
+            <span className="text-sm sm:text-lg font-bold text-secondary-900 dark:text-white">
               {Number(product.price).toFixed(2).replace('.', ',')} zł
             </span>
             {hasDiscount && (
-              <span className="text-xs sm:text-sm text-gray-400 line-through">
+              <span className="text-xs sm:text-sm text-gray-400 dark:text-secondary-500 line-through">
                 {Number(product.compareAtPrice).toFixed(2).replace('.', ',')} zł
               </span>
             )}
@@ -303,9 +303,9 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
 
           {/* Delivery Info */}
           <div className="flex flex-col gap-0.5 mb-1 sm:mb-2 mt-auto">
-            <span className="text-[10px] sm:text-xs text-green-600">{deliveryInfo}</span>
+            <span className="text-[10px] sm:text-xs text-green-600 dark:text-green-400">{deliveryInfo}</span>
             {warehouseLocation && (
-              <span className="text-[9px] sm:text-[10px] text-gray-500 flex items-center gap-0.5">
+              <span className="text-[9px] sm:text-[10px] text-gray-500 dark:text-secondary-400 flex items-center gap-0.5">
                 <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />

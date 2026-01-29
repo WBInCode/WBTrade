@@ -15,20 +15,20 @@ interface CheckoutPackagesListProps {
 
 // Warehouse display names (by city) and colors - don't expose wholesaler names
 const WHOLESALER_CONFIG: Record<string, { name: string; color: string; bgColor: string; icon: string }> = {
-  'HP': { name: 'Magazyn Zielona Góra', color: 'text-blue-700', bgColor: 'bg-blue-50 border-blue-200', icon: '📍' },
-  'Hurtownia Przemysłowa': { name: 'Magazyn Zielona Góra', color: 'text-blue-700', bgColor: 'bg-blue-50 border-blue-200', icon: '📍' },
-  'Ikonka': { name: 'Magazyn Białystok', color: 'text-purple-700', bgColor: 'bg-purple-50 border-purple-200', icon: '📍' },
-  'BTP': { name: 'Magazyn Chotów', color: 'text-green-700', bgColor: 'bg-green-50 border-green-200', icon: '📍' },
-  'Leker': { name: 'Magazyn Chynów', color: 'text-red-700', bgColor: 'bg-red-50 border-red-200', icon: '📍' },
-  'Gastro': { name: 'Magazyn Centralny', color: 'text-yellow-700', bgColor: 'bg-yellow-50 border-yellow-200', icon: '📍' },
-  'Horeca': { name: 'Magazyn Centralny', color: 'text-orange-700', bgColor: 'bg-orange-50 border-orange-200', icon: '📍' },
-  'Forcetop': { name: 'Magazyn Centralny', color: 'text-teal-700', bgColor: 'bg-teal-50 border-teal-200', icon: '📍' },
-  'default': { name: 'Magazyn WB Trade', color: 'text-gray-700', bgColor: 'bg-gray-50 border-gray-200', icon: '📍' },
+  'HP': { name: 'Magazyn Zielona Góra', color: 'text-blue-700 dark:text-blue-400', bgColor: 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700', icon: '📍' },
+  'Hurtownia Przemysłowa': { name: 'Magazyn Zielona Góra', color: 'text-blue-700 dark:text-blue-400', bgColor: 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700', icon: '📍' },
+  'Ikonka': { name: 'Magazyn Białystok', color: 'text-purple-700 dark:text-purple-400', bgColor: 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-700', icon: '📍' },
+  'BTP': { name: 'Magazyn Chotów', color: 'text-green-700 dark:text-green-400', bgColor: 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700', icon: '📍' },
+  'Leker': { name: 'Magazyn Chynów', color: 'text-red-700 dark:text-red-400', bgColor: 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700', icon: '📍' },
+  'Gastro': { name: 'Magazyn Centralny', color: 'text-yellow-700 dark:text-yellow-400', bgColor: 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700', icon: '📍' },
+  'Horeca': { name: 'Magazyn Centralny', color: 'text-orange-700 dark:text-orange-400', bgColor: 'bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-700', icon: '📍' },
+  'Forcetop': { name: 'Magazyn Centralny', color: 'text-teal-700 dark:text-teal-400', bgColor: 'bg-teal-50 dark:bg-teal-900/30 border-teal-200 dark:border-teal-700', icon: '📍' },
+  'default': { name: 'Magazyn WB Trade', color: 'text-gray-700 dark:text-gray-300', bgColor: 'bg-gray-50 dark:bg-secondary-700 border-gray-200 dark:border-secondary-600', icon: '📍' },
 };
 
 function getWholesalerConfig(wholesaler: string | null | undefined) {
   if (!wholesaler) return WHOLESALER_CONFIG['default'];
-  return WHOLESALER_CONFIG[wholesaler] || { name: wholesaler, color: 'text-gray-700', bgColor: 'bg-gray-50 border-gray-200', icon: '📦' };
+  return WHOLESALER_CONFIG[wholesaler] || { name: wholesaler, color: 'text-gray-700 dark:text-gray-300', bgColor: 'bg-gray-50 dark:bg-secondary-700 border-gray-200 dark:border-secondary-600', icon: '📦' };
 }
 
 export default function CheckoutPackagesList({
@@ -89,16 +89,16 @@ export default function CheckoutPackagesList({
                 {pkg.wholesalerDisplay}
               </span>
             </div>
-            <span className="text-[11px] text-gray-500">
+            <span className="text-[11px] text-gray-500 dark:text-gray-400">
               {pkg.items.length} {pkg.items.length === 1 ? 'produkt' : 'produktów'}
             </span>
           </div>
           
           {/* Package Items */}
-          <div className="bg-white px-3 py-2 space-y-2">
+          <div className="bg-white dark:bg-secondary-800 px-3 py-2 space-y-2">
             {pkg.items.map((item: CartItem) => (
               <div key={item.id} className="flex gap-2 group relative">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-lg flex-shrink-0 relative overflow-hidden">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 dark:bg-secondary-700 rounded-lg flex-shrink-0 relative overflow-hidden">
                   {item.variant?.product?.images?.[0] && (
                     <img
                       src={item.variant.product.images[0].url}
@@ -108,11 +108,11 @@ export default function CheckoutPackagesList({
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium line-clamp-2 pr-5 leading-tight">
+                  <p className="text-xs font-medium line-clamp-2 pr-5 leading-tight dark:text-white">
                     {item.variant?.product?.name}
                   </p>
                   <div className="flex items-center justify-between mt-1">
-                    <span className="text-[10px] text-gray-500">
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400">
                       {item.quantity} szt.
                     </span>
                     <span className="text-xs font-semibold text-orange-600">
@@ -123,7 +123,7 @@ export default function CheckoutPackagesList({
                 <button
                   onClick={() => onRemoveItem(item.id)}
                   disabled={removingItemId === item.id}
-                  className="absolute top-0 right-0 w-5 h-5 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                  className="absolute top-0 right-0 w-5 h-5 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full transition-colors"
                   title="Usuń z koszyka"
                 >
                   {removingItemId === item.id ? (
@@ -142,9 +142,9 @@ export default function CheckoutPackagesList({
           </div>
           
           {/* Package Subtotal */}
-          <div className="bg-gray-50 px-3 py-1.5 border-t flex items-center justify-between">
-            <span className="text-[10px] text-gray-500">Wartość przesyłki:</span>
-            <span className="text-xs font-semibold">{pkg.subtotal.toFixed(2)} zł</span>
+          <div className="bg-gray-50 dark:bg-secondary-700 px-3 py-1.5 border-t dark:border-secondary-600 flex items-center justify-between">
+            <span className="text-[10px] text-gray-500 dark:text-gray-400">Wartość przesyłki:</span>
+            <span className="text-xs font-semibold dark:text-white">{pkg.subtotal.toFixed(2)} zł</span>
           </div>
         </div>
       ))}

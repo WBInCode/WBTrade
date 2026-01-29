@@ -38,7 +38,7 @@ function SpecificationFilterContent({ specKey, label, options, unit = '' }: Spec
 
   return (
     <div className="mb-6">
-      <h3 className="font-semibold text-secondary-900 mb-3">{label}</h3>
+      <h3 className="font-semibold text-secondary-900 dark:text-white mb-3">{label}</h3>
       <div className="grid grid-cols-2 gap-2">
         {options.map(option => (
           <button
@@ -46,8 +46,8 @@ function SpecificationFilterContent({ specKey, label, options, unit = '' }: Spec
             onClick={() => toggleOption(option.value)}
             className={`px-4 py-2 text-sm font-medium rounded-lg border-2 transition-colors ${
               selected === option.value
-                ? 'border-primary-500 bg-primary-50 text-primary-600'
-                : 'border-gray-200 text-secondary-700 hover:border-gray-300'
+                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                : 'border-gray-200 dark:border-secondary-600 text-secondary-700 dark:text-secondary-300 hover:border-gray-300 dark:hover:border-secondary-500'
             }`}
           >
             {option.value}{unit && ` ${unit}`}
@@ -72,7 +72,7 @@ export function RamFilter({ options }: { options: { value: string; count: number
 
 export default function SpecificationFilter(props: SpecFilterProps) {
   return (
-    <Suspense fallback={<div className="mb-6 animate-pulse"><div className="h-6 bg-gray-200 rounded w-1/2 mb-3"></div><div className="h-20 bg-gray-200 rounded"></div></div>}>
+    <Suspense fallback={<div className="mb-6 animate-pulse"><div className="h-6 bg-gray-200 dark:bg-secondary-700 rounded w-1/2 mb-3"></div><div className="h-20 bg-gray-200 dark:bg-secondary-700 rounded"></div></div>}>
       <SpecificationFilterContent {...props} />
     </Suspense>
   );

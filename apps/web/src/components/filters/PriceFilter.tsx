@@ -81,7 +81,7 @@ function PriceFilterContent({ priceRange }: PriceFilterProps) {
   return (
     <div className="mb-6">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold text-secondary-900">Cena</h3>
+        <h3 className="font-semibold text-secondary-900 dark:text-white">Cena</h3>
         {hasActiveFilter && (
           <button 
             onClick={clearPrices}
@@ -98,22 +98,22 @@ function PriceFilterContent({ priceRange }: PriceFilterProps) {
           placeholder={priceRange ? `${priceRange.min}` : 'min'}
           value={minPrice}
           onChange={(e) => setMinPrice(e.target.value)}
-          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-secondary-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-secondary-700 dark:text-white dark:placeholder-secondary-400"
           min={0}
         />
-        <span className="text-gray-400">-</span>
+        <span className="text-gray-400 dark:text-secondary-500">-</span>
         <input
           type="number"
           placeholder={priceRange ? `${priceRange.max}` : 'max'}
           value={maxPrice}
           onChange={(e) => setMaxPrice(e.target.value)}
-          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-secondary-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-secondary-700 dark:text-white dark:placeholder-secondary-400"
           min={0}
         />
       </div>
       
       {priceRange && priceRange.min > 0 && priceRange.max > 0 && (
-        <p className="text-xs text-gray-400 mt-2">
+        <p className="text-xs text-gray-400 dark:text-secondary-500 mt-2">
           Zakres: {priceRange.min.toLocaleString()} - {priceRange.max.toLocaleString()} zł
         </p>
       )}
@@ -123,7 +123,7 @@ function PriceFilterContent({ priceRange }: PriceFilterProps) {
 
 export default function PriceFilter(props: PriceFilterProps) {
   return (
-    <Suspense fallback={<div className="mb-6 animate-pulse"><div className="h-6 bg-gray-200 rounded w-1/4 mb-3"></div><div className="h-10 bg-gray-200 rounded"></div></div>}>
+    <Suspense fallback={<div className="mb-6 animate-pulse"><div className="h-6 bg-gray-200 dark:bg-secondary-700 rounded w-1/4 mb-3"></div><div className="h-10 bg-gray-200 dark:bg-secondary-700 rounded"></div></div>}>
       <PriceFilterContent {...props} />
     </Suspense>
   );
