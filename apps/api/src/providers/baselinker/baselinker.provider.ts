@@ -20,6 +20,9 @@ import {
   BaselinkerApiResponse,
   BaselinkerAddOrderRequest,
   BaselinkerAddOrderResponse,
+  BaselinkerSetOrderStatusResponse,
+  BaselinkerSetOrderFieldsRequest,
+  BaselinkerSetOrderFieldsResponse,
 } from './baselinker-provider.interface';
 
 const BASELINKER_API_URL = 'https://api.baselinker.com/connector.php';
@@ -369,6 +372,44 @@ export class BaselinkerProvider implements IBaselinkerProvider {
     const response = await this.request<BaselinkerAddOrderResponse>('addOrder', orderData);
     
     console.log('[Baselinker] Order added successfully, order_id:', response.order_id);
+    
+    return response;
+  }
+
+  /**
+   * Set order status in Baselinker
+   * Use this to update order status (e.g., after payment confirmation)
+   * 
+   * @param orderId - Baselinker order ID (number)
+   * @param statusId - New status ID
+   * @returns Updated order info
+   */
+  async setOrderStatus(orderId: number, statusId: number): Promise<BaselinkerSetOrderStatusResponse> {
+    console.log('[Baselinker] Setting order status:', { orderId, statusId });
+
+    const response = await this.request<BaselinkerSetOrderStatusResponse>('setOrderStatus', {
+      order_id: orderId,
+      status_id: statusId,
+    });
+
+    console.log('[Baselinker] Order status updated successfully');
+    
+    return response;
+  }
+
+  /**
+   * Update order fields in Baselinker
+   * Use this to update order details like payment method, comments, etc.
+   * 
+   * @param data - Fields to update
+   * @returns Updated order info
+   */
+  async setOrderFields(data: BaselinkerSetOrderFieldsRequest): Promise<BaselinkerSetOrderFieldsResponse> {
+    console.log('[Baselinker] Updating order fields:', { orderId: data.order_id });
+
+    const response = await this.request<BaselinkerSetOrderFieldsResponse>('setOrderFields', data);
+
+    console.log('[Baselinker] Order fields updated successfully');
     
     return response;
   }

@@ -11,6 +11,7 @@ import { paymentService } from '../services/payment.service';
 import { OrdersService } from '../services/orders.service';
 import { CartService } from '../services/cart.service';
 import { addressesService } from '../services/addresses.service';
+import { baselinkerOrdersService } from '../services/baselinker-orders.service';
 import { ShippingProviderId } from '../types/shipping.types';
 import { CreatePaymentRequest, PaymentMethodType, PaymentProviderId } from '../types/payment.types';
 
@@ -523,6 +524,20 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
     // Clear cart after order creation
     await cartService.clearCart(cart.id);
 
+    // Sync order to Baselinker immediately (as unpaid)
+    // This ensures the order is in Baselinker right away
+    baselinkerOrdersService.syncOrderToBaselinker(order.id)
+      .then((syncResult) => {
+        if (syncResult.success) {
+          console.log(`[Checkout] Order ${order.id} synced to Baselinker (BL ID: ${syncResult.baselinkerOrderId})`);
+        } else {
+          console.error(`[Checkout] Failed to sync order to Baselinker:`, syncResult.error);
+        }
+      })
+      .catch((err) => {
+        console.error(`[Checkout] Baselinker sync error:`, err);
+      });
+
     // Handle payment
     if (paymentMethod === 'cod') {
       // Cash on delivery - no payment redirect needed
@@ -577,11 +592,13 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
         description: `Zamówienie ${order.orderNumber}`,
         returnUrl: `${frontendUrl}/order/${order.id}/confirmation`,
         cancelUrl: `${frontendUrl}/checkout?orderId=${order.id}&cancelled=true`,
-        notifyUrl: `${process.env.APP_URL || 'http://localhost:5000'}/api/webhooks/payu`,
+        notifyUrl: `${process.env.APP_URL || 'https://wbtrade-iv71.onrender.com'}/api/webhooks/payu`,
         metadata: {
           customerIp: req.ip || req.socket.remoteAddress || '127.0.0.1',
         },
       };
+      
+      console.log('💳 PayU notifyUrl:', paymentRequest.notifyUrl);
 
       console.log('Creating PayU payment request:', paymentRequest);
 
@@ -654,6 +671,9 @@ export async function paymentWebhook(req: Request, res: Response): Promise<void>
  * PayU sends signature in OpenPayU-Signature header
  */
 export async function payuWebhook(req: Request, res: Response): Promise<void> {
+  console.log('==========================================');
+  console.log('[PayU Webhook] Received at:', new Date().toISOString());
+  
   try {
     // PayU signature format: signature=<md5>;algorithm=MD5;sender=checkout
     const signature = req.headers['openpayu-signature'] as string || '';
@@ -662,19 +682,29 @@ export async function payuWebhook(req: Request, res: Response): Promise<void> {
     // Fall back to JSON.stringify for backwards compatibility
     const payload = (req as any).rawBody || JSON.stringify(req.body);
 
-    console.log('PayU webhook received:', {
-      signature,
+    console.log('[PayU Webhook] Details:', {
+      signature: signature ? signature.substring(0, 50) + '...' : 'MISSING',
       hasRawBody: !!(req as any).rawBody,
-      body: req.body,
+      payloadLength: payload.length,
+      orderId: req.body?.order?.orderId,
+      extOrderId: req.body?.order?.extOrderId,
+      status: req.body?.order?.status,
     });
 
     const result = await paymentService.processWebhook('payu', payload, signature);
 
-    console.log('PayU webhook processed:', result);
+    console.log('[PayU Webhook] Success:', {
+      orderId: result.orderId,
+      status: result.status,
+      transactionId: result.transactionId,
+    });
+    console.log('==========================================');
 
     res.json({ status: 'ok' });
   } catch (error) {
-    console.error('Error processing PayU webhook:', error);
+    console.error('[PayU Webhook] ERROR:', error);
+    console.error('[PayU Webhook] Request body:', JSON.stringify(req.body, null, 2));
+    console.log('==========================================');
     res.status(400).json({ message: 'Webhook processing failed' });
   }
 }
@@ -753,7 +783,7 @@ export async function retryPayment(req: Request, res: Response): Promise<void> {
       description: `Zamówienie ${order.orderNumber}`,
       returnUrl: `${frontendUrl}/order/${order.id}/confirmation`,
       cancelUrl: `${frontendUrl}/account/orders?cancelled=true`,
-      notifyUrl: `${process.env.APP_URL || 'http://localhost:5000'}/api/webhooks/payu`,
+      notifyUrl: `${process.env.APP_URL || 'https://wbtrade-iv71.onrender.com'}/api/webhooks/payu`,
       metadata: {
         customerIp: req.ip || req.socket.remoteAddress || '127.0.0.1',
       },

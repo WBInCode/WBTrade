@@ -396,10 +396,30 @@ export class PayUProvider implements IPaymentProvider {
   validateWebhook(payload: string, signature: string): boolean {
     // PayU sends signature in OpenPayU-Signature header
     // Format: signature=<md5>;algorithm=MD5;sender=checkout
+    
+    console.log(`[PayU] Validating webhook signature`);
+    console.log(`[PayU] Signature header: ${signature}`);
+    
+    // If no signature provided, log warning but allow in development
+    if (!signature) {
+      console.warn(`[PayU] No signature provided in webhook`);
+      // In production, you might want to reject this
+      // For now, allow it to debug the issue
+      if (process.env.NODE_ENV === 'production') {
+        console.error(`[PayU] Rejecting webhook without signature in production`);
+        return false;
+      }
+      return true;
+    }
+    
     const signatureParts = signature.split(';');
     const receivedSignature = signatureParts[0]?.replace('signature=', '');
     
     const expectedSignature = this.generateSignature(payload);
+    
+    console.log(`[PayU] Received signature: ${receivedSignature}`);
+    console.log(`[PayU] Expected signature: ${expectedSignature}`);
+    console.log(`[PayU] Match: ${receivedSignature === expectedSignature}`);
     
     return receivedSignature === expectedSignature;
   }

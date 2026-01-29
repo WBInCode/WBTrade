@@ -2,11 +2,12 @@
  * Baselinker Orders Synchronization Service
  * 
  * Handles syncing orders FROM local shop TO Baselinker.
- * This is the "feedback loop" - when a customer pays for an order,
- * we send it to Baselinker which automatically decreases stock.
+ * Orders are synced IMMEDIATELY after creation (as unpaid), 
+ * then status is updated when payment is confirmed.
  * 
- * IMPORTANT: Orders are synced ONLY after payment is confirmed (paymentStatus = PAID)
- * This ensures stock is not decreased for unpaid/cancelled orders.
+ * FLOW (Baselinker-style):
+ * 1. Order created -> sync to Baselinker as "Nieopłacone"
+ * 2. Payment confirmed -> update Baselinker order status to "Opłacone"
  * 
  * MULTI-WAREHOUSE: Each product is automatically assigned to the correct
  * Baselinker inventory based on its baselinkerProductId prefix or tags.
@@ -34,10 +35,16 @@ const WAREHOUSE_MAPPING: Record<string, string> = {
 };
 
 /**
- * Default order status ID for new orders in Baselinker
- * 65342 = "Nowe zamówienia"
+ * Order status ID for UNPAID orders in Baselinker
+ * 65823 = "Nieopłacone"
  */
-const DEFAULT_ORDER_STATUS_ID = 65342;
+const DEFAULT_UNPAID_STATUS_ID = 65823;
+
+/**
+ * Order status ID for PAID orders in Baselinker
+ * 65342 = "Nowe zamówienia" - this is where paid orders go for processing
+ */
+const PAID_STATUS_ID = 65342;
 
 /**
  * Detect warehouse inventory ID from product data
@@ -89,7 +96,8 @@ export interface SyncOrderToBaselinkerOptions {
 export class BaselinkerOrdersService {
   /**
    * Sync a single order to Baselinker
-   * This should be called ONLY after payment is confirmed
+   * Orders are synced immediately after creation (as unpaid)
+   * Status is updated when payment is confirmed via updateBaselinkerOrderStatus()
    * 
    * @param orderId - Local order ID
    * @param options - Sync options
@@ -98,7 +106,8 @@ export class BaselinkerOrdersService {
     orderId: string,
     options: SyncOrderToBaselinkerOptions = {}
   ): Promise<OrderSyncResult> {
-    const { orderStatusId = DEFAULT_ORDER_STATUS_ID, force = false } = options;
+    // Determine status based on payment - unpaid orders get UNPAID status
+    const { force = false } = options;
 
     try {
       // 1. Get order with all related data
@@ -140,15 +149,11 @@ export class BaselinkerOrdersService {
         };
       }
 
-      // 3. Verify payment is confirmed - CRITICAL CHECK
-      if (order.paymentStatus !== 'PAID') {
-        console.warn(`[BaselinkerOrders] Order ${orderId} has paymentStatus=${order.paymentStatus}, skipping sync`);
-        return {
-          success: false,
-          orderId,
-          error: `Order payment status is ${order.paymentStatus}, expected PAID. Sync only after payment confirmation.`,
-        };
-      }
+      // 3. Determine Baselinker status based on payment status
+      const orderStatusId = options.orderStatusId || 
+        (order.paymentStatus === 'PAID' ? PAID_STATUS_ID : DEFAULT_UNPAID_STATUS_ID);
+      
+      console.log(`[BaselinkerOrders] Syncing order ${orderId} with paymentStatus=${order.paymentStatus}, BL statusId=${orderStatusId}`);
 
       // 4. Get Baselinker configuration
       const config = await prisma.baselinkerConfig.findFirst({
@@ -408,6 +413,76 @@ export class BaselinkerOrdersService {
     };
 
     return mappings[method] || method;
+  }
+
+  /**
+   * Update order status in Baselinker after payment confirmation
+   * This is called when payment webhook confirms the payment
+   * 
+   * @param orderId - Local order ID
+   * @param statusId - New Baselinker status ID (defaults to PAID_STATUS_ID)
+   */
+  async updateBaselinkerOrderStatus(
+    orderId: string,
+    statusId: number = PAID_STATUS_ID
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      // 1. Get order with Baselinker ID
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { 
+          id: true, 
+          orderNumber: true, 
+          baselinkerOrderId: true,
+          paymentStatus: true,
+        },
+      });
+
+      if (!order) {
+        return { success: false, error: 'Order not found' };
+      }
+
+      if (!order.baselinkerOrderId) {
+        console.log(`[BaselinkerOrders] Order ${orderId} not synced to Baselinker yet, skipping status update`);
+        return { success: false, error: 'Order not synced to Baselinker' };
+      }
+
+      // 2. Get Baselinker configuration
+      const config = await prisma.baselinkerConfig.findFirst({
+        where: { syncEnabled: true },
+      });
+
+      if (!config) {
+        return { success: false, error: 'Baselinker integration not configured' };
+      }
+
+      // 3. Create provider and update status
+      const apiToken = decryptToken(
+        config.apiTokenEncrypted,
+        config.encryptionIv,
+        config.authTag
+      );
+
+      const provider = createBaselinkerProvider({
+        apiToken,
+        inventoryId: config.inventoryId,
+      });
+
+      const blOrderId = parseInt(order.baselinkerOrderId, 10);
+      console.log(`[BaselinkerOrders] Updating BL order ${blOrderId} status to ${statusId} (paid=${order.paymentStatus === 'PAID'})`);
+
+      await provider.setOrderStatus(blOrderId, statusId);
+
+      console.log(`[BaselinkerOrders] Successfully updated Baselinker order ${blOrderId} status`);
+
+      return { success: true };
+    } catch (error) {
+      console.error(`[BaselinkerOrders] Error updating Baselinker order status:`, error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
   }
 }
 
