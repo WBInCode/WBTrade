@@ -26,14 +26,14 @@ export async function authGuard(req: Request, res: Response, next: NextFunction)
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
-      res.status(401).json({ message: 'No authorization header provided' });
+      res.status(401).json({ message: 'Brak naglówka autoryzacji' });
       return;
     }
 
     const [type, token] = authHeader.split(' ');
 
     if (type !== 'Bearer' || !token) {
-      res.status(401).json({ message: 'Invalid authorization format. Use: Bearer <token>' });
+      res.status(401).json({ message: 'Nieprawidlowy format autoryzacji' });
       return;
     }
 
@@ -52,15 +52,15 @@ export async function authGuard(req: Request, res: Response, next: NextFunction)
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === 'Access token expired') {
-        res.status(401).json({ message: 'Token expired', code: 'TOKEN_EXPIRED' });
+        res.status(401).json({ message: 'Token wygasl', code: 'TOKEN_EXPIRED' });
         return;
       }
-      if (error.message === 'Token has been revoked') {
-        res.status(401).json({ message: 'Token has been revoked', code: 'TOKEN_REVOKED' });
+      if (error.message === 'Token zostal uniewazniony') {
+        res.status(401).json({ message: 'Token zostal uniewazniony', code: 'TOKEN_REVOKED' });
         return;
       }
     }
-    res.status(401).json({ message: 'Invalid token' });
+    res.status(401).json({ message: 'Nieprawidlowy token' });
   }
 }
 
@@ -105,13 +105,13 @@ export async function optionalAuth(req: Request, res: Response, next: NextFuncti
 export function roleGuard(...allowedRoles: UserRole[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
-      res.status(401).json({ message: 'Authentication required' });
+      res.status(401).json({ message: 'Wymagane uwierzytelnienie' });
       return;
     }
 
     if (!allowedRoles.includes(req.user.role)) {
       res.status(403).json({ 
-        message: 'Insufficient permissions',
+        message: 'Niewystarczajace uprawnienia',
         required: allowedRoles,
         current: req.user.role
       });

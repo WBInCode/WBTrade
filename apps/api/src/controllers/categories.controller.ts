@@ -40,7 +40,7 @@ export const categoriesController = {
       const category = await categoriesService.getCategoryBySlug(slug);
       
       if (!category) {
-        return res.status(404).json({ message: 'Category not found' });
+        return res.status(404).json({ message: 'Kategoria nie zostala znaleziona' });
       }
       
       res.json({ category });
@@ -60,7 +60,7 @@ export const categoriesController = {
       const path = await categoriesService.getCategoryPath(slug);
       
       if (path.length === 0) {
-        return res.status(404).json({ message: 'Category not found' });
+        return res.status(404).json({ message: 'Kategoria nie zostala znaleziona' });
       }
       
       res.json({ path });
@@ -148,7 +148,7 @@ export const categoriesController = {
       const category = await categoriesService.getCategoryById(id);
 
       if (!category) {
-        return res.status(404).json({ message: 'Category not found' });
+        return res.status(404).json({ message: 'Kategoria nie zostala znaleziona' });
       }
 
       res.json({ category });

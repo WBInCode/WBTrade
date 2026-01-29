@@ -4,8 +4,8 @@ import { z } from 'zod';
 import { LocationType } from '@prisma/client';
 
 const createLocationSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  code: z.string().min(1, 'Code is required').max(20),
+  name: z.string().min(1, 'Nazwa jest wymagana'),
+  code: z.string().min(1, 'Kod jest wymagany').max(20),
   type: z.enum(['WAREHOUSE', 'ZONE', 'SHELF', 'BIN']),
   parentId: z.string().optional()
 });
@@ -29,7 +29,7 @@ export class LocationsController {
       res.json(locations);
     } catch (error) {
       console.error('Error fetching locations:', error);
-      res.status(500).json({ error: 'Failed to fetch locations' });
+      res.status(500).json({ error: 'Nie udalo sie pobrac lokalizacji' });
     }
   }
 
@@ -42,7 +42,7 @@ export class LocationsController {
       res.json(tree);
     } catch (error) {
       console.error('Error fetching location tree:', error);
-      res.status(500).json({ error: 'Failed to fetch location tree' });
+      res.status(500).json({ error: 'Nie udalo sie pobrac drzewa lokalizacji' });
     }
   }
 
@@ -53,13 +53,13 @@ export class LocationsController {
     try {
       const type = req.params.type.toUpperCase() as LocationType;
       if (!['WAREHOUSE', 'ZONE', 'SHELF', 'BIN'].includes(type)) {
-        return res.status(400).json({ error: 'Invalid location type' });
+        return res.status(400).json({ error: 'Nieprawidlowy typ lokalizacji' });
       }
       const locations = await locationsService.getByType(type);
       res.json(locations);
     } catch (error) {
       console.error('Error fetching locations by type:', error);
-      res.status(500).json({ error: 'Failed to fetch locations' });
+      res.status(500).json({ error: 'Nie udalo sie pobrac lokalizacji' });
     }
   }
 
@@ -72,13 +72,13 @@ export class LocationsController {
       const location = await locationsService.getById(id);
       
       if (!location) {
-        return res.status(404).json({ error: 'Location not found' });
+        return res.status(404).json({ error: 'Lokalizacja nie zostala znaleziona' });
       }
       
       res.json(location);
     } catch (error) {
       console.error('Error fetching location:', error);
-      res.status(500).json({ error: 'Failed to fetch location' });
+      res.status(500).json({ error: 'Nie udalo sie pobrac lokalizacji' });
     }
   }
 
@@ -91,7 +91,7 @@ export class LocationsController {
       
       if (!validationResult.success) {
         return res.status(400).json({ 
-          error: 'Validation failed', 
+          error: 'Blad walidacji', 
           details: validationResult.error.issues 
         });
       }
@@ -103,7 +103,7 @@ export class LocationsController {
       if (error.message?.includes('already exists')) {
         return res.status(400).json({ error: error.message });
       }
-      res.status(500).json({ error: 'Failed to create location' });
+      res.status(500).json({ error: 'Nie udalo sie utworzyc lokalizacji' });
     }
   }
 
@@ -117,7 +117,7 @@ export class LocationsController {
       
       if (!validationResult.success) {
         return res.status(400).json({ 
-          error: 'Validation failed', 
+          error: 'Blad walidacji', 
           details: validationResult.error.issues 
         });
       }
@@ -129,7 +129,7 @@ export class LocationsController {
       if (error.message?.includes('already exists')) {
         return res.status(400).json({ error: error.message });
       }
-      res.status(500).json({ error: 'Failed to update location' });
+      res.status(500).json({ error: 'Nie udalo sie zaktualizowac lokalizacji' });
     }
   }
 
@@ -146,7 +146,7 @@ export class LocationsController {
       if (error.message?.includes('existing inventory')) {
         return res.status(400).json({ error: error.message });
       }
-      res.status(500).json({ error: 'Failed to delete location' });
+      res.status(500).json({ error: 'Nie udalo sie usunac lokalizacji' });
     }
   }
 }

@@ -82,7 +82,7 @@ export async function updateProductPrice(req: Request, res: Response): Promise<v
     const { newPrice, reason } = req.body;
 
     if (typeof newPrice !== 'number' || newPrice < 0) {
-      res.status(400).json({ message: 'newPrice must be a non-negative number' });
+      res.status(400).json({ message: 'Cena musi byc liczba nieujemna' });
       return;
     }
 
@@ -120,7 +120,7 @@ export async function updateVariantPrice(req: Request, res: Response): Promise<v
     const { newPrice, reason } = req.body;
 
     if (typeof newPrice !== 'number' || newPrice < 0) {
-      res.status(400).json({ message: 'newPrice must be a non-negative number' });
+      res.status(400).json({ message: 'Cena musi byc liczba nieujemna' });
       return;
     }
 
