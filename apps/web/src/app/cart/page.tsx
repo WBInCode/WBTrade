@@ -57,19 +57,22 @@ export default function CartPage() {
         
         const response = await checkoutApi.getShippingPerPackage(items);
         
-        // Build shipping prices per wholesaler and store total from API
+        // Build shipping prices per wholesaler - use LOWEST available price
         const prices: Record<string, number> = {};
+        let lowestTotal = 0;
         for (const pkg of response.packagesWithOptions) {
           const wholesaler = pkg.package.wholesaler || 'default';
-          // Get the selected method's price (this is what will actually be charged)
-          const selectedMethod = pkg.shippingMethods.find((m: any) => m.id === pkg.selectedMethod && m.available);
-          if (selectedMethod) {
-            prices[wholesaler] = selectedMethod.price;
+          // Get the lowest available shipping price for this package
+          const availableMethods = pkg.shippingMethods.filter((m: any) => m.available);
+          if (availableMethods.length > 0) {
+            const lowestPrice = Math.min(...availableMethods.map((m: any) => m.price));
+            prices[wholesaler] = lowestPrice;
+            lowestTotal += lowestPrice;
           }
         }
         setShippingPrices(prices);
-        // Use the total from API which is calculated correctly
-        setTotalShippingCost(response.totalShippingCost || 0);
+        // Use the lowest possible total
+        setTotalShippingCost(lowestTotal);
       } catch (err) {
         console.error('Failed to fetch shipping prices:', err);
       } finally {
@@ -254,13 +257,13 @@ export default function CartPage() {
                     <span className="font-medium">{totals.subtotal.toFixed(2)} zł</span>
                   </div>
                   <div className="flex justify-between text-sm sm:text-base">
-                    <span className="text-gray-600">Dostawa od</span>
+                    <span className="text-gray-600">Szacowana dostawa</span>
                     {loadingShipping ? (
                       <span className="text-gray-400">Obliczanie...</span>
                     ) : totals.shipping > 0 ? (
                       <span className="font-medium">{totals.shipping.toFixed(2)} zł</span>
                     ) : (
-                      <span className="text-gray-500 text-xs sm:text-sm">Wybierz przy zamówieniu</span>
+                      <span className="text-gray-500 text-xs sm:text-sm">obliczana przy zamówieniu</span>
                     )}
                   </div>
                   {Object.keys(shippingPrices).length > 1 && (
@@ -287,7 +290,12 @@ export default function CartPage() {
                       : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                   }`}
                   onClick={(e) => {
-                    if (selectedItems.size === 0) e.preventDefault();
+                    if (selectedItems.size === 0) {
+                      e.preventDefault();
+                    } else {
+                      // Save selected items to localStorage for checkout
+                      localStorage.setItem('checkoutSelectedItems', JSON.stringify(Array.from(selectedItems)));
+                    }
                   }}
                 >
                   Dostawa i płatność

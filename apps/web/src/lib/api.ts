@@ -932,6 +932,8 @@ export interface CheckoutRequest {
   paymentMethod: string;
   customerNotes?: string;
   acceptTerms: boolean;
+  // Selected cart item IDs (Empik-style partial cart checkout)
+  selectedItemIds?: string[];
   packageShipping?: PackageShippingRequest[];
   // Guest checkout fields
   guestEmail?: string;
@@ -1062,6 +1064,8 @@ export const checkoutApi = {
           isPaczkomatAvailable: boolean;
           isInPostOnly: boolean;
           isCourierOnly: boolean;
+          warehouseValue: number;
+          hasFreeShipping: boolean;
         };
         shippingMethods: Array<{
           id: string;
