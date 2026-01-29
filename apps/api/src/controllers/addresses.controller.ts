@@ -18,12 +18,12 @@ const sanitizeText = (text: string): string => {
  */
 const nameSchema = z
   .string()
-  .min(1, 'Name is required')
-  .max(100, 'Name is too long')
+  .min(1, 'Imię/Nazwisko jest wymagane')
+  .max(100, 'Imię/Nazwisko jest za długie')
   .transform(sanitizeText)
   .refine(
     (name) => /^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s\-']+$/.test(name),
-    'Name contains invalid characters'
+    'Imię/Nazwisko zawiera nieprawidłowe znaki'
   );
 
 /**
@@ -31,8 +31,8 @@ const nameSchema = z
  */
 const streetSchema = z
   .string()
-  .min(1, 'Street is required')
-  .max(200, 'Street is too long')
+  .min(1, 'Ulica jest wymagana')
+  .max(200, 'Ulica jest za długa')
   .transform(sanitizeText);
 
 /**
@@ -40,12 +40,12 @@ const streetSchema = z
  */
 const citySchema = z
   .string()
-  .min(1, 'City is required')
-  .max(100, 'City is too long')
+  .min(1, 'Miasto jest wymagane')
+  .max(100, 'Miasto jest za długie')
   .transform(sanitizeText)
   .refine(
     (city) => /^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s-]+$/.test(city),
-    'City contains invalid characters'
+    'Miasto zawiera nieprawidłowe znaki'
   );
 
 /**
@@ -53,11 +53,11 @@ const citySchema = z
  */
 const postalCodeSchema = z
   .string()
-  .min(1, 'Postal code is required')
-  .max(10, 'Postal code is too long')
+  .min(1, 'Kod pocztowy jest wymagany')
+  .max(10, 'Kod pocztowy jest za długi')
   .refine(
     (code) => /^[0-9]{2}-[0-9]{3}$/.test(code) || /^[0-9]{5}$/.test(code),
-    'Invalid postal code format (expected XX-XXX)'
+    'Nieprawidłowy format kodu pocztowego (oczekiwany XX-XXX)'
   );
 
 /**
@@ -76,7 +76,7 @@ const phoneSchema = z
       // Accept formats: 123456789, +48123456789, 48123456789
       return /^(\+?48)?[0-9]{9}$/.test(cleaned);
     },
-    'Invalid phone number format'
+    'Nieprawidłowy format numeru telefonu'
   );
 
 /**
@@ -84,7 +84,7 @@ const phoneSchema = z
  */
 const countrySchema = z
   .string()
-  .length(2, 'Country must be 2-letter code')
+  .length(2, 'Kod kraju musi mieć 2 litery')
   .toUpperCase()
   .optional()
   .default('PL');
@@ -134,7 +134,7 @@ export const addressesController = {
       const userId = req.user?.userId;
       
       if (!userId) {
-        return res.status(401).json({ message: 'Unauthorized' });
+        return res.status(401).json({ message: 'Brak autoryzacji' });
       }
 
       const addresses = await addressesService.getUserAddresses(userId);
@@ -153,17 +153,17 @@ export const addressesController = {
       const { id } = req.params;
       
       if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(401).json({ error: 'Brak autoryzacji' });
       }
 
       if (!isValidCUID(id)) {
-        return res.status(400).json({ error: 'Invalid address ID format' });
+        return res.status(400).json({ error: 'Nieprawidlowy format ID adresu' });
       }
 
       const address = await addressesService.getById(id, userId);
       
       if (!address) {
-        return res.status(404).json({ message: 'Address not found' });
+        return res.status(404).json({ message: 'Adres nie zostal znaleziony' });
       }
 
       res.json(address);
@@ -180,7 +180,7 @@ export const addressesController = {
       const userId = req.user?.userId;
       
       if (!userId) {
-        return res.status(401).json({ message: 'Unauthorized' });
+        return res.status(401).json({ message: 'Brak autoryzacji' });
       }
 
       const address = await addressesService.getDefaultAddress(userId);
@@ -198,14 +198,14 @@ export const addressesController = {
       const userId = req.user?.userId;
       
       if (!userId) {
-        return res.status(401).json({ message: 'Unauthorized' });
+        return res.status(401).json({ message: 'Brak autoryzacji' });
       }
 
       const validation = createAddressSchema.safeParse(req.body);
       
       if (!validation.success) {
         return res.status(400).json({
-          message: 'Validation error',
+          message: 'Blad walidacji',
           errors: validation.error.flatten().fieldErrors,
         });
       }
@@ -231,18 +231,18 @@ export const addressesController = {
       const { id } = req.params;
       
       if (!userId) {
-        return res.status(401).json({ message: 'Unauthorized' });
+        return res.status(401).json({ message: 'Brak autoryzacji' });
       }
 
       if (!isValidCUID(id)) {
-        return res.status(400).json({ error: 'Invalid address ID format' });
+        return res.status(400).json({ error: 'Nieprawidlowy format ID adresu' });
       }
 
       const validation = updateAddressSchema.safeParse(req.body);
       
       if (!validation.success) {
         return res.status(400).json({
-          error: 'Validation error',
+          error: 'Blad walidacji',
           errors: validation.error.flatten().fieldErrors,
         });
       }
@@ -252,8 +252,8 @@ export const addressesController = {
 
       res.json(address);
     } catch (error: any) {
-      if (error.message === 'Address not found') {
-        return res.status(404).json({ error: 'Address not found' });
+      if (error.message === 'Adres nie zostal znaleziony') {
+        return res.status(404).json({ error: 'Adres nie zostal znaleziony' });
       }
       next(error);
     }
@@ -268,18 +268,18 @@ export const addressesController = {
       const { id } = req.params;
       
       if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(401).json({ error: 'Brak autoryzacji' });
       }
 
       if (!isValidCUID(id)) {
-        return res.status(400).json({ error: 'Invalid address ID format' });
+        return res.status(400).json({ error: 'Nieprawidlowy format ID adresu' });
       }
 
       await addressesService.delete(id, userId);
-      res.json({ success: true, message: 'Address deleted' });
+      res.json({ success: true, message: 'Adres zostal usuniety' });
     } catch (error: any) {
-      if (error.message === 'Address not found') {
-        return res.status(404).json({ error: 'Address not found' });
+      if (error.message === 'Adres nie zostal znaleziony') {
+        return res.status(404).json({ error: 'Adres nie zostal znaleziony' });
       }
       next(error);
     }
@@ -294,18 +294,18 @@ export const addressesController = {
       const { id } = req.params;
       
       if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(401).json({ error: 'Brak autoryzacji' });
       }
 
       if (!isValidCUID(id)) {
-        return res.status(400).json({ error: 'Invalid address ID format' });
+        return res.status(400).json({ error: 'Nieprawidlowy format ID adresu' });
       }
 
       const address = await addressesService.setDefault(id, userId);
       res.json(address);
     } catch (error: any) {
-      if (error.message === 'Address not found') {
-        return res.status(404).json({ error: 'Address not found' });
+      if (error.message === 'Adres nie zostal znaleziony') {
+        return res.status(404).json({ error: 'Adres nie zostal znaleziony' });
       }
       next(error);
     }
