@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { checkoutApi, addressesApi, ApiClientError } from '@/lib/api';
+import { checkoutApi, addressesApi, ApiClientError, CartItem } from '@/lib/api';
 import CheckoutSteps from './components/CheckoutSteps';
 import CheckoutAuthChoice from './components/CheckoutAuthChoice';
 import AddressForm from './components/AddressForm';
@@ -106,7 +106,7 @@ function CheckoutPageContent() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   
   // Filtered items based on selection from cart page (Empik-style)
-  const [checkoutItems, setCheckoutItems] = useState<typeof cart.items>([]);
+  const [checkoutItems, setCheckoutItems] = useState<CartItem[]>([]);
   
   // Filter cart items based on localStorage selection
   useEffect(() => {
