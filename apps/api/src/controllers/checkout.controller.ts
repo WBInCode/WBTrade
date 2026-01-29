@@ -232,6 +232,11 @@ export async function getShippingPerPackage(req: Request, res: Response): Promis
           wholesaler: pkgOpt.package.wholesaler,
           items: pkgOpt.package.items,
           isPaczkomatAvailable: pkgOpt.package.isPaczkomatAvailable,
+          isInPostOnly: pkgOpt.package.isInPostOnly,
+          isCourierOnly: pkgOpt.package.isCourierOnly,
+          warehouseValue: pkgOpt.package.warehouseValue,
+          hasFreeShipping: pkgOpt.package.hasFreeShipping,
+          paczkomatPackageCount: pkgOpt.package.paczkomatPackageCount,
         },
         shippingMethods: pkgOpt.shippingMethods.map(method => ({
           id: method.id,
@@ -327,6 +332,8 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       customerNotes,
       acceptTerms,
       packageShipping,
+      // Selected cart item IDs (Empik-style partial cart checkout)
+      selectedItemIds,
       // Guest checkout fields
       guestEmail,
       guestFirstName,
@@ -391,6 +398,20 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       return;
     }
 
+    // Filter cart items if selectedItemIds is provided (Empik-style partial checkout)
+    let cartItemsToCheckout = cart.items;
+    if (selectedItemIds && Array.isArray(selectedItemIds) && selectedItemIds.length > 0) {
+      const selectedSet = new Set(selectedItemIds);
+      cartItemsToCheckout = cart.items.filter((item: any) => selectedSet.has(item.id));
+      console.log(`📦 Partial checkout: ${cartItemsToCheckout.length}/${cart.items.length} items selected`);
+      
+      if (cartItemsToCheckout.length === 0) {
+        console.log('❌ No selected items found in cart');
+        res.status(400).json({ message: 'No selected items found in cart' });
+        return;
+      }
+    }
+
     // Calculate totals
     interface CartItemData {
       variantId: string;
@@ -398,7 +419,7 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       unitPrice: number;
     }
     
-    const items: CartItemData[] = cart.items.map((item) => ({
+    const items: CartItemData[] = cartItemsToCheckout.map((item) => ({
       variantId: item.variant.id,
       quantity: item.quantity,
       unitPrice: Number(item.variant.price),
@@ -408,7 +429,7 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
     
     // Get shipping rate using the new calculator based on product tags
     // Convert cart items to format needed by shipping calculator
-    const cartItemsForShipping = cart.items.map(item => ({
+    const cartItemsForShipping = cartItemsToCheckout.map(item => ({
       variantId: item.variant.id,
       quantity: item.quantity,
     }));
@@ -517,8 +538,18 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       guestPhone: isGuestCheckout ? guestPhone : undefined,
     });
 
-    // Clear cart after order creation
-    await cartService.clearCart(cart.id);
+    // Clear only ordered items from cart (if partial checkout)
+    // If all items were selected, clear entire cart
+    if (selectedItemIds && Array.isArray(selectedItemIds) && selectedItemIds.length > 0 && cartItemsToCheckout.length < cart.items.length) {
+      // Remove only selected items - leave others in cart
+      for (const item of cartItemsToCheckout) {
+        await cartService.removeItem(cart.id, item.id);
+      }
+      console.log(`🛒 Removed ${cartItemsToCheckout.length} ordered items from cart, ${cart.items.length - cartItemsToCheckout.length} items remaining`);
+    } else {
+      // Clear entire cart
+      await cartService.clearCart(cart.id);
+    }
 
     // Handle payment
     if (paymentMethod === 'cod') {
