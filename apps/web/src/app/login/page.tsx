@@ -94,7 +94,14 @@ export default function LoginPage() {
                 alt="WBTrade"
                 width={120}
                 height={40}
-                className="h-10 w-auto"
+                className="h-10 w-auto dark:hidden"
+              />
+              <Image
+                src="/images/wb-trade-bez-tla.png"
+                alt="WBTrade"
+                width={120}
+                height={40}
+                className="h-10 w-auto hidden dark:block"
               />
             </Link>
             <Link 
