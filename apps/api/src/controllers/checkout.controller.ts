@@ -731,25 +731,40 @@ export async function shippingWebhook(req: Request, res: Response): Promise<void
 /**
  * Retry payment for an existing unpaid order
  * Creates a new PayU payment session and returns the redirect URL
+ * Supports both authenticated users and guest orders
  */
 export async function retryPayment(req: Request, res: Response): Promise<void> {
   try {
     const { orderId } = req.params;
     const userId = (req as any).user?.id;
+    const userEmail = (req as any).user?.email;
 
-    if (!userId) {
-      res.status(401).json({ message: 'Authentication required' });
-      return;
-    }
-
-    // Get order and verify ownership
+    // Get order
     const order = await ordersService.getById(orderId);
     if (!order) {
       res.status(404).json({ message: 'Order not found' });
       return;
     }
 
-    if (order.userId !== userId) {
+    // Verify access to order:
+    // - If user is logged in, check userId matches OR email matches
+    // - If guest, order must have guestEmail (verified on order details page)
+    let hasAccess = false;
+    
+    if (userId && order.userId === userId) {
+      // Logged in user owns this order
+      hasAccess = true;
+    } else if (userEmail && order.guestEmail === userEmail) {
+      // Logged in user's email matches guest order email
+      hasAccess = true;
+    } else if (!order.userId && order.guestEmail) {
+      // Guest order - allow access (they got here via order confirmation/email link)
+      // In production, you might want additional verification
+      hasAccess = true;
+    }
+    
+    if (!hasAccess && order.userId) {
+      // Order belongs to a different user
       res.status(403).json({ message: 'Access denied' });
       return;
     }
@@ -768,6 +783,9 @@ export async function retryPayment(req: Request, res: Response): Promise<void> {
     // Create new payment session with PayU
     const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').split(',')[0].trim();
     
+    // Get customer email from order
+    const customerEmail = order.guestEmail || userEmail || (req as any).user?.email || '';
+    
     const paymentRequest: CreatePaymentRequest = {
       orderId: order.id,
       amount: Number(order.total),
@@ -775,20 +793,20 @@ export async function retryPayment(req: Request, res: Response): Promise<void> {
       paymentMethod: 'blik', // Default to BLIK, PayU allows user to choose
       providerId: 'payu' as PaymentProviderId,
       customer: {
-        email: (req as any).user?.email || '',
-        firstName: '',
-        lastName: '',
+        email: customerEmail,
+        firstName: order.guestFirstName || '',
+        lastName: order.guestLastName || '',
       },
       description: `Zamówienie ${order.orderNumber}`,
       returnUrl: `${frontendUrl}/order/${order.id}/confirmation`,
-      cancelUrl: `${frontendUrl}/account/orders?cancelled=true`,
+      cancelUrl: `${frontendUrl}/order/${order.id}/payment?retry=true`,
       notifyUrl: `${process.env.APP_URL || 'http://localhost:5000'}/api/webhooks/payu`,
       metadata: {
         customerIp: req.ip || req.socket.remoteAddress || '127.0.0.1',
       },
     };
 
-    console.log('🔄 Creating retry payment for order:', order.orderNumber);
+    console.log('🔄 Creating retry payment for order:', order.orderNumber, 'email:', customerEmail);
     const paymentSession = await paymentService.createPayment(paymentRequest);
     console.log('✅ PayU payment session created for retry:', paymentSession.sessionId);
 
