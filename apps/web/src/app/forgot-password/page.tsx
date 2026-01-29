@@ -117,6 +117,7 @@ export default function ForgotPasswordPage() {
                   <div className="text-left">
                     <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Link jest ważny przez 1 godzinę</p>
                     <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">Sprawdź też folder spam jeśli nie widzisz wiadomości.</p>
+                  </div>
                 </div>
               </div>
 
