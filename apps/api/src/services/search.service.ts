@@ -4,12 +4,21 @@ import { getProductsIndex, PRODUCTS_INDEX, meiliClient } from '../lib/meilisearc
 // Tags that require "produkt w paczce" tag to be visible
 const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
 const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce|produkty?\s*w\s*paczce/i;
+// Tags that hide products completely
+const HIDDEN_TAGS = ['błąd zdjęcia', 'błąd zdjęcia '];
 
 /**
- * Check if product should be visible based on delivery tags
+ * Check if product should be visible based on delivery tags and error tags
  * Products with "Paczkomaty i Kurier" must also have "produkt w paczce" tag
+ * Products with "błąd zdjęcia" are always hidden
  */
 function shouldProductBeVisible(tags: string[]): boolean {
+  // Hide products with error tags
+  const hasHiddenTag = tags.some((tag: string) => 
+    HIDDEN_TAGS.some(ht => tag.toLowerCase() === ht.toLowerCase())
+  );
+  if (hasHiddenTag) return false;
+  
   const hasPaczkomatTag = tags.some((tag: string) => 
     PACZKOMAT_TAGS.some(pt => tag.toLowerCase() === pt.toLowerCase())
   );
