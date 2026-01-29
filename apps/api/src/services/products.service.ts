@@ -283,8 +283,8 @@ export class ProductsService {
           ...meilisearchResults.products.filter(p => !skuIds.includes(p.id)),
         ];
         
-        // Filter products: "Paczkomaty i Kurier" requires "produkt w paczce" tag
-        combinedProducts = filterProductsWithPackageInfo(combinedProducts);
+        // DISABLED - Filter products: "Paczkomaty i Kurier" requires "produkt w paczce" tag
+        // combinedProducts = filterProductsWithPackageInfo(combinedProducts);
         combinedProducts = combinedProducts.slice(0, limit);
         
         return {
@@ -454,8 +454,9 @@ export class ProductsService {
       transformedProducts = filterOldZeroStockProducts(transformedProducts, 14);
     }
     
-    // Filter products: "Paczkomaty i Kurier" requires "produkt w paczce" tag
-    transformedProducts = filterProductsWithPackageInfo(transformedProducts);
+    // TEMPORARILY DISABLED - Filter products: "Paczkomaty i Kurier" requires "produkt w paczce" tag
+    // TODO: Re-enable when all products have proper package tags from Baselinker
+    // transformedProducts = filterProductsWithPackageInfo(transformedProducts);
 
     return {
       products: transformedProducts,
@@ -622,8 +623,8 @@ export class ProductsService {
         transformedProducts = filterOldZeroStockProducts(transformedProducts, 14);
       }
       
-      // Filter products: "Paczkomaty i Kurier" requires "produkt w paczce" tag
-      transformedProducts = filterProductsWithPackageInfo(transformedProducts);
+      // DISABLED - Filter products: "Paczkomaty i Kurier" requires "produkt w paczce" tag
+      // transformedProducts = filterProductsWithPackageInfo(transformedProducts);
 
       return {
         products: transformedProducts,
@@ -747,8 +748,8 @@ export class ProductsService {
       transformedProducts = filterOldZeroStockProducts(transformedProducts, 14);
     }
     
-    // Filter products: "Paczkomaty i Kurier" requires "produkt w paczce" tag
-    transformedProducts = filterProductsWithPackageInfo(transformedProducts);
+    // DISABLED - Filter products: "Paczkomaty i Kurier" requires "produkt w paczce" tag
+    // transformedProducts = filterProductsWithPackageInfo(transformedProducts);
 
     return {
       products: transformedProducts,
@@ -1400,8 +1401,9 @@ export class ProductsService {
       }));
 
     // Combine: manual products first, then automatic bestsellers
-    // Filter out products with "Paczkomaty i Kurier" but no "produkt w paczce" tag
-    return filterProductsWithPackageInfo([...manualProducts, ...automaticBestsellers]);
+    // DISABLED - Filter out products with "Paczkomaty i Kurier" but no "produkt w paczce" tag
+    // return filterProductsWithPackageInfo([...manualProducts, ...automaticBestsellers]);
+    return [...manualProducts, ...automaticBestsellers];
   }
 
   /**
@@ -1549,8 +1551,9 @@ export class ProductsService {
     }
 
     // Combine: manual products first, then diverse automatic
-    // Filter out products with "Paczkomaty i Kurier" but no "produkt w paczce" tag
-    return filterProductsWithPackageInfo([...manualProducts, ...transformProducts(picked)]);
+    // DISABLED - Filter out products with "Paczkomaty i Kurier" but no "produkt w paczce" tag
+    // return filterProductsWithPackageInfo([...manualProducts, ...transformProducts(picked)]);
+    return [...manualProducts, ...transformProducts(picked)];
   }
 
   /**
@@ -1684,8 +1687,9 @@ export class ProductsService {
     }
 
     // Combine: manual products first, then automatic
-    // Filter out products with "Paczkomaty i Kurier" but no "produkt w paczce" tag
-    return filterProductsWithPackageInfo([...manualProducts, ...transformProducts(automaticProducts)]);
+    // DISABLED - Filter out products with "Paczkomaty i Kurier" but no "produkt w paczce" tag
+    // return filterProductsWithPackageInfo([...manualProducts, ...transformProducts(automaticProducts)]);
+    return [...manualProducts, ...transformProducts(automaticProducts)];
   }
 
   /**
@@ -1772,8 +1776,9 @@ export class ProductsService {
     });
 
     // Combine: manual products first, then automatic new products
-    // Filter out products with "Paczkomaty i Kurier" but no "produkt w paczce" tag
-    return filterProductsWithPackageInfo([...manualProducts, ...transformProducts(automaticProducts)]);
+    // DISABLED - Filter out products with "Paczkomaty i Kurier" but no "produkt w paczce" tag
+    // return filterProductsWithPackageInfo([...manualProducts, ...transformProducts(automaticProducts)]);
+    return [...manualProducts, ...transformProducts(automaticProducts)];
   }
 
   /**
@@ -1825,7 +1830,8 @@ export class ProductsService {
     });
 
     return {
-      products: filterProductsWithPackageInfo(transformProducts(products)),
+      // DISABLED - filterProductsWithPackageInfo
+      products: transformProducts(products),
       wholesaler: this.getWholesalerDisplayName(wholesaler),
     };
   }

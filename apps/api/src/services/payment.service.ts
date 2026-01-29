@@ -238,13 +238,33 @@ export class PaymentService {
   ): Promise<PaymentResult> {
     const provider = this.getProvider(providerId);
 
+    console.log(`[PaymentService] Processing ${providerId} webhook`);
+    console.log(`[PaymentService] Payload length: ${payload.length}`);
+    console.log(`[PaymentService] Signature: ${signature?.substring(0, 50)}...`);
+
     // Validate webhook signature
-    if (!provider.validateWebhook(payload, signature)) {
+    const isValid = provider.validateWebhook(payload, signature);
+    console.log(`[PaymentService] Signature valid: ${isValid}`);
+    
+    if (!isValid) {
+      console.error(`[PaymentService] Invalid webhook signature!`);
+      console.error(`[PaymentService] Payload: ${payload.substring(0, 200)}...`);
       throw new Error('Invalid webhook signature');
     }
 
     const data = JSON.parse(payload);
+    console.log(`[PaymentService] Webhook data:`, {
+      orderId: data.order?.orderId,
+      extOrderId: data.order?.extOrderId,
+      status: data.order?.status,
+    });
+    
     const result = await provider.processWebhook(data);
+    console.log(`[PaymentService] Webhook result:`, {
+      orderId: result.orderId,
+      status: result.status,
+      paymentMethodUsed: result.paymentMethodUsed,
+    });
 
     // Update order payment status
     await this.updateOrderPaymentStatus(result);
@@ -384,18 +404,35 @@ export class PaymentService {
           }
         }
         
-        // Sync to Baselinker asynchronously (don't block payment confirmation)
-        baselinkerOrdersService.syncOrderToBaselinker(order.id)
-          .then((syncResult) => {
-            if (syncResult.success) {
-              console.log(`[PaymentService] Order ${order.id} synced to Baselinker (BL ID: ${syncResult.baselinkerOrderId})`);
-            } else {
-              console.error(`[PaymentService] Failed to sync order ${order.id} to Baselinker:`, syncResult.error);
-            }
-          })
-          .catch((err) => {
-            console.error(`[PaymentService] Baselinker sync error for order ${order.id}:`, err);
-          });
+        // Handle Baselinker sync based on whether order is already synced
+        if (order.baselinkerOrderId) {
+          // Order already synced - update status to PAID
+          console.log(`[PaymentService] Order ${order.id} already in Baselinker (BL ID: ${order.baselinkerOrderId}), updating status`);
+          baselinkerOrdersService.updateBaselinkerOrderStatus(order.id)
+            .then((result) => {
+              if (result.success) {
+                console.log(`[PaymentService] Baselinker order ${order.baselinkerOrderId} status updated to PAID`);
+              } else {
+                console.error(`[PaymentService] Failed to update Baselinker status:`, result.error);
+              }
+            })
+            .catch((err) => {
+              console.error(`[PaymentService] Baselinker status update error:`, err);
+            });
+        } else {
+          // Order not synced yet - sync now (with PAID status)
+          baselinkerOrdersService.syncOrderToBaselinker(order.id)
+            .then((syncResult) => {
+              if (syncResult.success) {
+                console.log(`[PaymentService] Order ${order.id} synced to Baselinker (BL ID: ${syncResult.baselinkerOrderId})`);
+              } else {
+                console.error(`[PaymentService] Failed to sync order ${order.id} to Baselinker:`, syncResult.error);
+              }
+            })
+            .catch((err) => {
+              console.error(`[PaymentService] Baselinker sync error for order ${order.id}:`, err);
+            });
+        }
       }
     } else {
       console.error(`Order ${result.orderId} not found for payment update`);

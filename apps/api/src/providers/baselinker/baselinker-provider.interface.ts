@@ -153,6 +153,56 @@ export interface BaselinkerAddOrderResponse {
   order_id: number;
 }
 
+export interface BaselinkerSetOrderStatusRequest {
+  order_id: number;
+  status_id: number;
+}
+
+export interface BaselinkerSetOrderStatusResponse {
+  order_id: number;
+  status_id: number;
+}
+
+export interface BaselinkerSetOrderFieldsRequest {
+  order_id: number;
+  admin_comments?: string;
+  user_comments?: string;
+  payment_method?: string;
+  payment_method_cod?: boolean;
+  email?: string;
+  phone?: string;
+  user_login?: string;
+  delivery_method?: string;
+  delivery_price?: number;
+  delivery_fullname?: string;
+  delivery_company?: string;
+  delivery_address?: string;
+  delivery_city?: string;
+  delivery_postcode?: string;
+  delivery_country_code?: string;
+  delivery_point_id?: string;
+  delivery_point_name?: string;
+  delivery_point_address?: string;
+  delivery_point_postcode?: string;
+  delivery_point_city?: string;
+  invoice_fullname?: string;
+  invoice_company?: string;
+  invoice_nip?: string;
+  invoice_address?: string;
+  invoice_city?: string;
+  invoice_postcode?: string;
+  invoice_country_code?: string;
+  want_invoice?: boolean;
+  extra_field_1?: string;
+  extra_field_2?: string;
+  pick_state?: number;
+  pack_state?: number;
+}
+
+export interface BaselinkerSetOrderFieldsResponse {
+  order_id: number;
+}
+
 export interface BaselinkerUpdateStockRequest {
   inventory_id: number;
   products: Record<string, Record<string, number>>; // { product_id: { warehouse_id: stock } }
@@ -256,6 +306,19 @@ export interface IBaselinkerProvider {
    * @param orderData - Order data to add
    */
   addOrder(orderData: BaselinkerAddOrderRequest): Promise<BaselinkerAddOrderResponse>;
+
+  /**
+   * Set order status in Baselinker
+   * @param orderId - Baselinker order ID
+   * @param statusId - New status ID
+   */
+  setOrderStatus(orderId: number, statusId: number): Promise<BaselinkerSetOrderStatusResponse>;
+
+  /**
+   * Update order fields in Baselinker
+   * @param data - Fields to update
+   */
+  setOrderFields(data: BaselinkerSetOrderFieldsRequest): Promise<BaselinkerSetOrderFieldsResponse>;
 
   /**
    * Update stock levels for products in inventory
