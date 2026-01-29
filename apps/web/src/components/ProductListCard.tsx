@@ -9,6 +9,30 @@ import { useCart } from '../contexts/CartContext';
 // Placeholder SVG as data URI
 const PLACEHOLDER_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect fill='%23f3f4f6' width='400' height='400'/%3E%3Cpath fill='%23d1d5db' d='M160 150h80v100h-80z'/%3E%3Ccircle fill='%23d1d5db' cx='180' cy='130' r='20'/%3E%3Cpath fill='%23e5e7eb' d='M120 250l60-80 40 50 40-30 60 60v50H120z'/%3E%3C/svg%3E";
 
+// Mapowanie magazynów na miejscowości (zgodnie z koszykiem)
+const WAREHOUSE_LOCATIONS: Record<string, string> = {
+  'leker': 'Chynów',
+  'hp': 'Zielona Góra',
+  'btp': 'Chotów',
+};
+
+// Funkcja do określenia magazynu na podstawie produktu
+function getWarehouseLocation(product: Product): string | null {
+  // Sprawdź baselinkerProductId
+  const blId = (product as any).baselinkerProductId?.toLowerCase() || '';
+  if (blId.startsWith('leker-')) return WAREHOUSE_LOCATIONS['leker'];
+  if (blId.startsWith('hp-')) return WAREHOUSE_LOCATIONS['hp'];
+  if (blId.startsWith('btp-')) return WAREHOUSE_LOCATIONS['btp'];
+  
+  // Sprawdź SKU
+  const sku = product.sku?.toUpperCase() || '';
+  if (sku.startsWith('LEKER-')) return WAREHOUSE_LOCATIONS['leker'];
+  if (sku.startsWith('HP-')) return WAREHOUSE_LOCATIONS['hp'];
+  if (sku.startsWith('BTP-')) return WAREHOUSE_LOCATIONS['btp'];
+  
+  return null;
+}
+
 export interface ProductListCardProps {
   product: Product;
   showWishlist?: boolean;
@@ -36,6 +60,7 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
   const storeName = product.storeName || 'TopStore';
   const badge = product.badge as BadgeType | undefined;
   const deliveryInfo = product.deliveryInfo || 'Wysyłka w ciągu 24-72h';
+  const warehouseLocation = getWarehouseLocation(product);
 
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { addToCart } = useCart();
@@ -151,8 +176,17 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
             </div>
 
             {/* Delivery Info */}
-            <div className="flex items-center gap-2 mt-auto">
+            <div className="flex flex-col gap-0.5 mt-auto">
               <span className="text-sm text-green-600">{deliveryInfo}</span>
+              {warehouseLocation && (
+                <span className="text-xs text-gray-500 flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Magazyn {warehouseLocation}
+                </span>
+              )}
             </div>
 
             {/* Add to Cart Button */}
@@ -268,8 +302,17 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
           </div>
 
           {/* Delivery Info */}
-          <div className="flex items-center gap-2 mb-1 sm:mb-2 mt-auto">
+          <div className="flex flex-col gap-0.5 mb-1 sm:mb-2 mt-auto">
             <span className="text-[10px] sm:text-xs text-green-600">{deliveryInfo}</span>
+            {warehouseLocation && (
+              <span className="text-[9px] sm:text-[10px] text-gray-500 flex items-center gap-0.5">
+                <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Magazyn {warehouseLocation}
+              </span>
+            )}
           </div>
 
           {/* Add to Cart Button */}

@@ -8,7 +8,7 @@ import ProductListCard from '../../components/ProductListCard';
 import ProductListHeader from '../../components/ProductListHeader';
 import Pagination from '../../components/Pagination';
 import Breadcrumb from '../../components/Breadcrumb';
-import { CategoryFilter, PriceFilter, BrandFilter, SpecificationFilter } from '../../components/filters';
+import { CategoryFilter, PriceFilter, BrandFilter, SpecificationFilter, WarehouseFilter } from '../../components/filters';
 import { Product, productsApi, ProductFiltersResponse, categoriesApi } from '../../lib/api';
 import { cleanCategoryName } from '../../lib/categories';
 
@@ -60,6 +60,7 @@ function ProductsContent() {
   const minPrice = searchParams.get('minPrice');
   const maxPrice = searchParams.get('maxPrice');
   const brand = searchParams.get('brand');
+  const warehouse = searchParams.get('warehouse');
   const sort = searchParams.get('sort') || 'relevance';
   const tabFromUrl = searchParams.get('tab') || 'all';
 
@@ -155,6 +156,7 @@ function ProductsContent() {
             search: searchQuery || undefined,
             sort: sort as 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'newest',
             brand: brand || undefined,
+            warehouse: warehouse || undefined,
           });
           
           // Filter only discounted products
@@ -183,6 +185,7 @@ function ProductsContent() {
             search: searchQuery || undefined,
             sort: sortValue,
             brand: brand || undefined,
+            warehouse: warehouse || undefined,
             // Pass session seed for consistent random sorting (relevance)
             sessionSeed: sortValue === 'relevance' ? sessionSeedRef.current || undefined : undefined,
           });
@@ -200,7 +203,7 @@ function ProductsContent() {
       }
     }
     fetchProducts();
-  }, [currentPage, currentCategorySlug, minPrice, maxPrice, searchQuery, sort, brand, activeTab]);
+  }, [currentPage, currentCategorySlug, minPrice, maxPrice, searchQuery, sort, brand, warehouse, activeTab]);
 
   // Handle tab change
   const handleTabChange = (tab: string) => {
@@ -321,6 +324,7 @@ function ProductsContent() {
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <div className="bg-white rounded-lg border border-gray-200 p-4 sticky top-24">
               <CategoryFilter />
+              <WarehouseFilter warehouseCounts={filters?.warehouseCounts} />
               <PriceFilter priceRange={filters?.priceRange} />
               <BrandFilter brands={filters?.brands || []} />
               

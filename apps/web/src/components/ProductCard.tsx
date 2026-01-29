@@ -16,6 +16,36 @@ const CartIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+// Location icon
+const LocationIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+  </svg>
+);
+
+// Warehouse locations mapping
+const WAREHOUSE_LOCATIONS: Record<string, string> = {
+  'leker': 'Chynów',
+  'hp': 'Zielona Góra',
+  'btp': 'Chotów',
+};
+
+function getWarehouseLocation(product: Product): string | null {
+  const blId = (product as any).baselinkerProductId?.toLowerCase() || '';
+  if (blId.startsWith('leker-')) return WAREHOUSE_LOCATIONS['leker'];
+  if (blId.startsWith('hp-')) return WAREHOUSE_LOCATIONS['hp'];
+  if (blId.startsWith('btp-')) return WAREHOUSE_LOCATIONS['btp'];
+  
+  // Fallback to SKU prefix
+  const sku = product.sku?.toUpperCase() || '';
+  if (sku.startsWith('LEKER-')) return WAREHOUSE_LOCATIONS['leker'];
+  if (sku.startsWith('HP-')) return WAREHOUSE_LOCATIONS['hp'];
+  if (sku.startsWith('BTP-')) return WAREHOUSE_LOCATIONS['btp'];
+  
+  return null;
+}
+
 export interface ProductCardProps {
   product: Product;
   showDelivery?: boolean;
@@ -34,6 +64,7 @@ export default function ProductCard({ product, showDelivery = false, showWishlis
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { addToCart } = useCart();
   const inWishlist = isInWishlist(product.id);
+  const warehouseLocation = getWarehouseLocation(product);
 
   const handleWishlistClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -139,9 +170,17 @@ export default function ProductCard({ product, showDelivery = false, showWishlis
           </div>
 
           {/* Delivery info */}
-          <p className="text-[10px] sm:text-xs text-primary-600 mt-1 sm:mt-1.5">
-            Wysyłka 24-72h
-          </p>
+          <div className="flex flex-col gap-0.5 mt-1 sm:mt-1.5">
+            <p className="text-[10px] sm:text-xs text-primary-600">
+              Wysyłka 24-72h
+            </p>
+            {warehouseLocation && (
+              <span className="text-[9px] sm:text-[10px] text-gray-500 flex items-center gap-0.5">
+                <LocationIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                Magazyn {warehouseLocation}
+              </span>
+            )}
+          </div>
         </div>
       </Link>
 
