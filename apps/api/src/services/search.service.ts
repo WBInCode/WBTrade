@@ -6,18 +6,29 @@ const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
 const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce|produkty?\s*w\s*paczce/i;
 // Tags that hide products completely
 const HIDDEN_TAGS = ['błąd zdjęcia', 'błąd zdjęcia '];
+// Image domains that block hotlinking - products with these images are hidden
+const BLOCKED_IMAGE_DOMAINS = ['b2b.leker.pl'];
 
 /**
- * Check if product should be visible based on delivery tags and error tags
+ * Check if product should be visible based on delivery tags, error tags, and image URL
  * Products with "Paczkomaty i Kurier" must also have "produkt w paczce" tag
  * Products with "błąd zdjęcia" are always hidden
+ * Products with images from blocked domains are hidden
  */
-function shouldProductBeVisible(tags: string[]): boolean {
+function shouldProductBeVisible(tags: string[], imageUrl?: string | null): boolean {
   // Hide products with error tags
   const hasHiddenTag = tags.some((tag: string) => 
     HIDDEN_TAGS.some(ht => tag.toLowerCase() === ht.toLowerCase())
   );
   if (hasHiddenTag) return false;
+  
+  // Hide products with images from blocked domains
+  if (imageUrl) {
+    const hasBlockedImage = BLOCKED_IMAGE_DOMAINS.some(domain => 
+      imageUrl.includes(domain)
+    );
+    if (hasBlockedImage) return false;
+  }
   
   const hasPaczkomatTag = tags.some((tag: string) => 
     PACZKOMAT_TAGS.some(pt => tag.toLowerCase() === pt.toLowerCase())
@@ -89,9 +100,9 @@ export class SearchService {
       });
       const tagsMap = new Map(productsWithTags.map(p => [p.id, p.tags]));
 
-      // Filter products based on visibility rules
+      // Filter products based on visibility rules (including image URL check)
       const visibleHits = results.hits
-        .filter(hit => shouldProductBeVisible(tagsMap.get(hit.id) || []))
+        .filter(hit => shouldProductBeVisible(tagsMap.get(hit.id) || [], hit.image))
         .slice(0, limit);
 
       return {
@@ -141,8 +152,10 @@ export class SearchService {
       take: 100, // Fetch more to account for filtering
     });
 
-    // Filter products based on visibility rules
-    const visibleProducts = products.filter(p => shouldProductBeVisible(p.tags));
+    // Filter products based on visibility rules (including image URL check)
+    const visibleProducts = products.filter(p => 
+      shouldProductBeVisible(p.tags, p.images[0]?.url)
+    );
 
     return {
       products: visibleProducts.slice(0, 50),
@@ -175,10 +188,10 @@ export class SearchService {
       
       const tagsMap = new Map(productsWithTags.map(p => [p.id, p.tags]));
       
-      // Filter products based on delivery tag rules
+      // Filter products based on delivery tag rules and image URL
       const filteredHits = results.hits.filter(hit => {
         const tags = tagsMap.get(hit.id) || [];
-        return shouldProductBeVisible(tags);
+        return shouldProductBeVisible(tags, hit.image);
       }).slice(0, 8); // Limit to 8 after filtering
 
       // Also get category suggestions from Prisma
@@ -238,8 +251,10 @@ export class SearchService {
       take: 20, // Fetch more to account for filtering
     });
 
-    // Filter products based on delivery tag rules
-    const filteredProducts = products.filter(p => shouldProductBeVisible(p.tags)).slice(0, 8);
+    // Filter products based on delivery tag rules and image URL
+    const filteredProducts = products.filter(p => 
+      shouldProductBeVisible(p.tags, p.images[0]?.url)
+    ).slice(0, 8);
 
     const categories = await prisma.category.findMany({
       where: {
