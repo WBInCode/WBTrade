@@ -140,10 +140,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(data.user);
         return { success: true };
       } else {
-        return { success: false, error: data.message || 'Login failed' };
+        return { success: false, error: data.message || 'Logowanie nie powiodło się' };
       }
     } catch (error) {
-      return { success: false, error: 'Network error. Please try again.' };
+      return { success: false, error: 'Błąd sieci. Spróbuj ponownie.' };
     }
   };
 
@@ -164,10 +164,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(data.user);
         return { success: true, verificationToken: data.verificationToken };
       } else {
-        return { success: false, error: data.message || 'Registration failed' };
+        return { success: false, error: data.message || 'Rejestracja nie powiodła się' };
       }
     } catch (error) {
-      return { success: false, error: 'Network error. Please try again.' };
+      return { success: false, error: 'Błąd sieci. Spróbuj ponownie.' };
     }
   };
 

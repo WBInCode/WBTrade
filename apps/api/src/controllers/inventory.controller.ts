@@ -9,7 +9,7 @@ const stockQuerySchema = z.object({
 
 const movementSchema = z.object({
   variantId: z.string().min(1, 'Variant ID is required'),
-  quantity: z.number().positive('Quantity must be positive'),
+  quantity: z.number().positive('Ilosc musi byc dodatnia'),
   fromLocationId: z.string().optional(),
   toLocationId: z.string().optional(),
   reference: z.string().optional(),
@@ -19,7 +19,7 @@ const movementSchema = z.object({
 const adjustSchema = z.object({
   variantId: z.string().min(1, 'Variant ID is required'),
   locationId: z.string().min(1, 'Location ID is required'),
-  newQuantity: z.number().nonnegative('Quantity cannot be negative'),
+  newQuantity: z.number().nonnegative('Ilosc nie moze byc ujemna'),
   reference: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -27,7 +27,7 @@ const adjustSchema = z.object({
 const minimumSchema = z.object({
   variantId: z.string().min(1, 'Variant ID is required'),
   locationId: z.string().min(1, 'Location ID is required'),
-  minimum: z.number().nonnegative('Minimum cannot be negative'),
+  minimum: z.number().nonnegative('Minimum nie moze byc ujemne'),
 });
 
 /**
@@ -47,7 +47,7 @@ export async function getStock(req: Request, res: Response): Promise<void> {
     res.status(200).json({ stock });
   } catch (error) {
     console.error('Error getting stock:', error);
-    res.status(500).json({ message: 'Failed to get stock' });
+    res.status(500).json({ message: 'Nie udalo sie pobrac stanu magazynowego' });
   }
 }
 
@@ -64,7 +64,7 @@ export async function getAvailableStock(req: Request, res: Response): Promise<vo
     res.status(200).json({ variantId, available });
   } catch (error) {
     console.error('Error getting available stock:', error);
-    res.status(500).json({ message: 'Failed to get available stock' });
+    res.status(500).json({ message: 'Nie udalo sie pobrac dostepnego stanu' });
   }
 }
 
@@ -96,7 +96,7 @@ export async function reserveStock(req: Request, res: Response): Promise<void> {
       return;
     }
     console.error('Error reserving stock:', error);
-    res.status(500).json({ message: 'Failed to reserve stock' });
+    res.status(500).json({ message: 'Nie udalo sie zarezerwowac stanu' });
   }
 }
 
@@ -128,7 +128,7 @@ export async function releaseStock(req: Request, res: Response): Promise<void> {
       return;
     }
     console.error('Error releasing stock:', error);
-    res.status(500).json({ message: 'Failed to release stock' });
+    res.status(500).json({ message: 'Nie udalo sie zwolnic rezerwacji' });
   }
 }
 
@@ -165,7 +165,7 @@ export async function receiveGoods(req: Request, res: Response): Promise<void> {
       return;
     }
     console.error('Error receiving goods:', error);
-    res.status(500).json({ message: 'Failed to receive goods' });
+    res.status(500).json({ message: 'Nie udalo sie przyjac towaru' });
   }
 }
 
@@ -202,7 +202,7 @@ export async function shipGoods(req: Request, res: Response): Promise<void> {
       return;
     }
     console.error('Error shipping goods:', error);
-    res.status(500).json({ message: 'Failed to ship goods' });
+    res.status(500).json({ message: 'Nie udalo sie wyslac towaru' });
   }
 }
 
@@ -239,7 +239,7 @@ export async function transferStock(req: Request, res: Response): Promise<void> 
       return;
     }
     console.error('Error transferring stock:', error);
-    res.status(500).json({ message: 'Failed to transfer stock' });
+    res.status(500).json({ message: 'Nie udalo sie przeniesc stanu' });
   }
 }
 
@@ -276,7 +276,7 @@ export async function adjustStock(req: Request, res: Response): Promise<void> {
       return;
     }
     console.error('Error adjusting stock:', error);
-    res.status(500).json({ message: 'Failed to adjust stock' });
+    res.status(500).json({ message: 'Nie udalo sie skorygowac stanu' });
   }
 }
 
@@ -291,7 +291,7 @@ export async function getLowStock(req: Request, res: Response): Promise<void> {
     res.status(200).json({ items, count: items.length });
   } catch (error) {
     console.error('Error getting low stock:', error);
-    res.status(500).json({ message: 'Failed to get low stock items' });
+    res.status(500).json({ message: 'Nie udalo sie pobrac produktów z niskim stanem' });
   }
 }
 
@@ -312,7 +312,7 @@ export async function getMovementHistory(req: Request, res: Response): Promise<v
     res.status(200).json(result);
   } catch (error) {
     console.error('Error getting movement history:', error);
-    res.status(500).json({ message: 'Failed to get movement history' });
+    res.status(500).json({ message: 'Nie udalo sie pobrac historii ruchów' });
   }
 }
 
@@ -341,7 +341,7 @@ export async function setMinimumStock(req: Request, res: Response): Promise<void
     res.status(200).json({ message: 'Minimum stock level set successfully' });
   } catch (error) {
     console.error('Error setting minimum stock:', error);
-    res.status(500).json({ message: 'Failed to set minimum stock' });
+    res.status(500).json({ message: 'Nie udalo sie ustawic minimalnego stanu' });
   }
 }
 

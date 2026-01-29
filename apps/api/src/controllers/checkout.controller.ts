@@ -115,7 +115,7 @@ export async function calculateCartShipping(req: Request, res: Response): Promis
     
     if (!cart || !cart.items.length) {
       console.log('[calculateCartShipping] Cart is empty or not found');
-      res.status(400).json({ message: 'Cart is empty' });
+      res.status(400).json({ message: 'Koszyk jest pusty' });
       return;
     }
     
@@ -394,7 +394,7 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
     
     if (!cart || !cart.items.length) {
       console.log('‚ùå Cart is empty');
-      res.status(400).json({ message: 'Cart is empty' });
+      res.status(400).json({ message: 'Koszyk jest pusty' });
       return;
     }
 
@@ -745,7 +745,7 @@ export async function retryPayment(req: Request, res: Response): Promise<void> {
     const order = await ordersService.getById(orderId);
     if (!order) {
       console.log('‚ùå Order not found:', orderId);
-      res.status(404).json({ message: 'Order not found' });
+      res.status(404).json({ message: 'ZamÛwienie nie zostalo znalezione' });
       return;
     }
 
@@ -765,7 +765,7 @@ export async function retryPayment(req: Request, res: Response): Promise<void> {
 
     // Check if order is still unpaid
     if (order.paymentStatus === 'PAID') {
-      res.status(400).json({ message: 'Order is already paid' });
+      res.status(400).json({ message: 'ZamÛwienie zostalo juz oplacone' });
       return;
     }
 
@@ -831,7 +831,7 @@ export async function getOrderTracking(req: Request, res: Response): Promise<voi
     // Get order and verify ownership
     const order = await ordersService.getById(orderId);
     if (!order) {
-      res.status(404).json({ message: 'Order not found' });
+      res.status(404).json({ message: 'ZamÛwienie nie zostalo znalezione' });
       return;
     }
 

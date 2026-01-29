@@ -50,7 +50,7 @@ export async function authGuard(
 
     if (!authHeader) {
       res.status(401).json({
-        message: 'No authorization header provided',
+        message: 'Brak naglówka autoryzacji',
         code: 'NO_AUTH_HEADER',
       });
       return;
@@ -60,7 +60,7 @@ export async function authGuard(
 
     if (type !== 'Bearer' || !token) {
       res.status(401).json({
-        message: 'Invalid authorization format. Use: Bearer <token>',
+        message: 'Nieprawidlowy format autoryzacji',
         code: 'INVALID_AUTH_FORMAT',
       });
       return;
@@ -82,14 +82,14 @@ export async function authGuard(
     if (error instanceof Error) {
       if (error.message === 'Access token expired') {
         res.status(401).json({
-          message: 'Token expired',
+          message: 'Token wygasl',
           code: 'TOKEN_EXPIRED',
         });
         return;
       }
-      if (error.message === 'Token has been revoked') {
+      if (error.message === 'Token zostal uniewazniony') {
         res.status(401).json({
-          message: 'Token has been revoked',
+          message: 'Token zostal uniewazniony',
           code: 'TOKEN_REVOKED',
         });
         return;
@@ -106,7 +106,7 @@ export async function authGuard(
     );
 
     res.status(401).json({
-      message: 'Invalid token',
+      message: 'Nieprawidlowy token',
       code: 'INVALID_TOKEN',
     });
   }
@@ -158,7 +158,7 @@ export function roleGuard(...allowedRoles: UserRole[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
       res.status(401).json({
-        message: 'Authentication required',
+        message: 'Wymagane uwierzytelnienie',
         code: 'AUTH_REQUIRED',
       });
       return;
@@ -166,7 +166,7 @@ export function roleGuard(...allowedRoles: UserRole[]) {
 
     if (!allowedRoles.includes(req.user.role)) {
       res.status(403).json({
-        message: 'Insufficient permissions',
+        message: 'Niewystarczajace uprawnienia',
         code: 'FORBIDDEN',
         required: allowedRoles,
         current: req.user.role,
@@ -188,7 +188,7 @@ export async function emailVerifiedGuard(
 ): Promise<void> {
   if (!req.user) {
     res.status(401).json({
-      message: 'Authentication required',
+      message: 'Wymagane uwierzytelnienie',
       code: 'AUTH_REQUIRED',
     });
     return;
@@ -199,7 +199,7 @@ export async function emailVerifiedGuard(
 
   if (!user || !user.emailVerified) {
     res.status(403).json({
-      message: 'Email verification required',
+      message: 'Wymagana weryfikacja email',
       code: 'EMAIL_NOT_VERIFIED',
     });
     return;
@@ -237,7 +237,7 @@ export function csrfProtection(
 
   if (!csrfToken || csrfToken !== sessionCsrf) {
     res.status(403).json({
-      message: 'Invalid CSRF token',
+      message: 'Nieprawidlowy token CSRF',
       code: 'CSRF_INVALID',
     });
     return;

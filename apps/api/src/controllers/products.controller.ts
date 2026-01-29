@@ -143,7 +143,7 @@ export async function getProductById(req: Request, res: Response): Promise<void>
     const product = await productsService.getById(id);
 
     if (!product) {
-      res.status(404).json({ message: 'Product not found' });
+      res.status(404).json({ message: 'Produkt nie zostal znaleziony' });
       return;
     }
 
@@ -168,7 +168,7 @@ export async function getProductBySlug(req: Request, res: Response): Promise<voi
     const product = await productsService.getBySlug(slug);
 
     if (!product) {
-      res.status(404).json({ message: 'Product not found' });
+      res.status(404).json({ message: 'Produkt nie zostal znaleziony' });
       return;
     }
 
@@ -306,7 +306,7 @@ export async function updateProduct(req: Request, res: Response): Promise<void> 
     });
 
     if (!product) {
-      res.status(404).json({ message: 'Product not found' });
+      res.status(404).json({ message: 'Produkt nie zostal znaleziony' });
       return;
     }
 
@@ -331,7 +331,7 @@ export async function deleteProduct(req: Request, res: Response): Promise<void> 
     const result = await productsService.delete(id);
 
     if (!result) {
-      res.status(404).json({ message: 'Product not found' });
+      res.status(404).json({ message: 'Produkt nie zostal znaleziony' });
       return;
     }
 

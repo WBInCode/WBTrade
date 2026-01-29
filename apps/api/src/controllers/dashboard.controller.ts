@@ -165,7 +165,7 @@ export async function recordSearch(req: Request, res: Response): Promise<void> {
     }
 
     if (!query || typeof query !== 'string') {
-      res.status(400).json({ message: 'Query is required' });
+      res.status(400).json({ message: 'Zapytanie jest wymagane' });
       return;
     }
 
@@ -205,7 +205,7 @@ export async function simulatePayment(req: Request, res: Response): Promise<void
     console.log('Order found:', order ? { id: order.id, paymentStatus: order.paymentStatus, status: order.status } : null);
 
     if (!order) {
-      res.status(404).json({ message: 'Order not found' });
+      res.status(404).json({ message: 'Zamówienie nie zostalo znalezione' });
       return;
     }
 

@@ -23,7 +23,7 @@ export const reportsController = {
       res.json(report);
     } catch (error) {
       console.error('Error getting sales report:', error);
-      res.status(500).json({ message: 'Failed to get sales report', error });
+      res.status(500).json({ message: 'Nie udalo sie pobrac raportu sprzedazy', error });
     }
   },
 
@@ -38,7 +38,7 @@ export const reportsController = {
       res.json(report);
     } catch (error) {
       console.error('Error getting products report:', error);
-      res.status(500).json({ message: 'Failed to get products report', error });
+      res.status(500).json({ message: 'Nie udalo sie pobrac raportu produktów', error });
     }
   },
 
@@ -53,7 +53,7 @@ export const reportsController = {
       res.json(report);
     } catch (error) {
       console.error('Error getting customers report:', error);
-      res.status(500).json({ message: 'Failed to get customers report', error });
+      res.status(500).json({ message: 'Nie udalo sie pobrac raportu klientów', error });
     }
   }
 };
