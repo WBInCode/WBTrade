@@ -16,6 +16,7 @@ export default function MegaMenu({ categories, isOpen, onClose }: MegaMenuProps)
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
   const [mobileSubView, setMobileSubView] = useState<CategoryWithChildren | null>(null);
+  const [mobileNavHistory, setMobileNavHistory] = useState<CategoryWithChildren[]>([]);
   const [mounted, setMounted] = useState(false);
 
   // For portal - need to wait for client mount
@@ -29,12 +30,25 @@ export default function MegaMenu({ categories, isOpen, onClose }: MegaMenuProps)
 
   // Handle back from subcategory view on mobile
   const handleMobileBack = () => {
-    setMobileSubView(null);
+    if (mobileNavHistory.length > 0) {
+      // Go back to previous level
+      const newHistory = [...mobileNavHistory];
+      const previousCategory = newHistory.pop();
+      setMobileNavHistory(newHistory);
+      setMobileSubView(previousCategory || null);
+    } else {
+      // Go back to main menu
+      setMobileSubView(null);
+    }
   };
 
   // Handle category click on mobile - show subcategories or navigate
   const handleMobileCategoryClick = (category: CategoryWithChildren) => {
     if (category.children && category.children.length > 0) {
+      if (mobileSubView) {
+        // Save current view to history before navigating deeper
+        setMobileNavHistory([...mobileNavHistory, mobileSubView]);
+      }
       setMobileSubView(category);
     }
   };
@@ -90,22 +104,40 @@ export default function MegaMenu({ categories, isOpen, onClose }: MegaMenuProps)
               </svg>
             </Link>
             
-            {mobileSubView.children?.map((sub) => (
-              <Link
-                key={sub.slug}
-                href={`/products?category=${sub.slug}`}
-                onClick={onClose}
-                className="flex items-center justify-between px-4 py-4 border-b border-gray-100 dark:border-secondary-700 text-gray-900 dark:text-secondary-100 hover:bg-gray-50 dark:hover:bg-secondary-800"
-              >
-                <span>{cleanCategoryName(sub.name)}</span>
-                <div className="flex items-center gap-2 text-gray-400 dark:text-secondary-500">
-                  <span className="text-sm">({sub.productCount || 0})</span>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
-              </Link>
-            ))}
+            {mobileSubView.children?.map((sub) => {
+              const hasSubChildren = sub.children && sub.children.length > 0;
+              
+              return hasSubChildren ? (
+                <button
+                  key={sub.slug}
+                  onClick={() => handleMobileCategoryClick(sub)}
+                  className="w-full flex items-center justify-between px-4 py-4 border-b border-gray-100 dark:border-secondary-700 text-gray-900 dark:text-secondary-100 hover:bg-gray-50 dark:hover:bg-secondary-800"
+                >
+                  <span>{cleanCategoryName(sub.name)}</span>
+                  <div className="flex items-center gap-2 text-gray-400 dark:text-secondary-500">
+                    <span className="text-sm">({sub.productCount || 0})</span>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </button>
+              ) : (
+                <Link
+                  key={sub.slug}
+                  href={`/products?category=${sub.slug}`}
+                  onClick={onClose}
+                  className="flex items-center justify-between px-4 py-4 border-b border-gray-100 dark:border-secondary-700 text-gray-900 dark:text-secondary-100 hover:bg-gray-50 dark:hover:bg-secondary-800"
+                >
+                  <span>{cleanCategoryName(sub.name)}</span>
+                  <div className="flex items-center gap-2 text-gray-400 dark:text-secondary-500">
+                    <span className="text-sm">({sub.productCount || 0})</span>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </Link>
+              );
+            })}
           </nav>
         ) : (
           /* Main Categories View */
