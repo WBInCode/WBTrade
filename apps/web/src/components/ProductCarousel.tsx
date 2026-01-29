@@ -144,9 +144,9 @@ export default function ProductCarousel({
             WebkitOverflowScrolling: 'touch'
           }}
         >
-          {products.map((product) => (
+          {products.map((product, index) => (
             <div 
-              key={product.id} 
+              key={`${product.id}-${index}`} 
               className="flex-shrink-0 w-[145px] xs:w-[160px] sm:w-[180px] md:w-[200px] lg:w-[220px] snap-start"
             >
               <ProductCard product={product} showWishlist={true} showAddToCart={true} />

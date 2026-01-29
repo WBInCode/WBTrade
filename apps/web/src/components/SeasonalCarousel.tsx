@@ -76,18 +76,19 @@ export default function SeasonalCarousel({
           limit,
           season: currentSeason,
         });
-        setProducts(response.products);
+        setProducts(response.products || []);
       } catch (error) {
         console.error('Error fetching seasonal products:', error);
-        // Fallback: get products on sale
+        // Fallback: get newest products
         try {
           const fallback = await productsApi.getAll({
             limit,
             sort: 'newest',
           });
-          setProducts(fallback.products);
+          setProducts(fallback.products || []);
         } catch (e) {
           console.error('Fallback also failed:', e);
+          setProducts([]);
         }
       } finally {
         setLoading(false);
@@ -96,6 +97,11 @@ export default function SeasonalCarousel({
 
     fetchProducts();
   }, [currentSeason, limit]);
+
+  // Don't render if no products
+  if (!loading && products.length === 0) {
+    return null;
+  }
 
   if (loading) {
     return (
