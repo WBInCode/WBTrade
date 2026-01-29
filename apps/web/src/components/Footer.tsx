@@ -92,19 +92,19 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
                 alt="WB Trade" 
                 width={300} 
                 height={180} 
-                className="h-24 w-auto object-contain mix-blend-multiply dark:mix-blend-normal dark:brightness-0 dark:invert"
+                className="h-24 w-auto object-contain"
               />
             </Link>
             {/* Social Media */}
             <div className="flex items-center gap-4 mt-4">
               <a href="https://www.facebook.com/people/WB-Trade/61578263513701/" target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
-                <LogoImage src={getLogoUrl(SOCIAL_LOGOS.facebook)} alt="Facebook" width={28} height={28} className="object-contain dark:brightness-0 dark:invert" />
+                <LogoImage src={getLogoUrl(SOCIAL_LOGOS.facebook)} alt="Facebook" width={28} height={28} className="object-contain" />
               </a>
               <a href="https://www.instagram.com/wbtrade.pl" target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
-                <LogoImage src={getLogoUrl(SOCIAL_LOGOS.instagram)} alt="Instagram" width={28} height={28} className="object-contain dark:brightness-0 dark:invert" />
+                <LogoImage src={getLogoUrl(SOCIAL_LOGOS.instagram)} alt="Instagram" width={28} height={28} className="object-contain" />
               </a>
               <a href="https://linktr.ee/wbpartners" target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
-                <LogoImage src={getLogoUrl(SOCIAL_LOGOS.linktree)} alt="Linktree" width={28} height={28} className="object-contain rounded-lg dark:brightness-0 dark:invert" />
+                <LogoImage src={getLogoUrl(SOCIAL_LOGOS.linktree)} alt="Linktree" width={28} height={28} className="object-contain rounded-lg" />
               </a>
             </div>
           </div>
@@ -164,9 +164,9 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-secondary-500 dark:text-secondary-400">Akceptowane metody płatności</p>
             <div className="flex items-center gap-4">
-              <LogoImage src={getLogoUrl(PAYMENT_LOGOS.visa)} alt="Visa" width={40} height={28} className="object-contain rounded-md mix-blend-multiply" />
-              <LogoImage src={getLogoUrl(PAYMENT_LOGOS.blik)} alt="BLIK" width={40} height={28} className="object-contain rounded-md mix-blend-multiply" />
-              <LogoImage src={getLogoUrl(PAYMENT_LOGOS.przelewy24)} alt="Przelewy24" width={40} height={28} className="object-contain rounded-md mix-blend-multiply" />
+              <LogoImage src={getLogoUrl(PAYMENT_LOGOS.visa)} alt="Visa" width={40} height={28} className="object-contain rounded-md" />
+              <LogoImage src={getLogoUrl(PAYMENT_LOGOS.blik)} alt="BLIK" width={40} height={28} className="object-contain rounded-md" />
+              <LogoImage src={getLogoUrl(PAYMENT_LOGOS.przelewy24)} alt="Przelewy24" width={40} height={28} className="object-contain rounded-md" />
             </div>
           </div>
         </div>
