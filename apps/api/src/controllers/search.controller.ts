@@ -29,7 +29,7 @@ const searchQuerySchema = z.object({
   query: z
     .string()
     .min(1, 'Query parameter is required')
-    .max(200, 'Query is too long')
+    .max(200, 'Zapytanie jest za dlugie')
     .transform(sanitizeSearchQuery),
   minPrice: z.string().optional().transform((val) => {
     if (!val) return undefined;
@@ -55,7 +55,7 @@ const suggestionsQuerySchema = z.object({
   query: z
     .string()
     .min(1, 'Query parameter is required')
-    .max(100, 'Query is too long')
+    .max(100, 'Zapytanie jest za dlugie')
     .transform(sanitizeSearchQuery),
 });
 
@@ -80,7 +80,7 @@ export async function searchProducts(req: Request, res: Response): Promise<void>
     res.status(200).json(results);
   } catch (error) {
     console.error('Search error:', error);
-    res.status(500).json({ message: 'Search failed' });
+    res.status(500).json({ message: 'Wyszukiwanie nie powiodlo sie' });
   }
 }
 

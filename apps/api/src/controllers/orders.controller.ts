@@ -74,7 +74,7 @@ const createOrderSchema = z.object({
   pickupPointCode: z.string().max(50).optional(),
   pickupPointAddress: z.string().max(500).optional().transform((val) => val ? sanitizeText(val) : undefined),
   packageShipping: z.array(packageShippingItemSchema).optional(),
-  items: z.array(orderItemSchema).min(1, 'Order must have at least one item'),
+  items: z.array(orderItemSchema).min(1, 'Zamówienie musi miec co najmniej jeden produkt'),
 });
 
 /**
@@ -142,7 +142,7 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     const userId = req.user?.userId;
     
     if (!userId) {
-      res.status(401).json({ message: 'Authentication required' });
+      res.status(401).json({ message: 'Wymagane uwierzytelnienie' });
       return;
     }
     
@@ -186,7 +186,7 @@ export async function getOrder(req: Request, res: Response): Promise<void> {
     const order = await ordersService.getById(id);
     
     if (!order) {
-      res.status(404).json({ message: 'Order not found' });
+      res.status(404).json({ message: 'Zamówienie nie zostalo znalezione' });
       return;
     }
     
@@ -258,7 +258,7 @@ export async function updateOrder(req: Request, res: Response): Promise<void> {
     const order = await ordersService.updateStatus(id, validation.data.status, validation.data.note);
     
     if (!order) {
-      res.status(404).json({ message: 'Order not found' });
+      res.status(404).json({ message: 'Zamówienie nie zostalo znalezione' });
       return;
     }
     
@@ -287,7 +287,7 @@ export async function deleteOrder(req: Request, res: Response): Promise<void> {
     const order = await ordersService.cancel(id);
     
     if (!order) {
-      res.status(404).json({ message: 'Order not found' });
+      res.status(404).json({ message: 'Zamówienie nie zostalo znalezione' });
       return;
     }
     
@@ -308,7 +308,7 @@ export async function refundOrder(req: Request, res: Response): Promise<void> {
     const order = await ordersService.refund(id, reason);
     
     if (!order) {
-      res.status(404).json({ message: 'Order not found' });
+      res.status(404).json({ message: 'Zamówienie nie zostalo znalezione' });
       return;
     }
     
@@ -328,7 +328,7 @@ export async function restoreOrder(req: Request, res: Response): Promise<void> {
     const order = await ordersService.restore(id);
     
     if (!order) {
-      res.status(404).json({ message: 'Order not found' });
+      res.status(404).json({ message: 'Zamówienie nie zostalo znalezione' });
       return;
     }
     
@@ -363,7 +363,7 @@ export async function simulatePayment(req: Request, res: Response): Promise<void
     const order = await ordersService.simulatePayment(id);
     
     if (!order) {
-      res.status(404).json({ message: 'Order not found' });
+      res.status(404).json({ message: 'Zamówienie nie zostalo znalezione' });
       return;
     }
     

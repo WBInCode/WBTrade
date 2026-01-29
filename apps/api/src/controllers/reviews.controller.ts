@@ -31,17 +31,17 @@ const isValidCUID = (id: string): boolean => {
  * Create review validation schema
  */
 const createReviewSchema = z.object({
-  productId: z.string().regex(/^c[a-z0-9]{20,}$/i, 'Invalid product ID'),
-  rating: z.number().int().min(1, 'Rating must be at least 1').max(5, 'Rating cannot exceed 5'),
+  productId: z.string().regex(/^c[a-z0-9]{20,}$/i, 'Nieprawidlowy ID produktu'),
+  rating: z.number().int().min(1, 'Ocena musi wynosic co najmniej 1').max(5, 'Ocena nie moze przekraczac 5'),
   title: z
     .string()
-    .max(200, 'Title is too long')
+    .max(200, 'Tytul jest za dlugi')
     .optional()
     .transform((val) => (val ? sanitizeText(val) : undefined)),
   content: z
     .string()
-    .min(10, 'Review content must be at least 10 characters')
-    .max(5000, 'Review content is too long')
+    .min(10, 'Tresc opinii musi miec co najmniej 10 znaków')
+    .max(5000, 'Tresc opinii jest za dluga')
     .transform(sanitizeText),
 });
 
@@ -87,14 +87,14 @@ export const reviewsController = {
     try {
       const userId = req.user?.userId;
       if (!userId) {
-        return res.status(401).json({ message: 'Authentication required' });
+        return res.status(401).json({ message: 'Wymagane uwierzytelnienie' });
       }
 
       const validation = createReviewSchema.safeParse(req.body);
       
       if (!validation.success) {
         return res.status(400).json({
-          message: 'Validation error',
+          message: 'Blad walidacji',
           errors: validation.error.flatten().fieldErrors,
         });
       }
@@ -104,7 +104,7 @@ export const reviewsController = {
       res.status(201).json(review);
     } catch (error) {
       console.error('Error creating review:', error);
-      const message = error instanceof Error ? error.message : 'Failed to create review';
+      const message = error instanceof Error ? error.message : 'Nie udalo sie dodac opinii';
       res.status(400).json({ message });
     }
   },
@@ -118,14 +118,14 @@ export const reviewsController = {
       const { productId } = req.params;
       
       if (!isValidCUID(productId)) {
-        return res.status(400).json({ message: 'Invalid product ID format' });
+        return res.status(400).json({ message: 'Nieprawidlowy format ID produktu' });
       }
 
       const validation = reviewsQuerySchema.safeParse(req.query);
       
       if (!validation.success) {
         return res.status(400).json({
-          message: 'Invalid query parameters',
+          message: 'Nieprawidlowe parametry zapytania',
           errors: validation.error.flatten().fieldErrors,
         });
       }
@@ -135,7 +135,7 @@ export const reviewsController = {
       res.json(result);
     } catch (error) {
       console.error('Error fetching reviews:', error);
-      res.status(500).json({ message: 'Failed to fetch reviews' });
+      res.status(500).json({ message: 'Nie udalo sie pobrac opinii' });
     }
   },
 
@@ -148,14 +148,14 @@ export const reviewsController = {
       const { productId } = req.params;
       
       if (!isValidCUID(productId)) {
-        return res.status(400).json({ message: 'Invalid product ID format' });
+        return res.status(400).json({ message: 'Nieprawidlowy format ID produktu' });
       }
       
       const stats = await reviewsService.getProductReviewStats(productId);
       res.json(stats);
     } catch (error) {
       console.error('Error fetching review stats:', error);
-      res.status(500).json({ message: 'Failed to fetch review statistics' });
+      res.status(500).json({ message: 'Nie udalo sie pobrac statystyk opinii' });
     }
   },
 
@@ -179,14 +179,14 @@ export const reviewsController = {
       const { productId } = req.params;
       
       if (!isValidCUID(productId)) {
-        return res.status(400).json({ message: 'Invalid product ID format' });
+        return res.status(400).json({ message: 'Nieprawidlowy format ID produktu' });
       }
       
       const result = await reviewsService.canUserReviewProduct(userId, productId);
       res.json(result);
     } catch (error) {
       console.error('Error checking review eligibility:', error);
-      res.status(500).json({ message: 'Failed to check review eligibility' });
+      res.status(500).json({ message: 'Nie udalo sie sprawdzic uprawnienia do opinii' });
     }
   },
 
@@ -198,20 +198,20 @@ export const reviewsController = {
     try {
       const userId = req.user?.userId;
       if (!userId) {
-        return res.status(401).json({ message: 'Authentication required' });
+        return res.status(401).json({ message: 'Wymagane uwierzytelnienie' });
       }
 
       const { reviewId } = req.params;
       
       if (!isValidCUID(reviewId)) {
-        return res.status(400).json({ message: 'Invalid review ID format' });
+        return res.status(400).json({ message: 'Nieprawidlowy format ID opinii' });
       }
 
       const validation = updateReviewSchema.safeParse(req.body);
       
       if (!validation.success) {
         return res.status(400).json({
-          message: 'Validation error',
+          message: 'Blad walidacji',
           errors: validation.error.flatten().fieldErrors,
         });
       }
@@ -221,7 +221,7 @@ export const reviewsController = {
       res.json(review);
     } catch (error) {
       console.error('Error updating review:', error);
-      const message = error instanceof Error ? error.message : 'Failed to update review';
+      const message = error instanceof Error ? error.message : 'Nie udalo sie zaktualizowac opinii';
       res.status(400).json({ message });
     }
   },
@@ -234,19 +234,19 @@ export const reviewsController = {
     try {
       const userId = req.user?.userId;
       if (!userId) {
-        return res.status(401).json({ message: 'Authentication required' });
+        return res.status(401).json({ message: 'Wymagane uwierzytelnienie' });
       }
 
       const { reviewId } = req.params;
       
       if (!isValidCUID(reviewId)) {
-        return res.status(400).json({ message: 'Invalid review ID format' });
+        return res.status(400).json({ message: 'Nieprawidlowy format ID opinii' });
       }
       
       const isAdmin = req.user?.role === 'ADMIN';
 
       await reviewsService.deleteReview(reviewId, userId, isAdmin);
-      res.json({ success: true, message: 'Review deleted successfully' });
+      res.json({ success: true, message: 'Opinia zostala usunieta' });
     } catch (error) {
       console.error('Error deleting review:', error);
       const message = error instanceof Error ? error.message : 'Failed to delete review';
@@ -263,13 +263,13 @@ export const reviewsController = {
       const { reviewId } = req.params;
       
       if (!isValidCUID(reviewId)) {
-        return res.status(400).json({ message: 'Invalid review ID format' });
+        return res.status(400).json({ message: 'Nieprawidlowy format ID opinii' });
       }
       
       const { helpful } = req.body;
 
       if (typeof helpful !== 'boolean') {
-        return res.status(400).json({ message: 'helpful must be a boolean' });
+        return res.status(400).json({ message: 'Pole helpful musi byc typu boolean' });
       }
 
       const review = await reviewsService.markReviewHelpful(reviewId, helpful);
