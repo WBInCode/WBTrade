@@ -15,25 +15,15 @@ const DELIVERY_TAGS = [
 
 // Tagi wymagające "produkt w paczce"
 const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
-const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce|produkty?\s*w\s*paczce/i;
 
-/**
- * Check if product should be visible based on delivery tags
- * Products with "Paczkomaty i Kurier" must also have "produkt w paczce" tag
- */
-function shouldProductBeVisible(tags: string[]): boolean {
-  const hasPaczkomatTag = tags.some((tag: string) => 
-    PACZKOMAT_TAGS.some(pt => tag.toLowerCase() === pt.toLowerCase())
-  );
-  
-  if (!hasPaczkomatTag) return true;
-  
-  const hasPackageLimitTag = tags.some((tag: string) => 
-    PACKAGE_LIMIT_PATTERN.test(tag)
-  );
-  
-  return hasPackageLimitTag;
-}
+// Tagi "produkt w paczce" - różne rozmiary paczek
+const PACKAGE_TAGS = [
+  'produkt w paczce: 1',
+  'produkt w paczce: 2',
+  'produkt w paczce: 3',
+  'produkt w paczce: 4',
+  'produkt w paczce: 5',
+];
 
 // Bazowy filtr dla widocznych produktów (bez filtrowania po tagach kategorii - teraz używamy baselinkerCategoryPath)
 const VISIBLE_PRODUCT_WHERE = {
@@ -48,6 +38,11 @@ const VISIBLE_PRODUCT_WHERE = {
     }
   },
   tags: { hasSome: DELIVERY_TAGS },
+  // Jeśli ma "Paczkomaty i Kurier", musi mieć też "produkt w paczce"
+  OR: [
+    { NOT: { tags: { hasSome: PACZKOMAT_TAGS } } },
+    { tags: { hasSome: PACKAGE_TAGS } },
+  ],
 };
 
 export interface CategoryWithChildren {
@@ -65,46 +60,37 @@ export interface CategoryWithChildren {
 export class CategoriesService {
   /**
    * Count visible products for a category (using same filters as products listing)
-   * Now also filters out products with "Paczkomaty i Kurier" that don't have "produkt w paczce"
+   * Filtr SQL już uwzględnia warunek "produkt w paczce" przez VISIBLE_PRODUCT_WHERE
    */
   private async countVisibleProducts(categoryId: string): Promise<number> {
-    const products = await prisma.product.findMany({
+    return prisma.product.count({
       where: {
         ...VISIBLE_PRODUCT_WHERE,
         categoryId,
       },
-      select: { tags: true },
     });
-    
-    // Filter products that should be visible
-    const visibleProducts = products.filter(p => shouldProductBeVisible(p.tags));
-    return visibleProducts.length;
   }
 
   /**
    * Count visible products for multiple categories at once
-   * Now also filters out products with "Paczkomaty i Kurier" that don't have "produkt w paczce"
+   * Filtr SQL już uwzględnia warunek "produkt w paczce" przez VISIBLE_PRODUCT_WHERE
    */
   private async countVisibleProductsForCategories(categoryIds: string[]): Promise<Map<string, number>> {
     const counts = new Map<string, number>();
     
-    // Fetch products with their tags
-    const products = await prisma.product.findMany({
+    // Grupuj po categoryId używając Prisma
+    const results = await prisma.product.groupBy({
+      by: ['categoryId'],
       where: {
         ...VISIBLE_PRODUCT_WHERE,
         categoryId: { in: categoryIds },
       },
-      select: { 
-        categoryId: true,
-        tags: true,
-      },
+      _count: { id: true },
     });
     
-    // Filter and count by category
-    for (const product of products) {
-      if (product.categoryId && shouldProductBeVisible(product.tags)) {
-        const currentCount = counts.get(product.categoryId) || 0;
-        counts.set(product.categoryId, currentCount + 1);
+    for (const result of results) {
+      if (result.categoryId) {
+        counts.set(result.categoryId, result._count.id);
       }
     }
     

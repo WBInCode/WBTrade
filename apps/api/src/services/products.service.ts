@@ -19,6 +19,27 @@ const DELIVERY_TAGS = [
   'do 31,5 kg',
 ];
 
+// Tagi "Paczkomaty i Kurier" - produkty z tymi tagami MUSZĄ mieć też tag "produkt w paczce"
+const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
+
+// Tagi "produkt w paczce" - różne rozmiary paczek
+const PACKAGE_TAGS = [
+  'produkt w paczce: 1',
+  'produkt w paczce: 2',
+  'produkt w paczce: 3',
+  'produkt w paczce: 4',
+  'produkt w paczce: 5',
+];
+
+// Filtr SQL dla warunku "produkt w paczce"
+// Jeśli produkt ma "Paczkomaty i Kurier" to MUSI mieć też "produkt w paczce"
+const PACKAGE_FILTER_WHERE: Prisma.ProductWhereInput = {
+  OR: [
+    { NOT: { tags: { hasSome: PACZKOMAT_TAGS } } },
+    { tags: { hasSome: PACKAGE_TAGS } },
+  ]
+};
+
 // Kategorie są teraz zarządzane przez Baselinker, nie przez tagi
 // Produkty muszą mieć categoryId ustawione przez synchronizację z Baselinker
 
@@ -322,6 +343,8 @@ export class ProductsService {
             baselinkerCategoryId: { not: null } 
           } 
         },
+        // Jeśli ma "Paczkomaty i Kurier", musi mieć też "produkt w paczce"
+        PACKAGE_FILTER_WHERE,
       ],
     };
     
@@ -590,6 +613,8 @@ export class ProductsService {
                 baselinkerCategoryId: { not: null } 
               } 
             },
+            // Jeśli ma "Paczkomaty i Kurier", musi mieć też "produkt w paczce"
+            PACKAGE_FILTER_WHERE,
           ],
         },
         include: {
@@ -678,6 +703,8 @@ export class ProductsService {
             baselinkerCategoryId: { not: null } 
           } 
         },
+        // Jeśli ma "Paczkomaty i Kurier", musi mieć też "produkt w paczce"
+        PACKAGE_FILTER_WHERE,
       ],
     };
     
