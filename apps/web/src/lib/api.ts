@@ -560,6 +560,12 @@ export interface User {
   phone?: string;
   role: 'customer' | 'admin' | 'warehouse';
   createdAt: string;
+  // Company address fields
+  companyName?: string;
+  nip?: string;
+  companyStreet?: string;
+  companyCity?: string;
+  companyPostalCode?: string;
 }
 
 export interface AuthResponse {
