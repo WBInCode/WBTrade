@@ -231,11 +231,18 @@ export class CartService {
   }
 
   /**
-   * Clear all items from cart
+   * Clear all items from cart and reset coupon
    */
   async clearCart(cartId: string): Promise<CartWithItems> {
+    // Delete all items from cart
     await prisma.cartItem.deleteMany({
       where: { cartId },
+    });
+
+    // Also clear the coupon - it should not persist after order/clear
+    await prisma.cart.update({
+      where: { id: cartId },
+      data: { couponCode: null },
     });
 
     const cart = await prisma.cart.findUnique({
