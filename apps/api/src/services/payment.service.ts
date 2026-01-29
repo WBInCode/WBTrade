@@ -355,7 +355,7 @@ export class PaymentService {
       // This is the critical point - stock will be decreased in Baselinker
       // only AFTER payment is confirmed
       if (result.status === 'succeeded') {
-        console.log(`[PaymentService] Payment succeeded, triggering Baselinker sync for order ${order.id}`);
+        console.log(`[PaymentService] Payment succeeded, triggering Baselinker status update for order ${order.id}`);
         
         // Update product sales count for popularity tracking
         const orderItems = await prisma.orderItem.findMany({
@@ -370,13 +370,24 @@ export class PaymentService {
           }
         }
         
-        // Sync to Baselinker asynchronously (don't block payment confirmation)
-        baselinkerOrdersService.syncOrderToBaselinker(order.id)
+        // Update Baselinker order status from "Nieopłacone" to "Nowe zamówienia"
+        // Order was already synced when created, now we just update the status
+        baselinkerOrdersService.markOrderAsPaid(order.id)
           .then((syncResult) => {
             if (syncResult.success) {
-              console.log(`[PaymentService] Order ${order.id} synced to Baselinker (BL ID: ${syncResult.baselinkerOrderId})`);
+              console.log(`[PaymentService] Order ${order.id} marked as paid in Baselinker`);
             } else {
-              console.error(`[PaymentService] Failed to sync order ${order.id} to Baselinker:`, syncResult.error);
+              // If order wasn't synced yet (edge case), sync it now
+              console.warn(`[PaymentService] Could not update status, trying full sync: ${syncResult.error}`);
+              return baselinkerOrdersService.syncOrderToBaselinker(order.id, { 
+                orderStatusId: 65342, // Nowe zamówienia (paid)
+                skipPaymentCheck: true 
+              });
+            }
+          })
+          .then((syncResult) => {
+            if (syncResult && syncResult.success) {
+              console.log(`[PaymentService] Order ${order.id} synced to Baselinker (BL ID: ${syncResult.baselinkerOrderId})`);
             }
           })
           .catch((err) => {
