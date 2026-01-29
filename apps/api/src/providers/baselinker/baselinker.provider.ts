@@ -396,6 +396,22 @@ export class BaselinkerProvider implements IBaselinkerProvider {
   }
 
   /**
+   * Set order status in Baselinker
+   * @param orderId - Baselinker order ID
+   * @param statusId - New status ID
+   */
+  async setOrderStatus(orderId: string | number, statusId: number): Promise<void> {
+    console.log(`[Baselinker] Setting order ${orderId} status to ${statusId}`);
+
+    await this.request('setOrderStatus', {
+      order_id: typeof orderId === 'string' ? parseInt(orderId, 10) : orderId,
+      status_id: statusId,
+    });
+
+    console.log(`[Baselinker] Order ${orderId} status updated to ${statusId}`);
+  }
+
+  /**
    * Split array into chunks
    */
   private chunkArray<T>(array: T[], size: number): T[][] {

@@ -266,4 +266,11 @@ export interface IBaselinkerProvider {
     inventoryId: string,
     products: Record<string, Record<string, number>>
   ): Promise<void>;
+
+  /**
+   * Set order status in Baselinker
+   * @param orderId - Baselinker order ID
+   * @param statusId - New status ID
+   */
+  setOrderStatus(orderId: string | number, statusId: number): Promise<void>;
 }

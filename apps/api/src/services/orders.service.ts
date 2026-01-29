@@ -240,6 +240,22 @@ export class OrdersService {
         });
       }
 
+      // Sync order to Baselinker immediately with "Nieopłacone" status
+      // This is done outside transaction to not block order creation
+      setTimeout(() => {
+        baselinkerOrdersService.syncOrderToBaselinker(order.id, { skipPaymentCheck: true })
+          .then((syncResult) => {
+            if (syncResult.success) {
+              console.log(`[OrdersService] Order ${order.orderNumber} synced to Baselinker as unpaid (BL ID: ${syncResult.baselinkerOrderId})`);
+            } else {
+              console.error(`[OrdersService] Failed to sync order ${order.orderNumber} to Baselinker:`, syncResult.error);
+            }
+          })
+          .catch((err) => {
+            console.error(`[OrdersService] Baselinker sync error for order ${order.orderNumber}:`, err);
+          });
+      }, 100);
+
       return order;
     });
   }
@@ -527,7 +543,7 @@ export class OrdersService {
 
     // After successful payment simulation, sync to Baselinker
     if (updatedOrder) {
-      console.log(`[DEV] Triggering Baselinker sync for simulated payment, order ${id}`);
+      console.log(`[DEV] Triggering Baselinker status update for simulated payment, order ${id}`);
       
       // Update product sales count for popularity tracking
       for (const item of updatedOrder.items) {
@@ -541,12 +557,23 @@ export class OrdersService {
         }
       }
       
-      baselinkerOrdersService.syncOrderToBaselinker(id)
+      // Update Baselinker order status from "Nieopłacone" to "Nowe zamówienia"
+      baselinkerOrdersService.markOrderAsPaid(id)
         .then((syncResult) => {
           if (syncResult.success) {
-            console.log(`[DEV] Order ${id} synced to Baselinker (BL ID: ${syncResult.baselinkerOrderId})`);
+            console.log(`[DEV] Order ${id} marked as paid in Baselinker`);
           } else {
-            console.error(`[DEV] Failed to sync order ${id} to Baselinker:`, syncResult.error);
+            // If order wasn't synced yet, sync it now with paid status
+            console.warn(`[DEV] Could not update status, trying full sync: ${syncResult.error}`);
+            return baselinkerOrdersService.syncOrderToBaselinker(id, { 
+              orderStatusId: 65342, // Nowe zamówienia (paid)
+              skipPaymentCheck: true 
+            });
+          }
+        })
+        .then((syncResult) => {
+          if (syncResult && syncResult.success) {
+            console.log(`[DEV] Order ${id} synced to Baselinker (BL ID: ${syncResult.baselinkerOrderId})`);
           }
         })
         .catch((err) => {

@@ -52,6 +52,10 @@ apps/api/test-baselinker-categories.js
 apps/api/check-count.js
 apps/api/sync-images.js
 
+# Promo codes
+apps/api/generate-promo-codes.js
+apps/api/promo-codes-*
+
 # ============================================
 # 🔒 SECURITY - Sensitive files
 # ============================================
