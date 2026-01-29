@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { CategoryWithChildren } from '../lib/api';
 import { cleanCategoryName } from '../lib/categories';
@@ -14,102 +15,170 @@ interface MegaMenuProps {
 export default function MegaMenu({ categories, isOpen, onClose }: MegaMenuProps) {
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
+  const [mobileSubView, setMobileSubView] = useState<CategoryWithChildren | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  // For portal - need to wait for client mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   if (!isOpen) return null;
 
   const activeCategory = categories.find(c => c.slug === hoveredCategory);
 
-  return (
-    <>
-      {/* ===== MOBILE MENU ===== */}
-      <div className="lg:hidden fixed inset-0 z-[100]">
-        {/* Dark overlay */}
-        <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-        
-        {/* Sidebar - stop propagation to prevent overlay from catching clicks */}
-        <div 
-          className="absolute left-0 top-0 bottom-0 w-[85%] max-w-[320px] bg-white shadow-xl overflow-y-auto"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="sticky top-0 bg-white border-b px-4 py-3 flex items-center justify-between z-10">
-            <span className="font-bold text-lg">Kategorie</span>
-            <button onClick={onClose} className="p-2 -mr-2 hover:bg-gray-100 rounded-full">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+  // Handle back from subcategory view on mobile
+  const handleMobileBack = () => {
+    setMobileSubView(null);
+  };
+
+  // Handle category click on mobile - show subcategories or navigate
+  const handleMobileCategoryClick = (category: CategoryWithChildren) => {
+    if (category.children && category.children.length > 0) {
+      setMobileSubView(category);
+    }
+  };
+
+  // Mobile menu content - stopPropagation prevents Header's handleClickOutside from closing it
+  const mobileMenu = (
+    <div 
+      className="lg:hidden fixed inset-0 z-[9999] bg-white flex flex-col"
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Header */}
+      <div className="flex-shrink-0 bg-white border-b px-4 py-4 flex items-center justify-between">
+        {mobileSubView ? (
+          <>
+            <button 
+              onClick={handleMobileBack}
+              className="flex items-center gap-2 text-gray-700"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
+              <span className="font-semibold text-lg">{cleanCategoryName(mobileSubView.name)}</span>
             </button>
-          </div>
-
-          {/* Categories list */}
-          <nav className="py-2">
-            {categories.map((category) => {
-              const hasChildren = category.children && category.children.length > 0;
-              const isExpanded = mobileExpanded === category.slug;
-
-              return (
-                <div key={category.slug} className="border-b border-gray-100 last:border-0">
-                  {hasChildren ? (
-                    <>
-                      {/* Category with children - expandable */}
-                      <button
-                        onClick={() => setMobileExpanded(isExpanded ? null : category.slug)}
-                        className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 active:bg-gray-100"
-                      >
-                        <span className="font-medium text-gray-900">
-                          {cleanCategoryName(category.name)}
-                          <span className="text-gray-400 text-sm ml-2">({category.productCount || 0})</span>
-                        </span>
-                        <svg 
-                          className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
-                          fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-
-                      {/* Subcategories */}
-                      {isExpanded && (
-                        <div className="bg-gray-50 py-2">
-                          {/* View all in category */}
-                          <Link
-                            href={`/products?category=${category.slug}`}
-                            className="block px-6 py-2 text-primary-600 font-medium hover:bg-gray-100"
-                          >
-                            Zobacz wszystko →
-                          </Link>
-                          
-                          {category.children?.map((sub) => (
-                            <Link
-                              key={sub.slug}
-                              href={`/products?category=${sub.slug}`}
-                              className="block px-6 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary-600"
-                            >
-                              {cleanCategoryName(sub.name)}
-                              <span className="text-gray-400 text-sm ml-2">({sub.productCount || 0})</span>
-                            </Link>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    /* Category without children - direct link */
-                    <Link
-                      href={`/products?category=${category.slug}`}
-                      className="block px-4 py-3 font-medium text-gray-900 hover:bg-gray-50 active:bg-gray-100"
-                    >
-                      {cleanCategoryName(category.name)}
-                      <span className="text-gray-400 text-sm ml-2">({category.productCount || 0})</span>
-                    </Link>
-                  )}
-                </div>
-              );
-            })}
-          </nav>
-        </div>
+          </>
+        ) : (
+          <span className="font-bold text-lg">Menu</span>
+        )}
+        <button 
+          onClick={onClose} 
+          className="p-2 -mr-2 hover:bg-gray-100 rounded-full"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
 
-      {/* ===== DESKTOP MENU ===== */}
+      {/* Content - scrollable */}
+      <div className="flex-1 overflow-y-auto">
+        {mobileSubView ? (
+          /* Subcategory View */
+          <nav className="py-2">
+            {/* View all in category */}
+            <Link
+              href={`/products?category=${mobileSubView.slug}`}
+              onClick={onClose}
+              className="flex items-center justify-between px-4 py-4 border-b border-gray-100 text-primary-600 font-medium"
+            >
+              <span>Zobacz wszystko w {cleanCategoryName(mobileSubView.name)}</span>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+            
+            {mobileSubView.children?.map((sub) => (
+              <Link
+                key={sub.slug}
+                href={`/products?category=${sub.slug}`}
+                onClick={onClose}
+                className="flex items-center justify-between px-4 py-4 border-b border-gray-100 text-gray-900 hover:bg-gray-50"
+              >
+                <span>{cleanCategoryName(sub.name)}</span>
+                <div className="flex items-center gap-2 text-gray-400">
+                  <span className="text-sm">({sub.productCount || 0})</span>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </Link>
+            ))}
+          </nav>
+        ) : (
+          /* Main Categories View */
+          <>
+            <div className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">
+              Kategorie
+            </div>
+            <nav>
+              {categories.map((category) => {
+                const hasChildren = category.children && category.children.length > 0;
+
+                return hasChildren ? (
+                  <button
+                    key={category.slug}
+                    onClick={() => handleMobileCategoryClick(category)}
+                    className="w-full flex items-center justify-between px-4 py-4 border-b border-gray-100 text-gray-900 hover:bg-gray-50"
+                  >
+                    <span className="font-medium">{cleanCategoryName(category.name)}</span>
+                    <div className="flex items-center gap-2 text-gray-400">
+                      <span className="text-sm">({category.productCount || 0})</span>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </button>
+                ) : (
+                  <Link
+                    key={category.slug}
+                    href={`/products?category=${category.slug}`}
+                    onClick={onClose}
+                    className="flex items-center justify-between px-4 py-4 border-b border-gray-100 text-gray-900 hover:bg-gray-50"
+                  >
+                    <span className="font-medium">{cleanCategoryName(category.name)}</span>
+                    <div className="flex items-center gap-2 text-gray-400">
+                      <span className="text-sm">({category.productCount || 0})</span>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            {/* Help section */}
+            <div className="mt-4 px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">
+              Masz pytania?
+            </div>
+            <Link
+              href="/help"
+              onClick={onClose}
+              className="flex items-center justify-between px-4 py-4 border-b border-gray-100 text-gray-900 hover:bg-gray-50"
+            >
+              <div className="flex items-center gap-3">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="font-medium">Pomoc i kontakt</span>
+              </div>
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {/* ===== MOBILE MENU - Rendered via Portal to body ===== */}
+      {mounted && createPortal(mobileMenu, document.body)}
       <div 
         className="hidden lg:block absolute top-full left-0 right-0 z-50 bg-white shadow-2xl border-t"
         onMouseLeave={() => setHoveredCategory(null)}
