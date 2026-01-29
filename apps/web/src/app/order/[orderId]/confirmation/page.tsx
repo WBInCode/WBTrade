@@ -333,8 +333,12 @@ function OrderConfirmationPageContent() {
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Link href="/" className="text-2xl font-bold text-orange-500">
-            WB Trade
+          <Link href="/" className="inline-block">
+            <img 
+              src="/images/logo.png" 
+              alt="WB Trade" 
+              className="h-10 w-auto"
+            />
           </Link>
         </div>
       </header>
@@ -358,7 +362,7 @@ function OrderConfirmationPageContent() {
         {statusConfig.showRetryButton && order?.paymentStatus !== 'PAID' && (
           <div className="flex justify-center mb-6">
             <Link
-              href={`/checkout`}
+              href={`/order/${orderId}/payment`}
               className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-medium transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
