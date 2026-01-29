@@ -447,7 +447,11 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
     const selectedPayment = paymentMethods.find(m => m.type === paymentMethod);
     const paymentFee = selectedPayment?.fee || 0;
 
-    const total = subtotal + shippingCost + paymentFee;
+    // Calculate total with discount from cart
+    const discount = cart.discount || 0;
+    const total = subtotal + shippingCost + paymentFee - discount;
+    
+    console.log(`💰 Order total: subtotal=${subtotal} + shipping=${shippingCost} + fee=${paymentFee} - discount=${discount} = ${total}`);
 
     // For guest checkout, create shipping address from guestAddress data
     let finalShippingAddressId = shippingAddressId;

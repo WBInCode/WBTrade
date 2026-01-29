@@ -412,6 +412,31 @@ export class BaselinkerProvider implements IBaselinkerProvider {
   }
 
   /**
+   * Set order payment in Baselinker
+   * @param orderId - Baselinker order ID
+   * @param paymentDone - Amount paid
+   * @param paymentDate - Payment date (unix timestamp)
+   * @param paymentComment - Optional comment
+   */
+  async setOrderPayment(
+    orderId: string | number, 
+    paymentDone: number, 
+    paymentDate?: number,
+    paymentComment?: string
+  ): Promise<void> {
+    console.log(`[Baselinker] Setting order ${orderId} payment to ${paymentDone} PLN`);
+
+    await this.request('setOrderPayment', {
+      order_id: typeof orderId === 'string' ? parseInt(orderId, 10) : orderId,
+      payment_done: paymentDone,
+      payment_date: paymentDate || Math.floor(Date.now() / 1000),
+      payment_comment: paymentComment || 'Płatność online',
+    });
+
+    console.log(`[Baselinker] Order ${orderId} payment updated`);
+  }
+
+  /**
    * Split array into chunks
    */
   private chunkArray<T>(array: T[], size: number): T[][] {

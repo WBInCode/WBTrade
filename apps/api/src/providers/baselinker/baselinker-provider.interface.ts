@@ -273,4 +273,18 @@ export interface IBaselinkerProvider {
    * @param statusId - New status ID
    */
   setOrderStatus(orderId: string | number, statusId: number): Promise<void>;
+
+  /**
+   * Set order payment in Baselinker
+   * @param orderId - Baselinker order ID
+   * @param paymentDone - Amount paid
+   * @param paymentDate - Payment date (unix timestamp)
+   * @param paymentComment - Optional comment
+   */
+  setOrderPayment(
+    orderId: string | number, 
+    paymentDone: number, 
+    paymentDate?: number,
+    paymentComment?: string
+  ): Promise<void>;
 }
