@@ -35,6 +35,9 @@ interface PackageWithOptions {
     isPaczkomatAvailable: boolean;
     isInPostOnly: boolean;
     isCourierOnly: boolean;
+    warehouseValue: number;
+    hasFreeShipping: boolean;
+    paczkomatPackageCount?: number;
   };
   shippingMethods: ShippingMethodOption[];
   selectedMethod: string;
@@ -86,15 +89,16 @@ export default function ShippingPerPackage({
 }: ShippingPerPackageProps) {
   const [packagesWithOptions, setPackagesWithOptions] = useState<PackageWithOptions[]>([]);
   const [selectedMethods, setSelectedMethods] = useState<Record<string, ShippingMethodId>>({});
-  const [paczkomatSelections, setPaczkomatSelections] = useState<Record<string, { code: string; address: string }>>({});
+  // paczkomatSelections: packageId -> array of paczkomat selections (one per paczkomatPackageCount)
+  const [paczkomatSelections, setPaczkomatSelections] = useState<Record<string, Array<{ code: string; address: string }>>>({});
   const [isLoading, setIsLoading] = useState(true);
+  // Track which paczkomat slot we're selecting (packageId:index)
+  const [geoWidgetSlot, setGeoWidgetSlot] = useState<{ packageId: string; index: number } | null>(null);
   const [error, setError] = useState('');
   const [warnings, setWarnings] = useState<string[]>([]);
-  const [geoWidgetPackageId, setGeoWidgetPackageId] = useState<string | null>(null);
   
-  // Custom address state per package
-  const [useCustomAddress, setUseCustomAddress] = useState<Record<string, boolean>>({});
-  const [customAddresses, setCustomAddresses] = useState<Record<string, {
+  // Custom address type
+  type CustomAddressType = {
     firstName: string;
     lastName: string;
     phone: string;
@@ -102,7 +106,11 @@ export default function ShippingPerPackage({
     apartment: string;
     postalCode: string;
     city: string;
-  }>>({});
+  };
+  
+  // Custom address state per package
+  const [useCustomAddress, setUseCustomAddress] = useState<Record<string, boolean>>({});
+  const [customAddresses, setCustomAddresses] = useState<Record<string, CustomAddressType>>({});
 
   // Fetch shipping options per package
   useEffect(() => {
@@ -127,7 +135,7 @@ export default function ShippingPerPackage({
         // Initialize selected methods from response defaults or initial data
         const initialMethods: Record<string, ShippingMethodId> = {};
         const initialUseCustom: Record<string, boolean> = {};
-        const initialCustomAddresses: Record<string, typeof customAddresses[string]> = {};
+        const initialCustomAddresses: Record<string, CustomAddressType> = {};
         
         // Try to restore previous selections if available
         if (initialData.packageShipping && initialData.packageShipping.length > 0) {
@@ -136,10 +144,10 @@ export default function ShippingPerPackage({
             if (pkgShipping.paczkomatCode) {
               setPaczkomatSelections(prev => ({
                 ...prev,
-                [pkgShipping.packageId]: {
+                [pkgShipping.packageId]: [{
                   code: pkgShipping.paczkomatCode || '',
                   address: pkgShipping.paczkomatAddress || '',
-                },
+                }],
               }));
             }
             // Restore custom address if present
@@ -188,6 +196,55 @@ export default function ShippingPerPackage({
       }
     }
     return total;
+  };
+
+  // Calculate actual number of shipments based on selected methods
+  // Paczkomat: count each paczkomatPackageCount
+  // Courier: always 1 per package
+  const calculateShipmentCount = (): number => {
+    let count = 0;
+    for (const pkgOpt of packagesWithOptions) {
+      const method = selectedMethods[pkgOpt.package.id];
+      if (method === 'inpost_paczkomat') {
+        count += pkgOpt.package.paczkomatPackageCount || 1;
+      } else {
+        count += 1;
+      }
+    }
+    return count || packagesWithOptions.length;
+  };
+
+  // Split items into paczkomat packages for display
+  const getItemsForPaczkomatSlot = (items: PackageItem[], slotIndex: number, totalSlots: number): PackageItem[] => {
+    if (totalSlots <= 1) return items;
+    // Distribute items evenly across slots
+    const itemsPerSlot = Math.ceil(items.reduce((sum, i) => sum + i.quantity, 0) / totalSlots);
+    let currentSlot = 0;
+    let currentSlotCount = 0;
+    const slotItems: PackageItem[][] = Array.from({ length: totalSlots }, () => []);
+    
+    for (const item of items) {
+      let remainingQty = item.quantity;
+      while (remainingQty > 0) {
+        const spaceInSlot = itemsPerSlot - currentSlotCount;
+        const qtyForSlot = Math.min(remainingQty, spaceInSlot);
+        if (qtyForSlot > 0) {
+          const existingItem = slotItems[currentSlot].find(i => i.productId === item.productId);
+          if (existingItem) {
+            existingItem.quantity += qtyForSlot;
+          } else {
+            slotItems[currentSlot].push({ ...item, quantity: qtyForSlot });
+          }
+          currentSlotCount += qtyForSlot;
+          remainingQty -= qtyForSlot;
+        }
+        if (currentSlotCount >= itemsPerSlot && currentSlot < totalSlots - 1) {
+          currentSlot++;
+          currentSlotCount = 0;
+        }
+      }
+    }
+    return slotItems[slotIndex] || [];
   };
 
   const handleMethodChange = (packageId: string, methodId: ShippingMethodId) => {
@@ -247,24 +304,28 @@ export default function ShippingPerPackage({
     }));
   };
 
-  const openPaczkomatWidget = (packageId: string) => {
-    setGeoWidgetPackageId(packageId);
+  const openPaczkomatWidget = (packageId: string, slotIndex: number) => {
+    setGeoWidgetSlot({ packageId, index: slotIndex });
   };
 
   const handlePointSelect = (point: InPostPoint) => {
-    if (!geoWidgetPackageId) return;
+    if (!geoWidgetSlot) return;
+    
+    const { packageId, index } = geoWidgetSlot;
     
     const address = point.address_details
       ? `${point.address_details.street} ${point.address_details.building_number}, ${point.address_details.post_code} ${point.address_details.city}`
       : `${point.address.line1}, ${point.address.line2}`;
     
-    setPaczkomatSelections(prev => ({
-      ...prev,
-      [geoWidgetPackageId]: {
-        code: point.name,
-        address: address,
-      },
-    }));
+    setPaczkomatSelections(prev => {
+      const currentSelections = prev[packageId] || [];
+      const newSelections = [...currentSelections];
+      newSelections[index] = { code: point.name, address };
+      return {
+        ...prev,
+        [packageId]: newSelections,
+      };
+    });
     setError('');
   };
 
@@ -279,12 +340,15 @@ export default function ShippingPerPackage({
         return;
       }
 
-      // Check paczkomat selection if needed
+      // Check paczkomat selections if needed - validate all slots are filled
       if (methodId === 'inpost_paczkomat') {
-        const paczkomat = paczkomatSelections[pkgOpt.package.id];
-        if (!paczkomat?.code) {
-          setError(`Wybierz paczkomat dla paczki: ${getPackageTitle(pkgOpt)}`);
-          return;
+        const paczkomatCount = pkgOpt.package.paczkomatPackageCount || 1;
+        const selections = paczkomatSelections[pkgOpt.package.id] || [];
+        for (let i = 0; i < paczkomatCount; i++) {
+          if (!selections[i]?.code) {
+            setError(`Wybierz paczkomat ${paczkomatCount > 1 ? `#${i + 1} ` : ''}dla paczki: ${getPackageTitle(pkgOpt)}`);
+            return;
+          }
         }
       }
       
@@ -302,7 +366,7 @@ export default function ShippingPerPackage({
     const packageShipping: PackageShippingSelection[] = packagesWithOptions.map(pkgOpt => {
       const methodId = selectedMethods[pkgOpt.package.id];
       const method = pkgOpt.shippingMethods.find(m => m.id === methodId);
-      const paczkomat = paczkomatSelections[pkgOpt.package.id];
+      const selections = paczkomatSelections[pkgOpt.package.id] || [];
       const hasCustomAddr = useCustomAddress[pkgOpt.package.id] && methodId !== 'inpost_paczkomat';
 
       return {
@@ -310,8 +374,9 @@ export default function ShippingPerPackage({
         wholesaler: pkgOpt.package.wholesaler || undefined,
         method: methodId,
         price: method?.price || 0,
-        paczkomatCode: methodId === 'inpost_paczkomat' ? paczkomat?.code : undefined,
-        paczkomatAddress: methodId === 'inpost_paczkomat' ? paczkomat?.address : undefined,
+        // For multiple paczkomats, join codes with semicolon
+        paczkomatCode: methodId === 'inpost_paczkomat' ? selections.map(s => s?.code).filter(Boolean).join(';') : undefined,
+        paczkomatAddress: methodId === 'inpost_paczkomat' ? selections.map(s => s?.address).filter(Boolean).join(' | ') : undefined,
         useCustomAddress: hasCustomAddr,
         customAddress: hasCustomAddr ? customAddresses[pkgOpt.package.id] : undefined,
       };
@@ -397,7 +462,7 @@ export default function ShippingPerPackage({
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
             </svg>
-            {packagesWithOptions.length} {packagesWithOptions.length === 1 ? 'przesyłka' : packagesWithOptions.length < 5 ? 'przesyłki' : 'przesyłek'}
+            {calculateShipmentCount()} {calculateShipmentCount() === 1 ? 'przesyłka' : calculateShipmentCount() < 5 ? 'przesyłki' : 'przesyłek'}
           </span>
           {packagesWithOptions.some(p => p.package.type === 'gabaryt') && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm font-medium">
@@ -565,66 +630,94 @@ export default function ShippingPerPackage({
                       </div>
                     </label>
 
-                    {/* Paczkomat selector for this package */}
+                    {/* Paczkomat selectors for this package - one per paczkomatPackageCount */}
                     {method.id === 'inpost_paczkomat' &&
                       selectedMethods[pkgOpt.package.id] === 'inpost_paczkomat' && (
-                        <div className="mt-2 p-2.5 sm:p-3 bg-[#FFF9E6] border border-[#FFCD00] rounded-lg">
-                          {paczkomatSelections[pkgOpt.package.id]?.code ? (
-                            <div className="flex items-center gap-2 sm:gap-3">
-                              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-[#FFCD00] rounded-lg flex items-center justify-center flex-shrink-0">
-                                <svg
-                                  className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#1D1D1B]"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                                  />
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                                  />
-                                </svg>
+                        <div className="mt-2 space-y-2">
+                          {Array.from({ length: pkgOpt.package.paczkomatPackageCount || 1 }).map((_, slotIndex) => {
+                            const selection = paczkomatSelections[pkgOpt.package.id]?.[slotIndex];
+                            const paczkomatCount = pkgOpt.package.paczkomatPackageCount || 1;
+                            const slotItems = getItemsForPaczkomatSlot(pkgOpt.package.items, slotIndex, paczkomatCount);
+                            return (
+                              <div key={slotIndex} className="p-2.5 sm:p-3 bg-[#FFF9E6] border border-[#FFCD00] rounded-lg">
+                                {paczkomatCount > 1 && (
+                                  <div className="mb-2">
+                                    <div className="text-xs font-medium text-[#1D1D1B]">
+                                      Paczka {slotIndex + 1} z {paczkomatCount}
+                                    </div>
+                                    {/* Show which products go to this paczkomat */}
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                      {slotItems.map((item, idx) => (
+                                        <span key={idx} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-white/70 rounded text-[10px] text-gray-600">
+                                          {item.productImage && (
+                                            <img src={item.productImage} alt="" className="w-4 h-4 rounded object-cover" />
+                                          )}
+                                          <span className="truncate max-w-[80px]">{item.productName.slice(0, 15)}...</span>
+                                          {item.quantity > 1 && <span className="font-medium">×{item.quantity}</span>}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                {selection?.code ? (
+                                  <div className="flex items-center gap-2 sm:gap-3">
+                                    <div className="w-7 h-7 sm:w-8 sm:h-8 bg-[#FFCD00] rounded-lg flex items-center justify-center flex-shrink-0">
+                                      <svg
+                                        className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#1D1D1B]"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                                        />
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                                        />
+                                      </svg>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-medium text-gray-900 text-xs sm:text-sm">
+                                        {selection.code}
+                                      </p>
+                                      <p className="text-[10px] sm:text-xs text-gray-500 truncate">
+                                        {selection.address}
+                                      </p>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => openPaczkomatWidget(pkgOpt.package.id, slotIndex)}
+                                      className="text-[10px] sm:text-xs text-orange-600 hover:text-orange-700 font-medium shrink-0"
+                                    >
+                                      Zmień
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => openPaczkomatWidget(pkgOpt.package.id, slotIndex)}
+                                    className="w-full flex items-center justify-center gap-1.5 sm:gap-2 px-3 py-2 bg-[#FFCD00] text-[#1D1D1B] text-xs sm:text-sm font-semibold rounded-lg hover:bg-[#E6B800] transition-colors"
+                                  >
+                                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+                                      />
+                                    </svg>
+                                    Wybierz paczkomat{paczkomatCount > 1 ? ` #${slotIndex + 1}` : ''}
+                                  </button>
+                                )}
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-gray-900 text-xs sm:text-sm">
-                                  {paczkomatSelections[pkgOpt.package.id].code}
-                                </p>
-                                <p className="text-[10px] sm:text-xs text-gray-500 truncate">
-                                  {paczkomatSelections[pkgOpt.package.id].address}
-                                </p>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => openPaczkomatWidget(pkgOpt.package.id)}
-                                className="text-[10px] sm:text-xs text-orange-600 hover:text-orange-700 font-medium shrink-0"
-                              >
-                                Zmień
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => openPaczkomatWidget(pkgOpt.package.id)}
-                              className="w-full flex items-center justify-center gap-1.5 sm:gap-2 px-3 py-2 bg-[#FFCD00] text-[#1D1D1B] text-xs sm:text-sm font-semibold rounded-lg hover:bg-[#E6B800] transition-colors"
-                            >
-                              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-                                />
-                              </svg>
-                              Wybierz paczkomat
-                            </button>
-                          )}
+                            );
+                          })}
                         </div>
                       )}
                   </div>
@@ -723,6 +816,34 @@ export default function ShippingPerPackage({
                   )}
                 </div>
               )}
+              
+              {/* Free shipping progress bar per warehouse */}
+              {!pkgOpt.package.hasFreeShipping && pkgOpt.package.warehouseValue < 300 && (
+                <div className="bg-orange-50 px-4 py-3 border-t border-orange-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-gray-600">Do darmowej dostawy:</span>
+                    <span className="text-sm font-semibold text-orange-600">
+                      {(300 - pkgOpt.package.warehouseValue).toFixed(2)} zł
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-orange-200 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-orange-400 to-green-500 rounded-full transition-all duration-300"
+                      style={{ width: `${Math.min((pkgOpt.package.warehouseValue / 300) * 100, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+              {pkgOpt.package.hasFreeShipping && (
+                <div className="bg-green-50 px-4 py-2 border-t border-green-100">
+                  <div className="flex items-center gap-2 text-green-700">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-sm font-medium">Darmowa dostawa!</span>
+                  </div>
+                </div>
+              )}
               </div>
             </div>
           );
@@ -738,7 +859,7 @@ export default function ShippingPerPackage({
             </span>
           </div>
           <div className="text-xs text-gray-500">
-            {packagesWithOptions.length} {packagesWithOptions.length === 1 ? 'przesyłka' : packagesWithOptions.length < 5 ? 'przesyłki' : 'przesyłek'} • Otrzymasz numer śledzenia dla każdej
+            {calculateShipmentCount()} {calculateShipmentCount() === 1 ? 'przesyłka' : calculateShipmentCount() < 5 ? 'przesyłki' : 'przesyłek'} • Otrzymasz numer śledzenia dla każdej
           </div>
         </div>
 
@@ -769,8 +890,8 @@ export default function ShippingPerPackage({
 
       {/* InPost GeoWidget Modal */}
       <InPostGeoWidget
-        isOpen={geoWidgetPackageId !== null}
-        onClose={() => setGeoWidgetPackageId(null)}
+        isOpen={geoWidgetSlot !== null}
+        onClose={() => setGeoWidgetSlot(null)}
         onPointSelect={handlePointSelect}
       />
     </div>

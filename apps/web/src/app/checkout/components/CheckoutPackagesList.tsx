@@ -1,7 +1,10 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { CartItem } from '@/lib/api';
+
+// Placeholder SVG for failed images
+const PLACEHOLDER_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect fill='%23f3f4f6' width='400' height='400'/%3E%3Cpath fill='%23d1d5db' d='M160 150h80v100h-80z'/%3E%3Ccircle fill='%23d1d5db' cx='180' cy='130' r='20'/%3E%3Cpath fill='%23e5e7eb' d='M120 250l60-80 40 50 40-30 60 60v50H120z'/%3E%3C/svg%3E";
 
 interface CheckoutPackagesListProps {
   items: CartItem[];
@@ -34,6 +37,12 @@ export default function CheckoutPackagesList({
   removingItemId,
   shippingPrices = {},
 }: CheckoutPackagesListProps) {
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+
+  const handleImageError = (itemId: string) => {
+    setFailedImages(prev => new Set(prev).add(itemId));
+  };
+
   // Group items by wholesaler
   const packages = useMemo(() => {
     const grouped: Record<string, CartItem[]> = {};
