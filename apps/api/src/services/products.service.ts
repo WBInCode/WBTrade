@@ -54,6 +54,7 @@ interface ProductFilters {
   sort?: string;
   status?: string;
   hideOldZeroStock?: boolean; // Ukryj produkty ze stanem 0 starsze niż 14 dni
+  sessionSeed?: number; // Seed for consistent random sorting
 }
 
 interface ProductsListResult {
@@ -275,6 +276,7 @@ export class ProductsService {
       sort = 'newest',
       status,
       hideOldZeroStock = false,
+      sessionSeed,
     } = filters;
 
     // If search is provided, use Meilisearch for better results
@@ -380,37 +382,40 @@ export class ProductsService {
     }
 
     // Build orderBy clause
-    let orderBy: Prisma.ProductOrderByWithRelationInput | Prisma.ProductOrderByWithRelationInput[] = { createdAt: 'desc' };
+    // Always add secondary sort by id for stable pagination (prevents random order when primary values are equal)
+    let orderBy: Prisma.ProductOrderByWithRelationInput | Prisma.ProductOrderByWithRelationInput[] = [{ createdAt: 'desc' }, { id: 'asc' }];
     let useRandomSort = false;
     
     switch (sort) {
       case 'price_asc':
       case 'price-asc':
-        orderBy = { price: 'asc' };
+        orderBy = [{ price: 'asc' }, { id: 'asc' }];
         break;
       case 'price_desc':
       case 'price-desc':
-        orderBy = { price: 'desc' };
+        orderBy = [{ price: 'desc' }, { id: 'asc' }];
         break;
       case 'name_asc':
-        orderBy = { name: 'asc' };
+        orderBy = [{ name: 'asc' }, { id: 'asc' }];
         break;
       case 'name_desc':
-        orderBy = { name: 'desc' };
+        orderBy = [{ name: 'desc' }, { id: 'asc' }];
         break;
       case 'random':
-        // For random sort, we'll fetch more and shuffle client-side
+      case 'relevance':
+        // For random/relevance sort, we'll fetch more and shuffle with session seed
+        // This ensures consistent ordering within a user session but different between sessions
         useRandomSort = true;
         orderBy = { id: 'asc' }; // Temporary, will be shuffled
         break;
       case 'popularity':
-      case 'relevance':
         // Sort by popularity score (salesCount*3 + viewCount*0.1)
-        orderBy = { popularityScore: 'desc' };
+        // Add secondary sort by id for stable pagination when scores are equal
+        orderBy = [{ popularityScore: 'desc' }, { id: 'asc' }];
         break;
       case 'newest':
       default:
-        orderBy = { createdAt: 'desc' };
+        orderBy = [{ createdAt: 'desc' }, { id: 'asc' }];
     }
 
     // Execute queries in parallel
@@ -442,13 +447,15 @@ export class ProductsService {
     // Transform products
     let transformedProducts = transformProducts(products);
     
-    // Apply random shuffle if requested (seeded by day for consistency)
+    // Apply random shuffle if requested (seeded by session for consistency within a browsing session)
     if (useRandomSort && transformedProducts.length > 0) {
-      // Use date as seed for consistent daily shuffle
-      const today = new Date();
-      const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+      // Use sessionSeed if provided (from frontend), otherwise fallback to daily seed
+      const seed = sessionSeed || (() => {
+        const today = new Date();
+        return today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+      })();
       
-      // Seeded shuffle function
+      // Seeded shuffle function - produces same order for same seed
       const seededShuffle = (array: any[], seedValue: number) => {
         const shuffled = [...array];
         let currentSeed = seedValue;
@@ -503,6 +510,7 @@ export class ProductsService {
       sort = 'newest',
       status,
       hideOldZeroStock = false,
+      sessionSeed,
     } = filters;
 
     try {
@@ -543,30 +551,32 @@ export class ProductsService {
       }
 
       // Build sort
+      // Always add secondary sort by id for stable pagination (prevents random order when primary values are equal)
       let meiliSort: string[] = [];
       switch (sort) {
         case 'price_asc':
         case 'price-asc':
-          meiliSort = ['price:asc'];
+          meiliSort = ['price:asc', 'id:asc'];
           break;
         case 'price_desc':
         case 'price-desc':
-          meiliSort = ['price:desc'];
+          meiliSort = ['price:desc', 'id:asc'];
           break;
         case 'name_asc':
-          meiliSort = ['name:asc'];
+          meiliSort = ['name:asc', 'id:asc'];
           break;
         case 'name_desc':
-          meiliSort = ['name:desc'];
+          meiliSort = ['name:desc', 'id:asc'];
           break;
         case 'popularity':
         case 'relevance':
           // Sort by popularityScore (salesCount*3 + viewCount*0.1)
-          meiliSort = ['popularityScore:desc'];
+          // Add secondary sort by id for stable pagination when scores are equal
+          meiliSort = ['popularityScore:desc', 'id:asc'];
           break;
         case 'newest':
         default:
-          meiliSort = ['createdAt:desc'];
+          meiliSort = ['createdAt:desc', 'id:asc'];
       }
 
       const results = await index.search<MeiliProduct>(search || '', {
@@ -735,19 +745,23 @@ export class ProductsService {
       ];
     }
 
-    let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };
+    let orderBy: Prisma.ProductOrderByWithRelationInput | Prisma.ProductOrderByWithRelationInput[] = [{ createdAt: 'desc' }, { id: 'asc' }];
     switch (sort) {
       case 'price_asc':
-        orderBy = { price: 'asc' };
+        orderBy = [{ price: 'asc' }, { id: 'asc' }];
         break;
       case 'price_desc':
-        orderBy = { price: 'desc' };
+        orderBy = [{ price: 'desc' }, { id: 'asc' }];
         break;
       case 'name_asc':
-        orderBy = { name: 'asc' };
+        orderBy = [{ name: 'asc' }, { id: 'asc' }];
         break;
       case 'name_desc':
-        orderBy = { name: 'desc' };
+        orderBy = [{ name: 'desc' }, { id: 'asc' }];
+        break;
+      case 'popularity':
+      case 'relevance':
+        orderBy = [{ popularityScore: 'desc' }, { id: 'asc' }];
         break;
     }
 
