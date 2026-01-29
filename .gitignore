@@ -65,6 +65,11 @@ apps/api/test-*.ts
 apps/api/update-bl-*.js
 apps/api/create-test-*.js
 apps/api/verify-test-*.js
+apps/api/delete-test-*.js
+apps/api/find-*.js
+apps/api/set-bl-*.js
+apps/api/add-new-*.js
+apps/api/sync-tags-*.js
 
 # ============================================
 # 🔒 SECURITY - Sensitive files

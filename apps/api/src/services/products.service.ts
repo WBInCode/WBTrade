@@ -31,12 +31,23 @@ const PACKAGE_TAGS = [
   'produkt w paczce: 5',
 ];
 
-// Filtr SQL dla warunku "produkt w paczce"
+// Tagi ukrywające produkty - produkty z tymi tagami NIE będą wyświetlane
+const HIDDEN_TAGS = ['błąd zdjęcia', 'błąd zdjęcia '];
+
+// Filtr SQL dla warunku "produkt w paczce" oraz ukrywania produktów z błędami
 // Jeśli produkt ma "Paczkomaty i Kurier" to MUSI mieć też "produkt w paczce"
+// Produkty z tagiem "błąd zdjęcia" są ukrywane
 const PACKAGE_FILTER_WHERE: Prisma.ProductWhereInput = {
-  OR: [
-    { NOT: { tags: { hasSome: PACZKOMAT_TAGS } } },
-    { tags: { hasSome: PACKAGE_TAGS } },
+  AND: [
+    // Nie pokazuj produktów z tagami błędów
+    { NOT: { tags: { hasSome: HIDDEN_TAGS } } },
+    // Warunek paczkomatu
+    {
+      OR: [
+        { NOT: { tags: { hasSome: PACZKOMAT_TAGS } } },
+        { tags: { hasSome: PACKAGE_TAGS } },
+      ]
+    }
   ]
 };
 
