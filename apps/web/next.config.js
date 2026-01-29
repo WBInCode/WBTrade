@@ -27,6 +27,15 @@ module.exports = {
                 protocol: 'https',
                 hostname: '*.r2.cloudflarestorage.com',
             },
+            // Supplier image sources
+            {
+                protocol: 'https',
+                hostname: 'www.hurtowniaprzemyslowa.pl',
+            },
+            {
+                protocol: 'https',
+                hostname: 'hurtowniaprzemyslowa.pl',
+            },
         ],
         // Image optimization settings
         deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],

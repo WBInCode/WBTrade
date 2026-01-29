@@ -4,6 +4,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { CartItem, checkoutApi } from '../lib/api';
 
+// Placeholder SVG for failed images
+const PLACEHOLDER_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect fill='%23f3f4f6' width='400' height='400'/%3E%3Cpath fill='%23d1d5db' d='M160 150h80v100h-80z'/%3E%3Ccircle fill='%23d1d5db' cx='180' cy='130' r='20'/%3E%3Cpath fill='%23e5e7eb' d='M120 250l60-80 40 50 40-30 60 60v50H120z'/%3E%3C/svg%3E";
+
 interface PackageItem extends CartItem {
   selected: boolean;
 }
@@ -59,6 +62,12 @@ export default function CartPackageView({
 }: CartPackageViewProps) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [quantityInputs, setQuantityInputs] = useState<Record<string, string>>({});
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+
+  // Handle image load error
+  const handleImageError = (itemId: string) => {
+    setFailedImages(prev => new Set(prev).add(itemId));
+  };
 
   // Group items by wholesaler
   const packages = useMemo(() => {
@@ -203,18 +212,19 @@ export default function CartPackageView({
                     {/* Product Image */}
                     <Link href={`/products/${item.variant.product.slug || item.variant.product.id}`} className="shrink-0">
                       <div className={`${isCompact ? 'w-16 h-16 sm:w-20 sm:h-20' : 'w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28'} rounded-lg sm:rounded-xl overflow-hidden bg-gray-100 border`}>
-                        {item.variant.product.images[0] ? (
+                        {item.variant.product.images[0] && !failedImages.has(item.id) ? (
                           <img
                             src={item.variant.product.images[0].url}
                             alt={item.variant.product.images[0].alt || item.variant.product.name}
                             className="w-full h-full object-cover"
+                            onError={() => handleImageError(item.id)}
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400">
-                            <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                          </div>
+                          <img
+                            src={PLACEHOLDER_IMAGE}
+                            alt={item.variant.product.name}
+                            className="w-full h-full object-contain p-2"
+                          />
                         )}
                       </div>
                     </Link>
@@ -264,15 +274,9 @@ export default function CartPackageView({
                             }`}
                             title={item.quantity === 1 ? 'Usuń z koszyka' : 'Zmniejsz ilość'}
                           >
-                            {item.quantity === 1 ? (
-                              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            ) : (
-                              <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                              </svg>
-                            )}
+                            <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                            </svg>
                           </button>
                           <input
                             type="number"
@@ -309,6 +313,18 @@ export default function CartPackageView({
                             </svg>
                           </button>
                         </div>
+                        
+                        {/* Mobile: Remove button */}
+                        <button
+                          onClick={() => handleRemove(item.id)}
+                          disabled={isUpdating}
+                          className="sm:hidden flex items-center gap-1 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors px-2 py-1.5 rounded-lg border border-red-200"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          Usuń
+                        </button>
                       </div>
                     </div>
 
@@ -342,23 +358,40 @@ export default function CartPackageView({
             })}
           </div>
 
-          {/* Shipping Info */}
+          {/* Shipping Info with Free Shipping Progress */}
           <div className="bg-orange-50 px-3 sm:px-4 py-2.5 sm:py-3 border-t border-orange-100">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2 mb-2">
               <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
                 <svg className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                 </svg>
-                <span className="text-gray-700">Dostawa</span>
+                <span className="text-gray-700">Szacowana dostawa</span>
               </div>
               <div className="text-right">
-                {pkg.shippingPrice > 0 ? (
-                  <span className="font-semibold text-orange-600 text-sm sm:text-base">od {pkg.shippingPrice.toFixed(2)} zł</span>
+                {pkg.subtotal >= 300 ? (
+                  <span className="font-semibold text-green-600 text-sm sm:text-base">GRATIS!</span>
+                ) : pkg.shippingPrice > 0 ? (
+                  <span className="font-semibold text-orange-600 text-sm sm:text-base">{pkg.shippingPrice.toFixed(2)} zł</span>
                 ) : (
-                  <span className="text-gray-500 text-xs sm:text-sm">Przy zamówieniu</span>
+                  <span className="text-gray-500 text-xs sm:text-sm">obliczana przy zamówieniu</span>
                 )}
               </div>
             </div>
+            
+            {/* Free shipping progress bar per warehouse */}
+            {pkg.subtotal < 300 && (
+              <div className="space-y-1">
+                <div className="h-1.5 bg-orange-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-orange-400 to-green-500 rounded-full transition-all duration-300"
+                    style={{ width: `${Math.min((pkg.subtotal / 300) * 100, 100)}%` }}
+                  />
+                </div>
+                <p className="text-xs text-gray-600 text-center">
+                  <span className="font-medium text-orange-600">{(300 - pkg.subtotal).toFixed(2)} zł</span> do darmowej dostawy
+                </p>
+              </div>
+            )}
           </div>
         </div>
       ))}

@@ -199,6 +199,183 @@ function isInPostOnly(tags: string[]): boolean {
 }
 
 /**
+ * Calculate number of packages needed using First-Fit Decreasing (FFD) bin-packing algorithm.
+ * 
+ * Each product with "produkt w paczce: N" tag takes 1/N of package capacity.
+ * Package capacity is 1.0. Items are indivisible.
+ * 
+ * This only applies to products with "Paczkomaty i Kurier" tag.
+ * Products with different limits can be combined in the same package.
+ * 
+ * Examples:
+ * - 1×(paczka:3) + 2×(paczka:4) = 0.333 + 0.5 = 0.833 → 1 package
+ * - 2×(paczka:3) + 2×(paczka:4) = 0.667 + 0.5 = 1.167 → 2 packages
+ * - 3×(paczka:1) → 3 packages (each takes full capacity)
+ */
+function calculatePackageCount(items: Array<{ tags: string[]; quantity: number }>): number {
+  // Expand items to individual units with their fractional sizes
+  const units: number[] = [];
+  
+  for (const item of items) {
+    // Only count items with "Paczkomaty i Kurier" tag
+    if (!isInPostOnly(item.tags)) {
+      continue;
+    }
+    
+    const limit = getPaczkomatLimit(item.tags);
+    const fractionPerUnit = 1 / limit;
+    
+    // Add each unit as a separate entry
+    for (let i = 0; i < item.quantity; i++) {
+      units.push(fractionPerUnit);
+    }
+  }
+  
+  if (units.length === 0) {
+    return 0;
+  }
+  
+  // Sort units in descending order (First-Fit Decreasing)
+  units.sort((a, b) => b - a);
+  
+  // Pack units into packages (each package has capacity 1.0)
+  const packages: number[] = [];
+  
+  for (const unitSize of units) {
+    let fitted = false;
+    
+    // Try to fit in existing package
+    for (let i = 0; i < packages.length; i++) {
+      // Use small epsilon for floating point comparison
+      if (packages[i] + unitSize <= 1.0 + 0.0001) {
+        packages[i] += unitSize;
+        fitted = true;
+        break;
+      }
+    }
+    
+    // If doesn't fit anywhere, create new package
+    if (!fitted) {
+      packages.push(unitSize);
+    }
+  }
+  
+  return packages.length;
+}
+
+/**
+ * Pack items into bins using FFD algorithm and return item assignments.
+ * Returns array of bins, each bin contains array of items with their quantities.
+ * 
+ * This is used to split products into separate paczkomat packages for display.
+ */
+interface PackedItem {
+  productId: string;
+  productName: string;
+  variantId: string;
+  quantity: number;
+  productImage?: string;
+}
+
+interface PackedBin {
+  items: PackedItem[];
+  totalFraction: number;
+}
+
+function packItemsIntoBins(
+  items: Array<{
+    product: { id: string; name: string; tags: string[]; image?: string };
+    variantId: string;
+    quantity: number;
+  }>
+): PackedBin[] {
+  // Create units with product info
+  interface UnitInfo {
+    productId: string;
+    productName: string;
+    variantId: string;
+    productImage?: string;
+    fraction: number;
+  }
+  
+  const units: UnitInfo[] = [];
+  
+  for (const item of items) {
+    // Only pack items with "Paczkomaty i Kurier" tag
+    if (!isInPostOnly(item.product.tags)) {
+      continue;
+    }
+    
+    const limit = getPaczkomatLimit(item.product.tags);
+    const fraction = 1 / limit;
+    
+    // Add each unit separately
+    for (let i = 0; i < item.quantity; i++) {
+      units.push({
+        productId: item.product.id,
+        productName: item.product.name,
+        variantId: item.variantId,
+        productImage: item.product.image,
+        fraction,
+      });
+    }
+  }
+  
+  if (units.length === 0) {
+    return [];
+  }
+  
+  // Sort by fraction descending (FFD)
+  units.sort((a, b) => b.fraction - a.fraction);
+  
+  // Pack into bins
+  const bins: { units: UnitInfo[]; totalFraction: number }[] = [];
+  
+  for (const unit of units) {
+    let fitted = false;
+    
+    for (const bin of bins) {
+      if (bin.totalFraction + unit.fraction <= 1.0 + 0.0001) {
+        bin.units.push(unit);
+        bin.totalFraction += unit.fraction;
+        fitted = true;
+        break;
+      }
+    }
+    
+    if (!fitted) {
+      bins.push({ units: [unit], totalFraction: unit.fraction });
+    }
+  }
+  
+  // Convert to PackedBin format - aggregate units by product
+  return bins.map(bin => {
+    const itemMap = new Map<string, PackedItem>();
+    
+    for (const unit of bin.units) {
+      const key = unit.variantId;
+      const existing = itemMap.get(key);
+      if (existing) {
+        existing.quantity++;
+      } else {
+        itemMap.set(key, {
+          productId: unit.productId,
+          productName: unit.productName,
+          variantId: unit.variantId,
+          quantity: 1,
+          productImage: unit.productImage,
+        });
+      }
+    }
+    
+    return {
+      items: Array.from(itemMap.values()),
+      totalFraction: bin.totalFraction,
+    };
+  });
+}
+
+/**
  * Get weight from product tags (e.g., "do 10 kg" returns 10)
  */
 function getWeightKg(tags: string[]): number | null {
@@ -404,30 +581,15 @@ export class ShippingCalculatorService {
         };
       });
       
-      // Calculate how many packages are needed for this shipment
-      // RULE: Products with the SAME "produkt w paczce" limit can be packed together
-      // Products with DIFFERENT limits go in separate packages
-      // Example: 
-      //   - 3 products with "produkt w paczce: 3" = 1 package (3/3 = 1)
-      //   - 4 products with "produkt w paczce: 3" = 2 packages (ceil(4/3) = 2)
-      //   - 2 products with "produkt w paczce: 2" = 1 package (2/2 = 1)
-      //   - Mixed: 3x(limit 3) + 2x(limit 2) = 1 + 1 = 2 packages
+      // Calculate how many paczkomat packages are needed for this shipment
+      // Uses FFD bin-packing algorithm for products with "Paczkomaty i Kurier" tag
+      const itemsForPacking = groupItems.map(item => ({
+        tags: item.product.tags,
+        quantity: item.quantity,
+      }));
       
-      // Group items by their paczkomat limit
-      const itemsByLimit = new Map<number, number>(); // limit -> total quantity
-      for (const item of groupItems) {
-        const limit = getPaczkomatLimit(item.product.tags);
-        const currentQty = itemsByLimit.get(limit) || 0;
-        itemsByLimit.set(limit, currentQty + item.quantity);
-      }
-      
-      // Calculate packages needed for each limit group
-      let paczkomatPackageCount = 0;
-      for (const [limit, totalQty] of itemsByLimit) {
-        // Products with same limit are packed together
-        // e.g., 5 items with limit 3 = ceil(5/3) = 2 packages
-        paczkomatPackageCount += Math.ceil(totalQty / limit);
-      }
+      // Calculate packages using FFD bin-packing
+      const paczkomatPackageCount = calculatePackageCount(itemsForPacking);
       
       // Track highest weight-based shipping price in this package
       let maxWeightShippingPrice: number | null = null;
@@ -623,10 +785,11 @@ export class ShippingCalculatorService {
     }, 0);
     
     // Calculate InPost kurier cost (considering free shipping)
+    // Kurier InPost = stała cena za przesyłkę z magazynu (nie mnożymy przez liczbę paczek paczkomatowych)
     let inpostKurierCost = totalGabarytCost;
     for (const pkg of standardPackages) {
       if (!pkg.hasFreeShipping) {
-        inpostKurierCost += pkg.paczkomatPackageCount * SHIPPING_PRICES.inpost_kurier;
+        inpostKurierCost += SHIPPING_PRICES.inpost_kurier; // Jedna przesyłka za magazyn
       }
     }
     
@@ -765,8 +928,9 @@ export class ShippingCalculatorService {
           estimatedDelivery: '1-2 dni',
         });
         
-        // InPost Kurier - also charged per package (same logic as paczkomat)
-        const kurierPrice = isFree ? 0 : paczkomatPackages * SHIPPING_PRICES.inpost_kurier;
+        // InPost Kurier - stała cena za przesyłkę (nie zależy od liczby paczek paczkomatowych)
+        // Kurier zawsze wysyła wszystko w jednej przesyłce
+        const kurierPrice = isFree ? 0 : SHIPPING_PRICES.inpost_kurier;
         
         methods.push({
           id: 'inpost_kurier',
@@ -775,7 +939,7 @@ export class ShippingCalculatorService {
           available: isInPostAvailable,
           message: !isInPostAvailable 
             ? 'Produkt dostępny tylko z DPD' 
-            : (freeMessage || (paczkomatPackages > 1 ? `${paczkomatPackages} paczki` : undefined)),
+            : freeMessage,
           estimatedDelivery: '1-2 dni',
         });
         

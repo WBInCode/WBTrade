@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { checkoutApi, addressesApi, ApiClientError } from '@/lib/api';
+import { checkoutApi, addressesApi, ApiClientError, CartItem } from '@/lib/api';
 import CheckoutSteps from './components/CheckoutSteps';
 import CheckoutAuthChoice from './components/CheckoutAuthChoice';
 import AddressForm from './components/AddressForm';
@@ -105,6 +105,33 @@ function CheckoutPageContent() {
   const { cart, itemCount, loading: cartLoading, removeFromCart, updateQuantity, applyCoupon, removeCoupon } = useCart();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   
+  // Filtered items based on selection from cart page (Empik-style)
+  const [checkoutItems, setCheckoutItems] = useState<CartItem[]>([]);
+  
+  // Filter cart items based on localStorage selection
+  useEffect(() => {
+    if (!cart?.items) {
+      setCheckoutItems([]);
+      return;
+    }
+    
+    const savedSelectedItems = localStorage.getItem('checkoutSelectedItems');
+    if (savedSelectedItems) {
+      try {
+        const selectedIds: string[] = JSON.parse(savedSelectedItems);
+        const selectedSet = new Set(selectedIds);
+        const filteredItems = cart.items.filter(item => selectedSet.has(item.id));
+        // If no items match (e.g., stale localStorage), use all items
+        setCheckoutItems(filteredItems.length > 0 ? filteredItems : cart.items);
+      } catch {
+        setCheckoutItems(cart.items);
+      }
+    } else {
+      // No selection saved - use all items
+      setCheckoutItems(cart.items);
+    }
+  }, [cart?.items]);
+  
   // Step 0 = auth choice, Step 1-4 = checkout steps
   const [currentStep, setCurrentStep] = useState(0);
   const [isGuestCheckout, setIsGuestCheckout] = useState(false);
@@ -152,10 +179,10 @@ function CheckoutPageContent() {
   // Fetch shipping prices from API as soon as cart is loaded
   useEffect(() => {
     async function fetchShippingPrices() {
-      if (cartLoading || !cart?.items || cart.items.length === 0) return;
+      if (cartLoading || checkoutItems.length === 0) return;
       
       try {
-        const items = cart.items.map(item => ({
+        const items = checkoutItems.map(item => ({
           variantId: item.variant.id,
           quantity: item.quantity,
         }));
@@ -179,7 +206,7 @@ function CheckoutPageContent() {
     }
     
     fetchShippingPrices();
-  }, [cartLoading, cart?.items]);
+  }, [cartLoading, checkoutItems]);
 
   // Pre-fill address if user is logged in
   useEffect(() => {
@@ -196,9 +223,12 @@ function CheckoutPageContent() {
     }
   }, [isAuthenticated, user]);
 
-  // Show message if cart is empty
+  // Show message if cart is empty or no items selected
   const displayCart = cart;
-  const isCartEmpty = !cartLoading && itemCount === 0;
+  const isCartEmpty = !cartLoading && (itemCount === 0 || checkoutItems.length === 0);
+
+  // Calculate checkout item count (only selected items)
+  const checkoutItemCount = checkoutItems.reduce((sum, item) => sum + item.quantity, 0);
 
   // Guest checkout handlers
   const handleGuestCheckout = () => {
@@ -262,10 +292,10 @@ function CheckoutPageContent() {
   };
 
   const calculateTotal = () => {
-    const subtotal = cart?.items?.reduce((sum: number, item: any) => {
+    const subtotal = checkoutItems.reduce((sum: number, item: any) => {
       const price = item.variant?.price || 0;
       return sum + price * item.quantity;
-    }, 0) || 0;
+    }, 0);
     
     const shipping = checkoutData.shipping.price;
     const paymentFee = checkoutData.payment.extraFee;
@@ -303,6 +333,8 @@ function CheckoutPageContent() {
           paymentMethod: checkoutData.payment.method,
           customerNotes: '',
           acceptTerms: checkoutData.acceptTerms,
+          // Only include selected items (Empik-style selection)
+          selectedItemIds: checkoutItems.map(item => item.id),
           packageShipping: checkoutData.shipping.packageShipping?.map(pkg => ({
             packageId: pkg.packageId,
             method: pkg.method,
@@ -340,6 +372,9 @@ function CheckoutPageContent() {
             } : undefined,
           },
         });
+
+        // Clear localStorage selected items after successful order
+        localStorage.removeItem('checkoutSelectedItems');
 
         // If payment URL is provided, redirect to payment gateway
         if (checkoutResponse.paymentUrl) {
@@ -400,6 +435,8 @@ function CheckoutPageContent() {
         paymentMethod: checkoutData.payment.method,
         customerNotes: '',
         acceptTerms: checkoutData.acceptTerms,
+        // Only include selected items (Empik-style selection)
+        selectedItemIds: checkoutItems.map(item => item.id),
         packageShipping: checkoutData.shipping.packageShipping?.map(pkg => ({
           packageId: pkg.packageId,
           method: pkg.method,
@@ -410,6 +447,9 @@ function CheckoutPageContent() {
           customAddress: pkg.customAddress,
         })),
       });
+
+      // Clear localStorage selected items after successful order
+      localStorage.removeItem('checkoutSelectedItems');
 
       // If payment URL is provided, redirect to payment gateway
       if (checkoutResponse.paymentUrl) {
@@ -578,7 +618,7 @@ function CheckoutPageContent() {
                 onSubmit={handleShippingSubmit}
                 onBack={handleBack}
                 onPriceChange={handleShippingPriceChange}
-                cartItems={cart?.items}
+                cartItems={checkoutItems}
               />
             )}
 
@@ -627,7 +667,7 @@ function CheckoutPageContent() {
               
               {/* Products grouped by warehouse */}
               <CheckoutPackagesList 
-                items={displayCart?.items || []} 
+                items={checkoutItems} 
                 onRemoveItem={handleRemoveItem}
                 removingItemId={removingItemId}
               />
@@ -647,7 +687,7 @@ function CheckoutPageContent() {
                   <span>{totals.subtotal.toFixed(2)} zł</span>
                 </div>
                 <div className="flex justify-between text-xs sm:text-sm">
-                  <span className="text-gray-600">Dostawa</span>
+                  <span className="text-gray-600">Szacowana dostawa</span>
                   <span>{totals.shipping.toFixed(2)} zł</span>
                 </div>
                 {totals.paymentFee > 0 && (
