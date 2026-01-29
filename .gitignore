@@ -58,8 +58,11 @@ apps/api/promo-codes-*
 
 # Debug/test scripts (may contain user data)
 apps/api/check-*.ts
+apps/api/check-*.js
 apps/api/fix-*.ts
+apps/api/fix-*.js
 apps/api/test-*.ts
+apps/api/update-bl-*.js
 
 # ============================================
 # 🔒 SECURITY - Sensitive files

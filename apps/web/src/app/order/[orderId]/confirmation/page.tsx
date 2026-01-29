@@ -22,6 +22,7 @@ interface Order {
   paymentStatus: string;
   subtotal: number;
   shipping: number;
+  discount: number;
   tax: number;
   total: number;
   createdAt: string;
@@ -446,6 +447,17 @@ function OrderConfirmationPageContent() {
               <span>Suma częściowa</span>
               <span>{Number(order?.subtotal || 0).toFixed(2)} zł</span>
             </div>
+            {Number(order?.discount || 0) > 0 && (
+              <div className="flex justify-between items-center text-green-600">
+                <span className="flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
+                  </svg>
+                  Rabat (kupon)
+                </span>
+                <span>-{Number(order?.discount || 0).toFixed(2)} zł</span>
+              </div>
+            )}
             <div className="flex justify-between items-center text-gray-600">
               <span>Dostawa</span>
               <span>{Number(order?.shipping || 0).toFixed(2)} zł</span>
