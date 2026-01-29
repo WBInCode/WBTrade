@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-secondary-900">
       <Header />
       
       <main className="container-custom py-6">
@@ -32,7 +32,7 @@ export default function HomePage() {
         <div className="flex justify-center mb-10">
           <Link 
             href="/products"
-            className="px-8 py-3 border border-secondary-300 rounded-lg text-secondary-700 font-medium hover:bg-gray-50 transition-colors"
+            className="px-8 py-3 border border-secondary-300 dark:border-secondary-600 rounded-lg text-secondary-700 dark:text-secondary-300 font-medium hover:bg-gray-50 dark:hover:bg-secondary-800 transition-colors"
           >
             Pokaż więcej produktów
           </Link>

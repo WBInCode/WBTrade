@@ -134,7 +134,7 @@ export default function CartPackageView({
   return (
     <div className="space-y-3 sm:space-y-4">
       {/* Select All Header */}
-      <div className="flex items-center justify-between bg-white rounded-xl p-3 sm:p-4 shadow-sm">
+      <div className="flex items-center justify-between bg-white dark:bg-secondary-800 rounded-xl p-3 sm:p-4 shadow-sm">
         <label className="flex items-center gap-2 sm:gap-3 cursor-pointer">
           <input
             type="checkbox"
@@ -143,18 +143,18 @@ export default function CartPackageView({
               if (input) input.indeterminate = someSelected && !allSelected;
             }}
             onChange={(e) => onSelectAll(e.target.checked)}
-            className="w-4 h-4 sm:w-5 sm:h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+            className="w-4 h-4 sm:w-5 sm:h-5 rounded border-gray-300 dark:border-secondary-600 text-orange-500 focus:ring-orange-500"
           />
-          <span className="font-medium text-gray-900 text-sm sm:text-base">Cały koszyk</span>
+          <span className="font-medium text-gray-900 dark:text-white text-sm sm:text-base">Cały koszyk</span>
         </label>
-        <span className="text-xs sm:text-sm text-gray-500">{items.length} {items.length === 1 ? 'produkt' : 'produktów'}</span>
+        <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{items.length} {items.length === 1 ? 'produkt' : 'produktów'}</span>
       </div>
 
       {/* Packages */}
       {packages.map((pkg, pkgIndex) => (
-        <div key={pkg.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div key={pkg.id} className="bg-white dark:bg-secondary-800 rounded-xl shadow-sm overflow-hidden">
           {/* Package Header */}
-          <div className="bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 border-b">
+          <div className="bg-gray-50 dark:bg-secondary-700 px-3 sm:px-4 py-2.5 sm:py-3 border-b dark:border-secondary-600">
             <div className="flex items-center justify-between gap-2">
               <label className="flex items-center gap-2 sm:gap-3 cursor-pointer min-w-0 flex-1">
                 <input
@@ -163,28 +163,28 @@ export default function CartPackageView({
                   onChange={(e) => {
                     pkg.items.forEach(item => onSelectionChange(item.id, e.target.checked));
                   }}
-                  className="w-4 h-4 sm:w-5 sm:h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500 shrink-0"
+                  className="w-4 h-4 sm:w-5 sm:h-5 rounded border-gray-300 dark:border-secondary-600 text-orange-500 focus:ring-orange-500 shrink-0"
                 />
                 <div className="flex items-center gap-2 min-w-0">
                   <span className={`w-6 h-6 sm:w-8 sm:h-8 rounded-lg ${pkg.color} flex items-center justify-center text-white text-xs sm:text-sm shrink-0`}>
                     {pkg.icon}
                   </span>
                   <div className="min-w-0">
-                    <span className="font-semibold text-gray-900 text-xs sm:text-sm block truncate">{pkg.wholesalerDisplay}</span>
-                    <span className="text-gray-500 text-xs">
+                    <span className="font-semibold text-gray-900 dark:text-white text-xs sm:text-sm block truncate">{pkg.wholesalerDisplay}</span>
+                    <span className="text-gray-500 dark:text-gray-400 text-xs">
                       Paczka {pkgIndex + 1}/{totalPackages}
                     </span>
                   </div>
                 </div>
               </label>
               <div className="text-right shrink-0">
-                <p className="font-bold text-base sm:text-lg text-gray-900">{pkg.subtotal.toFixed(2)} zł</p>
+                <p className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">{pkg.subtotal.toFixed(2)} zł</p>
               </div>
             </div>
           </div>
 
           {/* Package Items */}
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-gray-100 dark:divide-secondary-700">
             {pkg.items.map((item) => {
               const availableStock = item.variant.inventory.reduce(
                 (sum, inv) => sum + (inv.quantity - inv.reserved),
@@ -195,7 +195,7 @@ export default function CartPackageView({
               return (
                 <div
                   key={item.id}
-                  className={`p-3 sm:p-4 transition-all ${isUpdating ? 'opacity-50' : ''} ${!item.selected ? 'bg-gray-50/50' : ''}`}
+                  className={`p-3 sm:p-4 transition-all ${isUpdating ? 'opacity-50' : ''} ${!item.selected ? 'bg-gray-50/50 dark:bg-secondary-900/30' : ''}`}
                 >
                   {/* Mobile: Stack layout, Desktop: Row layout */}
                   <div className="flex gap-2 sm:gap-4">
@@ -205,13 +205,13 @@ export default function CartPackageView({
                         type="checkbox"
                         checked={item.selected}
                         onChange={(e) => onSelectionChange(item.id, e.target.checked)}
-                        className="w-4 h-4 sm:w-5 sm:h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                        className="w-4 h-4 sm:w-5 sm:h-5 rounded border-gray-300 dark:border-secondary-600 text-orange-500 focus:ring-orange-500"
                       />
                     </div>
 
                     {/* Product Image */}
                     <Link href={`/products/${item.variant.product.slug || item.variant.product.id}`} className="shrink-0">
-                      <div className={`${isCompact ? 'w-16 h-16 sm:w-20 sm:h-20' : 'w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28'} rounded-lg sm:rounded-xl overflow-hidden bg-gray-100 border`}>
+                      <div className={`${isCompact ? 'w-16 h-16 sm:w-20 sm:h-20' : 'w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28'} rounded-lg sm:rounded-xl overflow-hidden bg-gray-100 dark:bg-secondary-700 border dark:border-secondary-600`}>
                         {item.variant.product.images[0] && !failedImages.has(item.id) ? (
                           <img
                             src={item.variant.product.images[0].url}
@@ -234,20 +234,20 @@ export default function CartPackageView({
                       {/* Name & Price Row */}
                       <div className="flex justify-between items-start gap-2">
                         <Link href={`/products/${item.variant.product.slug || item.variant.product.id}`} className="flex-1 min-w-0">
-                          <h3 className={`font-medium text-gray-900 hover:text-orange-500 transition-colors line-clamp-2 ${isCompact ? 'text-xs sm:text-sm' : 'text-sm sm:text-base'}`}>
+                          <h3 className={`font-medium text-gray-900 dark:text-white hover:text-orange-500 transition-colors line-clamp-2 ${isCompact ? 'text-xs sm:text-sm' : 'text-sm sm:text-base'}`}>
                             {item.variant.product.name}
                           </h3>
                         </Link>
                         {/* Price - visible on mobile */}
                         <div className="text-right shrink-0 sm:hidden">
-                          <p className="font-bold text-gray-900 text-base">
+                          <p className="font-bold text-gray-900 dark:text-white text-base">
                             {(item.variant.price * item.quantity).toFixed(2)} zł
                           </p>
                         </div>
                       </div>
 
                       {item.variant.name && item.variant.name !== 'Domyślny' && (
-                        <p className="text-xs sm:text-sm text-gray-500 mt-0.5">{item.variant.name}</p>
+                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">{item.variant.name}</p>
                       )}
 
                       {/* Stock info & unit price */}
@@ -255,7 +255,7 @@ export default function CartPackageView({
                         <p className={`text-xs ${availableStock > 0 ? 'text-green-600' : 'text-red-500'}`}>
                           {availableStock > 0 ? `Dostępne: ${availableStock}` : 'Brak'}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
                           {item.quantity} × {item.variant.price.toFixed(2)} zł
                         </p>
                       </div>
@@ -263,14 +263,14 @@ export default function CartPackageView({
                       {/* Mobile: Controls row at bottom */}
                       <div className="flex items-center justify-between mt-2 sm:mt-3 gap-2">
                         {/* Quantity Controls - smaller on mobile */}
-                        <div className="flex items-center border rounded-lg overflow-hidden">
+                        <div className="flex items-center border dark:border-secondary-600 rounded-lg overflow-hidden">
                           <button
                             onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
                             disabled={isUpdating}
                             className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                               item.quantity === 1 
-                                ? 'text-red-500 hover:bg-red-50 hover:text-red-600' 
-                                : 'text-gray-600 hover:bg-gray-100'
+                                ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600' 
+                                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-secondary-700'
                             }`}
                             title={item.quantity === 1 ? 'Usuń z koszyka' : 'Zmniejsz ilość'}
                           >
@@ -301,12 +301,12 @@ export default function CartPackageView({
                               if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
                             }}
                             disabled={isUpdating}
-                            className="w-10 sm:w-14 text-center text-sm sm:text-base font-medium border-x py-1.5 sm:py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="w-10 sm:w-14 text-center text-sm sm:text-base font-medium border-x dark:border-secondary-600 dark:bg-secondary-800 dark:text-white py-1.5 sm:py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                           <button
                             onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
                             disabled={item.quantity >= availableStock || isUpdating}
-                            className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                           >
                             <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -318,7 +318,7 @@ export default function CartPackageView({
                         <button
                           onClick={() => handleRemove(item.id)}
                           disabled={isUpdating}
-                          className="sm:hidden flex items-center gap-1 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors px-2 py-1.5 rounded-lg border border-red-200"
+                          className="sm:hidden flex items-center gap-1 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors px-2 py-1.5 rounded-lg border border-red-200 dark:border-red-800"
                         >
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -331,7 +331,7 @@ export default function CartPackageView({
                     {/* Desktop only: Price column with remove button */}
                     <div className="hidden sm:flex flex-col items-end gap-2 shrink-0">
                       <div className="text-right">
-                        <p className={`font-bold text-gray-900 ${isCompact ? 'text-lg' : 'text-xl'}`}>
+                        <p className={`font-bold text-gray-900 dark:text-white ${isCompact ? 'text-lg' : 'text-xl'}`}>
                           {(item.variant.price * item.quantity).toFixed(2)} zł
                         </p>
                         {item.variant.compareAtPrice && item.variant.compareAtPrice > item.variant.price && (
@@ -344,7 +344,7 @@ export default function CartPackageView({
                       <button
                         onClick={() => handleRemove(item.id)}
                         disabled={isUpdating}
-                        className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors px-3 py-1.5 rounded-lg border border-red-200"
+                        className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-800"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -359,21 +359,21 @@ export default function CartPackageView({
           </div>
 
           {/* Shipping Info with Free Shipping Progress */}
-          <div className="bg-orange-50 px-3 sm:px-4 py-2.5 sm:py-3 border-t border-orange-100">
+          <div className="bg-orange-50 dark:bg-orange-900/30 px-3 sm:px-4 py-2.5 sm:py-3 border-t border-orange-100 dark:border-orange-800">
             <div className="flex items-center justify-between gap-2 mb-2">
               <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
                 <svg className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                 </svg>
-                <span className="text-gray-700">Szacowana dostawa</span>
+                <span className="text-gray-700 dark:text-gray-300">Szacowana dostawa</span>
               </div>
               <div className="text-right">
                 {pkg.subtotal >= 300 ? (
-                  <span className="font-semibold text-green-600 text-sm sm:text-base">GRATIS!</span>
+                  <span className="font-semibold text-green-600 dark:text-green-400 text-sm sm:text-base">GRATIS!</span>
                 ) : pkg.shippingPrice > 0 ? (
-                  <span className="font-semibold text-orange-600 text-sm sm:text-base">{pkg.shippingPrice.toFixed(2)} zł</span>
+                  <span className="font-semibold text-orange-600 dark:text-orange-400 text-sm sm:text-base">{pkg.shippingPrice.toFixed(2)} zł</span>
                 ) : (
-                  <span className="text-gray-500 text-xs sm:text-sm">obliczana przy zamówieniu</span>
+                  <span className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">obliczana przy zamówieniu</span>
                 )}
               </div>
             </div>
@@ -381,14 +381,14 @@ export default function CartPackageView({
             {/* Free shipping progress bar per warehouse */}
             {pkg.subtotal < 300 && (
               <div className="space-y-1">
-                <div className="h-1.5 bg-orange-200 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-orange-200 dark:bg-orange-800 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-gradient-to-r from-orange-400 to-green-500 rounded-full transition-all duration-300"
                     style={{ width: `${Math.min((pkg.subtotal / 300) * 100, 100)}%` }}
                   />
                 </div>
-                <p className="text-xs text-gray-600 text-center">
-                  <span className="font-medium text-orange-600">{(300 - pkg.subtotal).toFixed(2)} zł</span> do darmowej dostawy
+                <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
+                  <span className="font-medium text-orange-600 dark:text-orange-400">{(300 - pkg.subtotal).toFixed(2)} zł</span> do darmowej dostawy
                 </p>
               </div>
             )}

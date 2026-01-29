@@ -272,8 +272,8 @@ export default function SearchBar() {
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder="Czego szukasz..."
-          className="flex-1 h-11 rounded-l-lg border border-r-0 border-gray-300 bg-white px-4 py-2 
-                     text-sm placeholder:text-gray-400 
+          className="flex-1 h-11 rounded-l-lg border border-r-0 border-gray-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-4 py-2 
+                     text-sm text-secondary-900 dark:text-secondary-100 placeholder:text-gray-400 dark:placeholder:text-secondary-500
                      focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           autoComplete="off"
         />
@@ -303,11 +303,11 @@ export default function SearchBar() {
       {showDropdown && (
         <div 
           ref={dropdownRef}
-          className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden"
+          className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-secondary-800 rounded-lg shadow-xl dark:shadow-secondary-950/50 border border-gray-200 dark:border-secondary-700 z-50 overflow-hidden"
         >
           {/* Loading state */}
           {isLoading && query.trim() && (
-            <div className="p-4 flex items-center justify-center gap-2 text-gray-500">
+            <div className="p-4 flex items-center justify-center gap-2 text-gray-500 dark:text-secondary-400">
               <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -319,18 +319,18 @@ export default function SearchBar() {
           {/* Search results */}
           {!isLoading && query.trim() && results.length > 0 && (
             <div className="py-2">
-              <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-secondary-400 uppercase tracking-wide">
                 Produkty
               </div>
               {results.map((product, index) => (
                 <button
                   key={product.id}
                   onClick={() => handleProductClick(product)}
-                  className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left ${
-                    selectedIndex === index ? 'bg-gray-50' : ''
+                  className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors text-left ${
+                    selectedIndex === index ? 'bg-gray-50 dark:bg-secondary-700' : ''
                   }`}
                 >
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                  <div className="w-12 h-12 bg-gray-100 dark:bg-secondary-700 rounded-lg overflow-hidden flex-shrink-0">
                     {product.image ? (
                       <img 
                         src={product.image} 
@@ -338,7 +338,7 @@ export default function SearchBar() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400">
+                      <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-secondary-500">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
@@ -346,10 +346,10 @@ export default function SearchBar() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
-                    <p className="text-xs text-gray-500">{product.category}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-secondary-100 truncate">{product.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-secondary-400">{product.category}</p>
                   </div>
-                  <div className="text-sm font-semibold text-primary-600">
+                  <div className="text-sm font-semibold text-primary-600 dark:text-primary-400">
                     {formatPrice(product.price)}
                   </div>
                 </button>
@@ -360,7 +360,7 @@ export default function SearchBar() {
                   saveRecentSearch(query);
                   setIsOpen(false);
                 }}
-                className="block px-4 py-3 text-center text-sm font-medium text-primary-600 hover:bg-primary-50 border-t border-gray-100"
+                className="block px-4 py-3 text-center text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 border-t border-gray-100 dark:border-secondary-700"
               >
                 Zobacz wszystkie wyniki dla "{query}"
               </Link>
@@ -370,11 +370,11 @@ export default function SearchBar() {
           {/* No results */}
           {!isLoading && query.trim() && results.length === 0 && (
             <div className="p-6 text-center">
-              <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-12 h-12 text-gray-300 dark:text-secondary-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              <p className="text-sm text-gray-500">Nie znaleziono produktów dla "{query}"</p>
-              <p className="text-xs text-gray-400 mt-1">Spróbuj innych słów kluczowych</p>
+              <p className="text-sm text-gray-500 dark:text-secondary-400">Nie znaleziono produktów dla "{query}"</p>
+              <p className="text-xs text-gray-400 dark:text-secondary-500 mt-1">Spróbuj innych słów kluczowych</p>
             </div>
           )}
 
@@ -383,14 +383,14 @@ export default function SearchBar() {
             <>
               {/* Recent searches */}
               {recentSearches.length > 0 && (
-                <div className="py-2 border-b border-gray-100">
+                <div className="py-2 border-b border-gray-100 dark:border-secondary-700">
                   <div className="px-4 py-2 flex items-center justify-between">
-                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    <span className="text-xs font-semibold text-gray-500 dark:text-secondary-400 uppercase tracking-wide">
                       Ostatnio szukane
                     </span>
                     <button 
                       onClick={clearRecentSearches}
-                      className="text-xs text-gray-400 hover:text-gray-600"
+                      className="text-xs text-gray-400 dark:text-secondary-500 hover:text-gray-600 dark:hover:text-secondary-300"
                     >
                       Wyczyść
                     </button>
@@ -399,14 +399,14 @@ export default function SearchBar() {
                     <button
                       key={index}
                       onClick={() => handleRecentSearchClick(search)}
-                      className={`w-full px-4 py-2.5 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left ${
-                        selectedIndex === index ? 'bg-gray-50' : ''
+                      className={`w-full px-4 py-2.5 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors text-left ${
+                        selectedIndex === index ? 'bg-gray-50 dark:bg-secondary-700' : ''
                       }`}
                     >
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-gray-400 dark:text-secondary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span className="text-sm text-gray-700">{search}</span>
+                      <span className="text-sm text-gray-700 dark:text-secondary-200">{search}</span>
                     </button>
                   ))}
                 </div>
@@ -414,21 +414,21 @@ export default function SearchBar() {
 
               {/* Popular searches */}
               <div className="py-2">
-                <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-secondary-400 uppercase tracking-wide">
                   🔥 Popularne wyszukiwania
                 </div>
                 {popularSearches.map((search, index) => (
                   <button
                     key={index}
                     onClick={() => handlePopularSearchClick(search)}
-                    className={`w-full px-4 py-2.5 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left ${
-                      selectedIndex === recentSearches.length + index ? 'bg-gray-50' : ''
+                    className={`w-full px-4 py-2.5 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors text-left ${
+                      selectedIndex === recentSearches.length + index ? 'bg-gray-50 dark:bg-secondary-700' : ''
                     }`}
                   >
                     <svg className="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                     </svg>
-                    <span className="text-sm text-gray-700">{search}</span>
+                    <span className="text-sm text-gray-700 dark:text-secondary-200">{search}</span>
                   </button>
                 ))}
               </div>

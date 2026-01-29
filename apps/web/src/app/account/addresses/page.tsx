@@ -140,7 +140,7 @@ export default function AddressesPage() {
 
   if (isLoading || addressesLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
       </div>
     );
@@ -310,12 +310,12 @@ export default function AddressesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-secondary-900">
       <Header />
 
       <main className="container-custom py-4 sm:py-6">
         {/* Breadcrumb - hidden on mobile */}
-        <nav className="hidden sm:flex items-center gap-2 text-sm text-gray-500 mb-6">
+        <nav className="hidden sm:flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
           <Link href="/" className="hover:text-orange-500">Strona główna</Link>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -324,21 +324,21 @@ export default function AddressesPage() {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
-          <span className="text-gray-900">Adresy</span>
+          <span className="text-gray-900 dark:text-white">Adresy</span>
         </nav>
 
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar - hidden on mobile */}
           <aside className="hidden lg:block w-64 shrink-0">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-100 dark:border-secondary-700 overflow-hidden">
               {/* User Profile */}
-              <div className="p-5 border-b border-gray-100">
+              <div className="p-5 border-b border-gray-100 dark:border-secondary-700">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white font-semibold">
                     {userData.avatar}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">{userData.fullName}</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">{userData.fullName}</h3>
                   </div>
                 </div>
               </div>
@@ -352,7 +352,7 @@ export default function AddressesPage() {
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                       item.id === 'addresses'
                         ? 'bg-orange-500 text-white'
-                        : 'text-gray-600 hover:bg-gray-50'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700'
                     }`}
                   >
                     <SidebarIcon icon={item.icon} />
@@ -369,7 +369,7 @@ export default function AddressesPage() {
             <div className="lg:hidden mb-4">
               <Link 
                 href="/account" 
-                className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-orange-500"
+                className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-orange-500"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -381,8 +381,8 @@ export default function AddressesPage() {
             {/* Page Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Moje adresy</h1>
-                <p className="text-gray-500 text-sm">Zarządzaj adresami dostawy i rozliczeniowymi</p>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Moje adresy</h1>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">Zarządzaj adresami dostawy i rozliczeniowymi</p>
               </div>
               <button
                 onClick={() => handleOpenModal()}
@@ -396,28 +396,28 @@ export default function AddressesPage() {
             </div>
 
             {/* Shipping Addresses */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm mb-6">
-              <div className="p-5 border-b border-gray-100 flex items-center gap-3">
+            <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-100 dark:border-secondary-700 shadow-sm mb-6">
+              <div className="p-5 border-b border-gray-100 dark:border-secondary-700 flex items-center gap-3">
                 <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                   <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                   </svg>
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Adresy dostawy</h2>
-                  <p className="text-sm text-gray-500">Adresy wykorzystywane podczas składania zamówień</p>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Adresy dostawy</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Adresy wykorzystywane podczas składania zamówień</p>
                 </div>
               </div>
 
               {shippingAddresses.length === 0 ? (
                 <div className="p-8 text-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-gray-100 dark:bg-secondary-700 rounded-full flex items-center justify-center mx-auto mb-4">
                     <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                   </div>
-                  <p className="text-gray-500 mb-4">Nie masz jeszcze żadnych adresów dostawy</p>
+                  <p className="text-gray-500 dark:text-gray-400 mb-4">Nie masz jeszcze żadnych adresów dostawy</p>
                   <button
                     onClick={() => {
                       setFormData(prev => ({ ...prev, type: 'SHIPPING' }));
@@ -429,10 +429,10 @@ export default function AddressesPage() {
                   </button>
                 </div>
               ) : (
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-gray-100 dark:divide-secondary-700">
                   {shippingAddresses.map((address) => (
                     <div key={address.id} className="p-5 flex items-start gap-4">
-                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+                      <div className="w-10 h-10 bg-gray-100 dark:bg-secondary-700 rounded-lg flex items-center justify-center shrink-0">
                         <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -440,23 +440,23 @@ export default function AddressesPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-medium text-gray-900">{address.label || 'Adres'}</h4>
+                          <h4 className="font-medium text-gray-900 dark:text-white">{address.label || 'Adres'}</h4>
                           {address.isDefault && (
                             <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
                               Domyślny
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600">{address.firstName} {address.lastName}</p>
-                        <p className="text-sm text-gray-600">{address.street}</p>
-                        <p className="text-sm text-gray-600">{address.postalCode} {address.city}</p>
-                        <p className="text-sm text-gray-500 mt-1">{address.phone}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{address.firstName} {address.lastName}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{address.street}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{address.postalCode} {address.city}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{address.phone}</p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         {!address.isDefault && (
                           <button
                             onClick={() => handleSetDefault(address.id, 'SHIPPING')}
-                            className="px-3 py-1.5 text-gray-600 text-sm font-medium hover:text-orange-500 transition-colors"
+                            className="px-3 py-1.5 text-gray-600 dark:text-gray-400 text-sm font-medium hover:text-orange-500 transition-colors"
                           >
                             Ustaw domyślny
                           </button>
@@ -502,27 +502,27 @@ export default function AddressesPage() {
             </div>
 
             {/* Billing Addresses */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
-              <div className="p-5 border-b border-gray-100 flex items-center gap-3">
+            <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-100 dark:border-secondary-700 shadow-sm">
+              <div className="p-5 border-b border-gray-100 dark:border-secondary-700 flex items-center gap-3">
                 <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
                   <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Adresy rozliczeniowe</h2>
-                  <p className="text-sm text-gray-500">Adresy wykorzystywane do faktur</p>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Adresy rozliczeniowe</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Adresy wykorzystywane do faktur</p>
                 </div>
               </div>
 
               {billingAddresses.length === 0 ? (
                 <div className="p-8 text-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-gray-100 dark:bg-secondary-700 rounded-full flex items-center justify-center mx-auto mb-4">
                     <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <p className="text-gray-500 mb-4">Nie masz jeszcze żadnych adresów rozliczeniowych</p>
+                  <p className="text-gray-500 dark:text-gray-400 mb-4">Nie masz jeszcze żadnych adresów rozliczeniowych</p>
                   <button
                     onClick={() => {
                       setFormData(prev => ({ ...prev, type: 'BILLING' }));
@@ -534,33 +534,33 @@ export default function AddressesPage() {
                   </button>
                 </div>
               ) : (
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-gray-100 dark:divide-secondary-700">
                   {billingAddresses.map((address) => (
                     <div key={address.id} className="p-5 flex items-start gap-4">
-                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+                      <div className="w-10 h-10 bg-gray-100 dark:bg-secondary-700 rounded-lg flex items-center justify-center shrink-0">
                         <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-medium text-gray-900">{address.label || 'Adres'}</h4>
+                          <h4 className="font-medium text-gray-900 dark:text-white">{address.label || 'Adres'}</h4>
                           {address.isDefault && (
                             <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
                               Domyślny
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600">{address.firstName} {address.lastName}</p>
-                        <p className="text-sm text-gray-600">{address.street}</p>
-                        <p className="text-sm text-gray-600">{address.postalCode} {address.city}</p>
-                        <p className="text-sm text-gray-500 mt-1">{address.phone}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{address.firstName} {address.lastName}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{address.street}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{address.postalCode} {address.city}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{address.phone}</p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         {!address.isDefault && (
                           <button
                             onClick={() => handleSetDefault(address.id, 'BILLING')}
-                            className="px-3 py-1.5 text-gray-600 text-sm font-medium hover:text-orange-500 transition-colors"
+                            className="px-3 py-1.5 text-gray-600 dark:text-gray-400 text-sm font-medium hover:text-orange-500 transition-colors"
                           >
                             Ustaw domyślny
                           </button>
@@ -619,9 +619,9 @@ export default function AddressesPage() {
             ></div>
 
             {/* Modal */}
-            <div className="relative bg-white rounded-xl shadow-xl max-w-lg w-full p-6 text-left transform transition-all">
+            <div className="relative bg-white dark:bg-secondary-800 rounded-xl shadow-xl max-w-lg w-full p-6 text-left transform transition-all">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                   {editingAddress ? 'Edytuj adres' : 'Dodaj nowy adres'}
                 </h3>
                 <button
@@ -637,7 +637,7 @@ export default function AddressesPage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Address Type */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Typ adresu
                   </label>
                   <div className="flex gap-4">
@@ -650,7 +650,7 @@ export default function AddressesPage() {
                         onChange={handleChange}
                         className="w-4 h-4 text-orange-500 focus:ring-orange-500"
                       />
-                      <span className="text-sm text-gray-700">Adres dostawy</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Adres dostawy</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -661,14 +661,14 @@ export default function AddressesPage() {
                         onChange={handleChange}
                         className="w-4 h-4 text-orange-500 focus:ring-orange-500"
                       />
-                      <span className="text-sm text-gray-700">Adres rozliczeniowy</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Adres rozliczeniowy</span>
                     </label>
                   </div>
                 </div>
 
                 {/* Label */}
                 <div>
-                  <label htmlFor="label" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="label" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Nazwa adresu <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -678,7 +678,7 @@ export default function AddressesPage() {
                     value={formData.label}
                     onChange={handleChange}
                     placeholder="np. Dom, Praca, Firma"
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-secondary-800 dark:text-white dark:border-secondary-600 ${
                       errors.label ? 'border-red-300 bg-red-50' : 'border-gray-200'
                     }`}
                   />
@@ -688,7 +688,7 @@ export default function AddressesPage() {
                 {/* First Name & Last Name */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Imię <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -697,14 +697,14 @@ export default function AddressesPage() {
                       name="firstName"
                       value={formData.firstName}
                       onChange={handleChange}
-                      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-secondary-800 dark:text-white dark:border-secondary-600 ${
                         errors.firstName ? 'border-red-300 bg-red-50' : 'border-gray-200'
                       }`}
                     />
                     {errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>}
                   </div>
                   <div>
-                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Nazwisko <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -713,7 +713,7 @@ export default function AddressesPage() {
                       name="lastName"
                       value={formData.lastName}
                       onChange={handleChange}
-                      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-secondary-800 dark:text-white dark:border-secondary-600 ${
                         errors.lastName ? 'border-red-300 bg-red-50' : 'border-gray-200'
                       }`}
                     />
@@ -723,7 +723,7 @@ export default function AddressesPage() {
 
                 {/* Street */}
                 <div>
-                  <label htmlFor="street" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="street" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Ulica i numer <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -733,7 +733,7 @@ export default function AddressesPage() {
                     value={formData.street}
                     onChange={handleChange}
                     placeholder="np. ul. Przykładowa 123/45"
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-secondary-800 dark:text-white dark:border-secondary-600 ${
                       errors.street ? 'border-red-300 bg-red-50' : 'border-gray-200'
                     }`}
                   />
@@ -743,7 +743,7 @@ export default function AddressesPage() {
                 {/* City & Postal Code */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Kod pocztowy <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -753,14 +753,14 @@ export default function AddressesPage() {
                       value={formData.postalCode}
                       onChange={handleChange}
                       placeholder="00-000"
-                      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-secondary-800 dark:text-white dark:border-secondary-600 ${
                         errors.postalCode ? 'border-red-300 bg-red-50' : 'border-gray-200'
                       }`}
                     />
                     {errors.postalCode && <p className="text-red-500 text-xs mt-1">{errors.postalCode}</p>}
                   </div>
                   <div>
-                    <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="city" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Miasto <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -769,7 +769,7 @@ export default function AddressesPage() {
                       name="city"
                       value={formData.city}
                       onChange={handleChange}
-                      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-secondary-800 dark:text-white dark:border-secondary-600 ${
                         errors.city ? 'border-red-300 bg-red-50' : 'border-gray-200'
                       }`}
                     />
@@ -779,7 +779,7 @@ export default function AddressesPage() {
 
                 {/* Country */}
                 <div>
-                  <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="country" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Kraj
                   </label>
                   <select
@@ -787,7 +787,7 @@ export default function AddressesPage() {
                     name="country"
                     value={formData.country}
                     onChange={handleChange}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
+                    className="w-full px-4 py-2.5 border border-gray-200 dark:border-secondary-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-secondary-800 dark:text-white"
                   >
                     <option value="Polska">Polska</option>
                     <option value="Niemcy">Niemcy</option>
@@ -799,7 +799,7 @@ export default function AddressesPage() {
 
                 {/* Phone */}
                 <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Numer telefonu
                   </label>
                   <input
@@ -809,7 +809,7 @@ export default function AddressesPage() {
                     value={formData.phone}
                     onChange={handleChange}
                     placeholder="+48 123 456 789"
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-secondary-800 dark:text-white dark:border-secondary-600 ${
                       errors.phone ? 'border-red-300 bg-red-50' : 'border-gray-200'
                     }`}
                   />
@@ -825,7 +825,7 @@ export default function AddressesPage() {
                     onChange={handleChange}
                     className="w-4 h-4 text-orange-500 rounded focus:ring-orange-500"
                   />
-                  <span className="text-sm text-gray-700">Ustaw jako domyślny adres</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Ustaw jako domyślny adres</span>
                 </label>
 
                 {/* Actions */}
@@ -833,7 +833,7 @@ export default function AddressesPage() {
                   <button
                     type="button"
                     onClick={handleCloseModal}
-                    className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                    className="px-4 py-2.5 border border-gray-300 dark:border-secondary-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors"
                   >
                     Anuluj
                   </button>

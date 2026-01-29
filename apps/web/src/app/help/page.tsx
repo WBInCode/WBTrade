@@ -122,7 +122,7 @@ export default function HelpPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-secondary-50">
+    <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
       <Header />
       
       {/* Hero Section */}
@@ -156,22 +156,22 @@ export default function HelpPage() {
       {/* Help Categories */}
       <section className="py-16 lg:py-24">
         <div className="container-custom">
-          <h2 className="text-2xl lg:text-3xl font-bold text-secondary-900 mb-10 text-center">
+          <h2 className="text-2xl lg:text-3xl font-bold text-secondary-900 dark:text-white mb-10 text-center">
             Przeglądaj kategorie pomocy
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {helpCategories.map((category, index) => (
               <div
                 key={index}
-                className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all"
+                className="bg-white dark:bg-secondary-800 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all"
               >
-                <div className="w-14 h-14 bg-primary-100 rounded-xl flex items-center justify-center text-primary-600 mb-4">
+                <div className="w-14 h-14 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center text-primary-600 mb-4">
                   {category.icon}
                 </div>
-                <h3 className="text-xl font-semibold text-secondary-900 mb-2">
+                <h3 className="text-xl font-semibold text-secondary-900 dark:text-white mb-2">
                   {category.title}
                 </h3>
-                <p className="text-secondary-600 text-sm mb-4">
+                <p className="text-secondary-600 dark:text-secondary-400 text-sm mb-4">
                   {category.description}
                 </p>
                 <ul className="space-y-2">
@@ -196,19 +196,19 @@ export default function HelpPage() {
       </section>
 
       {/* Popular Questions */}
-      <section className="py-16 lg:py-24 bg-white">
+      <section className="py-16 lg:py-24 bg-white dark:bg-secondary-800">
         <div className="container-custom">
-          <h2 className="text-2xl lg:text-3xl font-bold text-secondary-900 mb-10 text-center">
+          <h2 className="text-2xl lg:text-3xl font-bold text-secondary-900 dark:text-white mb-10 text-center">
             Najczęściej zadawane pytania
           </h2>
           <div className="max-w-3xl mx-auto space-y-4">
             {popularQuestions.map((item, index) => (
               <details
                 key={index}
-                className="group bg-secondary-50 rounded-2xl overflow-hidden"
+                className="group bg-secondary-50 dark:bg-secondary-900 rounded-2xl overflow-hidden"
               >
-                <summary className="flex items-center justify-between p-6 cursor-pointer hover:bg-secondary-100 transition-colors">
-                  <span className="font-semibold text-secondary-900 pr-4">
+                <summary className="flex items-center justify-between p-6 cursor-pointer hover:bg-secondary-100 dark:hover:bg-secondary-700 transition-colors">
+                  <span className="font-semibold text-secondary-900 dark:text-white pr-4">
                     {item.question}
                   </span>
                   <svg
@@ -220,7 +220,7 @@ export default function HelpPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </summary>
-                <div className="px-6 pb-6 text-secondary-600">
+                <div className="px-6 pb-6 text-secondary-600 dark:text-secondary-400">
                   {item.answer}
                 </div>
               </details>

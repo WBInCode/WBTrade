@@ -218,7 +218,7 @@ export default function RegisterPage() {
       </div>
 
       {/* Right side - Form */}
-      <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-16 xl:px-20 bg-white overflow-y-auto py-8">
+      <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-16 xl:px-20 bg-white dark:bg-secondary-900 overflow-y-auto py-8">
         <div className="mx-auto w-full max-w-md">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
@@ -233,7 +233,7 @@ export default function RegisterPage() {
             </Link>
             <Link 
               href="/" 
-              className="text-sm text-gray-500 hover:text-orange-500 transition-colors flex items-center gap-1"
+              className="text-sm text-gray-500 dark:text-gray-400 hover:text-orange-500 transition-colors flex items-center gap-1"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -244,10 +244,10 @@ export default function RegisterPage() {
 
           {/* Title */}
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
               Utwórz konto 
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-400">
               Zarejestruj się i zacznij oszczędzać
             </p>
           </div>
@@ -255,7 +255,7 @@ export default function RegisterPage() {
           {/* Form */}
           <form className="space-y-4" onSubmit={handleSubmit}>
             {error && (
-              <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+              <div className="bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
                 <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -266,7 +266,7 @@ export default function RegisterPage() {
             {/* Name fields */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                   Imię
                 </label>
                 <div className="relative">
@@ -527,17 +527,17 @@ export default function RegisterPage() {
           {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
+              <div className="w-full border-t border-gray-200 dark:border-secondary-600" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500">lub</span>
+              <span className="px-4 bg-white dark:bg-secondary-900 text-gray-500 dark:text-gray-400">lub</span>
             </div>
           </div>
 
           {/* Google Register Button */}
           <a
             href={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/api/auth/google`}
-            className="w-full flex items-center justify-center gap-3 py-3.5 px-4 border-2 border-gray-200 bg-white text-gray-700 font-medium rounded-xl hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500/20 transition-all duration-200"
+            className="w-full flex items-center justify-center gap-3 py-3.5 px-4 border-2 border-gray-200 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-gray-700 dark:text-gray-200 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-secondary-700 hover:border-gray-300 dark:hover:border-secondary-500 focus:outline-none focus:ring-2 focus:ring-gray-500/20 transition-all duration-200"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -549,7 +549,7 @@ export default function RegisterPage() {
           </a>
 
           {/* Login link */}
-          <p className="mt-6 text-center text-sm text-gray-600">
+          <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
             Masz już konto?{' '}
             <Link href="/login" className="font-semibold text-orange-500 hover:text-orange-600 transition-colors">
               Zaloguj się
@@ -557,7 +557,7 @@ export default function RegisterPage() {
           </p>
 
           {/* Security note */}
-          <p className="mt-6 text-center text-xs text-gray-400">
+          <p className="mt-6 text-center text-xs text-gray-400 dark:text-gray-500">
             🔒 Połączenie szyfrowane SSL. Twoje dane są bezpieczne.
           </p>
         </div>

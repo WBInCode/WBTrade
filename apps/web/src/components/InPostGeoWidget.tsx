@@ -154,7 +154,7 @@ export default function InPostGeoWidget({ isOpen, onClose, onPointSelect, token 
       {/* Modal */}
       <div 
         ref={containerRef}
-        className="relative bg-white rounded-xl shadow-2xl w-[95vw] h-[90vh] max-w-[1200px] max-h-[800px] overflow-hidden"
+        className="relative bg-white dark:bg-secondary-800 rounded-xl shadow-2xl w-[95vw] h-[90vh] max-w-[1200px] max-h-[800px] overflow-hidden"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-[#FFCD00] to-[#FFD700]">

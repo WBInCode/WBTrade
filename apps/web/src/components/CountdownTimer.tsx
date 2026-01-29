@@ -38,17 +38,17 @@ export default function CountdownTimer({ endTime }: CountdownTimerProps) {
     <div className="flex items-center gap-0.5">
       <div className="flex items-baseline gap-0.5">
         <span className="text-xl font-bold text-primary-500">{formatNumber(timeLeft.hours)}</span>
-        <span className="text-[10px] text-gray-400 uppercase mr-1">godz</span>
+        <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase mr-1">godz</span>
       </div>
       <span className="text-primary-500 font-bold text-lg">:</span>
       <div className="flex items-baseline gap-0.5">
         <span className="text-xl font-bold text-primary-500">{formatNumber(timeLeft.minutes)}</span>
-        <span className="text-[10px] text-gray-400 uppercase mr-1">min</span>
+        <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase mr-1">min</span>
       </div>
       <span className="text-primary-500 font-bold text-lg">:</span>
       <div className="flex items-baseline gap-0.5">
         <span className="text-xl font-bold text-primary-500">{formatNumber(timeLeft.seconds)}</span>
-        <span className="text-[10px] text-gray-400 uppercase">sek</span>
+        <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase">sek</span>
       </div>
     </div>
   );

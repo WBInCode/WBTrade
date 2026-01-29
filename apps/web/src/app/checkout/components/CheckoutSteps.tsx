@@ -35,7 +35,7 @@ export default function CheckoutSteps({ currentStep }: CheckoutStepsProps) {
               >
                 <div
                   className={`h-full ${
-                    step.id < currentStep ? 'bg-orange-500' : 'bg-gray-200'
+                    step.id < currentStep ? 'bg-orange-500' : 'bg-gray-200 dark:bg-secondary-600'
                   }`}
                 />
                 </div>
@@ -50,8 +50,8 @@ export default function CheckoutSteps({ currentStep }: CheckoutStepsProps) {
                   ${step.id < currentStep
                     ? 'bg-orange-500 text-white'
                     : step.id === currentStep
-                    ? 'bg-orange-500 text-white ring-2 sm:ring-4 ring-orange-100'
-                    : 'bg-gray-200 text-gray-500'
+                    ? 'bg-orange-500 text-white ring-2 sm:ring-4 ring-orange-100 dark:ring-orange-900'
+                    : 'bg-gray-200 dark:bg-secondary-700 text-gray-500 dark:text-gray-400'
                   }
                 `}
               >
@@ -76,7 +76,7 @@ export default function CheckoutSteps({ currentStep }: CheckoutStepsProps) {
               <span
                 className={`
                   mt-1 sm:mt-2 text-[10px] sm:text-xs lg:text-sm font-medium whitespace-nowrap
-                  ${step.id <= currentStep ? 'text-orange-600' : 'text-gray-500'}
+                  ${step.id <= currentStep ? 'text-orange-600' : 'text-gray-500 dark:text-gray-400'}
                 `}
               >
                 {step.shortName}

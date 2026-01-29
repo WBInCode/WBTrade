@@ -131,7 +131,7 @@ export default function WishlistPage() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-secondary-900">
       <Header />
       
       <main className="flex-grow">
@@ -147,8 +147,8 @@ export default function WishlistPage() {
                 </svg>
               </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Moje ulubione</h1>
-                <p className="text-gray-500">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Moje ulubione</h1>
+                <p className="text-gray-500 dark:text-gray-400">
                   {items.length === 0 
                     ? 'Brak produktów' 
                     : `${items.length} ${items.length === 1 ? 'produkt' : items.length < 5 ? 'produkty' : 'produktów'}`}
@@ -158,7 +158,7 @@ export default function WishlistPage() {
 
             {items.length > 0 && (
               <div className="flex items-center gap-2 text-sm">
-                <span className="text-gray-500">Łączna wartość:</span>
+                <span className="text-gray-500 dark:text-gray-400">Łączna wartość:</span>
                 <span className="text-xl font-bold text-primary-600">{totalValue.toFixed(2)} zł</span>
               </div>
             )}
@@ -166,14 +166,14 @@ export default function WishlistPage() {
 
           {items.length === 0 ? (
             /* Empty state */
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
-              <div className="w-24 h-24 bg-gray-100 rounded-full mx-auto mb-6 flex items-center justify-center">
-                <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-white dark:bg-secondary-800 rounded-2xl shadow-sm border border-gray-100 dark:border-secondary-700 p-12 text-center">
+              <div className="w-24 h-24 bg-gray-100 dark:bg-secondary-700 rounded-full mx-auto mb-6 flex items-center justify-center">
+                <svg className="w-12 h-12 text-gray-300 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Twoja lista ulubionych jest pusta</h2>
-              <p className="text-gray-500 mb-8 max-w-md mx-auto">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Twoja lista ulubionych jest pusta</h2>
+              <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-md mx-auto">
                 Przeglądaj produkty i klikaj serduszko, aby dodać je do ulubionych. 
                 Dzięki temu łatwo do nich wrócisz!
               </p>
@@ -190,17 +190,17 @@ export default function WishlistPage() {
           ) : (
             <>
               {/* Controls */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+              <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-100 dark:border-secondary-700 p-4 mb-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="flex items-center gap-4">
                     {/* Sort */}
                     <div className="flex items-center gap-2">
-                      <label htmlFor="sort" className="text-sm text-gray-500 hidden sm:block">Sortuj:</label>
+                      <label htmlFor="sort" className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">Sortuj:</label>
                       <select
                         id="sort"
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value as SortOption)}
-                        className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="text-sm border border-gray-200 dark:border-secondary-600 rounded-lg px-3 py-2 bg-white dark:bg-secondary-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                       >
                         <option value="newest">Ostatnio dodane</option>
                         <option value="oldest">Najstarsze</option>
@@ -211,10 +211,10 @@ export default function WishlistPage() {
                     </div>
 
                     {/* View mode */}
-                    <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="flex items-center border border-gray-200 dark:border-secondary-600 rounded-lg overflow-hidden">
                       <button
                         onClick={() => setViewMode('grid')}
-                        className={`p-2 ${viewMode === 'grid' ? 'bg-primary-50 text-primary-600' : 'text-gray-400 hover:text-gray-600'}`}
+                        className={`p-2 ${viewMode === 'grid' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
                         title="Widok siatki"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -223,7 +223,7 @@ export default function WishlistPage() {
                       </button>
                       <button
                         onClick={() => setViewMode('list')}
-                        className={`p-2 ${viewMode === 'list' ? 'bg-primary-50 text-primary-600' : 'text-gray-400 hover:text-gray-600'}`}
+                        className={`p-2 ${viewMode === 'list' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
                         title="Widok listy"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -252,12 +252,12 @@ export default function WishlistPage() {
                   {sortedItems.map((item) => (
                     <div 
                       key={item.id}
-                      className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden group transition-all duration-300 ${
+                      className={`bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-100 dark:border-secondary-700 overflow-hidden group transition-all duration-300 ${
                         removingId === item.id ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
                       }`}
                     >
                       {/* Image */}
-                      <Link href={`/products/${item.id}`} className="block relative aspect-square bg-gray-50">
+                      <Link href={`/products/${item.id}`} className="block relative aspect-square bg-gray-50 dark:bg-secondary-700">
                         <img
                           src={item.image}
                           alt={item.name}
@@ -285,12 +285,12 @@ export default function WishlistPage() {
                       {/* Info */}
                       <div className="p-3">
                         <Link href={`/products/${item.id}`}>
-                          <h3 className="text-sm text-gray-800 line-clamp-2 mb-2 min-h-[2.5rem] hover:text-primary-600 transition-colors">
+                          <h3 className="text-sm text-gray-800 dark:text-gray-200 line-clamp-2 mb-2 min-h-[2.5rem] hover:text-primary-600 transition-colors">
                             {item.name}
                           </h3>
                         </Link>
                         <div className="flex items-baseline gap-2 mb-3">
-                          <span className="text-lg font-bold text-gray-900">
+                          <span className="text-lg font-bold text-gray-900 dark:text-white">
                             {Number(item.price).toFixed(2)} zł
                           </span>
                           {item.compareAtPrice && Number(item.compareAtPrice) > Number(item.price) && (
@@ -344,14 +344,14 @@ export default function WishlistPage() {
                   {sortedItems.map((item) => (
                     <div 
                       key={item.id}
-                      className={`bg-white rounded-xl shadow-sm border border-gray-100 p-4 transition-all duration-300 ${
+                      className={`bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-100 dark:border-secondary-700 p-4 transition-all duration-300 ${
                         removingId === item.id ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'
                       }`}
                     >
                       <div className="flex gap-4">
                         {/* Image */}
                         <Link href={`/products/${item.id}`} className="shrink-0">
-                          <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gray-50 rounded-lg overflow-hidden">
+                          <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gray-50 dark:bg-secondary-700 rounded-lg overflow-hidden">
                             <img
                               src={item.image}
                               alt={item.name}
@@ -364,7 +364,7 @@ export default function WishlistPage() {
                         <div className="flex-grow min-w-0">
                           <div className="flex items-start justify-between gap-2">
                             <Link href={`/products/${item.id}`}>
-                              <h3 className="text-base font-medium text-gray-800 hover:text-primary-600 transition-colors line-clamp-2">
+                              <h3 className="text-base font-medium text-gray-800 dark:text-white hover:text-primary-600 transition-colors line-clamp-2">
                                 {item.name}
                               </h3>
                             </Link>
@@ -437,7 +437,7 @@ export default function WishlistPage() {
                             </button>
                             <Link
                               href={`/products/${item.id}`}
-                              className="py-2 px-4 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                              className="py-2 px-4 rounded-lg text-sm font-medium border border-gray-200 dark:border-secondary-600 text-gray-600 dark:text-gray-300 hover:border-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors"
                             >
                               Zobacz szczegóły
                             </Link>
@@ -451,11 +451,11 @@ export default function WishlistPage() {
 
               {/* Add all to cart */}
               {items.length > 1 && (
-                <div className="mt-8 bg-gradient-to-r from-primary-50 to-orange-50 rounded-xl p-6 border border-primary-100">
+                <div className="mt-8 bg-gradient-to-r from-primary-50 to-orange-50 dark:from-primary-900/30 dark:to-orange-900/30 rounded-xl p-6 border border-primary-100 dark:border-primary-800">
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">Dodaj wszystkie do koszyka</h3>
-                      <p className="text-sm text-gray-500">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Dodaj wszystkie do koszyka</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
                         {items.length} produktów za łącznie {totalValue.toFixed(2)} zł
                       </p>
                     </div>
@@ -505,22 +505,22 @@ export default function WishlistPage() {
       {/* Clear confirmation modal */}
       {showClearConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
-            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="bg-white dark:bg-secondary-800 rounded-2xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+            <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 text-center mb-2">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white text-center mb-2">
               Wyczyścić listę ulubionych?
             </h3>
-            <p className="text-gray-500 text-center mb-6">
+            <p className="text-gray-500 dark:text-gray-400 text-center mb-6">
               Czy na pewno chcesz usunąć wszystkie {items.length} produktów z listy ulubionych? Tej operacji nie można cofnąć.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowClearConfirm(false)}
-                className="flex-1 py-2.5 px-4 rounded-lg border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition-colors"
+                className="flex-1 py-2.5 px-4 rounded-lg border border-gray-200 dark:border-secondary-600 text-gray-600 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors"
               >
                 Anuluj
               </button>

@@ -100,7 +100,7 @@ export default function ToysPage() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-secondary-900">
       <Header />
       <main className="flex-grow">
         <div className="container-custom py-6">
@@ -123,7 +123,7 @@ export default function ToysPage() {
           {loading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {[...Array(20)].map((_, i) => (
-                <div key={i} className="bg-white rounded-lg h-[320px] animate-pulse" />
+                <div key={i} className="bg-white dark:bg-secondary-800 rounded-lg h-[320px] animate-pulse" />
               ))}
             </div>
           ) : products.length > 0 ? (

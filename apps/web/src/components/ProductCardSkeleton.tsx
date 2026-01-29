@@ -6,27 +6,27 @@ interface ProductCardSkeletonProps {
 
 export default function ProductCardSkeleton({ showDelivery = false }: ProductCardSkeletonProps) {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 animate-pulse">
+    <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 animate-pulse">
       {/* Image skeleton */}
-      <div className="aspect-square bg-gray-200 rounded-t-lg" />
+      <div className="aspect-square bg-gray-200 dark:bg-secondary-700 rounded-t-lg" />
 
       {/* Info skeleton */}
       <div className="p-3">
         {/* Delivery badge skeleton */}
         {showDelivery && (
-          <div className="h-4 bg-gray-200 rounded w-32 mb-2" />
+          <div className="h-4 bg-gray-200 dark:bg-secondary-700 rounded w-32 mb-2" />
         )}
 
         {/* Product name skeleton - 2 lines */}
         <div className="space-y-2 mb-3">
-          <div className="h-4 bg-gray-200 rounded w-full" />
-          <div className="h-4 bg-gray-200 rounded w-3/4" />
+          <div className="h-4 bg-gray-200 dark:bg-secondary-700 rounded w-full" />
+          <div className="h-4 bg-gray-200 dark:bg-secondary-700 rounded w-3/4" />
         </div>
         
         {/* Price skeleton */}
         <div className="flex items-baseline gap-2">
-          <div className="h-6 bg-gray-200 rounded w-20" />
-          <div className="h-4 bg-gray-100 rounded w-14" />
+          <div className="h-6 bg-gray-200 dark:bg-secondary-700 rounded w-20" />
+          <div className="h-4 bg-gray-100 dark:bg-secondary-600 rounded w-14" />
         </div>
       </div>
     </div>
@@ -65,27 +65,27 @@ export function ProductGridSkeleton({
 // List card skeleton (for product list page)
 export function ProductListCardSkeleton() {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 animate-pulse">
+    <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-4 animate-pulse">
       <div className="flex gap-4">
         {/* Image skeleton */}
-        <div className="w-32 h-32 bg-gray-200 rounded-lg flex-shrink-0" />
+        <div className="w-32 h-32 bg-gray-200 dark:bg-secondary-700 rounded-lg flex-shrink-0" />
         
         {/* Content skeleton */}
         <div className="flex-1 min-w-0">
           {/* Title */}
-          <div className="h-5 bg-gray-200 rounded w-3/4 mb-2" />
-          <div className="h-4 bg-gray-200 rounded w-1/2 mb-4" />
+          <div className="h-5 bg-gray-200 dark:bg-secondary-700 rounded w-3/4 mb-2" />
+          <div className="h-4 bg-gray-200 dark:bg-secondary-700 rounded w-1/2 mb-4" />
           
           {/* Rating */}
           <div className="flex items-center gap-2 mb-3">
-            <div className="h-4 bg-gray-200 rounded w-24" />
-            <div className="h-4 bg-gray-100 rounded w-16" />
+            <div className="h-4 bg-gray-200 dark:bg-secondary-700 rounded w-24" />
+            <div className="h-4 bg-gray-100 dark:bg-secondary-600 rounded w-16" />
           </div>
           
           {/* Price */}
           <div className="flex items-center gap-2">
-            <div className="h-6 bg-gray-200 rounded w-24" />
-            <div className="h-4 bg-gray-100 rounded w-16" />
+            <div className="h-6 bg-gray-200 dark:bg-secondary-700 rounded w-24" />
+            <div className="h-4 bg-gray-100 dark:bg-secondary-600 rounded w-16" />
           </div>
         </div>
       </div>
@@ -99,15 +99,15 @@ export function ProductsPageSkeleton() {
     <div className="flex gap-6">
       {/* Sidebar skeleton */}
       <aside className="hidden lg:block w-64 flex-shrink-0">
-        <div className="bg-white rounded-lg border border-gray-200 p-4 animate-pulse">
+        <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-4 animate-pulse">
           {/* Filter sections */}
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="mb-6">
-              <div className="h-5 bg-gray-200 rounded w-24 mb-3" />
+              <div className="h-5 bg-gray-200 dark:bg-secondary-700 rounded w-24 mb-3" />
               <div className="space-y-2">
-                <div className="h-4 bg-gray-100 rounded w-full" />
-                <div className="h-4 bg-gray-100 rounded w-3/4" />
-                <div className="h-4 bg-gray-100 rounded w-5/6" />
+                <div className="h-4 bg-gray-100 dark:bg-secondary-600 rounded w-full" />
+                <div className="h-4 bg-gray-100 dark:bg-secondary-600 rounded w-3/4" />
+                <div className="h-4 bg-gray-100 dark:bg-secondary-600 rounded w-5/6" />
               </div>
             </div>
           ))}
@@ -118,8 +118,8 @@ export function ProductsPageSkeleton() {
       <div className="flex-1">
         {/* Header skeleton */}
         <div className="flex items-center justify-between mb-4 animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-48" />
-          <div className="h-10 bg-gray-200 rounded w-32" />
+          <div className="h-6 bg-gray-200 dark:bg-secondary-700 rounded w-48" />
+          <div className="h-10 bg-gray-200 dark:bg-secondary-700 rounded w-32" />
         </div>
 
         {/* Grid skeleton */}

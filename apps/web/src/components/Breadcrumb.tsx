@@ -15,12 +15,12 @@ export default function Breadcrumb({ items }: BreadcrumbProps) {
       {items.map((item, index) => (
         <div key={index} className="flex items-center gap-1.5 sm:gap-2 shrink-0 last:shrink min-w-0">
           {index > 0 && (
-            <span className="text-gray-400">/</span>
+            <span className="text-gray-400 dark:text-gray-500">/</span>
           )}
           {item.href ? (
             <Link 
               href={item.href}
-              className="text-gray-500 hover:text-primary-500 transition-colors truncate max-w-[80px] sm:max-w-[120px] md:max-w-none"
+              className="text-gray-500 dark:text-gray-400 hover:text-primary-500 transition-colors truncate max-w-[80px] sm:max-w-[120px] md:max-w-none"
             >
               {item.label}
             </Link>

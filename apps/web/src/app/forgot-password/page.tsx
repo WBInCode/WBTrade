@@ -71,7 +71,7 @@ export default function ForgotPasswordPage() {
     return (
       <div className="min-h-screen flex">
         {/* Left side - Success message */}
-        <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 bg-white">
+        <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 bg-white dark:bg-secondary-900">
           <div className="mx-auto w-full max-w-sm lg:max-w-md">
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
@@ -81,43 +81,42 @@ export default function ForgotPasswordPage() {
                     <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
                   </svg>
                 </div>
-                <span className="text-xl font-bold text-gray-900">
-                  WB<span className="text-orange-500">Trade</span>
-                </span>
-              </Link>
-            </div>
+              <span className="text-xl font-bold text-gray-900 dark:text-white">
+                WB<span className="text-orange-500">Trade</span>
+              </span>
+            </Link>
+          </div>
 
             {/* Success content */}
             <div className="text-center">
-              <div className="mx-auto w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
+              <div className="mx-auto w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-6">
                 <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
               </div>
               
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
                 Sprawdź swoją skrzynkę! 📬
               </h1>
               
-              <p className="text-gray-600 mb-2">
+              <p className="text-gray-600 dark:text-gray-400 mb-2">
                 Jeśli konto z adresem
               </p>
-              <p className="font-semibold text-gray-900 mb-4">
+              <p className="font-semibold text-gray-900 dark:text-white mb-4">
                 {email}
               </p>
-              <p className="text-gray-600 mb-8">
+              <p className="text-gray-600 dark:text-gray-400 mb-8">
                 istnieje, wysłaliśmy na nie link do zresetowania hasła.
               </p>
 
-              <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 mb-8">
+              <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-100 dark:border-amber-800 rounded-xl p-4 mb-8">
                 <div className="flex items-start gap-3">
                   <svg className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div className="text-left">
-                    <p className="text-sm font-medium text-amber-800">Link jest ważny przez 1 godzinę</p>
-                    <p className="text-sm text-amber-700 mt-1">Sprawdź też folder spam jeśli nie widzisz wiadomości.</p>
-                  </div>
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Link jest ważny przez 1 godzinę</p>
+                    <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">Sprawdź też folder spam jeśli nie widzisz wiadomości.</p>
                 </div>
               </div>
 
@@ -137,7 +136,7 @@ export default function ForgotPasswordPage() {
                     setSuccess(false);
                     setEmail('');
                   }}
-                  className="w-full flex items-center justify-center gap-2 py-3.5 px-4 border-2 border-gray-200 text-gray-700 font-semibold rounded-xl hover:border-orange-500 hover:text-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
+                  className="w-full flex items-center justify-center gap-2 py-3.5 px-4 border-2 border-gray-200 dark:border-secondary-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:border-orange-500 hover:text-orange-500 dark:hover:text-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -191,7 +190,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left side - Form */}
-      <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 bg-white">
+      <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 bg-white dark:bg-secondary-900">
         <div className="mx-auto w-full max-w-sm lg:max-w-md">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
@@ -201,13 +200,13 @@ export default function ForgotPasswordPage() {
                   <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
                 </svg>
               </div>
-              <span className="text-xl font-bold text-gray-900">
+              <span className="text-xl font-bold text-gray-900 dark:text-white">
                 WB<span className="text-orange-500">Trade</span>
               </span>
             </Link>
             <Link 
               href="/login" 
-              className="text-sm text-gray-500 hover:text-orange-500 transition-colors flex items-center gap-1"
+              className="text-sm text-gray-500 dark:text-gray-400 hover:text-orange-500 transition-colors flex items-center gap-1"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -218,10 +217,10 @@ export default function ForgotPasswordPage() {
 
           {/* Title */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
               Zapomniałeś hasła? 🔐
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-400">
               Nie martw się! Podaj swój email, a wyślemy Ci link do zresetowania hasła.
             </p>
           </div>
@@ -229,7 +228,7 @@ export default function ForgotPasswordPage() {
           {/* Form */}
           <form className="space-y-5" onSubmit={handleSubmit}>
             {error && (
-              <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+              <div className="bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
                 <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -238,7 +237,7 @@ export default function ForgotPasswordPage() {
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Adres email
               </label>
               <div className="relative">
@@ -255,10 +254,10 @@ export default function ForgotPasswordPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onBlur={() => validateEmail(email)}
-                  className={`block w-full pl-12 pr-4 py-3.5 border rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
+                  className={`block w-full pl-12 pr-4 py-3.5 border rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-secondary-800 focus:outline-none focus:ring-2 transition-all ${
                     emailError 
-                      ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500' 
-                      : 'border-gray-200 focus:ring-orange-500/20 focus:border-orange-500'
+                      ? 'border-red-300 dark:border-red-700 focus:ring-red-500/20 focus:border-red-500' 
+                      : 'border-gray-200 dark:border-secondary-600 focus:ring-orange-500/20 focus:border-orange-500'
                   }`}
                   placeholder="twoj@email.pl"
                 />
@@ -300,17 +299,17 @@ export default function ForgotPasswordPage() {
           {/* Divider */}
           <div className="relative my-8">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
+              <div className="w-full border-t border-gray-200 dark:border-secondary-600" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500">Pamiętasz hasło?</span>
+              <span className="px-4 bg-white dark:bg-secondary-900 text-gray-500 dark:text-gray-400">Pamiętasz hasło?</span>
             </div>
           </div>
 
           {/* Login Link */}
           <Link
             href="/login"
-            className="w-full flex items-center justify-center gap-2 py-3.5 px-4 border-2 border-gray-200 text-gray-700 font-semibold rounded-xl hover:border-orange-500 hover:text-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
+            className="w-full flex items-center justify-center gap-2 py-3.5 px-4 border-2 border-gray-200 dark:border-secondary-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:border-orange-500 hover:text-orange-500 dark:hover:text-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
@@ -319,14 +318,14 @@ export default function ForgotPasswordPage() {
           </Link>
 
           {/* Security note */}
-          <div className="mt-8 p-4 bg-gray-50 rounded-xl">
+          <div className="mt-8 p-4 bg-gray-50 dark:bg-secondary-800 rounded-xl">
             <div className="flex items-start gap-3">
               <svg className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
               <div>
-                <p className="text-sm font-medium text-gray-700">Dlaczego nie potwierdzamy istnienia konta?</p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Dlaczego nie potwierdzamy istnienia konta?</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Ze względów bezpieczeństwa nie informujemy, czy podany email jest zarejestrowany w naszym systemie.
                 </p>
               </div>

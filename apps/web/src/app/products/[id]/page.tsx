@@ -465,17 +465,17 @@ export default function ProductPage({ params }: ProductPageProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-secondary-900">
         <Header />
         <main className="container-custom py-8">
           <div className="animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-1/4 mb-8"></div>
+            <div className="h-4 bg-gray-200 dark:bg-secondary-700 rounded w-1/4 mb-8"></div>
             <div className="grid lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2 aspect-square bg-gray-200 rounded-lg"></div>
+              <div className="lg:col-span-2 aspect-square bg-gray-200 dark:bg-secondary-700 rounded-lg"></div>
               <div className="space-y-4">
-                <div className="h-8 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-6 bg-gray-200 rounded w-1/2"></div>
-                <div className="h-12 bg-gray-200 rounded w-1/3"></div>
+                <div className="h-8 bg-gray-200 dark:bg-secondary-700 rounded w-3/4"></div>
+                <div className="h-6 bg-gray-200 dark:bg-secondary-700 rounded w-1/2"></div>
+                <div className="h-12 bg-gray-200 dark:bg-secondary-700 rounded w-1/3"></div>
               </div>
             </div>
           </div>
@@ -522,7 +522,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+    <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 overflow-x-hidden">
       <Header />
       
       <main className="container-custom py-3 sm:py-6 px-3 sm:px-4 overflow-hidden">
@@ -533,7 +533,7 @@ export default function ProductPage({ params }: ProductPageProps) {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
           {/* Left: Image Gallery */}
           <div className="md:col-span-1 lg:col-span-2 min-w-0">
-            <div className="bg-white rounded-lg p-2 sm:p-4 relative overflow-hidden">
+            <div className="bg-white dark:bg-secondary-800 rounded-lg p-2 sm:p-4 relative overflow-hidden">
               {/* Badge */}
               {product.badge && (
                 <span className="absolute top-3 left-3 sm:top-6 sm:left-6 bg-orange-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 sm:px-3 sm:py-1.5 rounded z-10 uppercase">
@@ -557,7 +557,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                     key={image.id}
                     onClick={() => setSelectedImage(index)}
                     className={`shrink-0 w-14 h-14 sm:w-20 sm:h-20 rounded-md sm:rounded-lg overflow-hidden border-2 transition-colors ${
-                      selectedImage === index ? 'border-orange-500' : 'border-gray-200 hover:border-gray-300'
+                      selectedImage === index ? 'border-orange-500' : 'border-gray-200 dark:border-secondary-700 hover:border-gray-300 dark:hover:border-secondary-600'
                     }`}
                   >
                     <img
@@ -573,9 +573,9 @@ export default function ProductPage({ params }: ProductPageProps) {
 
           {/* Right: Product Info Panel */}
           <div className="md:col-span-1 lg:col-span-1 min-w-0">
-            <div className="bg-white rounded-lg p-4 sm:p-6 md:sticky md:top-24 overflow-hidden">
+            <div className="bg-white dark:bg-secondary-800 rounded-lg p-4 sm:p-6 md:sticky md:top-24 overflow-hidden">
               {/* Title */}
-              <h1 className="text-base sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3 leading-snug break-words">
+              <h1 className="text-base sm:text-xl font-semibold text-gray-900 dark:text-white mb-2 sm:mb-3 leading-snug break-words">
                 {product.name}
               </h1>
 
@@ -600,14 +600,14 @@ export default function ProductPage({ params }: ProductPageProps) {
                 <span className="text-sm text-orange-500 font-medium">
                   {product.rating || mockProduct.rating}
                 </span>
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
                   ({product.reviewCount || mockProduct.reviewCount} ocen)
                 </span>
               </div>
 
               {/* Price */}
               <div className="flex flex-wrap items-baseline gap-2 sm:gap-3 mb-1">
-                <span className="text-2xl sm:text-3xl font-bold text-gray-900">
+                <span className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
                   {Number(effectivePrice).toFixed(2).replace('.', ',')} zł
                 </span>
                 {hasDiscount && (
@@ -623,7 +623,7 @@ export default function ProductPage({ params }: ProductPageProps) {
               </div>
 
               {/* Lowest Price Info - Omnibus Directive */}
-              <p className="text-[11px] sm:text-xs text-gray-500 mb-3 sm:mb-4">
+              <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mb-3 sm:mb-4">
                 Najniższa cena w ostatnich 30 dniach: {Number(product.lowestPrice30Days || effectivePrice).toFixed(2).replace('.', ',')} zł
               </p>
 
@@ -632,13 +632,13 @@ export default function ProductPage({ params }: ProductPageProps) {
                 <div className="mb-3 sm:mb-4 space-y-2 sm:space-y-3">
                   {variantAttributes.map((key) => (
                     <div key={key}>
-                      <label className="block text-xs sm:text-sm font-medium text-gray-900 mb-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-900 dark:text-white mb-1">
                         {key}
                       </label>
                       <select
                         value={selectedAttributes[key] || ''}
                         onChange={(e) => handleAttributeChange(key, e.target.value)}
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200"
+                        className="w-full border border-gray-200 dark:border-secondary-700 dark:bg-secondary-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200"
                       >
                         <option value="" disabled>
                           Wybierz
@@ -654,13 +654,13 @@ export default function ProductPage({ params }: ProductPageProps) {
 
                   {/* Quantity */}
                   <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-900 mb-1">Ilość</label>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-900 dark:text-white mb-1">Ilość</label>
                     <div className="flex items-center gap-1.5 sm:gap-2">
                       <button
                         type="button"
                         onClick={() => setQuantity((q) => clampQuantity(q - 1))}
                         disabled={quantity <= 1}
-                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg border border-gray-200 dark:border-secondary-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
                         aria-label="Zmniejsz ilość"
                       >
                         -
@@ -671,19 +671,19 @@ export default function ProductPage({ params }: ProductPageProps) {
                         max={selectedVariant?.stock ?? undefined}
                         value={quantity}
                         onChange={(e) => setQuantity(clampQuantity(Number(e.target.value || 1)))}
-                        className="w-16 sm:w-20 h-9 sm:h-10 text-center rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200"
+                        className="w-16 sm:w-20 h-9 sm:h-10 text-center rounded-lg border border-gray-200 dark:border-secondary-700 dark:bg-secondary-700 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-200"
                       />
                       <button
                         type="button"
                         onClick={() => setQuantity((q) => clampQuantity(q + 1))}
                         disabled={!!selectedVariant && quantity >= selectedVariant.stock}
-                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg border border-gray-200 dark:border-secondary-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
                         aria-label="Zwiększ ilość"
                       >
                         +
                       </button>
                       {selectedVariant && (
-                        <span className={`text-[10px] sm:text-xs ml-1 ${(selectedVariant.stock ?? 0) > 0 ? 'text-gray-500' : 'text-red-500 font-medium'}`}>
+                        <span className={`text-[10px] sm:text-xs ml-1 ${(selectedVariant.stock ?? 0) > 0 ? 'text-gray-500 dark:text-gray-400' : 'text-red-500 font-medium'}`}>
                           {(selectedVariant.stock ?? 0) > 0 
                             ? `Dostępne: ${selectedVariant.stock}` 
                             : 'Brak na stanie'}
@@ -709,8 +709,8 @@ export default function ProductPage({ params }: ProductPageProps) {
 
               {/* Out of Stock Banner */}
               {isOutOfStock && (
-                <div className="bg-gray-100 border border-gray-300 text-gray-700 px-3 py-2 sm:px-4 sm:py-3 rounded-lg mb-3 sm:mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 flex-shrink-0 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                <div className="bg-gray-100 dark:bg-secondary-700 border border-gray-300 dark:border-secondary-600 text-gray-700 dark:text-gray-300 px-3 py-2 sm:px-4 sm:py-3 rounded-lg mb-3 sm:mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 flex-shrink-0 text-gray-500 dark:text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
                   </svg>
                   <span className="text-sm font-medium">Produkt chwilowo niedostępny</span>
@@ -800,8 +800,8 @@ export default function ProductPage({ params }: ProductPageProps) {
                 }}
                 className={`w-full border-2 font-semibold py-2.5 sm:py-3 rounded-lg mb-3 sm:mb-4 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base ${
                   product && isInWishlist(product.id)
-                    ? 'border-red-500 bg-red-50 text-red-500 hover:bg-red-100' 
-                    : 'border-gray-300 text-gray-600 hover:border-gray-400 hover:bg-gray-50'
+                    ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30' 
+                    : 'border-gray-300 dark:border-secondary-600 text-gray-600 dark:text-gray-300 hover:border-gray-400 dark:hover:border-secondary-500 hover:bg-gray-50 dark:hover:bg-secondary-700'
                 }`}
               >
                 <svg className="w-5 h-5" fill={product && isInWishlist(product.id) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
@@ -845,7 +845,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                 if (!warehouseCity) return null;
                 
                 return (
-                  <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3 sm:mb-4">
                     <svg className="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                     </svg>
@@ -856,18 +856,18 @@ export default function ProductPage({ params }: ProductPageProps) {
 
               {/* Delivery Info */}
               
-              <div className="border-t pt-3 sm:pt-4 space-y-2 sm:space-y-3">
+              <div className="border-t dark:border-secondary-700 pt-3 sm:pt-4 space-y-2 sm:space-y-3">
               </div>
 
               {/* Seller Info */}
-              <div className="border-t mt-4 pt-4 hidden">
+              <div className="border-t dark:border-secondary-700 mt-4 pt-4 hidden">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
                     <span className="text-green-600 font-semibold text-sm">OW</span>
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
                         {product.storeName || mockProduct.storeName}
                       </span>
                       <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
@@ -877,7 +877,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                     <p className="text-xs text-orange-500">99.8% pozytywnych opinii</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                <div className="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
                   <span>18k sprzedanych</span>
                   <span className="flex items-center gap-1">
                     <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
@@ -892,9 +892,9 @@ export default function ProductPage({ params }: ProductPageProps) {
         </div>
 
         {/* Tabs Section */}
-        <div className="bg-white rounded-lg mb-8">
+        <div className="bg-white dark:bg-secondary-800 rounded-lg mb-8">
           {/* Tab Headers */}
-          <div className="border-b">
+          <div className="border-b dark:border-secondary-700">
             <div className="flex">
               {tabs.map((tab) => (
                 <button
@@ -903,7 +903,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                   className={`px-6 py-4 text-sm font-medium transition-colors relative ${
                     activeTab === tab.id
                       ? 'text-orange-500'
-                      : 'text-gray-600 hover:text-gray-900'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
                   {tab.label}
@@ -919,13 +919,13 @@ export default function ProductPage({ params }: ProductPageProps) {
           <div className="p-6">
             {activeTab === 'description' && (
               <div className="max-w-3xl">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                   {product.name}
                 </h2>
                 {/* Render HTML description from BaseLinker */}
                 <div 
-                  className="text-gray-600 mb-6 leading-relaxed prose prose-sm max-w-none
-                    [&_p]:mb-3 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mb-2 [&_h3]:text-gray-900
+                  className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed prose prose-sm dark:prose-invert max-w-none
+                    [&_p]:mb-3 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mb-2 [&_h3]:text-gray-900 dark:[&_h3]:text-white
                     [&_img]:rounded-lg [&_img]:my-4 [&_img]:max-w-full [&_img]:h-auto
                     [&_.section]:mb-4 [&_.text-item]:mb-2"
                   dangerouslySetInnerHTML={{ __html: mainDescription || mockProduct.description || '' }}
@@ -937,7 +937,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                       const parts = feature.split(':');
                       const hasColon = parts.length > 1;
                       return (
-                        <li key={index} className="flex items-start gap-2 text-gray-600">
+                        <li key={index} className="flex items-start gap-2 text-gray-600 dark:text-gray-300">
                           <span className="text-orange-500 mt-1">•</span>
                           {hasColon ? (
                             <span><strong>{parts[0]}:</strong>{parts.slice(1).join(':')}</span>
@@ -952,13 +952,13 @@ export default function ProductPage({ params }: ProductPageProps) {
 
                 {/* Key Specifications */}
                 {specifications.length > 0 && (
-                  <div className="bg-gray-50 rounded-lg p-6">
-                    <h3 className="text-base font-semibold text-gray-900 mb-4">Kluczowe specyfikacje</h3>
+                  <div className="bg-gray-50 dark:bg-secondary-700 rounded-lg p-6">
+                    <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">Kluczowe specyfikacje</h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       {specifications.slice(0, 6).map((spec, index) => (
                         <div key={index}>
-                          <p className="text-xs text-gray-500 mb-1">{spec.label}</p>
-                          <p className="text-sm font-medium text-gray-900">{spec.value}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{spec.label}</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">{spec.value}</p>
                         </div>
                       ))}
                     </div>
@@ -969,18 +969,18 @@ export default function ProductPage({ params }: ProductPageProps) {
 
             {activeTab === 'parameters' && (
               <div className="max-w-3xl">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Parametry techniczne</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Parametry techniczne</h2>
                 {specifications.length > 0 ? (
-                  <div className="divide-y">
+                  <div className="divide-y dark:divide-secondary-700">
                     {specifications.map((spec, index) => (
                       <div key={index} className="py-3 flex">
-                        <span className="w-1/3 text-gray-500">{spec.label}</span>
-                        <span className="w-2/3 text-gray-900 font-medium">{spec.value}</span>
+                        <span className="w-1/3 text-gray-500 dark:text-gray-400">{spec.label}</span>
+                        <span className="w-2/3 text-gray-900 dark:text-white font-medium">{spec.value}</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500">Brak dostępnych specyfikacji</p>
+                  <p className="text-gray-500 dark:text-gray-400">Brak dostępnych specyfikacji</p>
                 )}
               </div>
             )}
@@ -990,7 +990,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                 {reviewsLoading ? (
                   <div className="text-center py-12">
                     <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                    <p className="text-gray-500 mt-4">Ładowanie opinii...</p>
+                    <p className="text-gray-500 dark:text-gray-400 mt-4">Ładowanie opinii...</p>
                   </div>
                 ) : (
                   <>
@@ -999,7 +999,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                       {/* Stats Summary */}
                       <div className="flex-shrink-0">
                         <div className="text-center md:text-left">
-                          <div className="text-5xl font-bold text-gray-900 mb-1">
+                          <div className="text-5xl font-bold text-gray-900 dark:text-white mb-1">
                             {reviewStats?.averageRating?.toFixed(1) || '0.0'}
                           </div>
                           <div className="flex items-center justify-center md:justify-start gap-1 mb-2">
@@ -1014,7 +1014,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                               </svg>
                             ))}
                           </div>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
                             {reviewStats?.totalReviews || 0} {(reviewStats?.totalReviews || 0) === 1 ? 'opinia' : 'opinii'}
                           </p>
                         </div>
@@ -1029,14 +1029,14 @@ export default function ProductPage({ params }: ProductPageProps) {
                             const percentage = reviewStats.totalReviews > 0 ? (count / reviewStats.totalReviews) * 100 : 0;
                             return (
                               <div key={rating} className="flex items-center gap-2 mb-1">
-                                <span className="text-sm text-gray-600 w-12">{rating} gw.</span>
-                                <div className="flex-grow bg-gray-200 rounded-full h-2">
+                                <span className="text-sm text-gray-600 dark:text-gray-400 w-12">{rating} gw.</span>
+                                <div className="flex-grow bg-gray-200 dark:bg-secondary-700 rounded-full h-2">
                                   <div
                                     className="bg-yellow-400 h-2 rounded-full transition-all"
                                     style={{ width: `${percentage}%` }}
                                   />
                                 </div>
-                                <span className="text-sm text-gray-500 w-8">{count}</span>
+                                <span className="text-sm text-gray-500 dark:text-gray-400 w-8">{count}</span>
                               </div>
                             );
                           })}
@@ -1055,12 +1055,12 @@ export default function ProductPage({ params }: ProductPageProps) {
                     )}
 
                     {showReviewForm && (
-                      <div className="bg-gray-50 rounded-lg p-6 mb-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Twoja opinia</h3>
+                      <div className="bg-gray-50 dark:bg-secondary-700 rounded-lg p-6 mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Twoja opinia</h3>
                         
                         {/* Rating Selection */}
                         <div className="mb-4 hidden">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Ocena</label>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ocena</label>
                           <div className="flex gap-1">
                             {[1, 2, 3, 4, 5].map((star) => (
                               <button
@@ -1083,24 +1083,24 @@ export default function ProductPage({ params }: ProductPageProps) {
 
                         {/* Title (optional) */}
                         <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Tytuł (opcjonalnie)</label>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tytuł (opcjonalnie)</label>
                           <input
                             type="text"
                             value={reviewFormData.title}
                             onChange={(e) => setReviewFormData(prev => ({ ...prev, title: e.target.value }))}
-                            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                            className="w-full border border-gray-300 dark:border-secondary-600 dark:bg-secondary-800 dark:text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                             placeholder="Krótkie podsumowanie opinii"
                           />
                         </div>
 
                         {/* Content */}
                         <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Treść opinii</label>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Treść opinii</label>
                           <textarea
                             value={reviewFormData.content}
                             onChange={(e) => setReviewFormData(prev => ({ ...prev, content: e.target.value }))}
                             rows={4}
-                            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+                            className="w-full border border-gray-300 dark:border-secondary-600 dark:bg-secondary-800 dark:text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
                             placeholder="Podziel się swoją opinią o produkcie (min. 10 znaków)"
                           />
                         </div>
@@ -1122,7 +1122,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                               setShowReviewForm(false);
                               setReviewError('');
                             }}
-                            className="text-gray-600 px-6 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors"
+                            className="text-gray-600 dark:text-gray-300 px-6 py-2 rounded-lg font-medium hover:bg-gray-100 dark:hover:bg-secondary-600 transition-colors"
                           >
                             Anuluj
                           </button>
@@ -1137,7 +1137,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                           <select
                             value={reviewsSortBy}
                             onChange={(e) => setReviewsSortBy(e.target.value as typeof reviewsSortBy)}
-                            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                            className="border border-gray-300 dark:border-secondary-600 dark:bg-secondary-800 dark:text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                           >
                             <option value="newest">Najnowsze</option>
                             <option value="oldest">Najstarsze</option>
@@ -1153,7 +1153,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                     {reviews.length > 0 ? (
                       <div className="space-y-6">
                         {reviews.map((review) => (
-                          <div key={review.id} className="border-b border-gray-200 pb-6 last:border-0">
+                          <div key={review.id} className="border-b border-gray-200 dark:border-secondary-700 pb-6 last:border-0">
                             <div className="flex items-start justify-between mb-3">
                               <div>
                                 <div className="flex items-center gap-2 mb-1">
@@ -1170,7 +1170,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                                     ))}
                                   </div>
                                   {review.isVerifiedPurchase && (
-                                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                    <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full flex items-center gap-1">
                                       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                       </svg>
@@ -1178,7 +1178,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                                     </span>
                                   )}
                                 </div>
-                                <p className="text-sm text-gray-600">
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
                                   {review.user.firstName} {review.user.lastName.charAt(0)}.
                                   <span className="text-gray-400 mx-2">•</span>
                                   {new Date(review.createdAt).toLocaleDateString('pl-PL')}
@@ -1187,9 +1187,9 @@ export default function ProductPage({ params }: ProductPageProps) {
                             </div>
 
                             {review.title && (
-                              <h4 className="font-semibold text-gray-900 mb-2">{review.title}</h4>
+                              <h4 className="font-semibold text-gray-900 dark:text-white mb-2">{review.title}</h4>
                             )}
-                            <p className="text-gray-700 mb-4">{review.content}</p>
+                            <p className="text-gray-700 dark:text-gray-300 mb-4">{review.content}</p>
 
                             {/* Review Images */}
                             {review.images && review.images.length > 0 && (
@@ -1206,7 +1206,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                             )}
 
                             {/* Helpful Buttons */}
-                            <div className="flex items-center gap-4 text-sm text-gray-500">
+                            <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                               <span>Czy ta opinia była pomocna?</span>
                               <button
                                 onClick={() => handleMarkHelpful(review.id, true)}
@@ -1236,17 +1236,17 @@ export default function ProductPage({ params }: ProductPageProps) {
                             <button
                               onClick={() => setReviewsPage(p => Math.max(1, p - 1))}
                               disabled={reviewsPage === 1}
-                              className="px-4 py-2 border border-gray-300 rounded-lg text-sm disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                              className="px-4 py-2 border border-gray-300 dark:border-secondary-600 dark:text-gray-300 rounded-lg text-sm disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors"
                             >
                               Poprzednia
                             </button>
-                            <span className="px-4 py-2 text-sm text-gray-600">
+                            <span className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">
                               Strona {reviewsPage} z {reviewsTotalPages}
                             </span>
                             <button
                               onClick={() => setReviewsPage(p => Math.min(reviewsTotalPages, p + 1))}
                               disabled={reviewsPage === reviewsTotalPages}
-                              className="px-4 py-2 border border-gray-300 rounded-lg text-sm disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                              className="px-4 py-2 border border-gray-300 dark:border-secondary-600 dark:text-gray-300 rounded-lg text-sm disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors"
                             >
                               Następna
                             </button>
@@ -1256,17 +1256,17 @@ export default function ProductPage({ params }: ProductPageProps) {
                     ) : (
                       /* Empty State */
                       <div className="text-center py-12">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <div className="w-16 h-16 bg-gray-100 dark:bg-secondary-700 rounded-full flex items-center justify-center mx-auto mb-4">
                           <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                           </svg>
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Brak opinii</h3>
-                        <p className="text-gray-500 mb-6 max-w-sm mx-auto">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Brak opinii</h3>
+                        <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
                           Ten produkt nie ma jeszcze żadnych opinii. Bądź pierwszą osobą, która podzieli się swoją opinią!
                         </p>
                         {!canReviewInfo?.canReview && (
-                          <p className="text-sm text-gray-400">
+                          <p className="text-sm text-gray-400 dark:text-gray-500">
                             Opinie mogą dodawać tylko klienci, którzy zakupili ten produkt.
                           </p>
                         )}
@@ -1286,8 +1286,8 @@ export default function ProductPage({ params }: ProductPageProps) {
               <div className="flex items-center gap-2">
                 <span className="text-xl">🔥</span>
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900">Bestsellery</h2>
-                  <p className="text-sm text-gray-500">Najchętniej kupowane produkty</p>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Bestsellery</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Najchętniej kupowane produkty</p>
                 </div>
               </div>
               <Link href="/products/bestsellers" className="text-orange-500 hover:text-orange-600 text-sm font-medium flex items-center gap-1">

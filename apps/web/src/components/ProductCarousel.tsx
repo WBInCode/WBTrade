@@ -87,14 +87,14 @@ export default function ProductCarousel({
       <div className="flex items-center justify-between mb-3 sm:mb-4">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           {icon && (
-            <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-primary-100 rounded-xl flex items-center justify-center text-base sm:text-xl">
+            <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-primary-100 dark:bg-primary-900/50 rounded-xl flex items-center justify-center text-base sm:text-xl">
               {icon}
             </div>
           )}
           <div className="min-w-0">
-            <h2 className="text-sm sm:text-lg md:text-xl font-bold text-gray-900 truncate">{title}</h2>
+            <h2 className="text-sm sm:text-lg md:text-xl font-bold text-gray-900 dark:text-white truncate">{title}</h2>
             {subtitle && (
-              <p className="text-[11px] sm:text-sm text-gray-500 truncate hidden xs:block">{subtitle}</p>
+              <p className="text-[11px] sm:text-sm text-gray-500 dark:text-secondary-400 truncate hidden xs:block">{subtitle}</p>
             )}
           </div>
         </div>
@@ -105,7 +105,7 @@ export default function ProductCarousel({
             <button
               onClick={() => scroll('left')}
               disabled={!canScrollLeft}
-              className="w-9 h-9 rounded-full flex items-center justify-center shadow-md bg-white text-gray-700 hover:shadow-lg hover:scale-105 active:scale-95 disabled:shadow-none disabled:bg-gray-100 disabled:text-gray-300 disabled:scale-100 transition-all duration-150"
+              className="w-9 h-9 rounded-full flex items-center justify-center shadow-md bg-white dark:bg-secondary-800 text-gray-700 dark:text-secondary-200 hover:shadow-lg hover:scale-105 active:scale-95 disabled:shadow-none disabled:bg-gray-100 dark:disabled:bg-secondary-700 disabled:text-gray-300 dark:disabled:text-secondary-500 disabled:scale-100 transition-all duration-150"
               aria-label="Przewiń w lewo"
             >
               <ChevronLeftIcon className="w-4 h-4" />
@@ -113,7 +113,7 @@ export default function ProductCarousel({
             <button
               onClick={() => scroll('right')}
               disabled={!canScrollRight}
-              className="w-9 h-9 rounded-full flex items-center justify-center shadow-md bg-white text-gray-700 hover:shadow-lg hover:scale-105 active:scale-95 disabled:shadow-none disabled:bg-gray-100 disabled:text-gray-300 disabled:scale-100 transition-all duration-150"
+              className="w-9 h-9 rounded-full flex items-center justify-center shadow-md bg-white dark:bg-secondary-800 text-gray-700 dark:text-secondary-200 hover:shadow-lg hover:scale-105 active:scale-95 disabled:shadow-none disabled:bg-gray-100 dark:disabled:bg-secondary-700 disabled:text-gray-300 dark:disabled:text-secondary-500 disabled:scale-100 transition-all duration-150"
               aria-label="Przewiń w prawo"
             >
               <ChevronRightIcon className="w-4 h-4" />
@@ -156,7 +156,7 @@ export default function ProductCarousel({
       </div>
 
       {/* Progress bar */}
-      <div className="mt-2 sm:mt-3 h-1 sm:h-1.5 bg-gray-200 rounded-full overflow-hidden">
+      <div className="mt-2 sm:mt-3 h-1 sm:h-1.5 bg-gray-200 dark:bg-secondary-700 rounded-full overflow-hidden">
         <div 
           className="h-full bg-primary-500 rounded-full transition-all duration-300 ease-out"
           style={{ width: `${Math.max(8, scrollProgress)}%` }}
@@ -167,7 +167,7 @@ export default function ProductCarousel({
       {viewAllLink && (
         <Link
           href={viewAllLink}
-          className="lg:hidden flex items-center justify-center gap-1.5 mt-3 py-2.5 bg-primary-50 text-primary-600 rounded-xl font-medium text-sm hover:bg-primary-100 transition-colors"
+          className="lg:hidden flex items-center justify-center gap-1.5 mt-3 py-2.5 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-xl font-medium text-sm hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
         >
           {viewAllText}
           <ChevronRightIcon className="w-4 h-4" />

@@ -127,10 +127,10 @@ function OrderConfirmationPageContent() {
 
   if (isLoading || isVerifying) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400">
             {isVerifying ? 'Weryfikuję płatność...' : 'Ładowanie...'}
           </p>
         </div>
@@ -140,10 +140,10 @@ function OrderConfirmationPageContent() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Błąd</h1>
-          <p className="text-gray-600 mb-6">{error}</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Błąd</h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
           <Link
             href="/"
             className="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
@@ -176,31 +176,31 @@ function OrderConfirmationPageContent() {
     switch (order?.paymentStatus) {
       case 'PAID':
         return (
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
             ✓ Opłacone
           </span>
         );
       case 'FAILED':
         return (
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400">
             ✗ Płatność nieudana
           </span>
         );
       case 'CANCELLED':
         return (
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-400">
             Anulowane
           </span>
         );
       case 'AWAITING_CONFIRMATION':
         return (
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400">
             ⏳ Potwierdź w aplikacji
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400">
             Oczekuje na płatność
           </span>
         );
@@ -330,9 +330,9 @@ function OrderConfirmationPageContent() {
   const statusConfig = getStatusConfig();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-secondary-900">
       {/* Header */}
-      <header className="bg-white shadow-sm">
+      <header className="bg-white dark:bg-secondary-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <Link href="/" className="inline-block">
             <img 
@@ -348,10 +348,10 @@ function OrderConfirmationPageContent() {
         {/* Status message */}
         <div className="text-center mb-8">
           {statusConfig.icon}
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             {statusConfig.title}
           </h1>
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-gray-600 dark:text-gray-400">
             {statusConfig.subtitle}
           </p>
         </div>
@@ -375,11 +375,11 @@ function OrderConfirmationPageContent() {
         )}
 
         {/* Order details */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm p-6 mb-6">
           <div className="flex justify-between items-start mb-6">
             <div>
-              <h2 className="text-xl font-semibold">Zamówienie #{order?.orderNumber}</h2>
-              <p className="text-sm text-gray-500">
+              <h2 className="text-xl font-semibold dark:text-white">Zamówienie #{order?.orderNumber}</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 Złożone {new Date(order?.createdAt || '').toLocaleDateString('pl-PL', {
                   day: 'numeric',
                   month: 'long',
@@ -394,9 +394,9 @@ function OrderConfirmationPageContent() {
 
           <div className="grid md:grid-cols-2 gap-6 mb-6">
             {/* Shipping address */}
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <h3 className="font-medium text-gray-900 mb-2">📍 Adres dostawy</h3>
-              <p className="text-sm text-gray-600">
+            <div className="p-4 bg-gray-50 dark:bg-secondary-700 rounded-lg">
+              <h3 className="font-medium text-gray-900 dark:text-white mb-2">📍 Adres dostawy</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 {order?.shippingAddress?.firstName} {order?.shippingAddress?.lastName}<br />
                 {order?.shippingAddress?.street}<br />
                 {order?.shippingAddress?.postalCode} {order?.shippingAddress?.city}
@@ -404,9 +404,9 @@ function OrderConfirmationPageContent() {
             </div>
 
             {/* Delivery & Payment */}
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <h3 className="font-medium text-gray-900 mb-2">🚚 Dostawa i płatność</h3>
-              <p className="text-sm text-gray-600">
+            <div className="p-4 bg-gray-50 dark:bg-secondary-700 rounded-lg">
+              <h3 className="font-medium text-gray-900 dark:text-white mb-2">🚚 Dostawa i płatność</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 {shippingMethodNames[order?.shippingMethod || ''] || order?.shippingMethod}<br />
                 {paymentMethodNames[order?.paymentMethod || ''] || order?.paymentMethod}
               </p>
@@ -414,10 +414,10 @@ function OrderConfirmationPageContent() {
           </div>
 
           {/* Items */}
-          <h3 className="font-medium text-gray-900 mb-3">Zamówione produkty</h3>
+          <h3 className="font-medium text-gray-900 dark:text-white mb-3">Zamówione produkty</h3>
           <div className="space-y-3">
             {order?.items?.map((item) => (
-              <div key={item.id} className="flex gap-4 p-3 border rounded-lg">
+              <div key={item.id} className="flex gap-4 p-3 border dark:border-secondary-600 rounded-lg">
                 <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
                   <div className="w-full h-full flex items-center justify-center text-gray-400">
                     <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -485,12 +485,12 @@ function OrderConfirmationPageContent() {
 
         {/* Help message for failed payments */}
         {order?.paymentStatus === 'FAILED' && (
-          <div className="bg-gray-50 rounded-lg p-6 mb-6">
-            <h3 className="font-semibold text-gray-900 mb-3">Potrzebujesz pomocy?</h3>
-            <p className="text-sm text-gray-600 mb-3">
+          <div className="bg-gray-50 dark:bg-secondary-800 rounded-lg p-6 mb-6">
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Potrzebujesz pomocy?</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
               Jeśli masz problemy z płatnością, możesz:
             </p>
-            <ul className="list-disc list-inside space-y-2 text-sm text-gray-600">
+            <ul className="list-disc list-inside space-y-2 text-sm text-gray-600 dark:text-gray-400">
               <li>Sprawdzić czy masz wystarczające środki na koncie</li>
               <li>Upewnić się, że dane karty są poprawne</li>
               <li>Spróbować innej metody płatności (BLIK, przelew, karta)</li>
@@ -503,7 +503,7 @@ function OrderConfirmationPageContent() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
             href="/account"
-            className="inline-flex items-center justify-center px-6 py-3 border border-orange-500 text-orange-500 rounded-lg hover:bg-orange-50 font-medium"
+            className="inline-flex items-center justify-center px-6 py-3 border border-orange-500 text-orange-500 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/30 font-medium"
           >
             Moje zamówienia
           </Link>
@@ -521,7 +521,7 @@ function OrderConfirmationPageContent() {
 export default function OrderConfirmationPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
       </div>
     }>
