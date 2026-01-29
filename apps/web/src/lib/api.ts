@@ -320,6 +320,7 @@ export interface ProductFilters {
   sort?: 'price_asc' | 'price_desc' | 'price-asc' | 'price-desc' | 'name_asc' | 'name_desc' | 'newest' | 'random' | 'relevance' | 'popularity';
   status?: 'active' | 'draft' | 'archived';
   brand?: string;
+  warehouse?: string; // Filtr magazynu: leker, hp, btp (może być wiele oddzielone przecinkiem)
   sessionSeed?: number; // Seed for consistent random sorting within a session
   [key: string]: string | number | boolean | undefined; // Allow dynamic specification filters
 }
@@ -331,6 +332,7 @@ export interface ProductFiltersResponse {
   };
   brands: { name: string; count: number }[];
   specifications: Record<string, { value: string; count: number }[]>;
+  warehouseCounts?: Record<string, number>; // Liczba produktów per magazyn
   totalProducts: number;
 }
 

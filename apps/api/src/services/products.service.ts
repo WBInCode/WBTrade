@@ -53,6 +53,7 @@ interface ProductFilters {
   sku?: string; // Direct SKU search
   sort?: string;
   status?: string;
+  warehouse?: string; // Filtr magazynu: leker, hp, btp (może być wiele oddzielone przecinkiem)
   hideOldZeroStock?: boolean; // Ukryj produkty ze stanem 0 starsze niż 14 dni
   sessionSeed?: number; // Seed for consistent random sorting
 }
@@ -275,6 +276,7 @@ export class ProductsService {
       search,
       sort = 'newest',
       status,
+      warehouse,
       hideOldZeroStock = false,
       sessionSeed,
     } = filters;
@@ -381,6 +383,24 @@ export class ProductsService {
       };
     }
 
+    // Filter by warehouse (based on baselinkerProductId prefix)
+    if (warehouse) {
+      const warehouses = warehouse.split(',').map(w => w.trim().toLowerCase());
+      const warehouseConditions: Prisma.ProductWhereInput[] = [];
+      
+      for (const w of warehouses) {
+        if (['leker', 'hp', 'btp'].includes(w)) {
+          warehouseConditions.push({
+            baselinkerProductId: { startsWith: `${w}-` }
+          });
+        }
+      }
+      
+      if (warehouseConditions.length > 0) {
+        where.OR = warehouseConditions;
+      }
+    }
+
     // Build orderBy clause
     // Always add secondary sort by id for stable pagination (prevents random order when primary values are equal)
     let orderBy: Prisma.ProductOrderByWithRelationInput | Prisma.ProductOrderByWithRelationInput[] = [{ createdAt: 'desc' }, { id: 'asc' }];
@@ -419,8 +439,9 @@ export class ProductsService {
     }
 
     // Execute queries in parallel
-    // For random sort, we need to fetch more products and shuffle them
-    const fetchLimit = useRandomSort ? 500 : limit;
+    // For random sort, we need to fetch ALL matching products and shuffle them
+    // to ensure consistent pagination across pages
+    const fetchLimit = useRandomSort ? undefined : limit; // undefined = no limit (fetch all)
     const fetchSkip = useRandomSort ? 0 : skip;
     
     const [products, totalCount] = await Promise.all([
@@ -1232,6 +1253,9 @@ export class ProductsService {
       }
     });
 
+    // Count products per warehouse
+    const warehouseCounts = await this.getWarehouseCounts(categoryIds.length > 0 ? categoryIds : undefined);
+
     return {
       priceRange: {
         min: minPrice === Infinity ? 0 : Math.floor(minPrice),
@@ -1239,7 +1263,64 @@ export class ProductsService {
       },
       brands,
       specifications,
+      warehouseCounts,
       totalProducts: products.length,
+    };
+  }
+
+  /**
+   * Count products per warehouse based on baselinkerProductId prefix
+   * Uses same visibility criteria as main product listing
+   */
+  private async getWarehouseCounts(categoryIds?: string[]): Promise<Record<string, number>> {
+    // Same visibility criteria as getAll()
+    const whereBase: Prisma.ProductWhereInput = {
+      status: 'ACTIVE',
+      price: { gt: 0 },
+      // Produkty MUSZĄ mieć stan magazynowy > 0
+      variants: {
+        some: {
+          inventory: {
+            some: {
+              quantity: { gt: 0 }
+            }
+          }
+        }
+      },
+      // Produkty MUSZĄ mieć tag dostawy ORAZ kategorię z Baselinker
+      AND: [
+        { tags: { hasSome: DELIVERY_TAGS } },
+        { category: { baselinkerCategoryId: { not: null } } },
+        PACKAGE_FILTER_WHERE,
+      ],
+      ...(categoryIds ? { categoryId: { in: categoryIds } } : {}),
+    };
+
+    const [lekerCount, hpCount, btpCount] = await Promise.all([
+      prisma.product.count({
+        where: {
+          ...whereBase,
+          baselinkerProductId: { startsWith: 'leker-' },
+        },
+      }),
+      prisma.product.count({
+        where: {
+          ...whereBase,
+          baselinkerProductId: { startsWith: 'hp-' },
+        },
+      }),
+      prisma.product.count({
+        where: {
+          ...whereBase,
+          baselinkerProductId: { startsWith: 'btp-' },
+        },
+      }),
+    ]);
+
+    return {
+      leker: lekerCount,
+      hp: hpCount,
+      btp: btpCount,
     };
   }
 
@@ -1824,32 +1905,35 @@ export class ProductsService {
   async getSameWarehouseProducts(productId: string, options: { limit?: number } = {}) {
     const { limit = 6 } = options;
 
-    // First get the source product to find its wholesaler tag
+    // First get the source product to find its warehouse by baselinkerProductId prefix
     const sourceProduct = await prisma.product.findUnique({
       where: { id: productId },
-      select: { id: true, tags: true },
+      select: { id: true, baselinkerProductId: true, sku: true },
     });
 
     if (!sourceProduct) {
       return { products: [], wholesaler: null };
     }
 
-    // Extract wholesaler from tags
-    const wholesaler = this.extractWholesalerFromTags(sourceProduct.tags);
+    // Extract warehouse from baselinkerProductId prefix (hp-, leker-, btp-)
+    const warehouse = this.extractWarehouseFromProduct(sourceProduct);
     
-    if (!wholesaler) {
+    if (!warehouse) {
       return { products: [], wholesaler: null };
     }
 
-    // Find other products with the same wholesaler tag
+    // Find other products from the same warehouse by prefix
     const products = await prisma.product.findMany({
       where: {
         status: 'ACTIVE',
         price: { gt: 0 },
         id: { not: productId }, // Exclude the source product
-        tags: { has: wholesaler }, // Same wholesaler tag
+        baselinkerProductId: { startsWith: warehouse.prefix }, // Same warehouse prefix
         // Must have at least one delivery tag to be visible
         OR: DELIVERY_TAGS.map(tag => ({ tags: { has: tag } })),
+        // Additional visibility filters
+        baselinkerCategoryPath: { not: null },
+        ...PACKAGE_FILTER_WHERE,
       },
       orderBy: [
         { review_count: 'desc' }, // Popular products first
@@ -1865,47 +1949,38 @@ export class ProductsService {
       },
     });
 
+    // Filter to only include products with inventory
+    const productsWithInventory = products.filter((p: typeof products[number]) => 
+      p.variants.some((v: typeof p.variants[number]) => 
+        v.inventory && v.inventory.some((inv: typeof v.inventory[number]) => inv.quantity > 0)
+      )
+    );
+
     return {
-      products: filterProductsWithPackageInfo(transformProducts(products)),
-      wholesaler: this.getWholesalerDisplayName(wholesaler),
+      products: filterProductsWithPackageInfo(transformProducts(productsWithInventory)),
+      wholesaler: warehouse.displayName,
     };
   }
 
   /**
-   * Extract wholesaler tag from product tags
+   * Extract warehouse info from product's baselinkerProductId or SKU prefix
    */
-  private extractWholesalerFromTags(tags: string[]): string | null {
-    const WHOLESALER_TAGS = ['Ikonka', 'BTP', 'HP', 'Gastro', 'Horeca', 'Hurtownia Przemysłowa', 'Leker', 'Forcetop'];
-    
-    for (const tag of tags) {
-      // Direct match
-      if (WHOLESALER_TAGS.includes(tag)) {
-        return tag;
-      }
-      // Match pattern like "hurtownia:HP"
-      const match = tag.match(/^hurtownia[:\-_](.+)$/i);
-      if (match) {
-        return match[1];
+  private extractWarehouseFromProduct(product: { baselinkerProductId: string | null; sku: string | null }): { id: string; prefix: string; displayName: string } | null {
+    const WAREHOUSES = [
+      { id: 'leker', prefix: 'leker-', skuPrefix: 'LEKER-', displayName: 'Magazyn Chynów' },
+      { id: 'hp', prefix: 'hp-', skuPrefix: 'HP-', displayName: 'Magazyn Zielona Góra' },
+      { id: 'btp', prefix: 'btp-', skuPrefix: 'BTP-', displayName: 'Magazyn Chotów' },
+    ];
+
+    const blId = product.baselinkerProductId?.toLowerCase() || '';
+    const sku = product.sku?.toUpperCase() || '';
+
+    for (const wh of WAREHOUSES) {
+      if (blId.startsWith(wh.prefix) || sku.startsWith(wh.skuPrefix)) {
+        return wh;
       }
     }
     return null;
-  }
-
-  /**
-   * Get human-readable warehouse display name
-   */
-  private getWholesalerDisplayName(wholesaler: string): string {
-    const DISPLAY_NAMES: Record<string, string> = {
-      'HP': 'Magazyn Zielona Góra',
-      'Hurtownia Przemysłowa': 'Magazyn Zielona Góra',
-      'Ikonka': 'Magazyn Białystok',
-      'BTP': 'Magazyn Chotów',
-      'Leker': 'Magazyn Chynów',
-      'Gastro': 'Magazyn Centralny',
-      'Horeca': 'Magazyn Centralny',
-      'Forcetop': 'Magazyn Centralny',
-    };
-    return DISPLAY_NAMES[wholesaler] || wholesaler;
   }
 }
 
