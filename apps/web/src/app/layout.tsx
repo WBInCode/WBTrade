@@ -2,6 +2,7 @@ import '../styles/globals.css';
 import { CartProvider } from '../contexts/CartContext';
 import { AuthProvider } from '../contexts/AuthContext';
 import { WishlistProvider } from '../contexts/WishlistContext';
+import { ThemeProvider } from '../contexts/ThemeContext';
 import { WelcomeDiscountPopup } from '../components/WelcomeDiscountPopup';
 import CookieConsent from '../components/CookieConsent';
 import { Metadata } from 'next';
@@ -32,17 +33,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pl">
+    <html lang="pl" suppressHydrationWarning>
       <body className="font-sans">
-        <AuthProvider>
-          <CartProvider>
-            <WishlistProvider>
-              {children}
-              <WelcomeDiscountPopup />
-              <CookieConsent />
-            </WishlistProvider>
-          </CartProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <CartProvider>
+              <WishlistProvider>
+                {children}
+                <WelcomeDiscountPopup />
+                <CookieConsent />
+              </WishlistProvider>
+            </CartProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
