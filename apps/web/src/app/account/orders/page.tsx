@@ -488,7 +488,7 @@ export default function OrdersPage() {
                               Śledź przesyłkę
                             </button>
                           )}
-                          {order.status === 'PENDING' && (
+                          {order.paymentStatus === 'PENDING' && order.status !== 'CANCELLED' && (
                             <button 
                               onClick={() => handlePayNow(order.id)}
                               disabled={simulatingPayment === order.id}
