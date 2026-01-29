@@ -63,6 +63,8 @@ apps/api/fix-*.ts
 apps/api/fix-*.js
 apps/api/test-*.ts
 apps/api/update-bl-*.js
+apps/api/create-test-*.js
+apps/api/verify-test-*.js
 
 # ============================================
 # 🔒 SECURITY - Sensitive files
