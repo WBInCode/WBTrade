@@ -143,6 +143,12 @@ interface UserResponse {
   emailVerified: boolean;
   createdAt: Date;
   lastLoginAt?: Date | null;
+  // Company data fields
+  companyName?: string | null;
+  nip?: string | null;
+  companyStreet?: string | null;
+  companyCity?: string | null;
+  companyPostalCode?: string | null;
 }
 
 interface RegisterResult {
