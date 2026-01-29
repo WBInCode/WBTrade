@@ -31,6 +31,14 @@ model User {
   authProvider               AuthProvider       @default(LOCAL) @map("auth_provider")
   googleId                   String?            @unique @map("google_id")
   avatarUrl                  String?            @map("avatar_url")
+  // Company data fields
+  companyName                String?            @map("company_name")
+  nip                        String?
+  companyStreet              String?            @map("company_street")
+  companyCity                String?            @map("company_city")
+  companyPostalCode          String?            @map("company_postal_code")
+  companyCountry             String?            @default("PL") @map("company_country")
+  // Relations
   addresses                  Address[]
   cart                       Cart?
   orders                     Order[]

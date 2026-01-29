@@ -173,6 +173,12 @@ export const updateProfileSchema = z.object({
   firstName: nameSchema.optional(),
   lastName: nameSchema.optional(),
   phone: phoneSchema,
+  // Company data fields
+  companyName: z.string().max(200).optional().transform((val) => val?.trim() || undefined),
+  nip: z.string().max(15).optional().transform((val) => val ? val.replace(/[^0-9]/g, '') : undefined),
+  companyStreet: z.string().max(200).optional().transform((val) => val?.trim() || undefined),
+  companyCity: z.string().max(100).optional().transform((val) => val?.trim() || undefined),
+  companyPostalCode: z.string().max(10).optional().transform((val) => val?.trim() || undefined),
 });
 
 // ============================================

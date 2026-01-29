@@ -39,6 +39,12 @@ interface UserResponse {
   phone: string | null;
   role: UserRole;
   createdAt: Date;
+  // Company data fields
+  companyName?: string | null;
+  nip?: string | null;
+  companyStreet?: string | null;
+  companyCity?: string | null;
+  companyPostalCode?: string | null;
 }
 
 // Constants
@@ -356,7 +362,16 @@ export class AuthService {
    */
   async updateProfile(
     userId: string,
-    data: { firstName?: string; lastName?: string; phone?: string }
+    data: { 
+      firstName?: string; 
+      lastName?: string; 
+      phone?: string;
+      companyName?: string;
+      nip?: string;
+      companyStreet?: string;
+      companyCity?: string;
+      companyPostalCode?: string;
+    }
   ): Promise<UserResponse> {
     const user = await prisma.user.update({
       where: { id: userId },

@@ -19,6 +19,7 @@ function HeaderContent() {
   const [categoryPath, setCategoryPath] = useState<{ id: string; name: string; slug: string }[]>([]);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const { itemCount } = useCart();
   const { user, isAuthenticated, logout } = useAuth();
   const { itemCount: wishlistCount } = useWishlist();
@@ -92,6 +93,37 @@ function HeaderContent() {
     return () => window.removeEventListener('resize', checkScrollPosition);
   }, [categories]);
 
+  // Handle header visibility on scroll
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+    let isVisible = true;
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Show header when scrolling up (any amount) or at top
+      if (currentScrollY < lastScrollY || currentScrollY < 50) {
+        if (!isVisible) {
+          isVisible = true;
+          setIsHeaderVisible(true);
+        }
+      } 
+      // Hide header when scrolling down after passing threshold
+      else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        if (isVisible) {
+          isVisible = false;
+          setIsHeaderVisible(false);
+        }
+      }
+      
+      lastScrollY = currentScrollY;
+    };
+
+    // Use 'scroll' event on document for broader compatibility
+    document.addEventListener('scroll', handleScroll, { passive: true });
+    return () => document.removeEventListener('scroll', handleScroll);
+  }, []);
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -117,7 +149,7 @@ function HeaderContent() {
   }, [pathname, searchParams]);
 
   return (
-    <header className="bg-white sticky top-0 z-50 shadow-sm relative">
+    <header className={`bg-white sticky top-0 z-50 shadow-sm relative transition-transform duration-300 ${isHeaderVisible ? 'translate-y-0' : '-translate-y-full'}`}>
       {/* Top Header */}
       <div className="border-b border-gray-100">
         <div className="container-custom">

@@ -61,7 +61,7 @@ function ProductsContent() {
   const maxPrice = searchParams.get('maxPrice');
   const brand = searchParams.get('brand');
   const warehouse = searchParams.get('warehouse');
-  const sort = searchParams.get('sort') || 'relevance';
+  const sort = searchParams.get('sort') || 'popularity';
   const tabFromUrl = searchParams.get('tab') || 'all';
 
   // Session seed for consistent random sorting - generated once per session
@@ -260,7 +260,7 @@ function ProductsContent() {
     'price_asc': 'price-asc',
     'price_desc': 'price-desc',
   };
-  const uiSort = apiToUiSortMapping[sort] || 'relevance';
+  const uiSort = apiToUiSortMapping[sort] || 'popularity';
 
   // Build breadcrumb dynamically based on category path
   const breadcrumbItems = useMemo(() => {
@@ -292,8 +292,6 @@ function ProductsContent() {
 
   return (
     <div className="min-h-screen bg-gray-50 overflow-x-hidden">
-      <Header />
-      
       <main className="container-custom py-6 overflow-hidden">
         {/* Breadcrumb */}
         <Breadcrumb items={breadcrumbItems} />
@@ -412,12 +410,15 @@ function ProductsContent() {
 
 export default function ProductsPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
-      </div>
-    }>
-      <ProductsContent />
-    </Suspense>
+    <>
+      <Header />
+      <Suspense fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+        </div>
+      }>
+        <ProductsContent />
+      </Suspense>
+    </>
   );
 }

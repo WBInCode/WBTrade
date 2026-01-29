@@ -380,7 +380,7 @@ export const productsApi = {
 
   // Get products from the same warehouse (for "Zamów w jednej przesyłce")
   getSameWarehouseProducts: (productId: string, options?: { limit?: number }) =>
-    api.get<{ products: Product[]; wholesaler: string | null }>(
+    api.get<{ products: Product[]; wholesaler: string | null; warehouseId: string | null }>(
       `/products/same-warehouse/${productId}`, 
       options as Record<string, string | number | boolean>
     ),
@@ -560,6 +560,12 @@ export interface User {
   phone?: string;
   role: 'customer' | 'admin' | 'warehouse';
   createdAt: string;
+  // Company address fields
+  companyName?: string;
+  nip?: string;
+  companyStreet?: string;
+  companyCity?: string;
+  companyPostalCode?: string;
 }
 
 export interface AuthResponse {
