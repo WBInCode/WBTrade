@@ -18,7 +18,7 @@ export class SecureAuthController {
       // Validate required fields
       if (!email || !password) {
         res.status(400).json({
-          message: 'Email and password are required',
+          message: 'Email i hasło są wymagane',
           code: 'MISSING_FIELDS',
         });
         return;
@@ -34,7 +34,7 @@ export class SecureAuthController {
       });
 
       res.status(201).json({
-        message: 'Registration successful. Please verify your email.',
+        message: 'Rejestracja zakończona pomyślnie. Proszę zweryfikować email.',
         user: {
           id: result.user.id,
           email: result.user.email,
@@ -54,7 +54,7 @@ export class SecureAuthController {
         // Handle specific errors
         if (error.message === 'Email already exists') {
           res.status(409).json({
-            message: 'An account with this email already exists',
+            message: 'Konto z tym adresem email już istnieje',
             code: 'EMAIL_EXISTS',
           });
           return;
@@ -79,7 +79,7 @@ export class SecureAuthController {
 
       console.error('Registration error:', error);
       res.status(500).json({
-        message: 'Registration failed',
+        message: 'Rejestracja nie powiodła się',
         code: 'REGISTRATION_ERROR',
       });
     }
@@ -95,7 +95,7 @@ export class SecureAuthController {
 
       if (!email || !password) {
         res.status(400).json({
-          message: 'Email and password are required',
+          message: 'Email i hasło są wymagane',
           code: 'MISSING_FIELDS',
         });
         return;
@@ -109,7 +109,7 @@ export class SecureAuthController {
       });
 
       res.json({
-        message: 'Login successful',
+        message: 'Zalogowano pomyślnie',
         user: {
           id: result.user.id,
           email: result.user.email,
@@ -125,7 +125,7 @@ export class SecureAuthController {
       if (error instanceof Error) {
         if (error.message === 'Account is locked') {
           res.status(423).json({
-            message: 'Account is temporarily locked due to too many failed login attempts. Please try again later.',
+            message: 'Konto jest tymczasowo zablokowane z powodu zbyt wielu nieudanych prób logowania. Spróbuj ponownie później.',
             code: 'ACCOUNT_LOCKED',
           });
           return;
@@ -133,7 +133,7 @@ export class SecureAuthController {
 
         if (error.message === 'Invalid credentials') {
           res.status(401).json({
-            message: 'Invalid email or password',
+            message: 'Nieprawidłowy email lub hasło',
             code: 'INVALID_CREDENTIALS',
           });
           return;
@@ -142,7 +142,7 @@ export class SecureAuthController {
 
       console.error('Login error:', error);
       res.status(500).json({
-        message: 'Login failed',
+        message: 'Logowanie nie powiodło się',
         code: 'LOGIN_ERROR',
       });
     }
@@ -158,7 +158,7 @@ export class SecureAuthController {
 
       if (!refreshToken) {
         res.status(400).json({
-          message: 'Refresh token is required',
+          message: 'Token odświeżania jest wymagany',
           code: 'MISSING_TOKEN',
         });
         return;
@@ -171,14 +171,14 @@ export class SecureAuthController {
       });
 
       res.json({
-        message: 'Token refreshed successfully',
+        message: 'Token odświeżony pomyślnie',
         tokens: result.tokens,
       });
     } catch (error) {
       if (error instanceof Error) {
         if (error.message === 'Invalid or expired refresh token') {
           res.status(401).json({
-            message: 'Invalid or expired refresh token',
+            message: 'Nieprawidłowy lub wygasły token odświeżania',
             code: 'INVALID_REFRESH_TOKEN',
           });
           return;
@@ -186,7 +186,7 @@ export class SecureAuthController {
 
         if (error.message === 'Refresh token has been revoked') {
           res.status(401).json({
-            message: 'Session has been terminated. Please login again.',
+            message: 'Sesja została zakończona. Proszę zalogować się ponownie.',
             code: 'TOKEN_REVOKED',
           });
           return;
@@ -195,7 +195,7 @@ export class SecureAuthController {
 
       console.error('Token refresh error:', error);
       res.status(500).json({
-        message: 'Failed to refresh token',
+        message: 'Nie udało się odświeżyć tokena',
         code: 'REFRESH_ERROR',
       });
     }
@@ -214,7 +214,7 @@ export class SecureAuthController {
 
       if (!accessToken) {
         res.status(400).json({
-          message: 'Access token is required',
+          message: 'Token dostępu jest wymagany',
           code: 'MISSING_TOKEN',
         });
         return;
@@ -227,13 +227,13 @@ export class SecureAuthController {
       });
 
       res.json({
-        message: 'Logged out successfully',
+        message: 'Wylogowano pomyślnie',
       });
     } catch (error) {
       console.error('Logout error:', error);
       // Always return success for logout to prevent token probing
       res.json({
-        message: 'Logged out successfully',
+        message: 'Wylogowano pomyślnie',
       });
     }
   }
@@ -246,7 +246,7 @@ export class SecureAuthController {
     try {
       if (!req.user) {
         res.status(401).json({
-          message: 'Authentication required',
+          message: 'Wymagane uwierzytelnienie',
           code: 'AUTH_REQUIRED',
         });
         return;
@@ -262,12 +262,12 @@ export class SecureAuthController {
       });
 
       res.json({
-        message: 'Logged out from all devices successfully',
+        message: 'Wylogowano ze wszystkich urządzeń pomyślnie',
       });
     } catch (error) {
       console.error('Logout all error:', error);
       res.status(500).json({
-        message: 'Failed to logout from all devices',
+        message: 'Nie udało się wylogować ze wszystkich urządzeń',
         code: 'LOGOUT_ALL_ERROR',
       });
     }
@@ -283,7 +283,7 @@ export class SecureAuthController {
 
       if (!token) {
         res.status(400).json({
-          message: 'Verification token is required',
+          message: 'Token weryfikacyjny jest wymagany',
           code: 'MISSING_TOKEN',
         });
         return;
@@ -292,13 +292,13 @@ export class SecureAuthController {
       await secureAuthService.verifyEmail(token);
 
       res.json({
-        message: 'Email verified successfully',
+        message: 'Email zweryfikowany pomyślnie',
       });
     } catch (error) {
       if (error instanceof Error) {
         if (error.message === 'Invalid or expired verification token') {
           res.status(400).json({
-            message: 'Invalid or expired verification token',
+            message: 'Nieprawidłowy lub wygasły token weryfikacyjny',
             code: 'INVALID_TOKEN',
           });
           return;
@@ -307,7 +307,7 @@ export class SecureAuthController {
 
       console.error('Email verification error:', error);
       res.status(500).json({
-        message: 'Email verification failed',
+        message: 'Weryfikacja email nie powiodła się',
         code: 'VERIFICATION_ERROR',
       });
     }
@@ -323,7 +323,7 @@ export class SecureAuthController {
 
       if (!email) {
         res.status(400).json({
-          message: 'Email is required',
+          message: 'Email jest wymagany',
           code: 'MISSING_EMAIL',
         });
         return;
@@ -335,14 +335,14 @@ export class SecureAuthController {
       );
 
       res.json({
-        message: 'Verification email sent if account exists',
+        message: 'Email weryfikacyjny wysłany jeśli konto istnieje',
         // In production, send via email, not in response
         ...(process.env.NODE_ENV !== 'production' && { verificationToken: token }),
       });
     } catch {
       // Always return success to prevent user enumeration
       res.json({
-        message: 'Verification email sent if account exists',
+        message: 'Email weryfikacyjny wysłany jeśli konto istnieje',
       });
     }
   }
@@ -357,7 +357,7 @@ export class SecureAuthController {
 
       if (!email) {
         res.status(400).json({
-          message: 'Email is required',
+          message: 'Email jest wymagany',
           code: 'MISSING_EMAIL',
         });
         return;
@@ -369,14 +369,14 @@ export class SecureAuthController {
       );
 
       res.json({
-        message: 'Password reset instructions sent if account exists',
+        message: 'Instrukcje resetowania hasła wysłane jeśli konto istnieje',
         // In production, send via email, not in response
         ...(process.env.NODE_ENV !== 'production' && { resetToken: token }),
       });
     } catch {
       // Always return success to prevent user enumeration
       res.json({
-        message: 'Password reset instructions sent if account exists',
+        message: 'Instrukcje resetowania hasła wysłane jeśli konto istnieje',
       });
     }
   }
@@ -391,7 +391,7 @@ export class SecureAuthController {
 
       if (!token || !password) {
         res.status(400).json({
-          message: 'Token and new password are required',
+          message: 'Token i nowe hasło są wymagane',
           code: 'MISSING_FIELDS',
         });
         return;
@@ -404,13 +404,13 @@ export class SecureAuthController {
       });
 
       res.json({
-        message: 'Password reset successfully',
+        message: 'Hasło zresetowane pomyślnie',
       });
     } catch (error) {
       if (error instanceof Error) {
         if (error.message === 'Invalid or expired reset token') {
           res.status(400).json({
-            message: 'Invalid or expired reset token',
+            message: 'Nieprawidłowy lub wygasły token resetowania',
             code: 'INVALID_TOKEN',
           });
           return;
@@ -427,7 +427,7 @@ export class SecureAuthController {
 
       console.error('Password reset error:', error);
       res.status(500).json({
-        message: 'Password reset failed',
+        message: 'Resetowanie hasła nie powiodło się',
         code: 'RESET_ERROR',
       });
     }
@@ -441,7 +441,7 @@ export class SecureAuthController {
     try {
       if (!req.user) {
         res.status(401).json({
-          message: 'Authentication required',
+          message: 'Wymagane uwierzytelnienie',
           code: 'AUTH_REQUIRED',
         });
         return;
@@ -451,7 +451,7 @@ export class SecureAuthController {
 
       if (!currentPassword || !newPassword) {
         res.status(400).json({
-          message: 'Current password and new password are required',
+          message: 'Obecne hasło i nowe hasło są wymagane',
           code: 'MISSING_FIELDS',
         });
         return;
@@ -465,13 +465,13 @@ export class SecureAuthController {
       });
 
       res.json({
-        message: 'Password changed successfully',
+        message: 'Hasło zmienione pomyślnie',
       });
     } catch (error) {
       if (error instanceof Error) {
         if (error.message === 'Current password is incorrect') {
           res.status(400).json({
-            message: 'Current password is incorrect',
+            message: 'Obecne hasło jest nieprawidłowe',
             code: 'WRONG_PASSWORD',
           });
           return;
@@ -488,7 +488,7 @@ export class SecureAuthController {
 
       console.error('Change password error:', error);
       res.status(500).json({
-        message: 'Failed to change password',
+        message: 'Zmiana hasła nie powiodła się',
         code: 'CHANGE_PASSWORD_ERROR',
       });
     }
@@ -502,7 +502,7 @@ export class SecureAuthController {
     try {
       if (!req.user) {
         res.status(401).json({
-          message: 'Authentication required',
+          message: 'Wymagane uwierzytelnienie',
           code: 'AUTH_REQUIRED',
         });
         return;
@@ -512,7 +512,7 @@ export class SecureAuthController {
 
       if (!user) {
         res.status(404).json({
-          message: 'User not found',
+          message: 'Nie znaleziono użytkownika',
           code: 'USER_NOT_FOUND',
         });
         return;
@@ -533,7 +533,7 @@ export class SecureAuthController {
     } catch (error) {
       console.error('Get profile error:', error);
       res.status(500).json({
-        message: 'Failed to get profile',
+        message: 'Nie udało się pobrać profilu',
         code: 'PROFILE_ERROR',
       });
     }
@@ -547,7 +547,7 @@ export class SecureAuthController {
     try {
       if (!req.user) {
         res.status(401).json({
-          message: 'Authentication required',
+          message: 'Wymagane uwierzytelnienie',
           code: 'AUTH_REQUIRED',
         });
         return;
@@ -568,7 +568,7 @@ export class SecureAuthController {
     } catch (error) {
       console.error('Get sessions error:', error);
       res.status(500).json({
-        message: 'Failed to get sessions',
+        message: 'Nie udało się pobrać sesji',
         code: 'SESSIONS_ERROR',
       });
     }
@@ -582,7 +582,7 @@ export class SecureAuthController {
     try {
       if (!req.user) {
         res.status(401).json({
-          message: 'Authentication required',
+          message: 'Wymagane uwierzytelnienie',
           code: 'AUTH_REQUIRED',
         });
         return;
@@ -597,12 +597,12 @@ export class SecureAuthController {
       );
 
       res.json({
-        message: 'Session revoked successfully',
+        message: 'Sesja anulowana pomyślnie',
       });
     } catch (error) {
       console.error('Revoke session error:', error);
       res.status(500).json({
-        message: 'Failed to revoke session',
+        message: 'Nie udało się anulować sesji',
         code: 'REVOKE_SESSION_ERROR',
       });
     }

@@ -68,7 +68,7 @@ export class CartController {
       if (userId && !isValidCUID(userId)) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid user ID format',
+          message: 'Nieprawidlowy format ID uzytkownika',
         });
       }
 
@@ -99,7 +99,7 @@ export class CartController {
       if (userId && !isValidCUID(userId)) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid user ID format',
+          message: 'Nieprawidlowy format ID uzytkownika',
         });
       }
 
@@ -108,7 +108,7 @@ export class CartController {
       if (!validation.success) {
         return res.status(400).json({
           success: false,
-          message: 'Validation error',
+          message: 'Blad walidacji',
           errors: validation.error.flatten().fieldErrors,
         });
       }
@@ -148,7 +148,7 @@ export class CartController {
       if (!isValidCUID(itemId)) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid item ID format',
+          message: 'Nieprawidlowy format ID elementu',
         });
       }
 
@@ -157,7 +157,7 @@ export class CartController {
       if (!validation.success) {
         return res.status(400).json({
           success: false,
-          message: 'Validation error',
+          message: 'Blad walidacji',
           errors: validation.error.flatten().fieldErrors,
         });
       }
@@ -191,7 +191,7 @@ export class CartController {
       if (!isValidCUID(itemId)) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid item ID format',
+          message: 'Nieprawidlowy format ID elementu',
         });
       }
 
@@ -252,7 +252,7 @@ export class CartController {
       if (!validation.success) {
         return res.status(400).json({
           success: false,
-          message: 'Validation error',
+          message: 'Blad walidacji',
           errors: validation.error.flatten().fieldErrors,
         });
       }
@@ -318,7 +318,7 @@ export class CartController {
       if (!isValidCUID(userId)) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid user ID format',
+          message: 'Nieprawidlowy format ID uzytkownika',
         });
       }
 
@@ -327,7 +327,7 @@ export class CartController {
       if (!validation.success) {
         return res.status(400).json({
           success: false,
-          message: 'Validation error',
+          message: 'Blad walidacji',
           errors: validation.error.flatten().fieldErrors,
         });
       }

@@ -197,7 +197,7 @@ async function fetchApi<T>(
       }
       
       throw new ApiClientError(
-        data.message || data.error || 'An error occurred',
+        data.message || data.error || 'Wystąpił błąd',
         response.status,
         data.errors
       );
@@ -209,9 +209,9 @@ async function fetchApi<T>(
       throw error;
     }
     
-    // Network error or other issues
+    // Błąd sieci lub inne problemy
     throw new ApiClientError(
-      'Network error. Please check your connection.',
+      'Błąd sieci. Sprawdź połączenie internetowe.',
       0
     );
   }
