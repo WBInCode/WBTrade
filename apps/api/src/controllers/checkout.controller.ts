@@ -391,6 +391,12 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       return;
     }
 
+    // Debug: log cart coupon info
+    console.log('🎫 Cart couponCode:', cart.couponCode);
+    console.log('🎫 Cart discount:', cart.discount);
+    console.log('🎫 Cart subtotal:', cart.subtotal);
+    console.log('🎫 Cart total:', cart.total);
+
     // Calculate totals
     interface CartItemData {
       variantId: string;
