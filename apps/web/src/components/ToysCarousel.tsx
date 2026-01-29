@@ -79,15 +79,16 @@ export default function ToysCarousel({
         setProducts([...manualProducts, ...automaticProducts]);
       } catch (error) {
         console.error('Error fetching toys:', error);
-        // Fallback
+        // Fallback: get any products
         try {
           const fallback = await productsApi.getAll({
             limit,
-            category: categorySlug,
+            sort: 'newest',
           });
-          setProducts(fallback.products);
+          setProducts(fallback.products || []);
         } catch (e) {
           console.error('Fallback also failed:', e);
+          setProducts([]);
         }
       } finally {
         setLoading(false);
@@ -96,6 +97,11 @@ export default function ToysCarousel({
 
     fetchProducts();
   }, [categorySlug, limit]);
+
+  // Don't render if no products
+  if (!loading && products.length === 0) {
+    return null;
+  }
 
   if (loading) {
     return (
