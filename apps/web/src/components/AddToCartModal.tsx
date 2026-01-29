@@ -4,6 +4,17 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Product, productsApi } from '../lib/api';
 
+// Helper function to map warehouse display name to ID
+function getWarehouseIdFromName(name: string | null): string {
+  if (!name) return '';
+  const nameMap: Record<string, string> = {
+    'Magazyn Chynów': 'leker',
+    'Magazyn Zielona Góra': 'hp',
+    'Magazyn Chotów': 'btp',
+  };
+  return nameMap[name] || '';
+}
+
 interface AddedProduct {
   name: string;
   image: string;
@@ -30,6 +41,7 @@ interface AddToCartModalProps {
 export default function AddToCartModal({ isOpen, product, onClose, onAddToCart }: AddToCartModalProps) {
   const [sameWarehouseProducts, setSameWarehouseProducts] = useState<SameWarehouseProduct[]>([]);
   const [warehouseName, setWarehouseName] = useState<string | null>(null);
+  const [warehouseId, setWarehouseId] = useState<string | null>(null);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [addingProductId, setAddingProductId] = useState<string | null>(null);
 
@@ -60,6 +72,7 @@ export default function AddToCartModal({ isOpen, product, onClose, onAddToCart }
     } else {
       setSameWarehouseProducts([]);
       setWarehouseName(null);
+      setWarehouseId(null);
     }
   }, [isOpen, product?.productId]);
 
@@ -76,6 +89,7 @@ export default function AddToCartModal({ isOpen, product, onClose, onAddToCart }
       }));
       setSameWarehouseProducts(products);
       setWarehouseName(response.wholesaler);
+      setWarehouseId(response.warehouseId);
     } catch (error) {
       console.error('Failed to fetch same warehouse products:', error);
       setSameWarehouseProducts([]);
@@ -161,18 +175,34 @@ export default function AddToCartModal({ isOpen, product, onClose, onAddToCart }
           {/* Same Warehouse Products - "Zamów w jednej przesyłce" */}
           {(loadingProducts || sameWarehouseProducts.length > 0) && (
             <div className="mb-4 sm:mb-6">
-              <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                  </svg>
+              <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm font-semibold text-gray-900">Zamów w jednej przesyłce</p>
+                    {warehouseName && (
+                      <p className="text-[10px] sm:text-xs text-gray-500 truncate">z {warehouseName}</p>
+                    )}
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-xs sm:text-sm font-semibold text-gray-900">Zamów w jednej przesyłce</p>
-                  {warehouseName && (
-                    <p className="text-[10px] sm:text-xs text-gray-500 truncate">z {warehouseName}</p>
-                  )}
-                </div>
+                {/* Button to show all products from this warehouse */}
+                {(warehouseId || warehouseName) && (
+                  <Link
+                    href={`/products?warehouse=${warehouseId || getWarehouseIdFromName(warehouseName)}`}
+                    onClick={onClose}
+                    className="flex-shrink-0 py-1 sm:py-1.5 px-2 sm:px-3 text-[10px] sm:text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md sm:rounded-lg transition-colors flex items-center gap-1"
+                  >
+                    <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                    <span className="hidden sm:inline">Pokaż wszystkie</span>
+                    <span className="sm:hidden">Więcej</span>
+                  </Link>
+                )}
               </div>
 
               {loadingProducts ? (
