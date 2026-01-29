@@ -113,6 +113,8 @@ function HeaderContent() {
         if (isVisible) {
           isVisible = false;
           setIsHeaderVisible(false);
+          // Close mega menu when hiding header
+          setIsCategoryOpen(false);
         }
       }
       
