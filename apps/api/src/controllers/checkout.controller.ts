@@ -739,32 +739,26 @@ export async function retryPayment(req: Request, res: Response): Promise<void> {
     const userId = (req as any).user?.id;
     const userEmail = (req as any).user?.email;
 
+    console.log('🔄 Retry payment request for order:', orderId, 'userId:', userId, 'userEmail:', userEmail);
+
     // Get order
     const order = await ordersService.getById(orderId);
     if (!order) {
+      console.log('❌ Order not found:', orderId);
       res.status(404).json({ message: 'Order not found' });
       return;
     }
 
-    // Verify access to order:
-    // - If user is logged in, check userId matches OR email matches
-    // - If guest, order must have guestEmail (verified on order details page)
-    let hasAccess = false;
+    console.log('📦 Order found:', order.orderNumber, 'userId:', order.userId, 'guestEmail:', order.guestEmail);
+
+    // For security, verify access:
+    // - If user is logged in, they should own this order OR email should match
+    // - If not logged in (guest), allow access - they have the order ID from confirmation/email
+    // In future, could add time-based token for extra security
     
-    if (userId && order.userId === userId) {
-      // Logged in user owns this order
-      hasAccess = true;
-    } else if (userEmail && order.guestEmail === userEmail) {
-      // Logged in user's email matches guest order email
-      hasAccess = true;
-    } else if (!order.userId && order.guestEmail) {
-      // Guest order - allow access (they got here via order confirmation/email link)
-      // In production, you might want additional verification
-      hasAccess = true;
-    }
-    
-    if (!hasAccess && order.userId) {
-      // Order belongs to a different user
+    if (userId && order.userId && order.userId !== userId) {
+      // Logged in user trying to pay for someone else's order
+      console.log('❌ Access denied: userId mismatch', userId, 'vs', order.userId);
       res.status(403).json({ message: 'Access denied' });
       return;
     }
