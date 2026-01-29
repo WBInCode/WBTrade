@@ -97,9 +97,8 @@ export default function ShippingPerPackage({
   const [error, setError] = useState('');
   const [warnings, setWarnings] = useState<string[]>([]);
   
-  // Custom address state per package
-  const [useCustomAddress, setUseCustomAddress] = useState<Record<string, boolean>>({});
-  const [customAddresses, setCustomAddresses] = useState<Record<string, {
+  // Custom address type
+  type CustomAddressType = {
     firstName: string;
     lastName: string;
     phone: string;
@@ -107,7 +106,11 @@ export default function ShippingPerPackage({
     apartment: string;
     postalCode: string;
     city: string;
-  }>>({});
+  };
+  
+  // Custom address state per package
+  const [useCustomAddress, setUseCustomAddress] = useState<Record<string, boolean>>({});
+  const [customAddresses, setCustomAddresses] = useState<Record<string, CustomAddressType>>({});
 
   // Fetch shipping options per package
   useEffect(() => {
@@ -132,7 +135,7 @@ export default function ShippingPerPackage({
         // Initialize selected methods from response defaults or initial data
         const initialMethods: Record<string, ShippingMethodId> = {};
         const initialUseCustom: Record<string, boolean> = {};
-        const initialCustomAddresses: Record<string, typeof customAddresses[string]> = {};
+        const initialCustomAddresses: Record<string, CustomAddressType> = {};
         
         // Try to restore previous selections if available
         if (initialData.packageShipping && initialData.packageShipping.length > 0) {
