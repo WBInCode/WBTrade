@@ -20,6 +20,7 @@ import addressesRoutes from './routes/addresses';
 import wishlistRoutes from './routes/wishlist';
 import categoriesRoutes from './routes/categories';
 import checkoutRoutes from './routes/checkout';
+import { payuWebhook } from './controllers/checkout.controller';
 import dashboardRoutes from './routes/dashboard';
 import adminDashboardRoutes from './routes/admin-dashboard';
 import locationsRoutes from './routes/locations';
@@ -155,7 +156,9 @@ app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/checkout', checkoutRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reviews', reviewsRoutes);
-app.use('/api/webhooks', checkoutRoutes); // Webhook routes
+// Direct webhook endpoints for payment providers
+app.post('/api/webhooks/payu', payuWebhook);
+app.use('/api/webhooks', checkoutRoutes); // Other webhook routes
 app.use('/api/admin/dashboard', adminDashboardRoutes); // Admin dashboard
 app.use('/api/admin/settings', adminSettingsRoutes); // Admin settings (carousels, etc.)
 app.use('/api/admin/baselinker', baselinkerRoutes); // Baselinker integration
