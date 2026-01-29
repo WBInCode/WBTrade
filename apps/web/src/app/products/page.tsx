@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
@@ -13,6 +13,22 @@ import { Product, productsApi, ProductFiltersResponse, categoriesApi } from '../
 import { cleanCategoryName } from '../../lib/categories';
 
 const ITEMS_PER_PAGE = 48;
+
+// Generate or retrieve session seed for consistent random sorting
+function getSessionSeed(): number {
+  if (typeof window === 'undefined') return Date.now();
+  
+  const storageKey = 'wbtrade_session_seed';
+  const stored = sessionStorage.getItem(storageKey);
+  
+  if (stored) {
+    return parseInt(stored, 10);
+  }
+  
+  const newSeed = Date.now();
+  sessionStorage.setItem(storageKey, newSeed.toString());
+  return newSeed;
+}
 
 // Spec labels in Polish
 const specLabels: Record<string, { label: string; unit?: string }> = {
@@ -46,6 +62,12 @@ function ProductsContent() {
   const brand = searchParams.get('brand');
   const sort = searchParams.get('sort') || 'relevance';
   const tabFromUrl = searchParams.get('tab') || 'all';
+
+  // Session seed for consistent random sorting - generated once per session
+  const sessionSeedRef = useRef<number | null>(null);
+  if (sessionSeedRef.current === null && typeof window !== 'undefined') {
+    sessionSeedRef.current = getSessionSeed();
+  }
 
   // State for products and filters
   const [products, setProducts] = useState<Product[]>([]);
@@ -161,6 +183,8 @@ function ProductsContent() {
             search: searchQuery || undefined,
             sort: sortValue,
             brand: brand || undefined,
+            // Pass session seed for consistent random sorting (relevance)
+            sessionSeed: sortValue === 'relevance' ? sessionSeedRef.current || undefined : undefined,
           });
           setProducts(response.products);
           setTotalProducts(response.total);
@@ -203,6 +227,14 @@ function ProductsContent() {
       'newest': 'newest',
     };
     const apiSort = sortMapping[value] || 'newest';
+    
+    // If changing to 'relevance' from another sort, generate new session seed
+    // This ensures a fresh random order when user explicitly selects "Trafność"
+    if (apiSort === 'relevance' && sort !== 'relevance' && typeof window !== 'undefined') {
+      const newSeed = Date.now();
+      sessionStorage.setItem('wbtrade_session_seed', newSeed.toString());
+      sessionSeedRef.current = newSeed;
+    }
     
     const params = new URLSearchParams(searchParams.toString());
     params.set('sort', apiSort);

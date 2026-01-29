@@ -69,6 +69,7 @@ async function syncProductsToMeilisearch() {
       'name',
       'createdAt',
       'popularityScore',
+      'id',
     ]);
 
     await meiliClient.index(PRODUCTS_INDEX).updateTypoTolerance({

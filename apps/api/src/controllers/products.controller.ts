@@ -48,6 +48,12 @@ const productQuerySchema = z.object({
   status: z.enum(['ACTIVE', 'DRAFT', 'ARCHIVED']).optional(),
   // Ukryj produkty ze stanem 0 starsze niż 14 dni (domyślnie false - trzeba jawnie włączyć)
   hideOldZeroStock: z.string().optional().transform((val) => val === 'true'),
+  // Session seed for consistent random sorting
+  sessionSeed: z.string().optional().transform((val) => {
+    if (!val) return undefined;
+    const num = parseInt(val, 10);
+    return isNaN(num) ? undefined : num;
+  }),
 });
 
 /**
