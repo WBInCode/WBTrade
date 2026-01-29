@@ -127,10 +127,16 @@ router.get('/tracking/:orderId', authGuard, getOrderTracking);
 router.post('/webhooks/payu', payuWebhook);
 
 /**
- * POST /api/webhooks/payment/:provider?
- * Handle payment provider webhooks
+ * POST /api/webhooks/payment/:provider
+ * Handle payment provider webhooks (with provider specified)
  */
-router.post('/webhooks/payment/:provider?', paymentWebhook);
+router.post('/webhooks/payment/:provider', paymentWebhook);
+
+/**
+ * POST /api/webhooks/payment
+ * Handle payment provider webhooks (without provider - for backwards compatibility)
+ */
+router.post('/webhooks/payment', paymentWebhook);
 
 /**
  * POST /api/webhooks/shipping/:provider
