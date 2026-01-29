@@ -158,12 +158,22 @@ function HeaderContent() {
           <div className="flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
             {/* Logo */}
             <Link href="/" className="flex items-center shrink-0">
+              {/* Light mode logo */}
               <Image 
                 src="/images/WB-TRADE-logo.png" 
                 alt="WB Trade" 
                 width={200} 
                 height={120} 
-                className="h-12 sm:h-14 lg:h-16 w-auto object-contain"
+                className="h-12 sm:h-14 lg:h-16 w-auto object-contain dark:hidden"
+                priority
+              />
+              {/* Dark mode logo */}
+              <Image 
+                src="/images/wb-trade-bez-tla.png" 
+                alt="WB Trade" 
+                width={200} 
+                height={120} 
+                className="h-12 sm:h-14 lg:h-16 w-auto object-contain hidden dark:block"
                 priority
               />
             </Link>

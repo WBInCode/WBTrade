@@ -546,7 +546,15 @@ function CheckoutPageContent() {
                 alt="WB Trade" 
                 width={280} 
                 height={160} 
-                className="h-14 sm:h-18 lg:h-20 w-auto object-contain"
+                className="h-14 sm:h-18 lg:h-20 w-auto object-contain dark:hidden"
+                priority
+              />
+              <Image 
+                src="/images/wb-trade-bez-tla.png" 
+                alt="WB Trade" 
+                width={280} 
+                height={160} 
+                className="h-14 sm:h-18 lg:h-20 w-auto object-contain hidden dark:block"
                 priority
               />
             </Link>
