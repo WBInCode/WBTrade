@@ -6,7 +6,6 @@ interface SortOption {
 }
 
 const sortOptions: SortOption[] = [
-  { value: 'relevance', label: 'Trafność' },
   { value: 'popularity', label: 'Popularność' },
   { value: 'price-asc', label: 'Cena: od najniższej' },
   { value: 'price-desc', label: 'Cena: od najwyższej' },
@@ -29,7 +28,7 @@ export default function ProductListHeader({
   onViewChange,
   activeTab = 'all',
   onTabChange,
-  currentSort = 'relevance',
+  currentSort = 'popularity',
   currentView = 'grid'
 }: ProductListHeaderProps) {
   const handleSortChange = (value: string) => {
