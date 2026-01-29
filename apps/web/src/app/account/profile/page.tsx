@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import { useAuth } from '../../../contexts/AuthContext';
+import { authApi } from '../../../lib/api';
 
 // Sidebar navigation items
 const sidebarItems = [
@@ -71,6 +72,9 @@ interface ProfileFormData {
   gender: 'male' | 'female' | 'other' | '';
   companyName: string;
   nip: string;
+  companyStreet: string;
+  companyCity: string;
+  companyPostalCode: string;
 }
 
 interface FormErrors {
@@ -79,6 +83,7 @@ interface FormErrors {
   email?: string;
   phone?: string;
   nip?: string;
+  companyPostalCode?: string;
 }
 
 export default function ProfilePage() {
@@ -98,6 +103,9 @@ export default function ProfilePage() {
     gender: '',
     companyName: '',
     nip: '',
+    companyStreet: '',
+    companyCity: '',
+    companyPostalCode: '',
   });
 
   // Initialize form data from user
@@ -110,8 +118,11 @@ export default function ProfilePage() {
         phone: user.phone || '',
         birthDate: '',
         gender: '',
-        companyName: '',
-        nip: '',
+        companyName: (user as any).companyName || '',
+        nip: (user as any).nip || '',
+        companyStreet: (user as any).companyStreet || '',
+        companyCity: (user as any).companyCity || '',
+        companyPostalCode: (user as any).companyPostalCode || '',
       });
     }
   }, [user]);
@@ -167,6 +178,10 @@ export default function ProfilePage() {
       newErrors.nip = 'NIP musi składać się z 10 cyfr';
     }
 
+    if (formData.companyPostalCode && !/^\d{2}-\d{3}$/.test(formData.companyPostalCode)) {
+      newErrors.companyPostalCode = 'Kod pocztowy musi być w formacie XX-XXX';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -181,15 +196,28 @@ export default function ProfilePage() {
     setIsSaving(true);
     setSaveSuccess(false);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      await authApi.updateProfile({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone || undefined,
+        companyName: formData.companyName || undefined,
+        nip: formData.nip || undefined,
+        companyStreet: formData.companyStreet || undefined,
+        companyCity: formData.companyCity || undefined,
+        companyPostalCode: formData.companyPostalCode || undefined,
+      });
 
-    setIsSaving(false);
-    setSaveSuccess(true);
-    setIsEditing(false);
+      setSaveSuccess(true);
+      setIsEditing(false);
 
-    // Hide success message after 3 seconds
-    setTimeout(() => setSaveSuccess(false), 3000);
+      // Hide success message after 3 seconds
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -202,8 +230,11 @@ export default function ProfilePage() {
         phone: user.phone || '',
         birthDate: '',
         gender: '',
-        companyName: '',
-        nip: '',
+        companyName: (user as any).companyName || '',
+        nip: (user as any).nip || '',
+        companyStreet: (user as any).companyStreet || '',
+        companyCity: (user as any).companyCity || '',
+        companyPostalCode: (user as any).companyPostalCode || '',
       });
     }
     setErrors({});
@@ -671,6 +702,112 @@ export default function ProfilePage() {
                         </svg>
                       </button>
                     )}
+                  </div>
+
+                  {/* Company Street */}
+                  <div>
+                    <label htmlFor="companyStreet" className="block text-sm font-medium text-gray-700 mb-1">
+                      Ulica i numer
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        id="companyStreet"
+                        name="companyStreet"
+                        value={formData.companyStreet}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        placeholder="ul. Przykładowa 1/2"
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditing(true)}
+                        className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 hover:bg-gray-50 transition-colors group flex items-center"
+                      >
+                        {formData.companyStreet ? (
+                          <span className="text-gray-900">{formData.companyStreet}</span>
+                        ) : (
+                          <span className="text-gray-400 italic">Dodaj adres</span>
+                        )}
+                        <svg className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Company City and Postal Code */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="companyPostalCode" className="block text-sm font-medium text-gray-700 mb-1">
+                        Kod pocztowy
+                      </label>
+                      {isEditing ? (
+                        <>
+                          <input
+                            type="text"
+                            id="companyPostalCode"
+                            name="companyPostalCode"
+                            value={formData.companyPostalCode}
+                            onChange={handleChange}
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                              errors.companyPostalCode ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                            }`}
+                            placeholder="00-000"
+                          />
+                          {errors.companyPostalCode && (
+                            <p className="text-red-500 text-xs mt-1">{errors.companyPostalCode}</p>
+                          )}
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setIsEditing(true)}
+                          className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 hover:bg-gray-50 transition-colors group flex items-center"
+                        >
+                          {formData.companyPostalCode ? (
+                            <span className="text-gray-900">{formData.companyPostalCode}</span>
+                          ) : (
+                            <span className="text-gray-400 italic">Dodaj kod</span>
+                          )}
+                          <svg className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                    <div>
+                      <label htmlFor="companyCity" className="block text-sm font-medium text-gray-700 mb-1">
+                        Miasto
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          id="companyCity"
+                          name="companyCity"
+                          value={formData.companyCity}
+                          onChange={handleChange}
+                          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                          placeholder="Warszawa"
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setIsEditing(true)}
+                          className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 hover:bg-gray-50 transition-colors group flex items-center"
+                        >
+                          {formData.companyCity ? (
+                            <span className="text-gray-900">{formData.companyCity}</span>
+                          ) : (
+                            <span className="text-gray-400 italic">Dodaj miasto</span>
+                          )}
+                          <svg className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
