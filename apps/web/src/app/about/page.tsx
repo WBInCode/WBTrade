@@ -10,8 +10,7 @@ export const metadata = {
 export default function AboutPage() {
   const stats = [
     { value: 'tysiące', label: 'Zadowolonych klientów' },
-    { value: '50tyś+', label: 'Produktów w ofercie' },
-    { value: '99.8%', label: 'Pozytywnych opinii' },
+    { value: '>20tyś+', label: 'Produktów w ofercie' },
   ];
 
   const values = [
@@ -104,8 +103,8 @@ export default function AboutPage() {
                   z&nbsp;zespołem pięciu osób i&nbsp;marzeniem o&nbsp;zmianie sposobu, w&nbsp;jaki Polacy robią zakupy.
                 </p>
                 <p>
-                  Dziś jesteśmy bardzo szybko rozwijającą się platformą e-commerce w&nbsp;Polsce. 
-                  Na&nbsp;naszej platformie znajdziesz ponad 50&nbsp;000 produktów od&nbsp;sprawdzonych sprzedawców.
+                  Dziś jesteśmy bardzo szybko rozwijającym się sklepem e-commerce w&nbsp;Polsce. 
+                  Na&nbsp;naszej platformie znajdziesz ponad 20&nbsp;000 sprawdzonych produktów .
                 </p>
                 <p>
                   Sukces zawdzięczamy przede wszystkim naszym klientom i&nbsp;partnerom, którzy 
