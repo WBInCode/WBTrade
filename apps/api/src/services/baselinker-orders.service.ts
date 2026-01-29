@@ -34,10 +34,18 @@ const WAREHOUSE_MAPPING: Record<string, string> = {
 };
 
 /**
- * Default order status ID for new orders in Baselinker
- * 65342 = "Nowe zamówienia"
+ * Baselinker order status IDs
  */
-const DEFAULT_ORDER_STATUS_ID = 65342;
+const BL_STATUS = {
+  UNPAID: 65823,         // "Nieopłacone" - czerwony
+  NEW_ORDER: 65342,      // "Nowe zamówienia" - niebieski (po opłaceniu)
+  CANCELLED: 65816,      // "Zwroty/Anulowa" - czerwony
+};
+
+/**
+ * Default order status ID for new (unpaid) orders in Baselinker
+ */
+const DEFAULT_ORDER_STATUS_ID = BL_STATUS.UNPAID;
 
 /**
  * Detect warehouse inventory ID from product data
@@ -76,10 +84,12 @@ export interface OrderSyncResult {
 }
 
 export interface SyncOrderToBaselinkerOptions {
-  /** Baselinker order status ID (default: 65342 - Nowe zamówienia) */
+  /** Baselinker order status ID (default: Nieopłacone) */
   orderStatusId?: number;
   /** Force sync even if already synced */
   force?: boolean;
+  /** Skip payment check - for initial order creation */
+  skipPaymentCheck?: boolean;
 }
 
 // ============================================
@@ -89,7 +99,8 @@ export interface SyncOrderToBaselinkerOptions {
 export class BaselinkerOrdersService {
   /**
    * Sync a single order to Baselinker
-   * This should be called ONLY after payment is confirmed
+   * Orders are synced immediately after creation with status "Nieopłacone"
+   * After payment, the status is updated to "Nowe zamówienia"
    * 
    * @param orderId - Local order ID
    * @param options - Sync options
@@ -98,7 +109,7 @@ export class BaselinkerOrdersService {
     orderId: string,
     options: SyncOrderToBaselinkerOptions = {}
   ): Promise<OrderSyncResult> {
-    const { orderStatusId = DEFAULT_ORDER_STATUS_ID, force = false } = options;
+    const { orderStatusId = DEFAULT_ORDER_STATUS_ID, force = false, skipPaymentCheck = false } = options;
 
     try {
       // 1. Get order with all related data
@@ -140,14 +151,11 @@ export class BaselinkerOrdersService {
         };
       }
 
-      // 3. Verify payment is confirmed - CRITICAL CHECK
-      if (order.paymentStatus !== 'PAID') {
-        console.warn(`[BaselinkerOrders] Order ${orderId} has paymentStatus=${order.paymentStatus}, skipping sync`);
-        return {
-          success: false,
-          orderId,
-          error: `Order payment status is ${order.paymentStatus}, expected PAID. Sync only after payment confirmation.`,
-        };
+      // 3. Skip payment check for new orders - they go to Baselinker as "Nieopłacone"
+      // Payment check is only enforced when we need to update status to "paid"
+      if (!skipPaymentCheck && order.paymentStatus !== 'PAID' && !force) {
+        // If order is not paid and we're not skipping check, just sync with unpaid status
+        console.log(`[BaselinkerOrders] Order ${orderId} is unpaid, syncing with Nieopłacone status`);
       }
 
       // 4. Get Baselinker configuration
@@ -409,7 +417,72 @@ export class BaselinkerOrdersService {
 
     return mappings[method] || method;
   }
+
+  /**
+   * Update order status in Baselinker after payment
+   * Changes status from "Nieopłacone" to "Nowe zamówienia"
+   */
+  async markOrderAsPaid(orderId: string): Promise<OrderSyncResult> {
+    try {
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { 
+          id: true, 
+          orderNumber: true,
+          baselinkerOrderId: true, 
+          paymentStatus: true 
+        },
+      });
+
+      if (!order) {
+        return { success: false, orderId, error: 'Order not found' };
+      }
+
+      if (!order.baselinkerOrderId) {
+        console.warn(`[BaselinkerOrders] Order ${orderId} has no Baselinker ID, cannot update status`);
+        return { success: false, orderId, error: 'Order not synced to Baselinker yet' };
+      }
+
+      // Get Baselinker configuration
+      const config = await prisma.baselinkerConfig.findFirst({
+        where: { syncEnabled: true },
+      });
+
+      if (!config) {
+        return { success: false, orderId, error: 'Baselinker not configured' };
+      }
+
+      const apiToken = decryptToken(
+        config.apiTokenEncrypted,
+        config.encryptionIv,
+        config.authTag
+      );
+
+      const provider = createBaselinkerProvider({
+        apiToken,
+        inventoryId: config.inventoryId,
+      });
+
+      // Update status to "Nowe zamówienia" (paid)
+      await provider.setOrderStatus(order.baselinkerOrderId, BL_STATUS.NEW_ORDER);
+
+      console.log(`[BaselinkerOrders] Order ${order.orderNumber} marked as paid in Baselinker (status: ${BL_STATUS.NEW_ORDER})`);
+
+      return {
+        success: true,
+        orderId,
+        baselinkerOrderId: order.baselinkerOrderId,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[BaselinkerOrders] Failed to mark order as paid:', orderId, error);
+      return { success: false, orderId, error: errorMessage };
+    }
+  }
 }
 
 // Export singleton instance
 export const baselinkerOrdersService = new BaselinkerOrdersService();
+
+// Export status constants for use in other services
+export { BL_STATUS };
