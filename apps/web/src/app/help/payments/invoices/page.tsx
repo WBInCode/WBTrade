@@ -9,58 +9,58 @@ export const metadata = {
 
 export default function InvoicesPage() {
   return (
-    <div className="min-h-screen bg-secondary-50">
+    <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
       <Header />
       
       <main className="py-12">
         <div className="container-custom">
           {/* Breadcrumb */}
-          <nav className="flex items-center gap-2 text-sm text-secondary-500 mb-8">
+          <nav className="flex items-center gap-2 text-sm text-secondary-500 dark:text-secondary-400 mb-8">
             <Link href="/" className="hover:text-primary-600">Strona główna</Link>
             <span>/</span>
             <Link href="/help" className="hover:text-primary-600">Centrum pomocy</Link>
             <span>/</span>
-            <span className="text-secondary-900">Faktury</span>
+            <span className="text-secondary-900 dark:text-white">Faktury</span>
           </nav>
 
           <div className="max-w-4xl">
-            <h1 className="text-3xl lg:text-4xl font-bold text-secondary-900 mb-6">
+            <h1 className="text-3xl lg:text-4xl font-bold text-secondary-900 dark:text-white mb-6">
               Faktury i dokumenty sprzedaży
             </h1>
             
-            <div className="bg-white rounded-2xl p-8 shadow-sm">
+            <div className="bg-white dark:bg-secondary-800 rounded-2xl p-8 shadow-sm">
               <div className="prose prose-lg max-w-none">
-                <p className="text-secondary-600 text-lg mb-8">
+                <p className="text-secondary-600 dark:text-secondary-400 text-lg mb-8">
                   Potrzebujesz faktury do\u00A0zamówienia? Dowiedz się jak ją uzyskać i\u00A0jakie dokumenty wystawiamy.
                 </p>
 
-                <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">
+                <h2 className="text-xl font-semibold text-secondary-900 dark:text-white mt-8 mb-4">
                   Jak zamówić fakturę VAT?
                 </h2>
                 
-                <h3 className="text-lg font-medium text-secondary-800 mt-6 mb-3">Podczas składania zamówienia:</h3>
-                <ol className="list-decimal pl-6 text-secondary-600 space-y-2 mb-6">
+                <h3 className="text-lg font-medium text-secondary-800 dark:text-secondary-200 mt-6 mb-3">Podczas składania zamówienia:</h3>
+                <ol className="list-decimal pl-6 text-secondary-600 dark:text-secondary-400 space-y-2 mb-6">
                   <li>W\u00A0formularzu zamówienia zaznacz opcję "Chcę otrzymać fakturę VAT"</li>
                   <li>Wypełnij dane do\u00A0faktury (nazwa firmy, NIP, adres)</li>
                   <li>Dokończ składanie zamówienia</li>
                   <li>Faktura zostanie wystawiona automatycznie</li>
                 </ol>
 
-                <h3 className="text-lg font-medium text-secondary-800 mt-6 mb-3">Po złożeniu zamówienia:</h3>
-                <p className="text-secondary-600 mb-4">
-                  Jeśli zapomniałeś zaznaczyć opcję faktury przy zamówieniu:
+<h3 className="text-lg font-medium text-secondary-800 dark:text-secondary-200 mt-6 mb-3">Po złożeniu zamówienia:</h3>
+                <p className="text-secondary-600 dark:text-secondary-400 mb-4">
+                  Jeśli zapomniałeś zaznaczyć opcji faktury przy zamówieniu:
                 </p>
-                <ol className="list-decimal pl-6 text-secondary-600 space-y-2 mb-6">
+                <ol className="list-decimal pl-6 text-secondary-600 dark:text-secondary-400 space-y-2 mb-6">
                   <li>Skontaktuj się z\u00A0nami w\u00A0ciągu 7\u00A0dni od\u00A0zakupu</li>
                   <li>Podaj numer zamówienia i\u00A0dane do\u00A0faktury (NIP, nazwa firmy, adres)</li>
                   <li>Faktura zostanie wystawiona i\u00A0wysłana e-mailem</li>
                 </ol>
 
-                <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">
+                <h2 className="text-xl font-semibold text-secondary-900 dark:text-white mt-8 mb-4">
                   Wymagane dane do faktury
                 </h2>
-                <div className="bg-secondary-50 p-4 rounded-lg mb-6">
-                  <ul className="text-secondary-600 space-y-2">
+                <div className="bg-secondary-50 dark:bg-secondary-700 p-4 rounded-lg mb-6">
+                  <ul className="text-secondary-600 dark:text-secondary-300 space-y-2">
                     <li><strong>Nazwa firmy:</strong> Pełna nazwa zgodna z rejestrem</li>
                     <li><strong>NIP:</strong> 10-cyfrowy numer identyfikacji podatkowej</li>
                     <li><strong>Adres siedziby:</strong> Ulica, numer, kod pocztowy, miasto</li>
@@ -68,64 +68,64 @@ export default function InvoicesPage() {
                   </ul>
                 </div>
 
-                <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">
+                <h2 className="text-xl font-semibold text-secondary-900 dark:text-white mt-8 mb-4">
                   Gdzie znajdę fakturę?
                 </h2>
-                <ul className="list-disc pl-6 text-secondary-600 space-y-2 mb-6">
+                <ul className="list-disc pl-6 text-secondary-600 dark:text-secondary-400 space-y-2 mb-6">
                   <li><strong>E-mail:</strong> Faktura jest wysyłana na\u00A0adres podany przy zamówieniu</li>
                   <li><strong>Panel klienta:</strong> Zaloguj się → Moje konto → Zamówienia → Pobierz fakturę</li>
                   <li><strong>W\u00A0paczce:</strong> Wydrukowana faktura jest dołączona do\u00A0przesyłki</li>
                 </ul>
 
-                <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">
+                <h2 className="text-xl font-semibold text-secondary-900 dark:text-white mt-8 mb-4">
                   Rodzaje dokumentów
                 </h2>
                 
                 <div className="space-y-4 mb-8">
-                  <div className="p-4 bg-secondary-50 rounded-lg">
-                    <h4 className="font-medium text-secondary-900 mb-2">Paragon fiskalny</h4>
-                    <p className="text-secondary-600 text-sm">
+                  <div className="p-4 bg-secondary-50 dark:bg-secondary-700 rounded-lg">
+                    <h4 className="font-medium text-secondary-900 dark:text-white mb-2">Paragon fiskalny</h4>
+                    <p className="text-secondary-600 dark:text-secondary-400 text-sm">
                       Wystawiany standardowo dla zamówień bez żądania faktury. Dołączany do\u00A0paczki.
                     </p>
                   </div>
                   
-                  <div className="p-4 bg-secondary-50 rounded-lg">
-                    <h4 className="font-medium text-secondary-900 mb-2">Faktura VAT</h4>
-                    <p className="text-secondary-600 text-sm">
+                  <div className="p-4 bg-secondary-50 dark:bg-secondary-700 rounded-lg">
+                    <h4 className="font-medium text-secondary-900 dark:text-white mb-2">Faktura VAT</h4>
+                    <p className="text-secondary-600 dark:text-secondary-400 text-sm">
                       Wystawiana na\u00A0życzenie klienta. Zawiera dane firmy i\u00A0NIP nabywcy.
                     </p>
                   </div>
                   
-                  <div className="p-4 bg-secondary-50 rounded-lg">
-                    <h4 className="font-medium text-secondary-900 mb-2">Faktura korygująca</h4>
-                    <p className="text-secondary-600 text-sm">
+                  <div className="p-4 bg-secondary-50 dark:bg-secondary-700 rounded-lg">
+                    <h4 className="font-medium text-secondary-900 dark:text-white mb-2">Faktura korygująca</h4>
+                    <p className="text-secondary-600 dark:text-secondary-400 text-sm">
                       Wystawiana w\u00A0przypadku zwrotu towaru lub błędnych danych na\u00A0fakturze.
                     </p>
                   </div>
                 </div>
 
-                <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">
+<h2 className="text-xl font-semibold text-secondary-900 dark:text-white mt-8 mb-4">
                   Korekta faktury
                 </h2>
-                <p className="text-secondary-600 mb-4">
-                  Jeśli dane na\u00A0fakturze są błędne, skontaktuj się z\u00A0nami podając:
+                <p className="text-secondary-600 dark:text-secondary-400 mb-4">
+                  Jeśli dane na fakturze są błędne, skontaktuj się z nami podając:
                 </p>
-                <ul className="list-disc pl-6 text-secondary-600 space-y-2 mb-6">
+                <ul className="list-disc pl-6 text-secondary-600 dark:text-secondary-400 space-y-2 mb-6">
                   <li>Numer faktury do korekty</li>
                   <li>Dane, które wymagają poprawy</li>
                   <li>Prawidłowe dane</li>
                 </ul>
 
-                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mt-8">
-                  <h3 className="font-semibold text-yellow-800 mb-2">⚠️ Ważne</h3>
-                  <p className="text-yellow-700">
+                <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-xl p-6 mt-8">
+                  <h3 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">⚠️ Ważne</h3>
+                  <p className="text-yellow-700 dark:text-yellow-300">
                     Zgodnie z\u00A0przepisami, nie możemy wystawić faktury na\u00A0firmę jeśli wcześniej został wystawiony paragon bez NIP. Zadbaj o\u00A0podanie danych do\u00A0faktury przed złożeniem zamówienia.
                   </p>
                 </div>
 
-                <div className="bg-primary-50 border border-primary-200 rounded-xl p-6 mt-6">
-                  <h3 className="font-semibold text-primary-900 mb-2">💡 Wskazówka</h3>
-                  <p className="text-primary-700">
+                <div className="bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-700 rounded-xl p-6 mt-6">
+                  <h3 className="font-semibold text-primary-900 dark:text-primary-100 mb-2">💡 Wskazówka</h3>
+                  <p className="text-primary-700 dark:text-primary-300">
                     Jako zalogowany użytkownik możesz zapisać dane do\u00A0faktury w\u00A0profilu – będą automatycznie uzupełniane przy kolejnych zamówieniach.
                   </p>
                 </div>
@@ -133,16 +133,16 @@ export default function InvoicesPage() {
             </div>
 
             {/* Related links */}
-            <div className="mt-8 bg-white rounded-2xl p-6 shadow-sm">
-              <h3 className="font-semibold text-secondary-900 mb-4">Powiązane tematy</h3>
+            <div className="mt-8 bg-white dark:bg-secondary-800 rounded-2xl p-6 shadow-sm">
+              <h3 className="font-semibold text-secondary-900 dark:text-white mb-4">Powiązane tematy</h3>
               <div className="flex flex-wrap gap-3">
-                <Link href="/help/payments/methods" className="text-primary-600 hover:text-primary-700 text-sm bg-primary-50 px-4 py-2 rounded-lg">
+                <Link href="/help/payments/methods" className="text-primary-600 hover:text-primary-700 text-sm bg-primary-50 dark:bg-primary-900/30 px-4 py-2 rounded-lg">
                   Metody płatności
                 </Link>
-                <Link href="/help/orders/how-to-order" className="text-primary-600 hover:text-primary-700 text-sm bg-primary-50 px-4 py-2 rounded-lg">
+                <Link href="/help/orders/how-to-order" className="text-primary-600 hover:text-primary-700 text-sm bg-primary-50 dark:bg-primary-900/30 px-4 py-2 rounded-lg">
                   Jak złożyć zamówienie
                 </Link>
-                <Link href="/help/account/update" className="text-primary-600 hover:text-primary-700 text-sm bg-primary-50 px-4 py-2 rounded-lg">
+                <Link href="/help/account/update" className="text-primary-600 hover:text-primary-700 text-sm bg-primary-50 dark:bg-primary-900/30 px-4 py-2 rounded-lg">
                   Zmiana danych konta
                 </Link>
               </div>

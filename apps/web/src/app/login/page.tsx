@@ -84,7 +84,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left side - Form */}
-      <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 bg-white">
+      <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 bg-white dark:bg-secondary-900">
         <div className="mx-auto w-full max-w-sm lg:max-w-md">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
@@ -99,7 +99,7 @@ export default function LoginPage() {
             </Link>
             <Link 
               href="/" 
-              className="text-sm text-gray-500 hover:text-orange-500 transition-colors flex items-center gap-1"
+              className="text-sm text-gray-500 dark:text-gray-400 hover:text-orange-500 transition-colors flex items-center gap-1"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -110,10 +110,10 @@ export default function LoginPage() {
 
           {/* Title */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
               Witaj ponownie! 👋
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-400">
               Zaloguj się, aby kontynuować zakupy
             </p>
           </div>
@@ -121,7 +121,7 @@ export default function LoginPage() {
           {/* Form */}
           <form className="space-y-5" onSubmit={handleSubmit}>
             {error && (
-              <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center gap-2 animate-shake">
+              <div className="bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2 animate-shake">
                 <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -130,7 +130,7 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Adres email
               </label>
               <div className="relative">
@@ -150,7 +150,7 @@ export default function LoginPage() {
                     if (emailError) setEmailError('');
                   }}
                   onBlur={validateEmail}
-                  className={`block w-full pl-12 pr-4 py-3.5 border rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all ${emailError ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
+                  className={`block w-full pl-12 pr-4 py-3.5 border rounded-xl text-gray-900 dark:text-white dark:bg-secondary-800 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all ${emailError ? 'border-red-400 bg-red-50 dark:bg-red-900/20' : 'border-gray-200 dark:border-secondary-600'}`}
                   placeholder="twoj@email.pl"
                 />
               </div>
@@ -165,7 +165,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Hasło
               </label>
               <div className="relative">
@@ -185,13 +185,13 @@ export default function LoginPage() {
                     if (passwordError) setPasswordError('');
                   }}
                   onBlur={validatePassword}
-                  className={`block w-full pl-12 pr-12 py-3.5 border rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all ${passwordError ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
+                  className={`block w-full pl-12 pr-12 py-3.5 border rounded-xl text-gray-900 dark:text-white dark:bg-secondary-800 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all ${passwordError ? 'border-red-400 bg-red-50 dark:bg-red-900/20' : 'border-gray-200 dark:border-secondary-600'}`}
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                 >
                   {showPassword ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -219,9 +219,9 @@ export default function LoginPage() {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  className="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500 focus:ring-offset-0"
+                  className="w-4 h-4 text-orange-500 border-gray-300 dark:border-secondary-600 rounded focus:ring-orange-500 focus:ring-offset-0 dark:bg-secondary-700"
                 />
-                <span className="text-sm text-gray-600">Zapamiętaj mnie</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Zapamiętaj mnie</span>
               </label>
               <Link 
                 href="/forgot-password" 
@@ -258,17 +258,17 @@ export default function LoginPage() {
           {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
+              <div className="w-full border-t border-gray-200 dark:border-secondary-600" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500">lub</span>
+              <span className="px-4 bg-white dark:bg-secondary-900 text-gray-500 dark:text-gray-400">lub</span>
             </div>
           </div>
 
           {/* Google Login Button */}
           <a
             href={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/api/auth/google`}
-            className="w-full flex items-center justify-center gap-3 py-3.5 px-4 border-2 border-gray-200 bg-white text-gray-700 font-medium rounded-xl hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500/20 transition-all duration-200"
+            className="w-full flex items-center justify-center gap-3 py-3.5 px-4 border-2 border-gray-200 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-gray-700 dark:text-gray-200 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-secondary-700 hover:border-gray-300 dark:hover:border-secondary-500 focus:outline-none focus:ring-2 focus:ring-gray-500/20 transition-all duration-200"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -282,17 +282,17 @@ export default function LoginPage() {
           {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
+              <div className="w-full border-t border-gray-200 dark:border-secondary-600" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500">Nie masz jeszcze konta?</span>
+              <span className="px-4 bg-white dark:bg-secondary-900 text-gray-500 dark:text-gray-400">Nie masz jeszcze konta?</span>
             </div>
           </div>
 
           {/* Register Link */}
           <Link
             href="/register"
-            className="w-full flex items-center justify-center gap-2 py-3.5 px-4 border-2 border-gray-200 text-gray-700 font-semibold rounded-xl hover:border-orange-500 hover:text-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
+            className="w-full flex items-center justify-center gap-2 py-3.5 px-4 border-2 border-gray-200 dark:border-secondary-600 text-gray-700 dark:text-gray-200 font-semibold rounded-xl hover:border-orange-500 hover:text-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
           >
             Utwórz nowe konto
           </Link>

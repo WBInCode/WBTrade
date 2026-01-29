@@ -151,9 +151,9 @@ function HeaderContent() {
   }, [pathname, searchParams]);
 
   return (
-    <header className={`bg-white sticky top-0 z-50 shadow-sm relative transition-transform duration-300 ${isHeaderVisible ? 'translate-y-0' : '-translate-y-full'}`}>
+    <header className={`bg-white dark:bg-secondary-900 sticky top-0 z-50 shadow-sm dark:shadow-secondary-950/50 relative transition-transform duration-300 ${isHeaderVisible ? 'translate-y-0' : '-translate-y-full'}`}>
       {/* Top Header */}
-      <div className="border-b border-gray-100">
+      <div className="border-b border-gray-100 dark:border-secondary-700">
         <div className="container-custom">
           <div className="flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
             {/* Logo */}
@@ -176,8 +176,8 @@ function HeaderContent() {
                   isCategoryOpen
                     ? 'text-white bg-primary-500 border-primary-500'
                     : isOnProductsPage && currentMainCategory
-                    ? 'text-primary-600 border-primary-400 bg-primary-50 hover:bg-primary-100'
-                    : 'text-secondary-800 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400'
+                    ? 'text-primary-600 dark:text-primary-400 border-primary-400 bg-primary-50 dark:bg-primary-900/30 hover:bg-primary-100 dark:hover:bg-primary-900/50'
+                    : 'text-secondary-800 dark:text-secondary-200 border-gray-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 hover:bg-gray-50 dark:hover:bg-secondary-700 hover:border-gray-400 dark:hover:border-secondary-500'
                 }`}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -198,7 +198,7 @@ function HeaderContent() {
             {/* Right Icons */}
             <div className="flex items-center gap-1 sm:gap-2 md:gap-6">
               {/* Favorites */}
-              <Link href="/wishlist" className="flex flex-col items-center p-1.5 sm:p-2 text-secondary-700 hover:text-primary-500 transition-colors relative group">
+              <Link href="/wishlist" className="flex flex-col items-center p-1.5 sm:p-2 text-secondary-700 dark:text-secondary-300 hover:text-primary-500 transition-colors relative group">
                 <div className="relative">
                   <svg className="w-6 h-6 sm:w-7 sm:h-7 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -218,7 +218,7 @@ function HeaderContent() {
                   <>
                     <button
                       onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                      className="flex flex-col items-center p-1.5 sm:p-2 text-secondary-700 hover:text-primary-500 transition-colors group"
+                      className="flex flex-col items-center p-1.5 sm:p-2 text-secondary-700 dark:text-secondary-300 hover:text-primary-500 transition-colors group"
                     >
                       <div className="w-6 h-6 sm:w-7 sm:h-7 bg-primary-500 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-bold group-hover:scale-110 transition-transform shadow-sm">
                         {user?.firstName?.[0]}{user?.lastName?.[0]}
@@ -226,28 +226,28 @@ function HeaderContent() {
                       <span className="text-xs font-medium mt-1 hidden sm:block">{user?.firstName}</span>
                     </button>
                     {isUserMenuOpen && (
-                      <div className="absolute top-full right-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-50">
-                        <div className="px-4 py-2 border-b border-gray-100">
-                          <p className="text-sm font-medium text-gray-900 truncate">{user?.firstName} {user?.lastName}</p>
-                          <p className="text-xs text-gray-500 truncate" title={user?.email}>{user?.email}</p>
+                      <div className="absolute top-full right-0 mt-1 w-56 bg-white dark:bg-secondary-800 border border-gray-200 dark:border-secondary-600 rounded-lg shadow-lg py-2 z-50">
+                        <div className="px-4 py-2 border-b border-gray-100 dark:border-secondary-700">
+                          <p className="text-sm font-medium text-gray-900 dark:text-secondary-100 truncate">{user?.firstName} {user?.lastName}</p>
+                          <p className="text-xs text-gray-500 dark:text-secondary-400 truncate" title={user?.email}>{user?.email}</p>
                         </div>
                         <Link
                           href="/account"
-                          className="block px-4 py-2 text-sm text-secondary-700 hover:bg-gray-50"
+                          className="block px-4 py-2 text-sm text-secondary-700 dark:text-secondary-300 hover:bg-gray-50 dark:hover:bg-secondary-700"
                           onClick={() => setIsUserMenuOpen(false)}
                         >
                           Moje konto
                         </Link>
                         <Link
                           href="/account/orders"
-                          className="block px-4 py-2 text-sm text-secondary-700 hover:bg-gray-50"
+                          className="block px-4 py-2 text-sm text-secondary-700 dark:text-secondary-300 hover:bg-gray-50 dark:hover:bg-secondary-700"
                           onClick={() => setIsUserMenuOpen(false)}
                         >
                           Zamówienia
                         </Link>
                         <button
                           onClick={() => { logout(); setIsUserMenuOpen(false); }}
-                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
+                          className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-50 dark:hover:bg-secondary-700"
                         >
                           Wyloguj się
                         </button>
@@ -255,7 +255,7 @@ function HeaderContent() {
                     )}
                   </>
                 ) : (
-                  <Link href="/login" className="flex flex-col items-center p-1.5 sm:p-2 text-secondary-700 hover:text-primary-500 transition-colors group">
+                  <Link href="/login" className="flex flex-col items-center p-1.5 sm:p-2 text-secondary-700 dark:text-secondary-300 hover:text-primary-500 transition-colors group">
                     <svg className="w-6 h-6 sm:w-7 sm:h-7 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
@@ -265,7 +265,7 @@ function HeaderContent() {
               </div>
 
               {/* Cart */}
-              <Link href="/cart" className="flex flex-col items-center p-1.5 sm:p-2 text-secondary-700 hover:text-primary-500 transition-colors relative group">
+              <Link href="/cart" className="flex flex-col items-center p-1.5 sm:p-2 text-secondary-700 dark:text-secondary-300 hover:text-primary-500 transition-colors relative group">
                 <div className="relative">
                   <svg className="w-6 h-6 sm:w-7 sm:h-7 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -289,7 +289,7 @@ function HeaderContent() {
       </div>
 
       {/* Category Navigation Bar */}
-      <div className="border-b border-gray-200 bg-primary-500">
+      <div className="border-b border-gray-200 dark:border-secondary-700 bg-primary-500 dark:bg-primary-600">
         <div className="container-custom overflow-visible">
           <div className="flex items-center justify-between relative">
             {/* Left Arrow */}
@@ -379,9 +379,9 @@ function HeaderContent() {
 export default function Header() {
   return (
     <Suspense fallback={
-      <header className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
+      <header className="bg-white dark:bg-secondary-900 shadow-sm border-b border-gray-100 dark:border-secondary-700 sticky top-0 z-50">
         <div className="container-custom h-16 flex items-center justify-center">
-          <div className="animate-pulse bg-gray-200 h-8 w-32 rounded"></div>
+          <div className="animate-pulse bg-gray-200 dark:bg-secondary-700 h-8 w-32 rounded"></div>
         </div>
       </header>
     }>

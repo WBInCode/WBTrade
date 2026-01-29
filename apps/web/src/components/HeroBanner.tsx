@@ -106,7 +106,7 @@ export default function HeroBanner() {
         {/* Navigation arrows - outside the banner */}
         <button
           onClick={() => { prevSlide(); setIsAutoPlaying(false); setTimeout(() => setIsAutoPlaying(true), 10000); }}
-          className="absolute -left-4 sm:-left-5 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white text-gray-700 items-center justify-center hover:bg-gray-50 shadow-md transition-all hover:scale-105 z-10 hidden lg:flex"
+          className="absolute -left-4 sm:-left-5 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white dark:bg-secondary-800 text-gray-700 dark:text-secondary-200 items-center justify-center hover:bg-gray-50 dark:hover:bg-secondary-700 shadow-md transition-all hover:scale-105 z-10 hidden lg:flex"
           aria-label="Poprzedni slajd"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
@@ -115,7 +115,7 @@ export default function HeroBanner() {
         </button>
         <button
           onClick={() => { nextSlide(); setIsAutoPlaying(false); setTimeout(() => setIsAutoPlaying(true), 10000); }}
-          className="absolute -right-4 sm:-right-5 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white text-gray-700 items-center justify-center hover:bg-gray-50 shadow-md transition-all hover:scale-105 z-10 hidden lg:flex"
+          className="absolute -right-4 sm:-right-5 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white dark:bg-secondary-800 text-gray-700 dark:text-secondary-200 items-center justify-center hover:bg-gray-50 dark:hover:bg-secondary-700 shadow-md transition-all hover:scale-105 z-10 hidden lg:flex"
           aria-label="Następny slajd"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
@@ -141,22 +141,24 @@ export default function HeroBanner() {
 
         {/* Content */}
         <div className="relative p-6 sm:p-8 lg:p-12 h-full flex flex-col justify-center min-h-[280px] sm:min-h-[320px] lg:min-h-[380px]">
+          {/* Text backdrop for better readability */}
+          <div className="absolute inset-0 bg-gradient-to-r from-white/80 via-white/60 to-transparent dark:from-secondary-900/90 dark:via-secondary-900/70 dark:to-transparent"></div>
           <div
             key={currentSlide}
-            className="animate-fadeIn"
+            className="animate-fadeIn relative z-10"
           >
             <span className={`inline-block ${slide.badgeColor} text-white text-[10px] sm:text-xs font-bold px-2.5 sm:px-3 py-1 rounded-full mb-3 sm:mb-4`}>
               {slide.badge}
             </span>
-            <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-secondary-900 mb-2 sm:mb-3">
+            <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-secondary-900 dark:text-white mb-2 sm:mb-3">
               {slide.title}<br />{slide.titleHighlight}
             </h1>
-            <p className="text-secondary-600 text-sm sm:text-base mb-4 sm:mb-6 max-w-md">
+            <p className="text-secondary-600 dark:text-secondary-200 text-sm sm:text-base mb-4 sm:mb-6 max-w-md font-medium">
               {slide.description}
             </p>
             <Link 
               href={slide.buttonLink}
-              className="inline-flex items-center gap-2 bg-white text-secondary-900 font-semibold px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:bg-gray-50 transition-colors w-fit shadow-sm text-sm sm:text-base"
+              className="inline-flex items-center gap-2 bg-secondary-900 dark:bg-white text-white dark:text-secondary-900 font-semibold px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:bg-secondary-800 dark:hover:bg-gray-100 transition-colors w-fit shadow-sm text-sm sm:text-base"
             >
               {slide.buttonText}
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -9,32 +9,32 @@ export const metadata = {
 
 export default function SellersPage() {
   return (
-    <div className="min-h-screen bg-secondary-50">
+    <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
       <Header />
       
       <main className="py-12">
         <div className="container-custom">
           {/* Breadcrumb */}
-          <nav className="flex items-center gap-2 text-sm text-secondary-500 mb-8">
+          <nav className="flex items-center gap-2 text-sm text-secondary-500 dark:text-secondary-400 mb-8">
             <Link href="/" className="hover:text-primary-600">Strona główna</Link>
             <span>/</span>
             <Link href="/help" className="hover:text-primary-600">Centrum pomocy</Link>
             <span>/</span>
-            <span className="text-secondary-900">Weryfikacja sprzedawców</span>
+            <span className="text-secondary-900 dark:text-white">Weryfikacja sprzedawców</span>
           </nav>
 
           <div className="max-w-4xl">
-            <h1 className="text-3xl lg:text-4xl font-bold text-secondary-900 mb-6">
+            <h1 className="text-3xl lg:text-4xl font-bold text-secondary-900 dark:text-white mb-6">
               Weryfikacja sprzedawców
             </h1>
             
-            <div className="bg-white rounded-2xl p-8 shadow-sm">
+            <div className="bg-white dark:bg-secondary-800 rounded-2xl p-8 shadow-sm">
               <div className="prose prose-lg max-w-none">
-                <p className="text-secondary-600 text-lg mb-8">
+                <p className="text-secondary-600 dark:text-secondary-400 text-lg mb-8">
                   W WB Trade dbamy o to, abyś kupował od zweryfikowanych i godnych zaufania sprzedawców. Dowiedz się, jak weryfikujemy naszych partnerów.
                 </p>
 
-                <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">
+                <h2 className="text-xl font-semibold text-secondary-900 dark:text-white mt-8 mb-4">
                   Proces weryfikacji sprzedawców
                 </h2>
                 
@@ -80,17 +80,17 @@ export default function SellersPage() {
                   </div>
                 </div>
 
-                <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">
+                <h2 className="text-xl font-semibold text-secondary-900 dark:text-white mt-8 mb-4">
                   System ocen sprzedawców
                 </h2>
                 
                 <div className="grid md:grid-cols-2 gap-4 mb-8">
-                  <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="p-4 bg-green-50 dark:bg-green-900/30 rounded-lg border border-green-200 dark:border-green-700">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl">⭐</span>
-                      <h4 className="font-medium text-green-800">Super Sprzedawca</h4>
+                      <h4 className="font-medium text-green-800 dark:text-green-200">Super Sprzedawca</h4>
                     </div>
-                    <ul className="text-green-700 text-sm space-y-1">
+                    <ul className="text-green-700 dark:text-green-300 text-sm space-y-1">
                       <li>• Ocena powyżej 4.8/5</li>
                       <li>• Min. 100 sprzedanych produktów</li>
                       <li>• Szybka wysyłka (do 24h)</li>
@@ -98,12 +98,12 @@ export default function SellersPage() {
                     </ul>
                   </div>
                   
-                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl">✓</span>
-                      <h4 className="font-medium text-blue-800">Zweryfikowany</h4>
+                      <h4 className="font-medium text-blue-800 dark:text-blue-200">Zweryfikowany</h4>
                     </div>
-                    <ul className="text-blue-700 text-sm space-y-1">
+                    <ul className="text-blue-700 dark:text-blue-300 text-sm space-y-1">
                       <li>• Przeszedł pełną weryfikację</li>
                       <li>• Aktywny na platformie</li>
                       <li>• Regularne transakcje</li>
@@ -112,10 +112,10 @@ export default function SellersPage() {
                   </div>
                 </div>
 
-                <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">
+                <h2 className="text-xl font-semibold text-secondary-900 dark:text-white mt-8 mb-4">
                   Na co zwracać uwagę?
                 </h2>
-                <ul className="list-disc pl-6 text-secondary-600 space-y-2 mb-6">
+                <ul className="list-disc pl-6 text-secondary-600 dark:text-secondary-400 space-y-2 mb-6">
                   <li><strong>Ocena sprzedawcy:</strong> Sprawdź średnią ocenę i liczbę opinii</li>
                   <li><strong>Odznaki:</strong> Szukaj odznak "Zweryfikowany" lub "Super Sprzedawca"</li>
                   <li><strong>Czas działania:</strong> Starsi sprzedawcy mają dłuższą historię</li>
@@ -124,14 +124,14 @@ export default function SellersPage() {
                   <li><strong>Polityka zwrotów:</strong> Upewnij się, że sprzedawca akceptuje zwroty</li>
                 </ul>
 
-                <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">
+                <h2 className="text-xl font-semibold text-secondary-900 dark:text-white mt-8 mb-4">
                   Ochrona kupującego
                 </h2>
-                <div className="bg-primary-50 border border-primary-200 rounded-xl p-6 mb-6">
-                  <p className="text-primary-700 mb-3">
+                <div className="bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-700 rounded-xl p-6 mb-6">
+                  <p className="text-primary-700 dark:text-primary-300 mb-3">
                     <strong>Gwarancja WB Trade:</strong>
                   </p>
-                  <ul className="list-disc pl-6 text-primary-700 text-sm space-y-1">
+                  <ul className="list-disc pl-6 text-primary-700 dark:text-primary-300 text-sm space-y-1">
                     <li>Jeśli produkt nie dotrze - zwrot pieniędzy</li>
                     <li>Jeśli produkt jest niezgodny z opisem - zwrot lub wymiana</li>
                     <li>Mediacja w sporach ze sprzedawcą</li>
@@ -139,10 +139,10 @@ export default function SellersPage() {
                   </ul>
                 </div>
 
-                <h2 className="text-xl font-semibold text-secondary-900 mt-8 mb-4">
+                <h2 className="text-xl font-semibold text-secondary-900 dark:text-white mt-8 mb-4">
                   Jak zgłosić problem ze sprzedawcą?
                 </h2>
-                <ol className="list-decimal pl-6 text-secondary-600 space-y-2 mb-6">
+                <ol className="list-decimal pl-6 text-secondary-600 dark:text-secondary-400 space-y-2 mb-6">
                   <li>Najpierw skontaktuj się ze sprzedawcą przez wiadomości</li>
                   <li>Jeśli nie otrzymasz pomocy w ciągu 48h - skontaktuj się z nami</li>
                   <li>Przejdź do zamówienia i kliknij "Zgłoś problem"</li>
@@ -150,18 +150,18 @@ export default function SellersPage() {
                   <li>Nasz zespół rozpatrzy sprawę w ciągu 5 dni roboczych</li>
                 </ol>
 
-                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mt-8">
-                  <h3 className="font-semibold text-yellow-800 mb-2">⚠️ Podejrzany sprzedawca?</h3>
-                  <p className="text-yellow-700 mb-3">
+                <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-xl p-6 mt-8">
+                  <h3 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">⚠️ Podejrzany sprzedawca?</h3>
+                  <p className="text-yellow-700 dark:text-yellow-300 mb-3">
                     Jeśli zauważysz:
                   </p>
-                  <ul className="list-disc pl-6 text-yellow-700 text-sm space-y-1">
+                  <ul className="list-disc pl-6 text-yellow-700 dark:text-yellow-300 text-sm space-y-1">
                     <li>Ceny znacznie niższe od rynkowych</li>
                     <li>Prośby o płatność poza platformą</li>
                     <li>Podejrzane opisy produktów</li>
                     <li>Brak kontaktu lub nietypowe odpowiedzi</li>
                   </ul>
-                  <p className="text-yellow-700 mt-3 text-sm">
+                  <p className="text-yellow-700 dark:text-yellow-300 mt-3 text-sm">
                     Zgłoś to do nas: bezpieczenstwo@wbtrade.pl
                   </p>
                 </div>
@@ -169,16 +169,16 @@ export default function SellersPage() {
             </div>
 
             {/* Related links */}
-            <div className="mt-8 bg-white rounded-2xl p-6 shadow-sm">
-              <h3 className="font-semibold text-secondary-900 mb-4">Powiązane tematy</h3>
+            <div className="mt-8 bg-white dark:bg-secondary-800 rounded-2xl p-6 shadow-sm">
+              <h3 className="font-semibold text-secondary-900 dark:text-white mb-4">Powiązane tematy</h3>
               <div className="flex flex-wrap gap-3">
-                <Link href="/help/security/shopping" className="text-primary-600 hover:text-primary-700 text-sm bg-primary-50 px-4 py-2 rounded-lg">
+                <Link href="/help/security/shopping" className="text-primary-600 hover:text-primary-700 text-sm bg-primary-50 dark:bg-primary-900/30 px-4 py-2 rounded-lg">
                   Bezpieczeństwo zakupów
                 </Link>
-                <Link href="/help/returns/complaint" className="text-primary-600 hover:text-primary-700 text-sm bg-primary-50 px-4 py-2 rounded-lg">
+                <Link href="/help/returns/complaint" className="text-primary-600 hover:text-primary-700 text-sm bg-primary-50 dark:bg-primary-900/30 px-4 py-2 rounded-lg">
                   Reklamacja
                 </Link>
-                <Link href="/help/security/suspicious" className="text-primary-600 hover:text-primary-700 text-sm bg-primary-50 px-4 py-2 rounded-lg">
+                <Link href="/help/security/suspicious" className="text-primary-600 hover:text-primary-700 text-sm bg-primary-50 dark:bg-primary-900/30 px-4 py-2 rounded-lg">
                   Podejrzana aktywność
                 </Link>
               </div>

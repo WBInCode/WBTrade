@@ -54,7 +54,7 @@ export default function ContactPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-secondary-50">
+    <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
       <Header />
       
       {/* Hero Section */}
@@ -72,22 +72,22 @@ export default function ContactPage() {
       </section>
 
       {/* Contact Methods */}
-      <section className="py-12 bg-white border-b">
+      <section className="py-12 bg-white dark:bg-secondary-800 border-b dark:border-secondary-700">
         <div className="container-custom">
           <div className="grid md:grid-cols-3 gap-6">
             {contactMethods.map((method, index) => (
               <a
                 key={index}
                 href={method.href}
-                className="flex items-start gap-4 p-6 bg-secondary-50 rounded-2xl hover:shadow-lg transition-all group"
+                className="flex items-start gap-4 p-6 bg-secondary-50 dark:bg-secondary-900 rounded-2xl hover:shadow-lg transition-all group"
               >
-                <div className="w-14 h-14 bg-primary-100 rounded-xl flex items-center justify-center text-primary-600 shrink-0 group-hover:scale-110 transition-transform">
+                <div className="w-14 h-14 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center text-primary-600 shrink-0 group-hover:scale-110 transition-transform">
                   {method.icon}
                 </div>
                 <div>
-                  <h3 className="font-semibold text-secondary-900 mb-1">{method.title}</h3>
+                  <h3 className="font-semibold text-secondary-900 dark:text-white mb-1">{method.title}</h3>
                   <p className="text-primary-600 font-medium">{method.value}</p>
-                  <p className="text-sm text-secondary-500">{method.description}</p>
+                  <p className="text-sm text-secondary-500 dark:text-secondary-400">{method.description}</p>
                 </div>
               </a>
             ))}
@@ -101,17 +101,17 @@ export default function ContactPage() {
           <div className="grid lg:grid-cols-2 gap-12">
             {/* Contact Form */}
             <div>
-              <h2 className="text-2xl lg:text-3xl font-bold text-secondary-900 mb-6">
+              <h2 className="text-2xl lg:text-3xl font-bold text-secondary-900 dark:text-white mb-6">
                 Wyślij wiadomość
               </h2>
-              <p className="text-secondary-600 mb-8">
+              <p className="text-secondary-600 dark:text-secondary-400 mb-8">
                 Wypełnij formularz, a\u00A0nasz zespół skontaktuje się z\u00A0Tobą jak najszybciej.
               </p>
               
               <form className="space-y-6">
                 <div className="grid sm:grid-cols-2 gap-6">
                   <div>
-                    <label htmlFor="firstName" className="block text-sm font-medium text-secondary-700 mb-2">
+                    <label htmlFor="firstName" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                       Imię *
                     </label>
                     <input
@@ -119,12 +119,12 @@ export default function ContactPage() {
                       id="firstName"
                       name="firstName"
                       required
-                      className="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                      className="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors dark:bg-secondary-800 dark:text-white dark:border-secondary-600"
                       placeholder="Jan"
                     />
                   </div>
                   <div>
-                    <label htmlFor="lastName" className="block text-sm font-medium text-secondary-700 mb-2">
+                    <label htmlFor="lastName" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                       Nazwisko *
                     </label>
                     <input
@@ -132,14 +132,14 @@ export default function ContactPage() {
                       id="lastName"
                       name="lastName"
                       required
-                      className="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                      className="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors dark:bg-secondary-800 dark:text-white dark:border-secondary-600"
                       placeholder="Kowalski"
                     />
                   </div>
                 </div>
                 
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label htmlFor="email" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                     Adres e-mail *
                   </label>
                   <input
@@ -147,33 +147,33 @@ export default function ContactPage() {
                     id="email"
                     name="email"
                     required
-                    className="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                    className="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors dark:bg-secondary-800 dark:text-white dark:border-secondary-600"
                     placeholder="jan.kowalski@example.com"
                   />
                 </div>
                 
                 <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label htmlFor="phone" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                     Numer telefonu
                   </label>
                   <input
                     type="tel"
                     id="phone"
                     name="phone"
-                    className="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                    className="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors dark:bg-secondary-800 dark:text-white dark:border-secondary-600"
                     placeholder="+48 123 456 789"
                   />
                 </div>
                 
                 <div>
-                  <label htmlFor="topic" className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label htmlFor="topic" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                     Temat *
                   </label>
                   <select
                     id="topic"
                     name="topic"
                     required
-                    className="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                    className="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors dark:bg-secondary-800 dark:text-white dark:border-secondary-600"
                   >
                     <option value="">Wybierz temat</option>
                     {topics.map((topic) => (
@@ -185,20 +185,20 @@ export default function ContactPage() {
                 </div>
                 
                 <div>
-                  <label htmlFor="orderNumber" className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label htmlFor="orderNumber" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                     Numer zamówienia
                   </label>
                   <input
                     type="text"
                     id="orderNumber"
                     name="orderNumber"
-                    className="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                    className="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors dark:bg-secondary-800 dark:text-white dark:border-secondary-600"
                     placeholder="np. WBT-123456"
                   />
                 </div>
                 
                 <div>
-                  <label htmlFor="message" className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label htmlFor="message" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                     Wiadomość *
                   </label>
                   <textarea
@@ -206,7 +206,7 @@ export default function ContactPage() {
                     name="message"
                     rows={5}
                     required
-                    className="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors resize-none"
+                    className="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors resize-none dark:bg-secondary-800 dark:text-white dark:border-secondary-600"
                     placeholder="Opisz swoje pytanie lub problem..."
                   />
                 </div>
@@ -219,7 +219,7 @@ export default function ContactPage() {
                     required
                     className="mt-1 w-4 h-4 text-primary-600 border-secondary-300 rounded focus:ring-primary-500"
                   />
-                  <label htmlFor="privacy" className="text-sm text-secondary-600">
+                  <label htmlFor="privacy" className="text-sm text-secondary-600 dark:text-secondary-400">
                     Wyrażam zgodę na\u00A0przetwarzanie moich danych osobowych w\u00A0celu udzielenia odpowiedzi na\u00A0moje zapytanie. *
                   </label>
                 </div>
@@ -235,87 +235,87 @@ export default function ContactPage() {
             
             {/* Company Info */}
             <div>
-              <div className="bg-white rounded-2xl p-8 shadow-sm mb-8">
-                <h3 className="text-xl font-semibold text-secondary-900 mb-6">
+              <div className="bg-white dark:bg-secondary-800 rounded-2xl p-8 shadow-sm mb-8">
+                <h3 className="text-xl font-semibold text-secondary-900 dark:text-white mb-6">
                   Dane firmy
                 </h3>
                 <div className="space-y-4">
                   <div>
-                    <h4 className="font-medium text-secondary-900">WB\u00A0PARTNERS Sp.\u00A0z\u00A0o.o.</h4>
-                    <p className="text-secondary-600">ul.\u00A0Juliusza Słowackiego 24/11</p>
-                    <p className="text-secondary-600">35-060 Rzeszów</p>
+                    <h4 className="font-medium text-secondary-900 dark:text-white">WB\u00A0PARTNERS Sp.\u00A0z\u00A0o.o.</h4>
+                    <p className="text-secondary-600 dark:text-secondary-400">ul.\u00A0Juliusza Słowackiego 24/11</p>
+                    <p className="text-secondary-600 dark:text-secondary-400">35-060 Rzeszów</p>
                   </div>
-                  <div className="pt-4 border-t border-secondary-100">
+                  <div className="pt-4 border-t border-secondary-100 dark:border-secondary-700">
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <span className="text-secondary-500">KRS:</span>
-                        <p className="font-medium text-secondary-900">0001151642</p>
+                        <span className="text-secondary-500 dark:text-secondary-400">KRS:</span>
+                        <p className="font-medium text-secondary-900 dark:text-white">0001151642</p>
                       </div>
                       <div>
-                        <span className="text-secondary-500">NIP:</span>
-                        <p className="font-medium text-secondary-900">5170455185</p>
+                        <span className="text-secondary-500 dark:text-secondary-400">NIP:</span>
+                        <p className="font-medium text-secondary-900 dark:text-white">5170455185</p>
                       </div>
                       <div>
-                        <span className="text-secondary-500">REGON:</span>
-                        <p className="font-medium text-secondary-900">540735769</p>
+                        <span className="text-secondary-500 dark:text-secondary-400">REGON:</span>
+                        <p className="font-medium text-secondary-900 dark:text-white">540735769</p>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
               
-              <div className="bg-white rounded-2xl p-8 shadow-sm mb-8">
-                <h3 className="text-xl font-semibold text-secondary-900 mb-6">
+              <div className="bg-white dark:bg-secondary-800 rounded-2xl p-8 shadow-sm mb-8">
+                <h3 className="text-xl font-semibold text-secondary-900 dark:text-white mb-6">
                   Godziny pracy
                 </h3>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-secondary-600">Poniedziałek – Piątek</span>
-                    <span className="font-medium text-secondary-900">9:00 – 17:00</span>
+                    <span className="text-secondary-600 dark:text-secondary-400">Poniedziałek – Piątek</span>
+                    <span className="font-medium text-secondary-900 dark:text-white">9:00 – 17:00</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-secondary-600">Sobota</span>
-                    <span className="font-medium text-secondary-500">Nieczynne</span>
+                    <span className="text-secondary-600 dark:text-secondary-400">Sobota</span>
+                    <span className="font-medium text-secondary-500 dark:text-secondary-400">Nieczynne</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-secondary-600">Niedziela</span>
-                    <span className="font-medium text-secondary-500">Nieczynne</span>
+                    <span className="text-secondary-600 dark:text-secondary-400">Niedziela</span>
+                    <span className="font-medium text-secondary-500 dark:text-secondary-400">Nieczynne</span>
                   </div>
                 </div>
               </div>
               
-              <div className="bg-primary-50 rounded-2xl p-8">
-                <h3 className="text-xl font-semibold text-secondary-900 mb-4">
+              <div className="bg-primary-50 dark:bg-primary-900/30 rounded-2xl p-8">
+                <h3 className="text-xl font-semibold text-secondary-900 dark:text-white mb-4">
                   Szybka pomoc
                 </h3>
-                <p className="text-secondary-600 mb-6">
+                <p className="text-secondary-600 dark:text-secondary-400 mb-6">
                   Zanim się z nami skontaktujesz, sprawdź nasze centrum pomocy. 
                   Znajdziesz tam odpowiedzi na najczęściej zadawane pytania.
                 </p>
                 <div className="space-y-3">
                   <a
                     href="/help"
-                    className="flex items-center justify-between p-4 bg-white rounded-xl hover:shadow-md transition-all group"
+                    className="flex items-center justify-between p-4 bg-white dark:bg-secondary-800 rounded-xl hover:shadow-md transition-all group"
                   >
-                    <span className="font-medium text-secondary-900">Centrum pomocy</span>
+                    <span className="font-medium text-secondary-900 dark:text-white">Centrum pomocy</span>
                     <svg className="w-5 h-5 text-primary-600 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </a>
                   <a
                     href="/faq"
-                    className="flex items-center justify-between p-4 bg-white rounded-xl hover:shadow-md transition-all group"
+                    className="flex items-center justify-between p-4 bg-white dark:bg-secondary-800 rounded-xl hover:shadow-md transition-all group"
                   >
-                    <span className="font-medium text-secondary-900">FAQ</span>
+                    <span className="font-medium text-secondary-900 dark:text-white">FAQ</span>
                     <svg className="w-5 h-5 text-primary-600 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </a>
                   <a
                     href="/returns"
-                    className="flex items-center justify-between p-4 bg-white rounded-xl hover:shadow-md transition-all group"
+                    className="flex items-center justify-between p-4 bg-white dark:bg-secondary-800 rounded-xl hover:shadow-md transition-all group"
                   >
-                    <span className="font-medium text-secondary-900">Zwroty i reklamacje</span>
+                    <span className="font-medium text-secondary-900 dark:text-white">Zwroty i reklamacje</span>
                     <svg className="w-5 h-5 text-primary-600 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>

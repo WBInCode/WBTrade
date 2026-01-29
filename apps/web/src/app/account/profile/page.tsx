@@ -136,7 +136,7 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
       </div>
     );
@@ -251,12 +251,12 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-secondary-900">
       <Header />
 
       <main className="container-custom py-4 sm:py-6">
         {/* Breadcrumb - hidden on mobile */}
-        <nav className="hidden sm:flex items-center gap-2 text-sm text-gray-500 mb-6">
+        <nav className="hidden sm:flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
           <Link href="/" className="hover:text-orange-500">Strona główna</Link>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -265,21 +265,21 @@ export default function ProfilePage() {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
-          <span className="text-gray-900">Dane osobowe</span>
+          <span className="text-gray-900 dark:text-white">Dane osobowe</span>
         </nav>
 
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar - hidden on mobile */}
           <aside className="hidden lg:block w-64 shrink-0">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-100 dark:border-secondary-700 overflow-hidden">
               {/* User Profile */}
-              <div className="p-5 border-b border-gray-100">
+              <div className="p-5 border-b border-gray-100 dark:border-secondary-700">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white font-semibold">
                     {userData.avatar}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">{userData.fullName}</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">{userData.fullName}</h3>
                   </div>
                 </div>
               </div>
@@ -293,7 +293,7 @@ export default function ProfilePage() {
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                       item.id === 'profile'
                         ? 'bg-orange-500 text-white'
-                        : 'text-gray-600 hover:bg-gray-50'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700'
                     }`}
                   >
                     <SidebarIcon icon={item.icon} />
@@ -310,7 +310,7 @@ export default function ProfilePage() {
             <div className="lg:hidden mb-4">
               <Link 
                 href="/account" 
-                className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-orange-500"
+                className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-orange-500"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -322,8 +322,8 @@ export default function ProfilePage() {
             {/* Page Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Dane osobowe</h1>
-                <p className="text-gray-500 text-sm">Zarządzaj swoimi danymi osobowymi</p>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dane osobowe</h1>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">Zarządzaj swoimi danymi osobowymi</p>
               </div>
               {!isEditing && (
                 <button
@@ -371,9 +371,9 @@ export default function ProfilePage() {
 
             <form onSubmit={handleSubmit}>
               {/* Personal Information */}
-              <div className="bg-white rounded-xl border border-gray-100 shadow-sm mb-6">
-                <div className="p-5 border-b border-gray-100">
-                  <h2 className="text-lg font-semibold text-gray-900">Informacje podstawowe</h2>
+              <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-100 dark:border-secondary-700 shadow-sm mb-6">
+                <div className="p-5 border-b border-gray-100 dark:border-secondary-700">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Informacje podstawowe</h2>
                 </div>
                 
                 <div className="p-5 space-y-5">
@@ -384,10 +384,10 @@ export default function ProfilePage() {
                     </div>
                     {isEditing && (
                       <div>
-                        <button type="button" className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+                        <button type="button" className="px-4 py-2 border border-gray-300 dark:border-secondary-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors">
                           Zmień zdjęcie
                         </button>
-                        <p className="text-xs text-gray-500 mt-1">JPG, PNG lub GIF. Maks. 2MB.</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">JPG, PNG lub GIF. Maks. 2MB.</p>
                       </div>
                     )}
                   </div>
@@ -395,7 +395,7 @@ export default function ProfilePage() {
                   {/* Name Fields */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Imię <span className="text-red-500">*</span>
                       </label>
                       {isEditing ? (
@@ -406,7 +406,7 @@ export default function ProfilePage() {
                             name="firstName"
                             value={formData.firstName}
                             onChange={handleChange}
-                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-secondary-800 dark:text-white dark:border-secondary-600 ${
                               errors.firstName ? 'border-red-300 bg-red-50' : 'border-gray-200'
                             }`}
                             placeholder="Wprowadź imię"
@@ -419,9 +419,9 @@ export default function ProfilePage() {
                         <button
                           type="button"
                           onClick={() => setIsEditing(true)}
-                          className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 hover:bg-gray-50 transition-colors group"
+                          className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 dark:hover:border-secondary-600 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors group"
                         >
-                          <span className="text-gray-900">{formData.firstName}</span>
+                          <span className="text-gray-900 dark:text-white">{formData.firstName}</span>
                           <svg className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 inline ml-2 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                           </svg>
@@ -429,7 +429,7 @@ export default function ProfilePage() {
                       )}
                     </div>
                     <div>
-                      <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Nazwisko <span className="text-red-500">*</span>
                       </label>
                       {isEditing ? (
@@ -440,7 +440,7 @@ export default function ProfilePage() {
                             name="lastName"
                             value={formData.lastName}
                             onChange={handleChange}
-                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-secondary-800 dark:text-white dark:border-secondary-600 ${
                               errors.lastName ? 'border-red-300 bg-red-50' : 'border-gray-200'
                             }`}
                             placeholder="Wprowadź nazwisko"
@@ -453,9 +453,9 @@ export default function ProfilePage() {
                         <button
                           type="button"
                           onClick={() => setIsEditing(true)}
-                          className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 hover:bg-gray-50 transition-colors group"
+                          className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 dark:hover:border-secondary-600 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors group"
                         >
-                          <span className="text-gray-900">{formData.lastName}</span>
+                          <span className="text-gray-900 dark:text-white">{formData.lastName}</span>
                           <svg className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 inline ml-2 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                           </svg>
@@ -466,7 +466,7 @@ export default function ProfilePage() {
 
                   {/* Email */}
                   <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Adres email <span className="text-red-500">*</span>
                     </label>
                     {isEditing ? (
@@ -477,7 +477,7 @@ export default function ProfilePage() {
                           name="email"
                           value={formData.email}
                           onChange={handleChange}
-                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-secondary-800 dark:text-white dark:border-secondary-600 ${
                             errors.email ? 'border-red-300 bg-red-50' : 'border-gray-200'
                           }`}
                           placeholder="twoj@email.pl"
@@ -490,9 +490,9 @@ export default function ProfilePage() {
                       <button
                         type="button"
                         onClick={() => setIsEditing(true)}
-                        className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 hover:bg-gray-50 transition-colors group flex items-center gap-2"
+                        className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 dark:hover:border-secondary-600 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors group flex items-center gap-2"
                       >
-                        <span className="text-gray-900">{formData.email}</span>
+                        <span className="text-gray-900 dark:text-white">{formData.email}</span>
                         {userData.emailVerified ? (
                           <span className="inline-flex items-center gap-1 text-green-600 text-xs">
                             <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
@@ -517,7 +517,7 @@ export default function ProfilePage() {
 
                   {/* Phone */}
                   <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Numer telefonu
                     </label>
                     {isEditing ? (
@@ -528,7 +528,7 @@ export default function ProfilePage() {
                           name="phone"
                           value={formData.phone}
                           onChange={handleChange}
-                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-secondary-800 dark:text-white dark:border-secondary-600 ${
                             errors.phone ? 'border-red-300 bg-red-50' : 'border-gray-200'
                           }`}
                           placeholder="+48 123 456 789"
@@ -541,10 +541,10 @@ export default function ProfilePage() {
                       <button
                         type="button"
                         onClick={() => setIsEditing(true)}
-                        className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 hover:bg-gray-50 transition-colors group flex items-center"
+                        className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 dark:hover:border-secondary-600 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors group flex items-center"
                       >
                         {formData.phone ? (
-                          <span className="text-gray-900">{formData.phone}</span>
+                          <span className="text-gray-900 dark:text-white">{formData.phone}</span>
                         ) : (
                           <span className="text-gray-400 italic">Dodaj numer telefonu</span>
                         )}
@@ -558,7 +558,7 @@ export default function ProfilePage() {
                   {/* Birth Date & Gender */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Data urodzenia
                       </label>
                       {isEditing ? (
@@ -568,16 +568,16 @@ export default function ProfilePage() {
                           name="birthDate"
                           value={formData.birthDate}
                           onChange={handleChange}
-                          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                          className="w-full px-4 py-2.5 border border-gray-200 dark:border-secondary-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-secondary-800 dark:text-white"
                         />
                       ) : (
                         <button
                           type="button"
                           onClick={() => setIsEditing(true)}
-                          className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 hover:bg-gray-50 transition-colors group flex items-center"
+                          className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 dark:hover:border-secondary-600 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors group flex items-center"
                         >
                           {formData.birthDate ? (
-                            <span className="text-gray-900">{new Date(formData.birthDate).toLocaleDateString('pl-PL')}</span>
+                            <span className="text-gray-900 dark:text-white">{new Date(formData.birthDate).toLocaleDateString('pl-PL')}</span>
                           ) : (
                             <span className="text-gray-400 italic">Podaj datę urodzenia</span>
                           )}
@@ -588,7 +588,7 @@ export default function ProfilePage() {
                       )}
                     </div>
                     <div>
-                      <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="gender" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Płeć
                       </label>
                       {isEditing ? (
@@ -597,7 +597,7 @@ export default function ProfilePage() {
                           name="gender"
                           value={formData.gender}
                           onChange={handleChange}
-                          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
+                          className="w-full px-4 py-2.5 border border-gray-200 dark:border-secondary-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-secondary-800 dark:text-white"
                         >
                           <option value="">Wybierz</option>
                           <option value="male">Mężczyzna</option>
@@ -607,10 +607,10 @@ export default function ProfilePage() {
                         <button
                           type="button"
                           onClick={() => setIsEditing(true)}
-                          className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 hover:bg-gray-50 transition-colors group flex items-center"
+                          className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 dark:hover:border-secondary-600 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors group flex items-center"
                         >
                           {formData.gender ? (
-                            <span className="text-gray-900">
+                            <span className="text-gray-900 dark:text-white">
                               {formData.gender === 'male' ? 'Mężczyzna' : 'Kobieta'}
                             </span>
                           ) : (
@@ -627,15 +627,15 @@ export default function ProfilePage() {
               </div>
 
               {/* Company Information */}
-              <div className="bg-white rounded-xl border border-gray-100 shadow-sm mb-6">
-                <div className="p-5 border-b border-gray-100">
-                  <h2 className="text-lg font-semibold text-gray-900">Dane firmowe</h2>
-                  <p className="text-sm text-gray-500">Opcjonalne - wypełnij jeśli chcesz otrzymywać faktury na firmę</p>
+              <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-100 dark:border-secondary-700 shadow-sm mb-6">
+                <div className="p-5 border-b border-gray-100 dark:border-secondary-700">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Dane firmowe</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Opcjonalne - wypełnij jeśli chcesz otrzymywać faktury na firmę</p>
                 </div>
                 
                 <div className="p-5 space-y-5">
                   <div>
-                    <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Nazwa firmy
                     </label>
                     {isEditing ? (
@@ -645,17 +645,17 @@ export default function ProfilePage() {
                         name="companyName"
                         value={formData.companyName}
                         onChange={handleChange}
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        className="w-full px-4 py-2.5 border border-gray-200 dark:border-secondary-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-secondary-800 dark:text-white"
                         placeholder="Nazwa firmy"
                       />
                     ) : (
                       <button
                         type="button"
                         onClick={() => setIsEditing(true)}
-                        className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 hover:bg-gray-50 transition-colors group flex items-center"
+                        className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 dark:hover:border-secondary-600 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors group flex items-center"
                       >
                         {formData.companyName ? (
-                          <span className="text-gray-900">{formData.companyName}</span>
+                          <span className="text-gray-900 dark:text-white">{formData.companyName}</span>
                         ) : (
                           <span className="text-gray-400 italic">Dodaj nazwę firmy</span>
                         )}
@@ -666,7 +666,7 @@ export default function ProfilePage() {
                     )}
                   </div>
                   <div>
-                    <label htmlFor="nip" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="nip" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       NIP
                     </label>
                     {isEditing ? (
@@ -677,7 +677,7 @@ export default function ProfilePage() {
                           name="nip"
                           value={formData.nip}
                           onChange={handleChange}
-                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-secondary-800 dark:text-white dark:border-secondary-600 ${
                             errors.nip ? 'border-red-300 bg-red-50' : 'border-gray-200'
                           }`}
                           placeholder="1234567890"
@@ -690,10 +690,10 @@ export default function ProfilePage() {
                       <button
                         type="button"
                         onClick={() => setIsEditing(true)}
-                        className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 hover:bg-gray-50 transition-colors group flex items-center"
+                        className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 dark:hover:border-secondary-600 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors group flex items-center"
                       >
                         {formData.nip ? (
-                          <span className="text-gray-900">{formData.nip}</span>
+                          <span className="text-gray-900 dark:text-white">{formData.nip}</span>
                         ) : (
                           <span className="text-gray-400 italic">Dodaj NIP</span>
                         )}
@@ -706,7 +706,7 @@ export default function ProfilePage() {
 
                   {/* Company Street */}
                   <div>
-                    <label htmlFor="companyStreet" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="companyStreet" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Ulica i numer
                     </label>
                     {isEditing ? (
@@ -716,17 +716,17 @@ export default function ProfilePage() {
                         name="companyStreet"
                         value={formData.companyStreet}
                         onChange={handleChange}
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        className="w-full px-4 py-2.5 border border-gray-200 dark:border-secondary-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-secondary-800 dark:text-white"
                         placeholder="ul. Przykładowa 1/2"
                       />
                     ) : (
                       <button
                         type="button"
                         onClick={() => setIsEditing(true)}
-                        className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 hover:bg-gray-50 transition-colors group flex items-center"
+                        className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 dark:hover:border-secondary-600 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors group flex items-center"
                       >
                         {formData.companyStreet ? (
-                          <span className="text-gray-900">{formData.companyStreet}</span>
+                          <span className="text-gray-900 dark:text-white">{formData.companyStreet}</span>
                         ) : (
                           <span className="text-gray-400 italic">Dodaj adres</span>
                         )}
@@ -740,7 +740,7 @@ export default function ProfilePage() {
                   {/* Company City and Postal Code */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="companyPostalCode" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="companyPostalCode" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Kod pocztowy
                       </label>
                       {isEditing ? (
@@ -751,7 +751,7 @@ export default function ProfilePage() {
                             name="companyPostalCode"
                             value={formData.companyPostalCode}
                             onChange={handleChange}
-                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-secondary-800 dark:text-white dark:border-secondary-600 ${
                               errors.companyPostalCode ? 'border-red-300 bg-red-50' : 'border-gray-200'
                             }`}
                             placeholder="00-000"
@@ -764,10 +764,10 @@ export default function ProfilePage() {
                         <button
                           type="button"
                           onClick={() => setIsEditing(true)}
-                          className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 hover:bg-gray-50 transition-colors group flex items-center"
+                          className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 dark:hover:border-secondary-600 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors group flex items-center"
                         >
                           {formData.companyPostalCode ? (
-                            <span className="text-gray-900">{formData.companyPostalCode}</span>
+                            <span className="text-gray-900 dark:text-white">{formData.companyPostalCode}</span>
                           ) : (
                             <span className="text-gray-400 italic">Dodaj kod</span>
                           )}
@@ -778,7 +778,7 @@ export default function ProfilePage() {
                       )}
                     </div>
                     <div>
-                      <label htmlFor="companyCity" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="companyCity" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Miasto
                       </label>
                       {isEditing ? (
@@ -788,17 +788,17 @@ export default function ProfilePage() {
                           name="companyCity"
                           value={formData.companyCity}
                           onChange={handleChange}
-                          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                          className="w-full px-4 py-2.5 border border-gray-200 dark:border-secondary-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-secondary-800 dark:text-white"
                           placeholder="Warszawa"
                         />
                       ) : (
                         <button
                           type="button"
                           onClick={() => setIsEditing(true)}
-                          className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 hover:bg-gray-50 transition-colors group flex items-center"
+                          className="w-full text-left px-4 py-2.5 border border-transparent rounded-lg hover:border-gray-200 dark:hover:border-secondary-600 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors group flex items-center"
                         >
                           {formData.companyCity ? (
-                            <span className="text-gray-900">{formData.companyCity}</span>
+                            <span className="text-gray-900 dark:text-white">{formData.companyCity}</span>
                           ) : (
                             <span className="text-gray-400 italic">Dodaj miasto</span>
                           )}
@@ -818,7 +818,7 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={handleCancel}
-                    className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                    className="px-6 py-2.5 border border-gray-300 dark:border-secondary-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors"
                   >
                     Anuluj
                   </button>

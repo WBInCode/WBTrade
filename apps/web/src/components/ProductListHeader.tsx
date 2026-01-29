@@ -50,15 +50,15 @@ export default function ProductListHeader({
     <div className="flex flex-col gap-4 mb-6">
       {/* Tabs - scrollable on mobile */}
       <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
-        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 w-max sm:w-auto">
+        <div className="flex items-center gap-1 bg-gray-100 dark:bg-secondary-800 rounded-lg p-1 w-max sm:w-auto">
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => onTabChange?.(tab.id)}
               className={`px-3 sm:px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
                 activeTab === tab.id
-                  ? 'bg-white text-secondary-900 shadow-sm'
-                  : 'text-secondary-500 hover:text-secondary-700'
+                  ? 'bg-white dark:bg-secondary-700 text-secondary-900 dark:text-white shadow-sm'
+                  : 'text-secondary-500 dark:text-secondary-400 hover:text-secondary-700 dark:hover:text-white'
               }`}
             >
               {tab.label}
@@ -71,11 +71,11 @@ export default function ProductListHeader({
       <div className="flex items-center justify-between sm:justify-end gap-4">
         {/* Sort */}
         <div className="flex items-center gap-2">
-          <span className="text-sm text-secondary-500">Sortuj:</span>
+          <span className="text-sm text-secondary-500 dark:text-secondary-400">Sortuj:</span>
           <select
             value={currentSort}
             onChange={(e) => handleSortChange(e.target.value)}
-            className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="px-3 py-2 text-sm border border-gray-300 dark:border-secondary-600 rounded-lg bg-white dark:bg-secondary-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           >
             {sortOptions.map(option => (
               <option key={option.value} value={option.value}>
@@ -86,11 +86,11 @@ export default function ProductListHeader({
         </div>
 
         {/* View Toggle */}
-        <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+        <div className="flex items-center border border-gray-300 dark:border-secondary-600 rounded-lg overflow-hidden">
           <button
             onClick={() => handleViewChange('grid')}
             className={`p-2 transition-colors ${
-              currentView === 'grid' ? 'bg-primary-500 text-white' : 'bg-white text-secondary-500 hover:bg-gray-50'
+              currentView === 'grid' ? 'bg-primary-500 text-white' : 'bg-white dark:bg-secondary-700 text-secondary-500 dark:text-secondary-300 hover:bg-gray-50 dark:hover:bg-secondary-600'
             }`}
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -100,7 +100,7 @@ export default function ProductListHeader({
           <button
             onClick={() => handleViewChange('list')}
             className={`p-2 transition-colors ${
-              currentView === 'list' ? 'bg-primary-500 text-white' : 'bg-white text-secondary-500 hover:bg-gray-50'
+              currentView === 'list' ? 'bg-primary-500 text-white' : 'bg-white dark:bg-secondary-700 text-secondary-500 dark:text-secondary-300 hover:bg-gray-50 dark:hover:bg-secondary-600'
             }`}
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">

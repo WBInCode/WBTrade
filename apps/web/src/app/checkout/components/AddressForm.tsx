@@ -71,7 +71,7 @@ function InputField({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1.5">
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
         {label}{required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
       <input
@@ -85,14 +85,14 @@ function InputField({
         placeholder={placeholder}
         className={`
           w-full h-11 px-4
-          bg-white border rounded-lg
-          text-gray-900 text-sm
+          bg-white dark:bg-secondary-700 border rounded-lg
+          text-gray-900 dark:text-white text-sm
           outline-none transition-colors
           focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500
-          placeholder:text-gray-400
+          placeholder:text-gray-400 dark:placeholder:text-gray-500
           ${error 
             ? 'border-red-400' 
-            : 'border-gray-300'
+            : 'border-gray-300 dark:border-secondary-600'
           }
         `}
       />
@@ -432,17 +432,17 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm">
+    <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm">
       {/* Header */}
-      <div className="px-6 py-4 border-b">
-        <h2 className="text-lg font-semibold text-gray-900">Adres dostawy</h2>
+      <div className="px-6 py-4 border-b dark:border-secondary-700">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Adres dostawy</h2>
       </div>
 
       <form onSubmit={handleSubmit}>
         {/* Saved Addresses */}
         {isLoggedIn && savedAddresses.length > 0 && (
-          <div className="px-6 py-4 border-b">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Zapisane adresy</h3>
+          <div className="px-6 py-4 border-b dark:border-secondary-700">
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Zapisane adresy</h3>
             <div className="space-y-2">
               {savedAddresses.map((address) => (
                 <label
@@ -450,8 +450,8 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
                   className={`
                     flex items-center justify-between px-4 py-3 rounded-lg border cursor-pointer transition-colors
                     ${selectedSavedAddress === address.id
-                      ? 'border-orange-500 bg-orange-50'
-                      : 'border-gray-200 hover:bg-gray-50'
+                      ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20'
+                      : 'border-gray-200 dark:border-secondary-600 hover:bg-gray-50 dark:hover:bg-secondary-700'
                     }
                   `}
                 >
@@ -459,7 +459,7 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
                     <div
                       className={`
                         w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0
-                        ${selectedSavedAddress === address.id ? 'border-orange-500' : 'border-gray-300'}
+                        ${selectedSavedAddress === address.id ? 'border-orange-500' : 'border-gray-300 dark:border-secondary-500'}
                       `}
                     >
                       {selectedSavedAddress === address.id && (
@@ -474,8 +474,8 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
                       className="sr-only"
                     />
                     <div>
-                      <p className="font-medium text-gray-900">{address.firstName} {address.lastName}</p>
-                      <p className="text-sm text-gray-500">{address.street}, {address.postalCode} {address.city}</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{address.firstName} {address.lastName}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{address.street}, {address.postalCode} {address.city}</p>
                     </div>
                   </div>
                   {address.isDefault && (
@@ -488,13 +488,13 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
             </div>
             <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
+                <div className="w-full border-t border-gray-200 dark:border-secondary-600"></div>
               </div>
               <div className="relative flex justify-center">
                 <button
                   type="button"
                   onClick={handleEnterNewAddress}
-                  className="px-3 bg-white text-xs text-orange-500 hover:text-orange-600 cursor-pointer"
+                  className="px-3 bg-white dark:bg-secondary-800 text-xs text-orange-500 hover:text-orange-600 cursor-pointer"
                 >
                   lub wprowadź nowy adres
                 </button>
@@ -504,8 +504,8 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
         )}
 
         {/* Personal Info */}
-        <div className="px-6 py-4 border-b">
-          <h3 className="text-sm font-medium text-gray-700 mb-4">Dane osobowe</h3>
+        <div className="px-6 py-4 border-b dark:border-secondary-700">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Dane osobowe</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <InputField
               id="firstName"
@@ -533,8 +533,8 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
         </div>
 
         {/* Contact */}
-        <div className="px-6 py-4 border-b">
-          <h3 className="text-sm font-medium text-gray-700 mb-4">Kontakt</h3>
+        <div className="px-6 py-4 border-b dark:border-secondary-700">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Kontakt</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <InputField
               id="email"
@@ -551,7 +551,7 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
             
             {/* Phone with country selector */}
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 Telefon<span className="text-red-500 ml-0.5">*</span>
               </label>
               <div className="relative flex">
@@ -560,31 +560,31 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
                   onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
                   className={`
                     flex items-center gap-1 px-3 h-11 
-                    bg-gray-50 hover:bg-gray-100 border rounded-l-lg
+                    bg-gray-50 dark:bg-secondary-700 hover:bg-gray-100 dark:hover:bg-secondary-600 border rounded-l-lg
                     border-r-0 transition-colors
-                    ${errors.phone ? 'border-red-400' : 'border-gray-300'}
+                    ${errors.phone ? 'border-red-400' : 'border-gray-300 dark:border-secondary-600'}
                   `}
                 >
                   <span className="text-base">{selectedCountry.flag}</span>
-                  <span className="text-sm font-medium text-gray-600">{selectedCountry.dialCode}</span>
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{selectedCountry.dialCode}</span>
                   <svg className={`w-3 h-3 text-gray-400 transition-transform ${isCountryDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
                 
                 {isCountryDropdownOpen && (
-                  <div className="absolute z-50 top-full mt-1 left-0 w-64 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                  <div className="absolute z-50 top-full mt-1 left-0 w-64 bg-white dark:bg-secondary-700 border border-gray-200 dark:border-secondary-600 rounded-lg shadow-lg max-h-64 overflow-y-auto">
                     {countries.map((country) => (
                       <button
                         key={country.code}
                         type="button"
                         onClick={() => handleCountrySelect(country)}
-                        className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors ${
-                          selectedCountry.code === country.code ? 'bg-orange-50' : ''
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-secondary-600 transition-colors ${
+                          selectedCountry.code === country.code ? 'bg-orange-50 dark:bg-orange-900/30' : ''
                         }`}
                       >
                         <span className="text-lg">{country.flag}</span>
-                        <span className="flex-1 text-left text-sm text-gray-700">{country.name}</span>
+                        <span className="flex-1 text-left text-sm text-gray-700 dark:text-gray-200">{country.name}</span>
                         <span className="text-sm text-gray-400">{country.dialCode}</span>
                       </button>
                     ))}
@@ -601,14 +601,14 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
                   placeholder="123 456 789"
                   className={`
                     flex-1 h-11 px-4
-                    bg-white border rounded-r-lg
-                    text-gray-900 text-sm
+                    bg-white dark:bg-secondary-700 border rounded-r-lg
+                    text-gray-900 dark:text-white text-sm
                     outline-none transition-colors
                     focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500
-                    placeholder:text-gray-400
+                    placeholder:text-gray-400 dark:placeholder:text-gray-500
                     ${errors.phone 
                       ? 'border-red-400' 
-                      : 'border-gray-300'
+                      : 'border-gray-300 dark:border-secondary-600'
                     }
                   `}
                 />
@@ -621,8 +621,8 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
         </div>
 
         {/* Address */}
-        <div className="px-6 py-4 border-b">
-          <h3 className="text-sm font-medium text-gray-700 mb-4">Adres</h3>
+        <div className="px-6 py-4 border-b dark:border-secondary-700">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Adres</h3>
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="sm:col-span-2">
@@ -650,7 +650,7 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                   Kod pocztowy<span className="text-red-500 ml-0.5">*</span>
                 </label>
                 <input
@@ -664,14 +664,14 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
                   placeholder="00-000"
                   className={`
                     w-full h-11 px-4
-                    bg-white border rounded-lg
-                    text-gray-900 text-sm
+                    bg-white dark:bg-secondary-700 border rounded-lg
+                    text-gray-900 dark:text-white text-sm
                     outline-none transition-colors
                     focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500
-                    placeholder:text-gray-400
+                    placeholder:text-gray-400 dark:placeholder:text-gray-500
                     ${errors.postalCode 
                       ? 'border-red-400' 
-                      : 'border-gray-300'
+                      : 'border-gray-300 dark:border-secondary-600'
                     }
                   `}
                 />
@@ -697,16 +697,16 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
         </div>
 
         {/* Options */}
-        <div className="px-6 py-4 border-b space-y-3">
+        <div className="px-6 py-4 border-b dark:border-secondary-700 space-y-3">
           {isLoggedIn && !selectedSavedAddress && (
             <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={saveAddress}
                 onChange={(e) => setSaveAddress(e.target.checked)}
-                className="w-4 h-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded"
+                className="w-4 h-4 text-orange-500 focus:ring-orange-500 border-gray-300 dark:border-secondary-600 rounded dark:bg-secondary-700"
               />
-              <span className="text-sm text-gray-700">Zapamiętaj ten adres na przyszłość</span>
+              <span className="text-sm text-gray-700 dark:text-gray-300">Zapamiętaj ten adres na przyszłość</span>
             </label>
           )}
 
@@ -717,16 +717,16 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
               name="differentBillingAddress"
               checked={formData.differentBillingAddress}
               onChange={handleChange}
-              className="w-4 h-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded"
+              className="w-4 h-4 text-orange-500 focus:ring-orange-500 border-gray-300 dark:border-secondary-600 rounded dark:bg-secondary-700"
             />
-            <span className="text-sm text-gray-700">Inny adres do faktury</span>
+            <span className="text-sm text-gray-700 dark:text-gray-300">Inny adres do faktury</span>
           </label>
         </div>
 
         {/* Billing Address */}
         {formData.differentBillingAddress && (
-          <div className="px-6 py-4 border-b bg-gray-50">
-            <h3 className="text-sm font-medium text-gray-700 mb-4">Dane do faktury</h3>
+          <div className="px-6 py-4 border-b dark:border-secondary-700 bg-gray-50 dark:bg-secondary-700">
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Dane do faktury</h3>
             <div className="space-y-4">
               {/* Company Name and NIP */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -776,7 +776,7 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label htmlFor="billingPostalCode" className="block text-sm font-medium text-gray-700 mb-1.5">
+                  <label htmlFor="billingPostalCode" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                     Kod pocztowy<span className="text-red-500 ml-0.5">*</span>
                   </label>
                   <input
@@ -790,14 +790,14 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
                     placeholder="00-000"
                     className={`
                       w-full h-11 px-4
-                      bg-white border rounded-lg
-                      text-gray-900 text-sm
+                      bg-white dark:bg-secondary-600 border rounded-lg
+                      text-gray-900 dark:text-white text-sm
                       outline-none transition-colors
                       focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500
-                      placeholder:text-gray-400
+                      placeholder:text-gray-400 dark:placeholder:text-gray-500
                       ${errors.billingPostalCode 
                         ? 'border-red-400' 
-                        : 'border-gray-300'
+                        : 'border-gray-300 dark:border-secondary-500'
                       }
                     `}
                   />
@@ -825,8 +825,8 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
 
         {/* Login hint */}
         {!isLoggedIn && (
-          <div className="px-6 py-4 border-b bg-gray-50">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
+          <div className="px-6 py-4 border-b dark:border-secondary-700 bg-gray-50 dark:bg-secondary-700">
+            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
               <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
               </svg>

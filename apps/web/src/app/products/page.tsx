@@ -291,14 +291,14 @@ function ProductsContent() {
     : null;
 
   return (
-    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+    <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 overflow-x-hidden">
       <main className="container-custom py-6 overflow-hidden">
         {/* Breadcrumb */}
         <Breadcrumb items={breadcrumbItems} />
         
         {/* Page Title */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-secondary-900">
+          <h1 className="text-2xl font-bold text-secondary-900 dark:text-white">
             {searchQuery ? (
               <>
                 Wyniki dla "{searchQuery}"{' '}
@@ -320,7 +320,7 @@ function ProductsContent() {
         <div className="flex gap-6">
           {/* Sidebar Filters */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
-            <div className="bg-white rounded-lg border border-gray-200 p-4 sticky top-24">
+            <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-4 sticky top-24">
               <CategoryFilter />
               <WarehouseFilter warehouseCounts={filters?.warehouseCounts} />
               <PriceFilter priceRange={filters?.priceRange} />
@@ -359,21 +359,21 @@ function ProductsContent() {
             {loading ? (
               <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4">
                 {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="bg-white rounded-lg border border-gray-200 p-2 sm:p-4 animate-pulse">
-                    <div className="bg-gray-200 aspect-square rounded-lg mb-2 sm:mb-4"></div>
-                    <div className="bg-gray-200 h-4 rounded w-3/4 mb-2"></div>
-                    <div className="bg-gray-200 h-4 rounded w-1/2 mb-2"></div>
-                    <div className="bg-gray-200 h-6 rounded w-1/3"></div>
+                  <div key={i} className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-2 sm:p-4 animate-pulse">
+                    <div className="bg-gray-200 dark:bg-secondary-700 aspect-square rounded-lg mb-2 sm:mb-4"></div>
+                    <div className="bg-gray-200 dark:bg-secondary-700 h-4 rounded w-3/4 mb-2"></div>
+                    <div className="bg-gray-200 dark:bg-secondary-700 h-4 rounded w-1/2 mb-2"></div>
+                    <div className="bg-gray-200 dark:bg-secondary-700 h-6 rounded w-1/3"></div>
                   </div>
                 ))}
               </div>
             ) : products.length === 0 ? (
-              <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+              <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-12 text-center">
                 <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Brak wyników</h3>
-                <p className="text-gray-500 mb-4">Nie znaleziono produktów pasujących do Twojego wyszukiwania.</p>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Brak wyników</h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-4">Nie znaleziono produktów pasujących do Twojego wyszukiwania.</p>
                 <a href="/products" className="text-primary-500 hover:text-primary-600 font-medium">
                   Zobacz wszystkie produkty →
                 </a>
@@ -413,7 +413,7 @@ export default function ProductsPage() {
     <>
       <Header />
       <Suspense fallback={
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
         </div>
       }>

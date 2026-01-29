@@ -45,7 +45,7 @@ export default function ShippingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-secondary-50">
+    <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
       <Header />
       
       {/* Hero Section */}
@@ -66,7 +66,7 @@ export default function ShippingPage() {
       {/* Shipping Methods */}
       <section className="py-16 lg:py-24">
         <div className="container-custom">
-          <h2 className="text-2xl lg:text-3xl font-bold text-secondary-900 mb-10 text-center">
+          <h2 className="text-2xl lg:text-3xl font-bold text-secondary-900 dark:text-white mb-10 text-center">
             Metody dostawy
           </h2>
           
@@ -74,27 +74,27 @@ export default function ShippingPage() {
             {shippingMethods.map((method, index) => (
               <div
                 key={index}
-                className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all"
+                className="bg-white dark:bg-secondary-800 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all"
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 bg-primary-100 rounded-xl flex items-center justify-center text-primary-600 shrink-0">
+                  <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center text-primary-600 shrink-0">
                     {method.icon}
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-secondary-900 mb-1">
+                    <h3 className="text-xl font-semibold text-secondary-900 dark:text-white mb-1">
                       {method.name}
                     </h3>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm mb-3">
-                      <span className="text-secondary-600">
-                        <span className="font-medium text-secondary-900">{method.time}</span>
+                      <span className="text-secondary-600 dark:text-secondary-400">
+                        <span className="font-medium text-secondary-900 dark:text-white">{method.time}</span>
                       </span>
-                      <span className="text-secondary-600">
+                      <span className="text-secondary-600 dark:text-secondary-400">
                         Koszt: <span className="font-medium text-primary-600">{method.price}</span>
                       </span>
                     </div>
                     <ul className="space-y-1">
                       {method.features.map((feature, featureIndex) => (
-                        <li key={featureIndex} className="flex items-center gap-2 text-sm text-secondary-600">
+                        <li key={featureIndex} className="flex items-center gap-2 text-sm text-secondary-600 dark:text-secondary-400">
                           <svg className="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>

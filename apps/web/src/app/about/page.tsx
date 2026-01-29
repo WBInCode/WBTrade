@@ -53,7 +53,7 @@ export default function AboutPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-secondary-50">
+    <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
       <Header />
       
       {/* Hero Section */}
@@ -73,7 +73,7 @@ export default function AboutPage() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-white dark:bg-secondary-800">
         <div className="container-custom">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
@@ -81,7 +81,7 @@ export default function AboutPage() {
                 <div className="text-4xl lg:text-5xl font-bold text-primary-600 mb-2">
                   {stat.value}
                 </div>
-                <div className="text-secondary-600">{stat.label}</div>
+                <div className="text-secondary-600 dark:text-secondary-400">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -93,10 +93,10 @@ export default function AboutPage() {
         <div className="container-custom">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl lg:text-4xl font-bold text-secondary-900 mb-6">
+              <h2 className="text-3xl lg:text-4xl font-bold text-secondary-900 dark:text-white mb-6">
                 Nasza historia
               </h2>
-              <div className="space-y-4 text-secondary-600 leading-relaxed">
+              <div className="space-y-4 text-secondary-600 dark:text-secondary-400 leading-relaxed">
                 <p>
                   WB Trade powstało w&nbsp;2025&nbsp;roku z&nbsp;prostej idei – stworzyć miejsce, gdzie każdy 
                   może bezpiecznie i&nbsp;wygodnie kupować online. Zaczęliśmy jako mały startup 
@@ -133,26 +133,26 @@ export default function AboutPage() {
       </section>
 
       {/* Values Section */}
-      <section className="py-16 lg:py-24 bg-white">
+      <section className="py-16 lg:py-24 bg-white dark:bg-secondary-800">
         <div className="container-custom">
           <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-bold text-secondary-900 mb-4">
+            <h2 className="text-3xl lg:text-4xl font-bold text-secondary-900 dark:text-white mb-4">
               Nasze wartości
             </h2>
-            <p className="text-secondary-600 max-w-2xl mx-auto">
+            <p className="text-secondary-600 dark:text-secondary-400 max-w-2xl mx-auto">
               Wartości, które nas definiują i którymi kierujemy się każdego dnia.
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {values.map((value, index) => (
-              <div key={index} className="bg-secondary-50 rounded-2xl p-6 hover:shadow-lg transition-shadow">
-                <div className="w-14 h-14 bg-primary-100 rounded-xl flex items-center justify-center text-primary-600 mb-4">
+              <div key={index} className="bg-secondary-50 dark:bg-secondary-900 rounded-2xl p-6 hover:shadow-lg transition-shadow">
+                <div className="w-14 h-14 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center text-primary-600 mb-4">
                   {value.icon}
                 </div>
-                <h3 className="text-xl font-semibold text-secondary-900 mb-2">
+                <h3 className="text-xl font-semibold text-secondary-900 dark:text-white mb-2">
                   {value.title}
                 </h3>
-                <p className="text-secondary-600">
+                <p className="text-secondary-600 dark:text-secondary-400">
                   {value.description}
                 </p>
               </div>

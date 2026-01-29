@@ -10,23 +10,23 @@ interface CheckoutAuthChoiceProps {
 
 export default function CheckoutAuthChoice({ onGuestCheckout, onLoginClick }: CheckoutAuthChoiceProps) {
   return (
-    <div className="bg-white rounded-lg shadow-sm border p-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-6">
+    <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border dark:border-secondary-700 p-6">
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
         Jak chcesz kontynuować?
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Logowanie */}
-        <div className="border rounded-lg p-5 hover:border-orange-300 hover:shadow-md transition-all">
+        <div className="border dark:border-secondary-600 rounded-lg p-5 hover:border-orange-300 hover:shadow-md transition-all">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
               <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900">Mam już konto</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Mam już konto</h3>
           </div>
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
             Zaloguj się, aby skorzystać z zapisanych adresów i śledzić swoje zamówienia.
           </p>
           <button
@@ -35,7 +35,7 @@ export default function CheckoutAuthChoice({ onGuestCheckout, onLoginClick }: Ch
           >
             Zaloguj się
           </button>
-          <p className="text-xs text-gray-500 mt-3 text-center">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 text-center">
             Nie masz konta?{' '}
             <Link href="/register?redirect=/checkout" className="text-orange-500 hover:underline">
               Zarejestruj się
@@ -44,21 +44,21 @@ export default function CheckoutAuthChoice({ onGuestCheckout, onLoginClick }: Ch
         </div>
 
         {/* Zakupy bez konta */}
-        <div className="border rounded-lg p-5 hover:border-gray-400 hover:shadow-md transition-all">
+        <div className="border dark:border-secondary-600 rounded-lg p-5 hover:border-gray-400 hover:shadow-md transition-all">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-10 h-10 bg-gray-100 dark:bg-secondary-700 rounded-full flex items-center justify-center">
+              <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900">Kupuję bez konta</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Kupuję bez konta</h3>
           </div>
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
             Szybkie zakupy bez rejestracji. Wystarczy podać dane do wysyłki.
           </p>
           <button
             onClick={onGuestCheckout}
-            className="w-full border border-gray-300 text-gray-700 py-2.5 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+            className="w-full border border-gray-300 dark:border-secondary-600 text-gray-700 dark:text-gray-300 py-2.5 px-4 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors"
           >
             Kontynuuj bez logowania
           </button>
@@ -66,7 +66,7 @@ export default function CheckoutAuthChoice({ onGuestCheckout, onLoginClick }: Ch
       </div>
 
       {/* Box z korzyściami rejestracji */}
-      <div className="mt-8 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-5">
+      <div className="mt-8 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-5">
         <div className="flex items-start gap-4">
           <div className="flex-shrink-0">
             <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
@@ -74,10 +74,10 @@ export default function CheckoutAuthChoice({ onGuestCheckout, onLoginClick }: Ch
             </div>
           </div>
           <div className="flex-1">
-            <h4 className="font-semibold text-gray-900 mb-2">
+            <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
               Załóż konto i odbierz <span className="text-orange-500">-20% rabatu!</span>
             </h4>
-            <ul className="text-sm text-gray-600 space-y-1">
+            <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
               <li className="flex items-center gap-2">
                 <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />

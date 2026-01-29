@@ -8,17 +8,17 @@ export const metadata = {
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-secondary-50">
+    <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
       <Header />
       
       {/* Hero Section */}
-      <section className="bg-white border-b border-secondary-200 py-16">
+      <section className="bg-white dark:bg-secondary-800 border-b border-secondary-200 dark:border-secondary-700 py-16">
         <div className="container-custom">
           <div className="max-w-3xl">
-            <h1 className="text-4xl lg:text-5xl font-bold mb-4 text-secondary-900">
+            <h1 className="text-4xl lg:text-5xl font-bold mb-4 text-secondary-900 dark:text-white">
               Regulamin
             </h1>
-            <p className="text-secondary-500">
+            <p className="text-secondary-500 dark:text-secondary-400">
               Ostatnia aktualizacja: 18 grudnia 2025
             </p>
           </div>
@@ -29,13 +29,13 @@ export default function TermsPage() {
       <section className="py-16">
         <div className="container-custom">
           <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-sm p-8 lg:p-12">
-              <div className="prose prose-lg max-w-none">
+            <div className="bg-white dark:bg-secondary-800 rounded-2xl shadow-sm p-8 lg:p-12">
+              <div className="prose prose-lg dark:prose-invert max-w-none">
                 
-                <h2 className="text-2xl font-bold text-secondary-900 mt-0 mb-4">
+                <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-0 mb-4">
                   § 1. Postanowienia ogólne
                 </h2>
-                <ol className="list-decimal pl-6 text-secondary-600 mb-6 space-y-3">
+                <ol className="list-decimal pl-6 text-secondary-600 dark:text-secondary-400 mb-6 space-y-3">
                   <li>
                     Niniejszy Regulamin określa zasady korzystania ze&nbsp;sklepu internetowego WB Trade 
                     dostępnego pod adresem www.wbtrade.pl (dalej: „Sklep").
@@ -54,10 +54,10 @@ export default function TermsPage() {
                   </li>
                 </ol>
 
-                <h2 className="text-2xl font-bold text-secondary-900 mt-10 mb-4">
+                <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
                   § 2. Definicje
                 </h2>
-                <ul className="list-disc pl-6 text-secondary-600 mb-6 space-y-3">
+                <ul className="list-disc pl-6 text-secondary-600 dark:text-secondary-400 mb-6 space-y-3">
                   <li><strong>Klient</strong> – osoba fizyczna, prawna lub jednostka organizacyjna korzystająca ze&nbsp;Sklepu.</li>
                   <li><strong>Konsument</strong> – osoba fizyczna dokonująca zakupu niezwiązanego z&nbsp;działalnością gospodarczą.</li>
                   <li><strong>Konto</strong> – indywidualne konto Klienta w&nbsp;Sklepie.</li>
@@ -66,10 +66,10 @@ export default function TermsPage() {
                   <li><strong>Koszyk</strong> – funkcjonalność Sklepu umożliwiająca gromadzenie wybranych Produktów.</li>
                 </ul>
 
-                <h2 className="text-2xl font-bold text-secondary-900 mt-10 mb-4">
+                <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
                   § 3. Rejestracja i konto
                 </h2>
-                <ol className="list-decimal pl-6 text-secondary-600 mb-6 space-y-3">
+                <ol className="list-decimal pl-6 text-secondary-600 dark:text-secondary-400 mb-6 space-y-3">
                   <li>Rejestracja w&nbsp;Sklepie jest dobrowolna i&nbsp;bezpłatna.</li>
                   <li>
                     Do&nbsp;rejestracji wymagane jest podanie adresu e-mail oraz&nbsp;utworzenie hasła. 
@@ -82,10 +82,10 @@ export default function TermsPage() {
                   </li>
                 </ol>
 
-                <h2 className="text-2xl font-bold text-secondary-900 mt-10 mb-4">
+                <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
                   § 4. Składanie zamówień
                 </h2>
-                <ol className="list-decimal pl-6 text-secondary-600 mb-6 space-y-3">
+                <ol className="list-decimal pl-6 text-secondary-600 dark:text-secondary-400 mb-6 space-y-3">
                   <li>Zamówienia można składać 24&nbsp;godziny na&nbsp;dobę, 7&nbsp;dni w&nbsp;tygodniu.</li>
                   <li>
                     W&nbsp;celu złożenia Zamówienia należy:
@@ -105,10 +105,10 @@ export default function TermsPage() {
                   </li>
                 </ol>
 
-                <h2 className="text-2xl font-bold text-secondary-900 mt-10 mb-4">
+                <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
                   § 5. Ceny i płatności
                 </h2>
-                <ol className="list-decimal pl-6 text-secondary-600 mb-6 space-y-3">
+                <ol className="list-decimal pl-6 text-secondary-600 dark:text-secondary-400 mb-6 space-y-3">
                   <li>Ceny Produktów podane są w&nbsp;złotych polskich i&nbsp;zawierają podatek VAT.</li>
                   <li>Cena podana przy Produkcie jest wiążąca w&nbsp;chwili składania Zamówienia.</li>
                   <li>
@@ -127,10 +127,10 @@ export default function TermsPage() {
                   </li>
                 </ol>
 
-                <h2 className="text-2xl font-bold text-secondary-900 mt-10 mb-4">
+                <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
                   § 6. Dostawa
                 </h2>
-                <ol className="list-decimal pl-6 text-secondary-600 mb-6 space-y-3">
+                <ol className="list-decimal pl-6 text-secondary-600 dark:text-secondary-400 mb-6 space-y-3">
                   <li>Dostawa realizowana jest na&nbsp;terenie Polski.</li>
                   <li>
                     Dostępne metody dostawy: Kurier InPost, Paczkomaty InPost, wysyłka gabaryt.
@@ -146,10 +146,10 @@ export default function TermsPage() {
                   </li>
                 </ol>
 
-                <h2 className="text-2xl font-bold text-secondary-900 mt-10 mb-4">
+                <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
                   § 7. Odstąpienie od umowy
                 </h2>
-                <ol className="list-decimal pl-6 text-secondary-600 mb-6 space-y-3">
+                <ol className="list-decimal pl-6 text-secondary-600 dark:text-secondary-400 mb-6 space-y-3">
                   <li>
                     Konsument ma prawo odstąpić od&nbsp;umowy w&nbsp;terminie 14&nbsp;dni kalendarzowych 
                     od&nbsp;dnia otrzymania Produktu, bez podania przyczyny.
@@ -166,10 +166,10 @@ export default function TermsPage() {
                   <li>Koszty odesłania Produktu ponosi Konsument.</li>
                 </ol>
 
-                <h2 className="text-2xl font-bold text-secondary-900 mt-10 mb-4">
+                <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
                   § 8. Reklamacje
                 </h2>
-                <ol className="list-decimal pl-6 text-secondary-600 mb-6 space-y-3">
+                <ol className="list-decimal pl-6 text-secondary-600 dark:text-secondary-400 mb-6 space-y-3">
                   <li>
                     Sprzedawca odpowiada za&nbsp;wady Produktu na&nbsp;podstawie przepisów o&nbsp;rękojmi 
                     (art.&nbsp;556 i&nbsp;nast. Kodeksu cywilnego).
@@ -189,10 +189,10 @@ export default function TermsPage() {
                   </li>
                 </ol>
 
-                <h2 className="text-2xl font-bold text-secondary-900 mt-10 mb-4">
+                <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
                   § 9. Ochrona danych osobowych
                 </h2>
-                <ol className="list-decimal pl-6 text-secondary-600 mb-6 space-y-3">
+                <ol className="list-decimal pl-6 text-secondary-600 dark:text-secondary-400 mb-6 space-y-3">
                   <li>
                     Administratorem danych osobowych jest WB&nbsp;PARTNERS Sp.&nbsp;z&nbsp;o.o.
                   </li>
@@ -204,10 +204,10 @@ export default function TermsPage() {
                   </li>
                 </ol>
 
-                <h2 className="text-2xl font-bold text-secondary-900 mt-10 mb-4">
+                <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
                   § 10. Własność intelektualna
                 </h2>
-                <ol className="list-decimal pl-6 text-secondary-600 mb-6 space-y-3">
+                <ol className="list-decimal pl-6 text-secondary-600 dark:text-secondary-400 mb-6 space-y-3">
                   <li>
                     Wszystkie treści dostępne w&nbsp;Sklepie (teksty, grafiki, zdjęcia, logotypy) 
                     są własnością Sprzedawcy lub wykorzystywane na&nbsp;podstawie licencji.
@@ -217,10 +217,10 @@ export default function TermsPage() {
                   </li>
                 </ol>
 
-                <h2 className="text-2xl font-bold text-secondary-900 mt-10 mb-4">
+                <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
                   § 11. Postanowienia końcowe
                 </h2>
-                <ol className="list-decimal pl-6 text-secondary-600 mb-6 space-y-3">
+                <ol className="list-decimal pl-6 text-secondary-600 dark:text-secondary-400 mb-6 space-y-3">
                   <li>
                     Sprzedawca zastrzega sobie prawo do&nbsp;zmiany Regulaminu. Zmiany wchodzą w&nbsp;życie 
                     z&nbsp;dniem publikacji w&nbsp;Sklepie.

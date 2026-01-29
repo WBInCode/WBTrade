@@ -492,7 +492,7 @@ function CheckoutPageContent() {
   // Show loading while checking auth or cart
   if (cartLoading || authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
       </div>
     );
@@ -500,8 +500,8 @@ function CheckoutPageContent() {
 
   if (isCartEmpty) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <header className="bg-white shadow-sm">
+      <div className="min-h-screen bg-gray-50 dark:bg-secondary-900">
+        <header className="bg-white dark:bg-secondary-800 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <Link href="/">
               <Image 
@@ -516,8 +516,8 @@ function CheckoutPageContent() {
         </header>
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
           <div className="text-6xl mb-4">🛒</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Twój koszyk jest pusty</h1>
-          <p className="text-gray-600 mb-8">Dodaj produkty do koszyka, aby kontynuować zamówienie.</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Twój koszyk jest pusty</h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-8">Dodaj produkty do koszyka, aby kontynuować zamówienie.</p>
           <Link
             href="/products"
             className="inline-flex items-center px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-medium"
@@ -535,9 +535,9 @@ function CheckoutPageContent() {
   const totals = calculateTotal();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-secondary-900">
       {/* Header */}
-      <header className="bg-white shadow-sm">
+      <header className="bg-white dark:bg-secondary-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center shrink-0">
@@ -551,10 +551,10 @@ function CheckoutPageContent() {
               />
             </Link>
             <div className="flex items-center gap-2 sm:gap-4">
-              <span className="hidden sm:inline text-sm text-gray-500">
+              <span className="hidden sm:inline text-sm text-gray-500 dark:text-gray-400">
                 Bezpieczne zakupy 🔒
               </span>
-              <Link href="/cart" className="text-xs sm:text-sm text-gray-600 hover:text-orange-500">
+              <Link href="/cart" className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:text-orange-500">
                 ← <span className="hidden sm:inline">Wróć do </span>Koszyk<span className="hidden sm:inline">a</span>
               </Link>
             </div>
@@ -650,16 +650,16 @@ function CheckoutPageContent() {
 
           {/* Order summary sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 lg:sticky lg:top-4">
-              <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-2">Twoje zamówienie</h3>
+            <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm p-4 sm:p-6 lg:sticky lg:top-4">
+              <h3 className="text-base sm:text-lg font-semibold dark:text-white mb-3 sm:mb-2">Twoje zamówienie</h3>
               
               {/* Info about multiple warehouses */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4">
+              <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4">
                 <div className="flex gap-2">
                   <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <p className="text-[11px] sm:text-xs text-blue-700">
+                  <p className="text-[11px] sm:text-xs text-blue-700 dark:text-blue-400">
                     Produkty mogą pochodzić z różnych magazynów. Zamówienie może zostać wysłane w oddzielnych przesyłkach.
                   </p>
                 </div>
@@ -674,26 +674,26 @@ function CheckoutPageContent() {
 
               {isCartEmpty && (
                 <div className="text-center py-4">
-                  <p className="text-gray-500 text-sm mb-3">Twój koszyk jest pusty</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm mb-3">Twój koszyk jest pusty</p>
                   <Link href="/" className="text-orange-500 hover:text-orange-600 text-sm font-medium">
                     Kontynuuj zakupy
                   </Link>
                 </div>
               )}
 
-              <div className="border-t pt-3 sm:pt-4 space-y-1.5 sm:space-y-2">
+              <div className="border-t dark:border-secondary-700 pt-3 sm:pt-4 space-y-1.5 sm:space-y-2">
                 <div className="flex justify-between text-xs sm:text-sm">
-                  <span className="text-gray-600">Produkty</span>
-                  <span>{totals.subtotal.toFixed(2)} zł</span>
+                  <span className="text-gray-600 dark:text-gray-400">Produkty</span>
+                  <span className="dark:text-white">{totals.subtotal.toFixed(2)} zł</span>
                 </div>
                 <div className="flex justify-between text-xs sm:text-sm">
-                  <span className="text-gray-600">Szacowana dostawa</span>
-                  <span>{totals.shipping.toFixed(2)} zł</span>
+                  <span className="text-gray-600 dark:text-gray-400">Szacowana dostawa</span>
+                  <span className="dark:text-white">{totals.shipping.toFixed(2)} zł</span>
                 </div>
                 {totals.paymentFee > 0 && (
                   <div className="flex justify-between text-xs sm:text-sm">
-                    <span className="text-gray-600">Opłata za płatność</span>
-                    <span>{totals.paymentFee.toFixed(2)} zł</span>
+                    <span className="text-gray-600 dark:text-gray-400">Opłata za płatność</span>
+                    <span className="dark:text-white">{totals.paymentFee.toFixed(2)} zł</span>
                   </div>
                 )}
                 {totals.discount > 0 && (
@@ -702,8 +702,8 @@ function CheckoutPageContent() {
                     <span>-{totals.discount.toFixed(2)} zł</span>
                   </div>
                 )}
-                <div className="flex justify-between text-base sm:text-lg font-bold pt-2 border-t">
-                  <span>Razem</span>
+                <div className="flex justify-between text-base sm:text-lg font-bold pt-2 border-t dark:border-secondary-700">
+                  <span className="dark:text-white">Razem</span>
                   <span className="text-orange-600">{totals.total.toFixed(2)} zł</span>
                 </div>
               </div>
@@ -717,20 +717,20 @@ function CheckoutPageContent() {
               />
 
               {/* Trust badges */}
-              <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t">
-                <div className="flex items-center gap-2 text-[11px] sm:text-xs text-gray-500 mb-1.5 sm:mb-2">
+              <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t dark:border-secondary-700">
+                <div className="flex items-center gap-2 text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mb-1.5 sm:mb-2">
                   <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   Bezpieczne płatności
                 </div>
-                <div className="flex items-center gap-2 text-[11px] sm:text-xs text-gray-500 mb-1.5 sm:mb-2">
+                <div className="flex items-center gap-2 text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mb-1.5 sm:mb-2">
                   <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   14 dni na zwrot
                 </div>
-                <div className="flex items-center gap-2 text-[11px] sm:text-xs text-gray-500">
+                <div className="flex items-center gap-2 text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
                   <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
@@ -748,7 +748,7 @@ function CheckoutPageContent() {
 export default function CheckoutPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
       </div>
     }>
