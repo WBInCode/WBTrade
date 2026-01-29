@@ -144,10 +144,10 @@ export default function ShippingPerPackage({
             if (pkgShipping.paczkomatCode) {
               setPaczkomatSelections(prev => ({
                 ...prev,
-                [pkgShipping.packageId]: {
+                [pkgShipping.packageId]: [{
                   code: pkgShipping.paczkomatCode || '',
                   address: pkgShipping.paczkomatAddress || '',
-                },
+                }],
               }));
             }
             // Restore custom address if present
