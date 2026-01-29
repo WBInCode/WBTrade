@@ -77,7 +77,7 @@ export default function PressPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-secondary-50">
+    <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
       <Header />
       
       {/* Hero Section */}
@@ -100,9 +100,9 @@ export default function PressPage() {
       </section>
 
       {/* Quick Facts */}
-      <section className="py-12 bg-white border-b">
+      <section className="py-12 bg-white border-b dark:bg-secondary-800 dark:border-secondary-700">
         <div className="container-custom">
-          <h2 className="text-lg font-semibold text-secondary-900 mb-6 text-center">Fakty o WB Trade</h2>
+          <h2 className="text-lg font-semibold text-secondary-900 dark:text-white mb-6 text-center">Fakty o WB Trade</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
             {facts.map((fact, index) => (
               <div key={index} className="text-center">
@@ -118,25 +118,25 @@ export default function PressPage() {
       <section className="py-16 lg:py-24">
         <div className="container-custom">
           <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold text-secondary-900 mb-2">
+            <h2 className="text-3xl font-bold text-secondary-900 dark:text-white mb-2">
               Komunikaty prasowe
             </h2>
-            <p className="text-secondary-600">
+            <p className="text-secondary-600 dark:text-secondary-400">
               Najnowsze informacje i ogłoszenia od WB Trade.
             </p>
           </div>
           
           <div className="max-w-2xl mx-auto">
-            <div className="bg-white rounded-2xl p-12 text-center shadow-sm">
+            <div className="bg-white rounded-2xl p-12 text-center shadow-sm dark:bg-secondary-800">
               <div className="w-20 h-20 bg-secondary-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <svg className="w-10 h-10 text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-secondary-900 mb-3">
+              <h3 className="text-xl font-semibold text-secondary-900 dark:text-white mb-3">
                 Brak komunikatów prasowych
               </h3>
-              <p className="text-secondary-600">
+              <p className="text-secondary-600 dark:text-secondary-400">
                 Aktualnie nie mamy żadnych komunikatów prasowych do publikacji. 
                 Śledź tę stronę, aby być na bieżąco z najnowszymi informacjami.
               </p>
@@ -146,13 +146,13 @@ export default function PressPage() {
       </section>
 
       {/* Media Assets */}
-      <section className="py-16 lg:py-24 bg-white">
+      <section className="py-16 lg:py-24 bg-white dark:bg-secondary-800">
         <div className="container-custom">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-secondary-900 mb-4">
+            <h2 className="text-3xl font-bold text-secondary-900 dark:text-white mb-4">
               Materiały do pobrania
             </h2>
-            <p className="text-secondary-600 max-w-2xl mx-auto">
+            <p className="text-secondary-600 dark:text-secondary-400 max-w-2xl mx-auto">
               Pobierz oficjalne materiały marki WB Trade do wykorzystania w publikacjach.
             </p>
           </div>
@@ -161,22 +161,22 @@ export default function PressPage() {
             {mediaAssets.map((asset, index) => (
               <div
                 key={index}
-                className="bg-secondary-50 rounded-2xl p-6 hover:shadow-lg transition-all group"
+                className="bg-secondary-50 rounded-2xl p-6 hover:shadow-lg transition-all group dark:bg-secondary-900"
               >
                 <div className="w-14 h-14 bg-primary-100 rounded-xl flex items-center justify-center text-primary-600 mb-4 group-hover:scale-110 transition-transform">
                   {asset.icon}
                 </div>
-                <h3 className="text-lg font-semibold text-secondary-900 mb-2">
+                <h3 className="text-lg font-semibold text-secondary-900 dark:text-white mb-2">
                   {asset.title}
                 </h3>
-                <p className="text-secondary-600 text-sm mb-4">
+                <p className="text-secondary-600 dark:text-secondary-400 text-sm mb-4">
                   {asset.description}
                 </p>
                 <div className="flex flex-wrap gap-2 mb-4">
                   {asset.formats.map((format) => (
                     <span
                       key={format}
-                      className="px-2 py-1 bg-secondary-200 text-secondary-600 rounded text-xs font-medium"
+                      className="px-2 py-1 bg-secondary-200 text-secondary-600 dark:text-secondary-400 rounded text-xs font-medium"
                     >
                       {format}
                     </span>

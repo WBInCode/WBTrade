@@ -57,7 +57,7 @@ export default function CategoryPage() {
   const style = categoryStyles[slug] || { gradient: 'from-gray-600 to-gray-800', icon: '📦' };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-secondary-900">
       <Header />
       <main className="flex-grow">
         <div className="container-custom py-6">
@@ -80,12 +80,12 @@ export default function CategoryPage() {
           {loading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {[...Array(20)].map((_, i) => (
-                <div key={i} className="bg-white rounded-lg h-[320px] animate-pulse" />
+                <div key={i} className="bg-white dark:bg-secondary-800 rounded-lg h-[320px] animate-pulse" />
               ))}
             </div>
           ) : products.length > 0 ? (
             <>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
                 Znaleziono {products.length} produktów
               </p>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">

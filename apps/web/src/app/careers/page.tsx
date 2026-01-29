@@ -66,7 +66,7 @@ export default function CareersPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-secondary-50">
+    <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
       <Header />
       
       {/* Hero Section */}
@@ -98,27 +98,27 @@ export default function CareersPage() {
       </section>
 
       {/* Why Join Us */}
-      <section className="py-16 lg:py-24 bg-white">
+      <section className="py-16 lg:py-24 bg-white dark:bg-secondary-800">
         <div className="container-custom">
           <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-bold text-secondary-900 mb-4">
+            <h2 className="text-3xl lg:text-4xl font-bold text-secondary-900 dark:text-white mb-4">
               Dlaczego warto z nami pracować?
             </h2>
-            <p className="text-secondary-600 max-w-2xl mx-auto">
+            <p className="text-secondary-600 dark:text-secondary-400 max-w-2xl mx-auto">
               Oferujemy nie tylko pracę, ale możliwość rozwoju w dynamicznym środowisku.
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {benefits.map((benefit, index) => (
-              <div key={index} className="flex gap-4 p-6 bg-secondary-50 rounded-2xl hover:shadow-lg transition-shadow">
+              <div key={index} className="flex gap-4 p-6 bg-secondary-50 dark:bg-secondary-900 rounded-2xl hover:shadow-lg transition-shadow">
                 <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center text-primary-600 shrink-0">
                   {benefit.icon}
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-secondary-900 mb-1">
+                  <h3 className="text-lg font-semibold text-secondary-900 dark:text-white mb-1">
                     {benefit.title}
                   </h3>
-                  <p className="text-secondary-600 text-sm">
+                  <p className="text-secondary-600 dark:text-secondary-400 text-sm">
                     {benefit.description}
                   </p>
                 </div>
@@ -167,10 +167,10 @@ export default function CareersPage() {
               </div>
             </div>
             <div>
-              <h2 className="text-3xl lg:text-4xl font-bold text-secondary-900 mb-6">
+              <h2 className="text-3xl lg:text-4xl font-bold text-secondary-900 dark:text-white mb-6">
                 Nasza kultura
               </h2>
-              <div className="space-y-4 text-secondary-600 leading-relaxed">
+              <div className="space-y-4 text-secondary-600 dark:text-secondary-400 leading-relaxed">
                 <p>
                   W WB Trade wierzymy, że najlepsze pomysły rodzą się w atmosferze 
                   wzajemnego szacunku i otwartości. Każdy głos się liczy, a hierarchia 
@@ -206,29 +206,29 @@ export default function CareersPage() {
       </section>
 
       {/* Job Openings */}
-      <section id="openings" className="py-16 lg:py-24 bg-white">
+      <section id="openings" className="py-16 lg:py-24 bg-white dark:bg-secondary-800">
         <div className="container-custom">
           <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-bold text-secondary-900 mb-4">
+            <h2 className="text-3xl lg:text-4xl font-bold text-secondary-900 dark:text-white mb-4">
               Aktualne oferty pracy
             </h2>
-            <p className="text-secondary-600 max-w-2xl mx-auto">
+            <p className="text-secondary-600 dark:text-secondary-400 max-w-2xl mx-auto">
               Sprawdzaj regularnie - nowe stanowiska pojawiają się często!
             </p>
           </div>
 
           {/* No Job Openings */}
           <div className="max-w-2xl mx-auto">
-            <div className="bg-secondary-50 rounded-2xl p-12 text-center">
+            <div className="bg-secondary-50 dark:bg-secondary-900 rounded-2xl p-12 text-center">
               <div className="w-20 h-20 bg-secondary-200 rounded-full flex items-center justify-center mx-auto mb-6">
                 <svg className="w-10 h-10 text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-secondary-900 mb-3">
+              <h3 className="text-xl font-semibold text-secondary-900 dark:text-white mb-3">
                 Brak aktualnych ofert pracy
               </h3>
-              <p className="text-secondary-600 mb-6">
+              <p className="text-secondary-600 dark:text-secondary-400 mb-6">
                 Obecnie nie prowadzimy rekrutacji na żadne stanowisko. 
                 Zachęcamy do wysłania CV - skontaktujemy się, gdy pojawi się odpowiednia oferta.
               </p>

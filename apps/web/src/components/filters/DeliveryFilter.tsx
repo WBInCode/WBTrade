@@ -22,14 +22,14 @@ export default function DeliveryFilter() {
 
   return (
     <div className="mb-6">
-      <h3 className="font-semibold text-secondary-900 mb-3">Opcje dostawy</h3>
+      <h3 className="font-semibold text-secondary-900 dark:text-white mb-3">Opcje dostawy</h3>
       <div className="space-y-2">
         {options.map(option => (
           <label key={option.id} className="flex items-center gap-2 cursor-pointer group">
             <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
               option.checked 
                 ? 'bg-primary-500 border-primary-500' 
-                : 'border-gray-300 group-hover:border-primary-400'
+                : 'border-gray-300 dark:border-secondary-500 group-hover:border-primary-400'
             }`}>
               {option.checked && (
                 <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -37,7 +37,7 @@ export default function DeliveryFilter() {
                 </svg>
               )}
             </div>
-            <span className="text-sm text-secondary-700">{option.label}</span>
+            <span className="text-sm text-secondary-700 dark:text-secondary-300">{option.label}</span>
           </label>
         ))}
       </div>

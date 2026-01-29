@@ -64,19 +64,19 @@ export default function PaymentMethod({ initialData, onSubmit, onBack }: Payment
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm">
-      <div className="px-4 sm:px-6 py-3 sm:py-4 border-b">
-        <h2 className="text-base sm:text-lg font-semibold text-gray-900">Płatność</h2>
+    <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm">
+      <div className="px-4 sm:px-6 py-3 sm:py-4 border-b dark:border-secondary-700">
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Płatność</h2>
       </div>
 
       <form onSubmit={handleSubmit}>
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-gray-100 dark:divide-secondary-700">
           {paymentOptions.map((option) => (
             <label
               key={option.id}
               className={`
                 block px-4 sm:px-6 py-3 sm:py-4 cursor-pointer transition-colors
-                ${selectedMethod === option.id ? 'bg-gray-50' : 'hover:bg-gray-50'}
+                ${selectedMethod === option.id ? 'bg-gray-50 dark:bg-secondary-700' : 'hover:bg-gray-50 dark:hover:bg-secondary-700'}
               `}
             >
               <div className="flex items-center gap-3 sm:gap-4">
@@ -107,22 +107,22 @@ export default function PaymentMethod({ initialData, onSubmit, onBack }: Payment
                 {/* Name and badge */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm sm:text-base text-gray-900 font-medium">{option.name}</span>
+                    <span className="text-sm sm:text-base text-gray-900 dark:text-white font-medium">{option.name}</span>
                     {option.badge && (
-                      <span className="px-1.5 sm:px-2 py-0.5 bg-green-100 text-green-700 text-[10px] sm:text-xs font-medium rounded">
+                      <span className="px-1.5 sm:px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-[10px] sm:text-xs font-medium rounded">
                         {option.badge}
                       </span>
                     )}
                   </div>
                   {option.description && (
-                    <span className="text-[10px] sm:text-xs text-gray-500 block mt-0.5">{option.description}</span>
+                    <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 block mt-0.5">{option.description}</span>
                   )}
                 </div>
 
                 {/* Right side: icon and price */}
                 <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                   <PaymentIcon id={option.id} />
-                  <span className="text-gray-500 text-xs sm:text-sm whitespace-nowrap">
+                  <span className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm whitespace-nowrap">
                     {option.extraFee === 0 ? '0 zł' : `${option.extraFee} zł`}
                   </span>
                 </div>
@@ -132,8 +132,8 @@ export default function PaymentMethod({ initialData, onSubmit, onBack }: Payment
         </div>
 
         {/* Security note */}
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t bg-gray-50">
-          <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t dark:border-secondary-600 bg-gray-50 dark:bg-secondary-700">
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
             <svg className="w-4 h-4 text-green-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
@@ -142,11 +142,11 @@ export default function PaymentMethod({ initialData, onSubmit, onBack }: Payment
         </div>
 
         {/* Navigation buttons */}
-        <div className="flex justify-between px-4 sm:px-6 py-3 sm:py-4 border-t">
+        <div className="flex justify-between px-4 sm:px-6 py-3 sm:py-4 border-t dark:border-secondary-600">
           <button
             type="button"
             onClick={onBack}
-            className="px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm text-gray-600 font-medium hover:text-gray-900 transition-colors"
+            className="px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium hover:text-gray-900 dark:hover:text-white transition-colors"
           >
             ← Wstecz
           </button>

@@ -67,25 +67,25 @@ export default function CookieConsent() {
       
       {/* Cookie Banner */}
       <div className="fixed bottom-0 left-0 right-0 z-[9999] p-4 sm:p-6">
-        <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+        <div className="max-w-4xl mx-auto bg-white dark:bg-secondary-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-secondary-700 overflow-hidden">
           {!showSettings ? (
             // Main Banner
             <div className="p-6 sm:p-8">
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
                   <span className="text-2xl">🍪</span>
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-xl font-bold text-gray-900 mb-2">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                     Ta strona używa plików cookies
                   </h2>
-                  <p className="text-gray-600 text-sm mb-4">
+                  <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
                     Używamy plików cookies, aby zapewnić najlepsze doświadczenie na naszej stronie. 
                     Pliki cookies pomagają nam analizować ruch, personalizować treści i reklamy oraz 
                     udostępniać funkcje mediów społecznościowych. Możesz zaakceptować wszystkie cookies 
                     lub dostosować swoje preferencje.
                   </p>
-                  <p className="text-gray-500 text-xs mb-6">
+                  <p className="text-gray-500 dark:text-gray-400 text-xs mb-6">
                     Więcej informacji znajdziesz w naszej{' '}
                     <Link href="/privacy" className="text-orange-500 hover:underline">
                       Polityce prywatności
@@ -105,13 +105,13 @@ export default function CookieConsent() {
                     </button>
                     <button
                       onClick={acceptNecessary}
-                      className="flex-1 border-2 border-gray-300 hover:border-gray-400 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-colors"
+                      className="flex-1 border-2 border-gray-300 dark:border-secondary-600 hover:border-gray-400 text-gray-700 dark:text-gray-300 font-semibold py-3 px-6 rounded-xl transition-colors"
                     >
                       Tylko niezbędne
                     </button>
                     <button
                       onClick={() => setShowSettings(true)}
-                      className="sm:flex-none text-gray-500 hover:text-gray-700 font-medium py-3 px-4 transition-colors text-sm"
+                      className="sm:flex-none text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium py-3 px-4 transition-colors text-sm"
                     >
                       Dostosuj ustawienia
                     </button>
@@ -123,10 +123,10 @@ export default function CookieConsent() {
             // Settings Panel
             <div className="p-6 sm:p-8">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Ustawienia cookies</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Ustawienia cookies</h2>
                 <button
                   onClick={() => setShowSettings(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -136,13 +136,13 @@ export default function CookieConsent() {
 
               <div className="space-y-4 mb-6">
                 {/* Necessary Cookies */}
-                <div className="flex items-start justify-between p-4 bg-gray-50 rounded-xl">
+                <div className="flex items-start justify-between p-4 bg-gray-50 dark:bg-secondary-700 rounded-xl">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-gray-900">Niezbędne</h3>
-                      <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded">Zawsze aktywne</span>
+                      <h3 className="font-semibold text-gray-900 dark:text-white">Niezbędne</h3>
+                      <span className="text-xs bg-gray-200 dark:bg-secondary-600 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded">Zawsze aktywne</span>
                     </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
                       Te pliki cookies są niezbędne do prawidłowego działania strony. Umożliwiają 
                       podstawowe funkcje, takie jak nawigacja i dostęp do bezpiecznych obszarów.
                     </p>
@@ -155,10 +155,10 @@ export default function CookieConsent() {
                 </div>
 
                 {/* Analytics Cookies */}
-                <div className="flex items-start justify-between p-4 bg-gray-50 rounded-xl">
+                <div className="flex items-start justify-between p-4 bg-gray-50 dark:bg-secondary-700 rounded-xl">
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900 mb-1">Analityczne</h3>
-                    <p className="text-sm text-gray-600">
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Analityczne</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
                       Te pliki cookies pomagają nam zrozumieć, jak odwiedzający korzystają z naszej 
                       strony. Zbierają informacje w sposób anonimowy.
                     </p>
@@ -178,10 +178,10 @@ export default function CookieConsent() {
                 </div>
 
                 {/* Marketing Cookies */}
-                <div className="flex items-start justify-between p-4 bg-gray-50 rounded-xl">
+                <div className="flex items-start justify-between p-4 bg-gray-50 dark:bg-secondary-700 rounded-xl">
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900 mb-1">Marketingowe</h3>
-                    <p className="text-sm text-gray-600">
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Marketingowe</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
                       Te pliki cookies służą do wyświetlania spersonalizowanych reklam. Mogą być 
                       używane do śledzenia odwiedzających na różnych stronach.
                     </p>
@@ -210,7 +210,7 @@ export default function CookieConsent() {
                 </button>
                 <button
                   onClick={acceptAll}
-                  className="flex-1 border-2 border-gray-300 hover:border-gray-400 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-colors"
+                  className="flex-1 border-2 border-gray-300 dark:border-secondary-600 hover:border-gray-400 text-gray-700 dark:text-gray-300 font-semibold py-3 px-6 rounded-xl transition-colors"
                 >
                   Akceptuj wszystkie
                 </button>

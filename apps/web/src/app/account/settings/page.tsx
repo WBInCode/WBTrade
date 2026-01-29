@@ -112,7 +112,7 @@ export default function SettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
       </div>
     );
@@ -162,12 +162,12 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-secondary-900">
       <Header />
 
       <main className="container-custom py-4 sm:py-6">
         {/* Breadcrumb - hidden on mobile */}
-        <nav className="hidden sm:flex items-center gap-2 text-sm text-gray-500 mb-6">
+        <nav className="hidden sm:flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
           <Link href="/" className="hover:text-orange-500">Strona główna</Link>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -176,21 +176,21 @@ export default function SettingsPage() {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
-          <span className="text-gray-900">Ustawienia</span>
+          <span className="text-gray-900 dark:text-white">Ustawienia</span>
         </nav>
 
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar - hidden on mobile */}
           <aside className="hidden lg:block w-64 shrink-0">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-100 dark:border-secondary-700 overflow-hidden">
               {/* User Profile */}
-              <div className="p-5 border-b border-gray-100">
+              <div className="p-5 border-b border-gray-100 dark:border-secondary-700">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white font-semibold">
                     {userData.avatar}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">{userData.fullName}</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">{userData.fullName}</h3>
                   </div>
                 </div>
               </div>
@@ -204,7 +204,7 @@ export default function SettingsPage() {
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                       item.id === 'settings'
                         ? 'bg-orange-500 text-white'
-                        : 'text-gray-600 hover:bg-gray-50'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700'
                     }`}
                   >
                     <SidebarIcon icon={item.icon} />
@@ -221,7 +221,7 @@ export default function SettingsPage() {
             <div className="lg:hidden mb-4">
               <Link 
                 href="/account" 
-                className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-orange-500"
+                className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-orange-500"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -233,8 +233,8 @@ export default function SettingsPage() {
             {/* Page Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Ustawienia</h1>
-                <p className="text-gray-500 text-sm">Zarządzaj preferencjami swojego konta</p>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Ustawienia</h1>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">Zarządzaj preferencjami swojego konta</p>
               </div>
               <button
                 onClick={handleSave}
@@ -264,8 +264,8 @@ export default function SettingsPage() {
 
             <div className="space-y-6">
               {/* Notifications Section */}
-              <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
-                <div className="p-5 border-b border-gray-100">
+              <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-100 dark:border-secondary-700 shadow-sm">
+                <div className="p-5 border-b border-gray-100 dark:border-secondary-700">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                       <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -273,8 +273,8 @@ export default function SettingsPage() {
                       </svg>
                     </div>
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-900">Powiadomienia</h2>
-                      <p className="text-sm text-gray-500">Wybierz jakie powiadomienia chcesz otrzymywać</p>
+                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Powiadomienia</h2>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Wybierz jakie powiadomienia chcesz otrzymywać</p>
                     </div>
                   </div>
                 </div>
@@ -282,13 +282,13 @@ export default function SettingsPage() {
                 <div className="p-5 space-y-4">
                   <div className="flex items-center justify-between py-2">
                     <div>
-                      <h3 className="font-medium text-gray-900">Aktualizacje zamówień</h3>
-                      <p className="text-sm text-gray-500">Powiadomienia o statusie zamówień i dostawie</p>
+                      <h3 className="font-medium text-gray-900 dark:text-white">Aktualizacje zamówień</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Powiadomienia o statusie zamówień i dostawie</p>
                     </div>
                     <button
                       onClick={() => handleToggle('notifications', 'orderUpdates')}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        settings.notifications.orderUpdates ? 'bg-orange-500' : 'bg-gray-200'
+                        settings.notifications.orderUpdates ? 'bg-orange-500' : 'bg-gray-200 dark:bg-secondary-600'
                       }`}
                     >
                       <span
@@ -299,15 +299,15 @@ export default function SettingsPage() {
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between py-2 border-t border-gray-100">
+                  <div className="flex items-center justify-between py-2 border-t border-gray-100 dark:border-secondary-700">
                     <div>
-                      <h3 className="font-medium text-gray-900">Promocje i oferty</h3>
-                      <p className="text-sm text-gray-500">Informacje o zniżkach i specjalnych ofertach</p>
+                      <h3 className="font-medium text-gray-900 dark:text-white">Promocje i oferty</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Informacje o zniżkach i specjalnych ofertach</p>
                     </div>
                     <button
                       onClick={() => handleToggle('notifications', 'promotions')}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        settings.notifications.promotions ? 'bg-orange-500' : 'bg-gray-200'
+                        settings.notifications.promotions ? 'bg-orange-500' : 'bg-gray-200 dark:bg-secondary-600'
                       }`}
                     >
                       <span
@@ -318,15 +318,15 @@ export default function SettingsPage() {
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between py-2 border-t border-gray-100">
+                  <div className="flex items-center justify-between py-2 border-t border-gray-100 dark:border-secondary-700">
                     <div>
-                      <h3 className="font-medium text-gray-900">Newsletter</h3>
-                      <p className="text-sm text-gray-500">Cotygodniowy newsletter z nowościami</p>
+                      <h3 className="font-medium text-gray-900 dark:text-white">Newsletter</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Cotygodniowy newsletter z nowościami</p>
                     </div>
                     <button
                       onClick={() => handleToggle('notifications', 'newsletter')}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        settings.notifications.newsletter ? 'bg-orange-500' : 'bg-gray-200'
+                        settings.notifications.newsletter ? 'bg-orange-500' : 'bg-gray-200 dark:bg-secondary-600'
                       }`}
                     >
                       <span
@@ -337,15 +337,15 @@ export default function SettingsPage() {
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between py-2 border-t border-gray-100">
+                  <div className="flex items-center justify-between py-2 border-t border-gray-100 dark:border-secondary-700">
                     <div>
-                      <h3 className="font-medium text-gray-900">Powiadomienia SMS</h3>
-                      <p className="text-sm text-gray-500">Ważne informacje przez SMS</p>
+                      <h3 className="font-medium text-gray-900 dark:text-white">Powiadomienia SMS</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Ważne informacje przez SMS</p>
                     </div>
                     <button
                       onClick={() => handleToggle('notifications', 'sms')}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        settings.notifications.sms ? 'bg-orange-500' : 'bg-gray-200'
+                        settings.notifications.sms ? 'bg-orange-500' : 'bg-gray-200 dark:bg-secondary-600'
                       }`}
                     >
                       <span
@@ -359,8 +359,8 @@ export default function SettingsPage() {
               </div>
 
               {/* Privacy Section */}
-              <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
-                <div className="p-5 border-b border-gray-100">
+              <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-100 dark:border-secondary-700 shadow-sm">
+                <div className="p-5 border-b border-gray-100 dark:border-secondary-700">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                       <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -368,8 +368,8 @@ export default function SettingsPage() {
                       </svg>
                     </div>
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-900">Prywatność</h2>
-                      <p className="text-sm text-gray-500">Kontroluj swoje dane i prywatność</p>
+                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Prywatność</h2>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Kontroluj swoje dane i prywatność</p>
                     </div>
                   </div>
                 </div>
@@ -377,13 +377,13 @@ export default function SettingsPage() {
                 <div className="p-5 space-y-4">
                   <div className="flex items-center justify-between py-2">
                     <div>
-                      <h3 className="font-medium text-gray-900">Publiczny profil</h3>
-                      <p className="text-sm text-gray-500">Pozwól innym użytkownikom zobaczyć Twój profil</p>
+                      <h3 className="font-medium text-gray-900 dark:text-white">Publiczny profil</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Pozwól innym użytkownikom zobaczyć Twój profil</p>
                     </div>
                     <button
                       onClick={() => handleToggle('privacy', 'showProfile')}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        settings.privacy.showProfile ? 'bg-orange-500' : 'bg-gray-200'
+                        settings.privacy.showProfile ? 'bg-orange-500' : 'bg-gray-200 dark:bg-secondary-600'
                       }`}
                     >
                       <span
@@ -394,15 +394,15 @@ export default function SettingsPage() {
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between py-2 border-t border-gray-100">
+                  <div className="flex items-center justify-between py-2 border-t border-gray-100 dark:border-secondary-700">
                     <div>
-                      <h3 className="font-medium text-gray-900">Udostępnianie danych partnerom</h3>
-                      <p className="text-sm text-gray-500">Pozwól na udostępnianie danych zaufanym partnerom</p>
+                      <h3 className="font-medium text-gray-900 dark:text-white">Udostępnianie danych partnerom</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Pozwól na udostępnianie danych zaufanym partnerom</p>
                     </div>
                     <button
                       onClick={() => handleToggle('privacy', 'shareData')}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        settings.privacy.shareData ? 'bg-orange-500' : 'bg-gray-200'
+                        settings.privacy.shareData ? 'bg-orange-500' : 'bg-gray-200 dark:bg-secondary-600'
                       }`}
                     >
                       <span
@@ -413,15 +413,15 @@ export default function SettingsPage() {
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between py-2 border-t border-gray-100">
+                  <div className="flex items-center justify-between py-2 border-t border-gray-100 dark:border-secondary-700">
                     <div>
-                      <h3 className="font-medium text-gray-900">Personalizacja</h3>
-                      <p className="text-sm text-gray-500">Dostosowuj oferty na podstawie Twoich preferencji</p>
+                      <h3 className="font-medium text-gray-900 dark:text-white">Personalizacja</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Dostosowuj oferty na podstawie Twoich preferencji</p>
                     </div>
                     <button
                       onClick={() => handleToggle('privacy', 'personalization')}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        settings.privacy.personalization ? 'bg-orange-500' : 'bg-gray-200'
+                        settings.privacy.personalization ? 'bg-orange-500' : 'bg-gray-200 dark:bg-secondary-600'
                       }`}
                     >
                       <span
@@ -435,8 +435,8 @@ export default function SettingsPage() {
               </div>
 
               {/* Preferences Section */}
-              <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
-                <div className="p-5 border-b border-gray-100">
+              <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-100 dark:border-secondary-700 shadow-sm">
+                <div className="p-5 border-b border-gray-100 dark:border-secondary-700">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
                       <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -444,8 +444,8 @@ export default function SettingsPage() {
                       </svg>
                     </div>
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-900">Preferencje</h2>
-                      <p className="text-sm text-gray-500">Dostosuj wygląd i działanie aplikacji</p>
+                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Preferencje</h2>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Dostosuj wygląd i działanie aplikacji</p>
                     </div>
                   </div>
                 </div>
@@ -453,29 +453,29 @@ export default function SettingsPage() {
                 <div className="p-5 space-y-4">
                   <div className="flex items-center justify-between py-2">
                     <div>
-                      <h3 className="font-medium text-gray-900">Język</h3>
-                      <p className="text-sm text-gray-500">Wybierz preferowany język</p>
+                      <h3 className="font-medium text-gray-900 dark:text-white">Język</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Wybierz preferowany język</p>
                     </div>
                     <select
                       value={settings.preferences.language}
                       onChange={(e) => handleSelectChange('preferences', 'language', e.target.value)}
-                      className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="px-4 py-2 border border-gray-200 dark:border-secondary-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 dark:bg-secondary-800 dark:text-white"
                     >
                       <option value="pl">Polski</option>
                       <option value="en">English</option>
                     </select>
                   </div>
 
-                  <div className="flex items-center justify-between py-2 border-t border-gray-100">
+                  <div className="flex items-center justify-between py-2 border-t border-gray-100 dark:border-secondary-700">
                     <div>
-                      <h3 className="font-medium text-gray-900">Tryb ciemny</h3>
-                      <p className="text-sm text-gray-500">Przełącz na ciemny motyw (wkrótce)</p>
+                      <h3 className="font-medium text-gray-900 dark:text-white">Tryb ciemny</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Przełącz na ciemny motyw (wkrótce)</p>
                     </div>
                     <button
                       onClick={() => handleToggle('preferences', 'darkMode')}
                       disabled
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-not-allowed opacity-50 ${
-                        settings.preferences.darkMode ? 'bg-orange-500' : 'bg-gray-200'
+                        settings.preferences.darkMode ? 'bg-orange-500' : 'bg-gray-200 dark:bg-secondary-600'
                       }`}
                     >
                       <span
@@ -489,8 +489,8 @@ export default function SettingsPage() {
               </div>
 
               {/* Danger Zone */}
-              <div className="bg-white rounded-xl border border-red-200 shadow-sm">
-                <div className="p-5 border-b border-red-100">
+              <div className="bg-white dark:bg-secondary-800 rounded-xl border border-red-200 dark:border-red-900 shadow-sm">
+                <div className="p-5 border-b border-red-100 dark:border-red-900">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
                       <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -507,18 +507,18 @@ export default function SettingsPage() {
                 <div className="p-5 space-y-4">
                   <div className="flex items-center justify-between py-2">
                     <div>
-                      <h3 className="font-medium text-gray-900">Eksportuj dane</h3>
-                      <p className="text-sm text-gray-500">Pobierz kopię wszystkich swoich danych</p>
+                      <h3 className="font-medium text-gray-900 dark:text-white">Eksportuj dane</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Pobierz kopię wszystkich swoich danych</p>
                     </div>
-                    <button className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                    <button className="px-4 py-2 border border-gray-200 dark:border-secondary-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors">
                       Eksportuj
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between py-2 border-t border-gray-100">
+                  <div className="flex items-center justify-between py-2 border-t border-gray-100 dark:border-secondary-700">
                     <div>
-                      <h3 className="font-medium text-gray-900">Usuń konto</h3>
-                      <p className="text-sm text-gray-500">Trwale usuń swoje konto i wszystkie dane</p>
+                      <h3 className="font-medium text-gray-900 dark:text-white">Usuń konto</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Trwale usuń swoje konto i wszystkie dane</p>
                     </div>
                     <button className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors">
                       Usuń konto

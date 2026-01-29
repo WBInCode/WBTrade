@@ -53,9 +53,9 @@ function VerifyEmailContent() {
   }, [token, router]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 flex items-center justify-center px-4 py-12">
       <div className="max-w-md w-full">
-        <div className="bg-white rounded-lg shadow-lg p-8">
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-lg p-8">
           {/* Logo */}
           <div className="text-center mb-6">
             <Link href="/" className="inline-block">
@@ -63,7 +63,7 @@ function VerifyEmailContent() {
                 <span className="text-white font-bold text-2xl">W</span>
               </div>
             </Link>
-            <h1 className="mt-4 text-2xl font-bold text-gray-900">
+            <h1 className="mt-4 text-2xl font-bold text-gray-900 dark:text-white">
               Weryfikacja email
             </h1>
           </div>
@@ -93,7 +93,7 @@ function VerifyEmailContent() {
                   ></path>
                 </svg>
               </div>
-              <p className="mt-4 text-gray-600">
+              <p className="mt-4 text-gray-600 dark:text-gray-400">
                 Weryfikujemy Twój adres email...
               </p>
             </div>
@@ -102,7 +102,7 @@ function VerifyEmailContent() {
           {/* Success State */}
           {status === 'success' && (
             <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+              <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto">
                 <svg
                   className="w-10 h-10 text-green-500"
                   fill="none"
@@ -117,13 +117,13 @@ function VerifyEmailContent() {
                   />
                 </svg>
               </div>
-              <h2 className="mt-4 text-xl font-semibold text-gray-900">
+              <h2 className="mt-4 text-xl font-semibold text-gray-900 dark:text-white">
                 Email zweryfikowany!
               </h2>
-              <p className="mt-2 text-gray-600">
+              <p className="mt-2 text-gray-600 dark:text-gray-400">
                 Twój adres email został pomyślnie zweryfikowany.
               </p>
-              <p className="mt-4 text-sm text-gray-500">
+              <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
                 Przekierowanie do logowania za {countdown}s...
               </p>
               <div className="mt-6">
@@ -140,7 +140,7 @@ function VerifyEmailContent() {
           {/* Error State */}
           {status === 'error' && (
             <div className="text-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto">
                 <svg
                   className="w-10 h-10 text-red-500"
                   fill="none"
@@ -155,10 +155,10 @@ function VerifyEmailContent() {
                   />
                 </svg>
               </div>
-              <h2 className="mt-4 text-xl font-semibold text-gray-900">
+              <h2 className="mt-4 text-xl font-semibold text-gray-900 dark:text-white">
                 Weryfikacja nieudana
               </h2>
-              <p className="mt-2 text-gray-600">
+              <p className="mt-2 text-gray-600 dark:text-gray-400">
                 {errorMessage}
               </p>
               <div className="mt-6 space-y-3">
@@ -170,7 +170,7 @@ function VerifyEmailContent() {
                 </Link>
                 <Link
                   href="/register"
-                  className="inline-flex items-center justify-center w-full px-6 py-3 border border-gray-300 text-base font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                  className="inline-flex items-center justify-center w-full px-6 py-3 border border-gray-300 dark:border-secondary-600 text-base font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-secondary-700 hover:bg-gray-50 dark:hover:bg-secondary-600 transition-colors"
                 >
                   Zarejestruj się ponownie
                 </Link>
@@ -194,7 +194,7 @@ function VerifyEmailContent() {
 export default function VerifyEmailPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block">
             <svg

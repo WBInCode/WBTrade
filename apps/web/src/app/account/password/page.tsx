@@ -113,7 +113,7 @@ export default function PasswordPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
       </div>
     );
@@ -221,12 +221,12 @@ export default function PasswordPage() {
   const passwordStrength = getPasswordStrength(formData.newPassword);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-secondary-900">
       <Header />
 
       <main className="container-custom py-4 sm:py-6">
         {/* Breadcrumb - hidden on mobile */}
-        <nav className="hidden sm:flex items-center gap-2 text-sm text-gray-500 mb-6">
+        <nav className="hidden sm:flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
           <Link href="/" className="hover:text-orange-500">Strona główna</Link>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -235,21 +235,21 @@ export default function PasswordPage() {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
-          <span className="text-gray-900">Zmiana hasła</span>
+          <span className="text-gray-900 dark:text-white">Zmiana hasła</span>
         </nav>
 
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar - hidden on mobile */}
           <aside className="hidden lg:block w-64 shrink-0">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-100 dark:border-secondary-700 overflow-hidden">
               {/* User Profile */}
-              <div className="p-5 border-b border-gray-100">
+              <div className="p-5 border-b border-gray-100 dark:border-secondary-700">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white font-semibold">
                     {userData.avatar}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">{userData.fullName}</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">{userData.fullName}</h3>
                   </div>
                 </div>
               </div>
@@ -263,7 +263,7 @@ export default function PasswordPage() {
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                       item.id === 'password'
                         ? 'bg-orange-500 text-white'
-                        : 'text-gray-600 hover:bg-gray-50'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700'
                     }`}
                   >
                     <SidebarIcon icon={item.icon} />
@@ -280,7 +280,7 @@ export default function PasswordPage() {
             <div className="lg:hidden mb-4">
               <Link 
                 href="/account" 
-                className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-orange-500"
+                className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-orange-500"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -291,8 +291,8 @@ export default function PasswordPage() {
 
             {/* Page Header */}
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">Zmiana hasła</h1>
-              <p className="text-gray-500 text-sm">Zaktualizuj hasło do swojego konta</p>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Zmiana hasła</h1>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">Zaktualizuj hasło do swojego konta</p>
             </div>
 
             {/* Success Message */}
@@ -322,8 +322,8 @@ export default function PasswordPage() {
             )}
 
             {/* Password Form */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
-              <div className="p-5 border-b border-gray-100">
+            <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-100 dark:border-secondary-700 shadow-sm">
+              <div className="p-5 border-b border-gray-100 dark:border-secondary-700">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
                     <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -331,8 +331,8 @@ export default function PasswordPage() {
                     </svg>
                   </div>
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900">Ustaw nowe hasło</h2>
-                    <p className="text-sm text-gray-500">Upewnij się, że używasz silnego hasła</p>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Ustaw nowe hasło</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Upewnij się, że używasz silnego hasła</p>
                   </div>
                 </div>
               </div>
@@ -340,7 +340,7 @@ export default function PasswordPage() {
               <form onSubmit={handleSubmit} className="p-5 space-y-5">
                 {/* Current Password */}
                 <div>
-                  <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Obecne hasło <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
@@ -350,7 +350,7 @@ export default function PasswordPage() {
                       name="currentPassword"
                       value={formData.currentPassword}
                       onChange={handleChange}
-                      className={`w-full px-4 py-2.5 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-secondary-800 dark:text-white dark:border-secondary-600 ${
                         errors.currentPassword ? 'border-red-300 bg-red-50' : 'border-gray-200'
                       }`}
                       placeholder="Wprowadź obecne hasło"
@@ -382,7 +382,7 @@ export default function PasswordPage() {
 
                 {/* New Password */}
                 <div>
-                  <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Nowe hasło <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
@@ -392,7 +392,7 @@ export default function PasswordPage() {
                       name="newPassword"
                       value={formData.newPassword}
                       onChange={handleChange}
-                      className={`w-full px-4 py-2.5 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-secondary-800 dark:text-white dark:border-secondary-600 ${
                         errors.newPassword ? 'border-red-300 bg-red-50' : 'border-gray-200'
                       }`}
                       placeholder="Wprowadź nowe hasło"
@@ -422,7 +422,7 @@ export default function PasswordPage() {
                   {formData.newPassword && (
                     <div className="mt-3">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-gray-500">Siła hasła</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">Siła hasła</span>
                         <span className={`text-xs font-medium ${
                           passwordStrength.level <= 2 ? 'text-red-500' : 
                           passwordStrength.level === 3 ? 'text-yellow-500' : 'text-green-500'
@@ -435,7 +435,7 @@ export default function PasswordPage() {
                           <div
                             key={level}
                             className={`h-1.5 flex-1 rounded-full ${
-                              level <= passwordStrength.level ? passwordStrength.color : 'bg-gray-200'
+                              level <= passwordStrength.level ? passwordStrength.color : 'bg-gray-200 dark:bg-secondary-700'
                             }`}
                           ></div>
                         ))}
@@ -458,7 +458,7 @@ export default function PasswordPage() {
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-2a6 6 0 100-12 6 6 0 000 12z" clipRule="evenodd" />
                             </svg>
                           )}
-                          <span className={`text-xs ${passed ? 'text-green-600' : 'text-gray-500'}`}>
+                          <span className={`text-xs ${passed ? 'text-green-600' : 'text-gray-500 dark:text-gray-400'}`}>
                             {req.label}
                           </span>
                         </div>
@@ -469,7 +469,7 @@ export default function PasswordPage() {
 
                 {/* Confirm Password */}
                 <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Potwierdź nowe hasło <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
@@ -479,7 +479,7 @@ export default function PasswordPage() {
                       name="confirmPassword"
                       value={formData.confirmPassword}
                       onChange={handleChange}
-                      className={`w-full px-4 py-2.5 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-secondary-800 dark:text-white dark:border-secondary-600 ${
                         errors.confirmPassword ? 'border-red-300 bg-red-50' : 'border-gray-200'
                       }`}
                       placeholder="Powtórz nowe hasło"

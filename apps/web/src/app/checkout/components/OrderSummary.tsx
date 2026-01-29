@@ -72,16 +72,16 @@ export default function OrderSummary({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
-      <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">Podsumowanie zamówienia</h2>
+    <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm p-4 sm:p-6">
+      <h2 className="text-lg sm:text-xl font-semibold dark:text-white mb-4 sm:mb-6">Podsumowanie zamówienia</h2>
 
       {/* Order items */}
       <div className="mb-4 sm:mb-6">
-        <h3 className="text-sm sm:text-base font-medium text-gray-900 mb-2 sm:mb-3">Produkty ({cart?.items?.length || 0})</h3>
+        <h3 className="text-sm sm:text-base font-medium text-gray-900 dark:text-white mb-2 sm:mb-3">Produkty ({cart?.items?.length || 0})</h3>
         <div className="space-y-2 sm:space-y-3">
           {cart?.items?.map((item: any) => (
-            <div key={item.id} className="flex gap-2 sm:gap-4 p-2 sm:p-3 bg-gray-50 rounded-lg">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-lg flex-shrink-0 border">
+            <div key={item.id} className="flex gap-2 sm:gap-4 p-2 sm:p-3 bg-gray-50 dark:bg-secondary-700 rounded-lg">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white dark:bg-secondary-600 rounded-lg flex-shrink-0 border dark:border-secondary-500">
                 {item.variant?.product?.images?.[0] && (
                   <img
                     src={item.variant.product.images[0].url}
@@ -91,12 +91,12 @@ export default function OrderSummary({
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-gray-900 line-clamp-2">{item.variant?.product?.name}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white line-clamp-2">{item.variant?.product?.name}</p>
                 {item.variant?.name && (
-                  <p className="text-[11px] sm:text-sm text-gray-500">{item.variant.name}</p>
+                  <p className="text-[11px] sm:text-sm text-gray-500 dark:text-gray-400">{item.variant.name}</p>
                 )}
                 <div className="flex justify-between items-center mt-1">
-                  <span className="text-[11px] sm:text-sm text-gray-500">Ilość: {item.quantity}</span>
+                  <span className="text-[11px] sm:text-sm text-gray-500 dark:text-gray-400">Ilość: {item.quantity}</span>
                   <span className="text-sm sm:text-base font-semibold text-orange-600">
                     {(item.variant?.price * item.quantity).toFixed(2)} zł
                   </span>
@@ -110,19 +110,19 @@ export default function OrderSummary({
       {/* Summary sections */}
       <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
         {/* Delivery address */}
-        <div className="flex justify-between items-start p-3 sm:p-4 border rounded-lg">
+        <div className="flex justify-between items-start p-3 sm:p-4 border dark:border-secondary-600 rounded-lg">
           <div className="flex-1 min-w-0">
-            <h4 className="text-sm sm:text-base font-medium text-gray-900 mb-1">📍 Adres dostawy</h4>
+            <h4 className="text-sm sm:text-base font-medium text-gray-900 dark:text-white mb-1">📍 Adres dostawy</h4>
             {shipping.method === 'inpost_paczkomat' && shipping.paczkomatCode ? (
-              <div className="text-xs sm:text-sm text-gray-600">
-                <p className="text-sm sm:text-base font-medium text-gray-900">Paczkomat InPost</p>
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">Paczkomat InPost</p>
                 <p className="text-orange-600 font-semibold text-xs sm:text-sm">{shipping.paczkomatCode}</p>
                 {shipping.paczkomatAddress && (
                   <p className="mt-1 text-xs sm:text-sm">{shipping.paczkomatAddress}</p>
                 )}
               </div>
             ) : (
-              <p className="text-xs sm:text-sm text-gray-600">
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                 {formatAddress(address)}
               </p>
             )}
@@ -138,10 +138,10 @@ export default function OrderSummary({
 
         {/* Billing address (if different) */}
         {address.differentBillingAddress && (
-          <div className="flex justify-between items-start p-3 sm:p-4 border rounded-lg">
+          <div className="flex justify-between items-start p-3 sm:p-4 border dark:border-secondary-600 rounded-lg">
             <div className="flex-1 min-w-0">
-              <h4 className="text-sm sm:text-base font-medium text-gray-900 mb-1">🧾 Adres do faktury</h4>
-              <p className="text-xs sm:text-sm text-gray-600">
+              <h4 className="text-sm sm:text-base font-medium text-gray-900 dark:text-white mb-1">🧾 Adres do faktury</h4>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                 {formatAddress(address, true)}
               </p>
             </div>
@@ -156,14 +156,14 @@ export default function OrderSummary({
         )}
 
         {/* Shipping method */}
-        <div className="flex justify-between items-start p-3 sm:p-4 border rounded-lg">
+        <div className="flex justify-between items-start p-3 sm:p-4 border dark:border-secondary-600 rounded-lg">
           <div className="flex-1 min-w-0">
-            <h4 className="text-sm sm:text-base font-medium text-gray-900 mb-1">🚚 Dostawa</h4>
+            <h4 className="text-sm sm:text-base font-medium text-gray-900 dark:text-white mb-1">🚚 Dostawa</h4>
             {shipping.packageShipping && shipping.packageShipping.length > 1 ? (
               // Multiple packages - show each one
               <div className="space-y-2 sm:space-y-3">
                 {shipping.packageShipping.map((pkg, index) => (
-                  <div key={pkg.packageId} className="text-xs sm:text-sm text-gray-600">
+                  <div key={pkg.packageId} className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                     <div>
                       <span className="font-medium">Przesyłka {index + 1}:</span>{' '}
                       {shippingMethodNames[pkg.method]}
@@ -185,7 +185,7 @@ export default function OrderSummary({
               </div>
             ) : shipping.packageShipping && shipping.packageShipping.length === 1 ? (
               // Single package with possible custom address
-              <div className="text-xs sm:text-sm text-gray-600">
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                 <p>
                   {shippingMethodNames[shipping.method]}
                   {shipping.paczkomatCode && (
@@ -203,7 +203,7 @@ export default function OrderSummary({
               </div>
             ) : (
               // No package shipping (backward compat)
-              <p className="text-xs sm:text-sm text-gray-600">
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                 {shippingMethodNames[shipping.method]}
                 {shipping.paczkomatCode && (
                   <span className="text-orange-600 ml-1">({shipping.paczkomatCode})</span>
@@ -228,12 +228,12 @@ export default function OrderSummary({
         </div>
 
         {/* Payment method */}
-        <div className="flex justify-between items-start p-3 sm:p-4 border rounded-lg">
+        <div className="flex justify-between items-start p-3 sm:p-4 border dark:border-secondary-600 rounded-lg">
           <div className="flex-1 min-w-0">
-            <h4 className="text-sm sm:text-base font-medium text-gray-900 mb-1">💳 Płatność</h4>
-            <p className="text-xs sm:text-sm text-gray-600">{paymentMethodNames[payment.method]}</p>
+            <h4 className="text-sm sm:text-base font-medium text-gray-900 dark:text-white mb-1">💳 Płatność</h4>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{paymentMethodNames[payment.method]}</p>
             {payment.extraFee > 0 && (
-              <p className="text-xs sm:text-sm text-gray-500 mt-1">
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
                 Opłata: +{payment.extraFee.toFixed(2)} zł
               </p>
             )}
@@ -249,24 +249,24 @@ export default function OrderSummary({
       </div>
 
       {/* Totals */}
-      <div className="border-t pt-3 sm:pt-4 mb-4 sm:mb-6">
+      <div className="border-t dark:border-secondary-600 pt-3 sm:pt-4 mb-4 sm:mb-6">
         <div className="space-y-1.5 sm:space-y-2">
           <div className="flex justify-between text-xs sm:text-sm">
-            <span className="text-gray-600">Produkty</span>
-            <span>{totals.subtotal.toFixed(2)} zł</span>
+            <span className="text-gray-600 dark:text-gray-400">Produkty</span>
+            <span className="dark:text-white">{totals.subtotal.toFixed(2)} zł</span>
           </div>
           <div className="flex justify-between text-xs sm:text-sm">
-            <span className="text-gray-600">Dostawa</span>
-            <span>{totals.shipping === 0 ? 'GRATIS' : `${totals.shipping.toFixed(2)} zł`}</span>
+            <span className="text-gray-600 dark:text-gray-400">Dostawa</span>
+            <span className="dark:text-white">{totals.shipping === 0 ? 'GRATIS' : `${totals.shipping.toFixed(2)} zł`}</span>
           </div>
           {totals.paymentFee > 0 && (
             <div className="flex justify-between text-xs sm:text-sm">
-              <span className="text-gray-600">Opłata za płatność</span>
-              <span>{totals.paymentFee.toFixed(2)} zł</span>
+              <span className="text-gray-600 dark:text-gray-400">Opłata za płatność</span>
+              <span className="dark:text-white">{totals.paymentFee.toFixed(2)} zł</span>
             </div>
           )}
-          <div className="flex justify-between text-base sm:text-xl font-bold pt-2 sm:pt-3 border-t">
-            <span>Do zapłaty</span>
+          <div className="flex justify-between text-base sm:text-xl font-bold pt-2 sm:pt-3 border-t dark:border-secondary-600">
+            <span className="dark:text-white">Do zapłaty</span>
             <span className="text-orange-600">{totals.total.toFixed(2)} zł</span>
           </div>
         </div>
@@ -279,9 +279,9 @@ export default function OrderSummary({
             type="checkbox"
             checked={checkoutData.acceptTerms}
             onChange={(e) => onTermsChange(e.target.checked)}
-            className="mt-0.5 sm:mt-1 h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded shrink-0"
+            className="mt-0.5 sm:mt-1 h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 dark:border-secondary-600 rounded shrink-0 dark:bg-secondary-700"
           />
-          <span className="text-xs sm:text-sm text-gray-700">
+          <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
             Akceptuję{' '}
             <a href="/regulamin" className="text-orange-500 hover:underline" target="_blank">
               regulamin sklepu
@@ -299,9 +299,9 @@ export default function OrderSummary({
             type="checkbox"
             checked={checkoutData.acceptNewsletter}
             onChange={(e) => onNewsletterChange(e.target.checked)}
-            className="mt-0.5 sm:mt-1 h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded shrink-0"
+            className="mt-0.5 sm:mt-1 h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 dark:border-secondary-600 rounded shrink-0 dark:bg-secondary-700"
           />
-          <span className="text-xs sm:text-sm text-gray-700">
+          <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
             Chcę otrzymywać informacje o promocjach i nowościach (opcjonalne)
           </span>
         </label>
@@ -317,7 +317,7 @@ export default function OrderSummary({
           flex items-center justify-center gap-2
           ${checkoutData.acceptTerms && !isSubmitting
             ? 'bg-orange-500 hover:bg-orange-600 focus:ring-4 focus:ring-orange-200'
-            : 'bg-gray-300 cursor-not-allowed'
+            : 'bg-gray-300 dark:bg-secondary-600 cursor-not-allowed'
           }
         `}
       >
@@ -336,7 +336,7 @@ export default function OrderSummary({
         )}
       </button>
 
-      <p className="text-[10px] sm:text-xs text-gray-500 text-center mt-2 sm:mt-3">
+      <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 text-center mt-2 sm:mt-3">
         Klikając przycisk powyżej, potwierdzasz zamówienie z obowiązkiem zapłaty.
       </p>
     </div>

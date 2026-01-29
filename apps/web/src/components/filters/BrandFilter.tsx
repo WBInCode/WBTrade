@@ -55,7 +55,7 @@ function BrandFilterContent({ brands = [] }: BrandFilterProps) {
 
   return (
     <div className="mb-6">
-      <h3 className="font-semibold text-secondary-900 mb-3">Marki</h3>
+      <h3 className="font-semibold text-secondary-900 dark:text-white mb-3">Marki</h3>
       
       {/* Search */}
       {brands.length > 5 && (
@@ -65,7 +65,7 @@ function BrandFilterContent({ brands = [] }: BrandFilterProps) {
             placeholder="Szukaj marek..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent pl-9"
+            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-secondary-600 dark:bg-secondary-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent pl-9"
           />
           <svg 
             className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" 
@@ -90,7 +90,7 @@ function BrandFilterContent({ brands = [] }: BrandFilterProps) {
                   className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors cursor-pointer ${
                     isChecked 
                       ? 'bg-primary-500 border-primary-500' 
-                      : 'border-gray-300 group-hover:border-primary-400'
+                      : 'border-gray-300 dark:border-secondary-600 group-hover:border-primary-400'
                   }`}
                 >
                   {isChecked && (
@@ -100,20 +100,20 @@ function BrandFilterContent({ brands = [] }: BrandFilterProps) {
                   )}
                 </div>
                 <span 
-                  className="text-sm text-secondary-700 cursor-pointer"
+                  className="text-sm text-secondary-700 dark:text-secondary-300 cursor-pointer"
                   onClick={() => toggleBrand(brand.name)}
                 >
                   {brand.name}
                 </span>
               </div>
-              <span className="text-xs text-gray-400">({brand.count})</span>
+              <span className="text-xs text-gray-400 dark:text-secondary-500">({brand.count})</span>
             </label>
           );
         })}
       </div>
       
       {filteredBrands.length === 0 && searchQuery && (
-        <p className="text-sm text-gray-500">Brak wyników dla "{searchQuery}"</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Brak wyników dla "{searchQuery}"</p>
       )}
     </div>
   );
@@ -121,7 +121,7 @@ function BrandFilterContent({ brands = [] }: BrandFilterProps) {
 
 export default function BrandFilter(props: BrandFilterProps) {
   return (
-    <Suspense fallback={<div className="mb-6 animate-pulse"><div className="h-6 bg-gray-200 rounded w-1/4 mb-3"></div><div className="h-24 bg-gray-200 rounded"></div></div>}>
+    <Suspense fallback={<div className="mb-6 animate-pulse"><div className="h-6 bg-gray-200 dark:bg-secondary-700 rounded w-1/4 mb-3"></div><div className="h-24 bg-gray-200 dark:bg-secondary-700 rounded"></div></div>}>
       <BrandFilterContent {...props} />
     </Suspense>
   );

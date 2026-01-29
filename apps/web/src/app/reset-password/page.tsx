@@ -154,7 +154,7 @@ function ResetPasswordContent() {
     return (
       <div className="min-h-screen flex">
         {/* Left side - Success message */}
-        <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 bg-white">
+        <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 bg-white dark:bg-secondary-900">
           <div className="mx-auto w-full max-w-sm lg:max-w-md">
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
@@ -164,7 +164,7 @@ function ResetPasswordContent() {
                     <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
                   </svg>
                 </div>
-                <span className="text-xl font-bold text-gray-900">
+                <span className="text-xl font-bold text-gray-900 dark:text-white">
                   WB<span className="text-orange-500">Trade</span>
                 </span>
               </Link>
@@ -172,17 +172,17 @@ function ResetPasswordContent() {
 
             {/* Success content */}
             <div className="text-center">
-              <div className="mx-auto w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
+              <div className="mx-auto w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-6">
                 <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
               
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
                 Hasło zmienione! 🎉
               </h1>
               
-              <p className="text-gray-600 mb-8">
+              <p className="text-gray-600 dark:text-gray-400 mb-8">
                 Twoje hasło zostało pomyślnie zresetowane. Możesz teraz zalogować się używając nowego hasła.
               </p>
 
@@ -242,7 +242,7 @@ function ResetPasswordContent() {
     return (
       <div className="min-h-screen flex">
         {/* Left side - Error message */}
-        <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 bg-white">
+        <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 bg-white dark:bg-secondary-900">
           <div className="mx-auto w-full max-w-sm lg:max-w-md">
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
@@ -252,7 +252,7 @@ function ResetPasswordContent() {
                     <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
                   </svg>
                 </div>
-                <span className="text-xl font-bold text-gray-900">
+                <span className="text-xl font-bold text-gray-900 dark:text-white">
                   WB<span className="text-orange-500">Trade</span>
                 </span>
               </Link>
@@ -260,17 +260,17 @@ function ResetPasswordContent() {
 
             {/* Error content */}
             <div className="text-center">
-              <div className="mx-auto w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-6">
+              <div className="mx-auto w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-6">
                 <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </div>
               
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
                 Nieprawidłowy link 😕
               </h1>
               
-              <p className="text-gray-600 mb-8">
+              <p className="text-gray-600 dark:text-gray-400 mb-8">
                 Link do resetowania hasła jest nieprawidłowy lub wygasł. Poproś o nowy link, aby zresetować hasło.
               </p>
 
@@ -286,7 +286,7 @@ function ResetPasswordContent() {
 
               <Link
                 href="/login"
-                className="mt-4 w-full flex items-center justify-center gap-2 py-3.5 px-4 border-2 border-gray-200 text-gray-700 font-semibold rounded-xl hover:border-orange-500 hover:text-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
+                className="mt-4 w-full flex items-center justify-center gap-2 py-3.5 px-4 border-2 border-gray-200 dark:border-secondary-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:border-orange-500 hover:text-orange-500 dark:hover:text-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -339,7 +339,7 @@ function ResetPasswordContent() {
   return (
     <div className="min-h-screen flex">
       {/* Left side - Form */}
-      <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 bg-white">
+      <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 bg-white dark:bg-secondary-900">
         <div className="mx-auto w-full max-w-sm lg:max-w-md">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
@@ -349,13 +349,13 @@ function ResetPasswordContent() {
                   <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
                 </svg>
               </div>
-              <span className="text-xl font-bold text-gray-900">
+              <span className="text-xl font-bold text-gray-900 dark:text-white">
                 WB<span className="text-orange-500">Trade</span>
               </span>
             </Link>
             <Link 
               href="/login" 
-              className="text-sm text-gray-500 hover:text-orange-500 transition-colors flex items-center gap-1"
+              className="text-sm text-gray-500 dark:text-gray-400 hover:text-orange-500 transition-colors flex items-center gap-1"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -366,10 +366,10 @@ function ResetPasswordContent() {
 
           {/* Title */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
               Ustaw nowe hasło 🔒
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-400">
               Wybierz silne hasło, którego nie używasz na innych stronach.
             </p>
           </div>
@@ -377,7 +377,7 @@ function ResetPasswordContent() {
           {/* Form */}
           <form className="space-y-5" onSubmit={handleSubmit}>
             {error && (
-              <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+              <div className="bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
                 <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -387,7 +387,7 @@ function ResetPasswordContent() {
 
             {/* New Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Nowe hasło
               </label>
               <div className="relative">
@@ -404,10 +404,10 @@ function ResetPasswordContent() {
                   value={password}
                   onChange={handlePasswordChange}
                   onBlur={validatePasswordField}
-                  className={`block w-full pl-12 pr-12 py-3.5 border rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
+                  className={`block w-full pl-12 pr-12 py-3.5 border rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-secondary-800 focus:outline-none focus:ring-2 transition-all ${
                     passwordError
-                      ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500'
-                      : 'border-gray-200 focus:ring-orange-500/20 focus:border-orange-500'
+                      ? 'border-red-300 dark:border-red-700 focus:ring-red-500/20 focus:border-red-500'
+                      : 'border-gray-200 dark:border-secondary-600 focus:ring-orange-500/20 focus:border-orange-500'
                   }`}
                   placeholder="••••••••"
                 />
@@ -433,7 +433,7 @@ function ResetPasswordContent() {
               {password && !passwordError && (
                 <div className="mt-3 space-y-2">
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="flex-1 h-1.5 bg-gray-100 dark:bg-secondary-700 rounded-full overflow-hidden">
                       <div
                         className={`h-full ${passwordStrength ? strengthConfig[passwordStrength].color : ''} transition-all duration-300`}
                         style={{ width: passwordStrength ? strengthConfig[passwordStrength].width : '0%' }}
@@ -451,8 +451,8 @@ function ResetPasswordContent() {
                         key={idx}
                         className={`text-xs px-2 py-0.5 rounded-full transition-colors ${
                           req.regex.test(password)
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-gray-500'
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                            : 'bg-gray-100 dark:bg-secondary-700 text-gray-500 dark:text-gray-400'
                         }`}
                       >
                         {req.regex.test(password) && '✓ '}
@@ -474,7 +474,7 @@ function ResetPasswordContent() {
 
             {/* Confirm Password */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Potwierdź nowe hasło
               </label>
               <div className="relative">
@@ -494,12 +494,12 @@ function ResetPasswordContent() {
                     setConfirmPasswordError('');
                   }}
                   onBlur={validateConfirmPasswordField}
-                  className={`block w-full pl-12 pr-12 py-3.5 border rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
+                  className={`block w-full pl-12 pr-12 py-3.5 border rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-secondary-800 focus:outline-none focus:ring-2 transition-all ${
                     confirmPasswordError
-                      ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500'
+                      ? 'border-red-300 dark:border-red-700 focus:ring-red-500/20 focus:border-red-500'
                       : confirmPassword && password === confirmPassword
-                      ? 'border-green-300 focus:ring-green-500/20 focus:border-green-500'
-                      : 'border-gray-200 focus:ring-orange-500/20 focus:border-orange-500'
+                      ? 'border-green-300 dark:border-green-700 focus:ring-green-500/20 focus:border-green-500'
+                      : 'border-gray-200 dark:border-secondary-600 focus:ring-orange-500/20 focus:border-orange-500'
                   }`}
                   placeholder="••••••••"
                 />

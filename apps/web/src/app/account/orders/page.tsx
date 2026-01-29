@@ -232,7 +232,7 @@ export default function OrdersPage() {
 
   if (isLoading || ordersLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
       </div>
     );
@@ -270,12 +270,12 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-secondary-900">
       <Header />
 
       <main className="container-custom py-4 sm:py-6">
         {/* Breadcrumb - hidden on mobile */}
-        <nav className="hidden sm:flex items-center gap-2 text-sm text-gray-500 mb-6">
+        <nav className="hidden sm:flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
           <Link href="/" className="hover:text-orange-500">Strona główna</Link>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -284,21 +284,21 @@ export default function OrdersPage() {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
-          <span className="text-gray-900">Moje zamówienia</span>
+          <span className="text-gray-900 dark:text-white">Moje zamówienia</span>
         </nav>
 
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar - hidden on mobile */}
           <aside className="hidden lg:block w-64 shrink-0">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-100 dark:border-secondary-700 overflow-hidden">
               {/* User Profile */}
-              <div className="p-5 border-b border-gray-100">
+              <div className="p-5 border-b border-gray-100 dark:border-secondary-700">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white font-semibold">
                     {userData.avatar}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">{userData.fullName}</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">{userData.fullName}</h3>
                   </div>
                 </div>
               </div>
@@ -312,7 +312,7 @@ export default function OrdersPage() {
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                       item.id === 'orders'
                         ? 'bg-orange-500 text-white'
-                        : 'text-gray-600 hover:bg-gray-50'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700'
                     }`}
                   >
                     <SidebarIcon icon={item.icon} />
@@ -329,7 +329,7 @@ export default function OrdersPage() {
             <div className="lg:hidden mb-4">
               <Link 
                 href="/account" 
-                className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-orange-500"
+                className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-orange-500"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -341,15 +341,15 @@ export default function OrdersPage() {
             {/* Page Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-2">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Moje zamówienia</h1>
-                <p className="text-gray-500 text-sm">Przeglądaj i zarządzaj swoimi zamówieniami</p>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Moje zamówienia</h1>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">Przeglądaj i zarządzaj swoimi zamówieniami</p>
               </div>
             </div>
 
             {/* Search and Filter */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm mb-6">
+            <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-100 dark:border-secondary-700 shadow-sm mb-6">
               {/* Search Bar */}
-              <div className="p-4 border-b border-gray-100">
+              <div className="p-4 border-b border-gray-100 dark:border-secondary-700">
                 <div className="relative">
                   <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -359,7 +359,7 @@ export default function OrdersPage() {
                     placeholder="Szukaj po numerze zamówienia lub nazwie produktu..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-secondary-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-secondary-800 dark:text-white"
                   />
                 </div>
               </div>
@@ -373,7 +373,7 @@ export default function OrdersPage() {
                     className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                       activeFilter === tab.id
                         ? 'bg-orange-500 text-white'
-                        : 'text-gray-600 hover:bg-gray-100'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-secondary-700'
                     }`}
                   >
                     {tab.label}
@@ -381,7 +381,7 @@ export default function OrdersPage() {
                       <span className={`ml-1.5 px-1.5 py-0.5 text-xs rounded-full ${
                         activeFilter === tab.id
                           ? 'bg-white/20'
-                          : 'bg-gray-200'
+                          : 'bg-gray-200 dark:bg-secondary-700'
                       }`}>
                         {orderCounts[tab.id as keyof typeof orderCounts]}
                       </span>
@@ -393,14 +393,14 @@ export default function OrdersPage() {
 
             {/* Orders List */}
             {filteredOrders.length === 0 ? (
-              <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-12 text-center">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-100 dark:border-secondary-700 shadow-sm p-12 text-center">
+                <div className="w-16 h-16 bg-gray-100 dark:bg-secondary-700 rounded-full flex items-center justify-center mx-auto mb-4">
                   <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Brak zamówień</h3>
-                <p className="text-gray-500 mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Brak zamówień</h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-6">
                   {searchQuery
                     ? 'Nie znaleziono zamówień pasujących do wyszukiwania'
                     : 'Nie masz jeszcze żadnych zamówień w tej kategorii'}
@@ -418,21 +418,21 @@ export default function OrdersPage() {
             ) : (
               <div className="space-y-4">
                 {filteredOrders.map((order) => (
-                  <div key={order.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div key={order.id} className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-100 dark:border-secondary-700 shadow-sm overflow-hidden">
                     {/* Order Header */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 border-b border-gray-100 gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 dark:bg-secondary-900 border-b border-gray-100 dark:border-secondary-700 gap-3">
                       <div className="flex flex-wrap items-center gap-4 sm:gap-6">
                         <div>
-                          <span className="text-xs text-gray-500">Numer zamówienia</span>
-                          <p className="font-semibold text-gray-900">#{order.orderNumber}</p>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Numer zamówienia</span>
+                          <p className="font-semibold text-gray-900 dark:text-white">#{order.orderNumber}</p>
                         </div>
                         <div>
-                          <span className="text-xs text-gray-500">Data zamówienia</span>
-                          <p className="text-sm text-gray-700">{formatOrderDate(order.createdAt)}</p>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Data zamówienia</span>
+                          <p className="text-sm text-gray-700 dark:text-gray-300">{formatOrderDate(order.createdAt)}</p>
                         </div>
                         <div className="hidden sm:block">
-                          <span className="text-xs text-gray-500">Dostawa</span>
-                          <p className="text-sm text-gray-700">{order.shippingMethod}</p>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Dostawa</span>
+                          <p className="text-sm text-gray-700 dark:text-gray-300">{order.shippingMethod}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
@@ -444,10 +444,10 @@ export default function OrdersPage() {
                     </div>
 
                     {/* Order Items */}
-                    <div className="divide-y divide-gray-100">
+                    <div className="divide-y divide-gray-100 dark:divide-secondary-700">
                       {order.items.map((item) => (
                         <div key={item.id} className="p-4 flex items-center gap-4">
-                          <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                          <div className="w-16 h-16 bg-gray-100 dark:bg-secondary-700 rounded-lg overflow-hidden shrink-0">
                             <img
                               src={item.variant?.product?.images?.[0]?.url || '/placeholder.png'}
                               alt={item.productName}
@@ -455,32 +455,32 @@ export default function OrdersPage() {
                             />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-gray-900 mb-1">{item.productName}</h4>
+                            <h4 className="font-medium text-gray-900 dark:text-white mb-1">{item.productName}</h4>
                             {item.variantName && item.variantName !== 'Default' && (
-                              <p className="text-sm text-gray-500">{item.variantName}</p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">{item.variantName}</p>
                             )}
-                            <p className="text-sm text-gray-500">Ilość: {item.quantity}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Ilość: {item.quantity}</p>
                           </div>
                           <div className="text-right shrink-0">
-                            <span className="font-semibold text-gray-900">{Number(item.unitPrice).toFixed(2)} zł</span>
+                            <span className="font-semibold text-gray-900 dark:text-white">{Number(item.unitPrice).toFixed(2)} zł</span>
                           </div>
                         </div>
                       ))}
                     </div>
 
                     {/* Order Footer */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 border-t border-gray-100 gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 dark:bg-secondary-900 border-t border-gray-100 dark:border-secondary-700 gap-3">
                       <div>
                         {order.trackingNumber && order.status === 'SHIPPED' && (
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
                             <span className="text-green-600 font-medium">Numer przesyłki:</span> {order.trackingNumber}
                           </p>
                         )}
                       </div>
                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                         <div className="text-left sm:text-right">
-                          <span className="text-sm text-gray-500">Suma:</span>
-                          <span className="ml-2 text-lg font-bold text-gray-900">{Number(order.total).toFixed(2)} zł</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">Suma:</span>
+                          <span className="ml-2 text-lg font-bold text-gray-900 dark:text-white">{Number(order.total).toFixed(2)} zł</span>
                         </div>
                         <div className="flex gap-2">
                           {order.status === 'SHIPPED' && order.trackingNumber && (
@@ -504,7 +504,7 @@ export default function OrdersPage() {
                           )}
                           <Link
                             href={`/account/orders/${order.id}`}
-                            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                            className="px-4 py-2 border border-gray-300 dark:border-secondary-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors"
                           >
                             Szczegóły
                           </Link>
@@ -519,14 +519,14 @@ export default function OrdersPage() {
             {/* Pagination */}
             {filteredOrders.length > 0 && (
               <div className="flex items-center justify-between mt-6">
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   Wyświetlanie {filteredOrders.length} z {totalOrders} zamówień
                 </p>
                 <div className="flex items-center gap-2">
                   <button 
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                    className="px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors disabled:opacity-50"
                   >
                     Poprzednia
                   </button>
@@ -537,7 +537,7 @@ export default function OrdersPage() {
                       className={`px-3 py-2 rounded-lg text-sm font-medium ${
                         currentPage === page
                           ? 'bg-orange-500 text-white'
-                          : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                          : 'border border-gray-300 dark:border-secondary-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700'
                       } transition-colors`}
                     >
                       {page}
@@ -546,7 +546,7 @@ export default function OrdersPage() {
                   <button 
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                    className="px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors disabled:opacity-50"
                   >
                     Następna
                   </button>

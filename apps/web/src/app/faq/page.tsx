@@ -167,7 +167,7 @@ export default function FAQPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-secondary-50">
+    <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
       <Header />
       
       {/* Hero Section */}
@@ -185,14 +185,14 @@ export default function FAQPage() {
       </section>
 
       {/* Category Navigation */}
-      <section className="py-8 bg-white border-b sticky top-0 z-10">
+      <section className="py-8 bg-white dark:bg-secondary-800 border-b dark:border-secondary-700 sticky top-0 z-10">
         <div className="container-custom">
           <div className="flex flex-wrap gap-3 justify-center">
             {faqCategories.map((category) => (
               <a
                 key={category.id}
                 href={`#${category.id}`}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-secondary-100 hover:bg-primary-100 text-secondary-700 hover:text-primary-700 rounded-full transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-secondary-100 dark:bg-secondary-700 hover:bg-primary-100 dark:hover:bg-primary-800 text-secondary-700 dark:text-secondary-300 hover:text-primary-700 dark:hover:text-primary-300 rounded-full transition-colors"
               >
                 {category.icon}
                 <span className="font-medium">{category.name}</span>
@@ -209,10 +209,10 @@ export default function FAQPage() {
             {faqCategories.map((category) => (
               <div key={category.id} id={category.id}>
                 <div className="flex items-center gap-3 mb-8">
-                  <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center text-primary-600">
+                  <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-xl flex items-center justify-center text-primary-600 dark:text-primary-400">
                     {category.icon}
                   </div>
-                  <h2 className="text-2xl font-bold text-secondary-900">
+                  <h2 className="text-2xl font-bold text-secondary-900 dark:text-white">
                     {category.name}
                   </h2>
                 </div>
@@ -221,14 +221,14 @@ export default function FAQPage() {
                   {category.questions.map((item, index) => (
                     <details
                       key={index}
-                      className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                      className="group bg-white dark:bg-secondary-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                     >
                       <summary className="flex items-center justify-between p-6 cursor-pointer transition-colors">
-                        <span className="font-semibold text-secondary-900 pr-4">
+                        <span className="font-semibold text-secondary-900 dark:text-white pr-4">
                           {item.question}
                         </span>
                         <svg
-                          className="w-5 h-5 text-secondary-500 shrink-0 group-open:rotate-180 transition-transform"
+                          className="w-5 h-5 text-secondary-500 dark:text-secondary-400 shrink-0 group-open:rotate-180 transition-transform"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -236,7 +236,7 @@ export default function FAQPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       </summary>
-                      <div className="px-6 pb-6 pt-0 text-secondary-600 leading-relaxed border-t border-secondary-100">
+                      <div className="px-6 pb-6 pt-0 text-secondary-600 dark:text-secondary-400 leading-relaxed border-t border-secondary-100 dark:border-secondary-700">
                         {item.answer}
                       </div>
                     </details>
