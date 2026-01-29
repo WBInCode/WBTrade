@@ -11,6 +11,7 @@ import { useWishlist } from '../contexts/WishlistContext';
 import { categoriesApi, CategoryWithChildren } from '../lib/api';
 import { cleanCategoryName } from '../lib/categories';
 import Image from 'next/image';
+import { ThemeToggle } from './ThemeToggle';
 
 function HeaderContent() {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
@@ -207,6 +208,9 @@ function HeaderContent() {
 
             {/* Right Icons */}
             <div className="flex items-center gap-1 sm:gap-2 md:gap-6">
+              {/* Theme Toggle */}
+              <ThemeToggle />
+
               {/* Favorites */}
               <Link href="/wishlist" className="flex flex-col items-center p-1.5 sm:p-2 text-secondary-700 dark:text-secondary-300 hover:text-primary-500 transition-colors relative group">
                 <div className="relative">
