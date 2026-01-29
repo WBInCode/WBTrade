@@ -34,6 +34,9 @@ const PACKAGE_TAGS = [
 // Tagi ukrywające produkty - produkty z tymi tagami NIE będą wyświetlane
 const HIDDEN_TAGS = ['błąd zdjęcia', 'błąd zdjęcia '];
 
+// Domeny zdjęć które blokują hotlinking - produkty z takimi zdjęciami nie będą wyświetlane
+const BLOCKED_IMAGE_DOMAINS = ['b2b.leker.pl'];
+
 // Filtr SQL dla warunku "produkt w paczce" oraz ukrywania produktów z błędami
 // Jeśli produkt ma "Paczkomaty i Kurier" to MUSI mieć też "produkt w paczce"
 // Produkty z tagiem "błąd zdjęcia" są ukrywane
@@ -41,6 +44,17 @@ const PACKAGE_FILTER_WHERE: Prisma.ProductWhereInput = {
   AND: [
     // Nie pokazuj produktów z tagami błędów
     { NOT: { tags: { hasSome: HIDDEN_TAGS } } },
+    // Nie pokazuj produktów ze zdjęciami z blokowanych domen
+    ...BLOCKED_IMAGE_DOMAINS.map(domain => ({
+      NOT: {
+        images: {
+          some: {
+            url: { contains: domain },
+            order: 0 // tylko pierwsze zdjęcie
+          }
+        }
+      }
+    })),
     // Warunek paczkomatu
     {
       OR: [
