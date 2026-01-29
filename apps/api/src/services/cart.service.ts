@@ -355,6 +355,14 @@ export class CartService {
       }
     }
 
+    // Copy coupon from guest cart if user cart doesn't have one
+    if (guestCart.couponCode && !userCart.couponCode) {
+      await prisma.cart.update({
+        where: { id: userCart.id },
+        data: { couponCode: guestCart.couponCode },
+      });
+    }
+
     // Delete empty guest cart
     await prisma.cart.delete({
       where: { id: guestCart.id },

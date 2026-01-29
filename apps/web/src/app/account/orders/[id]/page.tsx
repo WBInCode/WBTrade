@@ -349,7 +349,7 @@ export default function OrderDetailsPage() {
                 <p className="text-gray-500 text-sm">Złożone {formatOrderDate(order.createdAt)}</p>
               </div>
               <div className="flex gap-3">
-                {order.status === 'PENDING' && (
+                {order.paymentStatus === 'PENDING' && order.status !== 'CANCELLED' && (
                   <Link 
                     href={`/order/${order.id}/payment`}
                     className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors"

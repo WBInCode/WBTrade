@@ -398,6 +398,7 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       return;
     }
 
+ wb-trade-logic-ship
     // Filter cart items if selectedItemIds is provided (Empik-style partial checkout)
     let cartItemsToCheckout = cart.items;
     if (selectedItemIds && Array.isArray(selectedItemIds) && selectedItemIds.length > 0) {
@@ -411,6 +412,7 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
         return;
       }
     }
+
 
     // Calculate totals
     interface CartItemData {
