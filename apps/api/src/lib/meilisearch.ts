@@ -170,12 +170,15 @@ export async function initializeMeilisearch(): Promise<void> {
     ]);
 
     // Configure sortable attributes
+    // Note: 'id' is added for stable secondary sorting to ensure consistent pagination
     await meiliClient.index(PRODUCTS_INDEX).updateSortableAttributes([
       'price',
       'name',
       'createdAt',
       'popularity',
+      'popularityScore',
       'rating',
+      'id',
     ]);
 
     // Configure ranking rules

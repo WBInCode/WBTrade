@@ -285,6 +285,17 @@ function HeaderContent() {
                 </svg>
                 Kategorie
               </button>
+              {/* All Products button */}
+              <Link
+                href="/products"
+                className={`px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors ${
+                  isOnProductsPage && !currentCategorySlug
+                    ? 'text-primary-500 bg-white'
+                    : 'text-white hover:bg-primary-600'
+                }`}
+              >
+                Wszystkie produkty
+              </Link>
               {categories.map((category) => {
                 const isActive = isOnProductsPage && currentMainCategory?.slug === category.slug;
                 return (

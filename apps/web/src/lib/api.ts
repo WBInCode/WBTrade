@@ -320,6 +320,7 @@ export interface ProductFilters {
   sort?: 'price_asc' | 'price_desc' | 'price-asc' | 'price-desc' | 'name_asc' | 'name_desc' | 'newest' | 'random' | 'relevance' | 'popularity';
   status?: 'active' | 'draft' | 'archived';
   brand?: string;
+  sessionSeed?: number; // Seed for consistent random sorting within a session
   [key: string]: string | number | boolean | undefined; // Allow dynamic specification filters
 }
 
