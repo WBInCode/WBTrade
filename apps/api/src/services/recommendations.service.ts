@@ -10,12 +10,21 @@ import { prisma } from '../db';
 const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
 // Pattern to match "produkt w paczce X" tag
 const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce|produkty?\s*w\s*paczce/i;
+// Tags that hide products completely
+const HIDDEN_TAGS = ['błąd zdjęcia', 'błąd zdjęcia '];
 
 /**
- * Check if product should be visible based on delivery tags
+ * Check if product should be visible based on delivery tags and error tags
  * Products with "Paczkomaty i Kurier" MUST also have "produkt w paczce" tag
+ * Products with "błąd zdjęcia" are always hidden
  */
 function shouldProductBeVisible(tags: string[]): boolean {
+  // Hide products with error tags
+  const hasHiddenTag = tags.some(tag => 
+    HIDDEN_TAGS.some(ht => tag.toLowerCase() === ht.toLowerCase())
+  );
+  if (hasHiddenTag) return false;
+  
   const hasPaczkomatTag = tags.some(tag => 
     PACZKOMAT_TAGS.some(pt => tag.toLowerCase() === pt.toLowerCase())
   );
