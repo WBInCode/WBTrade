@@ -129,7 +129,7 @@ export default function SearchBar() {
       );
       
       if (!response.ok) {
-        throw new Error('Search failed');
+        throw new Error('Wyszukiwanie nie powiodło się');
       }
       
       const data: SuggestResponse = await response.json();

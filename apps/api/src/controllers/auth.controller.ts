@@ -19,7 +19,7 @@ export async function register(req: Request, res: Response): Promise<void> {
 
     if (!validation.success) {
       res.status(400).json({ 
-        message: 'Validation error', 
+        message: 'Błąd walidacji', 
         errors: validation.error.flatten().fieldErrors 
       });
       return;
@@ -28,7 +28,7 @@ export async function register(req: Request, res: Response): Promise<void> {
     const result = await authService.register(validation.data);
 
     res.status(201).json({
-      message: 'Registration successful',
+      message: 'Rejestracja zakończona pomyślnie',
       user: result.user,
       tokens: result.tokens,
     });
@@ -40,7 +40,7 @@ export async function register(req: Request, res: Response): Promise<void> {
       }
     }
     console.error('Registration error:', error);
-    res.status(500).json({ message: 'Registration failed' });
+    res.status(500).json({ message: 'Rejestracja nie powiodła się' });
   }
 }
 
@@ -54,7 +54,7 @@ export async function login(req: Request, res: Response): Promise<void> {
 
     if (!validation.success) {
       res.status(400).json({ 
-        message: 'Validation error', 
+        message: 'Błąd walidacji', 
         errors: validation.error.flatten().fieldErrors 
       });
       return;
@@ -63,14 +63,14 @@ export async function login(req: Request, res: Response): Promise<void> {
     const result = await authService.login(validation.data);
 
     res.status(200).json({
-      message: 'Login successful',
+      message: 'Zalogowano pomyślnie',
       user: result.user,
       tokens: result.tokens,
     });
   } catch (error) {
     if (error instanceof Error) {
       if (error.message.includes('Invalid email or password')) {
-        res.status(401).json({ message: 'Invalid email or password' });
+        res.status(401).json({ message: 'Nieprawidłowy email lub hasło' });
         return;
       }
       if (error.message.includes('deactivated')) {
@@ -79,7 +79,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       }
     }
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Login failed' });
+    res.status(500).json({ message: 'Logowanie nie powiodło się' });
   }
 }
 
@@ -92,29 +92,29 @@ export async function refreshToken(req: Request, res: Response): Promise<void> {
     const { refreshToken } = req.body;
 
     if (!refreshToken) {
-      res.status(400).json({ message: 'Refresh token is required' });
+      res.status(400).json({ message: 'Token odświeżania jest wymagany' });
       return;
     }
 
     const tokens = await authService.refreshToken(refreshToken);
 
     res.status(200).json({
-      message: 'Token refreshed successfully',
+      message: 'Token odświeżony pomyślnie',
       tokens,
     });
   } catch (error) {
     if (error instanceof Error) {
       if (error.message.includes('expired')) {
-        res.status(401).json({ message: 'Refresh token expired', code: 'TOKEN_EXPIRED' });
+        res.status(401).json({ message: 'Token odświeżania wygasł', code: 'TOKEN_EXPIRED' });
         return;
       }
       if (error.message.includes('revoked') || error.message.includes('Invalid')) {
-        res.status(401).json({ message: 'Invalid refresh token' });
+        res.status(401).json({ message: 'Nieprawidłowy token odświeżania' });
         return;
       }
     }
     console.error('Token refresh error:', error);
-    res.status(500).json({ message: 'Token refresh failed' });
+    res.status(500).json({ message: 'Odświeżanie tokena nie powiodło się' });
   }
 }
 
@@ -132,10 +132,10 @@ export async function logout(req: Request, res: Response): Promise<void> {
       await authService.logout(accessToken, refreshToken);
     }
 
-    res.status(200).json({ message: 'Logged out successfully' });
+    res.status(200).json({ message: 'Wylogowano pomyślnie' });
   } catch (error) {
     console.error('Logout error:', error);
-    res.status(500).json({ message: 'Logout failed' });
+    res.status(500).json({ message: 'Wylogowanie nie powiodło się' });
   }
 }
 
@@ -146,21 +146,21 @@ export async function logout(req: Request, res: Response): Promise<void> {
 export async function getCurrentUser(req: Request, res: Response): Promise<void> {
   try {
     if (!req.user) {
-      res.status(401).json({ message: 'Not authenticated' });
+      res.status(401).json({ message: 'Nie zalogowany' });
       return;
     }
 
     const user = await authService.getUserById(req.user.userId);
 
     if (!user) {
-      res.status(404).json({ message: 'User not found' });
+      res.status(404).json({ message: 'Nie znaleziono użytkownika' });
       return;
     }
 
     res.status(200).json({ user });
   } catch (error) {
     console.error('Get user error:', error);
-    res.status(500).json({ message: 'Failed to get user' });
+    res.status(500).json({ message: 'Nie udało się pobrać danych użytkownika' });
   }
 }
 
@@ -174,7 +174,7 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
 
     if (!validation.success) {
       res.status(400).json({ 
-        message: 'Validation error', 
+        message: 'Błąd walidacji', 
         errors: validation.error.flatten().fieldErrors 
       });
       return;
@@ -184,7 +184,7 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
 
     // In production, don't return the token - send it via email
     res.status(200).json({ 
-      message: 'If this email exists, a reset link will be sent',
+      message: 'Jeśli ten email istnieje, link do resetowania hasła zostanie wysłany',
       // Remove in production - only for development/testing:
       ...(process.env.NODE_ENV === 'development' && { 
         resetToken: result.resetToken,
@@ -193,7 +193,7 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
     });
   } catch (error) {
     // Don't reveal if email exists
-    res.status(200).json({ message: 'If this email exists, a reset link will be sent' });
+    res.status(200).json({ message: 'Jeśli ten email istnieje, link do resetowania hasła zostanie wysłany' });
   }
 }
 
@@ -207,7 +207,7 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
 
     if (!validation.success) {
       res.status(400).json({ 
-        message: 'Validation error', 
+        message: 'Błąd walidacji', 
         errors: validation.error.flatten().fieldErrors 
       });
       return;
@@ -215,20 +215,20 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
 
     await authService.resetPassword(validation.data.token, validation.data.password);
 
-    res.status(200).json({ message: 'Password reset successfully' });
+    res.status(200).json({ message: 'Hasło zresetowane pomyślnie' });
   } catch (error) {
     if (error instanceof Error) {
       if (error.message.includes('expired')) {
-        res.status(400).json({ message: 'Reset token has expired' });
+        res.status(400).json({ message: 'Token resetowania hasła wygasł' });
         return;
       }
       if (error.message.includes('Invalid')) {
-        res.status(400).json({ message: 'Invalid reset token' });
+        res.status(400).json({ message: 'Nieprawidłowy token resetowania hasła' });
         return;
       }
     }
     console.error('Reset password error:', error);
-    res.status(500).json({ message: 'Password reset failed' });
+    res.status(500).json({ message: 'Resetowanie hasła nie powiodło się' });
   }
 }
 
@@ -239,7 +239,7 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
 export async function changePassword(req: Request, res: Response): Promise<void> {
   try {
     if (!req.user) {
-      res.status(401).json({ message: 'Not authenticated' });
+      res.status(401).json({ message: 'Nie zalogowany' });
       return;
     }
 
@@ -247,7 +247,7 @@ export async function changePassword(req: Request, res: Response): Promise<void>
 
     if (!validation.success) {
       res.status(400).json({ 
-        message: 'Validation error', 
+        message: 'Błąd walidacji', 
         errors: validation.error.flatten().fieldErrors 
       });
       return;
@@ -259,16 +259,16 @@ export async function changePassword(req: Request, res: Response): Promise<void>
       validation.data.newPassword
     );
 
-    res.status(200).json({ message: 'Password changed successfully' });
+    res.status(200).json({ message: 'Hasło zmienione pomyślnie' });
   } catch (error) {
     if (error instanceof Error) {
       if (error.message.includes('incorrect')) {
-        res.status(400).json({ message: 'Current password is incorrect' });
+        res.status(400).json({ message: 'Obecne hasło jest nieprawidłowe' });
         return;
       }
     }
     console.error('Change password error:', error);
-    res.status(500).json({ message: 'Password change failed' });
+    res.status(500).json({ message: 'Zmiana hasła nie powiodła się' });
   }
 }
 
@@ -279,7 +279,7 @@ export async function changePassword(req: Request, res: Response): Promise<void>
 export async function updateProfile(req: Request, res: Response): Promise<void> {
   try {
     if (!req.user) {
-      res.status(401).json({ message: 'Not authenticated' });
+      res.status(401).json({ message: 'Nie zalogowany' });
       return;
     }
 
@@ -287,7 +287,7 @@ export async function updateProfile(req: Request, res: Response): Promise<void> 
 
     if (!validation.success) {
       res.status(400).json({ 
-        message: 'Validation error', 
+        message: 'Błąd walidacji', 
         errors: validation.error.flatten().fieldErrors 
       });
       return;
@@ -295,9 +295,9 @@ export async function updateProfile(req: Request, res: Response): Promise<void> 
 
     const user = await authService.updateProfile(req.user.userId, validation.data);
 
-    res.status(200).json({ message: 'Profile updated successfully', user });
+    res.status(200).json({ message: 'Profil zaktualizowany pomyślnie', user });
   } catch (error) {
     console.error('Update profile error:', error);
-    res.status(500).json({ message: 'Profile update failed' });
+    res.status(500).json({ message: 'Aktualizacja profilu nie powiodła się' });
   }
 }

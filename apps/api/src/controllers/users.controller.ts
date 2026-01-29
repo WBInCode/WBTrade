@@ -8,8 +8,8 @@ import { UserRole } from '@prisma/client';
 // ============================================
 
 const createUserSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  email: z.string().email('Nieprawidlowy adres email'),
+  password: z.string().min(8, 'Haslo musi miec co najmniej 8 znaków'),
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
   phone: z.string().optional(),
@@ -17,7 +17,7 @@ const createUserSchema = z.object({
 });
 
 const updateUserSchema = z.object({
-  email: z.string().email('Invalid email address').optional(),
+  email: z.string().email('Nieprawidlowy adres email').optional(),
   firstName: z.string().min(1).optional(),
   lastName: z.string().min(1).optional(),
   phone: z.string().nullable().optional(),
@@ -30,7 +30,7 @@ const changeRoleSchema = z.object({
 });
 
 const resetPasswordSchema = z.object({
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  password: z.string().min(8, 'Haslo musi miec co najmniej 8 znaków'),
 });
 
 // ============================================
@@ -67,7 +67,7 @@ export const usersController = {
       res.json(result);
     } catch (error) {
       console.error('Error fetching users:', error);
-      res.status(500).json({ message: 'Failed to fetch users' });
+      res.status(500).json({ message: 'Nie udalo sie pobrac uzytkowników' });
     }
   },
 
@@ -81,7 +81,7 @@ export const usersController = {
       res.json(stats);
     } catch (error) {
       console.error('Error fetching user stats:', error);
-      res.status(500).json({ message: 'Failed to fetch user statistics' });
+      res.status(500).json({ message: 'Nie udalo sie pobrac statystyk uzytkowników' });
     }
   },
 
@@ -95,12 +95,12 @@ export const usersController = {
       const user = await usersService.getById(id);
       res.json(user);
     } catch (error) {
-      if (error instanceof Error && error.message === 'User not found') {
-        res.status(404).json({ message: 'User not found' });
+      if (error instanceof Error && error.message === 'Uzytkownik nie zostal znaleziony') {
+        res.status(404).json({ message: 'Uzytkownik nie zostal znaleziony' });
         return;
       }
       console.error('Error fetching user:', error);
-      res.status(500).json({ message: 'Failed to fetch user' });
+      res.status(500).json({ message: 'Nie udalo sie pobrac uzytkownika' });
     }
   },
 
@@ -114,7 +114,7 @@ export const usersController = {
 
       if (!validation.success) {
         res.status(400).json({
-          message: 'Validation failed',
+          message: 'Blad walidacji',
           errors: validation.error.flatten().fieldErrors,
         });
         return;
@@ -124,8 +124,8 @@ export const usersController = {
       res.status(201).json(user);
     } catch (error) {
       if (error instanceof Error) {
-        if (error.message === 'Email already in use') {
-          res.status(409).json({ message: 'Email already in use' });
+        if (error.message === 'Email jest juz uzywany') {
+          res.status(409).json({ message: 'Email jest juz uzywany' });
           return;
         }
         if (error.message.startsWith('Invalid password')) {
@@ -134,7 +134,7 @@ export const usersController = {
         }
       }
       console.error('Error creating user:', error);
-      res.status(500).json({ message: 'Failed to create user' });
+      res.status(500).json({ message: 'Nie udalo sie utworzyc uzytkownika' });
     }
   },
 
@@ -149,7 +149,7 @@ export const usersController = {
 
       if (!validation.success) {
         res.status(400).json({
-          message: 'Validation failed',
+          message: 'Blad walidacji',
           errors: validation.error.flatten().fieldErrors,
         });
         return;
@@ -159,17 +159,17 @@ export const usersController = {
       res.json(user);
     } catch (error) {
       if (error instanceof Error) {
-        if (error.message === 'User not found') {
-          res.status(404).json({ message: 'User not found' });
+        if (error.message === 'Uzytkownik nie zostal znaleziony') {
+          res.status(404).json({ message: 'Uzytkownik nie zostal znaleziony' });
           return;
         }
-        if (error.message === 'Email already in use') {
-          res.status(409).json({ message: 'Email already in use' });
+        if (error.message === 'Email jest juz uzywany') {
+          res.status(409).json({ message: 'Email jest juz uzywany' });
           return;
         }
       }
       console.error('Error updating user:', error);
-      res.status(500).json({ message: 'Failed to update user' });
+      res.status(500).json({ message: 'Nie udalo sie zaktualizowac uzytkownika' });
     }
   },
 
@@ -184,7 +184,7 @@ export const usersController = {
 
       if (!validation.success) {
         res.status(400).json({
-          message: 'Validation failed',
+          message: 'Blad walidacji',
           errors: validation.error.flatten().fieldErrors,
         });
         return;
@@ -192,19 +192,19 @@ export const usersController = {
 
       // Prevent changing own role
       if (req.user?.userId === id) {
-        res.status(403).json({ message: 'Cannot change your own role' });
+        res.status(403).json({ message: 'Nie mozesz zmienic wlasnej roli' });
         return;
       }
 
       const user = await usersService.changeRole(id, validation.data.role as UserRole);
       res.json(user);
     } catch (error) {
-      if (error instanceof Error && error.message === 'User not found') {
-        res.status(404).json({ message: 'User not found' });
+      if (error instanceof Error && error.message === 'Uzytkownik nie zostal znaleziony') {
+        res.status(404).json({ message: 'Uzytkownik nie zostal znaleziony' });
         return;
       }
       console.error('Error changing user role:', error);
-      res.status(500).json({ message: 'Failed to change user role' });
+      res.status(500).json({ message: 'Nie udalo sie zmienic roli uzytkownika' });
     }
   },
 
@@ -226,17 +226,17 @@ export const usersController = {
       res.json(user);
     } catch (error) {
       if (error instanceof Error) {
-        if (error.message === 'User not found') {
-          res.status(404).json({ message: 'User not found' });
+        if (error.message === 'Uzytkownik nie zostal znaleziony') {
+          res.status(404).json({ message: 'Uzytkownik nie zostal znaleziony' });
           return;
         }
-        if (error.message === 'User is already blocked') {
-          res.status(400).json({ message: 'User is already blocked' });
+        if (error.message === 'Uzytkownik jest juz zablokowany') {
+          res.status(400).json({ message: 'Uzytkownik jest juz zablokowany' });
           return;
         }
       }
       console.error('Error blocking user:', error);
-      res.status(500).json({ message: 'Failed to block user' });
+      res.status(500).json({ message: 'Nie udalo sie zablokowac uzytkownika' });
     }
   },
 
@@ -251,17 +251,17 @@ export const usersController = {
       res.json(user);
     } catch (error) {
       if (error instanceof Error) {
-        if (error.message === 'User not found') {
-          res.status(404).json({ message: 'User not found' });
+        if (error.message === 'Uzytkownik nie zostal znaleziony') {
+          res.status(404).json({ message: 'Uzytkownik nie zostal znaleziony' });
           return;
         }
-        if (error.message === 'User is not blocked') {
-          res.status(400).json({ message: 'User is not blocked' });
+        if (error.message === 'Uzytkownik nie jest zablokowany') {
+          res.status(400).json({ message: 'Uzytkownik nie jest zablokowany' });
           return;
         }
       }
       console.error('Error unblocking user:', error);
-      res.status(500).json({ message: 'Failed to unblock user' });
+      res.status(500).json({ message: 'Nie udalo sie odblokowac uzytkownika' });
     }
   },
 
@@ -275,12 +275,12 @@ export const usersController = {
       const result = await usersService.unlockAccount(id);
       res.json(result);
     } catch (error) {
-      if (error instanceof Error && error.message === 'User not found') {
-        res.status(404).json({ message: 'User not found' });
+      if (error instanceof Error && error.message === 'Uzytkownik nie zostal znaleziony') {
+        res.status(404).json({ message: 'Uzytkownik nie zostal znaleziony' });
         return;
       }
       console.error('Error unlocking account:', error);
-      res.status(500).json({ message: 'Failed to unlock account' });
+      res.status(500).json({ message: 'Nie udalo sie odblokowac konta' });
     }
   },
 
@@ -295,7 +295,7 @@ export const usersController = {
 
       if (!validation.success) {
         res.status(400).json({
-          message: 'Validation failed',
+          message: 'Blad walidacji',
           errors: validation.error.flatten().fieldErrors,
         });
         return;
@@ -305,8 +305,8 @@ export const usersController = {
       res.json(result);
     } catch (error) {
       if (error instanceof Error) {
-        if (error.message === 'User not found') {
-          res.status(404).json({ message: 'User not found' });
+        if (error.message === 'Uzytkownik nie zostal znaleziony') {
+          res.status(404).json({ message: 'Uzytkownik nie zostal znaleziony' });
           return;
         }
         if (error.message.startsWith('Invalid password')) {
@@ -315,7 +315,7 @@ export const usersController = {
         }
       }
       console.error('Error resetting password:', error);
-      res.status(500).json({ message: 'Failed to reset password' });
+      res.status(500).json({ message: 'Nie udalo sie zresetowac hasla' });
     }
   },
 
@@ -336,12 +336,12 @@ export const usersController = {
       const result = await usersService.delete(id);
       res.json(result);
     } catch (error) {
-      if (error instanceof Error && error.message === 'User not found') {
-        res.status(404).json({ message: 'User not found' });
+      if (error instanceof Error && error.message === 'Uzytkownik nie zostal znaleziony') {
+        res.status(404).json({ message: 'Uzytkownik nie zostal znaleziony' });
         return;
       }
       console.error('Error deleting user:', error);
-      res.status(500).json({ message: 'Failed to delete user' });
+      res.status(500).json({ message: 'Nie udalo sie usunac uzytkownika' });
     }
   },
 };
