@@ -430,7 +430,9 @@ export class BaselinkerOrdersService {
           id: true, 
           orderNumber: true,
           baselinkerOrderId: true, 
-          paymentStatus: true 
+          paymentStatus: true,
+          total: true,
+          paymentMethod: true,
         },
       });
 
@@ -463,10 +465,19 @@ export class BaselinkerOrdersService {
         inventoryId: config.inventoryId,
       });
 
-      // Update status to "Nowe zamówienia" (paid)
+      // 1. Update payment amount - this marks order as paid in BL
+      const paymentComment = `Płatność ${order.paymentMethod || 'online'}`;
+      await provider.setOrderPayment(
+        order.baselinkerOrderId, 
+        Number(order.total),
+        Math.floor(Date.now() / 1000),
+        paymentComment
+      );
+
+      // 2. Update status to "Nowe zamówienia" (paid)
       await provider.setOrderStatus(order.baselinkerOrderId, BL_STATUS.NEW_ORDER);
 
-      console.log(`[BaselinkerOrders] Order ${order.orderNumber} marked as paid in Baselinker (status: ${BL_STATUS.NEW_ORDER})`);
+      console.log(`[BaselinkerOrders] Order ${order.orderNumber} marked as paid in Baselinker (${order.total} PLN, status: ${BL_STATUS.NEW_ORDER})`);
 
       return {
         success: true,
