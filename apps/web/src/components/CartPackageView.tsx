@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { CartItem, checkoutApi } from '../lib/api';
+import { roundMoney } from '../lib/currency';
 
 // Placeholder SVG for failed images
 const PLACEHOLDER_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect fill='%23f3f4f6' width='400' height='400'/%3E%3Cpath fill='%23d1d5db' d='M160 150h80v100h-80z'/%3E%3Ccircle fill='%23d1d5db' cx='180' cy='130' r='20'/%3E%3Cpath fill='%23e5e7eb' d='M120 250l60-80 40 50 40-30 60 60v50H120z'/%3E%3C/svg%3E";
@@ -83,7 +84,7 @@ export default function CartPackageView({
 
     return Object.entries(grouped).map(([wholesaler, packageItems], index) => {
       const config = getWholesalerConfig(wholesaler);
-      const subtotal = packageItems.reduce((sum, item) => sum + (item.variant.price * item.quantity), 0);
+      const subtotal = roundMoney(packageItems.reduce((sum, item) => sum + (item.variant.price * item.quantity), 0));
       
       return {
         id: `pkg-${index}`,
