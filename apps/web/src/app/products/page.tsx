@@ -353,6 +353,7 @@ function ProductsContent() {
               onViewChange={handleViewChange}
               currentSort={uiSort}
               currentView={viewMode}
+              warehouseCounts={filters?.warehouseCounts}
             />
 
             {/* Loading State */}
