@@ -93,6 +93,8 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [verificationCooldown, setVerificationCooldown] = useState(0);
 
   const [formData, setFormData] = useState<ProfileFormData>({
     firstName: '',
@@ -184,6 +186,44 @@ export default function ProfilePage() {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  // Cooldown timer effect
+  useEffect(() => {
+    if (verificationCooldown > 0) {
+      const timer = setTimeout(() => setVerificationCooldown(verificationCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [verificationCooldown]);
+
+  const handleResendVerification = async () => {
+    if (!user?.email || resendingVerification || verificationCooldown > 0) return;
+
+    setResendingVerification(true);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/resend-verification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: user.email }),
+      });
+
+      if (response.ok) {
+        setVerificationCooldown(120); // 2 minuty = 120 sekund
+      }
+    } catch (error) {
+      console.error('Failed to resend verification:', error);
+    } finally {
+      setResendingVerification(false);
+    }
+  };
+
+  // Format cooldown time as MM:SS
+  const formatCooldown = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -360,11 +400,17 @@ export default function ProfilePage() {
                 <div className="flex-1">
                   <h4 className="font-medium text-yellow-800">Zweryfikuj swój adres email</h4>
                   <p className="text-sm text-yellow-700">
-                    Twój adres email nie został jeszcze zweryfikowany. Sprawdź skrzynkę odbiorczą.
+                    {verificationCooldown > 0 
+                      ? 'Email weryfikacyjny został wysłany! Sprawdź swoją skrzynkę.'
+                      : 'Twój adres email nie został jeszcze zweryfikowany. Sprawdź skrzynkę odbiorcą.'}
                   </p>
                 </div>
-                <button className="px-3 py-1.5 bg-yellow-100 text-yellow-800 rounded-lg text-sm font-medium hover:bg-yellow-200 transition-colors">
-                  Wyślij ponownie
+                <button 
+                  onClick={handleResendVerification}
+                  disabled={resendingVerification || verificationCooldown > 0}
+                  className="px-3 py-1.5 bg-yellow-100 text-yellow-800 rounded-lg text-sm font-medium hover:bg-yellow-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {resendingVerification ? 'Wysyłanie...' : verificationCooldown > 0 ? formatCooldown(verificationCooldown) : 'Wyślij ponownie'}
                 </button>
               </div>
             )}
