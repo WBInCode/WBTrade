@@ -171,9 +171,15 @@ export default function ProductCard({ product, showDelivery = false, showWishlis
 
           {/* Delivery info */}
           <div className="flex flex-col gap-0.5 mt-1 sm:mt-1.5">
-            <p className="text-[10px] sm:text-xs text-primary-600 dark:text-primary-400">
-              Wysyłka 24-72h
-            </p>
+            {product.variants?.[0]?.stock > 0 ? (
+              <p className="text-[10px] sm:text-xs text-primary-600 dark:text-primary-400">
+                Wysyłka 24-72h
+              </p>
+            ) : (
+              <p className="text-[10px] sm:text-xs text-red-500 dark:text-red-400 font-medium">
+                Brak na stanie
+              </p>
+            )}
             {warehouseLocation && (
               <span className="text-[9px] sm:text-[10px] text-gray-500 dark:text-secondary-400 flex items-center gap-0.5">
                 <LocationIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
