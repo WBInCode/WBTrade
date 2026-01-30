@@ -130,12 +130,12 @@ export default function ProductCard({ product, showDelivery = false, showWishlis
 
       <Link href={`/products/${product.id}`} className="flex flex-col flex-grow">
         {/* Image */}
-        <div className="relative aspect-square overflow-hidden bg-white dark:bg-secondary-700">
+        <div className="relative aspect-square m-2 sm:m-3 rounded-xl sm:rounded-2xl overflow-hidden">
           <img
             src={mainImage}
             alt={product.name}
             onError={() => setImgError(true)}
-            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300 p-2 sm:p-3"
+            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
           />
           {/* Discount Badge */}
           {hasDiscount && (
