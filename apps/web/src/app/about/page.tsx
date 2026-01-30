@@ -10,7 +10,7 @@ export const metadata = {
 export default function AboutPage() {
   const stats = [
     { value: 'tysiące', label: 'Zadowolonych klientów' },
-    { value: '>20tyś+', label: 'Produktów w ofercie' },
+    { value: 'Ponad 10 tysięcy', label: 'Produktów w ofercie' },
   ];
 
   const values = [
@@ -75,10 +75,10 @@ export default function AboutPage() {
       {/* Stats Section */}
       <section className="py-16 bg-white dark:bg-secondary-800">
         <div className="container-custom">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="flex justify-center gap-16 sm:gap-24 lg:gap-32">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
-                <div className="text-4xl lg:text-5xl font-bold text-primary-600 mb-2">
+                <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary-600 mb-2">
                   {stat.value}
                 </div>
                 <div className="text-secondary-600 dark:text-secondary-400">{stat.label}</div>
