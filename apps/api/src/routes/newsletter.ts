@@ -2,6 +2,7 @@ import express from 'express';
 import { prisma } from '../db';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
+import { emailService } from '../services/email.service';
 
 const router = express.Router();
 
@@ -39,7 +40,9 @@ router.post('/subscribe', async (req, res) => {
           },
         });
 
-        // TODO: Send verification email
+        // Send verification email
+        await emailService.sendNewsletterVerificationEmail(normalizedEmail, newToken);
+        
         return res.status(200).json({
           success: true,
           message: 'Dziękujemy! Na podany adres e-mail wysłaliśmy link potwierdzający.',
@@ -54,7 +57,8 @@ router.post('/subscribe', async (req, res) => {
       }
 
       // Not verified yet - resend verification
-      // TODO: Send verification email
+      await emailService.sendNewsletterVerificationEmail(normalizedEmail, existing.token);
+      
       return res.status(200).json({
         success: true,
         message: 'Na podany adres wysłaliśmy ponownie link potwierdzający.',
@@ -72,7 +76,8 @@ router.post('/subscribe', async (req, res) => {
       },
     });
 
-    // TODO: Send verification email with token
+    // Send verification email
+    await emailService.sendNewsletterVerificationEmail(normalizedEmail, token);
 
     return res.status(201).json({
       success: true,
@@ -117,6 +122,9 @@ router.get('/verify/:token', async (req, res) => {
         verified_at: new Date(),
       },
     });
+
+    // Send welcome email
+    await emailService.sendNewsletterWelcomeEmail(subscription.email, token);
 
     return res.status(200).json({
       success: true,
