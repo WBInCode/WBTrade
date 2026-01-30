@@ -153,6 +153,56 @@ export interface BaselinkerAddOrderResponse {
   order_id: number;
 }
 
+// ============================================
+// Order Response Types (for getOrders API)
+// ============================================
+
+export interface BaselinkerOrderResponse {
+  order_id: number;
+  shop_order_id?: number;
+  external_order_id?: string;
+  order_source?: string;
+  order_source_id?: number;
+  order_source_info?: string;
+  order_status_id: number;
+  date_add: number; // Unix timestamp
+  date_confirmed?: number;
+  date_in_status?: number;
+  currency?: string;
+  payment_method?: string;
+  payment_done?: number;
+  email?: string;
+  phone?: string;
+  delivery_method?: string;
+  delivery_price?: number;
+  delivery_fullname?: string;
+  delivery_address?: string;
+  delivery_city?: string;
+  delivery_postcode?: string;
+  delivery_country_code?: string;
+  delivery_point_id?: string;
+  delivery_point_name?: string;
+  delivery_point_address?: string;
+  invoice_fullname?: string;
+  invoice_address?: string;
+  invoice_city?: string;
+  invoice_postcode?: string;
+  invoice_nip?: string;
+  products: Array<{
+    product_id: number;
+    variant_id?: number;
+    name: string;
+    sku?: string;
+    ean?: string;
+    price_brutto: number;
+    quantity: number;
+  }>;
+}
+
+export interface GetOrdersResponse {
+  orders: BaselinkerOrderResponse[];
+}
+
 export interface BaselinkerUpdateStockRequest {
   inventory_id: number;
   products: Record<string, Record<string, number>>; // { product_id: { warehouse_id: stock } }
@@ -287,4 +337,16 @@ export interface IBaselinkerProvider {
     paymentDate?: number,
     paymentComment?: string
   ): Promise<void>;
+
+  /**
+   * Get orders from Baselinker
+   * @param params - Optional filters (date_from, status_id, etc.)
+   */
+  getOrders(params?: {
+    date_from?: number;
+    date_to?: number;
+    status_id?: number;
+    order_id?: number;
+    filter_order_source_id?: number;
+  }): Promise<BaselinkerOrderResponse[]>;
 }
