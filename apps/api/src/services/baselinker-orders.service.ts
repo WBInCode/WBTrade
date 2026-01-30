@@ -506,6 +506,74 @@ export class BaselinkerOrdersService {
       return { success: false, orderId, error: errorMessage };
     }
   }
+
+  /**
+   * Update order status in Baselinker to "Zwroty/Anulowane" (refunded/cancelled)
+   * and add refund reason to order notes
+   */
+  async markOrderAsRefunded(orderId: string, refundReason?: string): Promise<OrderSyncResult> {
+    try {
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { 
+          id: true, 
+          orderNumber: true,
+          baselinkerOrderId: true,
+        },
+      });
+
+      if (!order) {
+        return { success: false, orderId, error: 'Order not found' };
+      }
+
+      if (!order.baselinkerOrderId) {
+        console.warn(`[BaselinkerOrders] Order ${orderId} has no Baselinker ID, cannot update status to refunded`);
+        return { success: false, orderId, error: 'Order not synced to Baselinker yet' };
+      }
+
+      // Get Baselinker configuration
+      const config = await prisma.baselinkerConfig.findFirst({
+        where: { syncEnabled: true },
+      });
+
+      if (!config) {
+        return { success: false, orderId, error: 'Baselinker not configured' };
+      }
+
+      const apiToken = decryptToken(
+        config.apiTokenEncrypted,
+        config.encryptionIv,
+        config.authTag
+      );
+
+      const provider = createBaselinkerProvider({
+        apiToken,
+        inventoryId: config.inventoryId,
+      });
+
+      // Update status to "Zwroty/Anulowane" (status ID 65816)
+      await provider.setOrderStatus(order.baselinkerOrderId, BL_STATUS.CANCELLED);
+
+      // Add refund reason to order notes if provided
+      if (refundReason) {
+        const refundNote = `[ZWROT ${new Date().toLocaleDateString('pl-PL')}] Powód: ${refundReason}`;
+        await provider.setOrderField(order.baselinkerOrderId, 'admin_comments', refundNote);
+        console.log(`[BaselinkerOrders] Added refund reason to order ${order.orderNumber}`);
+      }
+
+      console.log(`[BaselinkerOrders] Order ${order.orderNumber} marked as refunded in Baselinker (status: ${BL_STATUS.CANCELLED} - Zwroty/Anulowane)`);
+
+      return {
+        success: true,
+        orderId,
+        baselinkerOrderId: order.baselinkerOrderId,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[BaselinkerOrders] Failed to mark order as refunded:', orderId, error);
+      return { success: false, orderId, error: errorMessage };
+    }
+  }
 }
 
 // Export singleton instance

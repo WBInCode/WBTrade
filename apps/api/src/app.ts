@@ -215,39 +215,22 @@ app.listen(PORT, async () => {
   // Initialize Meilisearch
   await initializeMeilisearch();
   
-  // Start background workers - DISABLED due to Redis limit exceeded
-  console.log('⚠️  Background workers disabled - Redis limit exceeded');
-  console.log('ℹ️  Enable workers after upgrading Upstash Redis plan');
-  
-  // TODO: Re-enable after upgrading Redis
-  /*
-  console.log('⚙️  Starting background workers...');
-  startSearchIndexWorker();
-  startEmailWorker();
-  startInventorySyncWorker();
-  startImportWorker();
-  startExportWorker();
-  startShippingWorker();
-  
-  // Schedule recurring jobs with retry logic
+  // Start background cron jobs (only essential ones)
+  console.log('⚙️  Starting cron jobs...');
   try {
+    // 1. Reservation cleanup - every 5 minutes
     await scheduleReservationCleanup();
     console.log('✅ Reservation cleanup scheduled (every 5 minutes)');
+    
+    // 2. Baselinker order status sync - every 15 minutes
+    const { createBaselinkerSyncWorker, scheduleBaselinkerSync } = await import('./workers/baselinker-sync.worker');
+    createBaselinkerSyncWorker();
+    await scheduleBaselinkerSync();
+    console.log('✅ Baselinker order status sync scheduled (every 15 minutes)');
+    
+    console.log('✅ All cron jobs started');
   } catch (error) {
-    console.error('⚠️  Failed to schedule reservation cleanup:', error);
-    console.log('ℹ️  Will retry in background...');
-    // Retry after 10 seconds
-    setTimeout(async () => {
-      try {
-        await scheduleReservationCleanup();
-        console.log('✅ Reservation cleanup scheduled (retry successful)');
-      } catch (retryError) {
-        console.error('❌ Reservation cleanup scheduling failed after retry:', retryError);
-      }
-    }, 10000);
+    console.error('⚠️  Failed to start cron jobs:', error);
+    console.warn('⚠️  Application will continue but background sync may not run');
   }
-  */
-  
-  console.log('✅ Server started (workers disabled)');
-  console.log('ℹ️  Baselinker sync: manual only (use admin panel)');
 });

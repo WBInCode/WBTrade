@@ -179,6 +179,31 @@ export default function OrderDetailsPage() {
   const [orderLoading, setOrderLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  
+  // Refund states
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [refundEligibility, setRefundEligibility] = useState<{
+    eligible: boolean;
+    reason?: string;
+    daysRemaining?: number;
+    deliveredAt?: string;
+  } | null>(null);
+  const [refundReason, setRefundReason] = useState('');
+  const [refundSubmitting, setRefundSubmitting] = useState(false);
+  const [refundError, setRefundError] = useState<string | null>(null);
+  const [refundSuccess, setRefundSuccess] = useState(false);
+  const [refundResult, setRefundResult] = useState<{
+    refundNumber: string;
+    returnAddress: {
+      name: string;
+      contactPerson: string;
+      street: string;
+      city: string;
+      postalCode: string;
+      phone: string;
+      email: string;
+    };
+  } | null>(null);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -209,6 +234,22 @@ export default function OrderDetailsPage() {
     fetchOrder();
   }, [isAuthenticated, orderId]);
 
+  // Check refund eligibility when order is loaded
+  useEffect(() => {
+    async function checkEligibility() {
+      if (!order || !['DELIVERED', 'SHIPPED'].includes(order.status)) return;
+      
+      try {
+        const eligibility = await ordersApi.checkRefundEligibility(order.id);
+        setRefundEligibility(eligibility);
+      } catch (err) {
+        console.error('Error checking refund eligibility:', err);
+      }
+    }
+    
+    checkEligibility();
+  }, [order]);
+
   const handleCancelOrder = async () => {
     if (!order) return;
     
@@ -227,6 +268,31 @@ export default function OrderDetailsPage() {
       alert(errorMessage);
     } finally {
       setCancelling(false);
+    }
+  };
+
+  const handleRefundRequest = async () => {
+    if (!order) return;
+    
+    try {
+      setRefundSubmitting(true);
+      setRefundError(null);
+      
+      const response = await ordersApi.requestRefund(order.id, refundReason);
+      
+      setRefundSuccess(true);
+      setRefundResult({
+        refundNumber: response.refundNumber,
+        returnAddress: response.returnAddress,
+      });
+      setOrder({ ...order, status: 'REFUNDED', paymentStatus: 'REFUNDED' });
+      
+    } catch (err: unknown) {
+      console.error('Error requesting refund:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Nie udało się złożyć wniosku o zwrot';
+      setRefundError(errorMessage);
+    } finally {
+      setRefundSubmitting(false);
     }
   };
 
@@ -581,6 +647,100 @@ export default function OrderDetailsPage() {
               </div>
             </div>
 
+            {/* Refund Eligibility Info */}
+            {refundEligibility && ['DELIVERED', 'SHIPPED'].includes(order.status) && (
+              <div className={`mt-6 p-4 rounded-lg border ${
+                refundEligibility.eligible 
+                  ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
+                  : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'
+              }`}>
+                <div className="flex items-center gap-3">
+                  {refundEligibility.eligible ? (
+                    <>
+                      <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div>
+                        <p className="text-sm font-medium text-green-800 dark:text-green-400">
+                          Możesz zwrócić to zamówienie
+                        </p>
+                        <p className="text-xs text-green-600 dark:text-green-500">
+                          Pozostało {refundEligibility.daysRemaining} dni na złożenie wniosku o zwrot (14 dni od dostawy)
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Zwrot nie jest już możliwy
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {refundEligibility.reason}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Refund Info - when order is refunded */}
+            {order.status === 'REFUNDED' && order.refundNumber && (
+              <div className="mt-6 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                  </svg>
+                  <h3 className="font-semibold text-orange-800 dark:text-orange-400">Informacje o zwrocie</h3>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-orange-700 dark:text-orange-300 mb-1">Numer zwrotu:</p>
+                    <p className="text-xl font-bold text-orange-600 dark:text-orange-400 font-mono">{order.refundNumber}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-orange-700 dark:text-orange-300 mb-1">Data zgłoszenia:</p>
+                    <p className="font-medium text-orange-800 dark:text-orange-400">
+                      {order.refundRequestedAt ? new Date(order.refundRequestedAt).toLocaleDateString('pl-PL', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      }) : '-'}
+                    </p>
+                  </div>
+                </div>
+
+                {order.refundReason && (
+                  <div className="mt-4 pt-4 border-t border-orange-200 dark:border-orange-700">
+                    <p className="text-sm text-orange-700 dark:text-orange-300 mb-1">Podany powód:</p>
+                    <p className="text-orange-800 dark:text-orange-400">{order.refundReason}</p>
+                  </div>
+                )}
+
+                <div className="mt-4 pt-4 border-t border-orange-200 dark:border-orange-700">
+                  <p className="text-sm font-medium text-orange-800 dark:text-orange-400 mb-2">Adres do wysyłki zwrotu:</p>
+                  <div className="text-orange-700 dark:text-orange-300 text-sm">
+                    <p className="font-semibold">WB Partners</p>
+                    <p>Daniel Budyka</p>
+                    <p>ul. Juliusza Słowackiego 24/11</p>
+                    <p>35-060 Rzeszów</p>
+                    <p className="mt-2">Tel: 570 028 761</p>
+                    <p>support@wb-partners.pl</p>
+                  </div>
+                  <p className="mt-3 text-sm text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 p-2 rounded">
+                    ⚠️ Pamiętaj o umieszczeniu numeru zwrotu <strong>{order.refundNumber}</strong> w paczce lub na paczce!
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Actions */}
             <div className="mt-6 flex items-center justify-between">
               <Link
@@ -594,11 +754,19 @@ export default function OrderDetailsPage() {
               </Link>
               
               <div className="flex gap-3">
+                {['DELIVERED', 'SHIPPED'].includes(order.status) && refundEligibility?.eligible && (
+                  <button 
+                    onClick={() => setShowRefundModal(true)}
+                    className="px-4 py-2 border border-orange-300 text-orange-600 rounded-lg text-sm font-medium hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors inline-flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                    </svg>
+                    Złóż wniosek o zwrot
+                  </button>
+                )}
                 {order.status === 'DELIVERED' && (
                   <>
-                    <button className="px-4 py-2 border border-gray-300 dark:border-secondary-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors">
-                      Zgłoś problem
-                    </button>
                     <button className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors">
                       Kup ponownie
                     </button>
@@ -618,6 +786,152 @@ export default function OrderDetailsPage() {
           </div>
         </div>
       </main>
+
+      {/* Refund Modal */}
+      {showRefundModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Wniosek o zwrot</h2>
+                <button 
+                  onClick={() => {
+                    setShowRefundModal(false);
+                    setRefundError(null);
+                    setRefundReason('');
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {refundSuccess && refundResult ? (
+                <div className="py-4">
+                  <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 text-center">Wniosek o zwrot przyjęty!</h3>
+                  
+                  {/* Refund Number */}
+                  <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4 mb-4">
+                    <p className="text-sm text-orange-700 dark:text-orange-300 mb-1">Twój numer zwrotu:</p>
+                    <p className="text-2xl font-bold text-orange-600 dark:text-orange-400 font-mono">{refundResult.refundNumber}</p>
+                  </div>
+
+                  {/* Return Address */}
+                  <div className="bg-gray-50 dark:bg-secondary-700 border border-gray-200 dark:border-secondary-600 rounded-lg p-4 mb-4">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Adres do wysyłki zwrotu:</p>
+                    <div className="text-gray-900 dark:text-white">
+                      <p className="font-semibold">{refundResult.returnAddress.name}</p>
+                      <p>{refundResult.returnAddress.contactPerson}</p>
+                      <p>{refundResult.returnAddress.street}</p>
+                      <p>{refundResult.returnAddress.postalCode} {refundResult.returnAddress.city}</p>
+                      <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Tel: {refundResult.returnAddress.phone}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{refundResult.returnAddress.email}</p>
+                    </div>
+                  </div>
+
+                  {/* Instructions */}
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
+                    <p className="text-sm font-medium text-yellow-800 dark:text-yellow-400 mb-2">⚠️ Ważne!</p>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                      Umieść numer zwrotu <strong>{refundResult.refundNumber}</strong> wewnątrz paczki lub na zewnątrz, abyśmy mogli zidentyfikować Twój zwrot.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setShowRefundModal(false);
+                      setRefundSuccess(false);
+                      setRefundResult(null);
+                      setRefundReason('');
+                    }}
+                    className="w-full px-4 py-3 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition-colors"
+                  >
+                    Zamknij
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="mb-6">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+                      <h4 className="font-medium text-blue-800 dark:text-blue-400 mb-2">Informacje o zwrocie</h4>
+                      <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                        <li>• Zwrot możliwy do 14 dni od daty dostawy</li>
+                        <li>• Produkt musi być w oryginalnym opakowaniu</li>
+                        <li>• Produkt nie może nosić śladów użytkowania</li>
+                        <li>• Zwrot kosztów nastąpi w ciągu 14 dni od otrzymania towaru</li>
+                      </ul>
+                      <Link 
+                        href="/returns" 
+                        className="text-sm text-blue-600 dark:text-blue-400 hover:underline mt-2 inline-block"
+                      >
+                        Przeczytaj pełną politykę zwrotów →
+                      </Link>
+                    </div>
+
+                    <div className="bg-gray-50 dark:bg-secondary-700 rounded-lg p-4 mb-4">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <span className="font-medium">Zamówienie:</span> #{order.orderNumber}
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <span className="font-medium">Kwota do zwrotu:</span> {Number(order.total).toFixed(2)} zł
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <span className="font-medium">Pozostało dni:</span> {refundEligibility?.daysRemaining} z 14
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Powód zwrotu <span className="text-gray-400 font-normal">(opcjonalnie)</span>
+                    </label>
+                    <textarea
+                      value={refundReason}
+                      onChange={(e) => setRefundReason(e.target.value)}
+                      placeholder="Opisz powód zwrotu (opcjonalnie)..."
+                      rows={4}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-secondary-600 rounded-lg bg-white dark:bg-secondary-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {refundError && (
+                    <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                      <p className="text-sm text-red-600 dark:text-red-400">{refundError}</p>
+                    </div>
+                  )}
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        setShowRefundModal(false);
+                        setRefundError(null);
+                        setRefundReason('');
+                      }}
+                      className="flex-1 px-4 py-3 border border-gray-300 dark:border-secondary-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors"
+                    >
+                      Anuluj
+                    </button>
+                    <button
+                      onClick={handleRefundRequest}
+                      disabled={refundSubmitting}
+                      className="flex-1 px-4 py-3 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {refundSubmitting ? 'Wysyłanie...' : 'Złóż wniosek o zwrot'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer hideTrustBadges />
     </div>

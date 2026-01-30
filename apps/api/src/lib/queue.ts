@@ -333,6 +333,23 @@ export async function scheduleReservationCleanup(): Promise<void> {
   );
 }
 
+/**
+ * Schedule recurring order status sync from Baselinker (every 15 minutes)
+ */
+export async function scheduleOrderStatusSync(): Promise<void> {
+  const queue = getQueue(QUEUE_NAMES.BASELINKER_SYNC);
+  await queue.add(
+    'sync-order-statuses',
+    { timestamp: Date.now(), hoursBack: 6 },
+    {
+      repeat: {
+        every: 15 * 60 * 1000, // 15 minutes
+      },
+      removeOnComplete: 10,
+    }
+  );
+}
+
 // ========================================
 // Queue Management
 // ========================================
