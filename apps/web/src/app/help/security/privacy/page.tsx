@@ -159,7 +159,7 @@ export default function PrivacyPage() {
                 <div className="bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-700 rounded-xl p-6 mt-8">
                   <h3 className="font-semibold text-primary-900 dark:text-primary-100 mb-2">📧 Kontakt w sprawie prywatności</h3>
                   <p className="text-primary-700 dark:text-primary-300 mb-2">
-                    Inspektor Ochrony Danych: <strong>iod@wbtrade.pl</strong>
+                    E-mail: <strong>support@wb-partners.pl</strong>
                   </p>
                   <p className="text-primary-700 dark:text-primary-300 text-sm">
                     Możesz też złożyć skargę do UODO (Urzędu Ochrony Danych Osobowych).

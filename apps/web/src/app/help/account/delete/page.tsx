@@ -118,7 +118,7 @@ export default function DeleteAccountPage() {
 
                 <h3 className="text-lg font-medium text-secondary-800 dark:text-secondary-200 mt-6 mb-3">Metoda 2: Przez kontakt z obsługą</h3>
                 <ol className="list-decimal pl-6 text-secondary-600 dark:text-secondary-400 space-y-2 mb-6">
-                  <li>Wyślij e-mail na adres: kontakt@wbtrade.pl</li>
+                  <li>Wyślij e-mail na adres: support@wb-partners.pl</li>
                   <li>Temat: "Żądanie usunięcia konta"</li>
                   <li>Podaj adres e-mail przypisany do konta</li>
                   <li>Otrzymasz potwierdzenie w ciągu 30 dni</li>
@@ -151,7 +151,7 @@ export default function DeleteAccountPage() {
                 <div className="bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-700 rounded-xl p-6 mt-6">
                   <h3 className="font-semibold text-primary-900 dark:text-primary-100 mb-2">📞 Potrzebujesz pomocy?</h3>
                   <p className="text-primary-700 dark:text-primary-300">
-                    Jeśli masz pytania dotyczące usunięcia konta lub przetwarzania danych, skontaktuj się z nami: kontakt@wbtrade.pl
+                    Jeśli masz pytania dotyczące usunięcia konta lub przetwarzania danych, skontaktuj się z nami: support@wb-partners.pl
                   </p>
                 </div>
               </div>

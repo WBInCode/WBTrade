@@ -118,11 +118,11 @@ export default function OrderModifyPage() {
                 <div className="grid md:grid-cols-2 gap-4 mt-4">
                   <div className="p-4 bg-primary-50 dark:bg-primary-900/30 rounded-lg">
                     <h4 className="font-medium text-primary-900 dark:text-primary-100 mb-1">📧 E-mail</h4>
-                    <p className="text-primary-700 dark:text-primary-300 text-sm">kontakt@wbtrade.pl</p>
+                    <p className="text-primary-700 dark:text-primary-300 text-sm">support@wb-partners.pl</p>
                   </div>
                   <div className="p-4 bg-primary-50 dark:bg-primary-900/30 rounded-lg">
                     <h4 className="font-medium text-primary-900 dark:text-primary-100 mb-1">📞 Telefon</h4>
-                    <p className="text-primary-700 dark:text-primary-300 text-sm">+48 123 456 789 (pon-pt 9-17)</p>
+                    <p className="text-primary-700 dark:text-primary-300 text-sm">+48 570 028 761 (pon-pt 9-17)</p>
                   </div>
                 </div>
               </div>
