@@ -171,7 +171,7 @@ export default function ProductCard({ product, showDelivery = false, showWishlis
 
           {/* Delivery info */}
           <div className="flex flex-col gap-0.5 mt-1 sm:mt-1.5">
-            {product.variants?.[0]?.stock > 0 ? (
+            {(product.variants?.[0]?.stock ?? 0) > 0 ? (
               <p className="text-[10px] sm:text-xs text-primary-600 dark:text-primary-400">
                 Wysyłka 24-72h
               </p>
