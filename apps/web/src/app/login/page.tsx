@@ -408,7 +408,7 @@ export default function LoginPage() {
             <p className="text-white/90 italic mb-3">
               &ldquo;Najlepszy sklep w jakim robiłem zakupy! Świetne ceny i błyskawiczna dostawa.&rdquo;
             </p>
-            <p className="text-sm text-white/70">— Marek K., Warszawa</p>
+            <p className="text-sm text-white/70">— Marek M., Warszawa</p>
           </div>
         </div>
 
