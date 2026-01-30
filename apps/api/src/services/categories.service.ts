@@ -25,7 +25,13 @@ const PACKAGE_TAGS = [
   'produkt w paczce: 5',
 ];
 
-// Bazowy filtr dla widocznych produktów (bez filtrowania po tagach kategorii - teraz używamy baselinkerCategoryPath)
+// UKRYWANIE PRODUKTÓW LEKER:
+// Domeny obrazków które blokują hotlinking - produkty z tymi obrazkami są ukryte
+const BLOCKED_IMAGE_DOMAINS = ['b2b.leker.pl'];
+// Tagi które ukrywają produkty całkowicie
+const HIDDEN_TAGS = ['błąd zdjęcia', 'błąd zdjęcia '];
+
+// Bazowy filtr dla widocznych produktów - MUSI BYĆ IDENTYCZNY jak w products.service.ts
 const VISIBLE_PRODUCT_WHERE = {
   price: { gt: 0 },
   variants: {
@@ -37,11 +43,23 @@ const VISIBLE_PRODUCT_WHERE = {
       }
     }
   },
-  tags: { hasSome: DELIVERY_TAGS },
-  // Jeśli ma "Paczkomaty i Kurier", musi mieć też "produkt w paczce"
-  OR: [
-    { NOT: { tags: { hasSome: PACZKOMAT_TAGS } } },
-    { tags: { hasSome: PACKAGE_TAGS } },
+  // Produkty MUSZĄ spełniać wszystkie warunki (AND)
+  AND: [
+    // Tag dostawy - nie pokazuj produktów z tylko tagiem hurtowni
+    { tags: { hasSome: DELIVERY_TAGS } },
+    // Kategoria z Baselinker - musi być przypisana
+    { 
+      category: { 
+        baselinkerCategoryId: { not: null } 
+      } 
+    },
+    // Jeśli ma "Paczkomaty i Kurier", musi mieć też "produkt w paczce"
+    {
+      OR: [
+        { NOT: { tags: { hasSome: PACZKOMAT_TAGS } } },
+        { tags: { hasSome: PACKAGE_TAGS } },
+      ]
+    },
   ],
 };
 
@@ -59,10 +77,30 @@ export interface CategoryWithChildren {
 
 export class CategoriesService {
   /**
+   * Get all category IDs that have baselinkerCategoryId (valid Baselinker categories)
+   */
+  private async getBaselinkerCategoryIds(): Promise<Set<string>> {
+    const categories = await prisma.category.findMany({
+      where: { 
+        baselinkerCategoryId: { not: null },
+        isActive: true,
+      },
+      select: { id: true },
+    });
+    return new Set(categories.map(c => c.id));
+  }
+
+  /**
    * Count visible products for a category (using same filters as products listing)
    * Filtr SQL już uwzględnia warunek "produkt w paczce" przez VISIBLE_PRODUCT_WHERE
    */
   private async countVisibleProducts(categoryId: string): Promise<number> {
+    // First check if this category has baselinkerCategoryId
+    const validCategoryIds = await this.getBaselinkerCategoryIds();
+    if (!validCategoryIds.has(categoryId)) {
+      return 0;
+    }
+
     return prisma.product.count({
       where: {
         ...VISIBLE_PRODUCT_WHERE,
@@ -74,23 +112,71 @@ export class CategoriesService {
   /**
    * Count visible products for multiple categories at once
    * Filtr SQL już uwzględnia warunek "produkt w paczce" przez VISIBLE_PRODUCT_WHERE
+   * Dodatkowo filtruje produkty z zablokowanymi domenami obrazków (Leker)
    */
   private async countVisibleProductsForCategories(categoryIds: string[]): Promise<Map<string, number>> {
     const counts = new Map<string, number>();
     
-    // Grupuj po categoryId używając Prisma
-    const results = await prisma.product.groupBy({
-      by: ['categoryId'],
+    // Only count products in categories that have baselinkerCategoryId
+    const validCategoryIds = await this.getBaselinkerCategoryIds();
+    const filteredCategoryIds = categoryIds.filter(id => validCategoryIds.has(id));
+    
+    if (filteredCategoryIds.length === 0) {
+      return counts;
+    }
+    
+    // Pobierz produkty z obrazkami żeby móc odfiltrować te z zablokowanych domen (Leker)
+    const products = await prisma.product.findMany({
       where: {
-        ...VISIBLE_PRODUCT_WHERE,
-        categoryId: { in: categoryIds },
+        categoryId: { in: filteredCategoryIds },
+        price: { gt: 0 },
+        variants: {
+          some: {
+            inventory: {
+              some: {
+                quantity: { gt: 0 }
+              }
+            }
+          }
+        },
+        tags: { hasSome: DELIVERY_TAGS },
+        // Nie pokazuj produktów z tagiem "błąd zdjęcia"
+        NOT: {
+          tags: { hasSome: HIDDEN_TAGS }
+        },
+        // Jeśli ma "Paczkomaty i Kurier", musi mieć też "produkt w paczce"
+        OR: [
+          { NOT: { tags: { hasSome: PACZKOMAT_TAGS } } },
+          { tags: { hasSome: PACKAGE_TAGS } },
+        ],
       },
-      _count: { id: true },
+      select: {
+        id: true,
+        categoryId: true,
+        images: {
+          select: { url: true },
+          orderBy: { order: 'asc' },
+          take: 1,
+        },
+      },
     });
     
-    for (const result of results) {
-      if (result.categoryId) {
-        counts.set(result.categoryId, result._count.id);
+    // Filtruj produkty z zablokowanych domen obrazków (Leker b2b.leker.pl)
+    const visibleProducts = products.filter(product => {
+      const imageUrl = product.images[0]?.url;
+      if (!imageUrl) return true; // Brak obrazka = produkt widoczny
+      
+      // Sprawdź czy obrazek jest z zablokowanej domeny
+      const hasBlockedImage = BLOCKED_IMAGE_DOMAINS.some(domain => 
+        imageUrl.includes(domain)
+      );
+      return !hasBlockedImage;
+    });
+    
+    // Zlicz produkty per kategoria
+    for (const product of visibleProducts) {
+      if (product.categoryId) {
+        counts.set(product.categoryId, (counts.get(product.categoryId) || 0) + 1);
       }
     }
     
