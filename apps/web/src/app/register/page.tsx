@@ -125,8 +125,8 @@ export default function RegisterPage() {
   ];
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left side - Hero */}
+    <div className="min-h-screen flex bg-white dark:bg-secondary-900">
+      {/* Left side - Hero */>
       <div className="hidden lg:flex lg:flex-1 bg-gradient-to-br from-orange-500 via-orange-600 to-red-500 relative overflow-hidden">
         {/* Background pattern */}
         <div className="absolute inset-0 opacity-10">
