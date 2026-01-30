@@ -431,7 +431,7 @@ export default function ShippingPerPackage({
       'BTP': { name: 'Magazyn Chotów', color: 'text-green-700 dark:text-green-400', bgColor: 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700' },
       'Leker': { name: 'Magazyn Chynów', color: 'text-red-700 dark:text-red-400', bgColor: 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700' },
     };
-    return configs[wholesaler || ''] || { name: 'Magazyn WB Trade', color: 'text-gray-700 dark:text-gray-300', bgColor: 'bg-gray-50 dark:bg-secondary-700 border-gray-200 dark:border-secondary-600' };
+    return configs[wholesaler || ''] || { name: 'Magazyn Chynów', color: 'text-gray-700 dark:text-gray-300', bgColor: 'bg-gray-50 dark:bg-secondary-700 border-gray-200 dark:border-secondary-600' };
   };
 
   if (isLoading) {

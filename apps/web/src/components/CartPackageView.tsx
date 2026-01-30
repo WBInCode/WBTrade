@@ -42,7 +42,7 @@ const WHOLESALER_CONFIG: Record<string, { name: string; color: string; icon: str
   'Gastro': { name: 'Magazyn Chotów', color: 'bg-yellow-500', icon: '📍' },
   'Horeca': { name: 'Magazyn Chotów', color: 'bg-orange-500', icon: '📍' },
   'Forcetop': { name: 'Magazyn Chotów', color: 'bg-teal-500', icon: '📍' },
-  'default': { name: 'Magazyn WB Trade', color: 'bg-gray-500', icon: '📍' },
+  'default': { name: 'Magazyn Chynów', color: 'bg-gray-500', icon: '📍' },
 };
 
 function getWholesalerConfig(wholesaler: string | null | undefined) {
