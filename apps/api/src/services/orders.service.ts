@@ -582,6 +582,7 @@ export class OrdersService {
         street: 'ul. Juliusza Słowackiego 24/11',
         city: 'Rzeszów',
         postalCode: '35-060',
+        country: 'Polska',
         phone: '570 028 761',
         email: 'support@wb-partners.pl',
       };
