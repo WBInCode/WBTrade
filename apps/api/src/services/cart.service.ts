@@ -1,4 +1,5 @@
 import { prisma } from '../db';
+import { roundMoney } from '../lib/currency';
 
 export interface CartWithItems {
   id: string;
@@ -467,10 +468,10 @@ export class CartService {
       };
     });
 
-    const subtotal = items.reduce(
+    const subtotal = roundMoney(items.reduce(
       (sum, item) => sum + item.variant.price * item.quantity,
       0
-    );
+    ));
 
     // Calculate discount based on coupon
     let discount = 0;
@@ -482,15 +483,15 @@ export class CartService {
       if (coupon && coupon.isActive && (!coupon.expiresAt || coupon.expiresAt > new Date())) {
         if (coupon.type === 'PERCENTAGE') {
           // Percentage discount
-          discount = Math.round(subtotal * Number(coupon.value) / 100 * 100) / 100;
+          discount = roundMoney(subtotal * Number(coupon.value) / 100);
         } else if (coupon.type === 'FIXED_AMOUNT') {
           // Fixed amount discount
-          discount = Math.min(Number(coupon.value), subtotal);
+          discount = roundMoney(Math.min(Number(coupon.value), subtotal));
         }
       }
     }
 
-    const total = subtotal - discount;
+    const total = roundMoney(subtotal - discount);
 
     return {
       id: cart.id,
