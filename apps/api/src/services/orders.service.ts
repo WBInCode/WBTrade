@@ -2,6 +2,7 @@ import { prisma } from '../db';
 import { OrderStatus, Prisma } from '@prisma/client';
 import { baselinkerOrdersService } from './baselinker-orders.service';
 import { popularityService } from './popularity.service';
+import { roundMoney, addMoney, subtractMoney } from '../lib/currency';
 
 interface PackageShippingItem {
   packageId: string;
@@ -143,26 +144,26 @@ export class OrdersService {
   async create(data: CreateOrderData) {
     const orderNumber = generateOrderNumber();
     
-    // Calculate totals
+    // Calculate totals (using roundMoney to avoid floating-point precision issues)
     // Note: Product prices are already gross (including VAT) in Poland
-    const subtotal = data.items.reduce(
+    const subtotal = roundMoney(data.items.reduce(
       (sum, item) => sum + item.unitPrice * item.quantity,
       0
-    );
+    ));
     
     // Calculate shipping cost from packageShipping or use 0
     let shipping = 0;
     if (data.packageShipping && data.packageShipping.length > 0) {
-      shipping = data.packageShipping.reduce((sum, pkg) => sum + (pkg.price || 0), 0);
+      shipping = roundMoney(data.packageShipping.reduce((sum, pkg) => sum + (pkg.price || 0), 0));
     }
     
     // Get discount from data (calculated in checkout controller)
-    const discount = data.discount || 0;
+    const discount = roundMoney(data.discount || 0);
     
     // VAT is already included in product prices (Polish prices are gross)
     // We calculate VAT for display purposes only (23% is already in the price)
     const tax = 0; // VAT already included in prices
-    const total = subtotal + shipping - discount;
+    const total = roundMoney(subtotal + shipping - discount);
 
     return prisma.$transaction(async (tx) => {
       // If coupon is used, mark it as used
