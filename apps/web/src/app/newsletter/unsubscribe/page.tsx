@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 function UnsubscribeContent() {
   const searchParams = useSearchParams();
@@ -24,7 +24,7 @@ function UnsubscribeContent() {
 
     const unsubscribe = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/newsletter/unsubscribe/${token}`);
+        const response = await fetch(`${API_URL}/newsletter/unsubscribe/${token}`);
         const data = await response.json();
 
         if (data.success) {

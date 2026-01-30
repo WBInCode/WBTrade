@@ -170,6 +170,81 @@ export class DiscountService {
       expiresAt: coupon.expiresAt,
     };
   }
+
+  /**
+   * Generate discount code for newsletter subscribers
+   * Format: NEWS-XXXXXX (6 random alphanumeric chars)
+   * 10% discount, valid for 30 days, single use
+   */
+  async generateNewsletterDiscount(email: string): Promise<WelcomeDiscountResult> {
+    const NEWSLETTER_DISCOUNT_PERCENT = 10;
+    const NEWSLETTER_DISCOUNT_VALID_DAYS = 30;
+
+    // Check if this email already has a newsletter discount
+    const existingCoupon = await prisma.coupon.findFirst({
+      where: {
+        description: { contains: email },
+        couponSource: 'NEWSLETTER',
+      },
+    });
+
+    if (existingCoupon) {
+      // Return existing code if not expired and not used
+      if (existingCoupon.expiresAt && existingCoupon.expiresAt > new Date() && existingCoupon.usedCount < (existingCoupon.maximumUses || 1)) {
+        return {
+          couponCode: existingCoupon.code,
+          discountPercent: Number(existingCoupon.value),
+          expiresAt: existingCoupon.expiresAt,
+        };
+      }
+    }
+
+    // Generate unique code (retry if collision)
+    let code: string;
+    let attempts = 0;
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    do {
+      const randomPart = Array.from(
+        crypto.randomBytes(6),
+        (byte) => chars[byte % chars.length]
+      ).join('');
+      code = `NEWS-${randomPart}`;
+      const existing = await prisma.coupon.findUnique({ where: { code } });
+      if (!existing) break;
+      attempts++;
+    } while (attempts < 10);
+
+    if (attempts >= 10) {
+      throw new Error('Nie udało się wygenerować unikalnego kodu');
+    }
+
+    // Calculate expiration date (30 days from now)
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + NEWSLETTER_DISCOUNT_VALID_DAYS);
+
+    // Create coupon in database
+    const coupon = await prisma.coupon.create({
+      data: {
+        code: code!,
+        description: `Zniżka newsletterowa -${NEWSLETTER_DISCOUNT_PERCENT}% dla ${email}`,
+        type: 'PERCENTAGE',
+        value: NEWSLETTER_DISCOUNT_PERCENT,
+        maximumUses: 1,         // One-time use
+        usedCount: 0,
+        expiresAt,
+        isActive: true,
+        couponSource: 'NEWSLETTER',
+      },
+    });
+
+    console.log(`✅ [DiscountService] Generated newsletter code ${code} for ${email}, expires ${expiresAt.toISOString()}`);
+
+    return {
+      couponCode: coupon.code,
+      discountPercent: NEWSLETTER_DISCOUNT_PERCENT,
+      expiresAt,
+    };
+  }
 }
 
 export const discountService = new DiscountService();
