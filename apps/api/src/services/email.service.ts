@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { discountService } from './discount.service';
 
 // ============================================
 // EMAIL SERVICE
@@ -319,7 +320,7 @@ Zespół WB Trade
   }
 
   /**
-   * Send newsletter welcome email after verification
+   * Send newsletter welcome email after verification with discount code
    */
   async sendNewsletterWelcomeEmail(
     to: string,
@@ -328,14 +329,30 @@ Zespół WB Trade
     try {
       const resend = getResend();
       
+      // Generate 10% discount code for newsletter subscriber
+      let discountCode = '';
+      let discountExpiry = '';
+      try {
+        const discount = await discountService.generateNewsletterDiscount(to);
+        discountCode = discount.couponCode;
+        discountExpiry = discount.expiresAt.toLocaleDateString('pl-PL', { 
+          day: 'numeric', 
+          month: 'long', 
+          year: 'numeric' 
+        });
+      } catch (discountErr) {
+        console.error('[EmailService] Failed to generate newsletter discount:', discountErr);
+        // Continue without discount code
+      }
+      
       const unsubscribeUrl = `${SITE_URL}/newsletter/unsubscribe?token=${unsubscribeToken}`;
 
       const { data, error } = await resend.emails.send({
         from: FROM_EMAIL,
         to: [to],
-        subject: '🎉 Witaj w newsletterze WB Trade!',
-        html: this.getNewsletterWelcomeHtml(unsubscribeUrl),
-        text: this.getNewsletterWelcomeText(unsubscribeUrl),
+        subject: discountCode ? '🎁 Twój kod -10% czeka! Witaj w newsletterze WB Trade!' : '🎉 Witaj w newsletterze WB Trade!',
+        html: this.getNewsletterWelcomeHtml(unsubscribeUrl, discountCode, discountExpiry),
+        text: this.getNewsletterWelcomeText(unsubscribeUrl, discountCode, discountExpiry),
       });
 
       if (error) {
@@ -343,7 +360,7 @@ Zespół WB Trade
         return { success: false, error: error.message };
       }
 
-      console.log(`✅ [EmailService] Newsletter welcome email sent to ${to}, messageId: ${data?.id}`);
+      console.log(`✅ [EmailService] Newsletter welcome email sent to ${to} with discount ${discountCode}, messageId: ${data?.id}`);
       return { success: true, messageId: data?.id };
     } catch (err: any) {
       console.error('[EmailService] Newsletter welcome exception:', err.message);
@@ -352,9 +369,22 @@ Zespół WB Trade
   }
 
   /**
-   * HTML template for newsletter welcome email
+   * HTML template for newsletter welcome email with discount code
    */
-  private getNewsletterWelcomeHtml(unsubscribeUrl: string): string {
+  private getNewsletterWelcomeHtml(unsubscribeUrl: string, discountCode?: string, discountExpiry?: string): string {
+    const discountSection = discountCode ? `
+        <!-- Discount Code Section -->
+        <tr>
+          <td style="padding: 0 30px 30px 30px;">
+            <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px dashed #f59e0b; border-radius: 12px; padding: 25px; text-align: center;">
+              <p style="margin: 0 0 10px 0; font-size: 14px; color: #92400e; text-transform: uppercase; letter-spacing: 1px;">Twój ekskluzywny kod rabatowy</p>
+              <p style="margin: 0 0 15px 0; font-size: 32px; font-weight: bold; color: #78350f; letter-spacing: 3px;">${discountCode}</p>
+              <p style="margin: 0 0 5px 0; font-size: 18px; color: #92400e;"><strong>-10%</strong> na Twoje pierwsze zamówienie!</p>
+              <p style="margin: 0; font-size: 13px; color: #a16207;">Ważny do: ${discountExpiry} • Jednorazowego użytku</p>
+            </div>
+          </td>
+        </tr>` : '';
+
     return `
 <!DOCTYPE html>
 <html lang="pl">
@@ -368,19 +398,23 @@ Zespół WB Trade
     <tr>
       <td style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 40px 30px; text-align: center;">
         <img src="${SITE_URL}/images/WB-TRADE-logo.png" alt="WBTrade" style="height: 50px; width: auto; margin-bottom: 15px;" />
-        <h1 style="color: white; margin: 0; font-size: 28px;">🎉 Dziękujemy za zapis!</h1>
+        <h1 style="color: white; margin: 0; font-size: 28px;">${discountCode ? '🎁 Mamy prezent dla Ciebie!' : '🎉 Dziękujemy za zapis!'}</h1>
       </td>
     </tr>
     
+    ${discountSection}
+    
     <!-- Content -->
     <tr>
-      <td style="padding: 40px 30px;">
+      <td style="padding: 30px;">
         <p style="font-size: 18px; color: #333; margin-bottom: 20px;">
           Cześć!
         </p>
         
         <p style="font-size: 16px; color: #555; line-height: 1.6;">
-          Twój adres e-mail został potwierdzony! Od teraz będziesz otrzymywać od nas:
+          ${discountCode 
+            ? 'Twój adres e-mail został potwierdzony! Na powitanie mamy dla Ciebie <strong>kod rabatowy -10%</strong> na pierwsze zamówienie. Użyj go podczas składania zamówienia!'
+            : 'Twój adres e-mail został potwierdzony!'} Od teraz będziesz otrzymywać od nas:
         </p>
         
         <ul style="font-size: 16px; color: #555; line-height: 2;">
@@ -393,7 +427,7 @@ Zespół WB Trade
         <!-- CTA Button -->
         <div style="text-align: center; margin: 35px 0;">
           <a href="${SITE_URL}/products" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-size: 16px; font-weight: bold; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);">
-            🛒 Przejdź do sklepu
+            🛒 ${discountCode ? 'Wykorzystaj kod teraz!' : 'Przejdź do sklepu'}
           </a>
         </div>
       </td>
@@ -417,15 +451,22 @@ Zespół WB Trade
   }
 
   /**
-   * Plain text version for newsletter welcome
+   * Plain text version for newsletter welcome with discount
    */
-  private getNewsletterWelcomeText(unsubscribeUrl: string): string {
+  private getNewsletterWelcomeText(unsubscribeUrl: string, discountCode?: string, discountExpiry?: string): string {
+    const discountText = discountCode ? `
+🎁 TWÓJ KOD RABATOWY: ${discountCode}
+-10% na pierwsze zamówienie!
+Ważny do: ${discountExpiry} • Jednorazowego użytku
+
+` : '';
+
     return `
 Cześć!
 
 Dziękujemy za zapis do newslettera WB Trade!
 
-Twój adres e-mail został potwierdzony. Od teraz będziesz otrzymywać od nas:
+${discountText}Twój adres e-mail został potwierdzony. Od teraz będziesz otrzymywać od nas:
 - Ekskluzywne kody rabatowe
 - Informacje o nowościach przed innymi
 - Specjalne promocje tylko dla subskrybentów
