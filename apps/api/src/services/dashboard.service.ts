@@ -1,6 +1,5 @@
-import { PrismaClient, OrderStatus } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { OrderStatus } from '@prisma/client';
+import { prisma } from '../db';
 
 interface DashboardKPIs {
   ordersToday: number;
