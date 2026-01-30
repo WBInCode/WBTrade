@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { checkoutApi, addressesApi, ApiClientError, CartItem } from '@/lib/api';
+import { roundMoney } from '@/lib/currency';
 import CheckoutSteps from './components/CheckoutSteps';
 import CheckoutAuthChoice from './components/CheckoutAuthChoice';
 import AddressForm from './components/AddressForm';
@@ -292,21 +293,21 @@ function CheckoutPageContent() {
   };
 
   const calculateTotal = () => {
-    const subtotal = checkoutItems.reduce((sum: number, item: any) => {
+    const subtotal = roundMoney(checkoutItems.reduce((sum: number, item: any) => {
       const price = item.variant?.price || 0;
       return sum + price * item.quantity;
-    }, 0);
+    }, 0));
     
-    const shipping = checkoutData.shipping.price;
-    const paymentFee = checkoutData.payment.extraFee;
-    const discount = cart?.discount || 0;
+    const shipping = roundMoney(checkoutData.shipping.price);
+    const paymentFee = roundMoney(checkoutData.payment.extraFee);
+    const discount = roundMoney(cart?.discount || 0);
     
     return {
       subtotal,
       shipping,
       paymentFee,
       discount,
-      total: subtotal + shipping + paymentFee - discount,
+      total: roundMoney(subtotal + shipping + paymentFee - discount),
     };
   };
 

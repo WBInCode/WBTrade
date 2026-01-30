@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { useCart } from '../../contexts/CartContext';
 import { productsApi } from '../../lib/api';
+import { roundMoney } from '../../lib/currency';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import Breadcrumb from '../../components/Breadcrumb';
@@ -123,7 +124,7 @@ export default function WishlistPage() {
     setShowClearConfirm(false);
   };
 
-  const totalValue = items.reduce((sum, item) => sum + Number(item.price), 0);
+  const totalValue = roundMoney(items.reduce((sum, item) => sum + Number(item.price), 0));
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-secondary-900">

@@ -7,6 +7,7 @@ import Footer from '../../components/Footer';
 import CartPackageView from '../../components/CartPackageView';
 import { useCart } from '../../contexts/CartContext';
 import { productsApi, checkoutApi, Product } from '../../lib/api';
+import { roundMoney } from '../../lib/currency';
 import ProductCard from '../../components/ProductCard';
 
 export default function CartPage() {
@@ -132,19 +133,19 @@ export default function CartPage() {
     if (!cart?.items) return { subtotal: 0, shipping: 0, total: 0, selectedCount: 0 };
     
     const selectedCartItems = cart.items.filter(item => selectedItems.has(item.id));
-    const subtotal = selectedCartItems.reduce((sum, item) => sum + (item.variant.price * item.quantity), 0);
+    const subtotal = roundMoney(selectedCartItems.reduce((sum, item) => sum + (item.variant.price * item.quantity), 0));
     
     // Use total shipping cost from API (calculated properly for all packages)
     // Only show shipping when all items are selected, otherwise recalculate would be needed
     const allSelected = selectedItems.size === cart.items.length;
-    const shipping = allSelected ? totalShippingCost : 
+    const shipping = roundMoney(allSelected ? totalShippingCost : 
       Array.from(new Set(selectedCartItems.map(item => item.variant.product?.wholesaler || 'default')))
-        .reduce((sum, ws) => sum + (shippingPrices[ws] || 0), 0);
+        .reduce((sum, ws) => sum + (shippingPrices[ws] || 0), 0));
     
     return {
       subtotal,
       shipping,
-      total: subtotal + shipping,
+      total: roundMoney(subtotal + shipping),
       selectedCount: selectedCartItems.reduce((sum, item) => sum + item.quantity, 0),
     };
   }, [cart?.items, selectedItems, shippingPrices, totalShippingCost]);

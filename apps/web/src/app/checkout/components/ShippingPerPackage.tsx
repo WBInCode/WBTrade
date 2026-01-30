@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShippingData, PackageShippingSelection } from '../page';
 import { checkoutApi } from '../../../lib/api';
+import { roundMoney } from '../../../lib/currency';
 import InPostGeoWidget, { InPostPoint } from '../../../components/InPostGeoWidget';
 
 type ShippingMethodId = 'inpost_paczkomat' | 'inpost_kurier' | 'dpd_kurier' | 'wysylka_gabaryt';
@@ -195,7 +196,7 @@ export default function ShippingPerPackage({
         total += method.price;
       }
     }
-    return total;
+    return roundMoney(total);
   };
 
   // Calculate actual number of shipments based on selected methods
