@@ -7,6 +7,7 @@ import Footer from '../../components/Footer';
 import CartPackageView from '../../components/CartPackageView';
 import { useCart } from '../../contexts/CartContext';
 import { productsApi, checkoutApi, Product } from '../../lib/api';
+import ProductCarousel from '../../components/ProductCarousel';
 
 export default function CartPage() {
   const { cart, loading, error, updateQuantity, removeFromCart, clearCart, addToCart } = useCart();
@@ -335,74 +336,14 @@ export default function CartPage() {
         {/* Bestsellers Section */}
         {suggestedProducts.length > 0 && (
           <div className="mt-6 sm:mt-12 bg-white dark:bg-secondary-800 rounded-xl p-4 sm:p-6 lg:p-8 shadow-sm">
-            <div className="flex items-center justify-between mb-4 sm:mb-6 gap-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">🔥</span>
-                <h2 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">Bestsellery</h2>
-              </div>
-              <Link href="/products/bestsellers" className="text-orange-500 hover:text-orange-600 text-sm sm:text-base font-medium flex items-center gap-1 shrink-0">
-                <span className="hidden sm:inline">Zobacz więcej</span>
-                <span className="sm:hidden">Więcej</span>
-                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
-              {suggestedProducts.slice(0, 5).map((product) => (
-                <div
-                  key={product.id}
-                  className="bg-gray-50 dark:bg-secondary-700 rounded-lg sm:rounded-xl p-2 sm:p-4 hover:shadow-lg transition-all hover:-translate-y-1 group"
-                >
-                  <Link href={`/products/${product.id}`}>
-                    <div className="aspect-square rounded-lg overflow-hidden bg-white dark:bg-secondary-600 mb-2 sm:mb-3">
-                      {product.images?.[0] ? (
-                        <img
-                          src={product.images[0].url}
-                          alt={product.images[0].alt || product.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400">
-                          <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </div>
-                      )}
-                    </div>
-                    <h3 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white line-clamp-2 group-hover:text-orange-500 transition-colors mb-1 sm:mb-2 min-h-[32px] sm:min-h-[40px]">
-                      {product.name}
-                    </h3>
-                  </Link>
-                  <div className="flex items-baseline gap-1 sm:gap-2 flex-wrap mb-2 sm:mb-3">
-                    <span className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white">
-                      {Number(product.price).toFixed(2)} zł
-                    </span>
-                    {product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price) && (
-                      <span className="text-xs text-gray-400 line-through hidden sm:inline">
-                        {Number(product.compareAtPrice).toFixed(2)} zł
-                      </span>
-                    )}
-                  </div>
-                  <button 
-                    onClick={() => {
-                      if (product.variants?.[0]?.id) {
-                        addToCart(product.variants[0].id, 1, {
-                          name: product.name,
-                          image: product.images?.[0]?.url || '',
-                          price: String(product.price),
-                          quantity: 1,
-                          productId: product.id,
-                        });
-                      }
-                    }}
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm font-medium py-2 sm:py-2.5 rounded-lg transition-colors"
-                  >
-                    Do koszyka
-                  </button>
-                </div>
-              ))}
-            </div>
+            <ProductCarousel
+              title="Bestsellery"
+              subtitle="Najchętniej kupowane produkty"
+              products={suggestedProducts}
+              viewAllLink="/products/bestsellers"
+              accentColor="orange"
+              icon={<span>🔥</span>}
+            />
           </div>
         )}
       </main>
