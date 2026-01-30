@@ -136,10 +136,10 @@ export default function ProductCarousel({
       </div>
 
       {/* Products carousel */}
-      <div className={compact ? "relative" : "relative -mx-4 sm:-mx-6 md:mx-0"}>
+      <div className="relative overflow-hidden">
         <div
           ref={scrollContainerRef}
-          className={`flex gap-2.5 sm:gap-3 md:gap-4 overflow-x-auto scroll-smooth pb-3 snap-x snap-mandatory ${compact ? "" : "px-4 sm:px-6 md:px-0"}`}
+          className="flex gap-2.5 sm:gap-3 md:gap-4 overflow-x-auto scroll-smooth pb-3 snap-x snap-mandatory"
           style={{ 
             scrollbarWidth: 'none', 
             msOverflowStyle: 'none',
@@ -149,10 +149,7 @@ export default function ProductCarousel({
           {products.map((product, index) => (
             <div 
               key={`${product.id}-${index}`} 
-              className={compact 
-                ? "flex-shrink-0 w-[130px] xs:w-[145px] sm:w-[160px] md:w-[180px] lg:w-[200px] snap-start"
-                : "flex-shrink-0 w-[145px] xs:w-[160px] sm:w-[180px] md:w-[200px] lg:w-[220px] snap-start"
-              }
+              className="flex-shrink-0 w-[145px] xs:w-[160px] sm:w-[180px] md:w-[200px] lg:w-[220px] snap-start"
             >
               <ProductCard product={product} showWishlist={true} showAddToCart={true} />
             </div>

@@ -7,15 +7,15 @@ import Footer from '../../components/Footer';
 import CartPackageView from '../../components/CartPackageView';
 import { useCart } from '../../contexts/CartContext';
 import { productsApi, checkoutApi, Product } from '../../lib/api';
-import ProductCarousel from '../../components/ProductCarousel';
+import ProductCard from '../../components/ProductCard';
 
 export default function CartPage() {
   const { cart, loading, error, updateQuantity, removeFromCart, clearCart, addToCart } = useCart();
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-  const [suggestedProducts, setSuggestedProducts] = useState<Product[]>([]);
   const [shippingPrices, setShippingPrices] = useState<Record<string, number>>({});
   const [totalShippingCost, setTotalShippingCost] = useState<number>(0);
   const [loadingShipping, setLoadingShipping] = useState(false);
+  const [bestsellers, setBestsellers] = useState<Product[]>([]);
 
   // Initialize all items as selected
   useEffect(() => {
@@ -24,21 +24,14 @@ export default function CartPage() {
     }
   }, [cart?.items]);
 
-  // Fetch bestseller products
+  // Fetch bestsellers
   useEffect(() => {
     async function fetchBestsellers() {
       try {
-        const response = await productsApi.getBestsellers({ limit: 10 });
-        setSuggestedProducts(response.products || []);
+        const response = await productsApi.getBestsellers({ limit: 15 });
+        setBestsellers(response.products || []);
       } catch (err) {
         console.error('Failed to fetch bestsellers:', err);
-        // Fallback to regular products
-        try {
-          const fallback = await productsApi.getAll({ limit: 10 });
-          setSuggestedProducts(fallback.products || []);
-        } catch (e) {
-          console.error('Fallback failed:', e);
-        }
       }
     }
     fetchBestsellers();
@@ -333,21 +326,43 @@ export default function CartPage() {
           </div>
         )}
 
-        {/* Bestsellers Section */}
-        {suggestedProducts.length > 0 && (
-          <div className="mt-6 sm:mt-12 bg-white dark:bg-secondary-800 rounded-xl p-4 sm:p-6 lg:p-8 shadow-sm">
-            <ProductCarousel
-              title="Bestsellery"
-              subtitle="Najchętniej kupowane produkty"
-              products={suggestedProducts}
-              viewAllLink="/products/bestsellers"
-              accentColor="orange"
-              icon={<span>🔥</span>}
-              compact
-            />
-          </div>
-        )}
       </main>
+
+      {/* Bestsellers Section */}
+      {bestsellers.length > 0 && (
+        <section className="py-6 sm:py-8">
+          <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center text-base sm:text-xl">
+                  🔥
+                </div>
+                <div>
+                  <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 dark:text-white">Bestsellery</h2>
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 hidden sm:block">Najchętniej kupowane produkty</p>
+                </div>
+              </div>
+              <Link href="/products/bestsellers" className="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center gap-1">
+                <span className="hidden sm:inline">Zobacz wszystkie</span>
+                <span className="sm:hidden">Więcej</span>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                </svg>
+              </Link>
+            </div>
+          </div>
+          <div 
+            className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {bestsellers.map((product) => (
+              <div key={product.id} className="flex-shrink-0 w-[160px] sm:w-[180px] md:w-[200px] lg:w-[220px]">
+                <ProductCard product={product} showWishlist={true} showAddToCart={true} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <Footer hideTrustBadges />
     </div>
