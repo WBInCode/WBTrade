@@ -1,9 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
+import { prisma } from '../db';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Hasło komunikacji - ustaw w .env jako BASELINKER_XML_PASSWORD
 const XML_PASSWORD = process.env.BASELINKER_XML_PASSWORD || 'wbtrade_bl_2024';
