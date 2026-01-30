@@ -772,6 +772,15 @@ export class BaselinkerService {
   private defaultPriceGroupId = '10034'; // PLN price group
 
   /**
+   * Round price to .99 ending (e.g., 12.34 → 12.99, 50.00 → 50.99)
+   * This makes prices more attractive psychologically
+   */
+  private roundPriceTo99(price: number): number {
+    if (price <= 0) return 0;
+    return Math.floor(price) + 0.99;
+  }
+
+  /**
    * Get product price from Baselinker product data
    * BaseLinker can return prices in different fields:
    * - price_brutto: direct price (simple products)
@@ -782,39 +791,43 @@ export class BaselinkerService {
    * 2. Default PLN price group (ID 10034)
    * 3. First non-zero price from any group
    * 4. price_netto + tax
+   * 
+   * All prices are rounded to .99 ending
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private getProductPrice(blProduct: any): number {
+    let rawPrice = 0;
+
     // First try direct price_brutto
     if (blProduct.price_brutto && parseFloat(blProduct.price_brutto) > 0) {
-      return parseFloat(blProduct.price_brutto);
+      rawPrice = parseFloat(blProduct.price_brutto);
     }
-    
     // Try prices object (inventory price groups)
-    if (blProduct.prices && typeof blProduct.prices === 'object') {
+    else if (blProduct.prices && typeof blProduct.prices === 'object') {
       // Priority 1: Default PLN price group
       const plnPrice = blProduct.prices[this.defaultPriceGroupId];
       if (plnPrice && parseFloat(plnPrice) > 0) {
-        return parseFloat(plnPrice);
-      }
-      
-      // Priority 2: First non-zero price (fallback)
-      for (const [groupId, price] of Object.entries(blProduct.prices)) {
-        const numPrice = parseFloat(String(price));
-        if (numPrice > 0) {
-          console.log(`[BaselinkerSync] Using price from group ${groupId} (not default PLN): ${numPrice}`);
-          return numPrice;
+        rawPrice = parseFloat(plnPrice);
+      } else {
+        // Priority 2: First non-zero price (fallback)
+        for (const [groupId, price] of Object.entries(blProduct.prices)) {
+          const numPrice = parseFloat(String(price));
+          if (numPrice > 0) {
+            console.log(`[BaselinkerSync] Using price from group ${groupId} (not default PLN): ${numPrice}`);
+            rawPrice = numPrice;
+            break;
+          }
         }
       }
     }
-    
     // Try price_netto + tax
-    if (blProduct.price_netto && parseFloat(blProduct.price_netto) > 0) {
+    else if (blProduct.price_netto && parseFloat(blProduct.price_netto) > 0) {
       const taxRate = blProduct.tax_rate || 23; // Default VAT 23%
-      return parseFloat(blProduct.price_netto) * (1 + taxRate / 100);
+      rawPrice = parseFloat(blProduct.price_netto) * (1 + taxRate / 100);
     }
     
-    return 0;
+    // Round to .99 ending
+    return this.roundPriceTo99(rawPrice);
   }
 
   /**
@@ -1128,7 +1141,9 @@ export class BaselinkerService {
                 for (const blVariant of blProduct.variants) {
                   const variantId = blVariant.variant_id.toString();
                   const variantSku = generateSku(blVariant.variant_id, blVariant.sku);
-                  const variantPrice = blVariant.price_brutto || productPrice;
+                  // Round variant price to .99 ending (use product price if variant has no price)
+                  const rawVariantPrice = blVariant.price_brutto || productPrice;
+                  const variantPrice = this.roundPriceTo99(rawVariantPrice);
                   const variantEan = blVariant.ean ? String(blVariant.ean).trim() : null;
 
                   // Check if variant exists
