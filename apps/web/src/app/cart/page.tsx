@@ -343,6 +343,7 @@ export default function CartPage() {
               viewAllLink="/products/bestsellers"
               accentColor="orange"
               icon={<span>🔥</span>}
+              compact
             />
           </div>
         )}

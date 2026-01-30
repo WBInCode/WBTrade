@@ -25,6 +25,7 @@ interface ProductCarouselProps {
   viewAllText?: string;
   accentColor?: string;
   icon?: React.ReactNode;
+  compact?: boolean; // For embedded use in cards/containers (cart page, etc.)
 }
 
 export default function ProductCarousel({
@@ -35,6 +36,7 @@ export default function ProductCarousel({
   viewAllText = 'Zobacz wszystkie',
   accentColor = 'orange',
   icon,
+  compact = false,
 }: ProductCarouselProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -82,7 +84,7 @@ export default function ProductCarousel({
   }
 
   return (
-    <section className="py-4 sm:py-6 md:py-8">
+    <section className={compact ? "py-2 sm:py-3" : "py-4 sm:py-6 md:py-8"}>
       {/* Header */}
       <div className="flex items-center justify-between mb-3 sm:mb-4">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
@@ -134,10 +136,10 @@ export default function ProductCarousel({
       </div>
 
       {/* Products carousel */}
-      <div className="relative -mx-4 sm:-mx-6 md:mx-0">
+      <div className={compact ? "relative" : "relative -mx-4 sm:-mx-6 md:mx-0"}>
         <div
           ref={scrollContainerRef}
-          className="flex gap-2.5 sm:gap-3 md:gap-4 overflow-x-auto scroll-smooth pb-3 px-4 sm:px-6 md:px-0 snap-x snap-mandatory"
+          className={`flex gap-2.5 sm:gap-3 md:gap-4 overflow-x-auto scroll-smooth pb-3 snap-x snap-mandatory ${compact ? "" : "px-4 sm:px-6 md:px-0"}`}
           style={{ 
             scrollbarWidth: 'none', 
             msOverflowStyle: 'none',
@@ -147,7 +149,10 @@ export default function ProductCarousel({
           {products.map((product, index) => (
             <div 
               key={`${product.id}-${index}`} 
-              className="flex-shrink-0 w-[145px] xs:w-[160px] sm:w-[180px] md:w-[200px] lg:w-[220px] snap-start"
+              className={compact 
+                ? "flex-shrink-0 w-[130px] xs:w-[145px] sm:w-[160px] md:w-[180px] lg:w-[200px] snap-start"
+                : "flex-shrink-0 w-[145px] xs:w-[160px] sm:w-[180px] md:w-[200px] lg:w-[220px] snap-start"
+              }
             >
               <ProductCard product={product} showWishlist={true} showAddToCart={true} />
             </div>
