@@ -343,6 +343,10 @@ model Order {
   guestFirstName      String?              @map("guest_first_name")
   guestLastName       String?              @map("guest_last_name")
   guestPhone          String?              @map("guest_phone")
+  // Refund fields
+  refundNumber        String?              @unique @map("refund_number")
+  refundReason        String?              @map("refund_reason")
+  refundRequestedAt   DateTime?            @map("refund_requested_at")
   items               OrderItem[]
   statusHistory       OrderStatusHistory[]
   billingAddress      Address?             @relation("BillingAddress", fields: [billingAddressId], references: [id])

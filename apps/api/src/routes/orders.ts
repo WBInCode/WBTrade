@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createOrder, getOrder, updateOrder, deleteOrder, getAllOrders, getUserOrders, refundOrder, restoreOrder, simulatePayment } from '../controllers/orders.controller';
+import { createOrder, getOrder, updateOrder, deleteOrder, getAllOrders, getUserOrders, refundOrder, restoreOrder, simulatePayment, checkRefundEligibility, requestRefund } from '../controllers/orders.controller';
 import { authGuard } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -22,7 +22,13 @@ router.put('/:id', updateOrder);
 // Route to delete an order by ID
 router.delete('/:id', deleteOrder);
 
-// Route to refund an order
+// Route to check refund eligibility (customer - no auth required, works with order ID/number)
+router.get('/:id/refund-eligibility', checkRefundEligibility);
+
+// Route to request refund (customer - no auth required, validates 14-day period)
+router.post('/:id/request-refund', requestRefund);
+
+// Route to refund an order (admin)
 router.post('/:id/refund', refundOrder);
 
 // Route to restore a cancelled/refunded order
