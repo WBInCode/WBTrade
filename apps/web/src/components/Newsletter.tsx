@@ -63,10 +63,10 @@ export default function Newsletter() {
 
         {/* Title */}
         <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-2">
-          Zapisz się do newslettera
+          Zapisz się i odbierz <span className="text-yellow-300">-10%</span> na pierwsze zamówienie!
         </h2>
         <p className="text-sm sm:text-base text-white/80 mb-4 sm:mb-6 max-w-xl mx-auto">
-          Otrzymuj informacje o najlepszych promocjach, nowościach i ekskluzywnych ofertach.
+          Otrzymaj unikalny kod rabatowy oraz informacje o najlepszych promocjach i ekskluzywnych ofertach.
         </p>
 
         {/* Form */}
@@ -122,6 +122,12 @@ export default function Newsletter() {
         {/* Benefits */}
         <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3 sm:gap-6 mt-6 sm:mt-8 text-white/80 text-xs sm:text-sm">
           <div className="flex items-center gap-2">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-300" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M5 2a2 2 0 00-2 2v14l3.5-2 3.5 2 3.5-2 3.5 2V4a2 2 0 00-2-2H5zm2.5 3a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm6.207.293a1 1 0 00-1.414 0l-6 6a1 1 0 101.414 1.414l6-6a1 1 0 000-1.414zM12.5 10a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" clipRule="evenodd" />
+            </svg>
+            <span className="text-yellow-200 font-semibold">-10% na pierwsze zamówienie</span>
+          </div>
+          <div className="flex items-center gap-2">
             <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
             </svg>
@@ -132,12 +138,6 @@ export default function Newsletter() {
               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
             </svg>
             <span>Wcześniejszy dostęp do wyprzedaży</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
-            <span>Rezygnacja w dowolnym momencie</span>
           </div>
         </div>
       </div>

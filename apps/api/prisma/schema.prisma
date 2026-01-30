@@ -415,6 +415,7 @@ model Coupon {
 enum CouponSource {
   MANUAL           // Admin created
   WELCOME_DISCOUNT // Auto-generated on registration (-20%)
+  NEWSLETTER       // Newsletter subscription (-10%)
   REFERRAL         // Referral program (future)
   CAMPAIGN         // Marketing campaign
 }
