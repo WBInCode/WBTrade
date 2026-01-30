@@ -125,18 +125,12 @@ export default function WishlistPage() {
 
   const totalValue = items.reduce((sum, item) => sum + Number(item.price), 0);
 
-  const breadcrumbItems = [
-    { label: 'Strona główna', href: '/' },
-    { label: 'Ulubione', href: '/wishlist' },
-  ];
-
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-secondary-900">
       <Header />
       
       <main className="flex-grow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Breadcrumb items={breadcrumbItems} />
 
           {/* Header section */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
@@ -290,11 +284,11 @@ export default function WishlistPage() {
                           </h3>
                         </Link>
                         <div className="flex items-baseline gap-2 mb-3">
-                          <span className="text-lg font-bold text-gray-900 dark:text-white">
+                          <span className="text-lg font-bold text-primary-600 dark:text-primary-400">
                             {Number(item.price).toFixed(2)} zł
                           </span>
                           {item.compareAtPrice && Number(item.compareAtPrice) > Number(item.price) && (
-                            <span className="text-sm text-gray-400 line-through">
+                            <span className="text-sm text-gray-400 dark:text-secondary-500 line-through">
                               {Number(item.compareAtPrice).toFixed(2)} zł
                             </span>
                           )}
@@ -380,30 +374,30 @@ export default function WishlistPage() {
                           </div>
                           
                           <div className="flex items-baseline gap-2 mt-2">
-                            <span className="text-xl font-bold text-gray-900">
+                            <span className="text-lg sm:text-xl font-bold text-primary-600 dark:text-primary-400">
                               {Number(item.price).toFixed(2)} zł
                             </span>
                             {item.compareAtPrice && Number(item.compareAtPrice) > Number(item.price) && (
                               <>
-                                <span className="text-sm text-gray-400 line-through">
+                                <span className="text-xs sm:text-sm text-gray-400 dark:text-secondary-500 line-through">
                                   {Number(item.compareAtPrice).toFixed(2)} zł
                                 </span>
-                                <span className="text-sm text-red-500 font-medium">
+                                <span className="text-xs sm:text-sm text-red-500 font-medium">
                                   -{Math.round((1 - Number(item.price) / Number(item.compareAtPrice)) * 100)}%
                                 </span>
                               </>
                             )}
                           </div>
 
-                          <p className="text-xs text-gray-400 mt-1">
+                          <p className="text-xs text-gray-400 dark:text-secondary-500 mt-1">
                             Dodano: {new Date(item.addedAt).toLocaleDateString('pl-PL')}
                           </p>
 
-                          <div className="flex gap-2 mt-3">
+                          <div className="flex flex-wrap gap-2 mt-3">
                             <button
                               onClick={() => handleAddToCart(item)}
                               disabled={addedToCartIds.has(item.id) || addingItemIds.has(item.id)}
-                              className={`py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                              className={`py-1.5 sm:py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1.5 sm:gap-2 ${
                                 addedToCartIds.has(item.id)
                                   ? 'bg-green-500 text-white'
                                   : addingItemIds.has(item.id)
@@ -437,7 +431,7 @@ export default function WishlistPage() {
                             </button>
                             <Link
                               href={`/products/${item.id}`}
-                              className="py-2 px-4 rounded-lg text-sm font-medium border border-gray-200 dark:border-secondary-600 text-gray-600 dark:text-gray-300 hover:border-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors"
+                              className="py-1.5 sm:py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-medium border border-gray-200 dark:border-secondary-600 text-gray-600 dark:text-gray-300 hover:border-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors"
                             >
                               Zobacz szczegóły
                             </Link>
