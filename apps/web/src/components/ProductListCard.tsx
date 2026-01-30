@@ -266,7 +266,7 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
 
       <Link href={`/products/${product.id}`} className="flex flex-col h-full">
         {/* Image */}
-        <div className="relative aspect-square overflow-hidden rounded-t-lg bg-gray-50 dark:bg-secondary-700 p-2 sm:p-4">
+        <div className="relative aspect-square m-2 sm:m-3 overflow-hidden rounded-lg sm:rounded-xl">
           <img
             src={mainImage}
             alt={product.name}
