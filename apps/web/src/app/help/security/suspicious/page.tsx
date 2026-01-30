@@ -89,7 +89,7 @@ export default function SuspiciousPage() {
                     <strong>Sprawdź dane:</strong> Zweryfikuj czy dane kontaktowe nie zostały zmienione.
                   </li>
                   <li>
-                    <strong>Skontaktuj się z nami:</strong> Zgłoś incydent na bezpieczenstwo@wbtrade.pl
+                    <strong>Skontaktuj się z nami:</strong> Zgłoś incydent na support@wb-partners.pl
                   </li>
                   <li>
                     <strong>Sprawdź bank:</strong> Przejrzyj wyciąg bankowy i zgłoś podejrzane transakcje.
@@ -124,7 +124,7 @@ export default function SuspiciousPage() {
                   </ul>
                 </div>
                 <p className="text-secondary-600 dark:text-secondary-400 mb-6">
-                  Jeśli otrzymałeś taki e-mail - <strong>NIE KLIKAJ w linki</strong>. Prześlij go do nas: bezpieczenstwo@wbtrade.pl
+                  Jeśli otrzymałeś taki e-mail - <strong>NIE KLIKAJ w linki</strong>. Prześlij go do nas: support@wb-partners.pl
                 </p>
 
                 <h2 className="text-xl font-semibold text-secondary-900 dark:text-white mt-8 mb-4">
@@ -140,13 +140,13 @@ export default function SuspiciousPage() {
                 </ul>
 
                 <div className="bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-700 rounded-xl p-6 mt-8">
-                  <h3 className="font-semibold text-primary-900 dark:text-primary-100 mb-2">📞 Pilny kontakt</h3>
+                  <h3 className="font-semibold text-primary-900 dark:text-primary-100 mb-2">📞 Kontakt z obsługą klienta</h3>
                   <p className="text-primary-700 dark:text-primary-300 mb-3">
                     W sprawach bezpieczeństwa konta:
                   </p>
                   <ul className="text-primary-700 dark:text-primary-300 text-sm space-y-1">
-                    <li>📧 E-mail: bezpieczenstwo@wbtrade.pl</li>
-                    <li>📞 Telefon: +48 123 456 789 (pon-pt 9-17)</li>
+                    <li>📧 E-mail: support@wb-partners.pl</li>
+                    <li>📞 Telefon: +48 570 028 761 (pon-pt 9-17)</li>
                     <li>⏰ Odpowiadamy na zgłoszenia bezpieczeństwa w ciągu 4 godzin</li>
                   </ul>
                 </div>

@@ -137,6 +137,7 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
               <li><Link href="/help" className="text-secondary-600 dark:text-secondary-400 hover:text-primary-500 transition-colors">Pomoc</Link></li>
               <li><Link href="/returns" className="text-secondary-600 dark:text-secondary-400 hover:text-primary-500 transition-colors">Zwroty i reklamacje</Link></li>
               <li><Link href="/shipping" className="text-secondary-600 dark:text-secondary-400 hover:text-primary-500 transition-colors">Dostawa</Link></li>
+              <li><Link href="/faq" className="text-secondary-600 dark:text-secondary-400 hover:text-primary-500 transition-colors">FAQ</Link></li>
               <li><Link href="/contact" className="text-secondary-600 dark:text-secondary-400 hover:text-primary-500 transition-colors">Kontakt</Link></li>
             </ul>
           </div>

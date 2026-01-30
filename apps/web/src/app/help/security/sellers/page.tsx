@@ -162,7 +162,7 @@ export default function SellersPage() {
                     <li>Brak kontaktu lub nietypowe odpowiedzi</li>
                   </ul>
                   <p className="text-yellow-700 dark:text-yellow-300 mt-3 text-sm">
-                    Zgłoś to do nas: bezpieczenstwo@wbtrade.pl
+                    Zgłoś to do nas: support@wb-partners.pl
                   </p>
                 </div>
               </div>
