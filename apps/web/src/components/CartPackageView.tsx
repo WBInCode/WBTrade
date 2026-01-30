@@ -39,9 +39,9 @@ const WHOLESALER_CONFIG: Record<string, { name: string; color: string; icon: str
   'Ikonka': { name: 'Magazyn Białystok', color: 'bg-purple-500', icon: '📍' },
   'BTP': { name: 'Magazyn Chotów', color: 'bg-green-500', icon: '📍' },
   'Leker': { name: 'Magazyn Chynów', color: 'bg-red-500', icon: '📍' },
-  'Gastro': { name: 'Magazyn Centralny', color: 'bg-yellow-500', icon: '📍' },
-  'Horeca': { name: 'Magazyn Centralny', color: 'bg-orange-500', icon: '📍' },
-  'Forcetop': { name: 'Magazyn Centralny', color: 'bg-teal-500', icon: '📍' },
+  'Gastro': { name: 'Magazyn Chotów', color: 'bg-yellow-500', icon: '📍' },
+  'Horeca': { name: 'Magazyn Chotów', color: 'bg-orange-500', icon: '📍' },
+  'Forcetop': { name: 'Magazyn Chotów', color: 'bg-teal-500', icon: '📍' },
   'default': { name: 'Magazyn WB Trade', color: 'bg-gray-500', icon: '📍' },
 };
 
@@ -366,6 +366,17 @@ export default function CartPackageView({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                 </svg>
                 <span className="text-gray-700 dark:text-gray-300">Szacowana dostawa</span>
+                <div className="relative group">
+                  <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center cursor-help hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
+                    <span className="text-[10px] sm:text-xs font-semibold text-gray-600 dark:text-gray-300">i</span>
+                  </div>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 w-56 sm:w-64 z-50 pointer-events-none">
+                    <div className="text-center leading-relaxed">
+                      Koszt dostawy zależy od wybranej metody dostawy w następnym kroku. Podana wartość to najtańsza możliwa opcja.
+                    </div>
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+                  </div>
+                </div>
               </div>
               <div className="text-right">
                 {pkg.subtotal >= 300 ? (
