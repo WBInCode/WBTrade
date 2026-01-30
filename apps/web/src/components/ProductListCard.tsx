@@ -59,7 +59,8 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
   // Demo data for display
   const storeName = product.storeName || 'TopStore';
   const badge = product.badge as BadgeType | undefined;
-  const deliveryInfo = product.deliveryInfo || 'Wysyłka w ciągu 24-72h';
+  const hasStock = product.variants && product.variants.length > 0 && product.variants[0].stock > 0;
+  const deliveryInfo = hasStock ? (product.deliveryInfo || 'Wysyłka w ciągu 24-72h') : 'Brak na stanie';
   const warehouseLocation = getWarehouseLocation(product);
 
   const { isInWishlist, toggleWishlist } = useWishlist();
@@ -177,7 +178,7 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
 
             {/* Delivery Info */}
             <div className="flex flex-col gap-0.5 mt-auto">
-              <span className="text-sm text-green-600 dark:text-green-400">{deliveryInfo}</span>
+              <span className={`text-sm ${hasStock ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400 font-medium'}`}>{deliveryInfo}</span>
               {warehouseLocation && (
                 <span className="text-xs text-gray-500 dark:text-secondary-400 flex items-center gap-1">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -303,7 +304,7 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
 
           {/* Delivery Info */}
           <div className="flex flex-col gap-0.5 mb-1 sm:mb-2 mt-auto">
-            <span className="text-[10px] sm:text-xs text-green-600 dark:text-green-400">{deliveryInfo}</span>
+            <span className={`text-[10px] sm:text-xs ${hasStock ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400 font-medium'}`}>{deliveryInfo}</span>
             {warehouseLocation && (
               <span className="text-[9px] sm:text-[10px] text-gray-500 dark:text-secondary-400 flex items-center gap-0.5">
                 <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

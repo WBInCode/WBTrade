@@ -132,23 +132,9 @@ export default function HelpPage() {
             <h1 className="text-4xl lg:text-5xl font-bold mb-6">
               Jak możemy Ci pomóc?
             </h1>
-            <p className="text-xl text-primary-100 mb-8">
+            <p className="text-xl text-primary-100">
               Znajdź odpowiedzi na pytania dotyczące zamówień, płatności, dostawy i więcej.
             </p>
-            
-            {/* Search Box */}
-            <div className="relative max-w-xl mx-auto">
-              <input
-                type="text"
-                placeholder="Szukaj w centrum pomocy..."
-                className="w-full px-6 py-4 pr-14 rounded-2xl text-secondary-900 placeholder-secondary-400 focus:outline-none focus:ring-4 focus:ring-white/30"
-              />
-              <button className="absolute right-4 top-1/2 -translate-y-1/2 text-primary-600 hover:text-primary-700">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </button>
-            </div>
           </div>
         </div>
       </section>
