@@ -344,10 +344,10 @@ function AccountPageContent() {
                     <Link
                       key={item.id}
                       href={item.href}
-                      className="flex flex-col items-center gap-1 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors"
+                      className="flex flex-col items-center justify-start gap-1 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors"
                     >
                       <SidebarIcon icon={item.icon} />
-                      <span className="text-xs">{item.label}</span>
+                      <span className="text-xs text-center leading-tight">{item.label}</span>
                     </Link>
                   ))}
                 </div>

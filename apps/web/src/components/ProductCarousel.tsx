@@ -137,7 +137,7 @@ export default function ProductCarousel({
       <div className="relative -mx-4 sm:-mx-6 md:mx-0">
         <div
           ref={scrollContainerRef}
-          className="flex gap-2.5 sm:gap-3 md:gap-4 overflow-x-auto scroll-smooth pb-3 px-4 sm:px-6 md:px-0 snap-x snap-mandatory touch-pan-x"
+          className="flex gap-2.5 sm:gap-3 md:gap-4 overflow-x-auto scroll-smooth pb-3 px-4 sm:px-6 md:px-0 snap-x snap-mandatory"
           style={{ 
             scrollbarWidth: 'none', 
             msOverflowStyle: 'none',
