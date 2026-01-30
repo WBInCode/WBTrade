@@ -310,7 +310,7 @@ function HeaderContent() {
             {showLeftArrow && (
               <button
                 onClick={() => scrollCategories('left')}
-                className="absolute left-0 z-10 h-full px-2 bg-gradient-to-r from-primary-500 via-primary-500 to-transparent flex items-center"
+                className="absolute left-0 z-10 h-full px-2 bg-gradient-to-r from-primary-500 via-primary-500 dark:from-primary-600 dark:via-primary-600 to-transparent flex items-center"
                 aria-label="Przewiń w lewo"
               >
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -366,7 +366,7 @@ function HeaderContent() {
             {showRightArrow && (
               <button
                 onClick={() => scrollCategories('right')}
-                className="absolute right-0 z-10 h-full pl-4 pr-1 bg-gradient-to-l from-primary-500 from-60% to-transparent flex items-center"
+                className="absolute right-0 z-10 h-full pl-4 pr-1 bg-gradient-to-l from-primary-500 dark:from-primary-600 from-60% to-transparent flex items-center"
                 aria-label="Przewiń w prawo"
               >
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
