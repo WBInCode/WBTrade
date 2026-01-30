@@ -8,6 +8,7 @@
 import { Router } from 'express';
 import { baselinkerController } from '../controllers/baselinker.controller';
 import { authGuard, adminOnly } from '../middleware/auth.middleware';
+import { orderStatusSyncService } from '../services/order-status-sync.service';
 
 const router = Router();
 
@@ -32,6 +33,32 @@ router.delete('/sync/:id', baselinkerController.cancelSync);
 // Orders are synced after payment to decrease stock in Baselinker
 router.post('/orders/sync', baselinkerController.syncPendingOrders);
 router.post('/orders/:orderId/sync', baselinkerController.syncOrder);
+
+// Order status sync (Baselinker → Shop)
+// Syncs order statuses from Baselinker (e.g., SHIPPED, DELIVERED)
+router.post('/orders/sync-statuses', async (req, res) => {
+  try {
+    const hoursBack = parseInt(req.query.hours as string) || 24;
+    const result = await orderStatusSyncService.syncOrderStatuses(hoursBack);
+    res.json({ 
+      success: true, 
+      message: `Synced ${result.synced} orders, skipped ${result.skipped}`,
+      ...result 
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get Baselinker status list (for mapping configuration)
+router.get('/order-statuses', async (req, res) => {
+  try {
+    const statuses = await orderStatusSyncService.getBaselinkerStatuses();
+    res.json({ success: true, statuses });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 // Manual order/stock sync endpoints (legacy/alternative)
 router.post('/send-order/:orderId', baselinkerController.sendOrder);

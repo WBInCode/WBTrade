@@ -487,6 +487,10 @@ export interface Order {
   total: number;
   trackingNumber?: string;
   notes?: string;
+  // Refund fields
+  refundNumber?: string;
+  refundReason?: string;
+  refundRequestedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -518,6 +522,31 @@ export const ordersApi = {
     
   cancel: (id: string) =>
     api.delete<{ message: string }>(`/orders/${id}`),
+
+  // Refund methods
+  checkRefundEligibility: (id: string) =>
+    api.get<{
+      eligible: boolean;
+      reason?: string;
+      daysRemaining?: number;
+      deliveredAt?: string;
+    }>(`/orders/${id}/refund-eligibility`),
+
+  requestRefund: (id: string, reason: string) =>
+    api.post<{
+      success: boolean;
+      refundNumber: string;
+      returnAddress: {
+        name: string;
+        contactPerson: string;
+        street: string;
+        city: string;
+        postalCode: string;
+        phone: string;
+        email: string;
+      };
+      order: Order;
+    }>(`/orders/${id}/request-refund`, { reason }),
 };
 
 // ============================================

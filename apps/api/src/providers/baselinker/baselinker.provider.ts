@@ -437,6 +437,48 @@ export class BaselinkerProvider implements IBaselinkerProvider {
   }
 
   /**
+   * Set order field value in Baselinker
+   * @param orderId - Baselinker order ID
+   * @param field - Field name (e.g., 'admin_comments', 'user_comments', 'extra_field_1')
+   * @param value - Field value
+   */
+  async setOrderField(orderId: string | number, field: string, value: string): Promise<void> {
+    console.log(`[Baselinker] Setting order ${orderId} field ${field}`);
+
+    await this.request('setOrderFields', {
+      order_id: typeof orderId === 'string' ? parseInt(orderId, 10) : orderId,
+      [field]: value,
+    });
+
+    console.log(`[Baselinker] Order ${orderId} field ${field} updated`);
+  }
+
+  /**
+   * Get orders from Baselinker
+   * @param params - Optional filters
+   */
+  async getOrders(params?: {
+    date_from?: number;
+    date_to?: number;
+    status_id?: number;
+    order_id?: number;
+    filter_order_source_id?: number;
+  }): Promise<import('./baselinker-provider.interface').BaselinkerOrderResponse[]> {
+    console.log('[Baselinker] Getting orders with params:', params);
+
+    const response = await this.request<{ orders: import('./baselinker-provider.interface').BaselinkerOrderResponse[] }>(
+      'getOrders',
+      {
+        ...params,
+        get_unconfirmed_orders: false,
+      }
+    );
+
+    console.log(`[Baselinker] Retrieved ${response.orders?.length || 0} orders`);
+    return response.orders || [];
+  }
+
+  /**
    * Split array into chunks
    */
   private chunkArray<T>(array: T[], size: number): T[][] {

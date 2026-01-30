@@ -396,7 +396,209 @@ export class OrdersService {
   }
 
   /**
-   * Process refund for an order
+   * Check if refund is allowed for an order (within 14 days)
+   * Returns eligibility info with days remaining
+   */
+  async checkRefundEligibility(id: string): Promise<{
+    eligible: boolean;
+    reason?: string;
+    daysRemaining?: number;
+    deliveredAt?: Date;
+  }> {
+    // Try to find by ID first, then by orderNumber
+    let order = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        statusHistory: {
+          where: { status: 'DELIVERED' },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    // If not found by ID, try by orderNumber
+    if (!order) {
+      order = await prisma.order.findUnique({
+        where: { orderNumber: id },
+        include: {
+          statusHistory: {
+            where: { status: 'DELIVERED' },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
+        },
+      });
+    }
+
+    if (!order) {
+      return { eligible: false, reason: 'Zamówienie nie zostało znalezione' };
+    }
+
+    // No user check - anyone with order ID/number can request refund
+
+    // Only DELIVERED or SHIPPED orders can be refunded
+    if (!['DELIVERED', 'SHIPPED'].includes(order.status)) {
+      return { eligible: false, reason: 'Zamówienie nie może zostać zwrócone w obecnym statusie' };
+    }
+
+    // Already refunded
+    if (order.status === 'REFUNDED') {
+      return { eligible: false, reason: 'Zamówienie zostało już zwrócone' };
+    }
+
+    // Get delivery date (from status history or fallback to updatedAt when status is DELIVERED)
+    const deliveredEntry = order.statusHistory[0];
+    let deliveredAt: Date;
+    
+    if (deliveredEntry?.createdAt) {
+      // Use status history entry if available
+      deliveredAt = deliveredEntry.createdAt;
+    } else if (order.status === 'DELIVERED') {
+      // If already delivered but no history entry, use updatedAt
+      deliveredAt = order.updatedAt;
+    } else {
+      // For SHIPPED orders, estimate delivery as now (they can request refund after receiving)
+      deliveredAt = new Date();
+    }
+    
+    // Calculate refund period:
+    // Day 0 = delivery day (doesn't count)
+    // Day 1 = first day after delivery (starts at midnight)
+    // Customer has 14 full days from the day after delivery
+    
+    // Get start of the day AFTER delivery (midnight)
+    const refundPeriodStart = new Date(deliveredAt);
+    refundPeriodStart.setHours(0, 0, 0, 0);
+    refundPeriodStart.setDate(refundPeriodStart.getDate() + 1); // Next day at midnight
+    
+    // Refund deadline = 14 days after refundPeriodStart (end of day 14)
+    const refundDeadline = new Date(refundPeriodStart);
+    refundDeadline.setDate(refundDeadline.getDate() + 14);
+    
+    const now = new Date();
+    
+    // Calculate days remaining (from now until deadline)
+    const msRemaining = refundDeadline.getTime() - now.getTime();
+    const daysRemaining = Math.ceil(msRemaining / (1000 * 60 * 60 * 24));
+
+    if (daysRemaining <= 0) {
+      return { 
+        eligible: false, 
+        reason: 'Minął 14-dniowy okres na zwrot towaru',
+        daysRemaining: 0,
+        deliveredAt,
+      };
+    }
+
+    return { 
+      eligible: true, 
+      daysRemaining,
+      deliveredAt,
+    };
+  }
+
+  /**
+   * Generate unique refund number (9 digits in format XXX XXX XXX)
+   */
+  private generateRefundNumber(): string {
+    let digits = '';
+    for (let i = 0; i < 9; i++) {
+      digits += Math.floor(Math.random() * 10).toString();
+    }
+    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 9)}`;
+  }
+
+  /**
+   * Request refund by customer (with 14-day validation)
+   * This method is for customer-initiated refunds
+   * Returns refund number and return address for the customer
+   */
+  async requestRefund(id: string, reason: string): Promise<{
+    success: boolean;
+    order?: any;
+    refundNumber?: string;
+    returnAddress?: {
+      name: string;
+      street: string;
+      city: string;
+      postalCode: string;
+      country: string;
+    };
+    error?: string;
+  }> {
+    // Try to find order by ID or orderNumber first
+    let order = await prisma.order.findUnique({ where: { id } });
+    if (!order) {
+      order = await prisma.order.findUnique({ where: { orderNumber: id } });
+    }
+    
+    const orderId = order?.id || id;
+    
+    // Check eligibility first
+    const eligibility = await this.checkRefundEligibility(orderId);
+    
+    if (!eligibility.eligible) {
+      return { success: false, error: eligibility.reason };
+    }
+
+    // Generate refund number
+    const refundNumber = this.generateRefundNumber();
+
+    try {
+      // Update order with refund info before processing
+      await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          refundNumber,
+          refundReason: reason || null,
+          refundRequestedAt: new Date(),
+        },
+      });
+
+      const refundedOrder = await this.refund(orderId, reason ? `Zwrot na żądanie klienta: ${reason}` : 'Zwrot na żądanie klienta');
+      
+      if (!refundedOrder) {
+        return { success: false, error: 'Nie udało się przetworzyć zwrotu' };
+      }
+
+      // Update Baselinker status to "Zwroty/Anulowane" and add refund reason
+      baselinkerOrdersService.markOrderAsRefunded(orderId, reason)
+        .then((result) => {
+          if (result.success) {
+            console.log(`[Orders] Order ${id} marked as refunded in Baselinker`);
+          } else {
+            console.error(`[Orders] Failed to mark order as refunded in Baselinker: ${result.error}`);
+          }
+        })
+        .catch((err) => {
+          console.error(`[Orders] Baselinker refund sync error:`, err);
+        });
+
+      // Return address for customer to send the package
+      const returnAddress = {
+        name: 'WB Partners',
+        contactPerson: 'Daniel Budyka',
+        street: 'ul. Juliusza Słowackiego 24/11',
+        city: 'Rzeszów',
+        postalCode: '35-060',
+        phone: '570 028 761',
+        email: 'support@wb-partners.pl',
+      };
+
+      return { 
+        success: true, 
+        order: refundedOrder,
+        refundNumber,
+        returnAddress,
+      };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Process refund for an order (admin)
    */
   async refund(id: string, reason?: string) {
     return prisma.$transaction(async (tx) => {
@@ -422,10 +624,13 @@ export class OrdersService {
         });
       }
 
-      // Update order status
+      // Update order status and payment status
       const refundedOrder = await tx.order.update({
         where: { id },
-        data: { status: 'REFUNDED' },
+        data: { 
+          status: 'REFUNDED',
+          paymentStatus: 'REFUNDED',
+        },
       });
 
       // Add to status history
