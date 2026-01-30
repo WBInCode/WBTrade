@@ -69,7 +69,7 @@ export default function ForgotPasswordPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex">
+      <div className="min-h-screen flex bg-white dark:bg-secondary-900">
         {/* Left side - Success message */}
         <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 bg-white dark:bg-secondary-900">
           <div className="mx-auto w-full max-w-sm lg:max-w-md">
@@ -189,7 +189,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-white dark:bg-secondary-900">
       {/* Left side - Form */}
       <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 bg-white dark:bg-secondary-900">
         <div className="mx-auto w-full max-w-sm lg:max-w-md">
