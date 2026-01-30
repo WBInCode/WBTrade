@@ -220,7 +220,7 @@ export default function HelpPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </summary>
-                <div className="px-6 pb-6 text-secondary-600 dark:text-secondary-400">
+                <div className="px-6 pt-4 pb-6 border-t border-secondary-200 dark:border-secondary-700 text-secondary-600 dark:text-secondary-400">
                   {item.answer}
                 </div>
               </details>

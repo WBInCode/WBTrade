@@ -94,35 +94,63 @@ function HeaderContent() {
     return () => window.removeEventListener('resize', checkScrollPosition);
   }, [categories]);
 
-  // Handle header visibility on scroll
+  // Handle category bar visibility on scroll
   useEffect(() => {
     let lastScrollY = window.scrollY;
     let isVisible = true;
+    let ticking = false;
+    let accumulatedDelta = 0;
+    const SCROLL_THRESHOLD = 80; // Larger threshold to prevent jitter
 
-    const handleScroll = () => {
+    const updateVisibility = () => {
       const currentScrollY = window.scrollY;
       
-      // Show header when scrolling up (any amount) or at top
-      if (currentScrollY < lastScrollY || currentScrollY < 50) {
+      // Always show at top of page
+      if (currentScrollY < 80) {
         if (!isVisible) {
           isVisible = true;
           setIsHeaderVisible(true);
         }
-      } 
-      // Hide header when scrolling down after passing threshold
-      else if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        if (isVisible) {
-          isVisible = false;
-          setIsHeaderVisible(false);
-          // Close mega menu when hiding header
-          setIsCategoryOpen(false);
-        }
+        accumulatedDelta = 0;
+        lastScrollY = currentScrollY;
+        ticking = false;
+        return;
+      }
+      
+      const delta = currentScrollY - lastScrollY;
+      
+      // Only accumulate if moving in same direction, otherwise reset
+      if ((accumulatedDelta >= 0 && delta >= 0) || (accumulatedDelta <= 0 && delta <= 0)) {
+        accumulatedDelta += delta;
+      } else {
+        accumulatedDelta = delta;
+      }
+      
+      // Hide when scrolled down enough
+      if (accumulatedDelta > SCROLL_THRESHOLD && isVisible) {
+        isVisible = false;
+        setIsHeaderVisible(false);
+        setIsCategoryOpen(false);
+        accumulatedDelta = 0;
+      }
+      // Show when scrolled up enough
+      else if (accumulatedDelta < -SCROLL_THRESHOLD && !isVisible) {
+        isVisible = true;
+        setIsHeaderVisible(true);
+        accumulatedDelta = 0;
       }
       
       lastScrollY = currentScrollY;
+      ticking = false;
     };
 
-    // Use 'scroll' event on document for broader compatibility
+    const handleScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(updateVisibility);
+      }
+    };
+
     document.addEventListener('scroll', handleScroll, { passive: true });
     return () => document.removeEventListener('scroll', handleScroll);
   }, []);
@@ -152,8 +180,8 @@ function HeaderContent() {
   }, [pathname, searchParams]);
 
   return (
-    <header className={`bg-white dark:bg-secondary-900 sticky top-0 z-50 shadow-sm dark:shadow-secondary-950/50 relative transition-transform duration-300 ${isHeaderVisible ? 'translate-y-0' : '-translate-y-full'}`}>
-      {/* Top Header */}
+    <header className="bg-white dark:bg-secondary-900 sticky top-0 z-50 shadow-sm dark:shadow-secondary-950/50 relative">
+      {/* Top Header - Always visible */}
       <div className="border-b border-gray-100 dark:border-secondary-700">
         <div className="container-custom">
           <div className="flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
@@ -302,8 +330,13 @@ function HeaderContent() {
         </div>
       </div>
 
-      {/* Category Navigation Bar */}
-      <div className="border-b border-gray-200 dark:border-secondary-700 bg-primary-500 dark:bg-primary-600">
+      {/* Category Navigation Bar - Hides on scroll down */}
+      <div 
+        className="border-b border-gray-200 dark:border-secondary-700 bg-primary-500 dark:bg-primary-600"
+        style={{
+          display: isHeaderVisible ? 'block' : 'none'
+        }}
+      >
         <div className="container-custom overflow-visible">
           <div className="flex items-center justify-between relative">
             {/* Left Arrow */}

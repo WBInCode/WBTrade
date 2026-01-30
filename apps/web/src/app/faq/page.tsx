@@ -236,7 +236,7 @@ export default function FAQPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       </summary>
-                      <div className="px-6 pb-6 pt-0 text-secondary-600 dark:text-secondary-400 leading-relaxed border-t border-secondary-100 dark:border-secondary-700">
+                      <div className="px-6 pb-6 pt-4 text-secondary-600 dark:text-secondary-400 leading-relaxed border-t border-secondary-100 dark:border-secondary-700">
                         {item.answer}
                       </div>
                     </details>

@@ -145,7 +145,7 @@ export default function ShoppingSecurityPage() {
                     <li>Sprawdzaj dokładnie adres strony przed zakupem</li>
                     <li>Nie klikaj w podejrzane linki w e-mailach</li>
                     <li>Nie wchodź na stronę z nieznanych źródeł</li>
-                    <li>Zgłoś podejrzaną stronę: bezpieczenstwo@wbtrade.pl</li>
+                    <li>Zgłoś podejrzaną stronę: support@wb-partners.pl</li>
                   </ul>
                 </div>
 
