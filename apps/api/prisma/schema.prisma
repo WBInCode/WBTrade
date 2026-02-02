@@ -27,18 +27,15 @@ model User {
   passwordChangedAt          DateTime?          @map("password_changed_at")
   email_verification_expires DateTime?
   email_verification_token   String?            @unique
-  // OAuth fields
   authProvider               AuthProvider       @default(LOCAL) @map("auth_provider")
-  googleId                   String?            @unique @map("google_id")
   avatarUrl                  String?            @map("avatar_url")
-  // Company data fields
-  companyName                String?            @map("company_name")
-  nip                        String?
-  companyStreet              String?            @map("company_street")
+  googleId                   String?            @unique @map("google_id")
   companyCity                String?            @map("company_city")
-  companyPostalCode          String?            @map("company_postal_code")
   companyCountry             String?            @default("PL") @map("company_country")
-  // Relations
+  companyName                String?            @map("company_name")
+  companyPostalCode          String?            @map("company_postal_code")
+  companyStreet              String?            @map("company_street")
+  nip                        String?
   addresses                  Address[]
   cart                       Cart?
   orders                     Order[]
@@ -50,18 +47,11 @@ model User {
   @@map("users")
 }
 
-enum AuthProvider {
-  LOCAL
-  GOOGLE
-}
-
 model Address {
   id             String      @id @default(cuid())
   userId         String?     @map("user_id")
   firstName      String      @map("first_name")
   lastName       String      @map("last_name")
-  companyName    String?     @map("company_name")
-  nip            String?
   street         String
   city           String
   postalCode     String      @map("postal_code")
@@ -72,6 +62,8 @@ model Address {
   updatedAt      DateTime    @updatedAt @map("updated_at")
   label          String?
   type           AddressType @default(SHIPPING)
+  companyName    String?     @map("company_name")
+  nip            String?
   user           User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
   billingOrders  Order[]     @relation("BillingAddress")
   shippingOrders Order[]     @relation("ShippingAddress")
@@ -92,7 +84,7 @@ model Category {
   createdAt              DateTime        @default(now()) @map("created_at")
   updatedAt              DateTime        @updatedAt @map("updated_at")
   baselinkerCategoryId   String?         @unique @map("baselinker_category_id")
-  baselinkerCategoryPath String?         @map("baselinker_category_path") // Pełna ścieżka z Baselinker np. "Gastronomia|Naczynia i przybory kuchenne"
+  baselinkerCategoryPath String?         @map("baselinker_category_path")
   parent                 Category?       @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children               Category[]      @relation("CategoryHierarchy")
   products               Product[]
@@ -113,9 +105,6 @@ model Product {
   status                 ProductStatus    @default(DRAFT)
   price                  Decimal          @db.Decimal(10, 2)
   compareAtPrice         Decimal?         @map("compare_at_price") @db.Decimal(10, 2)
-  // Omnibus: najniższa cena z ostatnich 30 dni (rolling window UTC)
-  lowestPrice30Days      Decimal?         @map("lowest_price_30_days") @db.Decimal(10, 2)
-  lowestPrice30DaysAt    DateTime?        @map("lowest_price_30_days_at")
   metaTitle              String?          @map("meta_title")
   metaDescription        String?          @map("meta_description")
   createdAt              DateTime         @default(now()) @map("created_at")
@@ -127,13 +116,14 @@ model Product {
   average_rating         Decimal?         @db.Decimal(2, 1)
   review_count           Int              @default(0)
   tags                   String[]         @default([])
-  // Popularity tracking
-  viewCount              Int              @default(0) @map("view_count")
-  salesCount             Int              @default(0) @map("sales_count")
   popularityScore        Float            @default(0) @map("popularity_score")
+  salesCount             Int              @default(0) @map("sales_count")
+  viewCount              Int              @default(0) @map("view_count")
+  lowestPrice30Days      Decimal?         @map("lowest_price_30_days") @db.Decimal(10, 2)
+  lowestPrice30DaysAt    DateTime?        @map("lowest_price_30_days_at")
+  priceHistory           PriceHistory[]
   images                 ProductImage[]
   variants               ProductVariant[]
-  priceHistory           PriceHistory[]
   category               Category?        @relation(fields: [categoryId], references: [id])
   reviews                Review[]
   wishlistItems          WishlistItem[]
@@ -205,13 +195,12 @@ model ProductVariant {
   barcode             String?
   price               Decimal         @db.Decimal(10, 2)
   compareAtPrice      Decimal?        @map("compare_at_price") @db.Decimal(10, 2)
-  // Omnibus: najniższa cena z ostatnich 30 dni per wariant (rolling window UTC)
-  lowestPrice30Days   Decimal?        @map("lowest_price_30_days") @db.Decimal(10, 2)
-  lowestPrice30DaysAt DateTime?       @map("lowest_price_30_days_at")
   attributes          Json            @default("{}")
   createdAt           DateTime        @default(now()) @map("created_at")
   updatedAt           DateTime        @updatedAt @map("updated_at")
   baselinkerVariantId String?         @unique @map("baselinker_variant_id")
+  lowestPrice30Days   Decimal?        @map("lowest_price_30_days") @db.Decimal(10, 2)
+  lowestPrice30DaysAt DateTime?       @map("lowest_price_30_days_at")
   cartItems           CartItem[]
   inventory           Inventory[]
   orderItems          OrderItem[]
@@ -314,46 +303,45 @@ model CartItem {
 }
 
 model Order {
-  id                  String               @id @default(cuid())
-  orderNumber         String               @unique @map("order_number")
-  userId              String?              @map("user_id")
-  status              OrderStatus          @default(PENDING)
-  shippingAddressId   String?              @map("shipping_address_id")
-  billingAddressId    String?              @map("billing_address_id")
-  shippingMethod      String               @map("shipping_method")
-  paymentMethod       String               @map("payment_method")
-  paymentStatus       PaymentStatus        @default(PENDING) @map("payment_status")
-  subtotal            Decimal              @db.Decimal(10, 2)
-  discount            Decimal              @default(0) @db.Decimal(10, 2)
-  shipping            Decimal              @default(0) @db.Decimal(10, 2)
-  tax                 Decimal              @default(0) @db.Decimal(10, 2)
-  total               Decimal              @db.Decimal(10, 2)
-  trackingNumber      String?              @map("tracking_number")
-  customerNotes       String?              @map("customer_notes")
-  internalNotes       String?              @map("internal_notes")
-  createdAt           DateTime             @default(now()) @map("created_at")
-  updatedAt           DateTime             @updatedAt @map("updated_at")
-  paczkomatAddress    String?              @map("paczkomat_address")
-  paczkomatCode       String?              @map("paczkomat_code")
-  packageShipping     Json?                @map("package_shipping")
-  baselinkerOrderId   String?              @unique @map("baselinker_order_id")
-  baselinkerSyncedAt  DateTime?            @map("baselinker_synced_at")
-  // Guest checkout fields (used when userId is null)
-  guestEmail          String?              @map("guest_email")
-  guestFirstName      String?              @map("guest_first_name")
-  guestLastName       String?              @map("guest_last_name")
-  guestPhone          String?              @map("guest_phone")
-  // Refund fields
-  refundNumber        String?              @unique @map("refund_number")
-  refundReason        String?              @map("refund_reason")
-  refundRequestedAt   DateTime?            @map("refund_requested_at")
-  // Invoice request
-  wantInvoice         Boolean              @default(false) @map("want_invoice")
-  items               OrderItem[]
-  statusHistory       OrderStatusHistory[]
-  billingAddress      Address?             @relation("BillingAddress", fields: [billingAddressId], references: [id])
-  shippingAddress     Address?             @relation("ShippingAddress", fields: [shippingAddressId], references: [id])
-  user                User?                @relation(fields: [userId], references: [id])
+  id                       String               @id @default(cuid())
+  orderNumber              String               @unique @map("order_number")
+  userId                   String?              @map("user_id")
+  status                   OrderStatus          @default(PENDING)
+  shippingAddressId        String?              @map("shipping_address_id")
+  billingAddressId         String?              @map("billing_address_id")
+  shippingMethod           String               @map("shipping_method")
+  paymentMethod            String               @map("payment_method")
+  paymentStatus            PaymentStatus        @default(PENDING) @map("payment_status")
+  subtotal                 Decimal              @db.Decimal(10, 2)
+  discount                 Decimal              @default(0) @db.Decimal(10, 2)
+  shipping                 Decimal              @default(0) @db.Decimal(10, 2)
+  tax                      Decimal              @default(0) @db.Decimal(10, 2)
+  total                    Decimal              @db.Decimal(10, 2)
+  trackingNumber           String?              @map("tracking_number")
+  customerNotes            String?              @map("customer_notes")
+  internalNotes            String?              @map("internal_notes")
+  createdAt                DateTime             @default(now()) @map("created_at")
+  updatedAt                DateTime             @updatedAt @map("updated_at")
+  paczkomatAddress         String?              @map("paczkomat_address")
+  paczkomatCode            String?              @map("paczkomat_code")
+  packageShipping          Json?                @map("package_shipping")
+  baselinkerOrderId        String?              @unique @map("baselinker_order_id")
+  baselinkerSyncedAt       DateTime?            @map("baselinker_synced_at")
+  guestEmail               String?              @map("guest_email")
+  guestFirstName           String?              @map("guest_first_name")
+  guestLastName            String?              @map("guest_last_name")
+  guestPhone               String?              @map("guest_phone")
+  refundNumber             String?              @unique @map("refund_number")
+  refundReason             String?              @map("refund_reason")
+  refundRequestedAt        DateTime?            @map("refund_requested_at")
+  wantInvoice              Boolean              @default(false) @map("want_invoice")
+  payment_reminder_count   Int?                 @default(0)
+  last_payment_reminder_at DateTime?            @db.Timestamp(6)
+  items                    OrderItem[]
+  statusHistory            OrderStatusHistory[]
+  billingAddress           Address?             @relation("BillingAddress", fields: [billingAddressId], references: [id])
+  shippingAddress          Address?             @relation("ShippingAddress", fields: [shippingAddressId], references: [id])
+  user                     User?                @relation(fields: [userId], references: [id])
 
   @@index([orderNumber])
   @@index([userId])
@@ -408,22 +396,12 @@ model Coupon {
   isActive      Boolean      @default(true) @map("is_active")
   createdAt     DateTime     @default(now()) @map("created_at")
   updatedAt     DateTime     @updatedAt @map("updated_at")
-  // Welcome discount - coupon generated for specific user on registration
-  userId        String?      @map("user_id")
   couponSource  CouponSource @default(MANUAL)
+  userId        String?      @map("user_id")
 
   @@index([code])
   @@index([userId])
   @@map("coupons")
-}
-
-// Source of coupon creation
-enum CouponSource {
-  MANUAL           // Admin created
-  WELCOME_DISCOUNT // Auto-generated on registration (-20%)
-  NEWSLETTER       // Newsletter subscription (-10%)
-  REFERRAL         // Referral program (future)
-  CAMPAIGN         // Marketing campaign
 }
 
 model TaxRate {
@@ -570,6 +548,49 @@ model newsletter_subscriptions {
   @@index([is_verified])
 }
 
+model PriceHistory {
+  id        String            @id @default(cuid())
+  productId String            @map("product_id")
+  variantId String?           @map("variant_id")
+  oldPrice  Decimal           @map("old_price") @db.Decimal(10, 2)
+  newPrice  Decimal           @map("new_price") @db.Decimal(10, 2)
+  source    PriceChangeSource
+  changedBy String?           @map("changed_by")
+  reason    String?
+  changedAt DateTime          @default(now()) @map("changed_at")
+  product   Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant   ProductVariant?   @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@index([productId, changedAt])
+  @@index([variantId, changedAt])
+  @@index([changedAt])
+  @@index([source])
+  @@map("price_history")
+}
+
+model Settings {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+}
+
+enum CouponSource {
+  MANUAL
+  WELCOME_DISCOUNT
+  REFERRAL
+  CAMPAIGN
+  NEWSLETTER
+}
+
 enum UserRole {
   CUSTOMER
   ADMIN
@@ -616,11 +637,11 @@ enum OrderStatus {
 
 enum PaymentStatus {
   PENDING
-  AWAITING_CONFIRMATION
   PAID
   FAILED
   REFUNDED
   PARTIALLY_REFUNDED
+  AWAITING_CONFIRMATION
   CANCELLED
 }
 
@@ -652,55 +673,11 @@ enum NewsletterCampaignStatus {
   FAILED
 }
 
-// ============================================
-// OMNIBUS: Źródło zmiany ceny (audit trail)
-// ============================================
 enum PriceChangeSource {
-  ADMIN       // Zmiana przez panel administracyjny
-  API         // Zmiana przez REST API
-  BASELINKER  // Synchronizacja z BaseLinker
-  IMPORT      // Import CSV/XLSX
-  SCRIPT      // Ręczny skrypt
-  SYSTEM      // Automatyczna zmiana systemowa
-}
-
-// ============================================
-// OMNIBUS: Historia cen (Dyrektywa 2019/2161)
-// ============================================
-// Tabela przechowuje każdą zmianę ceny produktu/wariantu
-// Używana do wyliczania "najniższej ceny z ostatnich 30 dni"
-// Okno czasowe: rolling 30*24h w strefie UTC
-model PriceHistory {
-  id          String            @id @default(cuid())
-  productId   String            @map("product_id")
-  variantId   String?           @map("variant_id")
-  oldPrice    Decimal           @map("old_price") @db.Decimal(10, 2)
-  newPrice    Decimal           @map("new_price") @db.Decimal(10, 2)
-  source      PriceChangeSource
-  changedBy   String?           @map("changed_by")  // userId lub null dla SYSTEM/BASELINKER
-  reason      String?           // Opcjonalny powód zmiany
-  changedAt   DateTime          @default(now()) @map("changed_at")
-  
-  product     Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
-  variant     ProductVariant?   @relation(fields: [variantId], references: [id], onDelete: Cascade)
-  
-  @@index([productId, changedAt])
-  @@index([variantId, changedAt])
-  @@index([changedAt])
-  @@index([source])
-  @@map("price_history")
-}
-
-// ============================================
-// SETTINGS - For admin-configurable options
-// ============================================
-
-model Settings {
-  id        String   @id @default(cuid())
-  key       String   @unique
-  value     String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("settings")
+  ADMIN
+  API
+  BASELINKER
+  IMPORT
+  SCRIPT
+  SYSTEM
 }
