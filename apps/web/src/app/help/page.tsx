@@ -105,7 +105,7 @@ export default function HelpPage() {
   const popularQuestions = [
     {
       question: 'Jak mogę śledzić moje zamówienie?',
-      answer: 'Po zalogowaniu się na swoje konto, przejdź do sekcji "Moje zamówienia". Znajdziesz tam listę wszystkich zamówień wraz z aktualnym statusem i linkiem do śledzenia przesyłki.',
+      answer: 'Po zalogowaniu się na swoje konto, przejdź do sekcji "Moje zamówienia".',
     },
     {
       question: 'Ile mam czasu na zwrot produktu?',
@@ -113,11 +113,11 @@ export default function HelpPage() {
     },
     {
       question: 'Jakie są dostępne metody płatności?',
-      answer: 'Akceptujemy płatności kartą (Visa, Mastercard), BLIK, przelewy online (PayU, Przelewy24), oraz płatność przy odbiorze dla wybranych zamówień.',
+      answer: 'Akceptujemy płatności kartą (Visa, Mastercard), BLIK, przelewy online (PayU).',
     },
     {
       question: 'Jak długo trwa realizacja zamówienia?',
-      answer: 'Standardowy czas realizacji to 1-3 dni robocze. Dla przesyłek ekspresowych możliwa jest dostawa następnego dnia roboczego.',
+      answer: 'Standardowy czas realizacji to 1-3 dni robocze.',
     },
   ];
 
