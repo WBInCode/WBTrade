@@ -51,11 +51,11 @@ export default function FAQPage() {
       questions: [
         {
           question: 'Jakie są dostępne metody dostawy?',
-          answer: 'Oferujemy dostawę kurierską InPost, dostawę do\u00A0Paczkomatów InPost, dostawę kurierską DPD oraz\u00A0specjalną wysyłkę dla produktów gabarytowych. Szczegółowe informacje o\u00A0cenach i\u00A0czasie dostawy znajdziesz na\u00A0stronie "Dostawa".',
+          answer: 'Oferujemy dostawę kurierską InPost, dostawę do\u00A0Paczkomatów InPost, dostawę kurierską DPD oraz\u00A0specjalną wysyłkę dla produktów gabarytowych.',
         },
         {
           question: 'Ile kosztuje dostawa?',
-          answer: 'Koszt dostawy zależy od\u00A0wybranej metody: Paczkomaty InPost od\u00A09,99\u00A0zł, Kurier InPost od\u00A019,99\u00A0zł. Darmowa dostawa dostępna przy zamówieniach powyżej określonej kwoty (od\u00A0100\u00A0zł dla Paczkomatów).',
+answer: 'Koszt dostawy zależy od\u00A0wybranej metody: Paczkomaty InPost od\u00A015,99\u00A0zł, Kurier InPost od\u00A019,99\u00A0zł. Darmowa dostawa dostępna przy zamówieniach powyżej określonej kwoty (od\u00A0300\u00A0zł dla Paczkomatów).',
         },
         {
           question: 'Jak śledzić przesyłkę?',

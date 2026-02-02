@@ -736,7 +736,7 @@ export default function OrderDetailsPage() {
                     <p>Daniel Budyka</p>
                     <p>ul. Juliusza Słowackiego 24/11</p>
                     <p>35-060 Rzeszów</p>
-                    <p className="mt-2">Tel: 570 028 761</p>
+                    <p className="mt-2">Tel: 570 034 367</p>
                     <p>support@wb-partners.pl</p>
                   </div>
                   <p className="mt-3 text-sm text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 p-2 rounded">

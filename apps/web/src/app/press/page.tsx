@@ -66,7 +66,7 @@ export default function PressPage() {
       name: 'Katarzyna Malinowska',
       role: 'PR Manager',
       email: 'k.malinowska@wbtrade.pl',
-      phone: '+48 500 123 456',
+      phone: '+48 570 034 367',
     },
     {
       name: 'Michał Kowalczyk',
