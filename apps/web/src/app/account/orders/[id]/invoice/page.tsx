@@ -340,19 +340,15 @@ export default function CustomerInvoicePage({ params }: { params: Promise<{ id: 
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-gray-500">Nazwa banku</p>
-                  <p className="font-medium">mBank S.A.</p>
+                  <p className="font-medium">ING</p>
                 </div>
                 <div>
                   <p className="text-gray-500">Numer konta</p>
-                  <p className="font-medium font-mono">12 1140 2004 0000 3102 1234 5678</p>
+                  <p className="font-medium font-mono">19 1050 1445 1000 0090 8466 1967</p>
                 </div>
                 <div>
                   <p className="text-gray-500">Tytuł przelewu</p>
                   <p className="font-medium">{invoiceNumber}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500">SWIFT/BIC</p>
-                  <p className="font-medium">BREXPLPWMBK</p>
                 </div>
               </div>
             </div>
