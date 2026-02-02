@@ -49,7 +49,7 @@ export default function RodoPage() {
                 </p>
                 <ul className="list-none text-secondary-600 dark:text-secondary-400 mb-6 space-y-2">
                   <li><strong>E-mail:</strong> support@wb-partners.pl</li>
-                  <li><strong>Telefon:</strong> +48 570 028 761</li>
+                  <li><strong>Telefon:</strong> +48 570 034 367</li>
                   <li><strong>Adres:</strong> ul. Juliusza Słowackiego 24/11, 35-060 Rzeszów</li>
                 </ul>
 
@@ -141,7 +141,7 @@ export default function RodoPage() {
                 <div className="bg-secondary-100 dark:bg-secondary-700 rounded-xl p-6 mt-8">
                   <h3 className="font-semibold text-secondary-900 dark:text-white mb-2">📞 Masz pytania?</h3>
                   <p className="text-secondary-600 dark:text-secondary-400">
-                    Skontaktuj się z nami: <strong>support@wb-partners.pl</strong> lub zadzwoń: <strong>+48 570 028 761</strong>
+                    Skontaktuj się z nami: <strong>support@wb-partners.pl</strong> lub zadzwoń: <strong>+48 570 034 367</strong>
                   </p>
                 </div>
 
