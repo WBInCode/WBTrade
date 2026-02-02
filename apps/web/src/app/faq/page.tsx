@@ -55,7 +55,7 @@ export default function FAQPage() {
         },
         {
           question: 'Ile kosztuje dostawa?',
-          answer: 'Koszt dostawy zależy od\u00A0wybranej metody: Paczkomaty InPost od\u00A09,99\u00A0zł, Kurier InPost od\u00A019,99\u00A0zł. Darmowa dostawa dostępna przy zamówieniach powyżej określonej kwoty (od\u00A0300\u00A0zł dla Paczkomatów).',
+answer: 'Koszt dostawy zależy od\u00A0wybranej metody: Paczkomaty InPost od\u00A015,99\u00A0zł, Kurier InPost od\u00A019,99\u00A0zł. Darmowa dostawa dostępna przy zamówieniach powyżej określonej kwoty (od\u00A0300\u00A0zł dla Paczkomatów).',
         },
         {
           question: 'Jak śledzić przesyłkę?',
