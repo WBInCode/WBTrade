@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import { ordersApi } from '../../lib/api';
@@ -30,6 +30,89 @@ export default function ReturnsPage() {
   const [step, setStep] = useState<'form' | 'confirm' | 'success'>('form');
   const [showConditionsModal, setShowConditionsModal] = useState(false);
   const [acceptedConditions, setAcceptedConditions] = useState(false);
+
+  // Complaint form state
+  const [complaintSubject, setComplaintSubject] = useState('');
+  const [complaintDescription, setComplaintDescription] = useState('');
+  const [complaintEmail, setComplaintEmail] = useState('');
+  const [complaintOrderNumber, setComplaintOrderNumber] = useState('');
+  const [complaintImages, setComplaintImages] = useState<File[]>([]);
+  const [complaintLoading, setComplaintLoading] = useState(false);
+  const [complaintSuccess, setComplaintSuccess] = useState(false);
+  const [complaintError, setComplaintError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleComplaintImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const validFiles = files.filter(file => {
+      const isImage = file.type.startsWith('image/');
+      const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB limit
+      return isImage && isValidSize;
+    });
+    setComplaintImages(prev => [...prev, ...validFiles].slice(0, 5)); // Max 5 images
+  };
+
+  const removeComplaintImage = (index: number) => {
+    setComplaintImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleComplaintSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!complaintSubject.trim() || !complaintDescription.trim() || !complaintEmail.trim()) {
+      setComplaintError('Wypełnij wszystkie wymagane pola');
+      return;
+    }
+
+    setComplaintLoading(true);
+    setComplaintError(null);
+
+    try {
+      // Convert images to base64
+      const imagePromises = complaintImages.map(file => {
+        return new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      });
+      const base64Images = await Promise.all(imagePromises);
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/contact/complaint`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          subject: complaintSubject,
+          description: complaintDescription,
+          email: complaintEmail,
+          orderNumber: complaintOrderNumber,
+          images: base64Images,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setComplaintSuccess(true);
+        setComplaintSubject('');
+        setComplaintDescription('');
+        setComplaintEmail('');
+        setComplaintOrderNumber('');
+        setComplaintImages([]);
+      } else {
+        setComplaintError(data.message || 'Wystąpił błąd podczas wysyłania zgłoszenia');
+      }
+    } catch (err) {
+      console.error('Complaint submission error:', err);
+      setComplaintError('Wystąpił błąd. Spróbuj ponownie później.');
+    } finally {
+      setComplaintLoading(false);
+    }
+  };
 
   const handleCheckEligibility = async () => {
     if (!orderNumber.trim()) {
@@ -121,6 +204,49 @@ export default function ReturnsPage() {
       icon: (
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+        </svg>
+      ),
+    },
+  ];
+
+  const complaintSteps = [
+    {
+      step: 1,
+      title: 'Wypełnij formularz',
+      description: 'Podaj swój email, numer zamówienia oraz opisz szczegółowo problem z produktem.',
+      icon: (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+      ),
+    },
+    {
+      step: 2,
+      title: 'Załącz zdjęcia',
+      description: 'Dodaj zdjęcia dokumentujące problem - uszkodzenia, wady lub niezgodności produktu.',
+      icon: (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      ),
+    },
+    {
+      step: 3,
+      title: 'Oczekuj na kontakt',
+      description: 'Nasz zespół przeanalizuje zgłoszenie i skontaktuje się z Tobą w ciągu 2-3 dni roboczych.',
+      icon: (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+      ),
+    },
+    {
+      step: 4,
+      title: 'Rozwiązanie problemu',
+      description: 'Otrzymasz wymianę produktu, naprawę lub zwrot środków zgodnie z przepisami.',
+      icon: (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
     },
@@ -489,6 +615,230 @@ export default function ReturnsPage() {
                   </p>
                 </div>
                 {index < returnSteps.length - 1 && (
+                  <div className="hidden lg:block absolute top-1/2 -right-3 transform -translate-y-1/2 text-secondary-300">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Complaint Form Section */}
+      <section className="py-16 lg:py-24 bg-secondary-50 dark:bg-secondary-900">
+        <div className="container-custom">
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full mb-4">
+                <svg className="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h2 className="text-2xl lg:text-3xl font-bold text-secondary-900 dark:text-white mb-4">
+                Zgłoś reklamację
+              </h2>
+              <p className="text-secondary-600 dark:text-secondary-400">
+                Masz problem z produktem? Wypełnij formularz poniżej, a nasz zespół skontaktuje się z Tobą.
+              </p>
+            </div>
+
+            <div className="bg-secondary-50 dark:bg-secondary-900 rounded-2xl p-6 lg:p-8 shadow-lg">
+              {complaintSuccess ? (
+                <div className="text-center py-8">
+                  <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h3 className="text-2xl font-bold text-secondary-900 dark:text-white mb-2">
+                    Zgłoszenie wysłane!
+                  </h3>
+                  <p className="text-secondary-600 dark:text-secondary-400 mb-6">
+                    Dziękujemy za zgłoszenie. Nasz zespół skontaktuje się z Tobą wkrótce.
+                  </p>
+                  <button
+                    onClick={() => setComplaintSuccess(false)}
+                    className="px-8 py-3 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-colors"
+                  >
+                    Wyślij kolejne zgłoszenie
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleComplaintSubmit} className="space-y-6">
+                  {complaintError && (
+                    <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
+                      <p className="text-red-700 dark:text-red-400 text-sm">{complaintError}</p>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+                      Twój adres e-mail *
+                    </label>
+                    <input
+                      type="email"
+                      value={complaintEmail}
+                      onChange={(e) => setComplaintEmail(e.target.value)}
+                      placeholder="jan.kowalski@email.pl"
+                      required
+                      className="w-full px-4 py-3 border border-secondary-300 dark:border-secondary-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-800 dark:text-white transition-colors"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+                      Numer zamówienia (opcjonalnie)
+                    </label>
+                    <input
+                      type="text"
+                      value={complaintOrderNumber}
+                      onChange={(e) => setComplaintOrderNumber(e.target.value)}
+                      placeholder="np. WB-123456"
+                      className="w-full px-4 py-3 border border-secondary-300 dark:border-secondary-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-800 dark:text-white transition-colors"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+                      Temat reklamacji *
+                    </label>
+                    <input
+                      type="text"
+                      value={complaintSubject}
+                      onChange={(e) => setComplaintSubject(e.target.value)}
+                      placeholder="np. Uszkodzony produkt"
+                      required
+                      className="w-full px-4 py-3 border border-secondary-300 dark:border-secondary-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-800 dark:text-white transition-colors"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+                      Opis problemu *
+                    </label>
+                    <textarea
+                      value={complaintDescription}
+                      onChange={(e) => setComplaintDescription(e.target.value)}
+                      placeholder="Opisz szczegółowo problem z produktem..."
+                      required
+                      rows={5}
+                      className="w-full px-4 py-3 border border-secondary-300 dark:border-secondary-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-800 dark:text-white transition-colors resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+                      Załącz zdjęcia (max 5 zdjęć, każde do 5MB)
+                    </label>
+                    <div className="space-y-4">
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="border-2 border-dashed border-secondary-300 dark:border-secondary-600 rounded-xl p-6 text-center cursor-pointer hover:border-primary-500 dark:hover:border-primary-500 transition-colors"
+                      >
+                        <svg className="w-10 h-10 text-secondary-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <p className="text-secondary-600 dark:text-secondary-400 text-sm">
+                          Kliknij, aby dodać zdjęcia
+                        </p>
+                        <p className="text-secondary-400 dark:text-secondary-500 text-xs mt-1">
+                          JPG, PNG, WEBP
+                        </p>
+                      </div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleComplaintImageChange}
+                        className="hidden"
+                      />
+
+                      {complaintImages.length > 0 && (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                          {complaintImages.map((file, index) => (
+                            <div key={index} className="relative group">
+                              <img
+                                src={URL.createObjectURL(file)}
+                                alt={`Preview ${index + 1}`}
+                                className="w-full h-24 object-cover rounded-lg"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeComplaintImage(index)}
+                                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-sm hover:bg-red-600 transition-colors"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={complaintLoading}
+                    className="w-full px-6 py-4 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {complaintLoading ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Wysyłanie...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                        Wyślij zgłoszenie reklamacyjne
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Complaint Steps */}
+      <section className="py-16 lg:py-24 bg-white dark:bg-secondary-800">
+        <div className="container-custom">
+          <h2 className="text-2xl lg:text-3xl font-bold text-secondary-900 dark:text-white mb-4 text-center">
+            Jak działa proces reklamacji?
+          </h2>
+          <p className="text-secondary-600 dark:text-secondary-400 text-center mb-12 max-w-2xl mx-auto">
+            Reklamacja to Twoje prawo. Sprawdź jak łatwo możesz zgłosić problem z produktem.
+          </p>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {complaintSteps.map((item, index) => (
+              <div key={index} className="relative">
+                <div className="bg-secondary-50 dark:bg-secondary-900 rounded-2xl p-6 h-full">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-red-600 text-white rounded-full flex items-center justify-center font-bold">
+                      {item.step}
+                    </div>
+                    <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center text-red-600">
+                      {item.icon}
+                    </div>
+                  </div>
+                  <h3 className="text-lg font-semibold text-secondary-900 dark:text-white mb-2">
+                    {item.title}
+                  </h3>
+                  <p className="text-secondary-600 dark:text-secondary-400 text-sm">
+                    {item.description}
+                  </p>
+                </div>
+                {index < complaintSteps.length - 1 && (
                   <div className="hidden lg:block absolute top-1/2 -right-3 transform -translate-y-1/2 text-secondary-300">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

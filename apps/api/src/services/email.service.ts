@@ -903,6 +903,280 @@ Pozdrawiamy,
 Zespół WB Trade
     `.trim();
   }
+
+  // ============================================
+  // CONTACT & COMPLAINT EMAILS
+  // ============================================
+
+  /**
+   * Send complaint email to support
+   */
+  async sendComplaintEmail(data: {
+    customerEmail: string;
+    subject: string;
+    description: string;
+    orderNumber?: string;
+    images?: string[];
+  }): Promise<EmailResult> {
+    try {
+      const resend = getResend();
+      const { customerEmail, subject, description, orderNumber, images = [] } = data;
+
+      // Prepare attachments from base64 images
+      const attachments = images
+        .filter(img => img && img.startsWith('data:image'))
+        .slice(0, 5) // Max 5 images
+        .map((base64, index) => {
+          const matches = base64.match(/^data:image\/(\w+);base64,(.+)$/);
+          if (matches) {
+            const ext = matches[1];
+            const content = matches[2];
+            return {
+              filename: `zdjecie_${index + 1}.${ext}`,
+              content: Buffer.from(content, 'base64'),
+            };
+          }
+          return null;
+        })
+        .filter((att): att is { filename: string; content: Buffer } => att !== null);
+
+      const htmlContent = this.getComplaintEmailHtml({
+        customerEmail,
+        subject,
+        description,
+        orderNumber,
+        hasImages: attachments.length > 0,
+        imageCount: attachments.length,
+      });
+
+      const { data: responseData, error } = await resend.emails.send({
+        from: FROM_EMAIL,
+        to: ['support@wb-partners.pl'],
+        replyTo: customerEmail,
+        subject: `[Reklamacja] ${subject}`,
+        html: htmlContent,
+        text: this.getComplaintEmailText({ customerEmail, subject, description, orderNumber }),
+        attachments: attachments.length > 0 ? attachments : undefined,
+      });
+
+      if (error) {
+        console.error('[EmailService] Complaint email error:', error);
+        return { success: false, error: error.message };
+      }
+
+      console.log(`✅ [EmailService] Complaint email sent, messageId: ${responseData?.id}`);
+      return { success: true, messageId: responseData?.id };
+    } catch (err: any) {
+      console.error('[EmailService] Complaint email exception:', err);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * HTML template for complaint email
+   */
+  private getComplaintEmailHtml(data: {
+    customerEmail: string;
+    subject: string;
+    description: string;
+    orderNumber?: string;
+    hasImages: boolean;
+    imageCount: number;
+  }): string {
+    const { customerEmail, subject, description, orderNumber, hasImages, imageCount } = data;
+    const now = new Date().toLocaleString('pl-PL', { 
+      dateStyle: 'long', 
+      timeStyle: 'short' 
+    });
+
+    return `
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+    <!-- Header -->
+    <tr>
+      <td style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); padding: 30px; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">⚠️ Nowe zgłoszenie reklamacyjne</h1>
+      </td>
+    </tr>
+    
+    <!-- Content -->
+    <tr>
+      <td style="padding: 30px;">
+        <table width="100%" cellspacing="0" cellpadding="0">
+          <tr>
+            <td style="padding-bottom: 20px;">
+              <p style="margin: 0; color: #64748b; font-size: 14px;">Data zgłoszenia:</p>
+              <p style="margin: 5px 0 0; color: #1e293b; font-size: 16px; font-weight: 600;">${now}</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding-bottom: 20px;">
+              <p style="margin: 0; color: #64748b; font-size: 14px;">Email klienta:</p>
+              <p style="margin: 5px 0 0;"><a href="mailto:${customerEmail}" style="color: #f97316; font-size: 16px; font-weight: 600; text-decoration: none;">${customerEmail}</a></p>
+            </td>
+          </tr>
+          ${orderNumber ? `
+          <tr>
+            <td style="padding-bottom: 20px;">
+              <p style="margin: 0; color: #64748b; font-size: 14px;">Numer zamówienia:</p>
+              <p style="margin: 5px 0 0; color: #1e293b; font-size: 16px; font-weight: 600;">${orderNumber}</p>
+            </td>
+          </tr>
+          ` : ''}
+          <tr>
+            <td style="padding-bottom: 20px;">
+              <p style="margin: 0; color: #64748b; font-size: 14px;">Temat reklamacji:</p>
+              <p style="margin: 5px 0 0; color: #1e293b; font-size: 18px; font-weight: 700;">${subject}</p>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Description Box -->
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-top: 10px;">
+          <p style="margin: 0 0 10px; color: #64748b; font-size: 14px; font-weight: 600;">Opis problemu:</p>
+          <p style="margin: 0; color: #334155; font-size: 15px; line-height: 1.6; white-space: pre-wrap;">${description.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
+        </div>
+
+        ${hasImages ? `
+        <!-- Images Notice -->
+        <div style="background-color: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 15px; margin-top: 20px;">
+          <p style="margin: 0; color: #92400e; font-size: 14px;">
+            📎 Do zgłoszenia załączono <strong>${imageCount}</strong> ${imageCount === 1 ? 'zdjęcie' : imageCount < 5 ? 'zdjęcia' : 'zdjęć'}. 
+            Sprawdź załączniki tego emaila.
+          </p>
+        </div>
+        ` : ''}
+
+        <!-- Action Button -->
+        <div style="text-align: center; margin-top: 30px;">
+          <a href="mailto:${customerEmail}?subject=Re: ${encodeURIComponent(subject)}" 
+             style="display: inline-block; background-color: #f97316; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+            Odpowiedz klientowi
+          </a>
+        </div>
+      </td>
+    </tr>
+    
+    <!-- Footer -->
+    <tr>
+      <td style="background-color: #1e293b; padding: 20px; text-align: center;">
+        <p style="margin: 0; color: #94a3b8; font-size: 12px;">
+          WB Trade - Zgłoszenie reklamacyjne
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+  }
+
+  /**
+   * Plain text version for complaint email
+   */
+  private getComplaintEmailText(data: {
+    customerEmail: string;
+    subject: string;
+    description: string;
+    orderNumber?: string;
+  }): string {
+    const { customerEmail, subject, description, orderNumber } = data;
+    const now = new Date().toLocaleString('pl-PL');
+
+    return `
+NOWE ZGŁOSZENIE REKLAMACYJNE
+============================
+
+Data: ${now}
+Email klienta: ${customerEmail}
+${orderNumber ? `Numer zamówienia: ${orderNumber}` : ''}
+
+TEMAT: ${subject}
+
+OPIS PROBLEMU:
+${description}
+
+---
+Odpowiedz na ten email, aby skontaktować się z klientem.
+    `.trim();
+  }
+
+  /**
+   * Send general contact form email
+   */
+  async sendContactFormEmail(data: {
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+  }): Promise<EmailResult> {
+    try {
+      const resend = getResend();
+      const { name, email, subject, message } = data;
+
+      const htmlContent = `
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+    <tr>
+      <td style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 30px; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">📬 Nowa wiadomość ze strony</h1>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 30px;">
+        <p style="margin: 0 0 10px; color: #64748b;">Od:</p>
+        <p style="margin: 0 0 20px; color: #1e293b; font-size: 16px;"><strong>${name}</strong> (${email})</p>
+        
+        <p style="margin: 0 0 10px; color: #64748b;">Temat:</p>
+        <p style="margin: 0 0 20px; color: #1e293b; font-size: 16px; font-weight: 600;">${subject}</p>
+        
+        <div style="background-color: #f8fafc; border-radius: 8px; padding: 20px;">
+          <p style="margin: 0 0 10px; color: #64748b; font-size: 14px;">Treść wiadomości:</p>
+          <p style="margin: 0; color: #334155; line-height: 1.6; white-space: pre-wrap;">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px;">
+          <a href="mailto:${email}?subject=Re: ${encodeURIComponent(subject)}" 
+             style="display: inline-block; background-color: #f97316; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600;">
+            Odpowiedz
+          </a>
+        </div>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+      const { data: responseData, error } = await resend.emails.send({
+        from: FROM_EMAIL,
+        to: ['kontakt@wb-trade.pl'],
+        replyTo: email,
+        subject: `[Kontakt] ${subject}`,
+        html: htmlContent,
+        text: `Od: ${name} (${email})\nTemat: ${subject}\n\n${message}`,
+      });
+
+      if (error) {
+        console.error('[EmailService] Contact form error:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, messageId: responseData?.id };
+    } catch (err: any) {
+      console.error('[EmailService] Contact form exception:', err);
+      return { success: false, error: err.message };
+    }
+  }
 }
 
 export const emailService = new EmailService();
