@@ -113,9 +113,10 @@ export class EmailService {
           <p style="font-size: 14px; color: #666; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 1px;">
             Twój kod rabatowy
           </p>
-          <p style="font-size: 32px; font-weight: bold; color: #ea580c; margin: 0 0 15px 0; letter-spacing: 3px; font-family: monospace;">
-            ${couponCode}
-          </p>
+          <div style="background-color: #ffffff; border: 2px solid #ea580c; border-radius: 8px; padding: 15px 25px; display: inline-block; margin: 10px 0; cursor: pointer;" title="Kliknij aby zaznaczyć">
+            <p style="font-size: 32px; font-weight: bold; color: #ea580c; margin: 0; letter-spacing: 4px; font-family: 'Courier New', monospace; user-select: all; -webkit-user-select: all; -moz-user-select: all; -ms-user-select: all;">${couponCode}</p>
+          </div>
+          <p style="font-size: 12px; color: #888; margin: 5px 0 15px 0;">👆 Kliknij kod aby zaznaczyć, potem Ctrl+C</p>
           <p style="font-size: 24px; font-weight: bold; color: #333; margin: 0;">
             -${discountPercent}% na pierwsze zakupy
           </p>
@@ -378,7 +379,10 @@ Zespół WB Trade
           <td style="padding: 0 30px 30px 30px;">
             <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px dashed #f59e0b; border-radius: 12px; padding: 25px; text-align: center;">
               <p style="margin: 0 0 10px 0; font-size: 14px; color: #92400e; text-transform: uppercase; letter-spacing: 1px;">Twój ekskluzywny kod rabatowy</p>
-              <p style="margin: 0 0 15px 0; font-size: 32px; font-weight: bold; color: #78350f; letter-spacing: 3px;">${discountCode}</p>
+              <div style="background-color: #ffffff; border: 2px solid #d97706; border-radius: 8px; padding: 12px 20px; display: inline-block; margin: 10px 0; cursor: pointer;" title="Kliknij aby zaznaczyć">
+                <p style="margin: 0; font-size: 32px; font-weight: bold; color: #78350f; letter-spacing: 4px; font-family: 'Courier New', monospace; user-select: all; -webkit-user-select: all; -moz-user-select: all; -ms-user-select: all;">${discountCode}</p>
+              </div>
+              <p style="margin: 5px 0 15px 0; font-size: 12px; color: #a16207;">👆 Kliknij kod aby zaznaczyć, potem Ctrl+C</p>
               <p style="margin: 0 0 5px 0; font-size: 18px; color: #92400e;"><strong>-10%</strong> na Twoje pierwsze zamówienie!</p>
               <p style="margin: 0; font-size: 13px; color: #a16207;">Ważny do: ${discountExpiry} • Jednorazowego użytku</p>
             </div>
@@ -479,6 +483,424 @@ Zespół WB Trade
 
 ---
 Wypisz się z newslettera: ${unsubscribeUrl}
+    `.trim();
+  }
+
+  /**
+   * Send payment reminder email with ordered products
+   */
+  async sendPaymentReminderEmail(
+    to: string,
+    customerName: string,
+    orderNumber: string,
+    orderId: string,
+    total: number,
+    items: {
+      name: string;
+      variant: string;
+      quantity: number;
+      price: number;
+      total: number;
+      imageUrl: string | null;
+    }[],
+    reminderNumber: number,
+    daysRemaining: number
+  ): Promise<EmailResult> {
+    try {
+      const resend = getResend();
+      
+      const paymentUrl = `${SITE_URL}/order/${orderId}/payment`;
+      
+      // Determine urgency based on days remaining
+      let urgencyEmoji = '⏰';
+      let urgencyText = 'Przypomnienie o płatności';
+      let urgencyColor = '#f97316'; // orange
+      
+      if (daysRemaining <= 2) {
+        urgencyEmoji = '🚨';
+        urgencyText = 'Pilne! Ostatnie dni na płatność';
+        urgencyColor = '#dc2626'; // red
+      } else if (daysRemaining <= 4) {
+        urgencyEmoji = '⚠️';
+        urgencyText = 'Przypomnienie o płatności';
+        urgencyColor = '#f59e0b'; // amber
+      }
+
+      const subject = `${urgencyEmoji} ${urgencyText} - Zamówienie #${orderNumber}`;
+
+      const { data, error } = await resend.emails.send({
+        from: FROM_EMAIL,
+        to: [to],
+        subject,
+        html: this.getPaymentReminderHtml(
+          customerName,
+          orderNumber,
+          orderId,
+          total,
+          items,
+          reminderNumber,
+          daysRemaining,
+          paymentUrl,
+          urgencyColor
+        ),
+        text: this.getPaymentReminderText(
+          customerName,
+          orderNumber,
+          total,
+          items,
+          daysRemaining,
+          paymentUrl
+        ),
+      });
+
+      if (error) {
+        console.error('[EmailService] Payment reminder error:', error);
+        return { success: false, error: error.message };
+      }
+
+      console.log(`✅ [EmailService] Payment reminder #${reminderNumber} sent to ${to} for order ${orderNumber}`);
+      return { success: true, messageId: data?.id };
+    } catch (err: any) {
+      console.error('[EmailService] Payment reminder exception:', err.message);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * HTML template for payment reminder email
+   */
+  private getPaymentReminderHtml(
+    customerName: string,
+    orderNumber: string,
+    orderId: string,
+    total: number,
+    items: {
+      name: string;
+      variant: string;
+      quantity: number;
+      price: number;
+      total: number;
+      imageUrl: string | null;
+    }[],
+    reminderNumber: number,
+    daysRemaining: number,
+    paymentUrl: string,
+    urgencyColor: string
+  ): string {
+    // Generate product list HTML
+    const productsHtml = items.map(item => `
+      <tr>
+        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">
+          <div style="display: flex; align-items: center;">
+            ${item.imageUrl ? `<img src="${item.imageUrl}" alt="${item.name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; margin-right: 12px;" />` : ''}
+            <div>
+              <p style="margin: 0; font-weight: 600; color: #333;">${item.name}</p>
+              ${item.variant ? `<p style="margin: 4px 0 0 0; font-size: 13px; color: #666;">${item.variant}</p>` : ''}
+            </div>
+          </div>
+        </td>
+        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #555;">
+          ${item.quantity} szt.
+        </td>
+        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: 600; color: #333;">
+          ${item.total.toFixed(2)} zł
+        </td>
+      </tr>
+    `).join('');
+
+    return `
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+    <!-- Header with Logo -->
+    <tr>
+      <td style="background: linear-gradient(135deg, ${urgencyColor} 0%, ${urgencyColor}dd 100%); padding: 40px 30px; text-align: center;">
+        <img src="${SITE_URL}/images/WB-TRADE-logo.png" alt="WBTrade" style="height: 50px; width: auto; margin-bottom: 15px;" />
+        <h1 style="color: white; margin: 0; font-size: 24px;">⏰ Przypomnienie o płatności</h1>
+      </td>
+    </tr>
+    
+    <!-- Content -->
+    <tr>
+      <td style="padding: 30px;">
+        <p style="font-size: 18px; color: #333; margin-bottom: 20px;">
+          Cześć <strong>${customerName}</strong>!
+        </p>
+        
+        <p style="font-size: 16px; color: #555; line-height: 1.6;">
+          Zauważyliśmy, że Twoje zamówienie <strong>#${orderNumber}</strong> nie zostało jeszcze opłacone.
+          Twoje produkty czekają na Ciebie!
+        </p>
+        
+        <!-- Urgency Warning -->
+        <div style="background-color: ${daysRemaining <= 2 ? '#fef2f2' : '#fef3e2'}; border-left: 4px solid ${urgencyColor}; padding: 15px 20px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+          <p style="margin: 0; color: ${daysRemaining <= 2 ? '#dc2626' : '#92400e'}; font-size: 15px;">
+            ${daysRemaining <= 1 
+              ? '🚨 <strong>Ostatni dzień!</strong> Twoje zamówienie zostanie anulowane jutro.'
+              : daysRemaining <= 2
+                ? `⚠️ <strong>Zostały tylko ${daysRemaining} dni!</strong> Opłać zamówienie, aby nie zostało anulowane.`
+                : `⏰ Masz jeszcze <strong>${daysRemaining} dni</strong> na opłacenie zamówienia.`
+            }
+          </p>
+        </div>
+
+        <!-- Order Summary Box -->
+        <div style="background-color: #f8fafc; border-radius: 12px; padding: 20px; margin: 25px 0;">
+          <h3 style="margin: 0 0 15px 0; color: #333; font-size: 16px;">📦 Twoje zamówienie #${orderNumber}</h3>
+          
+          <table width="100%" cellspacing="0" cellpadding="0" style="font-size: 14px;">
+            <thead>
+              <tr style="background-color: #e2e8f0;">
+                <th style="padding: 10px 12px; text-align: left; color: #475569;">Produkt</th>
+                <th style="padding: 10px 12px; text-align: center; color: #475569;">Ilość</th>
+                <th style="padding: 10px 12px; text-align: right; color: #475569;">Cena</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${productsHtml}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="2" style="padding: 15px 12px; text-align: right; font-weight: bold; color: #333; font-size: 16px;">
+                  Do zapłaty:
+                </td>
+                <td style="padding: 15px 12px; text-align: right; font-weight: bold; color: ${urgencyColor}; font-size: 20px;">
+                  ${total.toFixed(2)} zł
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        
+        <!-- CTA Button -->
+        <div style="text-align: center; margin: 35px 0;">
+          <a href="${paymentUrl}" style="display: inline-block; background: linear-gradient(135deg, ${urgencyColor} 0%, ${urgencyColor}dd 100%); color: white; text-decoration: none; padding: 18px 50px; border-radius: 8px; font-size: 18px; font-weight: bold; box-shadow: 0 4px 15px ${urgencyColor}50;">
+            💳 Opłać teraz
+          </a>
+        </div>
+        
+        <p style="font-size: 14px; color: #777; line-height: 1.6; text-align: center;">
+          Kliknij przycisk powyżej, aby przejść do bezpiecznej płatności.
+        </p>
+        
+        <!-- Help section -->
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+          <p style="font-size: 14px; color: #666; margin: 0;">
+            <strong>Masz pytania?</strong> Skontaktuj się z nami: 
+            <a href="mailto:kontakt@wb-trade.pl" style="color: ${urgencyColor};">kontakt@wb-trade.pl</a>
+          </p>
+        </div>
+      </td>
+    </tr>
+    
+    <!-- Footer -->
+    <tr>
+      <td style="background-color: #f8fafc; padding: 25px 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+        <p style="margin: 0 0 10px 0; color: #64748b; font-size: 14px;">
+          Pozdrawiamy,<br>
+          <strong>Zespół WB Trade</strong>
+        </p>
+        <p style="margin: 0; color: #94a3b8; font-size: 12px;">
+          Ten email został wysłany automatycznie. Nie odpowiadaj na niego.
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+  }
+
+  /**
+   * Plain text version for payment reminder
+   */
+  private getPaymentReminderText(
+    customerName: string,
+    orderNumber: string,
+    total: number,
+    items: {
+      name: string;
+      variant: string;
+      quantity: number;
+      price: number;
+      total: number;
+      imageUrl: string | null;
+    }[],
+    daysRemaining: number,
+    paymentUrl: string
+  ): string {
+    const productsList = items.map(item => 
+      `- ${item.name}${item.variant ? ` (${item.variant})` : ''} x${item.quantity} - ${item.total.toFixed(2)} zł`
+    ).join('\n');
+
+    return `
+Cześć ${customerName}!
+
+Przypomnienie o płatności - Zamówienie #${orderNumber}
+
+Zauważyliśmy, że Twoje zamówienie nie zostało jeszcze opłacone.
+
+${daysRemaining <= 2 
+  ? `⚠️ UWAGA: Zostały tylko ${daysRemaining} dni na opłacenie! Zamówienie zostanie automatycznie anulowane.`
+  : `Masz jeszcze ${daysRemaining} dni na opłacenie zamówienia.`
+}
+
+Twoje produkty:
+${productsList}
+
+Do zapłaty: ${total.toFixed(2)} zł
+
+Opłać zamówienie: ${paymentUrl}
+
+Masz pytania? Napisz do nas: kontakt@wb-trade.pl
+
+Pozdrawiamy,
+Zespół WB Trade
+    `.trim();
+  }
+
+  /**
+   * Send order cancelled due to non-payment email
+   */
+  async sendOrderCancelledDueToNonPaymentEmail(
+    to: string,
+    customerName: string,
+    orderNumber: string,
+    total: number
+  ): Promise<EmailResult> {
+    try {
+      const resend = getResend();
+
+      const { data, error } = await resend.emails.send({
+        from: FROM_EMAIL,
+        to: [to],
+        subject: `❌ Zamówienie #${orderNumber} zostało anulowane`,
+        html: this.getOrderCancelledHtml(customerName, orderNumber, total),
+        text: this.getOrderCancelledText(customerName, orderNumber, total),
+      });
+
+      if (error) {
+        console.error('[EmailService] Order cancelled email error:', error);
+        return { success: false, error: error.message };
+      }
+
+      console.log(`✅ [EmailService] Order cancelled email sent to ${to} for order ${orderNumber}`);
+      return { success: true, messageId: data?.id };
+    } catch (err: any) {
+      console.error('[EmailService] Order cancelled exception:', err.message);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * HTML template for order cancelled email
+   */
+  private getOrderCancelledHtml(
+    customerName: string,
+    orderNumber: string,
+    total: number
+  ): string {
+    return `
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+    <!-- Header with Logo -->
+    <tr>
+      <td style="background: linear-gradient(135deg, #64748b 0%, #475569 100%); padding: 40px 30px; text-align: center;">
+        <img src="${SITE_URL}/images/WB-TRADE-logo.png" alt="WBTrade" style="height: 50px; width: auto; margin-bottom: 15px;" />
+        <h1 style="color: white; margin: 0; font-size: 24px;">❌ Zamówienie anulowane</h1>
+      </td>
+    </tr>
+    
+    <!-- Content -->
+    <tr>
+      <td style="padding: 30px;">
+        <p style="font-size: 18px; color: #333; margin-bottom: 20px;">
+          Cześć <strong>${customerName}</strong>,
+        </p>
+        
+        <p style="font-size: 16px; color: #555; line-height: 1.6;">
+          Z przykrością informujemy, że Twoje zamówienie <strong>#${orderNumber}</strong> o wartości 
+          <strong>${total.toFixed(2)} zł</strong> zostało automatycznie anulowane z powodu braku płatności.
+        </p>
+        
+        <div style="background-color: #f1f5f9; border-radius: 8px; padding: 20px; margin: 25px 0; text-align: center;">
+          <p style="margin: 0; font-size: 14px; color: #64748b;">
+            Zamówienie oczekiwało na płatność przez 7 dni.
+          </p>
+        </div>
+        
+        <p style="font-size: 16px; color: #555; line-height: 1.6;">
+          Jeśli nadal jesteś zainteresowany/a naszymi produktami, zapraszamy do złożenia nowego zamówienia.
+          Wszystkie produkty są nadal dostępne w naszym sklepie!
+        </p>
+        
+        <!-- CTA Button -->
+        <div style="text-align: center; margin: 35px 0;">
+          <a href="${SITE_URL}/products" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-size: 16px; font-weight: bold; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);">
+            🛒 Przejdź do sklepu
+          </a>
+        </div>
+        
+        <!-- Help section -->
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+          <p style="font-size: 14px; color: #666; margin: 0;">
+            Jeśli masz pytania lub wystąpił problem z płatnością, skontaktuj się z nami:
+            <a href="mailto:kontakt@wb-trade.pl" style="color: #f97316;">kontakt@wb-trade.pl</a>
+          </p>
+        </div>
+      </td>
+    </tr>
+    
+    <!-- Footer -->
+    <tr>
+      <td style="background-color: #f8fafc; padding: 25px 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+        <p style="margin: 0 0 10px 0; color: #64748b; font-size: 14px;">
+          Pozdrawiamy,<br>
+          <strong>Zespół WB Trade</strong>
+        </p>
+        <p style="margin: 0; color: #94a3b8; font-size: 12px;">
+          Ten email został wysłany automatycznie. Nie odpowiadaj na niego.
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+  }
+
+  /**
+   * Plain text version for order cancelled email
+   */
+  private getOrderCancelledText(
+    customerName: string,
+    orderNumber: string,
+    total: number
+  ): string {
+    return `
+Cześć ${customerName},
+
+Zamówienie #${orderNumber} zostało anulowane
+
+Z przykrością informujemy, że Twoje zamówienie o wartości ${total.toFixed(2)} zł zostało automatycznie anulowane z powodu braku płatności.
+
+Zamówienie oczekiwało na płatność przez 7 dni.
+
+Jeśli nadal jesteś zainteresowany/a naszymi produktami, zapraszamy do złożenia nowego zamówienia: ${SITE_URL}/products
+
+Masz pytania? Napisz do nas: kontakt@wb-trade.pl
+
+Pozdrawiamy,
+Zespół WB Trade
     `.trim();
   }
 }

@@ -113,22 +113,22 @@ export function WelcomeDiscountPopup() {
             </div>
 
             {/* How it works */}
-            <div className="bg-orange-50 dark:bg-orange-900/30 rounded-xl p-4 mb-6">
+            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 mb-6">
               <h3 className="font-semibold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
-                <Mail size={18} className="text-orange-500" />
+                <Mail size={18} className="text-gray-500 dark:text-gray-400" />
                 Jak to działa?
               </h3>
               <ol className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                 <li className="flex items-start gap-2">
-                  <span className="flex-shrink-0 w-5 h-5 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                  <span className="flex-shrink-0 w-5 h-5 bg-gray-500 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
                   <span>Załóż bezpłatne konto</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="flex-shrink-0 w-5 h-5 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
-                  <span>Otrzymasz kod rabatowy na email</span>
+                  <span className="flex-shrink-0 w-5 h-5 bg-gray-500 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                  <span>Otrzymasz kod rabatowy na adres email</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="flex-shrink-0 w-5 h-5 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                  <span className="flex-shrink-0 w-5 h-5 bg-gray-500 text-white rounded-full flex items-center justify-center text-xs font-bold">3</span>
                   <span>Użyj kodu przy zamówieniu</span>
                 </li>
               </ol>
