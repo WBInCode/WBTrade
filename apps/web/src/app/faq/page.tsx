@@ -36,7 +36,7 @@ export default function FAQPage() {
         },
         {
           question: 'Jak otrzymam fakturę?',
-          answer: 'Faktura jest generowana automatycznie i\u00A0wysyłana na\u00A0adres e-mail podany przy zamówieniu. Możesz ją również pobrać z\u00A0zakładki "Moje zamówienia" po\u00A0zalogowaniu. Jeśli potrzebujesz faktury na\u00A0firmę, podaj dane firmy podczas składania zamówienia.',
+          answer: 'Podczas składania zamówienia zaznacz opcję "Chcę otrzymać fakturę VAT" i\u00A0podaj dane firmy (NIP, nazwa, adres). Po\u00A0opłaceniu zamówienia faktura będzie dostępna do\u00A0pobrania w\u00A0zakładce "Moje zamówienia".',
         },
       ],
     },
