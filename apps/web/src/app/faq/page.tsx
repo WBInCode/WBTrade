@@ -117,7 +117,7 @@ answer: 'Koszt dostawy zależy od\u00A0wybranej metody: Paczkomaty InPost od\u00
         },
         {
           question: 'Kto pokrywa koszty zwrotu?',
-          answer: 'W\u00A0przypadku zwrotu z\u00A0tytułu odstąpienia od\u00A0umowy (bez podania przyczyny), koszty przesyłki zwrotnej pokrywa kupujący. Przy reklamacji uznanej lub błędzie po\u00A0naszej stronie – pokrywamy koszty.',
+          answer: 'Koszty przesyłki zwrotnej zawsze pokrywa kupujący.',
         },
         {
           question: 'Jak długo trwa zwrot pieniędzy?',

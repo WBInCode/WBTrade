@@ -12,7 +12,7 @@ export default function ShippingPage() {
     {
       name: 'InPost Paczkomaty',
       time: '1-2 dni robocze',
-      price: '15,99 zł',
+      price: 'od 15,99 zł',
       icon: (
         <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -23,13 +23,24 @@ export default function ShippingPage() {
     {
       name: 'Kurier InPost',
       time: '1-2 dni robocze',
-      price: '19,99 zł',
+      price: 'od 19,99 zł',
       icon: (
         <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
         </svg>
       ),
       features: ['Śledzenie przesyłki', 'Dostawa pod drzwi', 'SMS przed dostawą'],
+    },
+    {
+      name: 'Kurier DPD',
+      time: '1-2 dni robocze',
+      price: 'od 19,99 zł',
+      icon: (
+        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+        </svg>
+      ),
+      features: ['Śledzenie przesyłki', 'Dostawa pod drzwi', 'Punkty odbioru DPD Pickup'],
     },
     {
       name: 'Wysyłka gabaryt',
