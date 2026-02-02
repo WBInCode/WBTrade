@@ -15,6 +15,7 @@ interface OrderSummaryProps {
   onEditStep: (step: number) => void;
   onTermsChange: (accepted: boolean) => void;
   onNewsletterChange: (accepted: boolean) => void;
+  onWantInvoiceChange: (wantInvoice: boolean) => void;
   onPlaceOrder: () => void;
   isSubmitting: boolean;
 }
@@ -43,6 +44,7 @@ export default function OrderSummary({
   onEditStep,
   onTermsChange,
   onNewsletterChange,
+  onWantInvoiceChange,
   onPlaceOrder,
   isSubmitting,
 }: OrderSummaryProps) {
@@ -303,6 +305,18 @@ export default function OrderSummary({
           />
           <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
             Chcę otrzymywać informacje o promocjach i nowościach (opcjonalne)
+          </span>
+        </label>
+
+        <label className="flex items-start gap-2 sm:gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={checkoutData.wantInvoice}
+            onChange={(e) => onWantInvoiceChange(e.target.checked)}
+            className="mt-0.5 sm:mt-1 h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 dark:border-secondary-600 rounded shrink-0 dark:bg-secondary-700"
+          />
+          <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+            🧾 Chcę otrzymać fakturę VAT {checkoutData.address.differentBillingAddress && checkoutData.address.billingNip ? '' : '(podaj dane firmy w adresie rozliczeniowym)'}
           </span>
         </label>
       </div>
