@@ -347,6 +347,8 @@ model Order {
   refundNumber        String?              @unique @map("refund_number")
   refundReason        String?              @map("refund_reason")
   refundRequestedAt   DateTime?            @map("refund_requested_at")
+  // Invoice request
+  wantInvoice         Boolean              @default(false) @map("want_invoice")
   items               OrderItem[]
   statusHistory       OrderStatusHistory[]
   billingAddress      Address?             @relation("BillingAddress", fields: [billingAddressId], references: [id])

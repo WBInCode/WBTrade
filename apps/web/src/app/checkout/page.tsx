@@ -75,6 +75,7 @@ export interface CheckoutData {
   payment: PaymentData;
   acceptTerms: boolean;
   acceptNewsletter: boolean;
+  wantInvoice: boolean;
 }
 
 const initialAddress: AddressData = {
@@ -143,6 +144,7 @@ function CheckoutPageContent() {
     payment: initialPayment,
     acceptTerms: false,
     acceptNewsletter: false,
+    wantInvoice: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -334,6 +336,7 @@ function CheckoutPageContent() {
           paymentMethod: checkoutData.payment.method,
           customerNotes: '',
           acceptTerms: checkoutData.acceptTerms,
+          wantInvoice: checkoutData.wantInvoice,
           // Only include selected items (Empik-style selection)
           selectedItemIds: checkoutItems.map(item => item.id),
           packageShipping: checkoutData.shipping.packageShipping?.map(pkg => ({
@@ -436,6 +439,7 @@ function CheckoutPageContent() {
         paymentMethod: checkoutData.payment.method,
         customerNotes: '',
         acceptTerms: checkoutData.acceptTerms,
+        wantInvoice: checkoutData.wantInvoice,
         // Only include selected items (Empik-style selection)
         selectedItemIds: checkoutItems.map(item => item.id),
         packageShipping: checkoutData.shipping.packageShipping?.map(pkg => ({
@@ -650,6 +654,9 @@ function CheckoutPageContent() {
                 }
                 onNewsletterChange={(acceptNewsletter) =>
                   setCheckoutData(prev => ({ ...prev, acceptNewsletter }))
+                }
+                onWantInvoiceChange={(wantInvoice) =>
+                  setCheckoutData(prev => ({ ...prev, wantInvoice }))
                 }
                 onPlaceOrder={handlePlaceOrder}
                 isSubmitting={isSubmitting}

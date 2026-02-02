@@ -165,7 +165,11 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
               <p className="text-gray-500 text-lg">{invoiceNumber}</p>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-orange-500">WBTrade</p>
+              <img 
+                src="/images/WB-TRADE-logo.png" 
+                alt="WB Trade" 
+                className="h-12 ml-auto mb-1"
+              />
               <p className="text-gray-600 text-sm">Sp. z o.o.</p>
             </div>
           </div>

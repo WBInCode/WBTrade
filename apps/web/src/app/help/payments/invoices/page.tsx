@@ -40,10 +40,10 @@ export default function InvoicesPage() {
                 
                 <h3 className="text-lg font-medium text-secondary-800 dark:text-secondary-200 mt-6 mb-3">Podczas składania zamówienia:</h3>
                 <ol className="list-decimal pl-6 text-secondary-600 dark:text-secondary-400 space-y-2 mb-6">
-                  <li>W\u00A0formularzu zamówienia zaznacz opcję "Chcę otrzymać fakturę VAT"</li>
-                  <li>Wypełnij dane do\u00A0faktury (nazwa firmy, NIP, adres)</li>
+                  <li>W\u00A0formularzu zamówienia zaznacz opcję &quot;Chcę otrzymać fakturę VAT&quot;</li>
+                  <li>Uzupełnij adres rozliczeniowy z danymi firmy (nazwa firmy, NIP)</li>
                   <li>Dokończ składanie zamówienia</li>
-                  <li>Faktura zostanie wystawiona automatycznie</li>
+                  <li>Po opłaceniu zamówienia faktura będzie dostępna do pobrania w\u00A0panelu klienta</li>
                 </ol>
 
 <h3 className="text-lg font-medium text-secondary-800 dark:text-secondary-200 mt-6 mb-3">Po złożeniu zamówienia:</h3>
@@ -72,9 +72,7 @@ export default function InvoicesPage() {
                   Gdzie znajdę fakturę?
                 </h2>
                 <ul className="list-disc pl-6 text-secondary-600 dark:text-secondary-400 space-y-2 mb-6">
-                  <li><strong>E-mail:</strong> Faktura jest wysyłana na\u00A0adres podany przy zamówieniu</li>
-                  <li><strong>Panel klienta:</strong> Zaloguj się → Moje konto → Zamówienia → Pobierz fakturę</li>
-                  <li><strong>W\u00A0paczce:</strong> Wydrukowana faktura jest dołączona do\u00A0przesyłki</li>
+                  <li><strong>Panel klienta:</strong> Zaloguj się → Moje konto → Zamówienia → Pobierz fakturę (widoczne tylko jeśli zaznaczyłeś opcję faktury przy zamówieniu i zamówienie jest opłacone)</li>
                 </ul>
 
                 <h2 className="text-xl font-semibold text-secondary-900 dark:text-white mt-8 mb-4">
