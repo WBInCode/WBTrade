@@ -154,6 +154,17 @@ router.delete(
   secureAuthController.revokeSession.bind(secureAuthController)
 );
 
+/**
+ * @route   DELETE /api/auth/delete-account
+ * @desc    Delete user account permanently
+ * @access  Private
+ */
+router.delete(
+  '/delete-account',
+  authGuard,
+  secureAuthController.deleteAccount.bind(secureAuthController)
+);
+
 // ============================================
 // GOOGLE OAUTH ROUTES
 // ============================================

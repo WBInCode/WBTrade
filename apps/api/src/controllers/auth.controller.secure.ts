@@ -607,6 +607,69 @@ export class SecureAuthController {
       });
     }
   }
+  /**
+   * Delete user account permanently
+   * DELETE /api/auth/delete-account
+   */
+  async deleteAccount(req: Request, res: Response): Promise<void> {
+    console.log('[AUTH] Delete account request received');
+    
+    try {
+      if (!req.user) {
+        console.log('[AUTH] No user in request');
+        res.status(401).json({
+          message: 'Wymagane uwierzytelnienie',
+          code: 'AUTH_REQUIRED',
+        });
+        return;
+      }
+
+      const { password } = req.body;
+
+      if (!password) {
+        res.status(400).json({
+          message: 'Hasło jest wymagane do usunięcia konta',
+          code: 'PASSWORD_REQUIRED',
+        });
+        return;
+      }
+
+      await secureAuthService.deleteAccount(req.user.userId, password);
+
+      res.json({
+        message: 'Konto zostało trwale usunięte',
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message.includes('incorrect')) {
+          res.status(400).json({
+            message: 'Nieprawidłowe hasło',
+            code: 'INVALID_PASSWORD',
+          });
+          return;
+        }
+        if (error.message.includes('not found')) {
+          res.status(404).json({
+            message: 'Użytkownik nie znaleziony',
+            code: 'USER_NOT_FOUND',
+          });
+          return;
+        }
+        if (error.message.includes('OAuth')) {
+          res.status(400).json({
+            message: 'Nie można usunąć konta OAuth bez ustawionego hasła',
+            code: 'OAUTH_ACCOUNT',
+          });
+          return;
+        }
+      }
+      console.error('Delete account error:', error);
+      res.status(500).json({
+        message: 'Usunięcie konta nie powiodło się',
+        code: 'DELETE_ACCOUNT_ERROR',
+      });
+    }
+  }
 }
 
 export const secureAuthController = new SecureAuthController();

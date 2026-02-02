@@ -28,6 +28,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   refreshToken: () => Promise<boolean>;
   setTokens: (accessToken: string, refreshToken: string) => Promise<void>;
+  deleteAccount: (password: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 interface RegisterData {
@@ -252,6 +253,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     saveTokens(newTokens);
   }, []);
 
+  // Delete account permanently
+  const deleteAccount = async (password: string): Promise<{ success: boolean; error?: string }> => {
+    if (!tokens?.accessToken) {
+      return { success: false, error: 'Nie zalogowany' };
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/auth/delete-account`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokens.accessToken}`,
+        },
+        body: JSON.stringify({ password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Clear user data and tokens
+        clearTokens();
+        return { success: true };
+      } else {
+        return { success: false, error: data.message || 'Usunięcie konta nie powiodło się' };
+      }
+    } catch (error) {
+      return { success: false, error: 'Błąd sieci. Spróbuj ponownie.' };
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -263,6 +294,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         refreshToken,
         setTokens: setTokensFromOAuth,
+        deleteAccount,
       }}
     >
       {children}

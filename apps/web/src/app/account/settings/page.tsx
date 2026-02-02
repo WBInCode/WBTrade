@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 // Sidebar navigation items
 const sidebarItems = [
@@ -81,7 +82,8 @@ interface Settings {
 }
 
 export default function SettingsPage() {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading, deleteAccount } = useAuth();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const router = useRouter();
   const [settings, setSettings] = useState<Settings>({
     notifications: {
@@ -102,6 +104,40 @@ export default function SettingsPage() {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  
+  // Delete account modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Sync darkMode setting with theme context
+  const isDarkMode = resolvedTheme === 'dark';
+
+  const handleDarkModeToggle = () => {
+    // Toggle between light and dark (not system)
+    setTheme(isDarkMode ? 'light' : 'dark');
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      setDeleteError('Wprowadź hasło');
+      return;
+    }
+
+    setIsDeleting(true);
+    setDeleteError('');
+
+    const result = await deleteAccount(deletePassword);
+
+    if (result.success) {
+      setShowDeleteModal(false);
+      router.push('/');
+    } else {
+      setDeleteError(result.error || 'Nie udało się usunąć konta');
+      setIsDeleting(false);
+    }
+  };
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -263,176 +299,9 @@ export default function SettingsPage() {
             </div>
 
             <div className="space-y-6">
-              {/* Notifications Section */}
-              <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-100 dark:border-secondary-700 shadow-sm">
-                <div className="p-5 border-b border-gray-100 dark:border-secondary-700">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Powiadomienia</h2>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Wybierz jakie powiadomienia chcesz otrzymywać</p>
-                    </div>
-                  </div>
-                </div>
+              
 
-                <div className="p-5 space-y-4">
-                  <div className="flex items-center justify-between py-2">
-                    <div>
-                      <h3 className="font-medium text-gray-900 dark:text-white">Aktualizacje zamówień</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Powiadomienia o statusie zamówień i dostawie</p>
-                    </div>
-                    <button
-                      onClick={() => handleToggle('notifications', 'orderUpdates')}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        settings.notifications.orderUpdates ? 'bg-orange-500' : 'bg-gray-200 dark:bg-secondary-600'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          settings.notifications.orderUpdates ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between py-2 border-t border-gray-100 dark:border-secondary-700">
-                    <div>
-                      <h3 className="font-medium text-gray-900 dark:text-white">Promocje i oferty</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Informacje o zniżkach i specjalnych ofertach</p>
-                    </div>
-                    <button
-                      onClick={() => handleToggle('notifications', 'promotions')}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        settings.notifications.promotions ? 'bg-orange-500' : 'bg-gray-200 dark:bg-secondary-600'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          settings.notifications.promotions ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between py-2 border-t border-gray-100 dark:border-secondary-700">
-                    <div>
-                      <h3 className="font-medium text-gray-900 dark:text-white">Newsletter</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Cotygodniowy newsletter z nowościami</p>
-                    </div>
-                    <button
-                      onClick={() => handleToggle('notifications', 'newsletter')}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        settings.notifications.newsletter ? 'bg-orange-500' : 'bg-gray-200 dark:bg-secondary-600'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          settings.notifications.newsletter ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between py-2 border-t border-gray-100 dark:border-secondary-700">
-                    <div>
-                      <h3 className="font-medium text-gray-900 dark:text-white">Powiadomienia SMS</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Ważne informacje przez SMS</p>
-                    </div>
-                    <button
-                      onClick={() => handleToggle('notifications', 'sms')}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        settings.notifications.sms ? 'bg-orange-500' : 'bg-gray-200 dark:bg-secondary-600'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          settings.notifications.sms ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Privacy Section */}
-              <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-100 dark:border-secondary-700 shadow-sm">
-                <div className="p-5 border-b border-gray-100 dark:border-secondary-700">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                      <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Prywatność</h2>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Kontroluj swoje dane i prywatność</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-5 space-y-4">
-                  <div className="flex items-center justify-between py-2">
-                    <div>
-                      <h3 className="font-medium text-gray-900 dark:text-white">Publiczny profil</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Pozwól innym użytkownikom zobaczyć Twój profil</p>
-                    </div>
-                    <button
-                      onClick={() => handleToggle('privacy', 'showProfile')}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        settings.privacy.showProfile ? 'bg-orange-500' : 'bg-gray-200 dark:bg-secondary-600'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          settings.privacy.showProfile ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between py-2 border-t border-gray-100 dark:border-secondary-700">
-                    <div>
-                      <h3 className="font-medium text-gray-900 dark:text-white">Udostępnianie danych partnerom</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Pozwól na udostępnianie danych zaufanym partnerom</p>
-                    </div>
-                    <button
-                      onClick={() => handleToggle('privacy', 'shareData')}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        settings.privacy.shareData ? 'bg-orange-500' : 'bg-gray-200 dark:bg-secondary-600'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          settings.privacy.shareData ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between py-2 border-t border-gray-100 dark:border-secondary-700">
-                    <div>
-                      <h3 className="font-medium text-gray-900 dark:text-white">Personalizacja</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Dostosowuj oferty na podstawie Twoich preferencji</p>
-                    </div>
-                    <button
-                      onClick={() => handleToggle('privacy', 'personalization')}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        settings.privacy.personalization ? 'bg-orange-500' : 'bg-gray-200 dark:bg-secondary-600'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          settings.privacy.personalization ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
-                </div>
-              </div>
+              
 
               {/* Preferences Section */}
               <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-100 dark:border-secondary-700 shadow-sm">
@@ -453,34 +322,18 @@ export default function SettingsPage() {
                 <div className="p-5 space-y-4">
                   <div className="flex items-center justify-between py-2">
                     <div>
-                      <h3 className="font-medium text-gray-900 dark:text-white">Język</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Wybierz preferowany język</p>
-                    </div>
-                    <select
-                      value={settings.preferences.language}
-                      onChange={(e) => handleSelectChange('preferences', 'language', e.target.value)}
-                      className="px-4 py-2 border border-gray-200 dark:border-secondary-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 dark:bg-secondary-800 dark:text-white"
-                    >
-                      <option value="pl">Polski</option>
-                      <option value="en">English</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center justify-between py-2 border-t border-gray-100 dark:border-secondary-700">
-                    <div>
                       <h3 className="font-medium text-gray-900 dark:text-white">Tryb ciemny</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Przełącz na ciemny motyw (wkrótce)</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Przełącz na ciemny motyw</p>
                     </div>
                     <button
-                      onClick={() => handleToggle('preferences', 'darkMode')}
-                      disabled
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-not-allowed opacity-50 ${
-                        settings.preferences.darkMode ? 'bg-orange-500' : 'bg-gray-200 dark:bg-secondary-600'
+                      onClick={handleDarkModeToggle}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        isDarkMode ? 'bg-orange-500' : 'bg-gray-200 dark:bg-secondary-600'
                       }`}
                     >
                       <span
                         className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          settings.preferences.darkMode ? 'translate-x-6' : 'translate-x-1'
+                          isDarkMode ? 'translate-x-6' : 'translate-x-1'
                         }`}
                       />
                     </button>
@@ -505,22 +358,17 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="p-5 space-y-4">
-                  <div className="flex items-center justify-between py-2">
-                    <div>
-                      <h3 className="font-medium text-gray-900 dark:text-white">Eksportuj dane</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Pobierz kopię wszystkich swoich danych</p>
-                    </div>
-                    <button className="px-4 py-2 border border-gray-200 dark:border-secondary-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors">
-                      Eksportuj
-                    </button>
-                  </div>
+                  
 
                   <div className="flex items-center justify-between py-2 border-t border-gray-100 dark:border-secondary-700">
                     <div>
                       <h3 className="font-medium text-gray-900 dark:text-white">Usuń konto</h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400">Trwale usuń swoje konto i wszystkie dane</p>
                     </div>
-                    <button className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors">
+                    <button 
+                      onClick={() => setShowDeleteModal(true)}
+                      className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
+                    >
                       Usuń konto
                     </button>
                   </div>
@@ -530,6 +378,73 @@ export default function SettingsPage() {
           </div>
         </div>
       </main>
+
+      {/* Delete Account Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-secondary-800 rounded-xl max-w-md w-full p-6 shadow-xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Usuń konto</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Ta akcja jest nieodwracalna</p>
+              </div>
+            </div>
+
+            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+              <p className="text-sm text-red-800 dark:text-red-200">
+                <strong>Uwaga!</strong> Po usunięciu konta:
+              </p>
+              <ul className="text-sm text-red-700 dark:text-red-300 mt-2 list-disc list-inside space-y-1">
+                <li>Wszystkie Twoje dane zostaną usunięte</li>
+                <li>Historia zamówień zostanie zanonimizowana</li>
+                <li>Kody rabatowe przestaną działać</li>
+                <li>Nie będziesz mógł odzyskać konta</li>
+              </ul>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Wprowadź hasło, aby potwierdzić
+              </label>
+              <input
+                type="password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                placeholder="Twoje hasło"
+                className="w-full px-4 py-2 border border-gray-200 dark:border-secondary-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-secondary-700 dark:text-white"
+              />
+              {deleteError && (
+                <p className="text-sm text-red-500 mt-2">{deleteError}</p>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeletePassword('');
+                  setDeleteError('');
+                }}
+                className="flex-1 px-4 py-2 border border-gray-200 dark:border-secondary-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors"
+              >
+                Anuluj
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors"
+              >
+                {isDeleting ? 'Usuwanie...' : 'Usuń konto'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer hideTrustBadges />
     </div>

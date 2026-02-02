@@ -9,6 +9,7 @@ import {
   resetPassword,
   changePassword,
   updateProfile,
+  deleteAccount,
 } from '../controllers/auth.controller';
 import { authGuard } from '../middleware/auth.middleware';
 
@@ -26,5 +27,6 @@ router.post('/logout', authGuard, logout);
 router.get('/me', authGuard, getCurrentUser);
 router.post('/change-password', authGuard, changePassword);
 router.patch('/profile', authGuard, updateProfile);
+router.delete('/delete-account', authGuard, deleteAccount);
 
 export default router;
