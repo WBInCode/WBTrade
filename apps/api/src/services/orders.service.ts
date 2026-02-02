@@ -54,6 +54,8 @@ interface CreateOrderData {
   guestFirstName?: string;
   guestLastName?: string;
   guestPhone?: string;
+  // Invoice preference
+  wantInvoice?: boolean;
 }
 
 interface GetAllOrdersParams {
@@ -193,6 +195,7 @@ export class OrdersService {
           tax,
           total,
           customerNotes: data.customerNotes,
+          wantInvoice: data.wantInvoice || false,
           // Guest checkout fields
           guestEmail: data.guestEmail,
           guestFirstName: data.guestFirstName,
@@ -359,13 +362,20 @@ export class OrdersService {
    * Cancel order and release inventory
    */
   async cancel(id: string) {
-    return prisma.$transaction(async (tx) => {
+    const cancelledOrder = await prisma.$transaction(async (tx) => {
       const order = await tx.order.findUnique({
         where: { id },
         include: { items: true },
       });
 
       if (!order) return null;
+
+      // Validate order can be cancelled
+      // Only allow cancellation for OPEN, PENDING, or CONFIRMED orders
+      const allowedStatuses = ['OPEN', 'PENDING', 'CONFIRMED'];
+      if (!allowedStatuses.includes(order.status)) {
+        throw new Error(`Cannot cancel order in status: ${order.status}. Orders can only be cancelled when in OPEN, PENDING, or CONFIRMED status.`);
+      }
 
       // Release reserved inventory
       for (const item of order.items) {
@@ -377,10 +387,13 @@ export class OrdersService {
         });
       }
 
-      // Update order status
+      // Update order status and payment status
       const cancelledOrder = await tx.order.update({
         where: { id },
-        data: { status: 'CANCELLED' },
+        data: { 
+          status: 'CANCELLED',
+          paymentStatus: order.paymentStatus === 'PAID' ? order.paymentStatus : 'CANCELLED', // Keep PAID status if already paid (for refund tracking)
+        },
       });
 
       // Add to status history
@@ -388,12 +401,31 @@ export class OrdersService {
         data: {
           orderId: id,
           status: 'CANCELLED',
-          note: 'Order cancelled',
+          note: 'Order cancelled by customer',
         },
       });
 
       return cancelledOrder;
     });
+
+    // Sync cancellation to Baselinker (update to "Zwroty/Anulowane" status)
+    if (cancelledOrder && cancelledOrder.baselinkerOrderId) {
+      setTimeout(() => {
+        baselinkerOrdersService.markOrderAsRefunded(cancelledOrder.id, 'Zamówienie anulowane przez klienta')
+          .then((syncResult) => {
+            if (syncResult.success) {
+              console.log(`[OrdersService] Order ${cancelledOrder.orderNumber} cancellation synced to Baselinker`);
+            } else {
+              console.error(`[OrdersService] Failed to sync cancellation to Baselinker:`, syncResult.error);
+            }
+          })
+          .catch((err) => {
+            console.error(`[OrdersService] Baselinker cancellation sync error:`, err);
+          });
+      }, 100);
+    }
+
+    return cancelledOrder;
   }
 
   /**
