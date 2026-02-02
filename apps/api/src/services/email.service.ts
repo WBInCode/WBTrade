@@ -923,22 +923,22 @@ Zespół WB Trade
       const { customerEmail, subject, description, orderNumber, images = [] } = data;
 
       // Prepare attachments from base64 images
-      const attachments = images
-        .filter(img => img && img.startsWith('data:image'))
-        .slice(0, 5) // Max 5 images
-        .map((base64, index) => {
-          const matches = base64.match(/^data:image\/(\w+);base64,(.+)$/);
+      const attachments: { filename: string; content: Buffer }[] = [];
+      
+      for (let i = 0; i < Math.min(images.length, 5); i++) {
+        const img = images[i];
+        if (img && img.startsWith('data:image')) {
+          const matches = img.match(/^data:image\/(\w+);base64,(.+)$/);
           if (matches) {
             const ext = matches[1];
             const content = matches[2];
-            return {
-              filename: `zdjecie_${index + 1}.${ext}`,
+            attachments.push({
+              filename: `zdjecie_${i + 1}.${ext}`,
               content: Buffer.from(content, 'base64'),
-            };
+            });
           }
-          return null;
-        })
-        .filter((att): att is { filename: string; content: Buffer } => att !== null);
+        }
+      }
 
       const htmlContent = this.getComplaintEmailHtml({
         customerEmail,
@@ -956,7 +956,7 @@ Zespół WB Trade
         subject: `[Reklamacja] ${subject}`,
         html: htmlContent,
         text: this.getComplaintEmailText({ customerEmail, subject, description, orderNumber }),
-        attachments: attachments.length > 0 ? attachments : undefined,
+        ...(attachments.length > 0 && { attachments }),
       });
 
       if (error) {
