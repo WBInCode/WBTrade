@@ -167,7 +167,7 @@ export default function WishlistPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Twoja lista ulubionych jest pusta</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Twoja lista ulubionych jest pusta!</h2>
               <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-md mx-auto">
                 Przeglądaj produkty i klikaj serduszko, aby dodać je do ulubionych. 
                 Dzięki temu łatwo do nich wrócisz!
