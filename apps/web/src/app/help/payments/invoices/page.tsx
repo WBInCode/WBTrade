@@ -53,7 +53,7 @@ export default function InvoicesPage() {
                 <ol className="list-decimal pl-6 text-secondary-600 dark:text-secondary-400 space-y-2 mb-6">
                   <li>Skontaktuj się z\u00A0nami w\u00A0ciągu 7\u00A0dni od\u00A0zakupu</li>
                   <li>Podaj numer zamówienia i\u00A0dane do\u00A0faktury (NIP, nazwa firmy, adres)</li>
-                  <li>Faktura zostanie wystawiona i\u00A0wysłana e-mailem</li>
+                  <li>Faktura zostanie wystawiona i\u00A0udostępniona do\u00A0pobrania w\u00A0panelu klienta</li>
                 </ol>
 
                 <h2 className="text-xl font-semibold text-secondary-900 dark:text-white mt-8 mb-4">
