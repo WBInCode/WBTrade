@@ -133,11 +133,11 @@ export default function ReturnsPage() {
     },
     {
       question: 'Czy mogę zwrócić używany produkt?',
-      answer: 'Produkt musi być nieużywany, kompletny i w stanie nienaruszonym. Możesz go rozpakować i obejrzeć, ale nie powinien nosić śladów użytkowania.',
+      answer: 'Produkt musi być nieużywany, kompletny i w stanie nienaruszonym. Możesz go rozpakować i obejrzeć, ale opakowanie nie może być uszkodzone, a produkt nie może posiadać śladów użytkowania.',
     },
     {
       question: 'Kto pokrywa koszty zwrotu?',
-      answer: 'W przypadku zwrotu z powodu odstąpienia od umowy, koszty przesyłki zwrotnej pokrywa kupujący. Przy reklamacji lub błędzie sprzedawcy - koszty pokrywamy my.',
+      answer: 'Koszty przesyłki zwrotnej zawsze pokrywa kupujący.',
     },
     {
       question: 'Jak długo trwa zwrot pieniędzy?',
