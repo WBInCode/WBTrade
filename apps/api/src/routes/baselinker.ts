@@ -9,6 +9,7 @@ import { Router } from 'express';
 import { baselinkerController } from '../controllers/baselinker.controller';
 import { authGuard, adminOnly } from '../middleware/auth.middleware';
 import { orderStatusSyncService } from '../services/order-status-sync.service';
+import { paymentReminderService } from '../services/payment-reminder.service';
 
 const router = Router();
 
@@ -67,5 +68,30 @@ router.post('/sync-all-stock', baselinkerController.syncAllStock);
 
 // Inventories list
 router.get('/inventories', baselinkerController.getInventories);
+
+// ========================================
+// Payment Reminder Admin Endpoints
+// ========================================
+
+/**
+ * POST /api/admin/baselinker/payment-reminders/trigger
+ * Manually trigger payment reminder processing
+ * Useful for testing or immediate processing
+ */
+router.post('/payment-reminders/trigger', async (req, res) => {
+  try {
+    console.log('[Admin] Manually triggering payment reminder processing');
+    const result = await paymentReminderService.processUnpaidOrders();
+    res.json({ 
+      success: true, 
+      message: `Processed ${result.processed} orders: ${result.remindersSent} reminders sent, ${result.ordersCancelled} cancelled`,
+      ...result 
+    });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[Admin] Payment reminder trigger error:', error);
+    res.status(500).json({ success: false, error: errorMessage });
+  }
+});
 
 export default router;

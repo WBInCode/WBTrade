@@ -228,6 +228,12 @@ app.listen(PORT, async () => {
     await scheduleBaselinkerSync();
     console.log('✅ Baselinker order status sync scheduled (every 15 minutes)');
     
+    // 3. Payment reminder - daily at 10:00 AM
+    const { createPaymentReminderWorker, schedulePaymentReminders } = await import('./workers/payment-reminder.worker');
+    createPaymentReminderWorker();
+    await schedulePaymentReminders();
+    console.log('✅ Payment reminder scheduled (daily at 10:00 AM)');
+    
     console.log('✅ All cron jobs started');
   } catch (error) {
     console.error('⚠️  Failed to start cron jobs:', error);

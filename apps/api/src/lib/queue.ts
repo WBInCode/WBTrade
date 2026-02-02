@@ -15,6 +15,7 @@ export const QUEUE_NAMES = {
   SHIPPING: 'shipping',
   RESERVATION_CLEANUP: 'reservation-cleanup',
   BASELINKER_SYNC: 'baselinker-sync',
+  PAYMENT_REMINDER: 'payment-reminder',
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
