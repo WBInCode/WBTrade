@@ -24,7 +24,7 @@ export default function FAQPage() {
         },
         {
           question: 'Jak sprawdzić status mojego zamówienia?',
-          answer: 'Status zamówienia możesz sprawdzić po\u00A0zalogowaniu się na\u00A0swoje konto w\u00A0zakładce "Moje zamówienia". Znajdziesz tam informacje o\u00A0etapie realizacji oraz\u00A0link do\u00A0śledzenia przesyłki. Otrzymasz także powiadomienia e-mail i\u00A0SMS o\u00A0zmianach statusu.',
+          answer: 'Status zamówienia możesz sprawdzić po\u00A0zalogowaniu się na\u00A0swoje konto w\u00A0zakładce "Moje zamówienia". Znajdziesz tam informacje o\u00A0etapie realizacji oraz\u00A0link do\u00A0śledzenia przesyłki.',
         },
         {
           question: 'Czy mogę anulować zamówienie?',
@@ -51,19 +51,15 @@ export default function FAQPage() {
       questions: [
         {
           question: 'Jakie są dostępne metody dostawy?',
-          answer: 'Oferujemy dostawę kurierską InPost, dostawę do\u00A0Paczkomatów InPost oraz\u00A0specjalną wysyłkę dla produktów gabarytowych. Szczegółowe informacje o\u00A0cenach i\u00A0czasie dostawy znajdziesz na\u00A0stronie "Dostawa".',
+          answer: 'Oferujemy dostawę kurierską InPost, dostawę do\u00A0Paczkomatów InPost, dostawę kurierską DPD oraz\u00A0specjalną wysyłkę dla produktów gabarytowych. Szczegółowe informacje o\u00A0cenach i\u00A0czasie dostawy znajdziesz na\u00A0stronie "Dostawa".',
         },
         {
           question: 'Ile kosztuje dostawa?',
           answer: 'Koszt dostawy zależy od\u00A0wybranej metody: Paczkomaty InPost od\u00A09,99\u00A0zł, Kurier InPost od\u00A019,99\u00A0zł. Darmowa dostawa dostępna przy zamówieniach powyżej określonej kwoty (od\u00A0100\u00A0zł dla Paczkomatów).',
         },
         {
-          question: 'Jak długo trwa dostawa?',
-          answer: 'Standardowy czas dostawy to\u00A01–3 dni robocze od\u00A0momentu nadania przesyłki. Zamówienia złożone do\u00A0godziny 14:00 w\u00A0dni robocze są wysyłane tego samego dnia.',
-        },
-        {
           question: 'Jak śledzić przesyłkę?',
-          answer: 'Po nadaniu przesyłki otrzymasz e-mail i\u00A0SMS z\u00A0numerem śledzenia. Możesz również sprawdzić status w\u00A0zakładce "Moje zamówienia". Link prowadzi bezpośrednio na\u00A0stronę przewoźnika.',
+          answer: 'Po nadaniu przesyłki otrzymasz e-mail z\u00A0numerem śledzenia. Możesz również sprawdzić status w\u00A0zakładce "Moje zamówienia".',
         },
         {
           question: 'Co zrobić, jeśli przesyłka jest uszkodzona?',
@@ -82,7 +78,7 @@ export default function FAQPage() {
       questions: [
         {
           question: 'Jakie metody płatności są dostępne?',
-          answer: 'Akceptujemy: karty płatnicze (Visa, Mastercard), BLIK, szybkie przelewy online (PayU, Przelewy24), tradycyjny przelew bankowy oraz\u00A0płatność przy odbiorze (dla wybranych zamówień).',
+          answer: 'Akceptujemy: karty płatnicze (Visa, Mastercard), BLIK, szybkie przelewy online (PayU) oraz tradycyjny przelew bankowy.',
         },
         {
           question: 'Czy płatności są bezpieczne?',
@@ -98,7 +94,7 @@ export default function FAQPage() {
         },
         {
           question: 'Czy mogę otrzymać fakturę VAT?',
-          answer: 'Tak, podczas składania zamówienia zaznacz opcję "Faktura VAT" i\u00A0podaj dane firmy (NIP, nazwa, adres). Faktura zostanie wygenerowana automatycznie i\u00A0wysłana na\u00A0podany adres e-mail.',
+          answer: 'Tak, podczas składania zamówienia zaznacz opcję "Faktura VAT" i\u00A0podaj dane firmy (NIP, nazwa, adres). Faktura zostanie wygenerowana automatycznie i będzie dostępna w zakładce "Moje zamówienia" pod Twoim zamówieniem.',
         },
       ],
     },
@@ -113,11 +109,11 @@ export default function FAQPage() {
       questions: [
         {
           question: 'Ile mam czasu na zwrot produktu?',
-          answer: 'Masz 14\u00A0dni kalendarzowych od\u00A0daty otrzymania przesyłki na\u00A0dokonanie zwrotu bez podania przyczyny. Wystarczy zgłosić zwrot przez formularz w\u00A0zakładce "Moje zamówienia".',
+          answer: 'Masz 14\u00A0dni kalendarzowych od\u00A0daty otrzymania przesyłki na\u00A0dokonanie zwrotu bez podania przyczyny. Wystarczy zgłosić zwrot przez formularz na\u00A0stronie /returns.',
         },
         {
           question: 'Jak zwrócić produkt?',
-          answer: 'Zaloguj się na\u00A0konto, przejdź do\u00A0"Moje zamówienia", wybierz produkt i\u00A0kliknij "Zgłoś zwrot". Postępuj zgodnie z\u00A0instrukcjami – spakuj produkt i\u00A0nadaj przesyłkę. Po\u00A0otrzymaniu i\u00A0weryfikacji, zwrócimy środki.',
+          answer: 'Wejdź na\u00A0stronę wbtrade.pl/returns i\u00A0wypełnij formularz zwrotu – podaj numer zamówienia i\u00A0adres e-mail. Nie musisz być zalogowany. Postępuj zgodnie z\u00A0instrukcjami – spakuj produkt i\u00A0nadaj przesyłkę. Po\u00A0otrzymaniu i\u00A0weryfikacji, zwrócimy środki.',
         },
         {
           question: 'Kto pokrywa koszty zwrotu?',

@@ -334,6 +334,8 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       packageShipping,
       // Selected cart item IDs (Empik-style partial cart checkout)
       selectedItemIds,
+      // Invoice preference
+      wantInvoice,
       // Guest checkout fields
       guestEmail,
       guestFirstName,
@@ -532,6 +534,8 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       // Discount/coupon from cart
       couponCode: cart.couponCode || undefined,
       discount: cart.discount || 0,
+      // Invoice preference
+      wantInvoice: wantInvoice || false,
       // Guest checkout fields
       guestEmail: isGuestCheckout ? guestEmail : undefined,
       guestFirstName: isGuestCheckout ? guestFirstName : undefined,
@@ -745,7 +749,7 @@ export async function retryPayment(req: Request, res: Response): Promise<void> {
     const order = await ordersService.getById(orderId);
     if (!order) {
       console.log('‚ùå Order not found:', orderId);
-      res.status(404).json({ message: 'ZamÛwienie nie zostalo znalezione' });
+      res.status(404).json({ message: 'ZamÔøΩwienie nie zostalo znalezione' });
       return;
     }
 
@@ -765,7 +769,7 @@ export async function retryPayment(req: Request, res: Response): Promise<void> {
 
     // Check if order is still unpaid
     if (order.paymentStatus === 'PAID') {
-      res.status(400).json({ message: 'ZamÛwienie zostalo juz oplacone' });
+      res.status(400).json({ message: 'ZamÔøΩwienie zostalo juz oplacone' });
       return;
     }
 
@@ -831,7 +835,7 @@ export async function getOrderTracking(req: Request, res: Response): Promise<voi
     // Get order and verify ownership
     const order = await ordersService.getById(orderId);
     if (!order) {
-      res.status(404).json({ message: 'ZamÛwienie nie zostalo znalezione' });
+      res.status(404).json({ message: 'ZamÔøΩwienie nie zostalo znalezione' });
       return;
     }
 

@@ -487,6 +487,8 @@ export interface Order {
   total: number;
   trackingNumber?: string;
   notes?: string;
+  // Invoice preference
+  wantInvoice?: boolean;
   // Refund fields
   refundNumber?: string;
   refundReason?: string;
@@ -972,6 +974,8 @@ export interface CheckoutRequest {
   // Selected cart item IDs (Empik-style partial cart checkout)
   selectedItemIds?: string[];
   packageShipping?: PackageShippingRequest[];
+  // Invoice preference
+  wantInvoice?: boolean;
   // Guest checkout fields
   guestEmail?: string;
   guestFirstName?: string;
