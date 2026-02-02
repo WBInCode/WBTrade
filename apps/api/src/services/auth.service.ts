@@ -381,6 +381,71 @@ export class AuthService {
     return this.sanitizeUser(user);
   }
 
+  /**
+   * Delete user account permanently
+   */
+  async deleteAccount(userId: string, password: string): Promise<void> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Verify password
+    if (!user.password) {
+      throw new Error('Cannot delete account - no password set (OAuth account?)');
+    }
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      throw new Error('Password is incorrect');
+    }
+
+    // Delete user and related data (cascade should handle most relations)
+    // But we'll explicitly delete some things for safety
+    await prisma.$transaction(async (tx) => {
+      // Delete cart items
+      await tx.cartItem.deleteMany({
+        where: { cart: { userId } },
+      });
+
+      // Delete carts
+      await tx.cart.deleteMany({
+        where: { userId },
+      });
+
+      // Delete wishlist items (WishlistItem has direct userId)
+      await tx.wishlistItem.deleteMany({
+        where: { userId },
+      });
+
+      // Delete addresses
+      await tx.address.deleteMany({
+        where: { userId },
+      });
+
+      // Delete newsletter subscription if exists
+      await tx.newsletter_subscriptions.deleteMany({
+        where: { email: user.email },
+      });
+
+      // Delete coupons created for this user
+      await tx.coupon.deleteMany({
+        where: { userId },
+      });
+
+      // Don't delete orders - keep them for records but anonymize
+      // Note: We can't update fields that don't exist, so we just set userId to null or leave them
+      // Orders have customerEmail etc. which are separate from user relation
+      
+      // Finally delete the user (cascade will handle remaining relations)
+      await tx.user.delete({
+        where: { id: userId },
+      });
+    });
+  }
+
   // ============================================
   // PRIVATE METHODS
   // ============================================

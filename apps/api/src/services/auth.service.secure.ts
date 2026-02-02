@@ -821,6 +821,59 @@ export class SecureAuthService {
   }
 
   /**
+   * Delete user account permanently
+   */
+  async deleteAccount(userId: string, password: string): Promise<void> {
+    // Find user
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, password: true },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Check if user has password (not OAuth-only account)
+    if (!user.password) {
+      throw new Error('Cannot delete account - no password set (OAuth account?)');
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new Error('Password is incorrect');
+    }
+
+    // Delete all related data in transaction
+    await prisma.$transaction(async (tx) => {
+      // Delete cart items and carts
+      await tx.cartItem.deleteMany({ where: { cart: { userId } } });
+      await tx.cart.deleteMany({ where: { userId } });
+
+      // Delete wishlist items
+      await tx.wishlistItem.deleteMany({ where: { userId } });
+
+      // Delete addresses
+      await tx.address.deleteMany({ where: { userId } });
+
+      // Delete newsletter subscriptions
+      await tx.newsletter_subscriptions.deleteMany({ where: { email: user.email } });
+
+      // Delete user coupons (welcome discount etc.)
+      await tx.coupon.deleteMany({ where: { userId } });
+
+      // Finally delete the user (orders remain with userId = null)
+      await tx.user.delete({ where: { id: userId } });
+    });
+
+    // Delete all sessions from Redis
+    await deleteAllUserSessions(userId);
+
+    console.log(`[SecureAuthService] Account deleted: ${user.email}`);
+  }
+
+  /**
    * Remove sensitive data from user object
    */
   private sanitizeUser(user: {

@@ -35,7 +35,7 @@ export async function register(req: Request, res: Response): Promise<void> {
   } catch (error) {
     if (error instanceof Error) {
       if (error.message.includes('already exists')) {
-        res.status(409).json({ message: error.message });
+        res.status(409).json({ message: 'Użytkownik z tym adresem email już istnieje' });
         return;
       }
     }
@@ -299,5 +299,47 @@ export async function updateProfile(req: Request, res: Response): Promise<void> 
   } catch (error) {
     console.error('Update profile error:', error);
     res.status(500).json({ message: 'Aktualizacja profilu nie powiodła się' });
+  }
+}
+
+/**
+ * Delete user account permanently
+ * DELETE /api/auth/delete-account
+ */
+export async function deleteAccount(req: Request, res: Response): Promise<void> {
+  console.log('[AUTH] Delete account request received');
+  console.log('[AUTH] User:', req.user);
+  console.log('[AUTH] Body:', req.body);
+  
+  try {
+    if (!req.user) {
+      console.log('[AUTH] No user in request');
+      res.status(401).json({ message: 'Nie zalogowany' });
+      return;
+    }
+
+    const { password } = req.body;
+
+    if (!password) {
+      res.status(400).json({ message: 'Hasło jest wymagane do usunięcia konta' });
+      return;
+    }
+
+    await authService.deleteAccount(req.user.userId, password);
+
+    res.status(200).json({ message: 'Konto zostało trwale usunięte' });
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes('incorrect')) {
+        res.status(400).json({ message: 'Nieprawidłowe hasło' });
+        return;
+      }
+      if (error.message.includes('not found')) {
+        res.status(404).json({ message: 'Użytkownik nie znaleziony' });
+        return;
+      }
+    }
+    console.error('Delete account error:', error);
+    res.status(500).json({ message: 'Usunięcie konta nie powiodło się' });
   }
 }
