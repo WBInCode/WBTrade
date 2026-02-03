@@ -122,7 +122,7 @@ export default function OrderModifyPage() {
                   </div>
                   <div className="p-4 bg-primary-50 dark:bg-primary-900/30 rounded-lg">
                     <h4 className="font-medium text-primary-900 dark:text-primary-100 mb-1">📞 Telefon</h4>
-                    <p className="text-primary-700 dark:text-primary-300 text-sm">+48 570 028 761 (pon-pt 9-17)</p>
+                    <p className="text-primary-700 dark:text-primary-300 text-sm">+48 570 034 367 (pon-pt 9-17)</p>
                   </div>
                 </div>
               </div>

@@ -3,12 +3,16 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, isAuthenticated } = useAuth();
+  
+  // Get redirect URL from query params, default to /account
+  const redirectUrl = searchParams.get('redirect') || '/account';
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,9 +25,9 @@ export default function LoginPage() {
   // Redirect if already logged in
   React.useEffect(() => {
     if (isAuthenticated) {
-      router.push('/account');
+      router.push(redirectUrl);
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, router, redirectUrl]);
 
   // Walidacja email
   const isValidEmail = (email: string): boolean => {
@@ -73,7 +77,7 @@ export default function LoginPage() {
     const result = await login(email, password);
 
     if (result.success) {
-      router.push('/account');
+      router.push(redirectUrl);
     } else {
       setError(result.error || 'Logowanie nie powiodło się');
     }
@@ -92,16 +96,16 @@ export default function LoginPage() {
               <Image
                 src="/images/WB-TRADE-logo.png"
                 alt="WBTrade"
-                width={180}
-                height={60}
-                className="h-14 w-auto dark:hidden"
+                width={220}
+                height={80}
+                className="h-20 w-auto dark:hidden"
               />
               <Image
                 src="/images/wb-trade-bez-tla.png"
                 alt="WBTrade"
-                width={180}
-                height={60}
-                className="h-14 w-auto hidden dark:block"
+                width={220}
+                height={80}
+                className="h-20 w-auto hidden dark:block"
               />
             </Link>
             <Link 

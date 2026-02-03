@@ -59,7 +59,7 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
   // Demo data for display
   const storeName = product.storeName || 'TopStore';
   const badge = product.badge as BadgeType | undefined;
-  const deliveryInfo = product.deliveryInfo || 'Wysyłka w ciągu 24-72h';
+  const deliveryInfo = product.deliveryInfo || 'Sprawna dostawa';
   const warehouseLocation = getWarehouseLocation(product);
 
   const { isInWishlist, toggleWishlist } = useWishlist();
