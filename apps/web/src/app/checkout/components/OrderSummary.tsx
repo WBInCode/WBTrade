@@ -296,29 +296,26 @@ export default function OrderSummary({
           </span>
         </label>
 
-        <label className="flex items-start gap-2 sm:gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={checkoutData.acceptNewsletter}
-            onChange={(e) => onNewsletterChange(e.target.checked)}
-            className="mt-0.5 sm:mt-1 h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 dark:border-secondary-600 rounded shrink-0 dark:bg-secondary-700"
-          />
-          <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
-            Chcę otrzymywać informacje o promocjach i nowościach (opcjonalne)
-          </span>
-        </label>
-
-        <label className="flex items-start gap-2 sm:gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={checkoutData.wantInvoice}
-            onChange={(e) => onWantInvoiceChange(e.target.checked)}
-            className="mt-0.5 sm:mt-1 h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 dark:border-secondary-600 rounded shrink-0 dark:bg-secondary-700"
-          />
-          <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
-            🧾 Chcę otrzymać fakturę VAT {checkoutData.address.differentBillingAddress && checkoutData.address.billingNip ? '' : '(podaj dane firmy w adresie rozliczeniowym)'}
-          </span>
-        </label>
+        <div className="flex items-start justify-between gap-2">
+          <label className="flex items-start gap-2 sm:gap-3 cursor-pointer flex-1">
+            <input
+              type="checkbox"
+              checked={checkoutData.wantInvoice}
+              onChange={(e) => onWantInvoiceChange(e.target.checked)}
+              className="mt-0.5 sm:mt-1 h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 dark:border-secondary-600 rounded shrink-0 dark:bg-secondary-700"
+            />
+            <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+              🧾 Chcę otrzymać fakturę VAT {checkoutData.address.differentBillingAddress && checkoutData.address.billingNip ? '' : '(podaj dane firmy w adresie)'}
+            </span>
+          </label>
+          <button
+            type="button"
+            onClick={() => onEditStep(1)}
+            className="text-xs sm:text-sm text-orange-500 hover:text-orange-600 font-medium shrink-0"
+          >
+            {checkoutData.address.differentBillingAddress && checkoutData.address.billingNip ? 'Zmień' : 'Dodaj'}
+          </button>
+        </div>
       </div>
 
       {/* Place order button */}
