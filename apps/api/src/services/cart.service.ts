@@ -258,13 +258,21 @@ export class CartService {
    * Apply coupon to cart
    */
   async applyCoupon(cartId: string, couponCode: string): Promise<CartWithItems> {
+    // Normalize coupon code - uppercase and trim whitespace
+    const normalizedCode = couponCode.toUpperCase().trim();
+    
     // Validate coupon
     const coupon = await prisma.coupon.findUnique({
-      where: { code: couponCode },
+      where: { code: normalizedCode },
     });
 
     if (!coupon) {
+      console.log(`[CartService] Coupon not found: "${normalizedCode}" (original: "${couponCode}")`);
       throw new Error('Nieprawidłowy kod kuponu');
+    }
+
+    if (!coupon.isActive) {
+      throw new Error('Kupon jest nieaktywny');
     }
 
     if (coupon.expiresAt && coupon.expiresAt < new Date()) {
@@ -275,9 +283,15 @@ export class CartService {
       throw new Error('Kupon został wykorzystany maksymalną liczbę razy');
     }
 
+    // Check for NEWSLETTER coupon restrictions - cannot be combined with other discount types
+    // This is informational since only one coupon can be applied at a time
+    if (coupon.couponSource === 'NEWSLETTER') {
+      console.log(`[CartService] Newsletter coupon ${normalizedCode} applied - note: cannot combine with registration/promo codes`);
+    }
+
     await prisma.cart.update({
       where: { id: cartId },
-      data: { couponCode },
+      data: { couponCode: normalizedCode },
     });
 
     const cart = await prisma.cart.findUnique({

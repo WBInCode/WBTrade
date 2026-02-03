@@ -178,7 +178,7 @@ export class DiscountService {
    */
   async generateNewsletterDiscount(email: string): Promise<WelcomeDiscountResult> {
     const NEWSLETTER_DISCOUNT_PERCENT = 10;
-    const NEWSLETTER_DISCOUNT_VALID_DAYS = 30;
+    const NEWSLETTER_DISCOUNT_VALID_DAYS = 14;  // 2 weeks
 
     // Check if this email already has a newsletter discount
     const existingCoupon = await prisma.coupon.findFirst({
@@ -226,7 +226,7 @@ export class DiscountService {
     const coupon = await prisma.coupon.create({
       data: {
         code: code!,
-        description: `Zniżka newsletterowa -${NEWSLETTER_DISCOUNT_PERCENT}% dla ${email}`,
+        description: `Zniżka newsletterowa -${NEWSLETTER_DISCOUNT_PERCENT}% na kolejne zakupy dla ${email} (nie łączy się z rabatem za rejestrację i kuponami promocyjnymi)`,
         type: 'PERCENTAGE',
         value: NEWSLETTER_DISCOUNT_PERCENT,
         maximumUses: 1,         // One-time use

@@ -322,17 +322,20 @@ export class BaselinkerOrdersService {
     // Add discount as a product with negative price (standard Baselinker approach)
     const orderDiscount = Number(order.discount || 0);
     if (orderDiscount > 0) {
+      const discountName = order.couponCode 
+        ? `Rabat (kupon: ${order.couponCode})` 
+        : 'Rabat (kupon)';
       products.push({
         storage: 'db' as const,
         storage_id: '0',
-        name: `Rabat (kupon)`,
-        sku: 'DISCOUNT',
+        name: discountName,
+        sku: order.couponCode || 'DISCOUNT',
         price_brutto: -orderDiscount, // Negative price for discount
         tax_rate: 23,
         quantity: 1,
         weight: 0,
       });
-      console.log(`[BaselinkerOrders] Added discount: -${orderDiscount} PLN`);
+      console.log(`[BaselinkerOrders] Added discount: -${orderDiscount} PLN (code: ${order.couponCode || 'N/A'})`);
     }
 
     // Build the order request
