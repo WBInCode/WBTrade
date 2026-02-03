@@ -87,7 +87,7 @@ interface FormErrors {
 }
 
 export default function ProfilePage() {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading, refreshProfile } = useAuth();
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -118,11 +118,11 @@ export default function ProfilePage() {
         phone: user.phone || '',
         birthDate: '',
         gender: '',
-        companyName: (user as any).companyName || '',
-        nip: (user as any).nip || '',
-        companyStreet: (user as any).companyStreet || '',
-        companyCity: (user as any).companyCity || '',
-        companyPostalCode: (user as any).companyPostalCode || '',
+        companyName: user.companyName || '',
+        nip: user.nip || '',
+        companyStreet: user.companyStreet || '',
+        companyCity: user.companyCity || '',
+        companyPostalCode: user.companyPostalCode || '',
       });
     }
   }, [user]);
@@ -208,6 +208,9 @@ export default function ProfilePage() {
         companyPostalCode: formData.companyPostalCode || undefined,
       });
 
+      // Refresh user data from server
+      await refreshProfile();
+
       setSaveSuccess(true);
       setIsEditing(false);
 
@@ -230,11 +233,11 @@ export default function ProfilePage() {
         phone: user.phone || '',
         birthDate: '',
         gender: '',
-        companyName: (user as any).companyName || '',
-        nip: (user as any).nip || '',
-        companyStreet: (user as any).companyStreet || '',
-        companyCity: (user as any).companyCity || '',
-        companyPostalCode: (user as any).companyPostalCode || '',
+        companyName: user.companyName || '',
+        nip: user.nip || '',
+        companyStreet: user.companyStreet || '',
+        companyCity: user.companyCity || '',
+        companyPostalCode: user.companyPostalCode || '',
       });
     }
     setErrors({});
