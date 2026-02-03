@@ -146,7 +146,7 @@ export default function SuspiciousPage() {
                   </p>
                   <ul className="text-primary-700 dark:text-primary-300 text-sm space-y-1">
                     <li>📧 E-mail: support@wb-partners.pl</li>
-                    <li>📞 Telefon: +48 570 028 761 (pon-pt 9-17)</li>
+                    <li>📞 Telefon: +48 570 034 367 (pon-pt 9-17)</li>
                     <li>⏰ Odpowiadamy na zgłoszenia bezpieczeństwa w ciągu 4 godzin</li>
                   </ul>
                 </div>

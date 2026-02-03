@@ -457,7 +457,9 @@ export default function ShippingPerPackage({
     <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm">
       {/* Header with summary */}
       <div className="px-4 sm:px-6 py-4 sm:py-5 border-b dark:border-secondary-700 bg-gradient-to-r from-orange-50 to-white dark:from-secondary-700 dark:to-secondary-800">
-        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Wybór dostawy</h2>
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+          {calculateShipmentCount() === 1 ? 'Dostawa' : 'Wybór dostawy'}
+        </h2>
         <div className="flex flex-wrap items-center gap-2 mt-2">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -475,7 +477,10 @@ export default function ShippingPerPackage({
           )}
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-          Produkty zostaną wysłane z różnych magazynów. Wybierz sposób dostawy dla każdej przesyłki.
+          {calculateShipmentCount() === 1 
+            ? 'Wybierz sposób dostawy dla Twojego zamówienia.'
+            : 'Produkty zostaną wysłane z różnych magazynów. Wybierz sposób dostawy dla każdej przesyłki.'
+          }
         </p>
       </div>
 
@@ -853,14 +858,11 @@ export default function ShippingPerPackage({
 
         {/* Shipping summary */}
         <div className="px-4 sm:px-6 py-4 bg-gray-50 dark:bg-secondary-700 border-t dark:border-secondary-600">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between">
             <span className="text-sm text-gray-600 dark:text-gray-400">Łączny koszt dostawy:</span>
             <span className="text-xl font-bold text-gray-900 dark:text-white">
               {calculateTotalPrice(packagesWithOptions, selectedMethods).toFixed(2)} zł
             </span>
-          </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            {calculateShipmentCount()} {calculateShipmentCount() === 1 ? 'przesyłka' : calculateShipmentCount() < 5 ? 'przesyłki' : 'przesyłek'} • Otrzymasz numer śledzenia dla każdej
           </div>
         </div>
 

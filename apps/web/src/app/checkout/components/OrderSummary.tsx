@@ -285,11 +285,11 @@ export default function OrderSummary({
           />
           <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
             Akceptuję{' '}
-            <a href="/regulamin" className="text-orange-500 hover:underline" target="_blank">
+            <a href="/terms" className="text-orange-500 hover:underline" target="_blank">
               regulamin sklepu
             </a>{' '}
             oraz{' '}
-            <a href="/polityka-prywatnosci" className="text-orange-500 hover:underline" target="_blank">
+            <a href="/privacy" className="text-orange-500 hover:underline" target="_blank">
               politykę prywatności
             </a>
             . Wyrażam zgodę na przetwarzanie danych osobowych w celu realizacji zamówienia. *
