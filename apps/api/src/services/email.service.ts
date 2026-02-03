@@ -361,7 +361,7 @@ Zespół WB Trade
         return { success: false, error: error.message };
       }
 
-      console.log(`✅ [EmailService] Newsletter welcome email sent to ${to} with discount ${discountCode}, messageId: ${data?.id}`);
+      console.log(`✅ [EmailService] Newsletter welcome email sent to ${to} with discount ${discountCode}, messageId: ${data?.id} [BUILD: 2026-02-03-v2]`);
       return { success: true, messageId: data?.id };
     } catch (err: any) {
       console.error('[EmailService] Newsletter welcome exception:', err.message);
