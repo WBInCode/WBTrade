@@ -116,6 +116,15 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
   const [saveAddress, setSaveAddress] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loadingAddresses, setLoadingAddresses] = useState(false);
+  
+  // User company data from profile
+  const [userCompanyData, setUserCompanyData] = useState<{
+    companyName?: string;
+    nip?: string;
+    companyStreet?: string;
+    companyCity?: string;
+    companyPostalCode?: string;
+  } | null>(null);
 
   // Check if user is logged in and fetch saved addresses (skip for guest checkout)
   useEffect(() => {
@@ -141,13 +150,15 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
         setLoadingAddresses(true);
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
         try {
+          // Fetch addresses
           const response = await fetch(`${apiUrl}/addresses`, {
             headers: {
               'Authorization': `Bearer ${token}`,
             },
           });
+          let addresses: SavedAddress[] = [];
           if (response.ok) {
-            const addresses: SavedAddress[] = await response.json();
+            addresses = await response.json();
             setSavedAddresses(addresses);
             
             // Auto-select default address if form is empty
@@ -168,6 +179,25 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
                 postalCode: defaultAddress.postalCode,
                 phone: phone,
               }));
+            }
+          }
+          
+          // Fetch user profile for company data
+          const profileResponse = await fetch(`${apiUrl}/auth/me`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
+            if (profileData.user) {
+              setUserCompanyData({
+                companyName: profileData.user.companyName,
+                nip: profileData.user.nip,
+                companyStreet: profileData.user.companyStreet,
+                companyCity: profileData.user.companyCity,
+                companyPostalCode: profileData.user.companyPostalCode,
+              });
             }
           }
         } catch (error) {
@@ -728,7 +758,30 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
         {/* Billing Address */}
         {formData.differentBillingAddress && (
           <div className="px-6 py-4 border-b dark:border-secondary-700 bg-gray-50 dark:bg-secondary-700">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Dane do faktury</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Dane do faktury</h3>
+              {isLoggedIn && userCompanyData && (userCompanyData.companyName || userCompanyData.nip) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData(prev => ({
+                      ...prev,
+                      billingCompanyName: userCompanyData.companyName || '',
+                      billingNip: userCompanyData.nip || '',
+                      billingStreet: userCompanyData.companyStreet || '',
+                      billingCity: userCompanyData.companyCity || '',
+                      billingPostalCode: userCompanyData.companyPostalCode || '',
+                    }));
+                  }}
+                  className="text-sm text-orange-600 hover:text-orange-700 dark:text-orange-500 dark:hover:text-orange-400 font-medium flex items-center gap-1.5 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  Uzupełnij z profilu
+                </button>
+              )}
+            </div>
             <div className="space-y-4">
               {/* Company Name and NIP */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
