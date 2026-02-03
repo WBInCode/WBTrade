@@ -133,6 +133,17 @@ router.get(
 );
 
 /**
+ * @route   PATCH /api/auth/profile
+ * @desc    Update user profile
+ * @access  Private
+ */
+router.patch(
+  '/profile',
+  authGuard,
+  secureAuthController.updateProfile.bind(secureAuthController)
+);
+
+/**
  * @route   GET /api/auth/sessions
  * @desc    Get active sessions
  * @access  Private

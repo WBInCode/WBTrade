@@ -524,10 +524,16 @@ export class SecureAuthController {
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
+          phone: user.phone,
           role: user.role,
           emailVerified: user.emailVerified,
           createdAt: user.createdAt,
           lastLoginAt: user.lastLoginAt,
+          companyName: user.companyName,
+          nip: user.nip,
+          companyStreet: user.companyStreet,
+          companyCity: user.companyCity,
+          companyPostalCode: user.companyPostalCode,
         },
       });
     } catch (error) {
@@ -667,6 +673,58 @@ export class SecureAuthController {
       res.status(500).json({
         message: 'Usunięcie konta nie powiodło się',
         code: 'DELETE_ACCOUNT_ERROR',
+      });
+    }
+  }
+  /**
+   * Update user profile
+   * PATCH /api/auth/profile
+   */
+  async updateProfile(req: Request, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          message: 'Wymagane uwierzytelnienie',
+          code: 'AUTH_REQUIRED',
+        });
+        return;
+      }
+
+      const { firstName, lastName, phone, companyName, nip, companyStreet, companyCity, companyPostalCode } = req.body;
+
+      const updatedUser = await secureAuthService.updateProfile(req.user.userId, {
+        firstName,
+        lastName,
+        phone,
+        companyName,
+        nip,
+        companyStreet,
+        companyCity,
+        companyPostalCode,
+      });
+
+      res.json({
+        message: 'Profil zaktualizowany pomyślnie',
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          firstName: updatedUser.firstName,
+          lastName: updatedUser.lastName,
+          phone: updatedUser.phone,
+          role: updatedUser.role,
+          emailVerified: updatedUser.emailVerified,
+          companyName: updatedUser.companyName,
+          nip: updatedUser.nip,
+          companyStreet: updatedUser.companyStreet,
+          companyCity: updatedUser.companyCity,
+          companyPostalCode: updatedUser.companyPostalCode,
+        },
+      });
+    } catch (error) {
+      console.error('Update profile error:', error);
+      res.status(500).json({
+        message: 'Aktualizacja profilu nie powiodła się',
+        code: 'UPDATE_PROFILE_ERROR',
       });
     }
   }

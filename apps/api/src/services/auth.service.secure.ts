@@ -888,6 +888,11 @@ export class SecureAuthService {
     password?: string | null;
     failedLoginAttempts?: number;
     lockedUntil?: Date | null;
+    companyName?: string | null;
+    nip?: string | null;
+    companyStreet?: string | null;
+    companyCity?: string | null;
+    companyPostalCode?: string | null;
   }): UserResponse {
     return {
       id: user.id,
@@ -898,7 +903,47 @@ export class SecureAuthService {
       role: user.role,
       emailVerified: user.emailVerified,
       createdAt: user.createdAt,
+      companyName: user.companyName,
+      nip: user.nip,
+      companyStreet: user.companyStreet,
+      companyCity: user.companyCity,
+      companyPostalCode: user.companyPostalCode,
     };
+  }
+
+  /**
+   * Update user profile
+   */
+  async updateProfile(
+    userId: string,
+    data: {
+      firstName?: string;
+      lastName?: string;
+      phone?: string;
+      companyName?: string;
+      nip?: string;
+      companyStreet?: string;
+      companyCity?: string;
+      companyPostalCode?: string;
+    }
+  ): Promise<UserResponse> {
+    // Filter out undefined values
+    const updateData: Record<string, any> = {};
+    if (data.firstName !== undefined) updateData.firstName = data.firstName;
+    if (data.lastName !== undefined) updateData.lastName = data.lastName;
+    if (data.phone !== undefined) updateData.phone = data.phone || null;
+    if (data.companyName !== undefined) updateData.companyName = data.companyName || null;
+    if (data.nip !== undefined) updateData.nip = data.nip ? data.nip.replace(/[^0-9]/g, '') : null;
+    if (data.companyStreet !== undefined) updateData.companyStreet = data.companyStreet || null;
+    if (data.companyCity !== undefined) updateData.companyCity = data.companyCity || null;
+    if (data.companyPostalCode !== undefined) updateData.companyPostalCode = data.companyPostalCode || null;
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+    });
+
+    return this.sanitizeUser(user);
   }
 }
 

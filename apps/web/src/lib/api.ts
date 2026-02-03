@@ -468,6 +468,25 @@ export interface OrderItem {
   };
 }
 
+export interface PackageShippingInfo {
+  packageId: string;
+  wholesaler?: string;
+  method: 'inpost_paczkomat' | 'inpost_kurier' | 'dpd_kurier' | 'wysylka_gabaryt';
+  price: number;
+  paczkomatCode?: string;
+  paczkomatAddress?: string;
+  useCustomAddress?: boolean;
+  customAddress?: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    street: string;
+    apartment: string;
+    postalCode: string;
+    city: string;
+  };
+}
+
 export interface Order {
   id: string;
   orderNumber: string;
@@ -480,6 +499,7 @@ export interface Order {
   paymentMethod: string;
   paczkomatCode?: string;
   paczkomatAddress?: string;
+  packageShipping?: PackageShippingInfo[];
   subtotal: number;
   discount: number;
   shipping: number;

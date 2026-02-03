@@ -138,6 +138,37 @@ function formatOrderDate(dateString: string): string {
   });
 }
 
+// Shipping method name formatter
+const shippingMethodNames: Record<string, string> = {
+  inpost_paczkomat: 'InPost Paczkomat',
+  inpost_kurier: 'Kurier InPost',
+  inpost_courier: 'Kurier InPost',
+  dpd_kurier: 'Kurier DPD',
+  dpd_courier: 'Kurier DPD',
+  dpd: 'Kurier DPD',
+  wysylka_gabaryt: 'Wysyłka gabaryt',
+  gabaryt: 'Wysyłka gabaryt',
+};
+
+function getShippingMethodName(method: string): string {
+  return shippingMethodNames[method] || method;
+}
+
+// Payment method name formatter
+const paymentMethodNames: Record<string, string> = {
+  payu: 'Płatność online (PayU)',
+  blik: 'BLIK',
+  card: 'Karta płatnicza',
+  transfer: 'Przelew online',
+  google_pay: 'Google Pay',
+  apple_pay: 'Apple Pay',
+  paypo: 'PayPo',
+};
+
+function getPaymentMethodName(method: string): string {
+  return paymentMethodNames[method] || method;
+}
+
 function getStatusTimelineSteps(status: OrderStatus): { label: string; isCompleted: boolean; isCurrent: boolean }[] {
   const allSteps = [
     { key: 'PENDING', label: 'Zamówienie złożone' },
@@ -561,10 +592,28 @@ export default function OrderDetailsPage() {
                     <span className="text-gray-500 dark:text-gray-400">Suma częściowa</span>
                     <span className="text-gray-900 dark:text-white">{Number(order.subtotal).toFixed(2)} zł</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">Dostawa ({order.shippingMethod})</span>
-                    <span className="text-gray-900 dark:text-white">{Number(order.shipping) === 0 ? 'Bezpłatna' : `${Number(order.shipping).toFixed(2)} zł`}</span>
-                  </div>
+                  
+                  {/* Per-package shipping breakdown */}
+                  {order.packageShipping && order.packageShipping.length > 0 ? (
+                    <>
+                      {order.packageShipping.map((pkg, index) => (
+                        <div key={index} className="flex justify-between text-sm">
+                          <span className="text-gray-500 dark:text-gray-400">
+                            {pkg.wholesaler ? `Paczka ${index + 1} (${pkg.wholesaler})` : `Paczka ${index + 1}`}
+                            <span className="text-xs ml-1">• {getShippingMethodName(pkg.method)}</span>
+                          </span>
+                          <span className="text-gray-900 dark:text-white">
+                            {pkg.price === 0 ? 'Bezpłatna' : `${Number(pkg.price).toFixed(2)} zł`}
+                          </span>
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Dostawa ({getShippingMethodName(order.shippingMethod)})</span>
+                      <span className="text-gray-900 dark:text-white">{Number(order.shipping) === 0 ? 'Bezpłatna' : `${Number(order.shipping).toFixed(2)} zł`}</span>
+                    </div>
+                  )}
                   {Number(order.discount) > 0 && (
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500 dark:text-gray-400">Rabat</span>
@@ -586,36 +635,72 @@ export default function OrderDetailsPage() {
             </div>
 
             {/* Shipping & Payment Info */}
-            <div className="grid grid-cols-2 gap-6">
-              {/* Shipping Address */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Shipping Info */}
               <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-100 dark:border-secondary-700 shadow-sm p-5">
                 <div className="flex items-center gap-2 mb-4">
                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                   </svg>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">
-                    {order.paczkomatCode ? 'Paczkomat InPost' : 'Adres dostawy'}
-                  </h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Dostawa</h3>
                 </div>
-                {order.paczkomatCode ? (
-                  <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                    <p className="font-medium text-gray-900 dark:text-white">{order.paczkomatCode}</p>
-                    {order.paczkomatAddress && (
-                      <p>{order.paczkomatAddress}</p>
-                    )}
-                  </div>
-                ) : order.shippingAddress ? (
-                  <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                    <p className="font-medium text-gray-900 dark:text-white">{order.shippingAddress.firstName} {order.shippingAddress.lastName}</p>
-                    <p>{order.shippingAddress.street}</p>
-                    <p>{order.shippingAddress.postalCode} {order.shippingAddress.city}</p>
-                    <p>{order.shippingAddress.country}</p>
-                    <p className="pt-2">{order.shippingAddress.phone}</p>
-                    <p>{order.shippingAddress.email}</p>
+                
+                {/* Per-package shipping info */}
+                {order.packageShipping && order.packageShipping.length > 0 ? (
+                  <div className="space-y-4">
+                    {order.packageShipping.map((pkg, index) => (
+                      <div key={index} className="p-3 bg-gray-50 dark:bg-secondary-900 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                            Paczka {index + 1}{pkg.wholesaler && ` • ${pkg.wholesaler}`}
+                          </span>
+                        </div>
+                        <p className="font-medium text-gray-900 dark:text-white text-sm">
+                          {getShippingMethodName(pkg.method)}
+                        </p>
+                        {pkg.method === 'inpost_paczkomat' && pkg.paczkomatCode && (
+                          <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                            <p className="font-medium">{pkg.paczkomatCode}</p>
+                            {pkg.paczkomatAddress && <p className="text-xs">{pkg.paczkomatAddress}</p>}
+                          </div>
+                        )}
+                        {pkg.useCustomAddress && pkg.customAddress && (
+                          <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                            <p>{pkg.customAddress.firstName} {pkg.customAddress.lastName}</p>
+                            <p>{pkg.customAddress.street}</p>
+                            <p>{pkg.customAddress.postalCode} {pkg.customAddress.city}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Brak danych adresu dostawy</p>
+                  <div className="space-y-3">
+                    <p className="font-medium text-gray-900 dark:text-white text-sm">
+                      {getShippingMethodName(order.shippingMethod)}
+                    </p>
+                    {order.paczkomatCode && (
+                      <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                        <p className="font-medium text-gray-900 dark:text-white text-sm">{order.paczkomatCode}</p>
+                        {order.paczkomatAddress && (
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{order.paczkomatAddress}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Shipping Address - show if no paczkomat or if custom address used */}
+                {order.shippingAddress && !order.paczkomatCode && (
+                  <div className="mt-4 pt-4 border-t border-gray-100 dark:border-secondary-700">
+                    <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Adres dostawy</h4>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                      <p className="font-medium text-gray-900 dark:text-white">{order.shippingAddress.firstName} {order.shippingAddress.lastName}</p>
+                      <p>{order.shippingAddress.street}</p>
+                      <p>{order.shippingAddress.postalCode} {order.shippingAddress.city}</p>
+                      {order.shippingAddress.phone && <p className="pt-1">{order.shippingAddress.phone}</p>}
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -630,7 +715,7 @@ export default function OrderDetailsPage() {
                 <div className="text-sm text-gray-600 dark:text-gray-400 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-gray-500 dark:text-gray-400">Metoda płatności</span>
-                    <span className="font-medium text-gray-900 dark:text-white">{order.paymentMethod}</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{getPaymentMethodName(order.paymentMethod)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-500 dark:text-gray-400">Status</span>
@@ -641,7 +726,7 @@ export default function OrderDetailsPage() {
                 {/* Billing Address */}
                 {order.billingAddress && (
                   <div className="mt-4 pt-4 border-t border-gray-100 dark:border-secondary-700">
-                    <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Adres rozliczeniowy</h4>
+                    <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Dane do faktury</h4>
                     <div className="text-sm text-gray-600 dark:text-gray-400">
                       <p className="font-medium text-gray-900 dark:text-white">{order.billingAddress.firstName} {order.billingAddress.lastName}</p>
                       <p>{order.billingAddress.street}</p>

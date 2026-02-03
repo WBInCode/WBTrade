@@ -10,6 +10,12 @@ interface User {
   phone?: string;
   role: string;
   emailVerified: boolean;
+  // Company data fields
+  companyName?: string;
+  nip?: string;
+  companyStreet?: string;
+  companyCity?: string;
+  companyPostalCode?: string;
 }
 
 interface AuthTokens {
@@ -27,6 +33,7 @@ interface AuthContextType {
   register: (data: RegisterData) => Promise<{ success: boolean; error?: string; verificationToken?: string }>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<boolean>;
+  refreshProfile: () => Promise<void>;
   setTokens: (accessToken: string, refreshToken: string) => Promise<void>;
   deleteAccount: (password: string) => Promise<{ success: boolean; error?: string }>;
 }
@@ -283,6 +290,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Expose fetchProfile as refreshProfile
+  const refreshProfile = useCallback(async () => {
+    await fetchProfile();
+  }, [tokens?.accessToken]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -293,6 +305,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         register,
         logout,
         refreshToken,
+        refreshProfile,
         setTokens: setTokensFromOAuth,
         deleteAccount,
       }}
