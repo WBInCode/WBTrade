@@ -192,6 +192,7 @@ export class OrdersService {
           subtotal,
           shipping,
           discount,
+          couponCode: data.couponCode, // Store the coupon code used
           tax,
           total,
           customerNotes: data.customerNotes,

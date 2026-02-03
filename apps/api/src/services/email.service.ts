@@ -383,8 +383,9 @@ Zespół WB Trade
                 <p style="margin: 0; font-size: 32px; font-weight: bold; color: #78350f; letter-spacing: 4px; font-family: 'Courier New', monospace; user-select: all; -webkit-user-select: all; -moz-user-select: all; -ms-user-select: all;">${discountCode}</p>
               </div>
               <p style="margin: 5px 0 15px 0; font-size: 12px; color: #a16207;">👆 Kliknij kod aby zaznaczyć, potem Ctrl+C</p>
-              <p style="margin: 0 0 5px 0; font-size: 18px; color: #92400e;"><strong>-10%</strong> na Twoje pierwsze zamówienie!</p>
-              <p style="margin: 0; font-size: 13px; color: #a16207;">Ważny do: ${discountExpiry} • Jednorazowego użytku</p>
+              <p style="margin: 0 0 5px 0; font-size: 18px; color: #92400e;"><strong>-10%</strong> na Twoje kolejne zakupy!</p>
+              <p style="margin: 0 0 5px 0; font-size: 13px; color: #a16207;">Ważny do: ${discountExpiry} • Jednorazowego użytku</p>
+              <p style="margin: 0; font-size: 11px; color: #b45309;">⚠️ Nie łączy się z rabatem za rejestrację (20%) ani kuponami promocyjnymi (30%)</p>
             </div>
           </td>
         </tr>` : '';
@@ -417,7 +418,7 @@ Zespół WB Trade
         
         <p style="font-size: 16px; color: #555; line-height: 1.6;">
           ${discountCode 
-            ? 'Twój adres e-mail został potwierdzony! Na powitanie mamy dla Ciebie <strong>kod rabatowy -10%</strong> na pierwsze zamówienie. Użyj go podczas składania zamówienia!'
+            ? 'Twój adres e-mail został potwierdzony! Na powitanie mamy dla Ciebie <strong>kod rabatowy -10%</strong> na kolejne zakupy. Użyj go podczas składania zamówienia! Uwaga: kod nie łączy się z rabatem za rejestrację (20%) oraz kuponami promocyjnymi (30%).'
             : 'Twój adres e-mail został potwierdzony!'} Od teraz będziesz otrzymywać od nas:
         </p>
         
@@ -460,8 +461,9 @@ Zespół WB Trade
   private getNewsletterWelcomeText(unsubscribeUrl: string, discountCode?: string, discountExpiry?: string): string {
     const discountText = discountCode ? `
 🎁 TWÓJ KOD RABATOWY: ${discountCode}
--10% na pierwsze zamówienie!
+-10% na kolejne zakupy!
 Ważny do: ${discountExpiry} • Jednorazowego użytku
+⚠️ Nie łączy się z rabatem za rejestrację (20%) ani kuponami promocyjnymi (30%)
 
 ` : '';
 
