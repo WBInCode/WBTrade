@@ -384,7 +384,7 @@ Zespół WB Trade
               </div>
               <p style="margin: 5px 0 15px 0; font-size: 12px; color: #a16207;">👆 Kliknij kod aby zaznaczyć, potem Ctrl+C</p>
               <p style="margin: 0 0 5px 0; font-size: 18px; color: #92400e;"><strong>-10%</strong> na Twoje kolejne zakupy!</p>
-              <p style="margin: 0 0 5px 0; font-size: 13px; color: #a16207;">Ważny do: ${discountExpiry} • Jednorazowego użytku</p>
+              <p style="margin: 0 0 5px 0; font-size: 13px; color: #6b7280;">Ważny do: <span style="color: #dc2626; font-weight: bold;">${discountExpiry}</span> • Jednorazowego użytku</p>
               <p style="margin: 0; font-size: 11px; color: #b45309;">⚠️ Nie łączy się z rabatem za rejestrację (20%) ani kuponami promocyjnymi (30%)</p>
             </div>
           </td>

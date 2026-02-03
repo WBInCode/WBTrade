@@ -63,10 +63,13 @@ export default function Newsletter() {
 
         {/* Title */}
         <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-2">
-          Zapisz się i odbierz <span className="text-yellow-300">-10%</span> na pierwsze zamówienie!
+          Zapisz się i odbierz <span className="text-yellow-300">-10%</span> na kolejne zakupy!
         </h2>
-        <p className="text-sm sm:text-base text-white/80 mb-4 sm:mb-6 max-w-xl mx-auto">
+        <p className="text-sm sm:text-base text-white/80 mb-2 max-w-xl mx-auto">
           Otrzymaj unikalny kod rabatowy oraz informacje o najlepszych promocjach i ekskluzywnych ofertach.
+        </p>
+        <p className="text-xs text-white/60 mb-4 sm:mb-6 max-w-xl mx-auto">
+          Rabat nie łączy się z promocją powitalną na pierwsze zakupy.
         </p>
 
         {/* Form */}

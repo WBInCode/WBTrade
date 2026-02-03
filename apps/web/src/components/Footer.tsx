@@ -48,8 +48,8 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
                   </svg>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-secondary-900 dark:text-secondary-100">Szybka Dostawa</h4>
-                  <p className="text-sm text-secondary-500 dark:text-secondary-400">Wysyłka w ciągu 24-72h</p>
+                  <h4 className="font-semibold text-secondary-900 dark:text-secondary-100">Sprawna Dostawa</h4>
+                  <p className="text-sm text-secondary-500 dark:text-secondary-400">Szybka realizacja zamówień</p>
                 </div>
               </div>
 
