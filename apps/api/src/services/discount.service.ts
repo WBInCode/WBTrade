@@ -178,7 +178,7 @@ export class DiscountService {
    */
   async generateNewsletterDiscount(email: string): Promise<WelcomeDiscountResult> {
     const NEWSLETTER_DISCOUNT_PERCENT = 10;
-    const NEWSLETTER_DISCOUNT_VALID_DAYS = 14;  // 2 weeks
+    const NEWSLETTER_DISCOUNT_VALID_DAYS = 30;  // 30 days
 
     // Check if this email already has a newsletter discount
     const existingCoupon = await prisma.coupon.findFirst({
