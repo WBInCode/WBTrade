@@ -139,8 +139,9 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
       if (token) {
         setIsLoggedIn(true);
         setLoadingAddresses(true);
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
         try {
-          const response = await fetch('http://localhost:5000/api/addresses', {
+          const response = await fetch(`${apiUrl}/addresses`, {
             headers: {
               'Authorization': `Bearer ${token}`,
             },
@@ -392,7 +393,8 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
         if (storedTokens) {
           try {
             const parsed = JSON.parse(storedTokens);
-            await fetch('http://localhost:5000/api/addresses', {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+            await fetch(`${apiUrl}/addresses`, {
               method: 'POST',
               headers: {
                 'Authorization': `Bearer ${parsed.accessToken}`,
@@ -719,7 +721,7 @@ export default function AddressForm({ initialData, onSubmit, isGuestCheckout = f
               onChange={handleChange}
               className="w-4 h-4 text-orange-500 focus:ring-orange-500 border-gray-300 dark:border-secondary-600 rounded dark:bg-secondary-700"
             />
-            <span className="text-sm text-gray-700 dark:text-gray-300">Inny adres do faktury</span>
+            <span className="text-sm text-gray-700 dark:text-gray-300">Dane firmy i adres do faktury</span>
           </label>
         </div>
 

@@ -481,6 +481,11 @@ export class AuthService {
     role: UserRole;
     createdAt: Date;
     password?: string | null;
+    companyName?: string | null;
+    nip?: string | null;
+    companyStreet?: string | null;
+    companyCity?: string | null;
+    companyPostalCode?: string | null;
   }): UserResponse {
     const { password, ...sanitized } = user;
     return sanitized as UserResponse;

@@ -339,6 +339,48 @@ export default function ReturnsPage() {
         </div>
       </section>
 
+      {/* Return Steps - How the process works */}
+      <section className="py-16 lg:py-24 bg-white dark:bg-secondary-800">
+        <div className="container-custom">
+          <h2 className="text-2xl lg:text-3xl font-bold text-secondary-900 dark:text-white mb-4 text-center">
+            Jak działa proces zwrotu?
+          </h2>
+          <p className="text-secondary-600 dark:text-secondary-400 text-center mb-12 max-w-2xl mx-auto">
+            Proces zwrotu jest prosty i zajmuje tylko kilka minut. Postępuj zgodnie z poniższymi krokami.
+          </p>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {returnSteps.map((item, index) => (
+              <div key={index} className="relative">
+                <div className="bg-secondary-50 dark:bg-secondary-900 rounded-2xl p-6 h-full">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold">
+                      {item.step}
+                    </div>
+                    <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center text-primary-600">
+                      {item.icon}
+                    </div>
+                  </div>
+                  <h3 className="text-lg font-semibold text-secondary-900 dark:text-white mb-2">
+                    {item.title}
+                  </h3>
+                  <p className="text-secondary-600 dark:text-secondary-400 text-sm">
+                    {item.description}
+                  </p>
+                </div>
+                {index < returnSteps.length - 1 && (
+                  <div className="hidden lg:block absolute top-1/2 -right-3 transform -translate-y-1/2 text-secondary-300">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Refund Form Section */}
       <section className="py-16 lg:py-24" id="refund-form">
         <div className="container-custom">
@@ -585,25 +627,25 @@ export default function ReturnsPage() {
         </div>
       </section>
 
-      {/* Return Steps */}
+      {/* Complaint Steps - How complaint process works */}
       <section className="py-16 lg:py-24 bg-white dark:bg-secondary-800">
         <div className="container-custom">
           <h2 className="text-2xl lg:text-3xl font-bold text-secondary-900 dark:text-white mb-4 text-center">
-            Jak działa proces zwrotu?
+            Jak działa proces reklamacji?
           </h2>
           <p className="text-secondary-600 dark:text-secondary-400 text-center mb-12 max-w-2xl mx-auto">
-            Proces zwrotu jest prosty i zajmuje tylko kilka minut. Postępuj zgodnie z poniższymi krokami.
+            Reklamacja to Twoje prawo. Sprawdź jak łatwo możesz zgłosić problem z produktem.
           </p>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {returnSteps.map((item, index) => (
+            {complaintSteps.map((item, index) => (
               <div key={index} className="relative">
                 <div className="bg-secondary-50 dark:bg-secondary-900 rounded-2xl p-6 h-full">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold">
+                    <div className="w-10 h-10 bg-red-600 text-white rounded-full flex items-center justify-center font-bold">
                       {item.step}
                     </div>
-                    <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center text-primary-600">
+                    <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center text-red-600">
                       {item.icon}
                     </div>
                   </div>
@@ -614,7 +656,7 @@ export default function ReturnsPage() {
                     {item.description}
                   </p>
                 </div>
-                {index < returnSteps.length - 1 && (
+                {index < complaintSteps.length - 1 && (
                   <div className="hidden lg:block absolute top-1/2 -right-3 transform -translate-y-1/2 text-secondary-300">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -805,48 +847,6 @@ export default function ReturnsPage() {
                 </form>
               )}
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Complaint Steps */}
-      <section className="py-16 lg:py-24 bg-white dark:bg-secondary-800">
-        <div className="container-custom">
-          <h2 className="text-2xl lg:text-3xl font-bold text-secondary-900 dark:text-white mb-4 text-center">
-            Jak działa proces reklamacji?
-          </h2>
-          <p className="text-secondary-600 dark:text-secondary-400 text-center mb-12 max-w-2xl mx-auto">
-            Reklamacja to Twoje prawo. Sprawdź jak łatwo możesz zgłosić problem z produktem.
-          </p>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {complaintSteps.map((item, index) => (
-              <div key={index} className="relative">
-                <div className="bg-secondary-50 dark:bg-secondary-900 rounded-2xl p-6 h-full">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-red-600 text-white rounded-full flex items-center justify-center font-bold">
-                      {item.step}
-                    </div>
-                    <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center text-red-600">
-                      {item.icon}
-                    </div>
-                  </div>
-                  <h3 className="text-lg font-semibold text-secondary-900 dark:text-white mb-2">
-                    {item.title}
-                  </h3>
-                  <p className="text-secondary-600 dark:text-secondary-400 text-sm">
-                    {item.description}
-                  </p>
-                </div>
-                {index < complaintSteps.length - 1 && (
-                  <div className="hidden lg:block absolute top-1/2 -right-3 transform -translate-y-1/2 text-secondary-300">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-            ))}
           </div>
         </div>
       </section>
