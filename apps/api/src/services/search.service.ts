@@ -137,7 +137,6 @@ export class SearchService {
           {
             OR: [
               { name: { contains: query, mode: 'insensitive' } },
-              { description: { contains: query, mode: 'insensitive' } },
               { sku: { contains: query, mode: 'insensitive' } },
             ],
           },
