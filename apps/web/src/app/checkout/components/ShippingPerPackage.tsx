@@ -364,32 +364,61 @@ export default function ShippingPerPackage({
     }
 
     // Build package shipping selections
-    const packageShipping: PackageShippingSelection[] = packagesWithOptions.map(pkgOpt => {
+    // If a package has multiple paczkomat slots, create separate entries for each
+    const packageShipping: PackageShippingSelection[] = [];
+    
+    for (const pkgOpt of packagesWithOptions) {
       const methodId = selectedMethods[pkgOpt.package.id];
       const method = pkgOpt.shippingMethods.find(m => m.id === methodId);
       const selections = paczkomatSelections[pkgOpt.package.id] || [];
       const hasCustomAddr = useCustomAddress[pkgOpt.package.id] && methodId !== 'inpost_paczkomat';
-
-      return {
-        packageId: pkgOpt.package.id,
-        wholesaler: pkgOpt.package.wholesaler || undefined,
-        method: methodId,
-        price: method?.price || 0,
-        // For multiple paczkomats, join codes with semicolon
-        paczkomatCode: methodId === 'inpost_paczkomat' ? selections.map(s => s?.code).filter(Boolean).join(';') : undefined,
-        paczkomatAddress: methodId === 'inpost_paczkomat' ? selections.map(s => s?.address).filter(Boolean).join(' | ') : undefined,
-        // Include items from the package for order history display
-        items: pkgOpt.package.items.map(item => ({
-          productId: item.productId,
-          productName: item.productName,
-          variantId: item.variantId,
-          quantity: item.quantity,
-          image: item.productImage,
-        })),
-        useCustomAddress: hasCustomAddr,
-        customAddress: hasCustomAddr ? customAddresses[pkgOpt.package.id] : undefined,
-      };
-    });
+      const paczkomatCount = pkgOpt.package.paczkomatPackageCount || 1;
+      
+      // If using paczkomat with multiple slots, create separate entries
+      if (methodId === 'inpost_paczkomat' && paczkomatCount > 1) {
+        const pricePerPackage = roundMoney((method?.price || 0) / paczkomatCount);
+        
+        for (let i = 0; i < paczkomatCount; i++) {
+          const slotItems = getItemsForPaczkomatSlot(pkgOpt.package.items, i, paczkomatCount);
+          packageShipping.push({
+            packageId: `${pkgOpt.package.id}_slot${i}`,
+            wholesaler: pkgOpt.package.wholesaler || undefined,
+            method: methodId,
+            price: pricePerPackage,
+            paczkomatCode: selections[i]?.code || undefined,
+            paczkomatAddress: selections[i]?.address || undefined,
+            items: slotItems.map(item => ({
+              productId: item.productId,
+              productName: item.productName,
+              variantId: item.variantId,
+              quantity: item.quantity,
+              image: item.productImage,
+            })),
+            useCustomAddress: false,
+            customAddress: undefined,
+          });
+        }
+      } else {
+        // Single package entry
+        packageShipping.push({
+          packageId: pkgOpt.package.id,
+          wholesaler: pkgOpt.package.wholesaler || undefined,
+          method: methodId,
+          price: method?.price || 0,
+          paczkomatCode: methodId === 'inpost_paczkomat' ? selections[0]?.code : undefined,
+          paczkomatAddress: methodId === 'inpost_paczkomat' ? selections[0]?.address : undefined,
+          items: pkgOpt.package.items.map(item => ({
+            productId: item.productId,
+            productName: item.productName,
+            variantId: item.variantId,
+            quantity: item.quantity,
+            image: item.productImage,
+          })),
+          useCustomAddress: hasCustomAddr,
+          customAddress: hasCustomAddr ? customAddresses[pkgOpt.package.id] : undefined,
+        });
+      }
+    }
 
     const totalPrice = calculateTotalPrice(packagesWithOptions, selectedMethods);
 
