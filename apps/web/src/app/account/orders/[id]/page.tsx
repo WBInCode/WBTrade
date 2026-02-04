@@ -724,52 +724,44 @@ export default function OrderDetailsPage() {
                 {/* Per-package shipping info */}
                 {order.packageShipping && order.packageShipping.length > 0 ? (
                   <div className="space-y-4">
-                    {(() => {
-                      // Pre-group items by wholesaler once (extracted from tags)
-                      const wholesalerGroups: Record<string, typeof order.items> = {};
-                      order.items.forEach(item => {
-                        const w = getWholesalerFromTags(item.variant?.product?.tags) || 'default';
-                        if (!wholesalerGroups[w]) wholesalerGroups[w] = [];
-                        wholesalerGroups[w].push(item);
-                      });
-                      const wholesalerKeys = Object.keys(wholesalerGroups);
+                    {order.packageShipping.map((pkg, index) => {
+                      const isExpanded = expandedPackages.has(index);
                       
-                      return order.packageShipping!.map((pkg, index) => {
-                        const isExpanded = expandedPackages.has(index);
-                        
-                        // Get items for this package by index (each package = one wholesaler group)
-                        const packageWholesaler = wholesalerKeys[index] || 'default';
-                        const packageItems = wholesalerGroups[packageWholesaler] || [];
-                        
-                        return (
+                      // Use items from packageShipping if available, otherwise try to match by wholesaler
+                      const packageItems = pkg.items || [];
+                      const packageWholesaler = pkg.wholesaler || 'default';
+                      
+                      return (
                         <div key={index} className="bg-gray-50 dark:bg-secondary-900 rounded-lg overflow-hidden">
                           <div className="p-3">
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                                 Paczka {index + 1}
                               </span>
-                              <button
-                                onClick={() => {
-                                  const newExpanded = new Set(expandedPackages);
-                                  if (isExpanded) {
-                                    newExpanded.delete(index);
-                                  } else {
-                                    newExpanded.add(index);
-                                  }
-                                  setExpandedPackages(newExpanded);
-                                }}
-                                className="text-xs text-orange-500 hover:text-orange-600 font-medium flex items-center gap-1"
-                              >
-                                Szczegóły
-                                <svg 
-                                  className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
-                                  fill="none" 
-                                  stroke="currentColor" 
-                                  viewBox="0 0 24 24"
+                              {packageItems.length > 0 && (
+                                <button
+                                  onClick={() => {
+                                    const newExpanded = new Set(expandedPackages);
+                                    if (isExpanded) {
+                                      newExpanded.delete(index);
+                                    } else {
+                                      newExpanded.add(index);
+                                    }
+                                    setExpandedPackages(newExpanded);
+                                  }}
+                                  className="text-xs text-orange-500 hover:text-orange-600 font-medium flex items-center gap-1"
                                 >
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                              </button>
+                                  Szczegóły
+                                  <svg 
+                                    className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                  </svg>
+                                </button>
+                              )}
                             </div>
                             <p className="font-medium text-gray-900 dark:text-white text-sm">
                               {getShippingMethodName(pkg.method)}
@@ -799,11 +791,11 @@ export default function OrderDetailsPage() {
                                 </svg>
                                 <span>{getWarehouseName(packageWholesaler)}</span>
                               </div>
-                              {packageItems.map((item) => (
-                                <div key={item.id} className="flex items-center gap-3">
+                              {packageItems.map((item, itemIndex) => (
+                                <div key={item.variantId || itemIndex} className="flex items-center gap-3">
                                   <div className="w-10 h-10 bg-gray-100 dark:bg-secondary-700 rounded overflow-hidden shrink-0">
                                     <img
-                                      src={item.variant?.product?.images?.[0]?.url || '/placeholder.png'}
+                                      src={item.image || '/placeholder.png'}
                                       alt={item.productName}
                                       className="w-full h-full object-cover"
                                     />
@@ -818,8 +810,7 @@ export default function OrderDetailsPage() {
                           )}
                         </div>
                       );
-                    });
-                  })()}
+                    })}
                   </div>
                 ) : (
                   <div className="space-y-3">
