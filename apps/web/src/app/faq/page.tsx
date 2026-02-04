@@ -20,7 +20,7 @@ export default function FAQPage() {
       questions: [
         {
           question: 'Jak złożyć zamówienie?',
-          answer: 'Aby złożyć zamówienie, dodaj wybrane produkty do\u00A0koszyka, a\u00A0następnie przejdź do\u00A0kasy. Uzupełnij dane dostawy, wybierz metodę płatności i\u00A0potwierdź zamówienie. Po\u00A0złożeniu zamówienia otrzymasz e-mail z\u00A0potwierdzeniem.',
+          answer: 'Aby złożyć zamówienie, dodaj wybrane produkty do\u00A0koszyka, a \u00A0następnie przejdź do\u00A0kasy. Uzupełnij dane dostawy, wybierz metodę płatności i\u00A0potwierdź zamówienie. Po\u00A0złożeniu zamówienia otrzymasz e-mail z\u00A0potwierdzeniem.',
         },
         {
           question: 'Jak sprawdzić status mojego zamówienia?',
