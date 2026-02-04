@@ -57,6 +57,23 @@ export const WEIGHT_SHIPPING_PRICES = {
 // Free shipping threshold per warehouse (in PLN)
 export const FREE_SHIPPING_THRESHOLD = 300;
 
+// Wholesaler to warehouse display name mapping
+const WHOLESALER_TO_WAREHOUSE: Record<string, string> = {
+  'HP': 'Magazyn Zielona Góra',
+  'Hurtownia Przemysłowa': 'Magazyn Zielona Góra',
+  'Ikonka': 'Magazyn Białystok',
+  'BTP': 'Magazyn Chotów',
+  'Leker': 'Magazyn Chynów',
+  'Forcetop': 'Magazyn Chynów',
+  'Gastro': 'Magazyn Centralny',
+  'Horeca': 'Magazyn Centralny',
+};
+
+function getWarehouseName(wholesaler: string | null | undefined): string {
+  if (!wholesaler) return 'Magazyn Chynów';
+  return WHOLESALER_TO_WAREHOUSE[wholesaler] || 'Magazyn Chynów';
+}
+
 export interface CartItemForShipping {
   variantId: string;
   quantity: number;
@@ -712,10 +729,11 @@ export class ShippingCalculatorService {
       warnings.push('Produkty gabarytowe nie mogą być wysłane do paczkomatu. Dostępna tylko dostawa kurierem.');
     }
     
-    // Add info about free shipping
-    const freeShippingWarehouses = [...new Set(packages.filter(p => p.hasFreeShipping).map(p => p.wholesaler).filter(Boolean))];
-    if (freeShippingWarehouses.length > 0) {
-      warnings.push(`Darmowa dostawa dla zamówień powyżej ${FREE_SHIPPING_THRESHOLD} zł z: ${freeShippingWarehouses.join(', ')}`);
+    // Add info about free shipping - use warehouse display names instead of wholesaler names
+    const freeShippingWholesalers = [...new Set(packages.filter(p => p.hasFreeShipping).map(p => p.wholesaler).filter(Boolean))];
+    const freeShippingWarehouseNames = [...new Set(freeShippingWholesalers.map(w => getWarehouseName(w)))];
+    if (freeShippingWarehouseNames.length > 0) {
+      warnings.push(`Darmowa dostawa dla zamówień powyżej ${FREE_SHIPPING_THRESHOLD} zł z: ${freeShippingWarehouseNames.join(', ')}`);
     }
     
     return {
