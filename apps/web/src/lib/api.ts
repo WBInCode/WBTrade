@@ -487,6 +487,14 @@ export interface PackageShippingInfo {
     postalCode: string;
     city: string;
   };
+  items?: {
+    productId: string;
+    productName: string;
+    variantId: string;
+    variantName: string;
+    quantity: number;
+    image?: string;
+  }[];
 }
 
 export interface Order {
@@ -962,6 +970,7 @@ export interface PackageShippingRequest {
   packageId: string;
   method: string;
   price: number;
+  wholesaler?: string;
   paczkomatCode?: string;
   paczkomatAddress?: string;
   useCustomAddress?: boolean;
@@ -978,7 +987,7 @@ export interface PackageShippingRequest {
     productId: string;
     productName: string;
     variantId: string;
-    variantName: string;
+    variantName?: string;
     quantity: number;
     image?: string;
   }[];

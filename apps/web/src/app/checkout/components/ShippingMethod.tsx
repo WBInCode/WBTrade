@@ -30,8 +30,8 @@ interface ShippingProvider {
 // Default shipping providers (will be updated from API)
 // Na ten moment tylko InPost + wysyłka gabaryt
 const defaultShippingProviders: ShippingProvider[] = [
-  { id: 'inpost_paczkomat', name: 'InPost Paczkomat', price: 15.99, estimatedDelivery: '1-2 dni', requiresPaczkomat: true, badge: 'Popularne', available: true },
-  { id: 'inpost_kurier', name: 'Kurier InPost', price: 19.99, estimatedDelivery: '1-2 dni', available: true },
+  { id: 'inpost_paczkomat', name: 'InPost Paczkomat', price: 15.99, estimatedDelivery: 'Wysyłka w ciągu 24 - 72h', requiresPaczkomat: true, badge: 'Popularne', available: true },
+  { id: 'inpost_kurier', name: 'Kurier InPost', price: 19.99, estimatedDelivery: 'Wysyłka w ciągu 24 - 72h', available: true },
 ];
 
 // Ikony dla dostawców

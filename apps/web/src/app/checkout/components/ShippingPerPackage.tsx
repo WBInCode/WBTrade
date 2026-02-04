@@ -378,6 +378,14 @@ export default function ShippingPerPackage({
         // For multiple paczkomats, join codes with semicolon
         paczkomatCode: methodId === 'inpost_paczkomat' ? selections.map(s => s?.code).filter(Boolean).join(';') : undefined,
         paczkomatAddress: methodId === 'inpost_paczkomat' ? selections.map(s => s?.address).filter(Boolean).join(' | ') : undefined,
+        // Include items from the package for order history display
+        items: pkgOpt.package.items.map(item => ({
+          productId: item.productId,
+          productName: item.productName,
+          variantId: item.variantId,
+          quantity: item.quantity,
+          image: item.productImage,
+        })),
         useCustomAddress: hasCustomAddr,
         customAddress: hasCustomAddr ? customAddresses[pkgOpt.package.id] : undefined,
       };
@@ -545,10 +553,10 @@ export default function ShippingPerPackage({
                 )}
               </div>
               
-              {/* Products - collapsed view */}
+              {/* Products - collapsed view with max 3 visible */}
               <div className="px-4 pb-3">
                 <div className="flex flex-wrap gap-2">
-                  {pkgOpt.package.items.map((item, itemIndex) => (
+                  {pkgOpt.package.items.slice(0, 3).map((item, itemIndex) => (
                     <div
                       key={`${item.variantId}-${itemIndex}`}
                       className="flex items-center gap-2 px-2 py-1 bg-white/80 dark:bg-secondary-800/80 rounded-lg border border-white/50 dark:border-secondary-600"
@@ -570,6 +578,13 @@ export default function ShippingPerPackage({
                       </div>
                     </div>
                   ))}
+                  {pkgOpt.package.items.length > 3 && (
+                    <div className="flex items-center px-2 py-1 bg-gray-100 dark:bg-secondary-700 rounded-lg">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        +{pkgOpt.package.items.length - 3} więcej
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
