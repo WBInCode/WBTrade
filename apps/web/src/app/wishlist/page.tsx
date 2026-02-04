@@ -170,7 +170,7 @@ export default function WishlistPage() {
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Twoja lista ulubionych jest pusta</h2>
               <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-md mx-auto">
                 Przeglądaj produkty i klikaj serduszko, aby dodać je do ulubionych. 
-                Dzięki temu łatwo do nich wrócisz
+                Dzięki temu łatwo do nich wrócisz!
               </p>
               <Link 
                 href="/products"
