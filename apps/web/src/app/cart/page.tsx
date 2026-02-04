@@ -213,7 +213,7 @@ export default function CartPage() {
               </svg>
             </div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Twój koszyk jest pusty</h2>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">Dodaj produkty do koszyka, aby kontynuować zakupy.</p>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">Dodaj produkty do koszyka, aby kontynuować zakupy</p>
             <Link
               href="/products"
               className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
