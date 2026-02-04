@@ -25,7 +25,7 @@ export default function ComplaintPage() {
 
           <div className="max-w-4xl">
             <h1 className="text-3xl lg:text-4xl font-bold text-secondary-900 dark:text-white mb-6">
-              Reklamacja produktu
+              Reklamacja produktu.
             </h1>
             
             <div className="bg-white dark:bg-secondary-800 rounded-2xl p-8 shadow-sm">
