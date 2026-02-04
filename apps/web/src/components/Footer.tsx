@@ -203,8 +203,9 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
             <p className="text-sm text-secondary-500 dark:text-secondary-400">Akceptowane metody płatności</p>
             <div className="flex items-center gap-4">
               <LogoImage src={getLogoUrl(PAYMENT_LOGOS.visa)} alt="Visa" width={40} height={28} className="object-contain rounded-md" />
-              <LogoImage src={getLogoUrl(PAYMENT_LOGOS.blik)} alt="BLIK" width={40} height={28} className="object-contain rounded-md" />
-              <LogoImage src={getLogoUrl(PAYMENT_LOGOS.przelewy24)} alt="Przelewy24" width={40} height={28} className="object-contain rounded-md" />
+              <div className="bg-white rounded-md p-1">
+                <LogoImage src={getLogoUrl(PAYMENT_LOGOS.blik)} alt="BLIK" width={40} height={28} className="object-contain" />
+              </div>
             </div>
           </div>
         </div>
