@@ -173,6 +173,8 @@ function formatOrderDate(dateString: string): string {
   });
 }
 
+const MAX_VISIBLE_ITEMS = 3;
+
 export default function OrdersPage() {
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -182,6 +184,7 @@ export default function OrdersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [simulatingPayment, setSimulatingPayment] = useState<string | null>(null);
+  const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
@@ -433,10 +436,6 @@ export default function OrdersPage() {
                           <span className="text-xs text-gray-500 dark:text-gray-400">Data zamówienia</span>
                           <p className="text-sm text-gray-700 dark:text-gray-300">{formatOrderDate(order.createdAt)}</p>
                         </div>
-                        <div className="hidden sm:block">
-                          <span className="text-xs text-gray-500 dark:text-gray-400">Dostawa</span>
-                          <p className="text-sm text-gray-700 dark:text-gray-300">{order.shippingMethod}</p>
-                        </div>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
@@ -448,27 +447,55 @@ export default function OrdersPage() {
 
                     {/* Order Items */}
                     <div className="divide-y divide-gray-100 dark:divide-secondary-700">
-                      {order.items.map((item) => (
-                        <div key={item.id} className="p-4 flex items-center gap-4">
-                          <div className="w-16 h-16 bg-gray-100 dark:bg-secondary-700 rounded-lg overflow-hidden shrink-0">
-                            <img
-                              src={item.variant?.product?.images?.[0]?.url || '/placeholder.png'}
-                              alt={item.productName}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-gray-900 dark:text-white mb-1">{item.productName}</h4>
-                            {item.variantName && item.variantName !== 'Default' && (
-                              <p className="text-sm text-gray-500 dark:text-gray-400">{item.variantName}</p>
+                      {(() => {
+                        const isExpanded = expandedOrders.has(order.id);
+                        const visibleItems = isExpanded ? order.items : order.items.slice(0, MAX_VISIBLE_ITEMS);
+                        const hiddenCount = order.items.length - MAX_VISIBLE_ITEMS;
+                        
+                        return (
+                          <>
+                            {visibleItems.map((item) => (
+                              <div key={item.id} className="p-4 flex items-center gap-4">
+                                <div className="w-16 h-16 bg-gray-100 dark:bg-secondary-700 rounded-lg overflow-hidden shrink-0">
+                                  <img
+                                    src={item.variant?.product?.images?.[0]?.url || '/placeholder.png'}
+                                    alt={item.productName}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-medium text-gray-900 dark:text-white mb-1">{item.productName}</h4>
+                                  {item.variantName && item.variantName !== 'Default' && (
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">{item.variantName}</p>
+                                  )}
+                                  <p className="text-sm text-gray-500 dark:text-gray-400">Ilość: {item.quantity}</p>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <span className="font-semibold text-gray-900 dark:text-white">{Number(item.unitPrice).toFixed(2)} zł</span>
+                                </div>
+                              </div>
+                            ))}
+                            {hiddenCount > 0 && (
+                              <button
+                                onClick={() => {
+                                  setExpandedOrders(prev => {
+                                    const newSet = new Set(prev);
+                                    if (newSet.has(order.id)) {
+                                      newSet.delete(order.id);
+                                    } else {
+                                      newSet.add(order.id);
+                                    }
+                                    return newSet;
+                                  });
+                                }}
+                                className="w-full p-3 text-center text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 hover:bg-gray-50 dark:hover:bg-secondary-700 font-medium transition-colors"
+                              >
+                                {isExpanded ? 'Zwiń' : `Pokaż więcej (${hiddenCount})`}
+                              </button>
                             )}
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Ilość: {item.quantity}</p>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <span className="font-semibold text-gray-900 dark:text-white">{Number(item.unitPrice).toFixed(2)} zł</span>
-                          </div>
-                        </div>
-                      ))}
+                          </>
+                        );
+                      })()}
                     </div>
 
                     {/* Order Footer */}

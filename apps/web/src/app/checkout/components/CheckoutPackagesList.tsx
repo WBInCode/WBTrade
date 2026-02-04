@@ -39,10 +39,25 @@ export default function CheckoutPackagesList({
   shippingPrices = {},
 }: CheckoutPackagesListProps) {
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  const [expandedPackages, setExpandedPackages] = useState<Set<number>>(new Set());
 
   const handleImageError = (itemId: string) => {
     setFailedImages(prev => new Set(prev).add(itemId));
   };
+  
+  const togglePackageExpand = (pkgIndex: number) => {
+    setExpandedPackages(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(pkgIndex)) {
+        newSet.delete(pkgIndex);
+      } else {
+        newSet.add(pkgIndex);
+      }
+      return newSet;
+    });
+  };
+  
+  const MAX_VISIBLE_ITEMS = 3;
 
   // Group items by wholesaler
   const packages = useMemo(() => {
@@ -97,7 +112,14 @@ export default function CheckoutPackagesList({
           
           {/* Package Items */}
           <div className="bg-white dark:bg-secondary-800 px-3 py-2 space-y-2">
-            {pkg.items.map((item: CartItem) => (
+            {(() => {
+              const isExpanded = expandedPackages.has(pkgIndex);
+              const visibleItems = isExpanded ? pkg.items : pkg.items.slice(0, MAX_VISIBLE_ITEMS);
+              const hiddenCount = pkg.items.length - MAX_VISIBLE_ITEMS;
+              
+              return (
+                <>
+                  {visibleItems.map((item: CartItem) => (
               <div key={item.id} className="flex gap-2 group relative">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 dark:bg-secondary-700 rounded-lg flex-shrink-0 relative overflow-hidden">
                   {item.variant?.product?.images?.[0] && (
@@ -140,6 +162,33 @@ export default function CheckoutPackagesList({
                 </button>
               </div>
             ))}
+                  
+                  {/* Show more/less button */}
+                  {hiddenCount > 0 && (
+                    <button
+                      onClick={() => togglePackageExpand(pkgIndex)}
+                      className="w-full py-1.5 text-xs text-orange-500 hover:text-orange-600 font-medium flex items-center justify-center gap-1 transition-colors"
+                    >
+                      {isExpanded ? (
+                        <>
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                          </svg>
+                          Zwiń
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                          Pokaż więcej ({hiddenCount})
+                        </>
+                      )}
+                    </button>
+                  )}
+                </>
+              );
+            })()}
           </div>
           
           {/* Package Subtotal */}
