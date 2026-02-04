@@ -487,6 +487,14 @@ export interface PackageShippingInfo {
     postalCode: string;
     city: string;
   };
+  items?: {
+    productId: string;
+    productName: string;
+    variantId: string;
+    variantName: string;
+    quantity: number;
+    image?: string;
+  }[];
 }
 
 export interface Order {
