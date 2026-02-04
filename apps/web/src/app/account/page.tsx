@@ -108,6 +108,7 @@ function getStatusColor(status: string) {
       return 'bg-blue-100 text-blue-700';
     case 'DELIVERED':
       return 'bg-green-100 text-green-700';
+    case 'OPEN':
     case 'PENDING':
       return 'bg-orange-100 text-orange-700';
     case 'CONFIRMED':
@@ -127,6 +128,8 @@ function getStatusLabel(status: string, paymentStatus: string) {
     return 'Oczekuje na płatność';
   }
   switch (status) {
+    case 'OPEN':
+      return 'Oczekuje na płatność';
     case 'PENDING':
       return 'Oczekuje';
     case 'CONFIRMED':

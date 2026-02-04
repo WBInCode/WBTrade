@@ -59,8 +59,8 @@ export default function ReturnsPage() {
   const handleComplaintSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!complaintSubject.trim() || !complaintDescription.trim() || !complaintEmail.trim()) {
-      setComplaintError('Wypełnij wszystkie wymagane pola');
+    if (!complaintSubject.trim() || !complaintDescription.trim() || !complaintEmail.trim() || !complaintOrderNumber.trim()) {
+      setComplaintError('Wypełnij wszystkie wymagane pola (w tym numer zamówienia)');
       return;
     }
 
@@ -732,13 +732,14 @@ export default function ReturnsPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
-                      Numer zamówienia (opcjonalnie)
+                      Numer zamówienia *
                     </label>
                     <input
                       type="text"
                       value={complaintOrderNumber}
                       onChange={(e) => setComplaintOrderNumber(e.target.value)}
                       placeholder="np. WB-123456"
+                      required
                       className="w-full px-4 py-3 border border-secondary-300 dark:border-secondary-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-800 dark:text-white transition-colors"
                     />
                   </div>
