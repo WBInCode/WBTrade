@@ -463,7 +463,9 @@ export interface OrderItem {
       id: string;
       name: string;
       slug: string;
+      wholesaler?: string;
       images: { url: string; alt: string | null }[];
+      tags?: string[];
     };
   };
 }

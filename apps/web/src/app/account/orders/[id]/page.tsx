@@ -9,7 +9,7 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import { ordersApi, Order } from '../../../../lib/api';
 
 // Order status types
-type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
+type OrderStatus = 'OPEN' | 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
 type PaymentStatus = 'PENDING' | 'AWAITING_CONFIRMATION' | 'PAID' | 'FAILED' | 'REFUNDED' | 'CANCELLED';
 
 // Sidebar navigation items
@@ -69,6 +69,8 @@ function SidebarIcon({ icon }: { icon: string }) {
 
 function getStatusColor(status: OrderStatus): string {
   switch (status) {
+    case 'OPEN':
+      return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300';
     case 'PENDING':
       return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300';
     case 'CONFIRMED':
@@ -89,6 +91,8 @@ function getStatusColor(status: OrderStatus): string {
 
 function getStatusLabel(status: OrderStatus): string {
   switch (status) {
+    case 'OPEN':
+      return 'Oczekuje na płatność';
     case 'PENDING':
       return 'Oczekuje na płatność';
     case 'CONFIRMED':
@@ -169,7 +173,41 @@ function getPaymentMethodName(method: string): string {
   return paymentMethodNames[method] || method;
 }
 
-function getStatusTimelineSteps(status: OrderStatus): { label: string; isCompleted: boolean; isCurrent: boolean }[] {
+// Warehouse display names - hide real wholesaler names
+const WAREHOUSE_NAMES: Record<string, string> = {
+  'HP': 'Magazyn Zielona Góra',
+  'Hurtownia Przemysłowa': 'Magazyn Zielona Góra',
+  'Ikonka': 'Magazyn Białystok',
+  'BTP': 'Magazyn Chotów',
+  'Leker': 'Magazyn Chynów',
+  'Gastro': 'Magazyn Chotów',
+  'Horeca': 'Magazyn Chotów',
+  'Forcetop': 'Magazyn Chotów',
+};
+
+// Pattern to extract wholesaler from product tags
+const WHOLESALER_PATTERN = /^(hurtownia[:\-_](.+)|Ikonka|BTP|HP|Gastro|Horeca|Hurtownia\s+Przemysłowa|Leker|Forcetop)$/i;
+
+// Extract wholesaler from product tags (same logic as cart.service.ts)
+function getWholesalerFromTags(tags?: string[]): string | null {
+  if (!tags || tags.length === 0) return null;
+  
+  for (const tag of tags) {
+    const match = tag.match(WHOLESALER_PATTERN);
+    if (match) {
+      // Return the captured group if present (e.g., "HP" from "hurtownia:HP"), or the whole match
+      return match[2] || match[1];
+    }
+  }
+  return null;
+}
+
+function getWarehouseName(wholesaler: string | null | undefined): string {
+  if (!wholesaler) return 'Magazyn główny';
+  return WAREHOUSE_NAMES[wholesaler] || 'Magazyn główny';
+}
+
+function getStatusTimelineSteps(status: OrderStatus, paymentStatus?: PaymentStatus): { label: string; isCompleted: boolean; isCurrent: boolean }[] {
   const allSteps = [
     { key: 'PENDING', label: 'Zamówienie złożone' },
     { key: 'CONFIRMED', label: 'Płatność potwierdzona' },
@@ -177,9 +215,6 @@ function getStatusTimelineSteps(status: OrderStatus): { label: string; isComplet
     { key: 'SHIPPED', label: 'Wysłano' },
     { key: 'DELIVERED', label: 'Dostarczono' },
   ];
-
-  const statusOrder = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
-  const currentIndex = statusOrder.indexOf(status);
 
   // Handle cancelled/refunded separately
   if (status === 'CANCELLED' || status === 'REFUNDED') {
@@ -193,6 +228,18 @@ function getStatusTimelineSteps(status: OrderStatus): { label: string; isComplet
       isCurrent: true,
     }]);
   }
+
+  // If order status is OPEN or PENDING with payment not PAID, first step is completed (order placed), second is current (awaiting payment)
+  if ((status === 'OPEN' || status === 'PENDING') && paymentStatus !== 'PAID') {
+    return allSteps.map((step, index) => ({
+      label: step.label,
+      isCompleted: index === 0, // Order was placed
+      isCurrent: index === 1, // Waiting for payment confirmation
+    }));
+  }
+
+  const statusOrder = ['OPEN', 'PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
+  const currentIndex = statusOrder.indexOf(status);
 
   return allSteps.map((step, index) => ({
     label: step.label,
@@ -210,6 +257,7 @@ export default function OrderDetailsPage() {
   const [orderLoading, setOrderLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [expandedPackages, setExpandedPackages] = useState<Set<number>>(new Set());
   
   // Refund states
   const [showRefundModal, setShowRefundModal] = useState(false);
@@ -367,7 +415,7 @@ export default function OrderDetailsPage() {
     avatar: `${user?.firstName?.[0] || 'U'}${user?.lastName?.[0] || ''}`,
   };
 
-  const statusSteps = getStatusTimelineSteps(order.status as OrderStatus);
+  const statusSteps = getStatusTimelineSteps(order.status as OrderStatus, order.paymentStatus as PaymentStatus);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-secondary-900">
@@ -430,22 +478,26 @@ export default function OrderDetailsPage() {
           {/* Main Content */}
           <div className="flex-1 min-w-0">
             {/* Page Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
+            <div className="flex flex-col gap-3 mb-6">
               <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <Link href="/account/orders" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <div className="flex items-start gap-3 mb-2">
+                  <Link href="/account/orders" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mt-1 flex-shrink-0">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </Link>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Zamówienie #{order.orderNumber}</h1>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status as OrderStatus)}`}>
-                    {getStatusLabel(order.status as OrderStatus)}
-                  </span>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white break-all sm:break-normal">
+                      Zamówienie #{order.orderNumber}
+                    </h1>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium w-fit ${getStatusColor(order.status as OrderStatus)}`}>
+                      {getStatusLabel(order.status as OrderStatus)}
+                    </span>
+                  </div>
                 </div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">Złożone {formatOrderDate(order.createdAt)}</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm ml-8">Złożone {formatOrderDate(order.createdAt)}</p>
               </div>
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3 ml-8 sm:ml-0">
                 {order.paymentStatus === 'PENDING' && order.status !== 'CANCELLED' && (
                   <Link 
                     href={`/order/${order.id}/payment`}
@@ -510,7 +562,9 @@ export default function OrderDetailsPage() {
                           ? item.isCurrent 
                             ? 'bg-orange-500 text-white' 
                             : 'bg-green-500 text-white'
-                          : 'bg-gray-200 text-gray-400'
+                          : item.isCurrent
+                            ? 'bg-yellow-500 text-white'
+                            : 'bg-gray-200 dark:bg-secondary-600 text-gray-400'
                       }`}>
                         {item.isCompleted ? (
                           item.isCurrent ? (
@@ -522,15 +576,22 @@ export default function OrderDetailsPage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
                           )
+                        ) : item.isCurrent ? (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
                         ) : (
-                          <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
+                          <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full"></span>
                         )}
                       </div>
 
                       {/* Content */}
                       <div className="flex-1 min-w-0 pb-2">
-                        <h4 className={`font-medium ${item.isCompleted ? 'text-gray-900 dark:text-white' : 'text-gray-400'}`}>
+                        <h4 className={`font-medium ${item.isCompleted || item.isCurrent ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
                           {item.label}
+                          {item.isCurrent && !item.isCompleted && index === 0 && (
+                            <span className="ml-2 text-xs font-normal text-yellow-600 dark:text-yellow-400">(oczekuje na płatność)</span>
+                          )}
                         </h4>
                       </div>
                     </div>
@@ -559,27 +620,42 @@ export default function OrderDetailsPage() {
               
               <div className="divide-y divide-gray-100 dark:divide-secondary-700">
                 {order.items.map((item) => (
-                  <div key={item.id} className="p-5 flex items-center gap-4">
-                    <div className="w-20 h-20 bg-gray-100 dark:bg-secondary-700 rounded-lg overflow-hidden shrink-0">
-                      <img
-                        src={item.variant?.product?.images?.[0]?.url || '/placeholder.png'}
-                        alt={item.productName}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-gray-900 dark:text-white mb-1">{item.productName}</h4>
-                      {item.variantName && item.variantName !== 'Default' && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{item.variantName}</p>
-                      )}
-                      <p className="text-xs text-gray-400">SKU: {item.sku}</p>
-                    </div>
-                    <div className="text-center shrink-0 px-4">
-                      <span className="text-sm text-gray-500 dark:text-gray-400">Ilość</span>
-                      <p className="font-medium text-gray-900 dark:text-white">{item.quantity}</p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <span className="font-semibold text-gray-900 dark:text-white">{Number(item.unitPrice).toFixed(2)} zł</span>
+                  <div key={item.id} className="p-4 sm:p-5">
+                    <div className="flex gap-3 sm:gap-4">
+                      {/* Image */}
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 dark:bg-secondary-700 rounded-lg overflow-hidden shrink-0">
+                        <img
+                          src={item.variant?.product?.images?.[0]?.url || '/placeholder.png'}
+                          alt={item.productName}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-gray-900 dark:text-white text-sm sm:text-base line-clamp-2 mb-1">{item.productName}</h4>
+                        {item.variantName && item.variantName !== 'Default' && (
+                          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1">{item.variantName}</p>
+                        )}
+                        <p className="text-xs text-gray-400">SKU: {item.sku}</p>
+                        
+                        {/* Mobile: price and quantity inline */}
+                        <div className="flex items-center justify-between mt-2 sm:hidden">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Ilość: <span className="font-medium text-gray-900 dark:text-white">{item.quantity}</span></span>
+                          <span className="font-semibold text-gray-900 dark:text-white">{Number(item.unitPrice).toFixed(2)} zł</span>
+                        </div>
+                      </div>
+                      
+                      {/* Desktop: quantity and price */}
+                      <div className="hidden sm:flex items-center gap-4">
+                        <div className="text-center shrink-0 px-4">
+                          <span className="text-sm text-gray-500 dark:text-gray-400">Ilość</span>
+                          <p className="font-medium text-gray-900 dark:text-white">{item.quantity}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="font-semibold text-gray-900 dark:text-white">{Number(item.unitPrice).toFixed(2)} zł</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -589,7 +665,7 @@ export default function OrderDetailsPage() {
               <div className="p-5 bg-gray-50 dark:bg-secondary-900 border-t border-gray-100 dark:border-secondary-700">
                 <div className="max-w-xs ml-auto space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">Suma częściowa</span>
+                    <span className="text-gray-500 dark:text-gray-400">Całkowity koszt produktów</span>
                     <span className="text-gray-900 dark:text-white">{Number(order.subtotal).toFixed(2)} zł</span>
                   </div>
                   
@@ -599,7 +675,7 @@ export default function OrderDetailsPage() {
                       {order.packageShipping.map((pkg, index) => (
                         <div key={index} className="flex justify-between text-sm">
                           <span className="text-gray-500 dark:text-gray-400">
-                            {pkg.wholesaler ? `Paczka ${index + 1} (${pkg.wholesaler})` : `Paczka ${index + 1}`}
+                            Paczka {index + 1}
                             <span className="text-xs ml-1">• {getShippingMethodName(pkg.method)}</span>
                           </span>
                           <span className="text-gray-900 dark:text-white">
@@ -648,31 +724,102 @@ export default function OrderDetailsPage() {
                 {/* Per-package shipping info */}
                 {order.packageShipping && order.packageShipping.length > 0 ? (
                   <div className="space-y-4">
-                    {order.packageShipping.map((pkg, index) => (
-                      <div key={index} className="p-3 bg-gray-50 dark:bg-secondary-900 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                            Paczka {index + 1}{pkg.wholesaler && ` • ${pkg.wholesaler}`}
-                          </span>
+                    {(() => {
+                      // Pre-group items by wholesaler once (extracted from tags)
+                      const wholesalerGroups: Record<string, typeof order.items> = {};
+                      order.items.forEach(item => {
+                        const w = getWholesalerFromTags(item.variant?.product?.tags) || 'default';
+                        if (!wholesalerGroups[w]) wholesalerGroups[w] = [];
+                        wholesalerGroups[w].push(item);
+                      });
+                      const wholesalerKeys = Object.keys(wholesalerGroups);
+                      
+                      return order.packageShipping!.map((pkg, index) => {
+                        const isExpanded = expandedPackages.has(index);
+                        
+                        // Get items for this package by index (each package = one wholesaler group)
+                        const packageWholesaler = wholesalerKeys[index] || 'default';
+                        const packageItems = wholesalerGroups[packageWholesaler] || [];
+                        
+                        return (
+                        <div key={index} className="bg-gray-50 dark:bg-secondary-900 rounded-lg overflow-hidden">
+                          <div className="p-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                                Paczka {index + 1}
+                              </span>
+                              <button
+                                onClick={() => {
+                                  const newExpanded = new Set(expandedPackages);
+                                  if (isExpanded) {
+                                    newExpanded.delete(index);
+                                  } else {
+                                    newExpanded.add(index);
+                                  }
+                                  setExpandedPackages(newExpanded);
+                                }}
+                                className="text-xs text-orange-500 hover:text-orange-600 font-medium flex items-center gap-1"
+                              >
+                                Szczegóły
+                                <svg 
+                                  className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
+                                  fill="none" 
+                                  stroke="currentColor" 
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </button>
+                            </div>
+                            <p className="font-medium text-gray-900 dark:text-white text-sm">
+                              {getShippingMethodName(pkg.method)}
+                            </p>
+                            {pkg.method === 'inpost_paczkomat' && pkg.paczkomatCode && (
+                              <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                                <p className="font-medium">{pkg.paczkomatCode}</p>
+                                {pkg.paczkomatAddress && <p className="text-xs">{pkg.paczkomatAddress}</p>}
+                              </div>
+                            )}
+                            {pkg.useCustomAddress && pkg.customAddress && (
+                              <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                                <p>{pkg.customAddress.firstName} {pkg.customAddress.lastName}</p>
+                                <p>{pkg.customAddress.street}</p>
+                                <p>{pkg.customAddress.postalCode} {pkg.customAddress.city}</p>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Expanded product list */}
+                          {isExpanded && packageItems.length > 0 && (
+                            <div className="border-t border-gray-200 dark:border-secondary-700 p-3 space-y-3">
+                              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                <span>{getWarehouseName(packageWholesaler)}</span>
+                              </div>
+                              {packageItems.map((item) => (
+                                <div key={item.id} className="flex items-center gap-3">
+                                  <div className="w-10 h-10 bg-gray-100 dark:bg-secondary-700 rounded overflow-hidden shrink-0">
+                                    <img
+                                      src={item.variant?.product?.images?.[0]?.url || '/placeholder.png'}
+                                      alt={item.productName}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm text-gray-900 dark:text-white line-clamp-1">{item.productName}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Ilość: {item.quantity}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        <p className="font-medium text-gray-900 dark:text-white text-sm">
-                          {getShippingMethodName(pkg.method)}
-                        </p>
-                        {pkg.method === 'inpost_paczkomat' && pkg.paczkomatCode && (
-                          <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                            <p className="font-medium">{pkg.paczkomatCode}</p>
-                            {pkg.paczkomatAddress && <p className="text-xs">{pkg.paczkomatAddress}</p>}
-                          </div>
-                        )}
-                        {pkg.useCustomAddress && pkg.customAddress && (
-                          <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                            <p>{pkg.customAddress.firstName} {pkg.customAddress.lastName}</p>
-                            <p>{pkg.customAddress.street}</p>
-                            <p>{pkg.customAddress.postalCode} {pkg.customAddress.city}</p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    });
+                  })()}
                   </div>
                 ) : (
                   <div className="space-y-3">

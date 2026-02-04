@@ -183,7 +183,7 @@ export default function CartPage() {
   const isEmpty = !cart || cart.items.length === 0;
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-secondary-900 flex flex-col">
+    <div className="min-h-screen bg-gray-100 dark:bg-secondary-900 flex flex-col overflow-x-hidden">
       <Header />
 
       <main className="container-custom py-4 sm:py-6 lg:py-8 flex-1">
@@ -247,18 +247,18 @@ export default function CartPage() {
 
                 {/* Order Details */}
                 <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
-                  <div className="flex justify-between text-sm sm:text-base">
-                    <span className="text-gray-600 dark:text-gray-400">Wartość produktów</span>
-                    <span className="font-medium dark:text-white">{totals.subtotal.toFixed(2)} zł</span>
+                  <div className="flex justify-between items-center gap-2 text-sm sm:text-base">
+                    <span className="text-gray-600 dark:text-gray-400 shrink-0">Wartość produktów</span>
+                    <span className="font-medium dark:text-white whitespace-nowrap">{totals.subtotal.toFixed(2)} zł</span>
                   </div>
-                  <div className="flex justify-between text-sm sm:text-base">
-                    <span className="text-gray-600 dark:text-gray-400">Szacowana dostawa</span>
+                  <div className="flex justify-between items-center gap-2 text-sm sm:text-base">
+                    <span className="text-gray-600 dark:text-gray-400 shrink-0">Szacowana dostawa</span>
                     {loadingShipping ? (
-                      <span className="text-gray-400">Obliczanie...</span>
+                      <span className="text-gray-400 whitespace-nowrap">Obliczanie...</span>
                     ) : totals.shipping > 0 ? (
-                      <span className="font-medium dark:text-white">{totals.shipping.toFixed(2)} zł</span>
+                      <span className="font-medium dark:text-white whitespace-nowrap">{totals.shipping.toFixed(2)} zł</span>
                     ) : (
-                      <span className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">obliczana przy zamówieniu</span>
+                      <span className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm text-right">przy zamówieniu</span>
                     )}
                   </div>
                   {Object.keys(shippingPrices).length > 1 && (
@@ -270,9 +270,9 @@ export default function CartPage() {
 
                 {/* Total */}
                 <div className="border-t dark:border-secondary-700 pt-3 sm:pt-4 mb-4 sm:mb-6">
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">Razem</span>
-                    <span className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{totals.total.toFixed(2)} zł</span>
+                  <div className="flex justify-between items-baseline gap-2">
+                    <span className="text-base sm:text-lg font-bold text-gray-900 dark:text-white shrink-0">Razem</span>
+                    <span className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white whitespace-nowrap">{totals.total.toFixed(2)} zł</span>
                   </div>
                 </div>
 

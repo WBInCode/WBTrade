@@ -70,13 +70,13 @@ export default function CookieConsent() {
         <div className="max-w-4xl mx-auto bg-white dark:bg-secondary-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-secondary-700 overflow-hidden">
           {!showSettings ? (
             // Main Banner
-            <div className="p-6 sm:p-8">
-              <div className="flex items-start gap-4">
+            <div className="p-5 sm:p-8">
+              <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left gap-4">
                 <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
                   <span className="text-2xl">🍪</span>
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2">
                     Ta strona używa plików cookies
                   </h2>
                   <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
@@ -85,7 +85,7 @@ export default function CookieConsent() {
                     udostępniać funkcje mediów społecznościowych. Możesz zaakceptować wszystkie cookies 
                     lub dostosować swoje preferencje.
                   </p>
-                  <p className="text-gray-500 dark:text-gray-400 text-xs mb-6">
+                  <p className="text-gray-500 dark:text-gray-400 text-xs mb-5 sm:mb-6">
                     Więcej informacji znajdziesz w naszej{' '}
                     <Link href="/privacy" className="text-orange-500 hover:underline">
                       Polityce prywatności
@@ -96,22 +96,22 @@ export default function CookieConsent() {
                     </Link>.
                   </p>
                   
-                  <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex flex-col gap-3 w-full">
                     <button
                       onClick={acceptAll}
-                      className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors"
+                      className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors"
                     >
                       Akceptuję wszystkie
                     </button>
                     <button
                       onClick={acceptNecessary}
-                      className="flex-1 border-2 border-gray-300 dark:border-secondary-600 hover:border-gray-400 text-gray-700 dark:text-gray-300 font-semibold py-3 px-6 rounded-xl transition-colors"
+                      className="w-full border-2 border-gray-300 dark:border-secondary-600 hover:border-gray-400 text-gray-700 dark:text-gray-300 font-semibold py-3 px-6 rounded-xl transition-colors"
                     >
                       Tylko niezbędne
                     </button>
                     <button
                       onClick={() => setShowSettings(true)}
-                      className="sm:flex-none text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium py-3 px-4 transition-colors text-sm"
+                      className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium py-2 sm:py-3 px-4 transition-colors text-sm"
                     >
                       Dostosuj ustawienia
                     </button>
@@ -148,7 +148,7 @@ export default function CookieConsent() {
                     </p>
                   </div>
                   <div className="ml-4">
-                    <div className="w-12 h-6 bg-orange-500 rounded-full relative">
+                    <div className="w-12 h-6 bg-gray-400 dark:bg-gray-500 rounded-full relative cursor-not-allowed opacity-70">
                       <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div>
                     </div>
                   </div>
