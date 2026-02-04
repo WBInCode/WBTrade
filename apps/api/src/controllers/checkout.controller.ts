@@ -11,6 +11,7 @@ import { paymentService } from '../services/payment.service';
 import { OrdersService } from '../services/orders.service';
 import { CartService } from '../services/cart.service';
 import { addressesService } from '../services/addresses.service';
+import { emailService } from '../services/email.service';
 import { ShippingProviderId } from '../types/shipping.types';
 import { CreatePaymentRequest, PaymentMethodType, PaymentProviderId } from '../types/payment.types';
 
@@ -560,6 +561,71 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
     if (paymentMethod === 'cod') {
       // Cash on delivery - no payment redirect needed
       await paymentService.createCODPayment(order.id, total);
+      
+      // Send order confirmation email for COD orders
+      // Fetch full order data for email
+      const orderForEmail = await prisma.order.findUnique({
+        where: { id: order.id },
+        include: {
+          user: { select: { email: true, firstName: true } },
+          shippingAddress: true,
+          items: {
+            include: {
+              variant: {
+                include: {
+                  product: {
+                    select: {
+                      images: { take: 1, select: { url: true } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+      
+      if (orderForEmail) {
+        const customerEmail = orderForEmail.user?.email || orderForEmail.guestEmail;
+        const customerName = orderForEmail.user?.firstName || orderForEmail.guestFirstName || 'Kliencie';
+        
+        if (customerEmail && orderForEmail.shippingAddress) {
+          emailService.sendOrderConfirmationEmail(
+            customerEmail,
+            customerName,
+            orderForEmail.orderNumber,
+            orderForEmail.id,
+            Number(orderForEmail.total),
+            orderForEmail.items.map(item => ({
+              name: item.productName,
+              variant: item.variantName,
+              quantity: item.quantity,
+              price: Number(item.unitPrice),
+              total: Number(item.total),
+              imageUrl: item.variant?.product?.images?.[0]?.url || null,
+            })),
+            {
+              firstName: orderForEmail.shippingAddress.firstName,
+              lastName: orderForEmail.shippingAddress.lastName,
+              street: orderForEmail.shippingAddress.street,
+              city: orderForEmail.shippingAddress.city,
+              postalCode: orderForEmail.shippingAddress.postalCode,
+              phone: orderForEmail.shippingAddress.phone || undefined,
+            },
+            orderForEmail.shippingMethod || 'unknown',
+            'cod',
+            false // isPaid - COD is not paid yet
+          ).then((emailResult) => {
+            if (emailResult.success) {
+              console.log(`[Checkout] Order confirmation email sent for COD order ${orderForEmail.orderNumber}`);
+            } else {
+              console.error(`[Checkout] Failed to send confirmation email: ${emailResult.error}`);
+            }
+          }).catch((err) => {
+            console.error(`[Checkout] Error sending confirmation email:`, err);
+          });
+        }
+      }
       
       res.json({
         orderId: order.id,
