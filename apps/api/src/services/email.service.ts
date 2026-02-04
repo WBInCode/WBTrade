@@ -907,6 +907,336 @@ Zespół WB Trade
   }
 
   // ============================================
+  // ORDER CONFIRMATION EMAIL
+  // ============================================
+
+  /**
+   * Send order confirmation email after successful payment
+   * Works for both logged-in users and guest checkout
+   */
+  async sendOrderConfirmationEmail(
+    to: string,
+    customerName: string,
+    orderNumber: string,
+    orderId: string,
+    total: number,
+    items: {
+      name: string;
+      variant: string;
+      quantity: number;
+      price: number;
+      total: number;
+      imageUrl: string | null;
+    }[],
+    shippingAddress: {
+      firstName: string;
+      lastName: string;
+      street: string;
+      city: string;
+      postalCode: string;
+      phone?: string;
+    },
+    shippingMethod: string,
+    paymentMethod: string,
+    isPaid: boolean
+  ): Promise<EmailResult> {
+    try {
+      const resend = getResend();
+      
+      const orderUrl = `${SITE_URL}/order/${orderId}/confirmation`;
+      
+      const { data, error } = await resend.emails.send({
+        from: FROM_EMAIL,
+        to: [to],
+        subject: `✅ Potwierdzenie zamówienia #${orderNumber}`,
+        html: this.getOrderConfirmationHtml(
+          customerName,
+          orderNumber,
+          orderId,
+          total,
+          items,
+          shippingAddress,
+          shippingMethod,
+          paymentMethod,
+          isPaid,
+          orderUrl
+        ),
+        text: this.getOrderConfirmationText(
+          customerName,
+          orderNumber,
+          total,
+          items,
+          shippingAddress,
+          shippingMethod,
+          paymentMethod,
+          isPaid,
+          orderUrl
+        ),
+      });
+
+      if (error) {
+        console.error('[EmailService] Order confirmation email error:', error);
+        return { success: false, error: error.message };
+      }
+
+      console.log(`✅ [EmailService] Order confirmation email sent to ${to} for order ${orderNumber}`);
+      return { success: true, messageId: data?.id };
+    } catch (err: any) {
+      console.error('[EmailService] Order confirmation exception:', err.message);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * HTML template for order confirmation email
+   */
+  private getOrderConfirmationHtml(
+    customerName: string,
+    orderNumber: string,
+    orderId: string,
+    total: number,
+    items: {
+      name: string;
+      variant: string;
+      quantity: number;
+      price: number;
+      total: number;
+      imageUrl: string | null;
+    }[],
+    shippingAddress: {
+      firstName: string;
+      lastName: string;
+      street: string;
+      city: string;
+      postalCode: string;
+      phone?: string;
+    },
+    shippingMethod: string,
+    paymentMethod: string,
+    isPaid: boolean,
+    orderUrl: string
+  ): string {
+    // Generate product list HTML
+    const productsHtml = items.map(item => `
+      <tr>
+        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">
+          <div style="display: flex; align-items: center;">
+            ${item.imageUrl ? `<img src="${item.imageUrl}" alt="${item.name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; margin-right: 12px;" />` : ''}
+            <div>
+              <p style="margin: 0; font-weight: 600; color: #333;">${item.name}</p>
+              ${item.variant ? `<p style="margin: 4px 0 0 0; font-size: 13px; color: #666;">${item.variant}</p>` : ''}
+            </div>
+          </div>
+        </td>
+        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #666;">
+          ${item.quantity} szt.
+        </td>
+        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: 600; color: #333;">
+          ${item.total.toFixed(2)} zł
+        </td>
+      </tr>
+    `).join('');
+
+    // Map shipping method to display name
+    const shippingMethodNames: Record<string, string> = {
+      'inpost_courier': 'Kurier InPost',
+      'inpost_locker': 'Paczkomat InPost',
+      'dpd': 'Kurier DPD',
+      'dhl': 'Kurier DHL',
+      'orlen': 'Paczka Orlen',
+      'pickup': 'Odbiór osobisty',
+    };
+    const shippingMethodDisplay = shippingMethodNames[shippingMethod] || shippingMethod;
+
+    // Map payment method to display name
+    const paymentMethodNames: Record<string, string> = {
+      'cod': 'Płatność przy odbiorze',
+      'blik': 'BLIK',
+      'card': 'Karta płatnicza',
+      'transfer': 'Przelew bankowy',
+      'przelewy24': 'Przelewy24',
+      'payu': 'PayU',
+    };
+    const paymentMethodDisplay = paymentMethodNames[paymentMethod] || paymentMethod;
+
+    return `
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+    <!-- Header with Logo -->
+    <tr>
+      <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 30px; text-align: center;">
+        <img src="${SITE_URL}/images/WB-TRADE-logo.png" alt="WBTrade" style="height: 50px; width: auto; margin-bottom: 15px;" />
+        <h1 style="color: white; margin: 0; font-size: 24px;">✅ Dziękujemy za zamówienie!</h1>
+      </td>
+    </tr>
+    
+    <!-- Content -->
+    <tr>
+      <td style="padding: 30px;">
+        <p style="font-size: 18px; color: #333; margin-bottom: 20px;">
+          Cześć <strong>${customerName}</strong>,
+        </p>
+        
+        <p style="font-size: 16px; color: #555; line-height: 1.6;">
+          Twoje zamówienie <strong>#${orderNumber}</strong> zostało przyjęte${isPaid ? ' i opłacone' : ''}.
+        </p>
+        
+        <!-- Order Number Box -->
+        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #10b981; border-radius: 12px; padding: 20px; text-align: center; margin: 25px 0;">
+          <p style="font-size: 14px; color: #666; margin: 0 0 5px 0;">Numer zamówienia</p>
+          <p style="font-size: 28px; font-weight: bold; color: #059669; margin: 0; letter-spacing: 2px;">#${orderNumber}</p>
+        </div>
+        
+        <!-- Products Table -->
+        <h3 style="color: #333; margin: 25px 0 15px 0; font-size: 16px;">📦 Zamówione produkty</h3>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+          <thead>
+            <tr style="background-color: #f8fafc;">
+              <th style="padding: 12px; text-align: left; font-size: 13px; color: #666;">Produkt</th>
+              <th style="padding: 12px; text-align: center; font-size: 13px; color: #666;">Ilość</th>
+              <th style="padding: 12px; text-align: right; font-size: 13px; color: #666;">Cena</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${productsHtml}
+          </tbody>
+          <tfoot>
+            <tr style="background-color: #f8fafc;">
+              <td colspan="2" style="padding: 15px; text-align: right; font-weight: bold; color: #333;">
+                Razem do zapłaty:
+              </td>
+              <td style="padding: 15px; text-align: right; font-weight: bold; font-size: 18px; color: #059669;">
+                ${total.toFixed(2)} zł
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+        
+        <!-- Shipping & Payment Info -->
+        <div style="display: flex; gap: 20px; margin-top: 25px;">
+          <div style="flex: 1; background-color: #f8fafc; border-radius: 8px; padding: 15px;">
+            <h4 style="margin: 0 0 10px 0; color: #333; font-size: 14px;">📍 Adres dostawy</h4>
+            <p style="margin: 0; color: #555; font-size: 14px; line-height: 1.5;">
+              ${shippingAddress.firstName} ${shippingAddress.lastName}<br>
+              ${shippingAddress.street}<br>
+              ${shippingAddress.postalCode} ${shippingAddress.city}
+              ${shippingAddress.phone ? `<br>Tel: ${shippingAddress.phone}` : ''}
+            </p>
+          </div>
+        </div>
+        
+        <div style="margin-top: 15px; background-color: #f8fafc; border-radius: 8px; padding: 15px;">
+          <p style="margin: 0 0 8px 0; color: #333; font-size: 14px;">
+            <strong>🚚 Metoda dostawy:</strong> ${shippingMethodDisplay}
+          </p>
+          <p style="margin: 0; color: #333; font-size: 14px;">
+            <strong>💳 Płatność:</strong> ${paymentMethodDisplay} ${isPaid ? '<span style="color: #10b981;">✓ Opłacone</span>' : '<span style="color: #f59e0b;">⏳ Oczekuje na płatność</span>'}
+          </p>
+        </div>
+        
+        <!-- CTA Button -->
+        <div style="text-align: center; margin: 35px 0;">
+          <a href="${orderUrl}" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-size: 16px; font-weight: bold; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);">
+            📋 Szczegóły zamówienia
+          </a>
+        </div>
+        
+        <!-- Help section -->
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+          <p style="font-size: 14px; color: #666; margin: 0;">
+            Masz pytania? Skontaktuj się z nami:
+            <a href="mailto:kontakt@wb-trade.pl" style="color: #f97316;">kontakt@wb-trade.pl</a>
+          </p>
+        </div>
+      </td>
+    </tr>
+    
+    <!-- Footer -->
+    <tr>
+      <td style="background-color: #f8fafc; padding: 25px 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+        <p style="margin: 0 0 10px 0; color: #64748b; font-size: 14px;">
+          Pozdrawiamy,<br>
+          <strong>Zespół WB Trade</strong>
+        </p>
+        <p style="margin: 0; color: #94a3b8; font-size: 12px;">
+          Ten email został wysłany automatycznie.
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+  }
+
+  /**
+   * Plain text version for order confirmation email
+   */
+  private getOrderConfirmationText(
+    customerName: string,
+    orderNumber: string,
+    total: number,
+    items: {
+      name: string;
+      variant: string;
+      quantity: number;
+      price: number;
+      total: number;
+      imageUrl: string | null;
+    }[],
+    shippingAddress: {
+      firstName: string;
+      lastName: string;
+      street: string;
+      city: string;
+      postalCode: string;
+      phone?: string;
+    },
+    shippingMethod: string,
+    paymentMethod: string,
+    isPaid: boolean,
+    orderUrl: string
+  ): string {
+    const itemsList = items.map(item => 
+      `- ${item.name}${item.variant ? ` (${item.variant})` : ''} x ${item.quantity} = ${item.total.toFixed(2)} zł`
+    ).join('\n');
+
+    return `
+Cześć ${customerName},
+
+Dziękujemy za zamówienie #${orderNumber}!
+
+Twoje zamówienie zostało przyjęte${isPaid ? ' i opłacone' : ''}.
+
+ZAMÓWIONE PRODUKTY:
+${itemsList}
+
+RAZEM DO ZAPŁATY: ${total.toFixed(2)} zł
+
+ADRES DOSTAWY:
+${shippingAddress.firstName} ${shippingAddress.lastName}
+${shippingAddress.street}
+${shippingAddress.postalCode} ${shippingAddress.city}
+${shippingAddress.phone ? `Tel: ${shippingAddress.phone}` : ''}
+
+Metoda dostawy: ${shippingMethod}
+Płatność: ${paymentMethod} ${isPaid ? '(Opłacone)' : '(Oczekuje na płatność)'}
+
+Szczegóły zamówienia: ${orderUrl}
+
+Masz pytania? Napisz do nas: kontakt@wb-trade.pl
+
+Pozdrawiamy,
+Zespół WB Trade
+    `.trim();
+  }
+
+  // ============================================
   // CONTACT & COMPLAINT EMAILS
   // ============================================
 
