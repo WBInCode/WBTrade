@@ -3,21 +3,23 @@
 import { useState, useEffect } from 'react';
 import { X, Gift, UserPlus, Mail, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
 
 // ============================================
 // WELCOME DISCOUNT POPUP
 // Shows -20% discount offer for non-logged users
+// Only on homepage, once per session
 // ============================================
 
 const POPUP_DELAY_MS = 2000; // Show after 2 seconds
-const POPUP_STORAGE_KEY = 'welcome_popup_dismissed';
-const POPUP_DISMISS_DAYS = 7; // Don't show again for 7 days after dismiss
+const POPUP_SESSION_KEY = 'welcome_popup_shown_this_session';
 
 export function WelcomeDiscountPopup() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const { isAuthenticated, isLoading } = useAuth();
+  const pathname = usePathname();
 
   // Wait for client mount to avoid hydration mismatch
   useEffect(() => {
@@ -27,37 +29,29 @@ export function WelcomeDiscountPopup() {
   useEffect(() => {
     if (!isMounted) return;
     
+    // Only show on homepage
+    if (pathname !== '/') return;
+    
     // Don't show if user is logged in or still loading
     if (isLoading) return;
     if (isAuthenticated) return;
 
-    // TEMP: Clear old dismissal for testing
-    localStorage.removeItem(POPUP_STORAGE_KEY);
-
-    // Check if popup was recently dismissed
-    const dismissedAt = localStorage.getItem(POPUP_STORAGE_KEY);
-    if (dismissedAt) {
-      const dismissDate = new Date(parseInt(dismissedAt));
-      const daysSinceDismiss = (Date.now() - dismissDate.getTime()) / (1000 * 60 * 60 * 24);
-      if (daysSinceDismiss < POPUP_DISMISS_DAYS) return;
-    }
+    // Check if popup was already shown this session
+    const shownThisSession = sessionStorage.getItem(POPUP_SESSION_KEY);
+    if (shownThisSession) return;
 
     // Show popup after delay
     const timer = setTimeout(() => {
       setIsOpen(true);
+      // Mark as shown for this session
+      sessionStorage.setItem(POPUP_SESSION_KEY, 'true');
     }, POPUP_DELAY_MS);
 
     return () => clearTimeout(timer);
-  }, [isMounted, isAuthenticated, isLoading]);
+  }, [isMounted, isAuthenticated, isLoading, pathname]);
 
-  const handleDismiss = () => {
+  const handleClose = () => {
     setIsOpen(false);
-    localStorage.setItem(POPUP_STORAGE_KEY, Date.now().toString());
-  };
-
-  const handleSignupClick = () => {
-    setIsOpen(false);
-    // Don't save to storage - let them see it again if they come back without registering
   };
 
   if (!isOpen) return null;
@@ -67,7 +61,7 @@ export function WelcomeDiscountPopup() {
       {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 animate-fadeIn"
-        onClick={handleDismiss}
+        onClick={handleClose}
       />
       
       {/* Modal */}
@@ -78,7 +72,7 @@ export function WelcomeDiscountPopup() {
         >
           {/* Close button */}
           <button
-            onClick={handleDismiss}
+            onClick={handleClose}
             className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-secondary-700 rounded-full transition-colors z-10"
             aria-label="Zamknij"
           >
@@ -142,7 +136,7 @@ export function WelcomeDiscountPopup() {
             {/* CTA Button */}
             <Link
               href="/register"
-              onClick={handleSignupClick}
+              onClick={handleClose}
               className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/30 transition-all hover:shadow-xl hover:shadow-orange-500/40 hover:-translate-y-0.5"
             >
               <UserPlus size={20} />
@@ -155,7 +149,7 @@ export function WelcomeDiscountPopup() {
               Masz już konto?{' '}
               <Link 
                 href="/login" 
-                onClick={handleSignupClick}
+                onClick={handleClose}
                 className="text-orange-600 hover:text-orange-700 font-medium"
               >
                 Zaloguj się

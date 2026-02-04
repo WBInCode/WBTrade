@@ -51,6 +51,14 @@ export interface PackageShippingSelection {
   price: number;
   paczkomatCode?: string;
   paczkomatAddress?: string;
+  // Items in this package (for order history display)
+  items?: Array<{
+    productId: string;
+    productName: string;
+    variantId: string;
+    quantity: number;
+    image?: string;
+  }>;
   // Custom delivery address for this package (if different from main address)
   useCustomAddress?: boolean;
   customAddress?: {
@@ -444,10 +452,12 @@ function CheckoutPageContent() {
         selectedItemIds: checkoutItems.map(item => item.id),
         packageShipping: checkoutData.shipping.packageShipping?.map(pkg => ({
           packageId: pkg.packageId,
+          wholesaler: pkg.wholesaler,
           method: pkg.method,
           price: pkg.price,
           paczkomatCode: pkg.paczkomatCode,
           paczkomatAddress: pkg.paczkomatAddress,
+          items: pkg.items,
           useCustomAddress: pkg.useCustomAddress,
           customAddress: pkg.customAddress,
         })),

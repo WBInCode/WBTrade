@@ -509,13 +509,15 @@ export class ShippingCalculatorService {
     }
     
     // Create packages for gabaryt items (each one is a separate shipment)
+    // GABARYTY NIE MAJĄ DARMOWEJ DOSTAWY - niezależnie od wartości zamówienia
     let packageId = 1;
     for (const gabarytItem of gabarytItems) {
       const gabarytPrice = getGabarytPrice(gabarytItem.product.tags);
       const productIsInPostOnly = isInPostOnly(gabarytItem.product.tags);
       const wholesaler = getWholesaler(gabarytItem.product.tags) || 'default';
       const warehouseValue = valueByWholesaler.get(wholesaler) || 0;
-      const hasFreeShipping = warehouseValue >= FREE_SHIPPING_THRESHOLD;
+      // Gabaryty NIGDY nie mają darmowej dostawy - płatna wysyłka zawsze
+      const hasFreeShipping = false;
       
       for (let i = 0; i < gabarytItem.quantity; i++) {
         packages.push({
@@ -636,35 +638,18 @@ export class ShippingCalculatorService {
     
     const breakdown: Array<{ description: string; cost: number; packageCount: number }> = [];
     
-    // Sum gabaryt costs from individual prices (considering free shipping)
+    // Sum gabaryt costs from individual prices
+    // Gabaryty NIGDY nie mają darmowej dostawy - zawsze płatna wysyłka
     const totalGabarytCost = gabarytPackages.reduce((sum, pkg) => {
-      if (pkg.hasFreeShipping) return sum; // Free shipping for this warehouse
       return sum + (pkg.gabarytPrice || SHIPPING_PRICES.gabaryt_base);
     }, 0);
     
-    const freeGabarytCount = gabarytPackages.filter(p => p.hasFreeShipping).length;
-    const paidGabarytCount = gabarytPackageCount - freeGabarytCount;
-    
     if (gabarytPackageCount > 0) {
-      if (freeGabarytCount > 0 && paidGabarytCount > 0) {
-        breakdown.push({
-          description: `Produkty gabarytowe (${paidGabarytCount} płatne, ${freeGabarytCount} darmowe)`,
-          cost: totalGabarytCost,
-          packageCount: gabarytPackageCount,
-        });
-      } else if (freeGabarytCount > 0) {
-        breakdown.push({
-          description: `Produkty gabarytowe (${gabarytPackageCount} szt.) - DARMOWA DOSTAWA`,
-          cost: 0,
-          packageCount: gabarytPackageCount,
-        });
-      } else {
-        breakdown.push({
-          description: `Produkty gabarytowe (${gabarytPackageCount} szt.)`,
-          cost: totalGabarytCost,
-          packageCount: gabarytPackageCount,
-        });
-      }
+      breakdown.push({
+        description: `Produkty gabarytowe (${gabarytPackageCount} szt.)`,
+        cost: totalGabarytCost,
+        packageCount: gabarytPackageCount,
+      });
     }
     
     // Calculate standard packages cost - use weight-based price if available (considering free shipping)
@@ -887,7 +872,7 @@ export class ShippingCalculatorService {
           price: 0,
           available: false,
           message: 'Produkt gabarytowy - tylko kurier',
-          estimatedDelivery: '1-2 dni',
+          estimatedDelivery: 'Wysyłka w ciągu 24 - 72h',
         });
         methods.push({
           id: 'inpost_kurier',
@@ -895,7 +880,7 @@ export class ShippingCalculatorService {
           price: gabarytPrice,
           available: false,
           message: 'Wymagana wysyłka gabaryt',
-          estimatedDelivery: '1-2 dni',
+          estimatedDelivery: 'Wysyłka w ciągu 24 - 72h',
         });
       } else {
         // Standard packages
@@ -925,7 +910,7 @@ export class ShippingCalculatorService {
           message: !isInPostAvailable 
             ? 'Produkt dostępny tylko z DPD'
             : (freeMessage || (paczkomatPackages > 1 ? `${paczkomatPackages} paczki` : undefined)),
-          estimatedDelivery: '1-2 dni',
+          estimatedDelivery: 'Wysyłka w ciągu 24 - 72h',
         });
         
         // InPost Kurier - stała cena za przesyłkę (nie zależy od liczby paczek paczkomatowych)
@@ -940,7 +925,7 @@ export class ShippingCalculatorService {
           message: !isInPostAvailable 
             ? 'Produkt dostępny tylko z DPD' 
             : freeMessage,
-          estimatedDelivery: '1-2 dni',
+          estimatedDelivery: 'Wysyłka w ciągu 24 - 72h',
         });
         
         // DPD Kurier - available only if DPD is available
@@ -952,7 +937,7 @@ export class ShippingCalculatorService {
           message: !isDpdAvailable 
             ? 'Produkt dostępny tylko z InPost' 
             : (freeMessage || (pkg.weightShippingPrice && !isFree ? `Cena wg wagi: ${dpdPrice.toFixed(2)} zł` : undefined)),
-          estimatedDelivery: '1-2 dni',
+          estimatedDelivery: 'Wysyłka w ciągu 24 - 72h',
         });
       }
       

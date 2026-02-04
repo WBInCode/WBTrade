@@ -258,6 +258,9 @@ export default function OrderDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [expandedPackages, setExpandedPackages] = useState<Set<number>>(new Set());
+  const [expandedProductLists, setExpandedProductLists] = useState<Set<number>>(new Set());
+  
+  const MAX_VISIBLE_ITEMS = 3;
   
   // Refund states
   const [showRefundModal, setShowRefundModal] = useState(false);
@@ -724,52 +727,44 @@ export default function OrderDetailsPage() {
                 {/* Per-package shipping info */}
                 {order.packageShipping && order.packageShipping.length > 0 ? (
                   <div className="space-y-4">
-                    {(() => {
-                      // Pre-group items by wholesaler once (extracted from tags)
-                      const wholesalerGroups: Record<string, typeof order.items> = {};
-                      order.items.forEach(item => {
-                        const w = getWholesalerFromTags(item.variant?.product?.tags) || 'default';
-                        if (!wholesalerGroups[w]) wholesalerGroups[w] = [];
-                        wholesalerGroups[w].push(item);
-                      });
-                      const wholesalerKeys = Object.keys(wholesalerGroups);
+                    {order.packageShipping.map((pkg, index) => {
+                      const isExpanded = expandedPackages.has(index);
                       
-                      return order.packageShipping!.map((pkg, index) => {
-                        const isExpanded = expandedPackages.has(index);
-                        
-                        // Get items for this package by index (each package = one wholesaler group)
-                        const packageWholesaler = wholesalerKeys[index] || 'default';
-                        const packageItems = wholesalerGroups[packageWholesaler] || [];
-                        
-                        return (
+                      // Use items from packageShipping if available, otherwise try to match by wholesaler
+                      const packageItems = pkg.items || [];
+                      const packageWholesaler = pkg.wholesaler || 'default';
+                      
+                      return (
                         <div key={index} className="bg-gray-50 dark:bg-secondary-900 rounded-lg overflow-hidden">
                           <div className="p-3">
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                                 Paczka {index + 1}
                               </span>
-                              <button
-                                onClick={() => {
-                                  const newExpanded = new Set(expandedPackages);
-                                  if (isExpanded) {
-                                    newExpanded.delete(index);
-                                  } else {
-                                    newExpanded.add(index);
-                                  }
-                                  setExpandedPackages(newExpanded);
-                                }}
-                                className="text-xs text-orange-500 hover:text-orange-600 font-medium flex items-center gap-1"
-                              >
-                                Szczegóły
-                                <svg 
-                                  className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
-                                  fill="none" 
-                                  stroke="currentColor" 
-                                  viewBox="0 0 24 24"
+                              {packageItems.length > 0 && (
+                                <button
+                                  onClick={() => {
+                                    const newExpanded = new Set(expandedPackages);
+                                    if (isExpanded) {
+                                      newExpanded.delete(index);
+                                    } else {
+                                      newExpanded.add(index);
+                                    }
+                                    setExpandedPackages(newExpanded);
+                                  }}
+                                  className="text-xs text-orange-500 hover:text-orange-600 font-medium flex items-center gap-1"
                                 >
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                              </button>
+                                  Szczegóły
+                                  <svg 
+                                    className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                  </svg>
+                                </button>
+                              )}
                             </div>
                             <p className="font-medium text-gray-900 dark:text-white text-sm">
                               {getShippingMethodName(pkg.method)}
@@ -792,34 +787,54 @@ export default function OrderDetailsPage() {
                           {/* Expanded product list */}
                           {isExpanded && packageItems.length > 0 && (
                             <div className="border-t border-gray-200 dark:border-secondary-700 p-3 space-y-3">
-                              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                                <span>{getWarehouseName(packageWholesaler)}</span>
-                              </div>
-                              {packageItems.map((item) => (
-                                <div key={item.id} className="flex items-center gap-3">
-                                  <div className="w-10 h-10 bg-gray-100 dark:bg-secondary-700 rounded overflow-hidden shrink-0">
-                                    <img
-                                      src={item.variant?.product?.images?.[0]?.url || '/placeholder.png'}
-                                      alt={item.productName}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm text-gray-900 dark:text-white line-clamp-1">{item.productName}</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Ilość: {item.quantity}</p>
-                                  </div>
-                                </div>
-                              ))}
+                              {(() => {
+                                const isProductListExpanded = expandedProductLists.has(index);
+                                const visibleItems = isProductListExpanded ? packageItems : packageItems.slice(0, MAX_VISIBLE_ITEMS);
+                                const hiddenCount = packageItems.length - MAX_VISIBLE_ITEMS;
+                                
+                                return (
+                                  <>
+                                    {visibleItems.map((item, itemIndex) => (
+                                      <div key={item.variantId || itemIndex} className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-gray-100 dark:bg-secondary-700 rounded overflow-hidden shrink-0">
+                                          <img
+                                            src={item.image || '/placeholder.png'}
+                                            alt={item.productName}
+                                            className="w-full h-full object-cover"
+                                          />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-sm text-gray-900 dark:text-white line-clamp-1">{item.productName}</p>
+                                          <p className="text-xs text-gray-500 dark:text-gray-400">Ilość: {item.quantity}</p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                    {hiddenCount > 0 && (
+                                      <button
+                                        onClick={() => {
+                                          setExpandedProductLists(prev => {
+                                            const newSet = new Set(prev);
+                                            if (newSet.has(index)) {
+                                              newSet.delete(index);
+                                            } else {
+                                              newSet.add(index);
+                                            }
+                                            return newSet;
+                                          });
+                                        }}
+                                        className="w-full text-center py-2 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium transition-colors"
+                                      >
+                                        {isProductListExpanded ? 'Zwiń' : `Pokaż więcej (${hiddenCount})`}
+                                      </button>
+                                    )}
+                                  </>
+                                );
+                              })()}
                             </div>
                           )}
                         </div>
                       );
-                    });
-                  })()}
+                    })}
                   </div>
                 ) : (
                   <div className="space-y-3">
