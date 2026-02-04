@@ -20,6 +20,7 @@ import { PayUProvider } from '../providers/payment/payu.provider';
 import { prisma } from '../db';
 import { baselinkerOrdersService } from './baselinker-orders.service';
 import { popularityService } from './popularity.service';
+import { emailService } from './email.service';
 
 // Provider configurations from environment
 const providerConfigs: Record<PaymentProviderId, Partial<PaymentProviderConfig>> = {
@@ -319,6 +320,23 @@ export class PaymentService {
 
     const order = await prisma.order.findFirst({
       where: { id: result.orderId },
+      include: {
+        user: { select: { email: true, firstName: true, lastName: true } },
+        shippingAddress: true,
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: {
+                  select: {
+                    images: { take: 1, select: { url: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
     if (order) {
@@ -351,7 +369,7 @@ export class PaymentService {
 
       console.log(`Order ${order.id} updated successfully`);
 
-      // If payment succeeded, sync order to Baselinker
+      // If payment succeeded, sync order to Baselinker and send confirmation email
       // This is the critical point - stock will be decreased in Baselinker
       // only AFTER payment is confirmed
       if (result.status === 'succeeded') {
@@ -368,6 +386,49 @@ export class PaymentService {
             popularityService.incrementSalesCount(item.variant.product.id, item.quantity)
               .catch((err) => console.error(`[PaymentService] Error updating sales count for product ${item.variant?.product?.id}:`, err));
           }
+        }
+        
+        // Send order confirmation email
+        const customerEmail = order.user?.email || order.guestEmail;
+        const customerName = order.user?.firstName || order.guestFirstName || 'Kliencie';
+        
+        if (customerEmail && order.shippingAddress) {
+          emailService.sendOrderConfirmationEmail(
+            customerEmail,
+            customerName,
+            order.orderNumber,
+            order.id,
+            Number(order.total),
+            order.items.map(item => ({
+              name: item.productName,
+              variant: item.variantName,
+              quantity: item.quantity,
+              price: Number(item.unitPrice),
+              total: Number(item.total),
+              imageUrl: item.variant?.product?.images?.[0]?.url || null,
+            })),
+            {
+              firstName: order.shippingAddress.firstName,
+              lastName: order.shippingAddress.lastName,
+              street: order.shippingAddress.street,
+              city: order.shippingAddress.city,
+              postalCode: order.shippingAddress.postalCode,
+              phone: order.shippingAddress.phone || undefined,
+            },
+            order.shippingMethod || 'unknown',
+            order.paymentMethod || 'online',
+            true // isPaid - payment succeeded
+          ).then((emailResult) => {
+            if (emailResult.success) {
+              console.log(`[PaymentService] Order confirmation email sent for order ${order.orderNumber}`);
+            } else {
+              console.error(`[PaymentService] Failed to send confirmation email: ${emailResult.error}`);
+            }
+          }).catch((err) => {
+            console.error(`[PaymentService] Error sending confirmation email:`, err);
+          });
+        } else {
+          console.warn(`[PaymentService] Cannot send confirmation email - no email or shipping address for order ${order.id}`);
         }
         
         // Update Baselinker order status from "Nieopłacone" to "Nowe zamówienia"
