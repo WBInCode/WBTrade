@@ -78,6 +78,7 @@ function SidebarIcon({ icon }: { icon: string }) {
 
 function getStatusColor(status: string): string {
   switch (status) {
+    case 'OPEN':
     case 'PENDING':
       return 'bg-yellow-100 text-yellow-700';
     case 'CONFIRMED':
@@ -98,6 +99,7 @@ function getStatusColor(status: string): string {
 
 function getStatusLabel(status: string): string {
   switch (status) {
+    case 'OPEN':
     case 'PENDING':
       return 'Oczekuje na płatność';
     case 'CONFIRMED':
@@ -119,6 +121,7 @@ function getStatusLabel(status: string): string {
 
 function getStatusIcon(status: string) {
   switch (status) {
+    case 'OPEN':
     case 'PENDING':
       return (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

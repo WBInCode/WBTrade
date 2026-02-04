@@ -13,6 +13,12 @@ interface OrderItem {
   productName: string;
   variantName?: string;
   sku?: string;
+  variant?: {
+    product?: {
+      images?: { url: string; alt?: string }[];
+      slug?: string;
+    };
+  };
 }
 
 interface Order {
@@ -299,25 +305,27 @@ function OrderConfirmationPageContent() {
       default: // PENDING
         return {
           icon: (
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-yellow-100 rounded-full mb-6">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-yellow-100 rounded-full mb-6 animate-pulse">
               <svg className="w-10 h-10 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
           ),
-          title: 'Dziękujemy za zamówienie!',
-          subtitle: 'Twoje zamówienie zostało przyjęte i oczekuje na płatność',
+          title: 'Weryfikujemy płatność...',
+          subtitle: 'Strona odświeży się automatycznie gdy status płatności zostanie potwierdzony',
           showRetryButton: true,
           alertBox: (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
               <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                <svg className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
                 <div>
-                  <h4 className="font-medium text-yellow-800">Oczekiwanie na płatność</h4>
-                  <p className="text-sm text-yellow-700 mt-1">
-                    Jeśli płatność nie została jeszcze zrealizowana, możesz spróbować ponownie klikając przycisk poniżej.
+                  <h4 className="font-medium text-yellow-800 dark:text-yellow-300">Oczekiwanie na potwierdzenie płatności</h4>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-400 mt-1">
+                    Jeśli właśnie wróciłeś z płatności PayU, poczekaj chwilę - sprawdzamy status. 
+                    Jeśli płatność nie doszła do skutku, możesz spróbować ponownie.
                   </p>
                 </div>
               </div>
@@ -416,35 +424,46 @@ function OrderConfirmationPageContent() {
           {/* Items */}
           <h3 className="font-medium text-gray-900 dark:text-white mb-3">Zamówione produkty</h3>
           <div className="space-y-3">
-            {order?.items?.map((item) => (
-              <div key={item.id} className="flex gap-4 p-3 border dark:border-secondary-600 rounded-lg">
-                <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">
-                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
+            {order?.items?.map((item) => {
+              const imageUrl = item.variant?.product?.images?.[0]?.url;
+              return (
+                <div key={item.id} className="flex gap-4 p-3 border dark:border-secondary-600 rounded-lg">
+                  <div className="w-16 h-16 bg-gray-100 dark:bg-secondary-700 rounded-lg flex-shrink-0 overflow-hidden">
+                    {imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt={item.productName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-900 dark:text-white line-clamp-2">{item.productName || 'Produkt'}</p>
+                    {item.variantName && item.variantName !== 'Default' && item.variantName !== 'Domyślny' && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{item.variantName}</p>
+                    )}
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Ilość: {item.quantity}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="font-semibold text-orange-500">
+                      {Number(item.total).toFixed(2)} zł
+                    </p>
                   </div>
                 </div>
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">{item.productName || 'Produkt'}</p>
-                  {item.variantName && item.variantName !== 'Default' && (
-                    <p className="text-sm text-gray-500">{item.variantName}</p>
-                  )}
-                  <p className="text-sm text-gray-500">Ilość: {item.quantity}</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold text-orange-600">
-                    {Number(item.total).toFixed(2)} zł
-                  </p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Total */}
           <div className="mt-6 pt-4 border-t space-y-2">
             <div className="flex justify-between items-center text-gray-600">
-              <span>Suma częściowa</span>
+              <span>Całkowity koszt produktów</span>
               <span>{Number(order?.subtotal || 0).toFixed(2)} zł</span>
             </div>
             {Number(order?.discount || 0) > 0 && (

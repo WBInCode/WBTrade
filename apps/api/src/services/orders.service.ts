@@ -277,7 +277,11 @@ export class OrdersService {
             variant: {
               include: {
                 product: {
-                  include: {
+                  select: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                    tags: true,
                     images: { orderBy: { order: 'asc' }, take: 1 },
                   },
                 },
@@ -311,7 +315,11 @@ export class OrdersService {
               variant: {
                 include: {
                   product: {
-                    include: {
+                    select: {
+                      id: true,
+                      name: true,
+                      slug: true,
+                      tags: true,
                       images: { orderBy: { order: 'asc' }, take: 1 },
                     },
                   },

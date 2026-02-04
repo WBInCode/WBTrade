@@ -59,7 +59,7 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
   // Demo data for display
   const storeName = product.storeName || 'TopStore';
   const badge = product.badge as BadgeType | undefined;
-  const deliveryInfo = product.deliveryInfo || 'Sprawna dostawa';
+  const deliveryInfo = product.deliveryInfo || 'Wysyłka w ciągu 24 - 72h';
   const warehouseLocation = getWarehouseLocation(product);
 
   const { isInWishlist, toggleWishlist } = useWishlist();
@@ -107,48 +107,49 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
 
   const canAddToCart = product.variants && product.variants.length > 0 && product.variants[0].stock > 0;
 
-  // List view
+  // List view - Allegro style
   if (viewMode === 'list') {
     return (
-      <div className="group bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 hover:shadow-lg dark:hover:shadow-secondary-950/50 transition-shadow duration-200 relative">
-        {/* Wishlist button */}
-        {showWishlist && (
-          <button
-            onClick={handleWishlistClick}
-            className={`absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200
-              ${inWishlist 
-                ? 'bg-red-50 dark:bg-red-900/30 text-red-500' 
-                : 'bg-white/80 dark:bg-secondary-700/80 text-gray-400 dark:text-secondary-300 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30'
-              }`}
-            title={inWishlist ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'}
-          >
-            <svg 
-              className="w-5 h-5" 
-              fill={inWishlist ? 'currentColor' : 'none'} 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
+      <div className="group bg-white dark:bg-secondary-800 rounded-2xl shadow-sm hover:shadow-lg dark:shadow-secondary-950/20 dark:hover:shadow-secondary-950/50 transition-shadow duration-200 relative overflow-hidden">
+        <Link href={`/products/${product.id}`} className="flex flex-row">
+          {/* Image container */}
+          <div className="relative w-[120px] h-[140px] sm:w-[140px] sm:h-[160px] flex-shrink-0 p-2">
+            {/* Wishlist button - inside image area */}
+            {showWishlist && (
+              <button
+                onClick={handleWishlistClick}
+                className={`absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 shadow-md
+                  ${inWishlist 
+                    ? 'bg-white text-red-500' 
+                    : 'bg-white text-gray-400 hover:text-red-500'
+                  }`}
+                title={inWishlist ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'}
+              >
+                <svg 
+                  className="w-5 h-5" 
+                  fill={inWishlist ? 'currentColor' : 'none'} 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
+                  />
+                </svg>
+              </button>
+            )}
+            <div className="w-full h-full rounded-xl overflow-hidden bg-gray-50 dark:bg-secondary-700">
+              <img
+                src={mainImage}
+                alt={product.name}
+                onError={() => setImgError(true)}
+                className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
               />
-            </svg>
-          </button>
-        )}
-
-        <Link href={`/products/${product.id}`} className="flex">
-          {/* Image */}
-          <div className="relative w-48 h-48 flex-shrink-0 overflow-hidden rounded-l-lg bg-gray-50 dark:bg-secondary-700 p-4">
-            <img
-              src={mainImage}
-              alt={product.name}
-              onError={() => setImgError(true)}
-              className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-            />
+            </div>
             {badge && (
-              <span className={`absolute top-2 left-2 text-xs font-bold px-2 py-1 rounded ${badgeStyles[badge]}`}>
+              <span className={`absolute bottom-3 left-3 text-[10px] font-bold px-2 py-0.5 rounded-lg ${badgeStyles[badge]}`}>
                 {badge === 'super-price' ? 'Super Cena' : 
                  badge === 'outlet' ? 'Outlet' : 
                  badge === 'bestseller' ? 'Bestseller' : 'Nowość'}
@@ -157,19 +158,19 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
           </div>
 
           {/* Info */}
-          <div className="p-4 flex flex-col flex-grow">
+          <div className="flex-1 py-3 pr-3 flex flex-col min-w-0">
             {/* Product Name */}
-            <h3 className="text-base font-medium text-secondary-800 dark:text-secondary-100 mb-2">
+            <h3 className="text-sm font-medium text-secondary-800 dark:text-secondary-100 line-clamp-2 mb-2 pr-2">
               {product.name}
             </h3>
 
             {/* Price */}
-            <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-xl font-bold text-secondary-900 dark:text-white">
+            <div className="flex flex-wrap items-baseline gap-2 mb-2">
+              <span className="text-lg font-bold text-secondary-900 dark:text-white">
                 {Number(product.price).toFixed(2).replace('.', ',')} zł
               </span>
               {hasDiscount && (
-                <span className="text-base text-gray-400 dark:text-secondary-500 line-through">
+                <span className="text-sm text-gray-400 dark:text-secondary-500 line-through">
                   {Number(product.compareAtPrice).toFixed(2).replace('.', ',')} zł
                 </span>
               )}
@@ -177,10 +178,10 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
 
             {/* Delivery Info */}
             <div className="flex flex-col gap-0.5 mt-auto">
-              <span className="text-sm text-green-600 dark:text-green-400">{deliveryInfo}</span>
+              <span className="text-xs text-green-600 dark:text-green-400 font-medium">{deliveryInfo}</span>
               {warehouseLocation && (
-                <span className="text-xs text-gray-500 dark:text-secondary-400 flex items-center gap-1">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span className="text-[10px] text-gray-500 dark:text-secondary-400 flex items-center gap-1">
+                  <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
@@ -188,47 +189,49 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
                 </span>
               )}
             </div>
-
-            {/* Add to Cart Button */}
-            {canAddToCart && (
-              <button
-                onClick={handleAddToCart}
-                disabled={isAdding || added}
-                className={`mt-3 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 w-fit
-                  ${added 
-                    ? 'bg-green-500 text-white' 
-                    : 'bg-primary-500 hover:bg-primary-600 text-white'
-                  }
-                  ${isAdding ? 'opacity-70 cursor-wait' : ''}
-                `}
-              >
-                {isAdding ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Dodawanie...
-                  </>
-                ) : added ? (
-                  <>
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Dodano!
-                  </>
-                ) : (
-                  <>
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    Dodaj do koszyka
-                  </>
-                )}
-              </button>
-            )}
           </div>
         </Link>
+
+        {/* Add to Cart Button - full width at bottom like Allegro */}
+        {canAddToCart && (
+          <div className="px-2 pb-2">
+            <button
+              onClick={handleAddToCart}
+              disabled={isAdding || added}
+              className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2
+                ${added 
+                  ? 'bg-green-500 text-white' 
+                  : 'bg-primary-500 hover:bg-primary-600 text-white'
+                }
+                ${isAdding ? 'opacity-70 cursor-wait' : ''}
+              `}
+            >
+              {isAdding ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Dodawanie...
+                </>
+              ) : added ? (
+                <>
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Dodano!
+                </>
+              ) : (
+                <>
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  Dodaj do koszyka
+                </>
+              )}
+            </button>
+          </div>
+        )}
       </div>
     );
   }
