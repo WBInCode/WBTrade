@@ -133,7 +133,7 @@ export default function CartPackageView({
   const totalPackages = packages.length;
 
   return (
-    <div className="space-y-3 sm:space-y-4">
+    <div className="space-y-3 sm:space-y-4 overflow-hidden">
       {/* Select All Header */}
       <div className="flex items-center justify-between bg-white dark:bg-secondary-800 rounded-xl p-3 sm:p-4 shadow-sm">
         <label className="flex items-center gap-2 sm:gap-3 cursor-pointer">
@@ -179,7 +179,7 @@ export default function CartPackageView({
                 </div>
               </label>
               <div className="text-right shrink-0">
-                <p className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">{pkg.subtotal.toFixed(2)} zł</p>
+                <p className="font-bold text-sm sm:text-lg text-gray-900 dark:text-white whitespace-nowrap">{pkg.subtotal.toFixed(2)}<span className="text-xs sm:text-base ml-0.5">zł</span></p>
               </div>
             </div>
           </div>
@@ -212,7 +212,7 @@ export default function CartPackageView({
 
                     {/* Product Image */}
                     <Link href={`/products/${item.variant.product.slug || item.variant.product.id}`} className="shrink-0">
-                      <div className={`${isCompact ? 'w-16 h-16 sm:w-20 sm:h-20' : 'w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28'} rounded-lg sm:rounded-xl overflow-hidden bg-gray-100 dark:bg-secondary-700 border dark:border-secondary-600`}>
+                      <div className={`${isCompact ? 'w-14 h-14 sm:w-20 sm:h-20' : 'w-16 h-16 sm:w-24 sm:h-24 lg:w-28 lg:h-28'} rounded-lg sm:rounded-xl overflow-hidden bg-gray-100 dark:bg-secondary-700 border dark:border-secondary-600`}>
                         {item.variant.product.images[0] && !failedImages.has(item.id) ? (
                           <img
                             src={item.variant.product.images[0].url}
@@ -231,17 +231,17 @@ export default function CartPackageView({
                     </Link>
 
                     {/* Product Info & Controls - stacked on mobile */}
-                    <div className="flex-1 min-w-0 flex flex-col">
+                    <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
                       {/* Name & Price Row */}
                       <div className="flex justify-between items-start gap-2">
-                        <Link href={`/products/${item.variant.product.slug || item.variant.product.id}`} className="flex-1 min-w-0">
-                          <h3 className={`font-medium text-gray-900 dark:text-white hover:text-orange-500 transition-colors line-clamp-2 ${isCompact ? 'text-xs sm:text-sm' : 'text-sm sm:text-base'}`}>
+                        <Link href={`/products/${item.variant.product.slug || item.variant.product.id}`} className="flex-1 min-w-0 overflow-hidden">
+                          <h3 className={`font-medium text-gray-900 dark:text-white hover:text-orange-500 transition-colors line-clamp-2 break-words ${isCompact ? 'text-xs sm:text-sm' : 'text-sm sm:text-base'}`}>
                             {item.variant.product.name}
                           </h3>
                         </Link>
                         {/* Price - visible on mobile */}
                         <div className="text-right shrink-0 sm:hidden">
-                          <p className="font-bold text-gray-900 dark:text-white text-base">
+                          <p className="font-bold text-gray-900 dark:text-white text-sm whitespace-nowrap">
                             {(item.variant.price * item.quantity).toFixed(2)} zł
                           </p>
                         </div>

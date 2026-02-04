@@ -188,8 +188,8 @@ export default function HeroBanner() {
         {isAutoPlaying && (
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/10">
             <div 
+              key={currentSlide}
               className="h-full bg-primary-500 animate-progress"
-              style={{ animationDuration: '8s' }}
             />
           </div>
         )}
@@ -219,7 +219,7 @@ export default function HeroBanner() {
           }
         }
         .animate-progress {
-          animation: progress 5s linear;
+          animation: progress 8s linear;
         }
       `}</style>
     </section>
