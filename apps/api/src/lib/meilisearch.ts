@@ -144,9 +144,9 @@ export async function initializeMeilisearch(): Promise<void> {
     });
 
     // Configure searchable attributes
+    // Note: 'description' removed to avoid false positives in search results
     await meiliClient.index(PRODUCTS_INDEX).updateSearchableAttributes([
       'name',
-      'description',
       'sku',
       'categoryName',
       'brand',
