@@ -521,52 +521,76 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
     }
 
     // Enrich packageShipping with product items for order history display
-    // Group cart items by wholesaler and add them to corresponding packages
+    // If frontend already sent items (new flow), use them directly
+    // Otherwise fallback to grouping by wholesaler (legacy flow)
     let enrichedPackageShipping = packageShipping;
     if (packageShipping && packageShipping.length > 0) {
-      // Build a map of wholesaler -> cart items
-      const itemsByWholesaler: Record<string, typeof cartItemsToCheckout> = {};
-      for (const cartItem of cartItemsToCheckout) {
-        const wholesaler = cartItem.variant?.product?.wholesaler || 'default';
-        if (!itemsByWholesaler[wholesaler]) {
-          itemsByWholesaler[wholesaler] = [];
-        }
-        itemsByWholesaler[wholesaler].push(cartItem);
-      }
-
-      // Match packages with items by wholesaler or packageId
-      enrichedPackageShipping = packageShipping.map((pkg: any, index: number) => {
-        // Try to match by wholesaler first
-        let matchedItems = pkg.wholesaler ? itemsByWholesaler[pkg.wholesaler] : null;
-        
-        // If no match by wholesaler, try by index (fallback)
-        if (!matchedItems) {
-          const wholesalerKeys = Object.keys(itemsByWholesaler);
-          if (index < wholesalerKeys.length) {
-            matchedItems = itemsByWholesaler[wholesalerKeys[index]];
-          }
-        }
-
-        const items = (matchedItems || []).map((item: any) => ({
-          productId: item.variant?.product?.id || '',
-          productName: item.variant?.product?.name || 'Unknown',
-          variantId: item.variant?.id || '',
-          variantName: item.variant?.name || 'Default',
-          quantity: item.quantity,
-          image: item.variant?.product?.images?.[0]?.url || null,
-        }));
-
-        return {
+      // Check if any package already has items from frontend
+      const hasItemsFromFrontend = packageShipping.some((pkg: any) => pkg.items && pkg.items.length > 0);
+      
+      if (hasItemsFromFrontend) {
+        // Frontend already sent items - use them directly, just ensure image URLs are present
+        enrichedPackageShipping = packageShipping.map((pkg: any) => ({
           ...pkg,
-          items,
-        };
-      });
+          items: (pkg.items || []).map((item: any) => ({
+            productId: item.productId || '',
+            productName: item.productName || 'Unknown',
+            variantId: item.variantId || '',
+            quantity: item.quantity || 1,
+            image: item.image || null,
+          })),
+        }));
+        
+        console.log('📦 Using items from frontend:', enrichedPackageShipping.map((p: any) => ({
+          packageId: p.packageId,
+          wholesaler: p.wholesaler,
+          itemCount: p.items?.length || 0,
+        })));
+      } else {
+        // Legacy fallback: Build a map of wholesaler -> cart items
+        const itemsByWholesaler: Record<string, typeof cartItemsToCheckout> = {};
+        for (const cartItem of cartItemsToCheckout) {
+          const wholesaler = cartItem.variant?.product?.wholesaler || 'default';
+          if (!itemsByWholesaler[wholesaler]) {
+            itemsByWholesaler[wholesaler] = [];
+          }
+          itemsByWholesaler[wholesaler].push(cartItem);
+        }
 
-      console.log('📦 Enriched packageShipping with items:', enrichedPackageShipping.map((p: any) => ({
-        packageId: p.packageId,
-        wholesaler: p.wholesaler,
-        itemCount: p.items?.length || 0,
-      })));
+        // Match packages with items by wholesaler or packageId
+        enrichedPackageShipping = packageShipping.map((pkg: any, index: number) => {
+          // Try to match by wholesaler first
+          let matchedItems = pkg.wholesaler ? itemsByWholesaler[pkg.wholesaler] : null;
+          
+          // If no match by wholesaler, try by index (fallback)
+          if (!matchedItems) {
+            const wholesalerKeys = Object.keys(itemsByWholesaler);
+            if (index < wholesalerKeys.length) {
+              matchedItems = itemsByWholesaler[wholesalerKeys[index]];
+            }
+          }
+
+          const items = (matchedItems || []).map((item: any) => ({
+            productId: item.variant?.product?.id || '',
+            productName: item.variant?.product?.name || 'Unknown',
+            variantId: item.variant?.id || '',
+            variantName: item.variant?.name || 'Default',
+            quantity: item.quantity,
+            image: item.variant?.product?.images?.[0]?.url || null,
+          }));
+
+          return {
+            ...pkg,
+            items,
+          };
+        });
+
+        console.log('📦 Enriched packageShipping with items (legacy):', enrichedPackageShipping.map((p: any) => ({
+          packageId: p.packageId,
+          wholesaler: p.wholesaler,
+          itemCount: p.items?.length || 0,
+        })));
+      }
     }
 
     // Create order - include guest data if guest checkout
