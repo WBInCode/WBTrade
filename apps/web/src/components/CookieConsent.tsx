@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 const COOKIE_CONSENT_KEY = 'wb_cookie_consent';
+
+// Pages where cookie consent banner should not appear
+const EXCLUDED_PATHS = ['/privacy-plain', '/cookies-plain'];
 
 export default function CookieConsent() {
   const [showBanner, setShowBanner] = useState(false);
@@ -13,8 +16,14 @@ export default function CookieConsent() {
     analytics: true,
     marketing: true,
   });
+  const pathname = usePathname();
 
   useEffect(() => {
+    // Don't show banner on excluded pages
+    if (EXCLUDED_PATHS.includes(pathname)) {
+      return;
+    }
+
     // Check if consent was already given
     const consent = localStorage.getItem(COOKIE_CONSENT_KEY);
     if (!consent) {
@@ -24,7 +33,7 @@ export default function CookieConsent() {
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [pathname]);
 
   const acceptAll = () => {
     const consent = {
@@ -87,13 +96,13 @@ export default function CookieConsent() {
                   </p>
                   <p className="text-gray-500 dark:text-gray-400 text-xs mb-5 sm:mb-6">
                     Więcej informacji znajdziesz w naszej{' '}
-                    <Link href="/privacy" className="text-orange-500 hover:underline">
+                    <a href="/privacy-plain" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">
                       Polityce prywatności
-                    </Link>{' '}
+                    </a>{' '}
                     i{' '}
-                    <Link href="/cookies" className="text-orange-500 hover:underline">
+                    <a href="/cookies-plain" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">
                       Polityce cookies
-                    </Link>.
+                    </a>.
                   </p>
                   
                   <div className="flex flex-col gap-3 w-full">
