@@ -43,6 +43,8 @@ const WHOLESALER_CONFIG: Record<string, { name: string; color: string; icon: str
   'Gastro': { name: 'Magazyn Chotów', color: 'bg-yellow-500', icon: '📍' },
   'Horeca': { name: 'Magazyn Chotów', color: 'bg-orange-500', icon: '📍' },
   'Forcetop': { name: 'Magazyn Chotów', color: 'bg-teal-500', icon: '📍' },
+  'Rzeszów': { name: 'Magazyn Rzeszów', color: 'bg-pink-500', icon: '📍' },
+  'Outlet': { name: 'Magazyn Rzeszów', color: 'bg-pink-500', icon: '📍' },
   'default': { name: 'Magazyn Chynów', color: 'bg-gray-500', icon: '📍' },
 };
 

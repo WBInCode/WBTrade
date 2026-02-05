@@ -183,10 +183,12 @@ const WAREHOUSE_NAMES: Record<string, string> = {
   'Gastro': 'Magazyn Chotów',
   'Horeca': 'Magazyn Chotów',
   'Forcetop': 'Magazyn Chotów',
+  'Rzeszów': 'Magazyn Rzeszów',
+  'Outlet': 'Magazyn Rzeszów',
 };
 
 // Pattern to extract wholesaler from product tags
-const WHOLESALER_PATTERN = /^(hurtownia[:\-_](.+)|Ikonka|BTP|HP|Gastro|Horeca|Hurtownia\s+Przemysłowa|Leker|Forcetop)$/i;
+const WHOLESALER_PATTERN = /^(hurtownia[:\-_](.+)|Ikonka|BTP|HP|Gastro|Horeca|Hurtownia\s+Przemysłowa|Leker|Forcetop|Rzeszów|Outlet)$/i;
 
 // Extract wholesaler from product tags (same logic as cart.service.ts)
 function getWholesalerFromTags(tags?: string[]): string | null {
