@@ -26,15 +26,22 @@ async function checkComplaintEligibility(orderNumber: string): Promise<{
   eligible: boolean;
   reason?: string;
 }> {
+  // Sanitize input - only allow alphanumeric characters for order number/ID
+  const sanitizedOrderNumber = orderNumber.replace(/[^a-zA-Z0-9-]/g, '');
+  
+  if (!sanitizedOrderNumber || sanitizedOrderNumber.length < 3) {
+    return { eligible: false, reason: 'Nieprawidłowy format numeru zamówienia' };
+  }
+
   // Try to find by orderNumber first, then by ID
   let order = await prisma.order.findUnique({
-    where: { orderNumber },
+    where: { orderNumber: sanitizedOrderNumber },
     select: { id: true, status: true, orderNumber: true },
   });
 
   if (!order) {
     order = await prisma.order.findUnique({
-      where: { id: orderNumber },
+      where: { id: sanitizedOrderNumber },
       select: { id: true, status: true, orderNumber: true },
     });
   }
