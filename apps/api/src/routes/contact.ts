@@ -72,7 +72,10 @@ router.get('/complaint-eligibility/:orderNumber', async (req: Request, res: Resp
     }
 
     // Remove # prefix if present (users often copy order number with #)
-    orderNumber = orderNumber.trim().replace(/^#/, '');
+    orderNumber = orderNumber.trim();
+    if (orderNumber.startsWith('#')) {
+      orderNumber = orderNumber.slice(1);
+    }
 
     const eligibility = await checkComplaintEligibility(orderNumber);
     return res.json(eligibility);
@@ -103,7 +106,10 @@ router.post('/complaint', async (req: Request, res: Response) => {
     }
 
     // Remove # prefix if present (users often copy order number with #)
-    const orderNumber = rawOrderNumber.trim().replace(/^#/, '');
+    let orderNumber = rawOrderNumber.trim();
+    if (orderNumber.startsWith('#')) {
+      orderNumber = orderNumber.slice(1);
+    }
 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
