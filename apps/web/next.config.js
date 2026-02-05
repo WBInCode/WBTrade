@@ -53,8 +53,22 @@ module.exports = {
     // Experimental features for better performance
     experimental: {
         // Enable optimized package imports
-        optimizePackageImports: ['lucide-react'],
+        optimizePackageImports: ['lucide-react', '@headlessui/react'],
     },
+    
+    // Compiler optimizations
+    compiler: {
+        // Remove console.logs in production
+        removeConsole: process.env.NODE_ENV === 'production' ? {
+            exclude: ['error', 'warn'],
+        } : false,
+    },
+    
+    // Enable gzip compression
+    compress: true,
+    
+    // Power prefetching for production
+    productionBrowserSourceMaps: false,
     
     // Headers for caching
     async headers() {
