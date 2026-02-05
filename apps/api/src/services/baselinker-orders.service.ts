@@ -30,6 +30,7 @@ const WAREHOUSE_MAPPING: Record<string, string> = {
   'hp': '22954',       // HP (Hurtownia Przemysłowa)
   'leker': '22952',    // Leker
   'ikonka': '22951',   // Ikonka (detected by tag)
+  'outlet': '23662',   // Magazyn zwrotów (Outlet/Rzeszów)
   'default': '11235',  // Główny (default fallback)
 };
 
@@ -67,6 +68,7 @@ function detectWarehouseId(baselinkerProductId: string | null, tags: string[] = 
   if (lowerTags.includes('leker')) return WAREHOUSE_MAPPING['leker'];
   if (lowerTags.includes('ikonka')) return WAREHOUSE_MAPPING['ikonka'];
   if (lowerTags.includes('forcetop')) return WAREHOUSE_MAPPING['ikonka']; // Forcetop uses ikonka
+  if (lowerTags.includes('rzeszów') || lowerTags.includes('outlet')) return WAREHOUSE_MAPPING['outlet'];
   
   // 3. If baselinkerProductId is just a number (no prefix), use default
   return WAREHOUSE_MAPPING['default'];
