@@ -1,6 +1,6 @@
 {
   "description": "Mapowanie kategorii na podstawie tagów z Baselinkera. Każdy produkt ma dwa tagi: główny i podkategorii.",
-  "version": "2.0",
+  "version": "2.1",
   
   "mainCategoryTags": [
     "Elektronika",
@@ -11,7 +11,8 @@
     "Dziecko",
     "Biurowe i papiernicze",
     "Gastronomiczne",
-    "gastronomia"
+    "gastronomia",
+    "Outlet"
   ],
   
   "categoryTree": {
@@ -87,6 +88,12 @@
     "gastronomia": {
       "slug": "gastronomiczne",
       "order": 8,
+      "subcategories": {}
+    },
+    "Outlet": {
+      "slug": "outlet",
+      "order": 100,
+      "description": "Produkty z magazynu zwrotów - przecenione i dostępne w niższych cenach",
       "subcategories": {}
     }
   },
@@ -164,7 +171,9 @@
       "artykuły szkolne": "Artykuły szkolne",
       "artykuly szkolne": "Artykuły szkolne",
       
-      "naczynia i zastawa": "Naczynia i zastawa"
+      "naczynia i zastawa": "Naczynia i zastawa",
+      
+      "outlet": "Outlet"
     }
   }
 }

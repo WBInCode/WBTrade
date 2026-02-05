@@ -431,7 +431,7 @@ export class CartService {
    * Get wholesaler from product tags
    */
   private getWholesaler(tags: string[]): string | null {
-    const WHOLESALER_PATTERN = /^(hurtownia[:\-_](.+)|Ikonka|BTP|HP|Gastro|Horeca|Hurtownia\s+Przemysłowa|Leker|Forcetop)$/i;
+    const WHOLESALER_PATTERN = /^(hurtownia[:\-_](.+)|Ikonka|BTP|HP|Gastro|Horeca|Hurtownia\s+Przemysłowa|Leker|Forcetop|Rzeszów|Outlet)$/i;
     for (const tag of tags) {
       const match = tag.match(WHOLESALER_PATTERN);
       if (match) {
