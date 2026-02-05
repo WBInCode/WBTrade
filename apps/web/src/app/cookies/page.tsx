@@ -19,7 +19,7 @@ export default function CookiesPage() {
               Polityka cookies
             </h1>
             <p className="text-secondary-500 dark:text-secondary-400">
-              Ostatnia aktualizacja: 18 grudnia 2025
+              Ostatnia aktualizacja: 18 grudnia 2025.
             </p>
           </div>
         </div>
