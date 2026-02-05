@@ -7,6 +7,7 @@ const WAREHOUSES = [
   { id: 'leker', location: 'Chynów' },
   { id: 'hp', location: 'Zielona Góra' },
   { id: 'btp', location: 'Chotów' },
+  { id: 'outlet', location: 'Outlet (zwroty)' },
 ] as const;
 
 interface SortOption {
