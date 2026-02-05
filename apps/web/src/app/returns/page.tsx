@@ -40,6 +40,8 @@ export default function ReturnsPage() {
   const [complaintLoading, setComplaintLoading] = useState(false);
   const [complaintSuccess, setComplaintSuccess] = useState(false);
   const [complaintError, setComplaintError] = useState<string | null>(null);
+  const [complaintStep, setComplaintStep] = useState<'check' | 'form' | 'success'>('check');
+  const [complaintEligible, setComplaintEligible] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleComplaintImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,6 +56,34 @@ export default function ReturnsPage() {
 
   const removeComplaintImage = (index: number) => {
     setComplaintImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleCheckComplaintEligibility = async () => {
+    if (!complaintOrderNumber.trim()) {
+      setComplaintError('Wprowadź numer zamówienia');
+      return;
+    }
+
+    setComplaintLoading(true);
+    setComplaintError(null);
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/contact/complaint-eligibility/${encodeURIComponent(complaintOrderNumber.trim())}`);
+      const result = await response.json();
+
+      if (result.eligible) {
+        setComplaintEligible(true);
+        setComplaintStep('form');
+      } else {
+        setComplaintError(result.reason || 'Nie można złożyć reklamacji dla tego zamówienia');
+      }
+    } catch (err) {
+      console.error('Complaint eligibility check error:', err);
+      setComplaintError('Wystąpił błąd. Spróbuj ponownie później.');
+    } finally {
+      setComplaintLoading(false);
+    }
   };
 
   const handleComplaintSubmit = async (e: React.FormEvent) => {
@@ -687,29 +717,56 @@ export default function ReturnsPage() {
               </p>
             </div>
 
-            <div className="bg-secondary-50 dark:bg-secondary-900 rounded-2xl p-6 lg:p-8 shadow-lg">
-              {complaintSuccess ? (
-                <div className="text-center py-8">
-                  <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <svg className="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
+            <div className="bg-white dark:bg-secondary-800 rounded-2xl p-6 lg:p-8 shadow-lg">
+              {/* Step 1: Check order eligibility */}
+              {complaintStep === 'check' && (
+                <>
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+                      Numer zamówienia
+                    </label>
+                    <input
+                      type="text"
+                      value={complaintOrderNumber}
+                      onChange={(e) => setComplaintOrderNumber(e.target.value)}
+                      placeholder="np. WB-MKZIFRKY-1SU5"
+                      className="w-full px-4 py-3 border border-secondary-300 dark:border-secondary-600 rounded-xl bg-white dark:bg-secondary-700 text-secondary-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    />
                   </div>
-                  <h3 className="text-2xl font-bold text-secondary-900 dark:text-white mb-2">
-                    Zgłoszenie wysłane!
-                  </h3>
-                  <p className="text-secondary-600 dark:text-secondary-400 mb-6">
-                    Dziękujemy za zgłoszenie. Nasz zespół skontaktuje się z Tobą wkrótce.
-                  </p>
+
+                  {complaintError && (
+                    <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+                      <p className="text-sm text-red-600 dark:text-red-400">{complaintError}</p>
+                    </div>
+                  )}
+
                   <button
-                    onClick={() => setComplaintSuccess(false)}
-                    className="px-8 py-3 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-colors"
+                    onClick={handleCheckComplaintEligibility}
+                    disabled={complaintLoading || !complaintOrderNumber.trim()}
+                    className="w-full px-6 py-4 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Wyślij kolejne zgłoszenie
+                    {complaintLoading ? 'Sprawdzanie...' : 'Sprawdź możliwość reklamacji'}
                   </button>
-                </div>
-              ) : (
+                </>
+              )}
+
+              {/* Step 2: Fill complaint form */}
+              {complaintStep === 'form' && (
                 <form onSubmit={handleComplaintSubmit} className="space-y-6">
+                  <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div>
+                        <p className="font-medium text-green-800 dark:text-green-400">Zamówienie zweryfikowane</p>
+                        <p className="text-sm text-green-600 dark:text-green-500">
+                          Numer: {complaintOrderNumber}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   {complaintError && (
                     <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
                       <p className="text-red-700 dark:text-red-400 text-sm">{complaintError}</p>
@@ -726,21 +783,7 @@ export default function ReturnsPage() {
                       onChange={(e) => setComplaintEmail(e.target.value)}
                       placeholder="jan.kowalski@email.pl"
                       required
-                      className="w-full px-4 py-3 border border-secondary-300 dark:border-secondary-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-800 dark:text-white transition-colors"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
-                      Numer zamówienia *
-                    </label>
-                    <input
-                      type="text"
-                      value={complaintOrderNumber}
-                      onChange={(e) => setComplaintOrderNumber(e.target.value)}
-                      placeholder="np. WB-123456"
-                      required
-                      className="w-full px-4 py-3 border border-secondary-300 dark:border-secondary-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-800 dark:text-white transition-colors"
+                      className="w-full px-4 py-3 border border-secondary-300 dark:border-secondary-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-secondary-700 dark:text-white transition-colors"
                     />
                   </div>
 
@@ -754,7 +797,7 @@ export default function ReturnsPage() {
                       onChange={(e) => setComplaintSubject(e.target.value)}
                       placeholder="np. Uszkodzony produkt"
                       required
-                      className="w-full px-4 py-3 border border-secondary-300 dark:border-secondary-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-800 dark:text-white transition-colors"
+                      className="w-full px-4 py-3 border border-secondary-300 dark:border-secondary-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-secondary-700 dark:text-white transition-colors"
                     />
                   </div>
 
@@ -768,7 +811,7 @@ export default function ReturnsPage() {
                       placeholder="Opisz szczegółowo problem z produktem..."
                       required
                       rows={5}
-                      className="w-full px-4 py-3 border border-secondary-300 dark:border-secondary-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-800 dark:text-white transition-colors resize-none"
+                      className="w-full px-4 py-3 border border-secondary-300 dark:border-secondary-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-secondary-700 dark:text-white transition-colors resize-none"
                     />
                   </div>
 
@@ -779,7 +822,7 @@ export default function ReturnsPage() {
                     <div className="space-y-4">
                       <div
                         onClick={() => fileInputRef.current?.click()}
-                        className="border-2 border-dashed border-secondary-300 dark:border-secondary-600 rounded-xl p-6 text-center cursor-pointer hover:border-primary-500 dark:hover:border-primary-500 transition-colors"
+                        className="border-2 border-dashed border-secondary-300 dark:border-secondary-600 rounded-xl p-6 text-center cursor-pointer hover:border-red-500 dark:hover:border-red-500 transition-colors"
                       >
                         <svg className="w-10 h-10 text-secondary-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -823,29 +866,74 @@ export default function ReturnsPage() {
                     </div>
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={complaintLoading}
-                    className="w-full px-6 py-4 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {complaintLoading ? (
-                      <>
-                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Wysyłanie...
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                        </svg>
-                        Wyślij zgłoszenie reklamacyjne
-                      </>
-                    )}
-                  </button>
+                  <div className="flex gap-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setComplaintStep('check');
+                        setComplaintEligible(false);
+                        setComplaintError(null);
+                      }}
+                      className="flex-1 px-6 py-4 border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-300 font-semibold rounded-xl hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors"
+                    >
+                      Wróć
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={complaintLoading}
+                      className="flex-1 px-6 py-4 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      {complaintLoading ? (
+                        <>
+                          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Wysyłanie...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                          </svg>
+                          Wyślij zgłoszenie
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </form>
+              )}
+
+              {/* Step 3: Success */}
+              {complaintSuccess && (
+                <div className="text-center py-8">
+                  <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h3 className="text-2xl font-bold text-secondary-900 dark:text-white mb-2">
+                    Zgłoszenie wysłane!
+                  </h3>
+                  <p className="text-secondary-600 dark:text-secondary-400 mb-6">
+                    Dziękujemy za zgłoszenie. Nasz zespół skontaktuje się z Tobą wkrótce.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setComplaintSuccess(false);
+                      setComplaintStep('check');
+                      setComplaintEligible(false);
+                      setComplaintOrderNumber('');
+                      setComplaintSubject('');
+                      setComplaintDescription('');
+                      setComplaintEmail('');
+                      setComplaintImages([]);
+                    }}
+                    className="px-8 py-3 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-colors"
+                  >
+                    Wyślij kolejne zgłoszenie
+                  </button>
+                </div>
               )}
             </div>
           </div>

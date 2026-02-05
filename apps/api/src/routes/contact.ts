@@ -1,7 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { emailService } from '../services/email.service';
+import { PrismaClient } from '@prisma/client';
 
 const router = Router();
+const prisma = new PrismaClient();
 
 // ============================================
 // CONTACT ROUTES
@@ -12,24 +14,114 @@ interface ComplaintRequest {
   subject: string;
   description: string;
   email: string;
-  orderNumber?: string;
+  orderNumber: string; // Required now
   images?: string[]; // Base64 encoded images
 }
 
 /**
+ * Helper function to check if order is eligible for complaint
+ * Order must exist and be in DELIVERED or SHIPPED status
+ */
+async function checkComplaintEligibility(orderNumber: string): Promise<{
+  eligible: boolean;
+  reason?: string;
+}> {
+  // Sanitize input - only allow alphanumeric characters and hyphens
+  const allowedChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-';
+  let sanitizedOrderNumber = '';
+  for (const char of orderNumber) {
+    if (allowedChars.includes(char)) {
+      sanitizedOrderNumber += char;
+    }
+  }
+  
+  if (!sanitizedOrderNumber || sanitizedOrderNumber.length < 3) {
+    return { eligible: false, reason: 'Nieprawidłowy format numeru zamówienia' };
+  }
+
+  // Try to find by orderNumber first, then by ID
+  let order = await prisma.order.findUnique({
+    where: { orderNumber: sanitizedOrderNumber },
+    select: { id: true, status: true, orderNumber: true },
+  });
+
+  if (!order) {
+    order = await prisma.order.findUnique({
+      where: { id: sanitizedOrderNumber },
+      select: { id: true, status: true, orderNumber: true },
+    });
+  }
+
+  if (!order) {
+    return { eligible: false, reason: 'Zamówienie nie zostało znalezione' };
+  }
+
+  // Only DELIVERED or SHIPPED orders can have complaints filed
+  if (!['DELIVERED', 'SHIPPED'].includes(order.status)) {
+    return { eligible: false, reason: 'Reklamację można zgłosić tylko dla zamówień dostarczonych lub w trakcie dostawy' };
+  }
+
+  // Already refunded
+  if (order.status === 'REFUNDED') {
+    return { eligible: false, reason: 'Zamówienie zostało już zwrócone' };
+  }
+
+  return { eligible: true };
+}
+
+/**
+ * GET /api/contact/complaint-eligibility/:orderNumber
+ * Sprawdza czy można złożyć reklamację dla danego zamówienia
+ */
+router.get('/complaint-eligibility/:orderNumber', async (req: Request, res: Response) => {
+  try {
+    let { orderNumber } = req.params;
+
+    if (!orderNumber?.trim()) {
+      return res.status(400).json({
+        eligible: false,
+        reason: 'Podaj numer zamówienia',
+      });
+    }
+
+    // Remove # prefix if present (users often copy order number with #)
+    orderNumber = orderNumber.trim();
+    if (orderNumber.startsWith('#')) {
+      orderNumber = orderNumber.slice(1);
+    }
+
+    const eligibility = await checkComplaintEligibility(orderNumber);
+    return res.json(eligibility);
+  } catch (error) {
+    console.error('[Contact] Complaint eligibility check error:', error);
+    return res.status(500).json({
+      eligible: false,
+      reason: 'Wystąpił błąd podczas sprawdzania zamówienia',
+    });
+  }
+});
+
+/**
  * POST /api/contact/complaint
  * Wysyła zgłoszenie reklamacyjne na email support@wb-partners.pl
+ * Wymaga numeru zamówienia i sprawdza czy zamówienie zostało dostarczone
  */
 router.post('/complaint', async (req: Request, res: Response) => {
   try {
-    const { subject, description, email, orderNumber, images = [] }: ComplaintRequest = req.body;
+    const { subject, description, email, orderNumber: rawOrderNumber, images = [] }: ComplaintRequest = req.body;
 
-    // Validation
-    if (!subject?.trim() || !description?.trim() || !email?.trim()) {
+    // Validation - all fields are now required
+    if (!subject?.trim() || !description?.trim() || !email?.trim() || !rawOrderNumber?.trim()) {
       return res.status(400).json({
         success: false,
-        message: 'Wypełnij wszystkie wymagane pola (temat, opis, email)',
+        message: 'Wypełnij wszystkie wymagane pola (temat, opis, email, numer zamówienia)',
       });
+    }
+
+    // Remove # prefix if present (users often copy order number with #)
+    let orderNumber = rawOrderNumber.trim();
+    if (orderNumber.startsWith('#')) {
+      orderNumber = orderNumber.slice(1);
     }
 
     // Email validation
@@ -41,17 +133,26 @@ router.post('/complaint', async (req: Request, res: Response) => {
       });
     }
 
+    // Check if order is eligible for complaint
+    const eligibility = await checkComplaintEligibility(orderNumber.trim());
+    if (!eligibility.eligible) {
+      return res.status(400).json({
+        success: false,
+        message: eligibility.reason || 'Nie można złożyć reklamacji dla tego zamówienia',
+      });
+    }
+
     // Send complaint email
     const result = await emailService.sendComplaintEmail({
       customerEmail: email,
       subject: subject.trim(),
       description: description.trim(),
-      orderNumber: orderNumber?.trim(),
+      orderNumber: orderNumber.trim(),
       images,
     });
 
     if (result.success) {
-      console.log(`✅ [Contact] Complaint sent from ${email}, subject: ${subject}`);
+      console.log(`✅ [Contact] Complaint sent from ${email}, order: ${orderNumber}, subject: ${subject}`);
       return res.json({
         success: true,
         message: 'Zgłoszenie zostało wysłane. Skontaktujemy się z Tobą wkrótce.',
