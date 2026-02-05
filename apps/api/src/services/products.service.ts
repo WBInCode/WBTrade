@@ -414,7 +414,7 @@ export class ProductsService {
       const warehouseConditions: Prisma.ProductWhereInput[] = [];
       
       for (const w of warehouses) {
-        if (['leker', 'hp', 'btp'].includes(w)) {
+        if (['leker', 'hp', 'btp', 'outlet'].includes(w)) {
           warehouseConditions.push({
             baselinkerProductId: { startsWith: `${w}-` }
           });
@@ -1319,7 +1319,7 @@ export class ProductsService {
       ...(categoryIds ? { categoryId: { in: categoryIds } } : {}),
     };
 
-    const [lekerCount, hpCount, btpCount] = await Promise.all([
+    const [lekerCount, hpCount, btpCount, outletCount] = await Promise.all([
       prisma.product.count({
         where: {
           ...whereBase,
@@ -1338,12 +1338,19 @@ export class ProductsService {
           baselinkerProductId: { startsWith: 'btp-' },
         },
       }),
+      prisma.product.count({
+        where: {
+          ...whereBase,
+          baselinkerProductId: { startsWith: 'outlet-' },
+        },
+      }),
     ]);
 
     return {
       leker: lekerCount,
       hp: hpCount,
       btp: btpCount,
+      outlet: outletCount,
     };
   }
 
@@ -1993,6 +2000,7 @@ export class ProductsService {
       { id: 'leker', prefix: 'leker-', skuPrefix: 'LEKER-', displayName: 'Magazyn Chynów' },
       { id: 'hp', prefix: 'hp-', skuPrefix: 'HP-', displayName: 'Magazyn Zielona Góra' },
       { id: 'btp', prefix: 'btp-', skuPrefix: 'BTP-', displayName: 'Magazyn Chotów' },
+      { id: 'outlet', prefix: 'outlet-', skuPrefix: 'OUTLET-', displayName: 'Magazyn Rzeszów' },
     ];
 
     const blId = product.baselinkerProductId?.toLowerCase() || '';
