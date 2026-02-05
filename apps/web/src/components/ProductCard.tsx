@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import Link from 'next/link';
 import { Product } from '../lib/api';
 import { useWishlist } from '../contexts/WishlistContext';
@@ -53,7 +53,7 @@ export interface ProductCardProps {
   showAddToCart?: boolean;
 }
 
-export default function ProductCard({ product, showDelivery = false, showWishlist = true, showAddToCart = true }: ProductCardProps) {
+export default memo(function ProductCard({ product, showDelivery = false, showWishlist = true, showAddToCart = true }: ProductCardProps) {
   const [imgError, setImgError] = useState(false);
   const mainImage = imgError || !product.images?.[0]?.url ? PLACEHOLDER_IMAGE : product.images[0].url;
   const hasDiscount = product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price);
@@ -65,6 +65,7 @@ export default function ProductCard({ product, showDelivery = false, showWishlis
   const { addToCart } = useCart();
   const inWishlist = isInWishlist(product.id);
   const warehouseLocation = getWarehouseLocation(product);
+  const isOutOfStock = !product.variants?.[0] || product.variants[0].stock <= 0;
 
   const handleWishlistClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -134,6 +135,8 @@ export default function ProductCard({ product, showDelivery = false, showWishlis
           <img
             src={mainImage}
             alt={product.name}
+            loading="lazy"
+            decoding="async"
             onError={() => setImgError(true)}
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
           />
@@ -171,9 +174,15 @@ export default function ProductCard({ product, showDelivery = false, showWishlis
 
           {/* Delivery info */}
           <div className="flex flex-col gap-0.5 mt-1 sm:mt-1.5">
-            <p className="text-[10px] sm:text-xs text-primary-600 dark:text-primary-400">
-              Wysyłka w ciągu 24 - 72h
-            </p>
+            {isOutOfStock ? (
+              <p className="text-[10px] sm:text-xs text-red-600 dark:text-red-400 font-medium">
+                Produkt chwilowo niedostępny
+              </p>
+            ) : (
+              <p className="text-[10px] sm:text-xs text-primary-600 dark:text-primary-400">
+                Wysyłka w ciągu 24 - 72h
+              </p>
+            )}
             {warehouseLocation && (
               <span className="text-[9px] sm:text-[10px] text-gray-500 dark:text-secondary-400 flex items-center gap-0.5">
                 <LocationIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
@@ -185,17 +194,29 @@ export default function ProductCard({ product, showDelivery = false, showWishlis
       </Link>
 
       {/* Add to cart button */}
-      {showAddToCart && product.variants?.[0] && (
+      {showAddToCart && (
         <div className="px-2 pb-2 sm:px-3 sm:pb-3">
-          <button
-            onClick={handleAddToCart}
-            className="w-full flex items-center justify-center gap-1.5 sm:gap-2 bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 sm:py-2.5 rounded-lg sm:rounded-xl transition-colors"
-          >
-            <CartIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="text-xs sm:text-sm">Do koszyka</span>
-          </button>
+          {isOutOfStock ? (
+            <button
+              disabled
+              className="w-full flex items-center justify-center gap-1.5 sm:gap-2 bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 font-medium py-2 sm:py-2.5 rounded-lg sm:rounded-xl cursor-not-allowed"
+            >
+              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+              </svg>
+              <span className="text-xs sm:text-sm">Brak w magazynie</span>
+            </button>
+          ) : (
+            <button
+              onClick={handleAddToCart}
+              className="w-full flex items-center justify-center gap-1.5 sm:gap-2 bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 sm:py-2.5 rounded-lg sm:rounded-xl transition-colors"
+            >
+              <CartIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm">Do koszyka</span>
+            </button>
+          )}
         </div>
       )}
     </div>
   );
-}
+});

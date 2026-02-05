@@ -245,6 +245,36 @@ export const api = {
 };
 
 // ============================================
+// SIMPLE IN-MEMORY CACHE FOR FREQUENT REQUESTS
+// ============================================
+
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+const apiCache = new Map<string, CacheEntry<unknown>>();
+const CACHE_TTL = 60 * 1000; // 1 minute cache
+
+function getCachedOrFetch<T>(
+  cacheKey: string,
+  fetchFn: () => Promise<T>,
+  ttl: number = CACHE_TTL
+): Promise<T> {
+  const cached = apiCache.get(cacheKey);
+  const now = Date.now();
+  
+  if (cached && (now - cached.timestamp) < ttl) {
+    return Promise.resolve(cached.data as T);
+  }
+  
+  return fetchFn().then(data => {
+    apiCache.set(cacheKey, { data, timestamp: now });
+    return data;
+  });
+}
+
+// ============================================
 // PRODUCTS API
 // ============================================
 
@@ -358,25 +388,48 @@ export const productsApi = {
   delete: (id: string) =>
     api.delete<void>(`/products/${id}`),
 
-  // Get bestsellers based on actual sales data
-  getBestsellers: (options?: { limit?: number; category?: string; days?: number }) =>
-    api.get<{ products: Product[] }>('/products/bestsellers', options as Record<string, string | number | boolean>),
+  // Get bestsellers based on actual sales data (cached for 2 min)
+  getBestsellers: (options?: { limit?: number; category?: string; days?: number }) => {
+    const cacheKey = `bestsellers:${JSON.stringify(options || {})}`;
+    return getCachedOrFetch(
+      cacheKey,
+      () => api.get<{ products: Product[] }>('/products/bestsellers', options as Record<string, string | number | boolean>),
+      2 * 60 * 1000 // 2 minutes
+    );
+  },
 
-  // Get featured products (admin-curated or fallback)
+  // Get featured products (admin-curated or fallback) - cached for 2 min
   getFeatured: (options?: { limit?: number; productIds?: string[] }) => {
     const params: Record<string, string | number | boolean> = {};
     if (options?.limit) params.limit = options.limit;
     if (options?.productIds) params.productIds = options.productIds.join(',');
-    return api.get<{ products: Product[] }>('/products/featured', params);
+    const cacheKey = `featured:${JSON.stringify(params)}`;
+    return getCachedOrFetch(
+      cacheKey,
+      () => api.get<{ products: Product[] }>('/products/featured', params),
+      2 * 60 * 1000 // 2 minutes
+    );
   },
 
-  // Get seasonal products
-  getSeasonal: (options?: { limit?: number; season?: 'spring' | 'summer' | 'autumn' | 'winter' }) =>
-    api.get<{ products: Product[] }>('/products/seasonal', options as Record<string, string | number | boolean>),
+  // Get seasonal products (cached for 5 min)
+  getSeasonal: (options?: { limit?: number; season?: 'spring' | 'summer' | 'autumn' | 'winter' }) => {
+    const cacheKey = `seasonal:${JSON.stringify(options || {})}`;
+    return getCachedOrFetch(
+      cacheKey,
+      () => api.get<{ products: Product[] }>('/products/seasonal', options as Record<string, string | number | boolean>),
+      5 * 60 * 1000 // 5 minutes
+    );
+  },
 
-  // Get new products (added in last X days)
-  getNewProducts: (options?: { limit?: number; days?: number }) =>
-    api.get<{ products: Product[] }>('/products/new-arrivals', options as Record<string, string | number | boolean>),
+  // Get new products (added in last X days) - cached for 2 min
+  getNewProducts: (options?: { limit?: number; days?: number }) => {
+    const cacheKey = `new-products:${JSON.stringify(options || {})}`;
+    return getCachedOrFetch(
+      cacheKey,
+      () => api.get<{ products: Product[] }>('/products/new-arrivals', options as Record<string, string | number | boolean>),
+      2 * 60 * 1000 // 2 minutes
+    );
+  },
 
   // Get products from the same warehouse (for "Zamów w jednej przesyłce")
   getSameWarehouseProducts: (productId: string, options?: { limit?: number }) =>
