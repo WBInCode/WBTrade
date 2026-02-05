@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import Link from 'next/link';
 import { Product } from '../lib/api';
 import { useWishlist } from '../contexts/WishlistContext';
@@ -49,7 +49,7 @@ const badgeStyles: Record<BadgeType, string> = {
   'new': 'bg-blue-500 text-white',
 };
 
-export default function ProductListCard({ product, showWishlist = true, viewMode = 'grid' }: ProductListCardProps) {
+export default memo(function ProductListCard({ product, showWishlist = true, viewMode = 'grid' }: ProductListCardProps) {
   const [imgError, setImgError] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [added, setAdded] = useState(false);
@@ -61,6 +61,7 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
   const badge = product.badge as BadgeType | undefined;
   const deliveryInfo = product.deliveryInfo || 'Wysyłka w ciągu 24 - 72h';
   const warehouseLocation = getWarehouseLocation(product);
+  const isOutOfStock = !product.variants?.[0] || product.variants[0].stock <= 0;
 
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { addToCart } = useCart();
@@ -144,6 +145,8 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
               <img
                 src={mainImage}
                 alt={product.name}
+                loading="lazy"
+                decoding="async"
                 onError={() => setImgError(true)}
                 className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
               />
@@ -178,7 +181,11 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
 
             {/* Delivery Info */}
             <div className="flex flex-col gap-0.5 mt-auto">
-              <span className="text-xs text-green-600 dark:text-green-400 font-medium">{deliveryInfo}</span>
+              {isOutOfStock ? (
+                <span className="text-xs text-red-600 dark:text-red-400 font-medium">Produkt chwilowo niedostępny</span>
+              ) : (
+                <span className="text-xs text-green-600 dark:text-green-400 font-medium">{deliveryInfo}</span>
+              )}
               {warehouseLocation && (
                 <span className="text-[10px] text-gray-500 dark:text-secondary-400 flex items-center gap-1">
                   <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -193,8 +200,18 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
         </Link>
 
         {/* Add to Cart Button - full width at bottom like Allegro */}
-        {canAddToCart && (
-          <div className="px-2 pb-2">
+        <div className="px-2 pb-2">
+          {isOutOfStock ? (
+            <button
+              disabled
+              className="w-full py-2.5 rounded-xl text-sm font-semibold bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+              </svg>
+              Brak w magazynie
+            </button>
+          ) : (
             <button
               onClick={handleAddToCart}
               disabled={isAdding || added}
@@ -230,8 +247,8 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
                 </>
               )}
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     );
   }
@@ -273,6 +290,8 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
           <img
             src={mainImage}
             alt={product.name}
+            loading="lazy"
+            decoding="async"
             onError={() => setImgError(true)}
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
           />
@@ -306,7 +325,11 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
 
           {/* Delivery Info */}
           <div className="flex flex-col gap-0.5 mb-1 sm:mb-2 mt-auto">
-            <span className="text-[10px] sm:text-xs text-green-600 dark:text-green-400">{deliveryInfo}</span>
+            {isOutOfStock ? (
+              <span className="text-[10px] sm:text-xs text-red-600 dark:text-red-400 font-medium">Produkt chwilowo niedostępny</span>
+            ) : (
+              <span className="text-[10px] sm:text-xs text-green-600 dark:text-green-400">{deliveryInfo}</span>
+            )}
             {warehouseLocation && (
               <span className="text-[9px] sm:text-[10px] text-gray-500 dark:text-secondary-400 flex items-center gap-0.5">
                 <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -319,7 +342,17 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
           </div>
 
           {/* Add to Cart Button */}
-          {canAddToCart && (
+          {isOutOfStock ? (
+            <button
+              disabled
+              className="w-full py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg text-xs sm:text-sm font-medium bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed flex items-center justify-center gap-1 sm:gap-2"
+            >
+              <svg className="h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+              </svg>
+              Brak w magazynie
+            </button>
+          ) : (
             <button
               onClick={handleAddToCart}
               disabled={isAdding || added}
@@ -360,4 +393,4 @@ export default function ProductListCard({ product, showWishlist = true, viewMode
       </Link>
     </div>
   );
-}
+});

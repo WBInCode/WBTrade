@@ -7,6 +7,7 @@ import BestsellersCarousel from '../components/BestsellersCarousel';
 import ToysCarousel from '../components/ToysCarousel';
 import SeasonalCarousel from '../components/SeasonalCarousel';
 import NewProductsCarousel from '../components/NewProductsCarousel';
+import LazyCarousel from '../components/LazyCarousel';
 import Link from 'next/link';
 
 // Force dynamic rendering to avoid build-time API calls
@@ -21,12 +22,25 @@ export default function HomePage() {
         {/* Hero Banner Section */}
         <HeroBanner />
 
-        {/* Carousels Section */}
+        {/* First carousel loads immediately (above the fold) */}
         <FeaturedCarousel />
-        <BestsellersCarousel />
-        <NewProductsCarousel />
-        <ToysCarousel />
-        <SeasonalCarousel />
+        
+        {/* Below-fold carousels use lazy loading */}
+        <LazyCarousel>
+          <BestsellersCarousel />
+        </LazyCarousel>
+        
+        <LazyCarousel>
+          <NewProductsCarousel />
+        </LazyCarousel>
+        
+        <LazyCarousel>
+          <ToysCarousel />
+        </LazyCarousel>
+        
+        <LazyCarousel>
+          <SeasonalCarousel />
+        </LazyCarousel>
 
         {/* Show More Button */}
         <div className="flex justify-center mb-10">
