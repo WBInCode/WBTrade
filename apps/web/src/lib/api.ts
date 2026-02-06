@@ -595,6 +595,21 @@ export interface OrdersListResponse {
   limit: number;
 }
 
+export interface OrderTrackingPackage {
+  packageIndex: number;
+  courierCode: string;
+  courierName: string;
+  trackingNumber: string | null;
+  trackingLink?: string;
+  isSent: boolean;
+}
+
+export interface OrderTrackingResponse {
+  orderId: string;
+  baselinkerOrderId?: string;
+  packages: OrderTrackingPackage[];
+}
+
 export const ordersApi = {
   create: (orderData: CreateOrderData) =>
     api.post<Order>('/orders', orderData),
@@ -607,6 +622,10 @@ export const ordersApi = {
     
   cancel: (id: string) =>
     api.delete<{ message: string }>(`/orders/${id}`),
+
+  // Get tracking info for an order from BaseLinker
+  getTracking: (id: string) =>
+    api.get<OrderTrackingResponse>(`/orders/${id}/tracking`),
 
   // Refund methods
   checkRefundEligibility: (id: string) =>
