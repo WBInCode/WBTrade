@@ -203,6 +203,25 @@ export interface GetOrdersResponse {
   orders: BaselinkerOrderResponse[];
 }
 
+// ============================================
+// Order Package Types (for getOrderPackages API)
+// ============================================
+
+export interface BaselinkerOrderPackage {
+  package_id: number;
+  courier_code: string;
+  courier_package_nr: string;
+  courier_other_name?: string;
+  tracking_status?: number;
+  tracking_link?: string;
+  is_sent?: boolean;
+  weight?: number;
+}
+
+export interface GetOrderPackagesResponse {
+  packages: BaselinkerOrderPackage[];
+}
+
 export interface BaselinkerUpdateStockRequest {
   inventory_id: number;
   products: Record<string, Record<string, number>>; // { product_id: { warehouse_id: stock } }
@@ -349,4 +368,10 @@ export interface IBaselinkerProvider {
     order_id?: number;
     filter_order_source_id?: number;
   }): Promise<BaselinkerOrderResponse[]>;
+
+  /**
+   * Get packages (shipments) for a specific order from Baselinker
+   * @param orderId - Baselinker order ID
+   */
+  getOrderPackages(orderId: string | number): Promise<BaselinkerOrderPackage[]>;
 }
