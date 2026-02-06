@@ -5,6 +5,7 @@ import { WishlistProvider } from '../contexts/WishlistContext';
 import { ThemeProvider } from '../contexts/ThemeContext';
 import { WelcomeDiscountPopup } from '../components/WelcomeDiscountPopup';
 import CookieConsent from '../components/CookieConsent';
+import { GoogleTagManager, GoogleTagManagerNoScript } from '../components/analytics/GoogleTagManager';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -34,7 +35,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pl" suppressHydrationWarning>
+      <head>
+        <GoogleTagManager />
+      </head>
       <body className="font-sans">
+        <GoogleTagManagerNoScript />
         <ThemeProvider>
           <AuthProvider>
             <CartProvider>

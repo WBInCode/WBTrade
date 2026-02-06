@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, Suspense } from 'react';
+import React, { useEffect, useState, useCallback, Suspense, useRef } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { ordersApi, checkoutApi } from '@/lib/api';
+import { trackPurchase, EcommerceItem } from '@/lib/analytics';
 
 interface OrderItem {
   id: string;
@@ -52,6 +53,7 @@ function OrderConfirmationPageContent() {
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isVerifying, setIsVerifying] = useState(false);
+  const purchaseTracked = useRef(false);
   const [error, setError] = useState('');
 
   // Pobierz parametry z URL PayU
@@ -103,6 +105,32 @@ function OrderConfirmationPageContent() {
 
     initialize();
   }, [orderId, payuOrderId, fetchOrder, verifyPayment]);
+
+  // Track purchase event for analytics (only once per order)
+  useEffect(() => {
+    if (order && !purchaseTracked.current) {
+      purchaseTracked.current = true;
+      
+      const items: EcommerceItem[] = order.items.map((item, index) => ({
+        item_id: item.sku || item.id,
+        item_name: item.productName,
+        item_variant: item.variantName,
+        price: item.unitPrice,
+        quantity: item.quantity,
+        index,
+      }));
+
+      trackPurchase(
+        order.orderNumber,
+        items,
+        order.total,
+        order.shipping,
+        order.tax,
+        undefined, // coupon - could be added if available
+        'PLN'
+      );
+    }
+  }, [order]);
 
   // Auto-refresh dla statusu AWAITING_CONFIRMATION (co 5 sekund)
   useEffect(() => {
