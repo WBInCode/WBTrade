@@ -575,9 +575,16 @@ export default function ProductPage({ params }: ProductPageProps) {
           <div className="md:col-span-1 lg:col-span-1 min-w-0">
             <div className="bg-white dark:bg-secondary-800 rounded-lg p-4 sm:p-6 md:sticky md:top-24 overflow-hidden">
               {/* Title */}
-              <h1 className="text-base sm:text-xl font-semibold text-gray-900 dark:text-white mb-2 sm:mb-3 leading-snug break-words">
+              <h1 className="text-base sm:text-xl font-semibold text-gray-900 dark:text-white mb-1 leading-snug break-words">
                 {product.name}
               </h1>
+
+              {/* SKU */}
+              {product?.sku && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 sm:mb-3">
+                  SKU: <span className="font-mono">{product.sku.replace(/^(hp-|leker-|btp-|outlet-|ikonka-)/i, '')}</span>
+                </p>
+              )}
 
               {/* Rating */}
               <div className="flex items-center gap-2 mb-4 hidden">
