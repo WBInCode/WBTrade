@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import ProductCard from '../../components/ProductCard';
-import { Product, dashboardApi, checkoutApi, productsApi, DashboardStats, DashboardOrder, RecommendedProduct } from '../../lib/api';
+import { Product, dashboardApi, checkoutApi, productsApi, DashboardStats, DashboardOrder } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 
 // Sidebar navigation items
@@ -172,7 +172,7 @@ function AccountPageContent() {
     loyaltyPoints: 0,
   });
   const [recentOrders, setRecentOrders] = useState<DashboardOrder[]>([]);
-  const [recommendations, setRecommendations] = useState<RecommendedProduct[]>([]);
+  const [recommendations, setRecommendations] = useState<Product[]>([]);
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [payingOrderId, setPayingOrderId] = useState<string | null>(null);
 
@@ -199,14 +199,8 @@ function AccountPageContent() {
         
         setStats(overviewRes.stats);
         setRecentOrders(overviewRes.recentOrders);
-        // Map bestsellers to recommendation format
-        setRecommendations(bestsellersRes.products.map(p => ({
-          id: p.id,
-          name: p.name,
-          price: Number(p.price),
-          images: p.images || [],
-          reason: 'bestseller' as const,
-        })));
+        // Store full product data to preserve variants for stock display
+        setRecommendations(bestsellersRes.products);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -563,22 +557,7 @@ function AccountPageContent() {
                       <div className="absolute top-2 left-2 z-10 bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
                         <span>🔥</span> Bestseller
                       </div>
-                      <ProductCard
-                        product={{
-                          id: product.id,
-                          name: product.name,
-                          slug: product.slug,
-                          price: String(product.price),
-                          compareAtPrice: product.compareAtPrice ? String(product.compareAtPrice) : undefined,
-                          status: 'active',
-                          images: product.images.map((img, idx) => ({
-                            id: String(idx),
-                            url: img.url,
-                            alt: img.alt || product.name,
-                            order: idx,
-                          })),
-                        }}
-                      />
+                      <ProductCard product={product} />
                     </div>
                   ))}
                 </div>
