@@ -143,6 +143,25 @@ function transformProducts(products: any[]): any[] {
 }
 
 /**
+ * Sort products so that out-of-stock items appear at the end
+ * Preserves original order within in-stock and out-of-stock groups
+ */
+function sortOutOfStockToEnd(products: any[]): any[] {
+  const inStock: any[] = [];
+  const outOfStock: any[] = [];
+  
+  for (const product of products) {
+    if (product.stock > 0) {
+      inStock.push(product);
+    } else {
+      outOfStock.push(product);
+    }
+  }
+  
+  return [...inStock, ...outOfStock];
+}
+
+/**
  * Filter out products with zero stock that haven't been updated in specified days
  * Only hides products that have 0 stock AND haven't had inventory updates recently
  */
@@ -531,6 +550,9 @@ export class ProductsService {
     
     // Filter products: "Paczkomaty i Kurier" requires "produkt w paczce" tag
     transformedProducts = filterProductsWithPackageInfo(transformedProducts);
+    
+    // Sort out-of-stock products to the end (preserves original order within each group)
+    transformedProducts = sortOutOfStockToEnd(transformedProducts);
 
     return {
       products: transformedProducts,
@@ -704,6 +726,9 @@ export class ProductsService {
       
       // Filter products: "Paczkomaty i Kurier" requires "produkt w paczce" tag
       transformedProducts = filterProductsWithPackageInfo(transformedProducts);
+      
+      // Sort out-of-stock products to the end (preserves original order within each group)
+      transformedProducts = sortOutOfStockToEnd(transformedProducts);
 
       return {
         products: transformedProducts,
@@ -834,6 +859,9 @@ export class ProductsService {
     
     // Filter products: "Paczkomaty i Kurier" requires "produkt w paczce" tag
     transformedProducts = filterProductsWithPackageInfo(transformedProducts);
+    
+    // Sort out-of-stock products to the end (preserves original order within each group)
+    transformedProducts = sortOutOfStockToEnd(transformedProducts);
 
     return {
       products: transformedProducts,
