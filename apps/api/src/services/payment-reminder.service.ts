@@ -127,12 +127,28 @@ export class PaymentReminderService {
           const orderAny = order as typeof order & { 
             paymentReminderCount: number | null; 
             lastPaymentReminderAt: Date | null;
+            isBusinessOrder: boolean | null;
+            pendingCancellation: boolean | null;
           };
           const reminderCount = orderAny.paymentReminderCount || 0;
           const lastReminderAt = orderAny.lastPaymentReminderAt;
+          
+          // Check if this is a business order (has FV00 suffix or isBusinessOrder flag)
+          const isBusinessOrder = orderAny.isBusinessOrder || order.orderNumber.includes('-FV00');
 
           // Check if we should cancel the order (after 7 days)
           if (daysSinceCreation >= REMINDER_DAYS) {
+            if (isBusinessOrder) {
+              // Business orders cannot be auto-cancelled - mark for manual review
+              // This prevents auto-cancellation of orders with many products from companies
+              await this.markBusinessOrderForReview(order.id, order.orderNumber);
+              console.log(`[PaymentReminder] Business order ${order.orderNumber} marked for manual cancellation review (NIP order)`);
+              
+              // Don't count as cancelled - it needs admin approval
+              result.errors.push(`Order ${order.orderNumber}: business order requires manual cancellation approval`);
+              continue;
+            }
+            
             await this.cancelUnpaidOrder(order.id, order.orderNumber);
             result.ordersCancelled++;
             console.log(`[PaymentReminder] Cancelled order ${order.orderNumber} after ${REMINDER_DAYS} days without payment`);
@@ -265,6 +281,22 @@ export class PaymentReminderService {
       order.orderNumber,
       Number(order.total)
     );
+  }
+
+  /**
+   * Mark business order for manual cancellation review
+   * Business orders (with NIP/FV00) cannot be auto-cancelled - they need admin approval
+   */
+  private async markBusinessOrderForReview(orderId: string, orderNumber: string): Promise<void> {
+    await prisma.$executeRaw`
+      UPDATE orders 
+      SET pending_cancellation = true,
+          pending_cancellation_at = ${new Date()},
+          internal_notes = COALESCE(internal_notes, '') || ${`\n[${new Date().toISOString()}] Zamówienie firmowe oczekuje na ręczne zatwierdzenie anulowania (${REMINDER_DAYS} dni bez płatności)`}
+      WHERE id = ${orderId}
+    `;
+    
+    console.log(`[PaymentReminder] Business order ${orderNumber} marked for manual cancellation review`);
   }
 
   /**
