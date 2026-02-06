@@ -151,15 +151,15 @@ function CheckoutPageContent() {
       
       const items: EcommerceItem[] = checkoutItems.map((item, index) => ({
         item_id: item.variant?.sku || item.id,
-        item_name: item.productName || 'Produkt',
-        item_variant: item.variantName,
-        price: item.unitPrice,
+        item_name: item.variant?.product?.name || 'Produkt',
+        item_variant: item.variant?.name,
+        price: item.variant?.price || 0,
         quantity: item.quantity,
         index,
       }));
 
-      const totalValue = checkoutItems.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
-      trackBeginCheckout(items, totalValue, cart?.couponCode);
+      const totalValue = checkoutItems.reduce((sum, item) => sum + ((item.variant?.price || 0) * item.quantity), 0);
+      trackBeginCheckout(items, totalValue, cart?.couponCode || undefined);
     }
   }, [checkoutItems, cart?.couponCode]);
   
