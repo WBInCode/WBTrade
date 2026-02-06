@@ -260,6 +260,12 @@ export default function OrderDetailsPage() {
   const [orderLoading, setOrderLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  
+  // Cancel modal states
+  const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
+  const [showCancelResultModal, setShowCancelResultModal] = useState(false);
+  const [cancelResultMessage, setCancelResultMessage] = useState('');
+  const [cancelResultType, setCancelResultType] = useState<'success' | 'pending' | 'error'>('success');
   const [expandedPackages, setExpandedPackages] = useState<Set<number>>(new Set());
   const [expandedProductLists, setExpandedProductLists] = useState<Set<number>>(new Set());
   
@@ -359,22 +365,39 @@ export default function OrderDetailsPage() {
     fetchTracking();
   }, [order]);
 
+  const handleCancelOrderClick = () => {
+    setShowCancelConfirmModal(true);
+  };
+
   const handleCancelOrder = async () => {
     if (!order) return;
     
-    if (!confirm('Czy na pewno chcesz anulować to zamówienie?')) {
-      return;
-    }
+    setShowCancelConfirmModal(false);
 
     try {
       setCancelling(true);
-      await ordersApi.cancel(order.id);
-      // Zaktualizuj lokalny stan zamówienia
-      setOrder({ ...order, status: 'CANCELLED' });
+      const response = await ordersApi.cancel(order.id);
+      
+      // Check if this is a business order pending approval
+      if (response.pendingApproval) {
+        setCancelResultType('pending');
+        setCancelResultMessage('Prośba o anulowanie zamówienia firmowego została przesłana do weryfikacji. Skontaktujemy się z Tobą wkrótce.');
+        setShowCancelResultModal(true);
+        // Update local state to show pending status
+        setOrder({ ...order, pendingCancellation: true });
+      } else {
+        // Regular order - cancelled immediately
+        setCancelResultType('success');
+        setCancelResultMessage('Zamówienie zostało anulowane.');
+        setShowCancelResultModal(true);
+        setOrder({ ...order, status: 'CANCELLED' });
+      }
     } catch (err: unknown) {
       console.error('Error cancelling order:', err);
       const errorMessage = err instanceof Error ? err.message : 'Nie udało się anulować zamówienia';
-      alert(errorMessage);
+      setCancelResultType('error');
+      setCancelResultMessage(errorMessage);
+      setShowCancelResultModal(true);
     } finally {
       setCancelling(false);
     }
@@ -1132,14 +1155,22 @@ export default function OrderDetailsPage() {
                     </button>
                   </>
                 )}
-                {['OPEN', 'PENDING', 'CONFIRMED'].includes(order.status) && (
+                {['OPEN', 'PENDING', 'CONFIRMED'].includes(order.status) && !order.pendingCancellation && (
                   <button 
-                    onClick={handleCancelOrder}
+                    onClick={handleCancelOrderClick}
                     disabled={cancelling}
                     className="px-4 py-2 border border-red-300 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {cancelling ? 'Anulowanie...' : 'Anuluj zamówienie'}
                   </button>
+                )}
+                {order.pendingCancellation && (
+                  <span className="px-4 py-2 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 rounded-lg text-sm font-medium inline-flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Oczekuje na zatwierdzenie anulowania
+                  </span>
                 )}
               </div>
             </div>
@@ -1288,6 +1319,93 @@ export default function OrderDetailsPage() {
                   </div>
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Confirmation Modal */}
+      {showCancelConfirmModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30">
+                <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white text-center mb-2">
+                Anulować zamówienie?
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
+                Czy na pewno chcesz anulować zamówienie #{order?.orderNumber}? Tej operacji nie można cofnąć.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowCancelConfirmModal(false)}
+                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-secondary-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors"
+                >
+                  Nie, zostaw
+                </button>
+                <button
+                  onClick={handleCancelOrder}
+                  disabled={cancelling}
+                  className="flex-1 px-4 py-3 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+                >
+                  {cancelling ? 'Anulowanie...' : 'Tak, anuluj'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Result Modal */}
+      {showCancelResultModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className={`flex items-center justify-center w-12 h-12 mx-auto mb-4 rounded-full ${
+                cancelResultType === 'success' ? 'bg-green-100 dark:bg-green-900/30' :
+                cancelResultType === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30' :
+                'bg-red-100 dark:bg-red-900/30'
+              }`}>
+                {cancelResultType === 'success' ? (
+                  <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : cancelResultType === 'pending' ? (
+                  <svg className="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                ) : (
+                  <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                )}
+              </div>
+              <h3 className={`text-lg font-bold text-center mb-2 ${
+                cancelResultType === 'success' ? 'text-green-700 dark:text-green-400' :
+                cancelResultType === 'pending' ? 'text-yellow-700 dark:text-yellow-400' :
+                'text-red-700 dark:text-red-400'
+              }`}>
+                {cancelResultType === 'success' ? 'Zamówienie anulowane' :
+                 cancelResultType === 'pending' ? 'Prośba wysłana' :
+                 'Wystąpił błąd'}
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
+                {cancelResultMessage}
+              </p>
+              <button
+                onClick={() => setShowCancelResultModal(false)}
+                className={`w-full px-4 py-3 rounded-lg font-medium transition-colors ${
+                  cancelResultType === 'success' ? 'bg-green-500 hover:bg-green-600 text-white' :
+                  cancelResultType === 'pending' ? 'bg-yellow-500 hover:bg-yellow-600 text-white' :
+                  'bg-gray-200 dark:bg-secondary-700 hover:bg-gray-300 dark:hover:bg-secondary-600 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                OK
+              </button>
             </div>
           </div>
         </div>

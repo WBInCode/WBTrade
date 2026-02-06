@@ -78,6 +78,9 @@ interface CreateOrderData {
   guestPhone?: string;
   // Invoice preference
   wantInvoice?: boolean;
+  // Business order fields (for FV00 suffix)
+  billingNip?: string;
+  billingCompanyName?: string;
 }
 
 interface GetAllOrdersParams {
@@ -91,8 +94,20 @@ interface GetAllOrdersParams {
   sortOrder?: 'asc' | 'desc';
 }
 
-function generateOrderNumber(): string {
+/**
+ * Generate order number
+ * Regular orders: WB-TIMESTAMP-RANDOM
+ * Business orders (with NIP): WB-TIMESTAMP-FV00 (FV00 indicates invoice/business order)
+ */
+function generateOrderNumber(isBusinessOrder: boolean = false): string {
   const timestamp = Date.now().toString(36).toUpperCase();
+  
+  if (isBusinessOrder) {
+    // Business order - use FV00 suffix (Faktura VAT indicator)
+    return `WB-${timestamp}-FV00`;
+  }
+  
+  // Regular order - random suffix
   const random = Math.random().toString(36).substring(2, 6).toUpperCase();
   return `WB-${timestamp}-${random}`;
 }
@@ -166,7 +181,11 @@ export class OrdersService {
    * Create a new order
    */
   async create(data: CreateOrderData) {
-    const orderNumber = generateOrderNumber();
+    // Check if this is a business order (has NIP)
+    const isBusinessOrder = Boolean(data.billingNip && data.billingNip.trim().length > 0);
+    const orderNumber = generateOrderNumber(isBusinessOrder);
+    
+    console.log(`[Orders] Creating order: isBusinessOrder=${isBusinessOrder}, NIP=${data.billingNip || 'none'}, orderNumber=${orderNumber}`);
     
     // Calculate totals (using roundMoney to avoid floating-point precision issues)
     // Note: Product prices are already gross (including VAT) in Poland
@@ -219,6 +238,10 @@ export class OrdersService {
           total,
           customerNotes: data.customerNotes,
           wantInvoice: data.wantInvoice || false,
+          // Business order fields (FV00 suffix)
+          billingNip: data.billingNip || null,
+          billingCompanyName: data.billingCompanyName || null,
+          isBusinessOrder,
           // Guest checkout fields
           guestEmail: data.guestEmail,
           guestFirstName: data.guestFirstName,
@@ -391,9 +414,12 @@ export class OrdersService {
 
   /**
    * Cancel order and release inventory
+   * For business orders (FV00), sets pendingCancellation instead of immediate cancellation
+   * @param id - Order ID
+   * @param forceCancel - If true, bypasses business order check (for admin use)
    */
-  async cancel(id: string) {
-    const cancelledOrder = await prisma.$transaction(async (tx) => {
+  async cancel(id: string, forceCancel: boolean = false): Promise<{ order: any; pendingApproval: boolean } | null> {
+    const result = await prisma.$transaction(async (tx) => {
       const order = await tx.order.findUnique({
         where: { id },
         include: { items: true },
@@ -408,6 +434,33 @@ export class OrdersService {
         throw new Error(`Cannot cancel order in status: ${order.status}. Orders can only be cancelled when in OPEN, PENDING, or CONFIRMED status.`);
       }
 
+      // Check if this is a business order (FV00)
+      const isBusinessOrder = order.isBusinessOrder || order.orderNumber.includes('-FV00');
+      
+      // Business orders require admin approval (unless forceCancel is true from admin)
+      if (isBusinessOrder && !forceCancel) {
+        // Just mark as pending cancellation, don't actually cancel
+        const updatedOrder = await tx.order.update({
+          where: { id },
+          data: {
+            pendingCancellation: true,
+            pendingCancellationAt: new Date(),
+          },
+        });
+
+        // Add to status history
+        await tx.orderStatusHistory.create({
+          data: {
+            orderId: id,
+            status: order.status, // Keep current status
+            note: 'Klient zgłosił prośbę o anulowanie zamówienia firmowego - oczekuje na zatwierdzenie',
+          },
+        });
+
+        return { order: updatedOrder, pendingApproval: true };
+      }
+
+      // Regular order - proceed with immediate cancellation
       // Release reserved inventory
       for (const item of order.items) {
         await tx.inventory.updateMany({
@@ -423,7 +476,9 @@ export class OrdersService {
         where: { id },
         data: { 
           status: 'CANCELLED',
-          paymentStatus: order.paymentStatus === 'PAID' ? order.paymentStatus : 'CANCELLED', // Keep PAID status if already paid (for refund tracking)
+          paymentStatus: order.paymentStatus === 'PAID' ? order.paymentStatus : 'CANCELLED',
+          pendingCancellation: false, // Clear any pending flag
+          pendingCancellationAt: null,
         },
       });
 
@@ -432,20 +487,22 @@ export class OrdersService {
         data: {
           orderId: id,
           status: 'CANCELLED',
-          note: 'Order cancelled by customer',
+          note: forceCancel ? 'Order cancelled by admin' : 'Order cancelled by customer',
         },
       });
 
-      return cancelledOrder;
+      return { order: cancelledOrder, pendingApproval: false };
     });
 
-    // Sync cancellation to Baselinker (update to "Zwroty/Anulowane" status)
-    if (cancelledOrder && cancelledOrder.baselinkerOrderId) {
+    if (!result) return null;
+
+    // Sync cancellation to Baselinker only if actually cancelled (not pending approval)
+    if (!result.pendingApproval && result.order.baselinkerOrderId) {
       setTimeout(() => {
-        baselinkerOrdersService.markOrderAsRefunded(cancelledOrder.id, 'Zamówienie anulowane przez klienta')
+        baselinkerOrdersService.markOrderAsRefunded(result.order.id, 'Zamówienie anulowane przez klienta')
           .then((syncResult) => {
             if (syncResult.success) {
-              console.log(`[OrdersService] Order ${cancelledOrder.orderNumber} cancellation synced to Baselinker`);
+              console.log(`[OrdersService] Order ${result.order.orderNumber} cancellation synced to Baselinker`);
             } else {
               console.error(`[OrdersService] Failed to sync cancellation to Baselinker:`, syncResult.error);
             }
@@ -456,7 +513,7 @@ export class OrdersService {
       }, 100);
     }
 
-    return cancelledOrder;
+    return result;
   }
 
   /**
@@ -953,5 +1010,73 @@ export class OrdersService {
         packages: [],
       };
     }
+  }
+
+  /**
+   * Get orders pending cancellation approval (for admin panel)
+   */
+  async getPendingCancellations() {
+    return prisma.order.findMany({
+      where: {
+        pendingCancellation: true,
+      },
+      include: {
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: true,
+              },
+            },
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        shippingAddress: true,
+        billingAddress: true,
+      },
+      orderBy: {
+        pendingCancellationAt: 'desc',
+      },
+    });
+  }
+
+  /**
+   * Approve cancellation of a business order (admin action)
+   */
+  async approveCancellation(id: string) {
+    // Use forceCancel=true to bypass business order check
+    return this.cancel(id, true);
+  }
+
+  /**
+   * Reject cancellation request (admin action)
+   * Clears pendingCancellation flag without cancelling the order
+   */
+  async rejectCancellation(id: string, reason?: string) {
+    const order = await prisma.order.update({
+      where: { id },
+      data: {
+        pendingCancellation: false,
+        pendingCancellationAt: null,
+      },
+    });
+
+    // Add to status history
+    await prisma.orderStatusHistory.create({
+      data: {
+        orderId: id,
+        status: order.status,
+        note: `Prośba o anulowanie zamówienia została odrzucona${reason ? `: ${reason}` : ''}`,
+      },
+    });
+
+    return order;
   }
 }

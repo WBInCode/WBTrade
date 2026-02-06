@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { 
   ShoppingCart, Search, Filter, Eye, ChevronLeft, ChevronRight, 
   Truck, FileText, Package, Calendar, RefreshCw, Download,
-  MoreVertical, X, Ban, RotateCcw
+  MoreVertical, X, Ban, RotateCcw, AlertTriangle
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -108,6 +108,27 @@ export default function OrdersPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [actionMenuId, setActionMenuId] = useState<string | null>(null);
+  const [pendingCancellationsCount, setPendingCancellationsCount] = useState(0);
+
+  // Load pending cancellations count
+  useEffect(() => {
+    const loadPendingCount = async () => {
+      try {
+        const token = getAuthToken();
+        const response = await fetch(`${API_URL}/orders/admin/pending-cancellations`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        });
+        const data = await response.json();
+        setPendingCancellationsCount(Array.isArray(data) ? data.length : 0);
+      } catch (error) {
+        console.error('Failed to load pending cancellations count:', error);
+      }
+    };
+    loadPendingCount();
+  }, []);
 
   // Sync statusFilter with URL parameter
   useEffect(() => {
@@ -220,6 +241,33 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-6">
+      {/* Pending Cancellations Alert */}
+      {pendingCancellationsCount > 0 && (
+        <Link
+          href="/orders/pending-cancellations"
+          className="block bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 hover:bg-yellow-500/20 transition-colors"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-yellow-500/20">
+                <AlertTriangle className="w-5 h-5 text-yellow-400" />
+              </div>
+              <div>
+                <p className="text-yellow-400 font-medium">
+                  {pendingCancellationsCount} zamówień firmowych (FV00) czeka na zatwierdzenie anulowania
+                </p>
+                <p className="text-gray-400 text-sm">
+                  Kliknij aby przejść do panelu zatwierdzania
+                </p>
+              </div>
+            </div>
+            <span className="px-3 py-1 rounded-full bg-yellow-500 text-black font-bold text-sm">
+              {pendingCancellationsCount}
+            </span>
+          </div>
+        </Link>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -416,7 +464,14 @@ export default function OrdersPage() {
                     </td>
                     <td className="px-4 py-4">
                       <Link href={`/orders/${order.id}`} className="hover:text-orange-400 transition-colors">
-                        <p className="font-medium text-white">{order.orderNumber}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-white">{order.orderNumber}</p>
+                          {order.orderNumber.includes('-FV00') && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                              FV
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-gray-500">#{order.id.slice(0, 8)}</p>
                       </Link>
                     </td>

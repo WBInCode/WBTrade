@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createOrder, getOrder, updateOrder, deleteOrder, getAllOrders, getUserOrders, refundOrder, restoreOrder, simulatePayment, checkRefundEligibility, requestRefund, getOrderTracking } from '../controllers/orders.controller';
+import { createOrder, getOrder, updateOrder, deleteOrder, getAllOrders, getUserOrders, refundOrder, restoreOrder, simulatePayment, checkRefundEligibility, requestRefund, getOrderTracking, getPendingCancellations, approveCancellation, rejectCancellation } from '../controllers/orders.controller';
 import { authGuard } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -9,6 +9,9 @@ router.get('/', authGuard, getUserOrders);
 
 // Route to get all orders (admin)
 router.get('/admin/all', getAllOrders);
+
+// Route to get orders pending cancellation approval (admin)
+router.get('/admin/pending-cancellations', getPendingCancellations);
 
 // Route to create a new order (requires authentication)
 router.post('/', authGuard, createOrder);
@@ -33,6 +36,12 @@ router.post('/:id/request-refund', requestRefund);
 
 // Route to refund an order (admin)
 router.post('/:id/refund', refundOrder);
+
+// Route to approve cancellation of business order (admin)
+router.post('/:id/approve-cancellation', approveCancellation);
+
+// Route to reject cancellation request (admin)
+router.post('/:id/reject-cancellation', rejectCancellation);
 
 // Route to restore a cancelled/refunded order
 router.post('/:id/restore', restoreOrder);
