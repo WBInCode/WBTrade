@@ -19,7 +19,7 @@ let lastRequest = 0;
 // =====================================================
 // ⚠️  USTAW ID KATALOGU OUTLET Z BASELINKERA TUTAJ:
 // =====================================================
-const OUTLET_INVENTORY_ID = null; // np. 22999 - wstaw swoje ID po utworzeniu katalogu
+const OUTLET_INVENTORY_ID = 23662; // "magazyn zwrotów" w Baselinkerze
 // =====================================================
 
 const OUTLET_CATEGORY_SLUG = 'outlet';
