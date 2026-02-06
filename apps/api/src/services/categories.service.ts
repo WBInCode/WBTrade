@@ -412,21 +412,21 @@ export class CategoriesService {
         parentId: null,
         baselinkerCategoryId: { not: null } // Only Baselinker categories
       },
-      orderBy: { name: 'asc' },
+      orderBy: [{ order: 'asc' }, { name: 'asc' }],
       include: {
         children: {
           where: { 
             isActive: true,
             baselinkerCategoryId: { not: null }
           },
-          orderBy: { name: 'asc' },
+          orderBy: [{ order: 'asc' }, { name: 'asc' }],
           include: {
             children: {
               where: { 
                 isActive: true,
                 baselinkerCategoryId: { not: null }
               },
-              orderBy: { name: 'asc' },
+              orderBy: [{ order: 'asc' }, { name: 'asc' }],
             }
           }
         }

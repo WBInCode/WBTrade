@@ -86,3 +86,6 @@ apps/*/.env.staging
 # md (internal docs)
 *.md
 !README.md
+
+centrum-pomocy.txt
+regulamin.txt
