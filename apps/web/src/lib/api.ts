@@ -526,7 +526,7 @@ export interface OrderItem {
 export interface PackageShippingInfo {
   packageId: string;
   wholesaler?: string;
-  method: 'inpost_paczkomat' | 'inpost_kurier' | 'dpd_kurier' | 'wysylka_gabaryt';
+  method: 'inpost_paczkomat' | 'inpost_kurier' | 'dpd_kurier' | 'wysylka_gabaryt' | 'odbior_osobisty_outlet';
   price: number;
   paczkomatCode?: string;
   paczkomatAddress?: string;

@@ -20,8 +20,8 @@ const TAG_PATTERNS = {
   GABARYT: /^((\d+(?:\.\d{2})?)\s*)?gabaryt$/i,
   // Matches "tylko kurier" tags
   TYLKO_KURIER: /^tylko\s*kurier$/i,
-  // Matches wholesaler tags (including Rzeszów/Outlet for returns warehouse)
-  WHOLESALER: /^(hurtownia[:\-_](.+)|Ikonka|BTP|HP|Gastro|Horeca|Hurtownia\s+Przemysłowa|Leker|Forcetop|Rzeszów|Outlet)$/i,
+  // Matches wholesaler tags (Rzeszów/Outlet handled separately with higher priority)
+  WHOLESALER: /^(hurtownia[:\-_](.+)|Ikonka|BTP|HP|Gastro|Horeca|Hurtownia\s+Przemysłowa|Leker|Forcetop)$/i,
   // Matches paczkomat limit tags like "produkt w paczce: 3" or "3 produkty w paczce"
   PACZKOMAT_LIMIT: /^(?:produkt\s*w\s*paczce[:\s]*(\d+)|(\d+)\s*produkt(?:y|ów)?\s*w\s*paczce)$/i,
   // Matches tags that indicate courier-only delivery
@@ -110,6 +110,7 @@ export interface ShippingPackage {
   isPaczkomatAvailable: boolean;
   isInPostOnly: boolean; // When true, only InPost (Paczkomat + Kurier InPost) - no DPD
   isCourierOnly: boolean; // When true, only DPD Kurier - no InPost (tag "Tylko kurier")
+  isOutlet: boolean; // When true, personal pickup (Outlet) option is available - for Rzeszów/Outlet warehouse
   warehouseValue: number; // Total value of products from this warehouse
   hasFreeShipping: boolean; // True if warehouse value >= FREE_SHIPPING_THRESHOLD
 }
@@ -179,8 +180,17 @@ function getGabarytPrice(tags: string[]): number | null {
 
 /**
  * Get wholesaler from product tags
+ * Priority: Rzeszów/Outlet > other wholesalers (for outlet products shipped from Rzeszów)
  */
 function getWholesaler(tags: string[]): string | null {
+  // First check for Rzeszów/Outlet - these have priority over other wholesalers
+  for (const tag of tags) {
+    if (/^(Rzeszów|Outlet)$/i.test(tag)) {
+      return tag;
+    }
+  }
+  
+  // Then check for other wholesaler tags
   for (const tag of tags) {
     const match = tag.match(TAG_PATTERNS.WHOLESALER);
     if (match) {
@@ -215,6 +225,16 @@ function getPaczkomatLimit(tags: string[]): number {
  */
 function isInPostOnly(tags: string[]): boolean {
   return tags.some(tag => TAG_PATTERNS.INPOST_ONLY.test(tag));
+}
+
+/**
+ * Check if product is from Outlet/Rzeszów warehouse
+ * Products from this warehouse have personal pickup option available
+ */
+function isOutletProduct(wholesaler: string | null): boolean {
+  if (!wholesaler) return false;
+  const lowerWholesaler = wholesaler.toLowerCase();
+  return lowerWholesaler === 'rzeszów' || lowerWholesaler === 'outlet';
 }
 
 /**
@@ -557,6 +577,7 @@ export class ShippingCalculatorService {
           isPaczkomatAvailable: false, // Gabaryt cannot use paczkomat
           isInPostOnly: productIsInPostOnly,
           isCourierOnly: false, // Gabaryt has its own shipping method
+          isOutlet: isOutletProduct(wholesaler), // Personal pickup available for Outlet warehouse
           warehouseValue,
           hasFreeShipping,
         });
@@ -641,6 +662,7 @@ export class ShippingCalculatorService {
         isPaczkomatAvailable: isPaczkomatAvailableForPackage,
         isInPostOnly: packageIsInPostOnly,
         isCourierOnly: packageIsCourierOnly,
+        isOutlet: isOutletProduct(wholesaler), // Personal pickup available for Outlet warehouse
         warehouseValue,
         hasFreeShipping,
       });
@@ -959,6 +981,18 @@ export class ShippingCalculatorService {
             : (freeMessage || (pkg.weightShippingPrice && !isFree ? `Cena wg wagi: ${dpdPrice.toFixed(2)} zł` : undefined)),
           estimatedDelivery: 'Wysyłka w ciągu 24 - 72h',
         });
+        
+        // Personal pickup (Outlet) - available only for Outlet/Rzeszów warehouse
+        if (pkg.isOutlet) {
+          methods.push({
+            id: 'odbior_osobisty_outlet',
+            name: 'Odbiór osobisty (Outlet)',
+            price: 0,
+            available: true,
+            message: 'Odbiór w magazynie Outlet - Rzeszów',
+            estimatedDelivery: 'Do uzgodnienia',
+          });
+        }
       }
       
       // Set default selected method
