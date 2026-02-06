@@ -152,6 +152,7 @@ const shippingMethodNames: Record<string, string> = {
   dpd: 'Kurier DPD',
   wysylka_gabaryt: 'Wysyłka gabaryt',
   gabaryt: 'Wysyłka gabaryt',
+  odbior_osobisty_outlet: 'Odbiór osobisty (Outlet)',
 };
 
 function getShippingMethodName(method: string): string {

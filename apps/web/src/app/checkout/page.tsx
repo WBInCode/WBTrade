@@ -36,7 +36,7 @@ export interface AddressData {
 }
 
 export interface ShippingData {
-  method: 'inpost_paczkomat' | 'inpost_kurier' | 'dpd_kurier' | 'wysylka_gabaryt';
+  method: 'inpost_paczkomat' | 'inpost_kurier' | 'dpd_kurier' | 'wysylka_gabaryt' | 'odbior_osobisty_outlet';
   paczkomatCode?: string;
   paczkomatAddress?: string;
   price: number;
@@ -47,7 +47,7 @@ export interface ShippingData {
 export interface PackageShippingSelection {
   packageId: string;
   wholesaler?: string;
-  method: 'inpost_paczkomat' | 'inpost_kurier' | 'dpd_kurier' | 'wysylka_gabaryt';
+  method: 'inpost_paczkomat' | 'inpost_kurier' | 'dpd_kurier' | 'wysylka_gabaryt' | 'odbior_osobisty_outlet';
   price: number;
   paczkomatCode?: string;
   paczkomatAddress?: string;
