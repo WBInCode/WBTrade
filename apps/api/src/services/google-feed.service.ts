@@ -57,110 +57,117 @@ function truncate(text: string, maxLength: number): string {
 
 /**
  * Generates Google Merchant Center XML feed
- * Optimized for low memory usage - selects only required fields
+ * Optimized for low memory usage - uses pagination
  */
 export async function generateGoogleMerchantFeed(baseUrl: string): Promise<string> {
-  // Fetch active products with only required fields to minimize memory usage
-  const products = await prisma.product.findMany({
-    where: {
-      status: ProductStatus.ACTIVE,
-    },
-    select: {
-      sku: true,
-      name: true,
-      slug: true,
-      description: true,
-      price: true,
-      compareAtPrice: true,
-      barcode: true,
-      tags: true,
-      baselinkerCategoryPath: true,
-      images: {
-        select: { url: true },
-        orderBy: { order: 'asc' },
-        take: 10, // Limit images
-      },
-      category: {
-        select: { name: true },
-      },
-      variants: {
-        select: {
-          inventory: {
-            select: { quantity: true, reserved: true },
-          },
-        },
-        take: 5, // Limit variants for stock calculation
-      },
-    },
-  });
-
+  const BATCH_SIZE = 500; // Process 500 products at a time
+  let skip = 0;
+  let hasMore = true;
   const feedProducts: GoogleFeedProduct[] = [];
 
-  for (const product of products) {
-    // Calculate total stock across all variants and locations
-    let totalStock = 0;
-    for (const variant of product.variants) {
-      for (const inv of variant.inventory) {
-        totalStock += inv.quantity - inv.reserved;
-      }
-    }
-
-    // Get primary image
-    const primaryImage = product.images[0]?.url || '';
-    const additionalImages = product.images.slice(1, 10).map((img: { url: string }) => img.url);
-
-    // Determine availability
-    let availability: 'in_stock' | 'out_of_stock' | 'preorder' = 'out_of_stock';
-    if (totalStock > 0) {
-      availability = 'in_stock';
-    }
-
-    // Format prices (Google requires format: "99.99 PLN")
-    const price = `${Number(product.price).toFixed(2)} PLN`;
-    const salePrice = product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price)
-      ? `${Number(product.price).toFixed(2)} PLN`
-      : undefined;
-    const regularPrice = product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price)
-      ? `${Number(product.compareAtPrice).toFixed(2)} PLN`
-      : price;
-
-    // Build category path for product_type
-    let productType = '';
-    if (product.category) {
-      productType = product.category.name;
-      if (product.baselinkerCategoryPath) {
-        productType = product.baselinkerCategoryPath.replace(/\s*>\s*/g, ' > ');
-      }
-    }
-
-    // Extract brand from tags or specifications
-    let brand = 'WBTrade';
-    if (product.tags && product.tags.length > 0) {
-      const brandTag = product.tags.find((tag: string) => tag.toLowerCase().startsWith('brand:'));
-      if (brandTag) {
-        brand = brandTag.replace('brand:', '').trim();
-      }
-    }
-
-    feedProducts.push({
-      id: product.sku,
-      title: truncate(product.name, 150),
-      description: truncate(stripHtml(product.description || product.name), 5000),
-      link: `${baseUrl}/product/${product.slug}`,
-      imageLink: primaryImage,
-      additionalImageLinks: additionalImages,
-      price: salePrice ? regularPrice : price,
-      salePrice: salePrice,
-      availability,
-      condition: 'new',
-      brand,
-      gtin: product.barcode || undefined,
-      mpn: product.sku,
-      productType,
+  // Process products in batches to avoid memory issues
+  while (hasMore) {
+    const products = await prisma.product.findMany({
+      where: {
+        status: ProductStatus.ACTIVE,
+      },
+      select: {
+        sku: true,
+        name: true,
+        slug: true,
+        description: true,
+        price: true,
+        compareAtPrice: true,
+        barcode: true,
+        tags: true,
+        baselinkerCategoryPath: true,
+        images: {
+          select: { url: true },
+          orderBy: { order: 'asc' },
+          take: 5,
+        },
+        category: {
+          select: { name: true },
+        },
+        variants: {
+          select: {
+            inventory: {
+              select: { quantity: true, reserved: true },
+            },
+          },
+          take: 1,
+        },
+      },
+      skip,
+      take: BATCH_SIZE,
     });
+
+    if (products.length === 0) {
+      hasMore = false;
+      break;
+    }
+
+    for (const product of products) {
+      // Calculate total stock
+      let totalStock = 0;
+      for (const variant of product.variants) {
+        for (const inv of variant.inventory) {
+          totalStock += inv.quantity - inv.reserved;
+        }
+      }
+
+      const primaryImage = product.images[0]?.url || '';
+      const additionalImages = product.images.slice(1, 5).map((img: { url: string }) => img.url);
+
+      const availability: 'in_stock' | 'out_of_stock' | 'preorder' = totalStock > 0 ? 'in_stock' : 'out_of_stock';
+
+      const price = `${Number(product.price).toFixed(2)} PLN`;
+      const salePrice = product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price)
+        ? `${Number(product.price).toFixed(2)} PLN`
+        : undefined;
+      const regularPrice = product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price)
+        ? `${Number(product.compareAtPrice).toFixed(2)} PLN`
+        : price;
+
+      let productType = '';
+      if (product.category) {
+        productType = product.category.name;
+      }
+
+      let brand = 'WBTrade';
+      if (product.tags && product.tags.length > 0) {
+        const brandTag = product.tags.find((tag: string) => tag.toLowerCase().startsWith('brand:'));
+        if (brandTag) {
+          brand = brandTag.replace('brand:', '').trim();
+        }
+      }
+
+      feedProducts.push({
+        id: product.sku,
+        title: truncate(product.name, 150),
+        description: truncate(stripHtml(product.description || product.name), 5000),
+        link: `${baseUrl}/product/${product.slug}`,
+        imageLink: primaryImage,
+        additionalImageLinks: additionalImages,
+        price: salePrice ? regularPrice : price,
+        salePrice: salePrice,
+        availability,
+        condition: 'new',
+        brand,
+        gtin: product.barcode || undefined,
+        mpn: product.sku,
+        productType,
+      });
+    }
+
+    skip += BATCH_SIZE;
+    
+    // Safety limit - max 10000 products
+    if (skip >= 10000) {
+      hasMore = false;
+    }
   }
 
-  // Generate XML
   return buildXmlFeed(feedProducts, baseUrl);
 }
 
