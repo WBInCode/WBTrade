@@ -19,6 +19,8 @@ export interface EcommerceData {
   shipping?: number;
   currency?: string;
   coupon?: string;
+  shipping_tier?: string;
+  payment_type?: string;
   items?: EcommerceItem[];
 }
 
