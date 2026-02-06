@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createOrder, getOrder, updateOrder, deleteOrder, getAllOrders, getUserOrders, refundOrder, restoreOrder, simulatePayment, checkRefundEligibility, requestRefund } from '../controllers/orders.controller';
+import { createOrder, getOrder, updateOrder, deleteOrder, getAllOrders, getUserOrders, refundOrder, restoreOrder, simulatePayment, checkRefundEligibility, requestRefund, getOrderTracking } from '../controllers/orders.controller';
 import { authGuard } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -12,6 +12,9 @@ router.get('/admin/all', getAllOrders);
 
 // Route to create a new order (requires authentication)
 router.post('/', authGuard, createOrder);
+
+// Route to get order tracking info from BaseLinker
+router.get('/:id/tracking', getOrderTracking);
 
 // Route to get an order by ID
 router.get('/:id', getOrder);

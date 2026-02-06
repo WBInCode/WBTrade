@@ -20,6 +20,7 @@ import {
   BaselinkerApiResponse,
   BaselinkerAddOrderRequest,
   BaselinkerAddOrderResponse,
+  BaselinkerOrderPackage,
 } from './baselinker-provider.interface';
 
 const BASELINKER_API_URL = 'https://api.baselinker.com/connector.php';
@@ -476,6 +477,24 @@ export class BaselinkerProvider implements IBaselinkerProvider {
 
     console.log(`[Baselinker] Retrieved ${response.orders?.length || 0} orders`);
     return response.orders || [];
+  }
+
+  /**
+   * Get packages (shipments) for a specific order from Baselinker
+   * @param orderId - Baselinker order ID
+   */
+  async getOrderPackages(orderId: string | number): Promise<BaselinkerOrderPackage[]> {
+    console.log(`[Baselinker] Getting packages for order ${orderId}`);
+
+    const response = await this.request<{ packages: BaselinkerOrderPackage[] }>(
+      'getOrderPackages',
+      {
+        order_id: typeof orderId === 'string' ? parseInt(orderId, 10) : orderId,
+      }
+    );
+
+    console.log(`[Baselinker] Retrieved ${response.packages?.length || 0} packages for order ${orderId}`);
+    return response.packages || [];
   }
 
   /**

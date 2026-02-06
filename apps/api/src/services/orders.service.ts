@@ -3,6 +3,28 @@ import { OrderStatus, Prisma } from '@prisma/client';
 import { baselinkerOrdersService } from './baselinker-orders.service';
 import { popularityService } from './popularity.service';
 import { roundMoney, addMoney, subtractMoney } from '../lib/currency';
+import { createBaselinkerProvider } from '../providers/baselinker';
+import { decryptToken } from '../lib/encryption';
+
+// Courier name mapping for display
+const COURIER_NAMES: Record<string, string> = {
+  'inpost': 'InPost Paczkomat',
+  'inpost_paczkomaty': 'InPost Paczkomat',
+  'inpost_courier': 'Kurier InPost',
+  'inpost_kurier': 'Kurier InPost',
+  'dpd': 'Kurier DPD',
+  'dpd_kurier': 'Kurier DPD',
+  'dpd_courier': 'Kurier DPD',
+  'dhl': 'Kurier DHL',
+  'dhl_kurier': 'Kurier DHL',
+  'ups': 'Kurier UPS',
+  'gls': 'Kurier GLS',
+  'poczta_polska': 'Poczta Polska',
+  'pocztex': 'Pocztex',
+  'fedex': 'Kurier FedEx',
+  'geis': 'Kurier Geis',
+  'raben': 'Kurier Raben',
+};
 
 interface PackageShippingItem {
   packageId: string;
@@ -830,5 +852,106 @@ export class OrdersService {
     }
 
     return updatedOrder;
+  }
+
+  /**
+   * Get tracking info for an order from BaseLinker
+   * Returns package tracking information (courier, tracking number) per shipment
+   */
+  async getTrackingInfo(orderId: string): Promise<{
+    orderId: string;
+    baselinkerOrderId?: string;
+    packages: Array<{
+      packageIndex: number;
+      courierCode: string;
+      courierName: string;
+      trackingNumber: string | null;
+      trackingLink?: string;
+      isSent: boolean;
+    }>;
+  } | null> {
+    // 1. Get order to find Baselinker order ID
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: {
+        id: true,
+        baselinkerOrderId: true,
+        packageShipping: true,
+        status: true,
+      },
+    });
+
+    if (!order) {
+      return null;
+    }
+
+    // If no Baselinker order ID, return empty packages
+    if (!order.baselinkerOrderId) {
+      return {
+        orderId: order.id,
+        packages: [],
+      };
+    }
+
+    // 2. Get BaseLinker config
+    const config = await prisma.baselinkerConfig.findFirst({
+      where: { syncEnabled: true },
+    });
+
+    if (!config) {
+      console.warn('[OrdersService] No active Baselinker config found for tracking');
+      return {
+        orderId: order.id,
+        baselinkerOrderId: order.baselinkerOrderId,
+        packages: [],
+      };
+    }
+
+    try {
+      // 3. Create provider and fetch packages
+      const apiToken = decryptToken(
+        config.apiTokenEncrypted,
+        config.encryptionIv,
+        config.authTag
+      );
+
+      const provider = createBaselinkerProvider({
+        apiToken,
+        inventoryId: config.inventoryId,
+      });
+
+      const blPackages = await provider.getOrderPackages(order.baselinkerOrderId);
+
+      // 4. Map BaseLinker packages to our format
+      const packages = blPackages.map((pkg, index) => {
+        const courierCode = pkg.courier_code?.toLowerCase() || '';
+        const courierName = pkg.courier_other_name || 
+          COURIER_NAMES[courierCode] || 
+          pkg.courier_code || 
+          'Nieznany przewoźnik';
+
+        return {
+          packageIndex: index + 1,
+          courierCode: pkg.courier_code || '',
+          courierName,
+          trackingNumber: pkg.courier_package_nr || null,
+          trackingLink: pkg.tracking_link || undefined,
+          isSent: pkg.is_sent || !!pkg.courier_package_nr,
+        };
+      });
+
+      return {
+        orderId: order.id,
+        baselinkerOrderId: order.baselinkerOrderId,
+        packages,
+      };
+    } catch (error) {
+      console.error('[OrdersService] Error fetching tracking info from Baselinker:', error);
+      return {
+        orderId: order.id,
+        baselinkerOrderId: order.baselinkerOrderId,
+        packages: [],
+      };
+    }
   }
 }
