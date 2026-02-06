@@ -6,7 +6,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Header from '../../../../components/Header';
 import Footer from '../../../../components/Footer';
 import { useAuth } from '../../../../contexts/AuthContext';
-import { ordersApi, Order } from '../../../../lib/api';
+import { ordersApi, Order, OrderTrackingPackage } from '../../../../lib/api';
 
 // Order status types
 type OrderStatus = 'OPEN' | 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
@@ -288,6 +288,10 @@ export default function OrderDetailsPage() {
       email: string;
     };
   } | null>(null);
+  
+  // Tracking states
+  const [trackingPackages, setTrackingPackages] = useState<OrderTrackingPackage[]>([]);
+  const [trackingLoading, setTrackingLoading] = useState(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -332,6 +336,26 @@ export default function OrderDetailsPage() {
     }
     
     checkEligibility();
+  }, [order]);
+
+  // Fetch tracking info from BaseLinker when order is loaded
+  useEffect(() => {
+    async function fetchTracking() {
+      if (!order || !['PROCESSING', 'SHIPPED', 'DELIVERED'].includes(order.status)) return;
+      
+      try {
+        setTrackingLoading(true);
+        const tracking = await ordersApi.getTracking(order.id);
+        setTrackingPackages(tracking.packages);
+      } catch (err) {
+        console.error('Error fetching tracking info:', err);
+        // Silent fail - tracking info is optional
+      } finally {
+        setTrackingLoading(false);
+      }
+    }
+    
+    fetchTracking();
   }, [order]);
 
   const handleCancelOrder = async () => {
@@ -736,6 +760,9 @@ export default function OrderDetailsPage() {
                       const packageItems = pkg.items || [];
                       const packageWholesaler = pkg.wholesaler || 'default';
                       
+                      // Find tracking info for this package (match by index)
+                      const trackingInfo = trackingPackages.find(t => t.packageIndex === index + 1);
+                      
                       return (
                         <div key={index} className="bg-gray-50 dark:bg-secondary-900 rounded-lg overflow-hidden">
                           <div className="p-3">
@@ -769,7 +796,8 @@ export default function OrderDetailsPage() {
                               )}
                             </div>
                             <p className="font-medium text-gray-900 dark:text-white text-sm">
-                              {getShippingMethodName(pkg.method)}
+                              {/* Show courier name from tracking if available, otherwise default from order */}
+                              {trackingInfo?.courierName || getShippingMethodName(pkg.method)}
                             </p>
                             {pkg.method === 'inpost_paczkomat' && pkg.paczkomatCode && (
                               <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
@@ -782,6 +810,44 @@ export default function OrderDetailsPage() {
                                 <p>{pkg.customAddress.firstName} {pkg.customAddress.lastName}</p>
                                 <p>{pkg.customAddress.street}</p>
                                 <p>{pkg.customAddress.postalCode} {pkg.customAddress.city}</p>
+                              </div>
+                            )}
+                            
+                            {/* Tracking info section */}
+                            {['PROCESSING', 'SHIPPED', 'DELIVERED'].includes(order.status) && (
+                              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-secondary-700">
+                                {trackingLoading ? (
+                                  <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                    <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span>Ładowanie informacji o przesyłce...</span>
+                                  </div>
+                                ) : trackingInfo?.trackingNumber ? (
+                                  <div className="space-y-1">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Numer przesyłki:</p>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <p className="font-mono text-sm text-gray-900 dark:text-white break-all">
+                                        {trackingInfo.trackingNumber}
+                                      </p>
+                                      {trackingInfo.trackingLink && (
+                                        <a
+                                          href={trackingInfo.trackingLink}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-xs text-orange-500 hover:text-orange-600 font-medium shrink-0"
+                                        >
+                                          Śledź →
+                                        </a>
+                                      )}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                                    Informacje o śledzeniu przesyłki pojawią się po nadaniu.
+                                  </p>
+                                )}
                               </div>
                             )}
                           </div>
@@ -841,13 +907,52 @@ export default function OrderDetailsPage() {
                 ) : (
                   <div className="space-y-3">
                     <p className="font-medium text-gray-900 dark:text-white text-sm">
-                      {getShippingMethodName(order.shippingMethod)}
+                      {/* Show courier name from tracking if available */}
+                      {trackingPackages[0]?.courierName || getShippingMethodName(order.shippingMethod)}
                     </p>
                     {order.paczkomatCode && (
                       <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                         <p className="font-medium text-gray-900 dark:text-white text-sm">{order.paczkomatCode}</p>
                         {order.paczkomatAddress && (
                           <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{order.paczkomatAddress}</p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Tracking info for single package orders */}
+                    {['PROCESSING', 'SHIPPED', 'DELIVERED'].includes(order.status) && (
+                      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-secondary-700">
+                        {trackingLoading ? (
+                          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                            <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>Ładowanie informacji o przesyłce...</span>
+                          </div>
+                        ) : trackingPackages[0]?.trackingNumber ? (
+                          <div className="space-y-1">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Numer przesyłki:</p>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-mono text-sm text-gray-900 dark:text-white break-all">
+                                {trackingPackages[0].trackingNumber}
+                              </p>
+                              {trackingPackages[0].trackingLink && (
+                                <a
+                                  href={trackingPackages[0].trackingLink}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-orange-500 hover:text-orange-600 font-medium shrink-0"
+                                >
+                                  Śledź →
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                            Informacje o śledzeniu przesyłki pojawią się po nadaniu.
+                          </p>
                         )}
                       </div>
                     )}

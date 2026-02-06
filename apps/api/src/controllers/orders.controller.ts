@@ -411,7 +411,7 @@ export async function simulatePayment(req: Request, res: Response): Promise<void
     const order = await ordersService.simulatePayment(id);
     
     if (!order) {
-      res.status(404).json({ message: 'Zam�wienie nie zostalo znalezione' });
+      res.status(404).json({ message: 'Zamówienie nie zostało znalezione' });
       return;
     }
     
@@ -424,5 +424,35 @@ export async function simulatePayment(req: Request, res: Response): Promise<void
   } catch (error: any) {
     console.error('Error simulating payment:', error);
     res.status(400).json({ message: error.message || 'Error simulating payment' });
+  }
+}
+
+/**
+ * Get order tracking info from BaseLinker
+ * @route GET /api/orders/:id/tracking
+ */
+export async function getOrderTracking(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    
+    // Validate ID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const cuidRegex = /^c[a-z0-9]{20,}$/i;
+    if (!uuidRegex.test(id) && !cuidRegex.test(id)) {
+      res.status(400).json({ message: 'Invalid order ID format' });
+      return;
+    }
+    
+    const trackingInfo = await ordersService.getTrackingInfo(id);
+    
+    if (!trackingInfo) {
+      res.status(404).json({ message: 'Zamówienie nie zostało znalezione' });
+      return;
+    }
+    
+    res.status(200).json(trackingInfo);
+  } catch (error: any) {
+    console.error('Error fetching order tracking:', error);
+    res.status(500).json({ message: error.message || 'Error fetching tracking info' });
   }
 }
