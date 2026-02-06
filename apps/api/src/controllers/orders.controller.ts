@@ -284,10 +284,20 @@ export async function deleteOrder(req: Request, res: Response): Promise<void> {
       return;
     }
     
-    const order = await ordersService.cancel(id);
+    const result = await ordersService.cancel(id);
     
-    if (!order) {
-      res.status(404).json({ message: 'Zam�wienie nie zostalo znalezione' });
+    if (!result) {
+      res.status(404).json({ message: 'Zamówienie nie zostało znalezione' });
+      return;
+    }
+    
+    // Check if this is a business order pending approval
+    if (result.pendingApproval) {
+      res.status(200).json({ 
+        message: 'Prośba o anulowanie zamówienia firmowego została przesłana do weryfikacji. Skontaktujemy się z Tobą wkrótce.',
+        pendingApproval: true,
+        order: result.order,
+      });
       return;
     }
     
@@ -454,5 +464,69 @@ export async function getOrderTracking(req: Request, res: Response): Promise<voi
   } catch (error: any) {
     console.error('Error fetching order tracking:', error);
     res.status(500).json({ message: error.message || 'Error fetching tracking info' });
+  }
+}
+/**
+ * Get orders pending cancellation approval (admin)
+ * @route GET /api/orders/pending-cancellations
+ */
+export async function getPendingCancellations(req: Request, res: Response): Promise<void> {
+  try {
+    const orders = await ordersService.getPendingCancellations();
+    res.status(200).json(orders);
+  } catch (error: any) {
+    console.error('Error fetching pending cancellations:', error);
+    res.status(500).json({ message: error.message || 'Error fetching pending cancellations' });
+  }
+}
+
+/**
+ * Approve cancellation of business order (admin)
+ * @route POST /api/orders/:id/approve-cancellation
+ */
+export async function approveCancellation(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    
+    const result = await ordersService.approveCancellation(id);
+    
+    if (!result) {
+      res.status(404).json({ message: 'Zamówienie nie zostało znalezione' });
+      return;
+    }
+    
+    res.status(200).json({ 
+      message: 'Zamówienie zostało anulowane',
+      order: result.order,
+    });
+  } catch (error: any) {
+    console.error('Error approving cancellation:', error);
+    res.status(500).json({ message: error.message || 'Error approving cancellation' });
+  }
+}
+
+/**
+ * Reject cancellation request (admin)
+ * @route POST /api/orders/:id/reject-cancellation
+ */
+export async function rejectCancellation(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    
+    const order = await ordersService.rejectCancellation(id, reason);
+    
+    if (!order) {
+      res.status(404).json({ message: 'Zamówienie nie zostało znalezione' });
+      return;
+    }
+    
+    res.status(200).json({ 
+      message: 'Prośba o anulowanie została odrzucona',
+      order,
+    });
+  } catch (error: any) {
+    console.error('Error rejecting cancellation:', error);
+    res.status(500).json({ message: error.message || 'Error rejecting cancellation' });
   }
 }
