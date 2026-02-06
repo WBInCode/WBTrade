@@ -540,9 +540,9 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       // Guest checkout with separate billing - use billing address NIP
       billingNip = guestAddress.billingAddress.nip || undefined;
       billingCompanyName = guestAddress.billingAddress.companyName || undefined;
-    } else if (finalBillingAddressId) {
-      // Fetch NIP from existing billing address
-      const billingAddress = await addressesService.getById(finalBillingAddressId);
+    } else if (finalBillingAddressId && userId) {
+      // Fetch NIP from existing billing address (only for logged-in users)
+      const billingAddress = await addressesService.getById(finalBillingAddressId, userId);
       if (billingAddress) {
         billingNip = billingAddress.nip || undefined;
         billingCompanyName = billingAddress.companyName || undefined;
