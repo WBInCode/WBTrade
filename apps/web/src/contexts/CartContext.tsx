@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { cartApi, Cart, CartItem } from '../lib/api';
 import AddToCartModal from '../components/AddToCartModal';
+import { trackAddToCart, trackRemoveFromCart, EcommerceItem } from '../lib/analytics';
 
 interface AddedProductInfo {
   name: string;
@@ -73,8 +74,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const updatedCart = await cartApi.addItem(variantId, quantity);
       setCart(updatedCart);
       
-      // Show modal if product info is provided
+      // Track add to cart event for analytics
       if (productInfo) {
+        const priceNum = parseFloat(productInfo.price.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+        const analyticsItem: EcommerceItem = {
+          item_id: variantId,
+          item_name: productInfo.name,
+          price: priceNum,
+          quantity: quantity,
+        };
+        trackAddToCart(analyticsItem, priceNum * quantity);
+        
+        // Show modal
         showAddToCartModal(productInfo);
       }
     } catch (err: any) {
