@@ -34,6 +34,7 @@ import priceHistoryRoutes from './routes/price-history';
 import adminSettingsRoutes from './routes/admin-settings';
 import newsletterRoutes from './routes/newsletter';
 import contactRoutes from './routes/contact';
+import feedRoutes from './routes/feed';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
 import { initializeMeilisearch } from './lib/meilisearch';
 import { startSearchIndexWorker } from './workers/search-index.worker';
@@ -170,6 +171,7 @@ app.use('/api/locations', locationsRoutes); // Warehouse locations
 app.use('/api/users', usersRoutes); // Users management
 app.use('/api/upload', uploadRoutes); // File uploads
 app.use('/api/price-history', priceHistoryRoutes); // Omnibus price history
+app.use('/api/feed', feedRoutes); // Google Merchant / Product feeds
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
