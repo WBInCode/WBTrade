@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -16,6 +16,7 @@ import PaymentMethod from './components/PaymentMethod';
 import OrderSummary from './components/OrderSummary';
 import CheckoutPackagesList from './components/CheckoutPackagesList';
 import CouponInput from './components/CouponInput';
+import { trackBeginCheckout, trackAddPaymentInfo, trackAddShippingInfo, EcommerceItem } from '@/lib/analytics';
 
 export interface AddressData {
   firstName: string;
@@ -117,6 +118,7 @@ function CheckoutPageContent() {
   
   // Filtered items based on selection from cart page (Empik-style)
   const [checkoutItems, setCheckoutItems] = useState<CartItem[]>([]);
+  const beginCheckoutTracked = useRef(false);
   
   // Filter cart items based on localStorage selection
   useEffect(() => {
@@ -141,6 +143,25 @@ function CheckoutPageContent() {
       setCheckoutItems(cart.items);
     }
   }, [cart?.items]);
+
+  // Track begin_checkout event (only once)
+  useEffect(() => {
+    if (checkoutItems.length > 0 && !beginCheckoutTracked.current) {
+      beginCheckoutTracked.current = true;
+      
+      const items: EcommerceItem[] = checkoutItems.map((item, index) => ({
+        item_id: item.variant?.sku || item.id,
+        item_name: item.productName || 'Produkt',
+        item_variant: item.variantName,
+        price: item.unitPrice,
+        quantity: item.quantity,
+        index,
+      }));
+
+      const totalValue = checkoutItems.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
+      trackBeginCheckout(items, totalValue, cart?.couponCode);
+    }
+  }, [checkoutItems, cart?.couponCode]);
   
   // Step 0 = auth choice, Step 1-4 = checkout steps
   const [currentStep, setCurrentStep] = useState(0);
