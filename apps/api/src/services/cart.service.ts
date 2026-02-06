@@ -429,9 +429,18 @@ export class CartService {
 
   /**
    * Get wholesaler from product tags
+   * Priority: Rzeszów/Outlet > other wholesalers (for outlet products shipped from Rzeszów)
    */
   private getWholesaler(tags: string[]): string | null {
-    const WHOLESALER_PATTERN = /^(hurtownia[:\-_](.+)|Ikonka|BTP|HP|Gastro|Horeca|Hurtownia\s+Przemysłowa|Leker|Forcetop|Rzeszów|Outlet)$/i;
+    // First check for Rzeszów/Outlet - these have priority over other wholesalers
+    for (const tag of tags) {
+      if (/^(Rzeszów|Outlet)$/i.test(tag)) {
+        return tag;
+      }
+    }
+    
+    // Then check for other wholesaler tags
+    const WHOLESALER_PATTERN = /^(hurtownia[:\-_](.+)|Ikonka|BTP|HP|Gastro|Horeca|Hurtownia\s+Przemysłowa|Leker|Forcetop)$/i;
     for (const tag of tags) {
       const match = tag.match(WHOLESALER_PATTERN);
       if (match) {

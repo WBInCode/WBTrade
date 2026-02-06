@@ -431,40 +431,51 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
 
     const subtotal = items.reduce((sum: number, item: CartItemData) => sum + item.unitPrice * item.quantity, 0);
     
-    // Get shipping rate using the new calculator based on product tags
-    // Convert cart items to format needed by shipping calculator
-    const cartItemsForShipping = cartItemsToCheckout.map(item => ({
-      variantId: item.variant.id,
-      quantity: item.quantity,
-    }));
-    
+    // Calculate shipping cost
+    // If packageShipping is provided (per-package shipping selections), sum prices from each package
+    // Otherwise fallback to the old single-method calculation
     let shippingCost = 0;
-    try {
-      const shippingResult = await shippingCalculatorService.calculateShipping(cartItemsForShipping);
+    
+    if (packageShipping && Array.isArray(packageShipping) && packageShipping.length > 0) {
+      // Sum shipping prices from each package - this includes odbior_osobisty_outlet at 0 zł
+      shippingCost = packageShipping.reduce((sum: number, pkg: any) => sum + (pkg.price || 0), 0);
+      console.log(`📦 Shipping cost from packageShipping: ${shippingCost} (${packageShipping.length} packages)`);
+      console.log(`📦 Package details:`, packageShipping.map((p: any) => ({ method: p.method, price: p.price })));
+    } else {
+      // Fallback: Get shipping rate using the calculator based on product tags
+      // Convert cart items to format needed by shipping calculator
+      const cartItemsForShipping = cartItemsToCheckout.map(item => ({
+        variantId: item.variant.id,
+        quantity: item.quantity,
+      }));
       
-      // Get price for specific shipping method
-      const methods = await shippingCalculatorService.getAvailableShippingMethods(cartItemsForShipping);
-      const selectedMethod = methods.find(m => m.id === shippingMethod);
-      shippingCost = selectedMethod?.price || shippingResult.shippingCost;
-      
-      // Log any warnings for debugging
-      if (shippingResult.warnings.length > 0) {
-        console.log('📦 Shipping warnings:', shippingResult.warnings);
-      }
-    } catch (shippingError) {
-      // Fallback to old shipping calculation if new one fails
-      console.error('⚠️ Error with new shipping calculator, falling back:', shippingError);
-      const shippingRates = await shippingService.calculateRate(
-        shippingMethod as ShippingProviderId,
-        {
-          providerId: shippingMethod as ShippingProviderId,
-          origin: { postalCode: '00-001', city: 'Warszawa', country: 'PL' },
-          destination: { postalCode: '00-001', city: '', country: 'PL' },
-          packages: [{ weight: 1 }],
-          pickupPointCode,
+      try {
+        const shippingResult = await shippingCalculatorService.calculateShipping(cartItemsForShipping);
+        
+        // Get price for specific shipping method
+        const methods = await shippingCalculatorService.getAvailableShippingMethods(cartItemsForShipping);
+        const selectedMethod = methods.find(m => m.id === shippingMethod);
+        shippingCost = selectedMethod?.price || shippingResult.shippingCost;
+        
+        // Log any warnings for debugging
+        if (shippingResult.warnings.length > 0) {
+          console.log('📦 Shipping warnings:', shippingResult.warnings);
         }
-      );
-      shippingCost = shippingRates[0]?.price || 0;
+      } catch (shippingError) {
+        // Fallback to old shipping calculation if new one fails
+        console.error('⚠️ Error with new shipping calculator, falling back:', shippingError);
+        const shippingRates = await shippingService.calculateRate(
+          shippingMethod as ShippingProviderId,
+          {
+            providerId: shippingMethod as ShippingProviderId,
+            origin: { postalCode: '00-001', city: 'Warszawa', country: 'PL' },
+            destination: { postalCode: '00-001', city: '', country: 'PL' },
+            packages: [{ weight: 1 }],
+            pickupPointCode,
+          }
+        );
+        shippingCost = shippingRates[0]?.price || 0;
+      }
     }
 
     // Get payment fee

@@ -25,6 +25,7 @@ const shippingMethodNames: Record<ShippingData['method'], string> = {
   inpost_kurier: 'Kurier InPost',
   dpd_kurier: 'Kurier DPD',
   wysylka_gabaryt: 'Wysyłka gabaryt',
+  odbior_osobisty_outlet: 'Odbiór osobisty (Outlet)',
 };
 
 const paymentMethodNames: Record<PaymentData['method'], string> = {
