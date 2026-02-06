@@ -57,22 +57,39 @@ function truncate(text: string, maxLength: number): string {
 
 /**
  * Generates Google Merchant Center XML feed
+ * Optimized for low memory usage - selects only required fields
  */
 export async function generateGoogleMerchantFeed(baseUrl: string): Promise<string> {
-  // Fetch all active products with their images, variants and inventory
+  // Fetch active products with only required fields to minimize memory usage
   const products = await prisma.product.findMany({
     where: {
       status: ProductStatus.ACTIVE,
     },
-    include: {
+    select: {
+      sku: true,
+      name: true,
+      slug: true,
+      description: true,
+      price: true,
+      compareAtPrice: true,
+      barcode: true,
+      tags: true,
+      baselinkerCategoryPath: true,
       images: {
+        select: { url: true },
         orderBy: { order: 'asc' },
+        take: 10, // Limit images
       },
-      category: true,
+      category: {
+        select: { name: true },
+      },
       variants: {
-        include: {
-          inventory: true,
+        select: {
+          inventory: {
+            select: { quantity: true, reserved: true },
+          },
         },
+        take: 5, // Limit variants for stock calculation
       },
     },
   });
@@ -219,7 +236,7 @@ function buildXmlFeed(products: GoogleFeedProduct[], baseUrl: string): string {
 }
 
 /**
- * Get feed statistics
+ * Get feed statistics - optimized query
  */
 export async function getFeedStats(): Promise<{
   totalProducts: number;
@@ -227,15 +244,27 @@ export async function getFeedStats(): Promise<{
   outOfStock: number;
   lastUpdated: Date;
 }> {
-  const products = await prisma.product.findMany({
+  // Use count instead of fetching all products
+  const totalProducts = await prisma.product.count({
     where: {
       status: ProductStatus.ACTIVE,
     },
-    include: {
+  });
+
+  // Count products with stock > 0 using raw aggregation
+  const productsWithStock = await prisma.product.findMany({
+    where: {
+      status: ProductStatus.ACTIVE,
+    },
+    select: {
+      id: true,
       variants: {
-        include: {
-          inventory: true,
+        select: {
+          inventory: {
+            select: { quantity: true, reserved: true },
+          },
         },
+        take: 1,
       },
     },
   });
@@ -243,7 +272,7 @@ export async function getFeedStats(): Promise<{
   let inStock = 0;
   let outOfStock = 0;
 
-  for (const product of products) {
+  for (const product of productsWithStock) {
     let totalStock = 0;
     for (const variant of product.variants) {
       for (const inv of variant.inventory) {
@@ -258,7 +287,7 @@ export async function getFeedStats(): Promise<{
   }
 
   return {
-    totalProducts: products.length,
+    totalProducts,
     inStock,
     outOfStock,
     lastUpdated: new Date(),
