@@ -32,16 +32,18 @@ function escapeXml(unsafe: string): string {
 
 /**
  * Strips HTML tags from description
- * Uses iterative approach to handle nested/malformed tags
+ * Uses iterative approach and removes stray angle brackets
  */
 function stripHtml(html: string): string {
   let result = html;
   let previous = '';
-  // Iterate until no more tags are found (handles nested cases like <scr<script>ipt>)
+  // Iterate until no more tags are found
   while (result !== previous) {
     previous = result;
     result = result.replace(/<[^>]*>/g, '');
   }
+  // Remove any remaining stray angle brackets
+  result = result.replace(/[<>]/g, '');
   return result.trim();
 }
 
