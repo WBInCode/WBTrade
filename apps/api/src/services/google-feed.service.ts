@@ -32,9 +32,17 @@ function escapeXml(unsafe: string): string {
 
 /**
  * Strips HTML tags from description
+ * Uses iterative approach to handle nested/malformed tags
  */
 function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, '').trim();
+  let result = html;
+  let previous = '';
+  // Iterate until no more tags are found (handles nested cases like <scr<script>ipt>)
+  while (result !== previous) {
+    previous = result;
+    result = result.replace(/<[^>]*>/g, '');
+  }
+  return result.trim();
 }
 
 /**
