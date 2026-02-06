@@ -530,6 +530,28 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
         console.log('📍 Guest billing address created:', guestBillingAddress.id);
       }
     }
+    
+    // Extract billing NIP and company name for business order detection
+    // This determines if order number will have FV00 suffix
+    let billingNip: string | undefined;
+    let billingCompanyName: string | undefined;
+    
+    if (isGuestCheckout && guestAddress?.billingAddress) {
+      // Guest checkout with separate billing - use billing address NIP
+      billingNip = guestAddress.billingAddress.nip || undefined;
+      billingCompanyName = guestAddress.billingAddress.companyName || undefined;
+    } else if (finalBillingAddressId) {
+      // Fetch NIP from existing billing address
+      const billingAddress = await addressesService.getById(finalBillingAddressId);
+      if (billingAddress) {
+        billingNip = billingAddress.nip || undefined;
+        billingCompanyName = billingAddress.companyName || undefined;
+      }
+    }
+    
+    if (billingNip) {
+      console.log(`🏢 Business order detected - NIP: ${billingNip}, Company: ${billingCompanyName || 'N/A'}`);
+    }
 
     // Enrich packageShipping with product items for order history display
     // If frontend already sent items (new flow), use them directly
@@ -621,6 +643,9 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       discount: cart.discount || 0,
       // Invoice preference
       wantInvoice: wantInvoice || false,
+      // Business order fields (for FV00 suffix)
+      billingNip,
+      billingCompanyName,
       // Guest checkout fields
       guestEmail: isGuestCheckout ? guestEmail : undefined,
       guestFirstName: isGuestCheckout ? guestFirstName : undefined,
