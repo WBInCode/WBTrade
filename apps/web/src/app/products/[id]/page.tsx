@@ -1,7 +1,7 @@
 'use client';
 
 import { notFound, useRouter } from 'next/navigation';
-import { useState, use, useEffect, useMemo, useCallback } from 'react';
+import { useState, use, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
@@ -11,6 +11,7 @@ import ProductCard from '../../../components/ProductCard';
 import { useCart } from '../../../contexts/CartContext';
 import { useWishlist } from '../../../contexts/WishlistContext';
 import { cleanCategoryName } from '../../../lib/categories';
+import { trackViewItem, EcommerceItem } from '../../../lib/analytics';
 
 interface ProductPageProps {
   params: Promise<{ id: string }>;
@@ -89,6 +90,9 @@ export default function ProductPage({ params }: ProductPageProps) {
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   const router = useRouter();
+
+  // Analytics dedup ref
+  const viewItemTracked = useRef(false);
 
   // Cart error state for displaying error messages
   const [cartError, setCartError] = useState<string | null>(null);
@@ -298,6 +302,22 @@ export default function ProductPage({ params }: ProductPageProps) {
     }
     fetchProduct();
   }, [id]);
+
+  // Track view_item event (only once per product)
+  useEffect(() => {
+    if (!product || loading || viewItemTracked.current) return;
+    viewItemTracked.current = true;
+
+    const price = Number(product.price) || 0;
+    const item: EcommerceItem = {
+      item_id: product.sku || product.id,
+      item_name: product.name,
+      item_category: product.category?.name,
+      price,
+      quantity: 1,
+    };
+    trackViewItem(item, price);
+  }, [product, loading]);
 
   // Fetch bestsellers for recommendations
   useEffect(() => {

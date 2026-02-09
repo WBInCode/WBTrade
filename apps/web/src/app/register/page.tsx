@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { trackSignup } from '@/lib/analytics';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -101,6 +102,7 @@ export default function RegisterPage() {
     });
 
     if (result.success) {
+      trackSignup('email');
       router.push('/account?registered=true');
     } else {
       setError(result.error || 'Rejestracja nie powiodła się');
