@@ -20,23 +20,23 @@ export default function FAQPage() {
       questions: [
         {
           question: 'Jak złożyć zamówienie?',
-          answer: 'Aby złożyć zamówienie, dodaj wybrane produkty do\u00A0koszyka, a\u00A0następnie przejdź do\u00A0kasy. Uzupełnij dane dostawy, wybierz metodę płatności i\u00A0potwierdź zamówienie. Po\u00A0złożeniu zamówienia otrzymasz e-mail z\u00A0potwierdzeniem.',
+          answer: 'Aby złożyć zamówienie, dodaj wybrane produkty do koszyka i przejdź do kasy. Uzupełnij dane do wysyłki (oraz dane do faktury, jeśli chcesz ją otrzymać), wybierz metodę dostawy i płatności, a następnie potwierdź zamówienie. Po złożeniu zamówienia otrzymasz e-mail z potwierdzeniem.',
         },
         {
           question: 'Jak sprawdzić status mojego zamówienia?',
-          answer: 'Status zamówienia możesz sprawdzić po\u00A0zalogowaniu się na\u00A0swoje konto w\u00A0zakładce "Moje zamówienia". Znajdziesz tam informacje o\u00A0etapie realizacji oraz\u00A0link do\u00A0śledzenia przesyłki.',
+          answer: 'Status zamówienia możesz sprawdzić po zalogowaniu się na konto w zakładce "Moje zamówienia". Znajdziesz tam etap realizacji oraz (po nadaniu przesyłki) numer i link do śledzenia.',
         },
         {
           question: 'Czy mogę anulować zamówienie?',
-          answer: 'Tak, możesz anulować zamówienie, o\u00A0ile nie zostało jeszcze wysłane. Przejdź do\u00A0"Moje zamówienia" i\u00A0kliknij "Anuluj zamówienie". Jeśli zamówienie zostało już nadane, będziesz musiał poczekać na\u00A0dostawę i\u00A0skorzystać z\u00A0procedury zwrotu.',
+          answer: 'Tak — możesz anulować zamówienie, o ile nie zostało jeszcze wysłane. W tym celu przejdź do „Moje zamówienia” i wybierz opcję „Anuluj zamówienie” (jeśli jest dostępna). Jeżeli zamówienie zostało już nadane, anulowanie może nie być możliwe — w takim przypadku, po otrzymaniu przesyłki, możesz skorzystać z prawa zwrotu w terminie 14 dni.',
         },
         {
           question: 'Czy mogę zmienić adres dostawy po złożeniu zamówienia?',
-          answer: 'Zmiana adresu dostawy jest możliwa tylko przed wysyłką zamówienia. Skontaktuj się z\u00A0nami jak najszybciej przez formularz kontaktowy lub telefonicznie, podając numer zamówienia i\u00A0nowy adres.',
+          answer: 'Zmiana adresu dostawy na stronie jest możliwa wyłącznie przed wysyłką zamówienia. W przypadku pomyłki lub potrzeby zmiany adresu skontaktuj się z nami jak najszybciej (formularz kontaktowy lub telefon), podając numer zamówienia i poprawny adres.',
         },
         {
           question: 'Jak otrzymam fakturę?',
-          answer: 'Podczas składania zamówienia zaznacz opcję "Chcę otrzymać fakturę VAT" i\u00A0podaj dane firmy (NIP, nazwa, adres). Po\u00A0opłaceniu zamówienia faktura będzie dostępna do\u00A0pobrania w\u00A0zakładce "Moje zamówienia".',
+          answer: 'Podczas składania zamówienia zaznacz opcję „Faktura VAT” i podaj dane do faktury (w przypadku firmy: NIP, nazwa i adres). Po opłaceniu zamówienia faktura będzie dostępna do pobrania w zakładce „Moje zamówienia” przy danym zamówieniu.',
         },
       ],
     },
@@ -51,19 +51,19 @@ export default function FAQPage() {
       questions: [
         {
           question: 'Jakie są dostępne metody dostawy?',
-          answer: 'Oferujemy dostawę kurierską InPost, dostawę do\u00A0Paczkomatów InPost, dostawę kurierską DPD oraz\u00A0specjalną wysyłkę dla produktów gabarytowych.',
+          answer: 'Oferujemy: dostawę do Paczkomatów InPost, dostawę kurierską InPost, dostawę kurierską DPD oraz specjalną wysyłkę dla produktów gabarytowych (jeśli jest dostępna dla danego produktu).',
         },
         {
           question: 'Ile kosztuje dostawa?',
-answer: 'Koszt dostawy zależy od\u00A0wybranej metody: Paczkomaty InPost od\u00A015,99\u00A0zł, Kurier InPost od\u00A019,99\u00A0zł. Darmowa dostawa dostępna przy zamówieniach powyżej określonej kwoty (od\u00A0300\u00A0zł dla Paczkomatów).',
+          answer: 'Koszt dostawy zależy od wybranej metody: Paczkomaty InPost — od 15,99 zł, Kurier InPost — od 19,99 zł. Darmowa dostawa może być dostępna dla wybranych metod po przekroczeniu progu zamówienia, jeśli zamówienie spełnia warunki promocji dla danej hurtowni. Darmowa dostawa nie dotyczy przesyłek gabarytowych. Ostateczny koszt dostawy oraz informacja o ewentualnej darmowej dostawie są widoczne w koszyku i w kasie przed złożeniem zamówienia.',
         },
         {
           question: 'Jak śledzić przesyłkę?',
-          answer: 'Po nadaniu przesyłki otrzymasz e-mail z\u00A0numerem śledzenia. Możesz również sprawdzić status w\u00A0zakładce "Moje zamówienia".',
+          answer: 'Po nadaniu przesyłki otrzymasz e-mail z numerem (i linkiem) do śledzenia. Możesz też sprawdzić te informacje po zalogowaniu w zakładce „Moje zamówienia”.',
         },
         {
           question: 'Co zrobić, jeśli przesyłka jest uszkodzona?',
-          answer: 'W\u00A0przypadku widocznych uszkodzeń paczki, sporządź protokół szkody w\u00A0obecności kuriera i\u00A0zrób zdjęcia. Następnie skontaktuj się z\u00A0nami, a\u00A0rozpatrzymy reklamację. Masz również prawo odmówić przyjęcia uszkodzonej przesyłki.',
+          answer: 'Jeżeli paczka ma widoczne uszkodzenia lub nosi ślady otwarcia, sprawdź ją przy odbiorze. W przypadku dostawy kurierem: sporządź protokół szkody w obecności kuriera i zrób zdjęcia. Następnie skontaktuj się z nami i przekaż numer zamówienia oraz dokumentację (zdjęcia/protokół). Masz również prawo odmówić przyjęcia uszkodzonej przesyłki.',
         },
       ],
     },
@@ -82,19 +82,19 @@ answer: 'Koszt dostawy zależy od\u00A0wybranej metody: Paczkomaty InPost od\u00
         },
         {
           question: 'Czy płatności są bezpieczne?',
-          answer: 'Tak, wszystkie płatności są szyfrowane i\u00A0przetwarzane przez certyfikowanych operatorów płatności. Nie przechowujemy danych Twoich kart płatniczych. Strona jest zabezpieczona certyfikatem SSL.',
+          answer: 'Tak. Płatności są przetwarzane przez operatorów płatności, a połączenie ze sklepem jest zabezpieczone (SSL). Nie przechowujemy danych kart płatniczych.',
         },
         {
           question: 'Co zrobić, gdy płatność nie przeszła?',
-          answer: 'Jeśli płatność nie została zrealizowana, sprawdź saldo konta i\u00A0limity karty. Spróbuj ponownie lub wybierz inną metodę płatności. Jeśli problem się powtarza, skontaktuj się z\u00A0nami lub ze\u00A0swoim bankiem.',
+          answer: 'Jeśli płatność nie została zrealizowana, sprawdź saldo i limity (karty/BLIK) oraz spróbuj ponownie lub wybierz inną metodę płatności. Jeżeli problem się powtarza, skontaktuj się z nami lub ze swoim bankiem/operatorem płatności.',
         },
         {
           question: 'Kiedy zostanie pobrana płatność?',
-          answer: 'Płatność jest pobierana natychmiast po\u00A0potwierdzeniu zamówienia. W\u00A0przypadku przelewu tradycyjnego, zamówienie jest realizowane po\u00A0zaksięgowaniu wpłaty na\u00A0naszym koncie (1–2 dni robocze).',
+          answer: 'W przypadku płatności online (karta/BLIK/szybki przelew) płatność jest realizowana po potwierdzeniu transakcji. W przypadku przelewu tradycyjnego zamówienie jest realizowane po zaksięgowaniu wpłaty na naszym koncie (zwykle 1–2 dni robocze).',
         },
         {
           question: 'Czy mogę otrzymać fakturę VAT?',
-          answer: 'Tak, podczas składania zamówienia zaznacz opcję "Faktura VAT" i\u00A0podaj dane firmy (NIP, nazwa, adres). Faktura zostanie wygenerowana automatycznie i będzie dostępna w zakładce "Moje zamówienia" pod Twoim zamówieniem.',
+          answer: 'Tak. Podczas składania zamówienia zaznacz opcję „Faktura VAT” i podaj dane do faktury (w przypadku firmy: NIP, nazwa, adres). Faktura zostanie wygenerowana i będzie dostępna w zakładce „Moje zamówienia” przy Twoim zamówieniu.',
         },
       ],
     },
@@ -109,23 +109,19 @@ answer: 'Koszt dostawy zależy od\u00A0wybranej metody: Paczkomaty InPost od\u00
       questions: [
         {
           question: 'Ile mam czasu na zwrot produktu?',
-          answer: 'Masz 14\u00A0dni kalendarzowych od\u00A0daty otrzymania przesyłki na\u00A0dokonanie zwrotu bez podania przyczyny. Wystarczy zgłosić zwrot przez formularz na\u00A0stronie /returns.',
-        },
-        {
-          question: 'Jak zwrócić produkt?',
-          answer: 'Wejdź na\u00A0stronę wbtrade.pl/returns i\u00A0wypełnij formularz zwrotu – podaj numer zamówienia i\u00A0adres e-mail. Nie musisz być zalogowany. Postępuj zgodnie z\u00A0instrukcjami – spakuj produkt i\u00A0nadaj przesyłkę. Po\u00A0otrzymaniu i\u00A0weryfikacji, zwrócimy środki.',
+          answer: 'Masz 14 dni kalendarzowych od dnia otrzymania przesyłki na zgłoszenie zwrotu bez podania przyczyny. Zgłoszenia dokonasz przez formularz na stronie "Zwroty i reklamacje"',
         },
         {
           question: 'Kto pokrywa koszty zwrotu?',
-          answer: 'Koszty przesyłki zwrotnej zawsze pokrywa kupujący.',
+          answer: 'Koszty przesyłki zwrotnej ponosi kupujący.',
         },
         {
           question: 'Jak długo trwa zwrot pieniędzy?',
-          answer: 'Zwrot środków następuje w\u00A0ciągu 14\u00A0dni roboczych od\u00A0momentu otrzymania i\u00A0pozytywnej weryfikacji zwróconego produktu. Pieniądze wracają tą samą metodą, którą dokonano płatności.',
+          answer: 'Zwrot środków następuje w ciągu 14 dni roboczych od otrzymania zwróconego produktu i jego weryfikacji. Środki zwracamy tą samą metodą płatności, którą opłacono zamówienie.',
         },
         {
           question: 'Jak złożyć reklamację?',
-          answer: 'Reklamację można złożyć przez formularz na\u00A0stronie lub kontaktując się z\u00A0nami mailowo. Podaj numer zamówienia, opis problemu i\u00A0dołącz zdjęcia. Reklamacje rozpatrujemy w\u00A0ciągu 14\u00A0dni kalendarzowych.',
+          answer: 'Reklamację możesz złożyć przez formularz na stronie lub kontaktując się z nami e-mailowo. Podaj numer zamówienia, opisz problem i dołącz zdjęcia (jeśli to możliwe). Reklamacje rozpatrujemy w ciągu 14 dni kalendarzowych od otrzymania zgłoszenia.',
         },
       ],
     },
@@ -140,23 +136,23 @@ answer: 'Koszt dostawy zależy od\u00A0wybranej metody: Paczkomaty InPost od\u00
       questions: [
         {
           question: 'Jak założyć konto?',
-          answer: 'Kliknij "Zarejestruj się" w\u00A0prawym górnym rogu strony. Podaj adres e-mail, utwórz hasło i\u00A0uzupełnij dane. Możesz również zarejestrować się podczas składania pierwszego zamówienia.',
+          answer: 'Kliknij „Zaloguj” na górze strony sklepu, a następnie wybierz opcję założenia konta (zgodnie z komunikatem „Załóż konto i odbierz zniżkę”). Podaj adres e-mail, utwórz hasło i uzupełnij wymagane dane. Możesz również utworzyć konto podczas składania zamówienia.',
         },
         {
           question: 'Zapomniałem hasła, co zrobić?',
-          answer: 'Kliknij "Zaloguj się", a\u00A0następnie "Zapomniałem hasła". Podaj adres e-mail powiązany z\u00A0kontem, a\u00A0wyślemy link do\u00A0zresetowania hasła. Link jest ważny przez 24\u00A0godziny.',
+          answer: 'Kliknij „Zaloguj się”, a następnie „Zapomniałem hasła”. Podaj adres e-mail powiązany z kontem — wyślemy link do ustawienia nowego hasła. Link jest ważny przez godzinę.',
         },
         {
           question: 'Jak zmienić dane w koncie?',
-          answer: 'Po zalogowaniu przejdź do\u00A0"Moje konto" > "Ustawienia". Możesz tam zmienić dane osobowe, adres dostawy, hasło oraz\u00A0preferencje powiadomień.',
+          answer: 'Po zalogowaniu wejdź w „Moje konto” i wybierz odpowiednią zakładkę: „Dane osobowe” — zmiana danych osobowych, „Adresy” — zmiana/dodanie adresu dostawy i adresu rozliczeniowego (do faktury), „Zmiana hasła” — aktualizacja hasła, „Ustawienia” — preferencje konta (np. wygląd/tryb ciemny).',
         },
         {
           question: 'Czy mogę usunąć swoje konto?',
-          answer: 'Tak, możesz zażądać usunięcia konta kontaktując się z\u00A0nami. Pamiętaj, że utracisz dostęp do\u00A0historii zamówień i\u00A0zgromadzonych punktów. Proces usunięcia trwa do\u00A030\u00A0dni.',
+          answer: 'Tak. Po zalogowaniu wejdź w „Moje konto” → „Ustawienia” i w sekcji „Strefa zagrożenia” kliknij „Usuń konto”. Następnie potwierdź operację hasłem. Usunięcie konta jest natychmiastowe i nieodwracalne — zostaną trwale usunięte dane przypisane do konta, w tym m.in. historia zamówień, zapisane adresy oraz ewentualne korzyści przypisane do konta.',
         },
         {
           question: 'Czy moje dane są bezpieczne?',
-          answer: 'Tak, dbamy o\u00A0bezpieczeństwo Twoich danych. Stosujemy szyfrowanie SSL, nie udostępniamy danych osobom trzecim bez Twojej zgody i\u00A0przestrzegamy przepisów RODO.',
+          answer: 'Dbamy o bezpieczeństwo danych. Połączenie ze sklepem jest zabezpieczone (SSL), a dane przetwarzamy zgodnie z przepisami RODO.',
         },
       ],
     },
@@ -165,7 +161,7 @@ answer: 'Koszt dostawy zależy od\u00A0wybranej metody: Paczkomaty InPost od\u00
   return (
     <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
       <Header />
-      
+
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-primary-600 to-primary-700 text-white py-16 lg:py-24">
         <div className="container-custom">
@@ -212,7 +208,7 @@ answer: 'Koszt dostawy zależy od\u00A0wybranej metody: Paczkomaty InPost od\u00
                     {category.name}
                   </h2>
                 </div>
-                
+
                 <div className="space-y-4">
                   {category.questions.map((item, index) => (
                     <details
