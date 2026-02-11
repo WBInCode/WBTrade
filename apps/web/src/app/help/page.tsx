@@ -18,10 +18,10 @@ export default function HelpPage() {
       title: 'Zamówienia',
       description: 'Składanie zamówień, status, modyfikacje',
       links: [
-        { label: 'Jak złożyć zamówienie?', href: '/help/orders/how-to-order' },
-        { label: 'Sprawdzanie statusu zamówienia', href: '/help/orders/status' },
-        { label: 'Anulowanie zamówienia', href: '/help/orders/cancel' },
-        { label: 'Modyfikacja zamówienia', href: '/help/orders/modify' },
+        { label: 'Jak złożyć zamówienie?', href: '/faq#orders' },
+        { label: 'Sprawdzanie statusu zamówienia', href: '/faq#orders' },
+        { label: 'Anulowanie zamówienia', href: '/faq#orders' },
+        { label: 'Faktury i rachunki', href: '/faq#orders' },
       ],
     },
     {
@@ -31,12 +31,12 @@ export default function HelpPage() {
         </svg>
       ),
       title: 'Płatności',
-      description: 'Metody płatności, faktury, problemy',
+      description: 'Metody płatności, bezpieczeństwo',
       links: [
-        { label: 'Dostępne metody płatności', href: '/help/payments/methods' },
-        { label: 'Problemy z płatnością', href: '/help/payments/issues' },
-        { label: 'Faktury i rachunki', href: '/help/payments/invoices' },
-        { label: 'Zwrot środków', href: '/help/payments/refunds' },
+        { label: 'Dostępne metody płatności', href: '/faq#payments' },
+        { label: 'Bezpieczeństwo płatności', href: '/faq#payments' },
+        { label: 'Problemy z płatnością', href: '/faq#payments' },
+        { label: 'Zwrot środków', href: '/faq#returns' },
       ],
     },
     {
@@ -48,10 +48,10 @@ export default function HelpPage() {
       title: 'Zwroty i reklamacje',
       description: 'Procedury zwrotów i reklamacji',
       links: [
-        { label: 'Jak zwrócić produkt?', href: '/returns' },
-        { label: 'Polityka zwrotów', href: '/help/returns/policy' },
-        { label: 'Zgłaszanie reklamacji', href: '/help/returns/complaint' },
-        { label: 'Status zwrotu/reklamacji', href: '/help/returns/status' },
+        { label: 'Jak zwrócić produkt?', href: '/faq#returns' },
+        { label: 'Polityka zwrotów', href: '/terms' },
+        { label: 'Zgłaszanie reklamacji', href: '/faq#returns' },
+        { label: 'Status zwrotu/reklamacji', href: '/contact' },
       ],
     },
     {
@@ -64,10 +64,10 @@ export default function HelpPage() {
       title: 'Dostawa',
       description: 'Opcje dostawy, śledzenie przesyłki',
       links: [
-        { label: 'Opcje i koszty dostawy', href: '/shipping' },
-        { label: 'Śledzenie przesyłki', href: '/help/delivery/tracking' },
-        { label: 'Odbiór w punkcie', href: '/help/delivery/pickup' },
-        { label: 'Problemy z dostawą', href: '/help/delivery/issues' },
+        { label: 'Opcje i koszty dostawy', href: '/faq#delivery' },
+        { label: 'Śledzenie przesyłki', href: '/faq#delivery' },
+        { label: 'Odbiór w punkcie', href: '/faq#delivery' },
+        { label: 'Uszkodzona przesyłka', href: '/faq#delivery' },
       ],
     },
     {
@@ -79,10 +79,10 @@ export default function HelpPage() {
       title: 'Konto',
       description: 'Zarządzanie kontem, ustawienia',
       links: [
-        { label: 'Rejestracja konta', href: '/help/account/register' },
-        { label: 'Resetowanie hasła', href: '/forgot-password' },
-        { label: 'Zmiana danych', href: '/help/account/update' },
-        { label: 'Usunięcie konta', href: '/help/account/delete' },
+        { label: 'Rejestracja konta', href: '/faq#account' },
+        { label: 'Resetowanie hasła', href: '/faq#account' },
+        { label: 'Zmiana danych', href: '/faq#account' },
+        { label: 'Usunięcie konta', href: '/faq#account' },
       ],
     },
     {
@@ -91,40 +91,40 @@ export default function HelpPage() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
         </svg>
       ),
-      title: 'Bezpieczeństwo',
-      description: 'Ochrona konta i danych',
+      title: 'Bezpieczeństwo i Prawne',
+      description: 'Ochrona konta i regulacje',
       links: [
-        { label: 'Bezpieczeństwo zakupów', href: '/help/security/shopping' },
-        { label: 'Ochrona danych osobowych', href: '/help/security/privacy' },
-        { label: 'Podejrzana aktywność', href: '/help/security/suspicious' },
-        { label: 'Weryfikacja sprzedawców', href: '/help/security/sellers' },
+        { label: 'Polityka prywatności', href: '/privacy' },
+        { label: 'Polityka RODO', href: '/rodo' },
+        { label: 'Regulamin sklepu', href: '/terms' },
+        { label: 'Bezpieczeństwo danych', href: '/faq#account' },
       ],
     },
   ];
 
   const popularQuestions = [
     {
-      question: 'Jak mogę śledzić moje zamówienie?',
-      answer: 'Po zalogowaniu się na swoje konto, przejdź do sekcji "Moje zamówienia".',
+      question: 'Jak sprawdzić status mojego zamówienia?',
+      answer: 'Status zamówienia możesz sprawdzić po zalogowaniu się na konto w zakładce "Moje zamówienia". Znajdziesz tam etap realizacji oraz (po nadaniu przesyłki) numer i link do śledzenia.',
     },
     {
       question: 'Ile mam czasu na zwrot produktu?',
-      answer: 'Masz 14 dni od daty otrzymania przesyłki na dokonanie zwrotu bez podania przyczyny. Produkt musi być nieużywany i w oryginalnym opakowaniu.',
+      answer: 'Masz 14 dni kalendarzowych od dnia otrzymania przesyłki na zgłoszenie zwrotu bez podania przyczyny. Zgłoszenia dokonasz przez formularz na stronie "Zwroty i reklamacje".',
     },
     {
       question: 'Jakie są dostępne metody płatności?',
-      answer: 'Akceptujemy płatności kartą (Visa, Mastercard), BLIK, przelewy online (PayU).',
+      answer: 'Akceptujemy: karty płatnicze (Visa, Mastercard), BLIK, szybkie przelewy online (PayU) oraz tradycyjny przelew bankowy.',
     },
     {
-      question: 'Jak długo trwa realizacja zamówienia?',
-      answer: 'Standardowy czas realizacji to 1-3 dni robocze.',
+      question: 'Czy mogę anulować zamówienie?',
+      answer: 'Tak — możesz anulować zamówienie, o ile nie zostało jeszcze wysłane. W tym celu przejdź do „Moje zamówienia” i wybierz opcję „Anuluj zamówienie” (jeśli jest dostępna).',
     },
   ];
 
   return (
     <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
       <Header />
-      
+
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-primary-600 to-primary-700 text-white py-16 lg:py-24">
         <div className="container-custom">
@@ -135,7 +135,7 @@ export default function HelpPage() {
             <p className="text-xl text-primary-100 mb-8">
               Znajdź odpowiedzi na pytania dotyczące zamówień, płatności, dostawy i więcej.
             </p>
-            
+
             {/* Search Box */}
             <div className="relative max-w-xl mx-auto">
               <input
