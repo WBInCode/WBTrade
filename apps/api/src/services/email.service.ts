@@ -1098,7 +1098,7 @@ Zespół WB Trade
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
           <thead>
             <tr style="background-color: #f8fafc;">
-              <th style="padding: 12px; text-align: left; font-size: 13px; color: #666;">Produkt</th>
+              <th style="padding: 12px; text-align: left; font-size: 13px; color: #667;">Produkt</th>
               <th style="padding: 12px; text-align: center; font-size: 13px; color: #666;">Ilość</th>
               <th style="padding: 12px; text-align: right; font-size: 13px; color: #666;">Cena</th>
             </tr>

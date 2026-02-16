@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { trackLogin } from '@/lib/analytics';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -77,6 +78,7 @@ export default function LoginPage() {
     const result = await login(email, password);
 
     if (result.success) {
+      trackLogin('email');
       router.push(redirectUrl);
     } else {
       setError(result.error || 'Logowanie nie powiodło się');

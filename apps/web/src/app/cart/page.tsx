@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
@@ -8,6 +8,7 @@ import CartPackageView from '../../components/CartPackageView';
 import { useCart } from '../../contexts/CartContext';
 import { productsApi, checkoutApi, Product } from '../../lib/api';
 import { roundMoney } from '../../lib/currency';
+import { trackViewCart, EcommerceItem } from '../../lib/analytics';
 import ProductCard from '../../components/ProductCard';
 
 export default function CartPage() {
@@ -17,6 +18,7 @@ export default function CartPage() {
   const [totalShippingCost, setTotalShippingCost] = useState<number>(0);
   const [loadingShipping, setLoadingShipping] = useState(false);
   const [bestsellers, setBestsellers] = useState<Product[]>([]);
+  const viewCartTracked = useRef(false);
 
   // Initialize all items as selected
   useEffect(() => {
@@ -37,6 +39,23 @@ export default function CartPage() {
     }
     fetchBestsellers();
   }, []);
+
+  // Track view_cart event (only once)
+  useEffect(() => {
+    if (!cart?.items || cart.items.length === 0 || loading || viewCartTracked.current) return;
+    viewCartTracked.current = true;
+
+    const items: EcommerceItem[] = cart.items.map((item, index) => ({
+      item_id: item.variant?.sku || item.variant?.id || item.id,
+      item_name: item.variant?.product?.name || 'Produkt',
+      item_variant: item.variant?.name,
+      price: item.variant?.price || 0,
+      quantity: item.quantity,
+      index,
+    }));
+    const totalValue = cart.items.reduce((sum, item) => sum + ((item.variant?.price || 0) * item.quantity), 0);
+    trackViewCart(items, totalValue);
+  }, [cart?.items, loading]);
 
   // Fetch shipping prices for each package
   useEffect(() => {
