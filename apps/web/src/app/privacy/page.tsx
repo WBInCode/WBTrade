@@ -10,7 +10,7 @@ export default function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
       <Header />
-      
+
       {/* Hero Section */}
       <section className="bg-white dark:bg-secondary-800 border-b border-secondary-200 dark:border-secondary-700 py-16">
         <div className="container-custom">
@@ -31,18 +31,18 @@ export default function PrivacyPolicyPage() {
           <div className="max-w-4xl mx-auto">
             <div className="bg-white dark:bg-secondary-800 rounded-2xl shadow-sm p-8 lg:p-12">
               <div className="prose prose-lg dark:prose-invert max-w-none">
-                
+
                 <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-0 mb-4">
                   1. Informacje ogólne
                 </h2>
                 <p className="text-secondary-600 dark:text-secondary-400 mb-6">
-                  Niniejsza Polityka Prywatności określa zasady przetwarzania i&nbsp;ochrony danych osobowych 
-                  przekazanych przez Użytkowników w&nbsp;związku z&nbsp;korzystaniem z&nbsp;serwisu WB Trade.
+                  Niniejsza Polityka Prywatności określa zasady przetwarzania i&nbsp;ochrony danych osobowych
+                  przekazanych przez Użytkowników w&nbsp;związku z&nbsp;korzystaniem z&nbsp;serwisu wb-trade.pl („Sklep").
                 </p>
                 <p className="text-secondary-600 dark:text-secondary-400 mb-6">
-                  Administratorem danych osobowych jest WB&nbsp;PARTNERS Sp.&nbsp;z&nbsp;o.o. z&nbsp;siedzibą w&nbsp;Rzeszowie, 
-                  ul.&nbsp;Juliusza Słowackiego 24/11, 35-060 Rzeszów, wpisana do&nbsp;rejestru przedsiębiorców 
-                  KRS pod numerem 0001151642, NIP:&nbsp;5170455185, REGON:&nbsp;540735769.
+                  Administratorem danych osobowych jest WB&nbsp;Partners Sp.&nbsp;z&nbsp;o.o. z&nbsp;siedzibą w&nbsp;Rzeszowie pod ul.&nbsp;Juliusza
+                  Słowackiego 24/11, 35-060 Rzeszów, wpisana do&nbsp;rejestru przedsiębiorców KRS pod numerem
+                  0001151642, NIP:&nbsp;5170455185, REGON:&nbsp;540735769.
                 </p>
 
                 <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
@@ -56,28 +56,43 @@ export default function PrivacyPolicyPage() {
                   <li>Adres e-mail</li>
                   <li>Numer telefonu</li>
                   <li>Adres dostawy</li>
-                  <li>Dane rozliczeniowe (w przypadku faktur)</li>
-                  <li>Historia zamówień</li>
-                  <li>Dane dotyczące aktywności w serwisie</li>
+                  <li>Dane rozliczeniowe</li>
+                  <li>Dane do faktury</li>
+                  <li>Dane zamówień</li>
+                  <li>Dane techniczne i analityczne</li>
                 </ul>
 
                 <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
-                  3. Cel przetwarzania danych
+                  3. Źródło danych osobowych
+                </h2>
+                <p className="text-secondary-600 dark:text-secondary-400 mb-6">
+                  Dane osobowe pozyskujemy bezpośrednio od&nbsp;Ciebie, w&nbsp;szczególności podczas: rejestracji konta,
+                  składania zamówienia, wypełniania formularzy kontaktowych, zapisu do&nbsp;newslettera oraz w&nbsp;trakcie
+                  kontaktu z&nbsp;Biurem Obsługi Klienta. Dodatkowo, po&nbsp;wyrażeniu zgody na&nbsp;pliki cookies, możemy
+                  pozyskiwać dane z&nbsp;urządzenia i&nbsp;przeglądarki (np.&nbsp;identyfikatory cookies, adres IP, informacje o&nbsp;aktywności
+                  w&nbsp;Sklepie) w&nbsp;związku z&nbsp;korzystaniem z&nbsp;narzędzi analitycznych i&nbsp;marketingowych.
+                </p>
+
+                <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
+                  4. Cel przetwarzania danych
                 </h2>
                 <p className="text-secondary-600 dark:text-secondary-400 mb-4">
                   Dane osobowe przetwarzane są w celu:
                 </p>
                 <ul className="list-disc pl-6 text-secondary-600 dark:text-secondary-400 mb-6 space-y-2">
                   <li>Realizacji zamówień i umów sprzedaży</li>
-                  <li>Obsługi reklamacji i zwrotów</li>
-                  <li>Kontaktu z klientem w sprawach związanych z zamówieniem</li>
-                  <li>Wysyłki newslettera (za zgodą użytkownika)</li>
+                  <li>Obsługi konta użytkownika (jeżeli zostało założone)</li>
+                  <li>Obsługi zwrotów i reklamacji</li>
+                  <li>Kontaktu z klientem w sprawach zamówienia, zwrotu lub reklamacji</li>
                   <li>Prowadzenia analiz i statystyk</li>
-                  <li>Wypełnienia obowiązków prawnych (np. podatkowych)</li>
+                  <li>Marketingu bezpośredniego – na podstawie prawnie uzasadnionego interesu</li>
+                  <li>Wysyłki newslettera – wyłącznie na podstawie zgody użytkownika</li>
+                  <li>Wypełnienia obowiązków prawnych (np. podatkowych/księgowych)</li>
+                  <li>Ustalenia, dochodzenia i obrony roszczeń</li>
                 </ul>
 
                 <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
-                  4. Podstawa prawna przetwarzania
+                  5. Podstawa prawna przetwarzania
                 </h2>
                 <p className="text-secondary-600 dark:text-secondary-400 mb-4">
                   Przetwarzamy dane osobowe na podstawie:
@@ -88,26 +103,34 @@ export default function PrivacyPolicyPage() {
                   <li>Art. 6 ust. 1 lit. c RODO – wypełnienie obowiązku prawnego</li>
                   <li>Art. 6 ust. 1 lit. f RODO – prawnie uzasadniony interes administratora</li>
                 </ul>
-
-                <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
-                  5. Okres przechowywania danych
-                </h2>
                 <p className="text-secondary-600 dark:text-secondary-400 mb-6">
-                  Dane osobowe przechowywane są przez okres niezbędny do&nbsp;realizacji celów, dla których 
-                  zostały zebrane, a&nbsp;następnie przez okres wymagany przepisami prawa (np.&nbsp;przepisami 
-                  podatkowymi – 5&nbsp;lat od&nbsp;końca roku, w&nbsp;którym powstał obowiązek podatkowy). 
-                  Dane przetwarzane na&nbsp;podstawie zgody przechowujemy do&nbsp;momentu jej wycofania.
+                  Szczegółowe cele i&nbsp;przypisane im podstawy prawne wskazujemy w&nbsp;dokumencie „RODO" dostępnym
+                  w&nbsp;Sklepie.
                 </p>
 
                 <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
-                  6. Prawa użytkownika
+                  6. Okres przechowywania danych
+                </h2>
+                <p className="text-secondary-600 dark:text-secondary-400 mb-6">
+                  Dane osobowe przechowywane są przez okres niezbędny do&nbsp;realizacji celów, dla których zostały
+                  zebrane, a&nbsp;następnie przez okres wymagany przepisami prawa (np.&nbsp;przepisami podatkowymi – 5&nbsp;lat od&nbsp;końca
+                  roku, w&nbsp;którym powstał obowiązek podatkowy). Dane przetwarzane na&nbsp;podstawie zgody
+                  przechowujemy do&nbsp;momentu jej wycofania.
+                </p>
+                <p className="text-secondary-600 dark:text-secondary-400 mb-6">
+                  Szczegółowe informacje o&nbsp;okresie przechowywania danych wskazujemy w&nbsp;dokumencie „RODO"
+                  dostępnym w&nbsp;Sklepie.
+                </p>
+
+                <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
+                  7. Prawa użytkownika
                 </h2>
                 <p className="text-secondary-600 dark:text-secondary-400 mb-4">
                   Każdy użytkownik ma prawo do:
                 </p>
                 <ul className="list-disc pl-6 text-secondary-600 dark:text-secondary-400 mb-6 space-y-2">
                   <li>Dostępu do swoich danych osobowych</li>
-                  <li>Sprostowania nieprawidłowych danych</li>
+                  <li>Sprostowania nieprawdziwych danych</li>
                   <li>Usunięcia danych („prawo do bycia zapomnianym")</li>
                   <li>Ograniczenia przetwarzania</li>
                   <li>Przenoszenia danych</li>
@@ -117,7 +140,7 @@ export default function PrivacyPolicyPage() {
                 </ul>
 
                 <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
-                  7. Odbiorcy danych
+                  8. Odbiorcy danych
                 </h2>
                 <p className="text-secondary-600 dark:text-secondary-400 mb-4">
                   Dane osobowe mogą być przekazywane następującym podmiotom:
@@ -131,7 +154,7 @@ export default function PrivacyPolicyPage() {
                 </ul>
 
                 <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
-                  8. Pliki cookies
+                  9. Pliki cookies
                 </h2>
                 <p className="text-secondary-600 dark:text-secondary-400 mb-4">
                   Serwis wykorzystuje pliki cookies w celu:
@@ -143,21 +166,21 @@ export default function PrivacyPolicyPage() {
                   <li>Personalizacji treści i reklam</li>
                 </ul>
                 <p className="text-secondary-600 dark:text-secondary-400 mb-6">
-                  Użytkownik może w każdej chwili zmienić ustawienia przeglądarki dotyczące cookies. 
+                  Użytkownik może w każdej chwili zmienić ustawienia przeglądarki dotyczące cookies.
                   Szczegółowe informacje znajdują się w ustawieniach przeglądarki internetowej.
                 </p>
 
                 <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
-                  9. Bezpieczeństwo danych
+                  10. Bezpieczeństwo danych
                 </h2>
                 <p className="text-secondary-600 dark:text-secondary-400 mb-6">
-                  Stosujemy odpowiednie środki techniczne i&nbsp;organizacyjne w&nbsp;celu ochrony danych osobowych 
-                  przed nieuprawnionym dostępem, utratą lub zniszczeniem. Wykorzystujemy szyfrowanie SSL, 
+                  Stosujemy odpowiednie środki techniczne i&nbsp;organizacyjne w&nbsp;celu ochrony danych osobowych
+                  przed nieuprawnionym dostępem, utratą lub zniszczeniem. Wykorzystujemy szyfrowanie SSL,
                   kontrolę dostępu oraz&nbsp;regularne kopie zapasowe.
                 </p>
 
                 <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
-                  10. Kontakt
+                  11. Kontakt
                 </h2>
                 <p className="text-secondary-600 dark:text-secondary-400 mb-4">
                   W sprawach związanych z ochroną danych osobowych można kontaktować się:
@@ -165,16 +188,16 @@ export default function PrivacyPolicyPage() {
                 <ul className="list-none text-secondary-600 dark:text-secondary-400 mb-6 space-y-2">
                   <li><strong>E-mail:</strong> support@wb-partners.pl</li>
                   <li><strong>Telefon:</strong> +48 570 034 367</li>
-                  <li><strong>Adres:</strong> WB PARTNERS Sp. z o.o., ul. Juliusza Słowackiego 24/11, 35-060 Rzeszów</li>
+                  <li><strong>Adres:</strong> WB Partners Sp. z o.o., ul. Juliusza Słowackiego 24/11, 35-060 Rzeszów</li>
                 </ul>
 
                 <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
-                  11. Zmiany polityki prywatności
+                  12. Zmiany polityki prywatności
                 </h2>
                 <p className="text-secondary-600 dark:text-secondary-400 mb-6">
-                  Administrator zastrzega sobie prawo do&nbsp;wprowadzania zmian w&nbsp;Polityce Prywatności. 
-                  O&nbsp;wszelkich zmianach użytkownicy będą informowani poprzez publikację nowej wersji 
-                  na&nbsp;stronie internetowej. Korzystanie z&nbsp;serwisu po&nbsp;wprowadzeniu zmian oznacza ich akceptację.
+                  Administrator zastrzega sobie prawo do wprowadzania zmian w Polityce Prywatności. O wszelkich
+                  zmianach użytkownicy będą informowani poprzez publikację nowej wersji na stronie internetowej.
+                  Korzystanie z serwisu po wprowadzeniu zmian oznacza ich akceptację.
                 </p>
 
               </div>

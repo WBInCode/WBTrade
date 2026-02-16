@@ -282,6 +282,19 @@ function CheckoutPageContent() {
 
   const handleShippingSubmit = (shipping: ShippingData) => {
     setCheckoutData(prev => ({ ...prev, shipping }));
+
+    // Track add_shipping_info
+    const items: EcommerceItem[] = checkoutItems.map((item, index) => ({
+      item_id: item.variant?.sku || item.id,
+      item_name: item.variant?.product?.name || 'Produkt',
+      item_variant: item.variant?.name,
+      price: item.variant?.price || 0,
+      quantity: item.quantity,
+      index,
+    }));
+    const totalValue = checkoutItems.reduce((sum, item) => sum + ((item.variant?.price || 0) * item.quantity), 0);
+    trackAddShippingInfo(items, totalValue, shipping.method);
+
     setCurrentStep(3);
     window.scrollTo(0, 0);
   };
@@ -298,6 +311,19 @@ function CheckoutPageContent() {
 
   const handlePaymentSubmit = (payment: PaymentData) => {
     setCheckoutData(prev => ({ ...prev, payment }));
+
+    // Track add_payment_info
+    const items: EcommerceItem[] = checkoutItems.map((item, index) => ({
+      item_id: item.variant?.sku || item.id,
+      item_name: item.variant?.product?.name || 'Produkt',
+      item_variant: item.variant?.name,
+      price: item.variant?.price || 0,
+      quantity: item.quantity,
+      index,
+    }));
+    const totalValue = checkoutItems.reduce((sum, item) => sum + ((item.variant?.price || 0) * item.quantity), 0);
+    trackAddPaymentInfo(items, totalValue, payment.method);
+
     setCurrentStep(4);
     window.scrollTo(0, 0);
   };

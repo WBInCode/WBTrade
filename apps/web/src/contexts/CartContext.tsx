@@ -108,13 +108,26 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const removeFromCart = useCallback(async (itemId: string) => {
     try {
       setError(null);
+      // Track remove_from_cart before removing
+      const removedItem = cart?.items.find(item => item.id === itemId);
+      if (removedItem) {
+        const price = removedItem.variant?.price || 0;
+        const analyticsItem: EcommerceItem = {
+          item_id: removedItem.variant?.sku || removedItem.variant?.id || itemId,
+          item_name: removedItem.variant?.product?.name || 'Produkt',
+          item_variant: removedItem.variant?.name,
+          price,
+          quantity: removedItem.quantity,
+        };
+        trackRemoveFromCart(analyticsItem, price * removedItem.quantity);
+      }
       const updatedCart = await cartApi.removeItem(itemId);
       setCart(updatedCart);
     } catch (err: any) {
       setError(err.message);
       throw err;
     }
-  }, []);
+  }, [cart?.items]);
 
   const clearCart = useCallback(async () => {
     try {
