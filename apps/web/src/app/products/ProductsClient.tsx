@@ -75,10 +75,17 @@ function ProductsContent() {
   const [totalProducts, setTotalProducts] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [transitioning, setTransitioning] = useState(false);
   const [filters, setFilters] = useState<ProductFiltersResponse | null>(null);
   const [categoryPath, setCategoryPath] = useState<{ id: string; name: string; slug: string }[]>([]);
   const [activeTab, setActiveTab] = useState<string>(tabFromUrl);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // Track whether we already have products (for transition vs skeleton decision)
+  const hasProductsRef = useRef(false);
+  useEffect(() => {
+    hasProductsRef.current = products.length > 0;
+  }, [products]);
 
   // Sync activeTab with URL param
   useEffect(() => {
@@ -119,7 +126,12 @@ function ProductsContent() {
   // Fetch products when filters or tab change
   useEffect(() => {
     async function fetchProducts() {
-      setLoading(true);
+      // Show skeleton only on initial load; keep old products visible during transitions
+      if (hasProductsRef.current) {
+        setTransitioning(true);
+      } else {
+        setLoading(true);
+      }
       try {
         // For bestsellers tab, use dedicated bestsellers endpoint (same as carousel on homepage)
         // Always show global bestsellers, ignore category filter
@@ -200,6 +212,7 @@ function ProductsContent() {
         setTotalPages(1);
       } finally {
         setLoading(false);
+        setTransitioning(false);
       }
     }
     fetchProducts();
@@ -357,7 +370,7 @@ function ProductsContent() {
             />
 
             {/* Loading State */}
-            {loading ? (
+            {loading && products.length === 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4">
                 {Array.from({ length: 8 }).map((_, i) => (
                   <div key={i} className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-2 sm:p-4 animate-pulse">
@@ -368,7 +381,7 @@ function ProductsContent() {
                   </div>
                 ))}
               </div>
-            ) : products.length === 0 ? (
+            ) : !loading && !transitioning && products.length === 0 ? (
               <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-12 text-center">
                 <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -380,12 +393,19 @@ function ProductsContent() {
                 </a>
               </div>
             ) : (
-              <>
+              <div className="relative">
+                {/* Transition progress bar — professional indeterminate bar at top */}
+                {transitioning && (
+                  <div className="absolute top-0 left-0 right-0 z-10 h-1 overflow-hidden rounded-t-lg bg-primary-100 dark:bg-primary-900/30">
+                    <div className="h-full w-1/2 rounded-full bg-primary-500 progress-bar-indeterminate" />
+                  </div>
+                )}
+
                 {/* Product Grid/List */}
-                <div className={viewMode === 'grid' 
+                <div className={`transition-opacity duration-200 ${transitioning ? 'opacity-40 pointer-events-none' : 'opacity-100'} ${viewMode === 'grid' 
                   ? "grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4"
                   : "flex flex-col gap-2 sm:gap-4"
-                }>
+                }`}>
                   {products.map((product) => (
                     <ProductListCard key={product.id} product={product} viewMode={viewMode} />
                   ))}
@@ -398,7 +418,7 @@ function ProductsContent() {
                   totalItems={totalProducts}
                   itemsPerPage={ITEMS_PER_PAGE}
                 />
-              </>
+              </div>
             )}
           </div>
         </div>
