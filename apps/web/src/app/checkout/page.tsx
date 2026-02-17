@@ -604,7 +604,7 @@ function CheckoutPageContent() {
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center shrink-0">
               <Image 
-                src="/images/WB-TRADE-logo.png" 
+                src="/images/WB-TRADE-logo.webp" 
                 alt="WB Trade" 
                 width={280} 
                 height={160} 
@@ -612,7 +612,7 @@ function CheckoutPageContent() {
                 priority
               />
               <Image 
-                src="/images/wb-trade-bez-tla.png" 
+                src="/images/wb-trade-bez-tla.webp" 
                 alt="WB Trade" 
                 width={280} 
                 height={160} 

@@ -51,7 +51,6 @@ module.exports = {
     
     // Environment variables
     env: {
-        API_URL: process.env.API_URL || 'http://localhost:5000/api',
         NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
     },
     
@@ -91,6 +90,26 @@ module.exports = {
             {
                 // Cache fonts
                 source: '/fonts/:path*',
+                headers: [
+                    {
+                        key: 'Cache-Control',
+                        value: 'public, max-age=31536000, immutable',
+                    },
+                ],
+            },
+            {
+                // Cache Next.js static assets (JS, CSS bundles)
+                source: '/_next/static/:path*',
+                headers: [
+                    {
+                        key: 'Cache-Control',
+                        value: 'public, max-age=31536000, immutable',
+                    },
+                ],
+            },
+            {
+                // Cache SVG and other static files
+                source: '/:path*.svg',
                 headers: [
                     {
                         key: 'Cache-Control',

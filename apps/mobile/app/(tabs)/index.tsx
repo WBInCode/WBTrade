@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, ScrollView, View, Text, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { StyleSheet, ScrollView, View, Text, TextInput, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { FontAwesome } from '@expo/vector-icons';
 import { api } from '../../services/api';
 import { Colors } from '../../constants/Colors';
+import { useCart } from '../../contexts/CartContext';
 import ProductCarousel from '../../components/product/ProductCarousel';
 import type { Product, Category } from '../../services/types';
 
@@ -17,12 +19,14 @@ interface HomeData {
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { itemCount } = useCart();
   const [data, setData] = useState<HomeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [categoriesExpanded, setCategoriesExpanded] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
 
   const loadData = async () => {
     try {
@@ -106,110 +110,77 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* Header */}
+        {/* Header with logo + search + cart */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>WBTrade</Text>
-          <Text style={styles.headerSubtitle}>Twój sklep internetowy</Text>
+          <View style={styles.headerTop}>
+            <Text style={styles.headerLogo}>WB Trade</Text>
+            <View style={styles.headerIcons}>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/search')} style={styles.headerIcon}>
+                <FontAwesome name="search" size={20} color={Colors.white} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/cart')} style={styles.headerIcon}>
+                <FontAwesome name="shopping-cart" size={20} color={Colors.white} />
+                {itemCount > 0 && (
+                  <View style={styles.cartBadge}>
+                    <Text style={styles.cartBadgeText}>{itemCount > 9 ? '9+' : itemCount}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+          {/* Search bar */}
+          <TouchableOpacity
+            style={styles.searchBar}
+            onPress={() => router.push('/(tabs)/search')}
+            activeOpacity={0.8}
+          >
+            <FontAwesome name="search" size={14} color={Colors.secondary[400]} />
+            <Text style={styles.searchPlaceholder}>Szukaj produktów...</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Categories Menu */}
-        {data?.categories && data.categories.length > 0 && (
-          <View style={styles.categoriesSection}>
-            <TouchableOpacity 
-              style={styles.categoriesHeader}
-              onPress={() => setCategoriesExpanded(!categoriesExpanded)}
+        {/* Orange category bar */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.categoryBar}
+          contentContainerStyle={styles.categoryBarContent}
+        >
+          <TouchableOpacity
+            style={styles.categoryBarItem}
+            onPress={() => router.push('/(tabs)/search')}
+          >
+            <Text style={styles.categoryBarText}>Wszystkie</Text>
+          </TouchableOpacity>
+          {data?.categories?.map((cat) => (
+            <TouchableOpacity
+              key={cat.id}
+              style={styles.categoryBarItem}
+              onPress={() => router.push(`/category/${cat.slug}`)}
             >
-              <Text style={styles.categoriesTitle}>Kategorie</Text>
-              <Text style={styles.categoriesMainArrow}>
-                {categoriesExpanded ? '▼' : '▶'}
-              </Text>
+              <Text style={styles.categoryBarText}>{cat.name}</Text>
             </TouchableOpacity>
-            
-            {categoriesExpanded && (
-              <View style={styles.categoriesList}>
-              {data.categories.map((category) => {
-                const isExpanded = expandedCategories.has(category.id);
-                const hasChildren = category.children && category.children.length > 0;
-                
-                return (
-                  <View key={category.id} style={styles.categoryItem}>
-                    <TouchableOpacity
-                      style={styles.categoryButton}
-                      onPress={() => {
-                        if (hasChildren) {
-                          setExpandedCategories(prev => {
-                            const newSet = new Set(prev);
-                            if (newSet.has(category.id)) {
-                              newSet.delete(category.id);
-                            } else {
-                              newSet.add(category.id);
-                            }
-                            return newSet;
-                          });
-                        } else {
-                          router.push(`/(tabs)/search?category=${category.slug}`);
-                        }
-                      }}
-                    >
-                      <Text style={styles.categoryMainName}>{category.name}</Text>
-                      {hasChildren && (
-                        <Text style={styles.categoryArrow}>
-                          {isExpanded ? '▼' : '▶'}
-                        </Text>
-                      )}
-                    </TouchableOpacity>
-                    
-                    {isExpanded && hasChildren && (
-                      <View style={styles.subcategoriesList}>
-                        {category.children!.map((subcategory) => (
-                          <TouchableOpacity
-                            key={subcategory.id}
-                            style={styles.subcategoryButton}
-                            onPress={() => router.push(`/(tabs)/search?category=${subcategory.slug}`)}
-                          >
-                            <Text style={styles.subcategoryName}>{subcategory.name}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    )}
-                  </View>
-                );
-              })}
-              </View>
-            )}
-          </View>
-        )}
+          ))}
+        </ScrollView>
 
         {/* Featured / Polecane */}
         {data?.featured && data.featured.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>⭐ Polecane</Text>
-            <ProductCarousel products={data.featured} />
-          </View>
-        )}
-
-        {/* New Arrivals / Nowości */}
-        {data?.newArrivals && data.newArrivals.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>🆕 Nowości</Text>
-            <ProductCarousel products={data.newArrivals} />
-          </View>
+          <ProductCarousel title="Polecane" products={data.featured} />
         )}
 
         {/* Bestsellers */}
         {data?.bestsellers && data.bestsellers.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>🔥 Bestsellery</Text>
-            <ProductCarousel products={data.bestsellers} />
-          </View>
+          <ProductCarousel title="Bestsellery" products={data.bestsellers} />
+        )}
+
+        {/* New Arrivals / Nowości */}
+        {data?.newArrivals && data.newArrivals.length > 0 && (
+          <ProductCarousel title="Nowości" products={data.newArrivals} />
         )}
 
         {/* Seasonal */}
         {data?.seasonal && data.seasonal.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>🎁 Sezonowe</Text>
-            <ProductCarousel products={data.seasonal} />
-          </View>
+          <ProductCarousel title="Sezonowe" products={data.seasonal} />
         )}
 
         {/* View All Products Button */}
@@ -244,31 +215,78 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   header: {
+    backgroundColor: Colors.secondary[900],
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  headerLogo: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: Colors.primary[500],
+  },
+  headerIcons: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  headerIcon: {
+    position: 'relative',
+    padding: 4,
+  },
+  cartBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -6,
+    backgroundColor: Colors.destructive,
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  cartBadgeText: {
+    color: Colors.white,
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: Colors.white,
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.secondary[200],
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 8,
   },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: Colors.primary[600],
-  },
-  headerSubtitle: {
+  searchPlaceholder: {
     fontSize: 14,
-    color: Colors.secondary[600],
-    marginTop: 2,
+    color: Colors.secondary[400],
   },
-  section: {
-    marginTop: 24,
+  categoryBar: {
+    backgroundColor: Colors.primary[500],
+    maxHeight: 44,
   },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: Colors.secondary[900],
-    paddingHorizontal: 16,
-    marginBottom: 12,
+  categoryBarContent: {
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    gap: 4,
+  },
+  categoryBarItem: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  categoryBarText: {
+    color: Colors.white,
+    fontSize: 13,
+    fontWeight: '600',
   },
   errorText: {
     fontSize: 16,
@@ -287,80 +305,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   viewAllButton: {
-    backgroundColor: Colors.white,
-    borderWidth: 1,
-    borderColor: Colors.secondary[300],
+    backgroundColor: Colors.primary[500],
     borderRadius: 12,
     paddingHorizontal: 32,
-    paddingVertical: 12,
+    paddingVertical: 14,
     minWidth: 200,
     alignItems: 'center',
   },
   viewAllText: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.secondary[700],
-  },
-  categoriesSection: {
-    backgroundColor: Colors.white,
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    marginBottom: 8,
-  },
-  categoriesHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  categoriesTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: Colors.secondary[900],
-    flex: 1,
-  },
-  categoriesMainArrow: {
-    fontSize: 16,
-    color: Colors.primary[600],
-    fontWeight: '700',
-    marginLeft: 8,
-  },
-  categoriesList: {
-    gap: 8,
-  },
-  categoryItem: {
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.secondary[200],
-  },
-  categoryButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 8,
-  },
-  categoryMainName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.secondary[900],
-    flex: 1,
-  },
-  categoryArrow: {
-    fontSize: 12,
-    color: Colors.secondary[600],
-    marginLeft: 8,
-  },
-  subcategoriesList: {
-    backgroundColor: Colors.secondary[50],
-    paddingLeft: 24,
-    paddingVertical: 8,
-  },
-  subcategoryButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-  },
-  subcategoryName: {
-    fontSize: 14,
-    color: Colors.secondary[700],
+    color: Colors.white,
   },
 });
