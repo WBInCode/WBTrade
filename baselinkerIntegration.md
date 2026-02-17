@@ -1,6 +1,6 @@
 # Plan: Baselinker Integration with NeonDB (Final)
 
-Integrate Baselinker as the product data source, syncing one-way (BL → NeonDB) with AES-256-GCM encrypted credentials stored exclusively in NeonDB. Baselinker is source of truth - overwrites local product data on sync.
+Integrate Baselinker as the product data source, syncing one-way (BL → NeonDB) with AES-256-GCM encrypted credentials sadasdasdasdasdasdasdstored exclusively in NeonDB. Baselinker is source of truth - overwrites local product data on sync.
 
 ---
 
