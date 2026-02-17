@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 
-const extra = Constants.expirationDate ? {} : (Constants.expoConfig?.extra || {});
+const extra = Constants.expoConfig?.extra || {};
 
 export const Config = {
-  API_URL: extra.apiUrl || process.env.API_URL || 'http://localhost:5000/api',
+  API_URL: extra.apiUrl || 'https://wbtrade-iv71.onrender.com/api',
 };
