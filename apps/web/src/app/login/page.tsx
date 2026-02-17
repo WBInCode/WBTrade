@@ -96,14 +96,14 @@ function LoginContent() {
           <div className="flex items-center justify-between mb-8">
             <Link href="/" className="flex items-center gap-2 group">
               <Image
-                src="/images/WB-TRADE-logo.png"
+                src="/images/WB-TRADE-logo.webp"
                 alt="WBTrade"
                 width={220}
                 height={80}
                 className="h-20 w-auto dark:hidden"
               />
               <Image
-                src="/images/wb-trade-bez-tla.png"
+                src="/images/wb-trade-bez-tla.webp"
                 alt="WBTrade"
                 width={220}
                 height={80}
