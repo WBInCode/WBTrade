@@ -1,15 +1,14 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import {
   StyleSheet,
-  ScrollView,
+  FlatList,
   View,
   Text,
   RefreshControl,
   ActivityIndicator,
   TouchableOpacity,
   Dimensions,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -21,8 +20,6 @@ import { useCart } from '../../contexts/CartContext';
 import ProductCarousel from '../../components/product/ProductCarousel';
 import ProductCard from '../../components/product/ProductCard';
 import type { Product, Category } from '../../services/types';
-
-const RANDOM_PAGE_SIZE = 20;
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -49,34 +46,15 @@ function getCategoryIcon(slug?: string): string {
   return key ? CATEGORY_ICONS[key] : CATEGORY_ICONS.default;
 }
 
-// Color palette for category circles
 const CATEGORY_COLORS = [
-  Colors.primary[100],
-  '#e0f2fe',
-  '#fce7f3',
-  '#d1fae5',
-  '#fef3c7',
-  '#ede9fe',
-  '#fde68a',
-  '#ccfbf1',
-  '#fee2e2',
-  '#e0e7ff',
+  Colors.primary[100], '#e0f2fe', '#fce7f3', '#d1fae5', '#fef3c7',
+  '#ede9fe', '#fde68a', '#ccfbf1', '#fee2e2', '#e0e7ff',
 ];
-
 const CATEGORY_ICON_COLORS = [
-  Colors.primary[600],
-  '#0284c7',
-  '#db2777',
-  '#059669',
-  '#d97706',
-  '#7c3aed',
-  '#b45309',
-  '#0d9488',
-  '#dc2626',
-  '#4f46e5',
+  Colors.primary[600], '#0284c7', '#db2777', '#059669', '#d97706',
+  '#7c3aed', '#b45309', '#0d9488', '#dc2626', '#4f46e5',
 ];
 
-// Promo banners data
 const PROMO_BANNERS = [
   { id: 'elektronika', title: 'Elektronika', subtitle: 'Odkryj hity technologiczne', icon: 'laptop' as const, bgColor: '#1e3a5f', accentColor: '#60a5fa', icon2: 'microchip' as const },
   { id: 'dom-i-ogrod', title: 'Dom i ogród', subtitle: 'Wiosenne inspiracje dla domu', icon: 'tree' as const, bgColor: '#14532d', accentColor: '#4ade80', icon2: 'leaf' as const },
@@ -88,85 +66,297 @@ const BANNER_WIDTH = SCREEN_WIDTH - 32;
 interface HomeData {
   bestsellers: Product[];
   featured: Product[];
-  seasonal: Product[];
   newArrivals: Product[];
   categories: Category[];
-  deals: Product[];
-  budgetPicks: Product[];
-  electronica: Product[];
-  domOgrod: Product[];
-  dziecko: Product[];
-  sport: Product[];
 }
 
-export default function HomeScreen() {
+// Section item types for FlatList virtualization
+type SectionItem =
+  | { type: 'header' }
+  | { type: 'categories'; categories: Category[] }
+  | { type: 'promo' }
+  | { type: 'carousel'; title: string; products: Product[]; key: string }
+  | { type: 'hero'; product: Product }
+  | { type: 'top3'; products: Product[] }
+  | { type: 'trust' }
+  | { type: 'discover-header' }
+  | { type: 'discover-grid'; products: Product[] }
+  | { type: 'load-more' };
+
+// ═══════════════════════════════════════════════════════
+// Memoized section components — each renders in isolation
+// ═══════════════════════════════════════════════════════
+
+const HeaderSection = React.memo(function HeaderSection() {
   const router = useRouter();
   const { itemCount } = useCart();
+  return (
+    <View style={styles.header}>
+      <View style={styles.headerTop}>
+        <Image
+          source={require('../../assets/images/wb-trade-logo.png')}
+          style={styles.headerLogo}
+          contentFit="contain"
+        />
+        <View style={styles.headerIcons}>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/search')} style={styles.headerIconBtn}>
+            <FontAwesome name="bell-o" size={20} color={Colors.secondary[600]} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/cart')} style={styles.headerIconBtn}>
+            <FontAwesome name="shopping-cart" size={20} color={Colors.secondary[600]} />
+            {itemCount > 0 && (
+              <View style={styles.cartBadge}>
+                <Text style={styles.cartBadgeText}>{itemCount > 9 ? '9+' : itemCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+      <TouchableOpacity style={styles.searchBar} onPress={() => router.push('/(tabs)/search')} activeOpacity={0.8}>
+        <FontAwesome name="search" size={15} color={Colors.secondary[400]} />
+        <Text style={styles.searchPlaceholder}>Czego szukasz?</Text>
+      </TouchableOpacity>
+    </View>
+  );
+});
+
+const CategoriesSection = React.memo(function CategoriesSection({ categories }: { categories: Category[] }) {
+  const router = useRouter();
+  return (
+    <View style={styles.categoriesSection}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScrollContent}>
+        {categories.map((cat, index) => (
+          <TouchableOpacity key={cat.id} style={styles.categoryCircleWrap} onPress={() => router.push(`/category/${cat.slug}`)}>
+            <View style={[styles.categoryCircle, { backgroundColor: CATEGORY_COLORS[index % CATEGORY_COLORS.length] }]}>
+              <FontAwesome name={getCategoryIcon(cat.slug) as any} size={22} color={CATEGORY_ICON_COLORS[index % CATEGORY_ICON_COLORS.length]} />
+            </View>
+            <Text style={styles.categoryCircleLabel} numberOfLines={2}>{cat.name}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+      <TouchableOpacity style={styles.allCategoriesBtn} onPress={() => router.push('/categories')} activeOpacity={0.7}>
+        <FontAwesome name="th-list" size={15} color={Colors.primary[500]} />
+        <Text style={styles.allCategoriesBtnText}>Wszystkie kategorie</Text>
+        <FontAwesome name="chevron-right" size={12} color={Colors.secondary[400]} />
+      </TouchableOpacity>
+    </View>
+  );
+});
+
+const PromoSection = React.memo(function PromoSection() {
+  const router = useRouter();
+  return (
+    <View style={styles.promoSection}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        snapToInterval={BANNER_WIDTH + 12}
+        decelerationRate="fast"
+        contentContainerStyle={styles.promoScrollContent}
+      >
+        {PROMO_BANNERS.map((banner) => (
+          <TouchableOpacity
+            key={banner.id}
+            style={[styles.promoBanner, { backgroundColor: banner.bgColor }]}
+            onPress={() => router.push(`/category/${banner.id}` as any)}
+            activeOpacity={0.9}
+          >
+            <View style={styles.promoDecorWrap}>
+              <FontAwesome name={banner.icon} size={80} color={banner.accentColor} style={{ opacity: 0.12, position: 'absolute', top: -10, right: -10 }} />
+              <FontAwesome name={banner.icon2} size={50} color={banner.accentColor} style={{ opacity: 0.08, position: 'absolute', bottom: 10, right: 60 }} />
+            </View>
+            <View style={styles.promoBannerContent}>
+              <View style={[styles.promoBannerIconWrap, { backgroundColor: banner.accentColor }]}>
+                <FontAwesome name={banner.icon} size={24} color={Colors.white} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.promoBannerTitle}>{banner.title}</Text>
+                <Text style={styles.promoBannerSub}>{banner.subtitle}</Text>
+              </View>
+              <View style={[styles.promoBannerCta, { backgroundColor: banner.accentColor }]}>
+                <Text style={styles.promoBannerCtaText}>Zobacz</Text>
+                <FontAwesome name="chevron-right" size={10} color={Colors.white} />
+              </View>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+});
+
+const CarouselSection = React.memo(function CarouselSection({ title, products }: { title: string; products: Product[] }) {
+  const router = useRouter();
+  return (
+    <View style={styles.productSection}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        <TouchableOpacity onPress={() => router.push('/(tabs)/search')} style={styles.seeAllBtn}>
+          <Text style={styles.seeAllText}>Więcej</Text>
+          <FontAwesome name="chevron-right" size={11} color={Colors.primary[500]} />
+        </TouchableOpacity>
+      </View>
+      <ProductCarousel products={products} />
+    </View>
+  );
+});
+
+const HeroSection = React.memo(function HeroSection({ product }: { product: Product }) {
+  const router = useRouter();
+  return (
+    <View style={styles.heroSection}>
+      <View style={styles.heroHeader}>
+        <View style={styles.heroBadge}>
+          <FontAwesome name="star" size={11} color="#f59e0b" />
+          <Text style={styles.heroBadgeText}>PRODUKT DNIA</Text>
+        </View>
+      </View>
+      <TouchableOpacity
+        style={styles.heroCard}
+        onPress={() => router.push(`/product/${product.slug}` as any)}
+        activeOpacity={0.9}
+      >
+        {product.images?.[0]?.url && (
+          <Image source={{ uri: product.images[0].url }} style={styles.heroImage} contentFit="contain" />
+        )}
+        <View style={styles.heroInfo}>
+          <Text style={styles.heroName} numberOfLines={2}>{product.name}</Text>
+          <View style={styles.heroPriceRow}>
+            <Text style={styles.heroPrice}>{Number(product.price).toFixed(2)} zł</Text>
+            {product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price) && (
+              <View style={styles.heroDiscountBadge}>
+                <Text style={styles.heroDiscountText}>
+                  -{Math.round((1 - Number(product.price) / Number(product.compareAtPrice)) * 100)}%
+                </Text>
+              </View>
+            )}
+          </View>
+          {product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price) && (
+            <Text style={styles.heroOldPrice}>{Number(product.compareAtPrice).toFixed(2)} zł</Text>
+          )}
+          <View style={styles.heroCtaBtn}>
+            <Text style={styles.heroCtaText}>Zobacz produkt</Text>
+            <FontAwesome name="arrow-right" size={12} color={Colors.white} />
+          </View>
+        </View>
+      </TouchableOpacity>
+    </View>
+  );
+});
+
+const Top3Section = React.memo(function Top3Section({ products }: { products: Product[] }) {
+  const router = useRouter();
+  return (
+    <View style={styles.topSection}>
+      <View style={styles.topHeader}>
+        <FontAwesome name="trophy" size={18} color="#f59e0b" />
+        <Text style={styles.topTitle}>Top 3 tego tygodnia</Text>
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.topScrollContent}>
+        {products.slice(0, 3).map((product, index) => (
+          <TouchableOpacity
+            key={product.id}
+            style={styles.topCard}
+            onPress={() => router.push(`/product/${product.slug}` as any)}
+            activeOpacity={0.9}
+          >
+            <View style={[styles.topMedal, { backgroundColor: ['#f59e0b', '#9ca3af', '#cd7f32'][index] }]}>
+              <Text style={styles.topMedalText}>{index + 1}</Text>
+            </View>
+            {product.images?.[0]?.url && (
+              <Image source={{ uri: product.images[0].url }} style={styles.topProductImage} contentFit="contain" />
+            )}
+            <Text style={styles.topProductName} numberOfLines={2}>{product.name}</Text>
+            <Text style={styles.topProductPrice}>{Number(product.price).toFixed(2)} zł</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+});
+
+const TrustSection = React.memo(function TrustSection() {
+  return (
+    <View style={styles.trustStrip}>
+      {([
+        { icon: 'truck' as const, title: 'Szybka wysyłka' },
+        { icon: 'shield' as const, title: 'Bezpieczne\npłatności' },
+        { icon: 'undo' as const, title: 'Zwrot\n14 dni' },
+        { icon: 'headphones' as const, title: 'Wsparcie\n24/7' },
+      ]).map((item) => (
+        <View key={item.title} style={styles.trustItem}>
+          <View style={styles.trustIconWrap}>
+            <FontAwesome name={item.icon} size={18} color={Colors.primary[500]} />
+          </View>
+          <Text style={styles.trustTitle}>{item.title}</Text>
+        </View>
+      ))}
+    </View>
+  );
+});
+
+const DiscoverHeader = React.memo(function DiscoverHeader() {
+  return (
+    <View style={styles.discoverHeader}>
+      <View style={styles.discoverTitleRow}>
+        <FontAwesome name="random" size={16} color={Colors.primary[500]} />
+        <Text style={styles.discoverTitle}>Odkryj coś dla siebie</Text>
+      </View>
+      <Text style={styles.discoverSubtitle}>Produkty dobrane losowo</Text>
+    </View>
+  );
+});
+
+const DiscoverGrid = React.memo(function DiscoverGrid({ products }: { products: Product[] }) {
+  return (
+    <View style={styles.discoverGrid}>
+      {products.map((product, index) => (
+        <ProductCard key={`${product.id}-${index}`} product={product} />
+      ))}
+    </View>
+  );
+});
+
+// ═══════════════════════════════════════════════════════
+// Main HomeScreen — uses FlatList for virtualization
+// ═══════════════════════════════════════════════════════
+export default function HomeScreen() {
   const [data, setData] = useState<HomeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Infinite random products
-  const [randomProducts, setRandomProducts] = useState<Product[]>([]);
-  const [randomPage, setRandomPage] = useState(1);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMoreRandom, setHasMoreRandom] = useState(true);
+  // Discover / random products
+  const [discoverProducts, setDiscoverProducts] = useState<Product[]>([]);
+  const [discoverLoading, setDiscoverLoading] = useState(false);
+  const [discoverPage, setDiscoverPage] = useState(1);
+  const [hasMoreDiscover, setHasMoreDiscover] = useState(true);
+  const discoverLoadingRef = useRef(false);
   const sessionSeed = useRef(Math.floor(Math.random() * 100000));
   const seenIds = useRef(new Set<string>());
 
-  // Promo banner
-  const promoScrollRef = useRef<ScrollView>(null);
-  const [promoIndex, setPromoIndex] = useState(0);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setError(null);
-
-      const results: HomeData = {
-        bestsellers: [], featured: [], seasonal: [], newArrivals: [],
-        categories: [], deals: [], budgetPicks: [],
-        electronica: [], domOgrod: [], dziecko: [], sport: [],
-      };
-
-      const [bestRes, featRes, seasRes, newRes, catRes, dealsRes, budgetRes, elecRes, domRes, dzieckoRes, sportRes] = await Promise.allSettled([
-        api.get<{ products: Product[] }>('/products/bestsellers', { limit: 10 }),
-        api.get<{ products: Product[] }>('/products/featured', { limit: 10 }),
-        api.get<{ products: Product[] }>('/products/seasonal', { limit: 10 }),
-        api.get<{ products: Product[] }>('/products/new-arrivals', { limit: 10 }),
+      const [bestRes, featRes, catRes, newRes] = await Promise.allSettled([
+        api.get<{ products: Product[] }>('/products/bestsellers', { limit: 6 }),
+        api.get<{ products: Product[] }>('/products/featured', { limit: 6 }),
         api.get<{ categories: Category[] }>('/categories/main'),
-        // Extra sections
-        api.get<{ products: Product[] }>('/products', { limit: 10, sort: 'popular' }),
-        api.get<{ products: Product[] }>('/products', { limit: 10, maxPrice: 50, sort: 'popular' }),
-        api.get<{ products: Product[] }>('/products', { limit: 10, category: 'elektronika', sort: 'popular' }),
-        api.get<{ products: Product[] }>('/products', { limit: 10, category: 'dom-i-ogrod', sort: 'popular' }),
-        api.get<{ products: Product[] }>('/products', { limit: 10, category: 'dziecko', sort: 'popular' }),
-        api.get<{ products: Product[] }>('/products', { limit: 10, category: 'sport', sort: 'popular' }),
+        api.get<{ products: Product[] }>('/products/new-arrivals', { limit: 6 }),
       ]);
 
-      if (bestRes.status === 'fulfilled') results.bestsellers = bestRes.value.products || [];
-      if (featRes.status === 'fulfilled') results.featured = featRes.value.products || [];
-      if (seasRes.status === 'fulfilled') results.seasonal = seasRes.value.products || [];
-      if (newRes.status === 'fulfilled') results.newArrivals = newRes.value.products || [];
-      if (catRes.status === 'fulfilled') results.categories = catRes.value.categories || [];
-      // Extra
-      if (dealsRes.status === 'fulfilled') {
-        results.deals = (dealsRes.value.products || []).filter(
-          (p) => p.compareAtPrice && Number(p.compareAtPrice) > Number(p.price)
-        );
-      }
-      if (budgetRes.status === 'fulfilled') results.budgetPicks = budgetRes.value.products || [];
-      if (elecRes.status === 'fulfilled') results.electronica = elecRes.value.products || [];
-      if (domRes.status === 'fulfilled') results.domOgrod = domRes.value.products || [];
-      if (dzieckoRes.status === 'fulfilled') results.dziecko = dzieckoRes.value.products || [];
-      if (sportRes.status === 'fulfilled') results.sport = sportRes.value.products || [];
+      const results: HomeData = {
+        bestsellers: bestRes.status === 'fulfilled' ? bestRes.value.products || [] : [],
+        featured: featRes.status === 'fulfilled' ? featRes.value.products || [] : [],
+        categories: catRes.status === 'fulfilled' ? catRes.value.categories || [] : [],
+        newArrivals: newRes.status === 'fulfilled' ? newRes.value.products || [] : [],
+      };
 
-      if (!results.bestsellers.length && !results.featured.length && !results.seasonal.length && !results.newArrivals.length) {
+      if (!results.bestsellers.length && !results.featured.length) {
         try {
-          const fallback = await api.get<{ products: Product[] }>('/products', { limit: 20, sort: 'newest' });
+          const fallback = await api.get<{ products: Product[] }>('/products', { limit: 10, sort: 'newest' });
           results.featured = fallback.products || [];
-        } catch (fallbackErr) {
-          console.error('Fallback also failed:', fallbackErr);
+        } catch {
           setError('Nie udało się załadować produktów. Sprawdź połączenie z internetem.');
         }
       }
@@ -179,85 +369,134 @@ export default function HomeScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
-
-  useEffect(() => {
-    loadData();
   }, []);
 
-  const onRefresh = () => {
+  useEffect(() => { loadData(); }, []);
+
+  const onRefresh = useCallback(() => {
     setRefreshing(true);
-    // Reset random products on refresh
     sessionSeed.current = Math.floor(Math.random() * 100000);
     seenIds.current = new Set();
-    setRandomProducts([]);
-    setRandomPage(1);
-    setHasMoreRandom(true);
+    setDiscoverProducts([]);
+    setDiscoverPage(1);
+    setHasMoreDiscover(true);
+    discoverLoadingRef.current = false;
     loadData();
-  };
+  }, [loadData]);
 
-  // Fetch random products for infinite scroll
-  const fetchRandomProducts = useCallback(async (page: number) => {
-    if (loadingMore || !hasMoreRandom) return;
-    setLoadingMore(true);
+  // Load more discover products — triggered by button press only
+  const loadMoreDiscover = useCallback(async () => {
+    if (discoverLoadingRef.current || !hasMoreDiscover) return;
+    discoverLoadingRef.current = true;
+    setDiscoverLoading(true);
     try {
-      const res = await api.get<{ products: Product[]; total: number; totalPages: number }>('/products', {
+      const page = discoverPage;
+      const res = await api.get<{ products: Product[]; totalPages: number }>('/products', {
         page,
-        limit: RANDOM_PAGE_SIZE,
+        limit: 10,
         sort: 'random',
         sessionSeed: sessionSeed.current,
       });
-      const newProducts = (res.products || []).filter((p) => !seenIds.current.has(p.id));
-      newProducts.forEach((p) => seenIds.current.add(p.id));
-      setRandomProducts((prev) => [...prev, ...newProducts]);
-      setRandomPage(page + 1);
+      const newProducts = (res.products || []).filter((p: Product) => !seenIds.current.has(p.id));
+      newProducts.forEach((p: Product) => seenIds.current.add(p.id));
+      if (newProducts.length > 0) {
+        setDiscoverProducts((prev) => [...prev, ...newProducts]);
+      }
+      setDiscoverPage(page + 1);
       if (!res.products?.length || page >= (res.totalPages || 999)) {
-        setHasMoreRandom(false);
+        setHasMoreDiscover(false);
       }
     } catch {
       // silently fail
     } finally {
-      setLoadingMore(false);
+      discoverLoadingRef.current = false;
+      setDiscoverLoading(false);
     }
-  }, [loadingMore, hasMoreRandom]);
+  }, [discoverPage, hasMoreDiscover]);
 
-  // Load first page of random products after main data loads
-  useEffect(() => {
-    if (!loading && data) {
-      fetchRandomProducts(1);
+  // Build flat section list for FlatList virtualization
+  const sections = useMemo<SectionItem[]>(() => {
+    if (!data) return [];
+    const items: SectionItem[] = [];
+    items.push({ type: 'header' });
+    if (data.categories.length > 0) {
+      items.push({ type: 'categories', categories: data.categories });
     }
-  }, [loading]);
-
-  // Infinite scroll handler
-  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
-    const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
-    if (distanceFromBottom < 600 && !loadingMore && hasMoreRandom) {
-      fetchRandomProducts(randomPage);
+    items.push({ type: 'promo' });
+    if (data.featured.length > 0) {
+      items.push({ type: 'carousel', title: 'Polecane', products: data.featured, key: 'feat' });
     }
-  }, [randomPage, loadingMore, hasMoreRandom, fetchRandomProducts]);
+    const heroProduct = data.featured[0] || data.bestsellers[0];
+    if (heroProduct) {
+      items.push({ type: 'hero', product: heroProduct });
+    }
+    if (data.bestsellers.length > 0) {
+      items.push({ type: 'carousel', title: 'Bestsellery', products: data.bestsellers, key: 'best' });
+    }
+    if (data.bestsellers.length >= 3) {
+      items.push({ type: 'top3', products: data.bestsellers });
+    }
+    if (data.newArrivals.length > 0) {
+      items.push({ type: 'carousel', title: 'Nowości', products: data.newArrivals, key: 'new' });
+    }
+    items.push({ type: 'trust' });
+    if (discoverProducts.length > 0) {
+      items.push({ type: 'discover-header' });
+      items.push({ type: 'discover-grid', products: discoverProducts });
+    }
+    if (hasMoreDiscover) {
+      items.push({ type: 'load-more' });
+    }
+    return items;
+  }, [data, discoverProducts, hasMoreDiscover]);
 
-  // Auto-scroll promo banners (lightweight — only scrollTo, no heavy re-render)
-  useEffect(() => {
-    if (!data) return;
-    const timer = setInterval(() => {
-      setPromoIndex((prev) => {
-        const next = (prev + 1) % PROMO_BANNERS.length;
-        try { promoScrollRef.current?.scrollTo({ x: next * (BANNER_WIDTH + 12), animated: true }); } catch {}
-        return next;
-      });
-    }, 6000);
-    return () => clearInterval(timer);
-  }, [data]);
+  const renderItem = useCallback(({ item }: { item: SectionItem }) => {
+    switch (item.type) {
+      case 'header':
+        return <HeaderSection />;
+      case 'categories':
+        return <CategoriesSection categories={item.categories} />;
+      case 'promo':
+        return <PromoSection />;
+      case 'carousel':
+        return <CarouselSection title={item.title} products={item.products} />;
+      case 'hero':
+        return <HeroSection product={item.product} />;
+      case 'top3':
+        return <Top3Section products={item.products} />;
+      case 'trust':
+        return <TrustSection />;
+      case 'discover-header':
+        return <DiscoverHeader />;
+      case 'discover-grid':
+        return <DiscoverGrid products={item.products} />;
+      case 'load-more':
+        return (
+          <View style={styles.loadMoreWrap}>
+            {discoverLoading ? (
+              <View style={styles.loadMoreInner}>
+                <ActivityIndicator size="small" color={Colors.primary[500]} />
+                <Text style={styles.loadMoreText}>Ładuję produkty...</Text>
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMoreDiscover} activeOpacity={0.7}>
+                <FontAwesome name="plus-circle" size={18} color={Colors.white} />
+                <Text style={styles.loadMoreBtnText}>
+                  {discoverProducts.length === 0 ? 'Odkryj więcej produktów' : 'Załaduj więcej'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        );
+      default:
+        return null;
+    }
+  }, [discoverLoading, discoverProducts.length, loadMoreDiscover]);
 
-  const handlePromoScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const x = e.nativeEvent.contentOffset.x;
-    const idx = Math.round(x / (BANNER_WIDTH + 12));
-    if (idx >= 0 && idx < PROMO_BANNERS.length) setPromoIndex(idx);
+  const keyExtractor = useCallback((item: SectionItem, index: number) => {
+    if (item.type === 'carousel') return `carousel-${item.key}`;
+    return `section-${item.type}-${index}`;
   }, []);
-
-  // Hero product for "Produkt dnia"
-  const heroProduct = data?.featured?.[0] || data?.bestsellers?.[0] || null;
 
   if (loading) {
     return (
@@ -272,23 +511,23 @@ export default function HomeScreen() {
   if (error) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <ScrollView
-          contentContainerStyle={styles.centerContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        >
+        <View style={styles.centerContent}>
           <FontAwesome name="exclamation-triangle" size={40} color={Colors.secondary[300]} />
           <Text style={styles.errorText}>{error}</Text>
           <Text style={styles.errorHint}>Pociągnij w dół aby spróbować ponownie</Text>
-        </ScrollView>
+        </View>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+      <FlatList
+        data={sections}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        style={styles.list}
+        contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -297,1066 +536,238 @@ export default function HomeScreen() {
             colors={[Colors.primary[500]]}
           />
         }
-        onScroll={handleScroll}
-        scrollEventThrottle={200}
-      >
-        {/* ── Header: Logo + Icons ── */}
-        <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <Image
-              source={require('../../assets/images/wb-trade-logo.png')}
-              style={styles.headerLogo}
-              contentFit="contain"
-            />
-            <View style={styles.headerIcons}>
-              <TouchableOpacity
-                onPress={() => router.push('/(tabs)/search')}
-                style={styles.headerIconBtn}
-              >
-                <FontAwesome name="bell-o" size={20} color={Colors.secondary[600]} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => router.push('/(tabs)/cart')}
-                style={styles.headerIconBtn}
-              >
-                <FontAwesome name="shopping-cart" size={20} color={Colors.secondary[600]} />
-                {itemCount > 0 && (
-                  <View style={styles.cartBadge}>
-                    <Text style={styles.cartBadgeText}>{itemCount > 9 ? '9+' : itemCount}</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Search bar */}
-          <TouchableOpacity
-            style={styles.searchBar}
-            onPress={() => router.push('/(tabs)/search')}
-            activeOpacity={0.8}
-          >
-            <FontAwesome name="search" size={15} color={Colors.secondary[400]} />
-            <Text style={styles.searchPlaceholder}>Czego szukasz?</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* ── Category circles ── */}
-        {data?.categories && data.categories.length > 0 && (
-          <View style={styles.categoriesSection}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.categoriesScrollContent}
-            >
-              {data.categories.map((cat, index) => (
-                <TouchableOpacity
-                  key={cat.id}
-                  style={styles.categoryCircleWrap}
-                  onPress={() => router.push(`/category/${cat.slug}`)}
-                >
-                  <View
-                    style={[
-                      styles.categoryCircle,
-                      { backgroundColor: CATEGORY_COLORS[index % CATEGORY_COLORS.length] },
-                    ]}
-                  >
-                    <FontAwesome
-                      name={getCategoryIcon(cat.slug) as any}
-                      size={22}
-                      color={CATEGORY_ICON_COLORS[index % CATEGORY_ICON_COLORS.length]}
-                    />
-                  </View>
-                  <Text style={styles.categoryCircleLabel} numberOfLines={2}>
-                    {cat.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            {/* "Wszystkie kategorie" button → navigates to full page */}
-            <TouchableOpacity
-              style={styles.allCategoriesBtn}
-              onPress={() => router.push('/categories')}
-              activeOpacity={0.7}
-            >
-              <FontAwesome name="th-list" size={15} color={Colors.primary[500]} />
-              <Text style={styles.allCategoriesBtnText}>Wszystkie kategorie</Text>
-              <FontAwesome name="chevron-right" size={12} color={Colors.secondary[400]} />
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* ── Promo banners carousel ── */}
-        <View style={styles.promoSection}>
-          <ScrollView
-            ref={promoScrollRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            snapToInterval={BANNER_WIDTH + 12}
-            decelerationRate="fast"
-            contentContainerStyle={styles.promoScrollContent}
-            onMomentumScrollEnd={handlePromoScroll}
-          >
-            {PROMO_BANNERS.map((banner) => (
-              <TouchableOpacity
-                key={banner.id}
-                style={[styles.promoBanner, { backgroundColor: banner.bgColor }]}
-                onPress={() => router.push(`/category/${banner.id}` as any)}
-                activeOpacity={0.9}
-              >
-                {/* Decorative background icons */}
-                <View style={styles.promoDecorWrap}>
-                  <FontAwesome name={banner.icon} size={80} color={banner.accentColor} style={{ opacity: 0.12, position: 'absolute', top: -10, right: -10 }} />
-                  <FontAwesome name={banner.icon2} size={50} color={banner.accentColor} style={{ opacity: 0.08, position: 'absolute', bottom: 10, right: 60 }} />
-                </View>
-                {/* Content */}
-                <View style={styles.promoBannerContent}>
-                  <View style={[styles.promoBannerIconWrap, { backgroundColor: banner.accentColor }]}>
-                    <FontAwesome name={banner.icon} size={24} color={Colors.white} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.promoBannerTitle}>{banner.title}</Text>
-                    <Text style={styles.promoBannerSub}>{banner.subtitle}</Text>
-                  </View>
-                  <View style={[styles.promoBannerCta, { backgroundColor: banner.accentColor }]}>
-                    <Text style={styles.promoBannerCtaText}>Zobacz</Text>
-                    <FontAwesome name="chevron-right" size={10} color={Colors.white} />
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-          <View style={styles.promoDots}>
-            {PROMO_BANNERS.map((_, i) => (
-              <View key={i} style={[styles.promoDot, i === promoIndex && styles.promoDotActive]} />
-            ))}
-          </View>
-        </View>
-
-        {/* ── Product sections ── */}
-        {data?.featured && data.featured.length > 0 && (
-          <View style={styles.productSection}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Polecane</Text>
-              <TouchableOpacity
-                onPress={() => router.push('/(tabs)/search')}
-                style={styles.seeAllBtn}
-              >
-                <Text style={styles.seeAllText}>Więcej</Text>
-                <FontAwesome name="chevron-right" size={11} color={Colors.primary[500]} />
-              </TouchableOpacity>
-            </View>
-            <ProductCarousel products={data.featured} />
-          </View>
-        )}
-
-        {/* ── Produkt dnia hero ── */}
-        {heroProduct && (
-          <View style={styles.heroSection}>
-            <View style={styles.heroHeader}>
-              <View style={styles.heroBadge}>
-                <FontAwesome name="star" size={11} color="#f59e0b" />
-                <Text style={styles.heroBadgeText}>PRODUKT DNIA</Text>
-              </View>
-            </View>
-            <TouchableOpacity
-              style={styles.heroCard}
-              onPress={() => router.push(`/product/${heroProduct.slug}` as any)}
-              activeOpacity={0.9}
-            >
-              {heroProduct.images?.[0] && (
-                <Image
-                  source={{ uri: heroProduct.images[0] }}
-                  style={styles.heroImage}
-                  contentFit="contain"
-                />
-              )}
-              <View style={styles.heroInfo}>
-                <Text style={styles.heroName} numberOfLines={2}>{heroProduct.name}</Text>
-                <View style={styles.heroPriceRow}>
-                  <Text style={styles.heroPrice}>{Number(heroProduct.price).toFixed(2)} zł</Text>
-                  {heroProduct.compareAtPrice && Number(heroProduct.compareAtPrice) > Number(heroProduct.price) && (
-                    <View style={styles.heroDiscountBadge}>
-                      <Text style={styles.heroDiscountText}>
-                        -{Math.round((1 - Number(heroProduct.price) / Number(heroProduct.compareAtPrice)) * 100)}%
-                      </Text>
-                    </View>
-                  )}
-                </View>
-                {heroProduct.compareAtPrice && Number(heroProduct.compareAtPrice) > Number(heroProduct.price) && (
-                  <Text style={styles.heroOldPrice}>{Number(heroProduct.compareAtPrice).toFixed(2)} zł</Text>
-                )}
-                <View style={styles.heroCtaBtn}>
-                  <Text style={styles.heroCtaText}>Zobacz produkt</Text>
-                  <FontAwesome name="arrow-right" size={12} color={Colors.white} />
-                </View>
-              </View>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {data?.bestsellers && data.bestsellers.length > 0 && (
-          <View style={styles.productSection}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Bestsellery</Text>
-              <TouchableOpacity
-                onPress={() => router.push('/(tabs)/search')}
-                style={styles.seeAllBtn}
-              >
-                <Text style={styles.seeAllText}>Więcej</Text>
-                <FontAwesome name="chevron-right" size={11} color={Colors.primary[500]} />
-              </TouchableOpacity>
-            </View>
-            <ProductCarousel products={data.bestsellers} />
-          </View>
-        )}
-
-        {/* ── 🏆 Top 3 tego tygodnia ── */}
-        {data?.bestsellers && data.bestsellers.length >= 3 && (
-          <View style={styles.topSection}>
-            <View style={styles.topHeader}>
-              <FontAwesome name="trophy" size={18} color="#f59e0b" />
-              <Text style={styles.topTitle}>Top 3 tego tygodnia</Text>
-            </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.topScrollContent}>
-              {data.bestsellers.slice(0, 3).map((product, index) => (
-                <TouchableOpacity
-                  key={product.id}
-                  style={styles.topCard}
-                  onPress={() => router.push(`/product/${product.slug}` as any)}
-                  activeOpacity={0.9}
-                >
-                  <View style={[styles.topMedal, { backgroundColor: ['#f59e0b', '#9ca3af', '#cd7f32'][index] }]}>
-                    <Text style={styles.topMedalText}>{index + 1}</Text>
-                  </View>
-                  {product.images?.[0] && (
-                    <Image
-                      source={{ uri: product.images[0] }}
-                      style={styles.topProductImage}
-                      contentFit="contain"
-                    />
-                  )}
-                  <Text style={styles.topProductName} numberOfLines={2}>{product.name}</Text>
-                  <Text style={styles.topProductPrice}>{Number(product.price).toFixed(2)} zł</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-
-        {data?.newArrivals && data.newArrivals.length > 0 && (
-          <View style={styles.productSection}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Nowości</Text>
-              <TouchableOpacity
-                onPress={() => router.push('/(tabs)/search')}
-                style={styles.seeAllBtn}
-              >
-                <Text style={styles.seeAllText}>Więcej</Text>
-                <FontAwesome name="chevron-right" size={11} color={Colors.primary[500]} />
-              </TouchableOpacity>
-            </View>
-            <ProductCarousel products={data.newArrivals} />
-          </View>
-        )}
-
-        {data?.seasonal && data.seasonal.length > 0 && (
-          <View style={styles.productSection}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Sezonowe</Text>
-              <TouchableOpacity
-                onPress={() => router.push('/(tabs)/search')}
-                style={styles.seeAllBtn}
-              >
-                <Text style={styles.seeAllText}>Więcej</Text>
-                <FontAwesome name="chevron-right" size={11} color={Colors.primary[500]} />
-              </TouchableOpacity>
-            </View>
-            <ProductCarousel products={data.seasonal} />
-          </View>
-        )}
-
-        {/* ── 🔥 Deals / Okazje dnia ── */}
-        {data?.deals && data.deals.length > 0 && (
-          <View style={styles.dealsSection}>
-            <View style={styles.dealsBanner}>
-              <View style={styles.dealsIconWrap}>
-                <FontAwesome name="bolt" size={18} color={Colors.white} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.dealsBannerTitle}>Okazje dnia</Text>
-                <Text style={styles.dealsBannerSub}>Obniżki, które warto złapać!</Text>
-              </View>
-              <View style={styles.dealsBadge}>
-                <Text style={styles.dealsBadgeText}>SALE</Text>
-              </View>
-            </View>
-            <ProductCarousel products={data.deals} />
-          </View>
-        )}
-
-        {/* ── 💰 Budget Picks / Poniżej 50 zł ── */}
-        {data?.budgetPicks && data.budgetPicks.length > 0 && (
-          <View style={styles.budgetSection}>
-            <View style={styles.budgetHeader}>
-              <View style={styles.budgetTitleRow}>
-                <View style={styles.budgetIconWrap}>
-                  <FontAwesome name="tag" size={14} color={Colors.white} />
-                </View>
-                <Text style={styles.budgetTitle}>Poniżej 50 zł</Text>
-              </View>
-              <Text style={styles.budgetSubtitle}>Świetna jakość w małej cenie</Text>
-            </View>
-            <ProductCarousel products={data.budgetPicks} />
-          </View>
-        )}
-
-        {/* ── Visual category tiles ── */}
-        {(data?.electronica?.length > 0 || data?.domOgrod?.length > 0 || data?.dziecko?.length > 0 || data?.sport?.length > 0) && (
-          <View style={styles.catTilesSection}>
-            <Text style={styles.catTilesTitle}>Przeglądaj kategorie</Text>
-            <View style={styles.catTilesGrid}>
-              {[
-                { label: 'Elektronika', icon: 'laptop' as const, color: '#3b82f6', darkColor: '#1e40af', slug: 'elektronika', items: data?.electronica },
-                { label: 'Dom i ogród', icon: 'tree' as const, color: '#16a34a', darkColor: '#15803d', slug: 'dom-i-ogrod', items: data?.domOgrod },
-                { label: 'Dziecko', icon: 'child' as const, color: '#ec4899', darkColor: '#be185d', slug: 'dziecko', items: data?.dziecko },
-                { label: 'Sport', icon: 'futbol-o' as const, color: '#f59e0b', darkColor: '#b45309', slug: 'sport', items: data?.sport },
-              ]
-                .filter((c) => c.items && c.items.length > 0)
-                .map((cat) => (
-                  <TouchableOpacity
-                    key={cat.slug}
-                    style={styles.catTile}
-                    onPress={() => router.push(`/category/${cat.slug}` as any)}
-                    activeOpacity={0.85}
-                  >
-                    <View style={[styles.catTileImageWrap, { backgroundColor: cat.color + '18' }]}>
-                      <View style={[styles.catTileIconCircle, { backgroundColor: cat.color }]}>
-                        <FontAwesome name={cat.icon} size={28} color={Colors.white} />
-                      </View>
-                      <FontAwesome name={cat.icon} size={60} color={cat.color} style={{ position: 'absolute', right: -8, bottom: -8, opacity: 0.08 }} />
-                    </View>
-                    <View style={styles.catTileInfo}>
-                      <Text style={[styles.catTileLabel, { color: cat.darkColor }]}>{cat.label}</Text>
-                      <View style={[styles.catTileBtn, { backgroundColor: cat.color }]}>
-                        <Text style={styles.catTileBtnText}>Odkryj</Text>
-                        <FontAwesome name="chevron-right" size={9} color={Colors.white} />
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-            </View>
-          </View>
-        )}
-
-        {/* ── Trust / Info strip ── */}
-        <View style={styles.trustStrip}>
-          {[
-            { icon: 'truck' as const, title: 'Szybka wysyłka', sub: '24h' },
-            { icon: 'shield' as const, title: 'Bezpieczne\npłatności', sub: '' },
-            { icon: 'undo' as const, title: 'Zwrot\n14 dni', sub: '' },
-            { icon: 'headphones' as const, title: 'Wsparcie\n24/7', sub: '' },
-          ].map((item) => (
-            <View key={item.title} style={styles.trustItem}>
-              <View style={styles.trustIconWrap}>
-                <FontAwesome name={item.icon} size={18} color={Colors.primary[500]} />
-              </View>
-              <Text style={styles.trustTitle}>{item.title}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* ── Infinite random products ── */}
-        {randomProducts.length > 0 && (
-          <View style={styles.randomSection}>
-            <View style={styles.randomHeader}>
-              <View style={styles.randomTitleRow}>
-                <FontAwesome name="random" size={16} color={Colors.primary[500]} />
-                <Text style={styles.randomTitle}>Odkryj coś dla siebie</Text>
-              </View>
-              <Text style={styles.randomSubtitle}>Nieskończony wybór — scrolluj i odkrywaj!</Text>
-            </View>
-            <View style={styles.randomGrid}>
-              {randomProducts.map((product, index) => (
-                <ProductCard key={`${product.id}-${index}`} product={product} />
-              ))}
-            </View>
-            {loadingMore && (
-              <View style={styles.loadingMore}>
-                <ActivityIndicator size="small" color={Colors.primary[500]} />
-                <Text style={styles.loadingMoreText}>Ładuję więcej produktów...</Text>
-              </View>
-            )}
-            {!hasMoreRandom && randomProducts.length > 0 && (
-              <View style={styles.endReached}>
-                <FontAwesome name="check-circle" size={20} color={Colors.secondary[300]} />
-                <Text style={styles.endReachedText}>To już wszystko — ale zawsze możesz odświeżyć!</Text>
-              </View>
-            )}
-          </View>
-        )}
-      </ScrollView>
+        initialNumToRender={4}
+        maxToRenderPerBatch={2}
+        windowSize={5}
+        removeClippedSubviews={true}
+        showsVerticalScrollIndicator={false}
+      />
     </SafeAreaView>
   );
 }
 
+// ═══════════════════════════════════════════════════════
+// Styles
+// ═══════════════════════════════════════════════════════
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.secondary[100],
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 24,
-  },
-  centerContent: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    gap: 12,
-  },
+  container: { flex: 1, backgroundColor: Colors.secondary[100] },
+  list: { flex: 1 },
+  listContent: { paddingBottom: 24 },
+  centerContent: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
 
-  // ── Header ──
+  // Header
   header: {
     backgroundColor: Colors.white,
-    paddingHorizontal: 16,
-    paddingTop: 6,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.secondary[200],
+    paddingHorizontal: 16, paddingTop: 6, paddingBottom: 12,
+    borderBottomWidth: 1, borderBottomColor: Colors.secondary[200],
   },
   headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', marginBottom: 10,
   },
-  headerLogo: {
-    width: 120,
-    height: 36,
-  },
-  headerIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
+  headerLogo: { width: 120, height: 36 },
+  headerIcons: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   headerIconBtn: {
-    position: 'relative',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    position: 'relative', width: 36, height: 36, borderRadius: 18,
     backgroundColor: Colors.secondary[100],
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
   cartBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
+    position: 'absolute', top: -4, right: -4,
     backgroundColor: Colors.destructive,
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-    borderWidth: 2,
-    borderColor: Colors.white,
+    borderRadius: 10, minWidth: 18, height: 18,
+    alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: 4, borderWidth: 2, borderColor: Colors.white,
   },
-  cartBadgeText: {
-    color: Colors.white,
-    fontSize: 10,
-    fontWeight: '700',
-  },
+  cartBadgeText: { color: Colors.white, fontSize: 10, fontWeight: '700' },
   searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row', alignItems: 'center',
     backgroundColor: Colors.secondary[100],
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 11,
-    gap: 10,
+    borderRadius: 24, paddingHorizontal: 16, paddingVertical: 11, gap: 10,
   },
-  searchPlaceholder: {
-    fontSize: 15,
-    color: Colors.secondary[400],
-  },
+  searchPlaceholder: { fontSize: 15, color: Colors.secondary[400] },
 
-  // ── Categories circles ──
+  // Categories
   categoriesSection: {
-    backgroundColor: Colors.white,
-    paddingTop: 16,
-    paddingBottom: 4,
-    marginBottom: 8,
+    backgroundColor: Colors.white, paddingTop: 16, paddingBottom: 4, marginBottom: 8,
   },
-  categoriesScrollContent: {
-    paddingHorizontal: 12,
-    gap: 4,
-  },
-  categoryCircleWrap: {
-    alignItems: 'center',
-    width: 72,
-  },
+  categoriesScrollContent: { paddingHorizontal: 12, gap: 4 },
+  categoryCircleWrap: { alignItems: 'center', width: 72 },
   categoryCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
+    width: 56, height: 56, borderRadius: 28,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 6,
   },
   categoryCircleLabel: {
-    fontSize: 11,
-    color: Colors.secondary[700],
-    textAlign: 'center',
-    lineHeight: 14,
-    fontWeight: '500',
+    fontSize: 11, color: Colors.secondary[700], textAlign: 'center',
+    lineHeight: 14, fontWeight: '500',
   },
-
-  // ── "Wszystkie kategorie" button + tree ──
   allCategoriesBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 10,
-    marginHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: Colors.secondary[200],
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    marginTop: 10, marginHorizontal: 16, paddingVertical: 10,
+    borderRadius: 10, borderWidth: 1, borderColor: Colors.secondary[200],
     backgroundColor: Colors.secondary[50],
   },
-  allCategoriesBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.secondary[700],
-  },
+  allCategoriesBtnText: { fontSize: 14, fontWeight: '600', color: Colors.secondary[700] },
 
-  // ── Product sections ──
+  // Product sections
   productSection: {
-    backgroundColor: Colors.white,
-    paddingTop: 16,
-    paddingBottom: 8,
-    marginBottom: 8,
+    backgroundColor: Colors.white, paddingTop: 16, paddingBottom: 8, marginBottom: 8,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 12,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 16, marginBottom: 12,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.secondary[900],
-  },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: Colors.secondary[900] },
   seeAllBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 2,
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingVertical: 4, paddingHorizontal: 2,
   },
-  seeAllText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.primary[500],
-  },
+  seeAllText: { fontSize: 14, fontWeight: '500', color: Colors.primary[500] },
 
-  // ── Error ──
-  errorText: {
-    fontSize: 16,
-    color: Colors.destructive,
-    textAlign: 'center',
-  },
-  errorHint: {
-    fontSize: 14,
-    color: Colors.secondary[500],
-    textAlign: 'center',
-  },
+  // Error
+  errorText: { fontSize: 16, color: Colors.destructive, textAlign: 'center' },
+  errorHint: { fontSize: 14, color: Colors.secondary[500], textAlign: 'center' },
 
-  // ── Random infinite scroll ──
-  randomSection: {
-    backgroundColor: Colors.white,
-    paddingTop: 20,
-    paddingBottom: 8,
-  },
-
-  // ── Deals section ──
-  dealsSection: {
-    backgroundColor: Colors.white,
-    paddingTop: 16,
-    paddingBottom: 8,
-    marginBottom: 8,
-  },
-  dealsBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    marginBottom: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    backgroundColor: '#fef2f2',
-    borderWidth: 1,
-    borderColor: '#fecaca',
-    gap: 12,
-  },
-  dealsIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#ef4444',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dealsBannerTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#dc2626',
-  },
-  dealsBannerSub: {
-    fontSize: 12,
-    color: '#b91c1c',
-    marginTop: 1,
-  },
-  dealsBadge: {
-    backgroundColor: '#ef4444',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  dealsBadgeText: {
-    color: Colors.white,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-
-  // ── Budget section ──
-  budgetSection: {
-    backgroundColor: Colors.white,
-    paddingTop: 16,
-    paddingBottom: 8,
-    marginBottom: 8,
-  },
-  budgetHeader: {
-    paddingHorizontal: 16,
-    marginBottom: 12,
-  },
-  budgetTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 2,
-  },
-  budgetIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#16a34a',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  budgetTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#15803d',
-  },
-  budgetSubtitle: {
-    fontSize: 13,
-    color: Colors.secondary[500],
-    marginLeft: 36,
-  },
-
-  // ── Promo banners ──
+  // Promo
   promoSection: {
-    backgroundColor: Colors.white,
-    paddingTop: 12,
-    paddingBottom: 16,
-    marginBottom: 8,
+    backgroundColor: Colors.white, paddingTop: 12, paddingBottom: 16, marginBottom: 8,
   },
-  promoScrollContent: {
-    paddingHorizontal: 16,
-    gap: 12,
-  },
+  promoScrollContent: { paddingHorizontal: 16, gap: 12 },
   promoBanner: {
-    width: BANNER_WIDTH,
-    height: 130,
-    borderRadius: 16,
-    overflow: 'hidden',
-    justifyContent: 'center',
+    width: BANNER_WIDTH, height: 130, borderRadius: 16,
+    overflow: 'hidden', justifyContent: 'center',
   },
-  promoDecorWrap: {
-    ...StyleSheet.absoluteFillObject,
-  },
+  promoDecorWrap: { ...StyleSheet.absoluteFillObject },
   promoBannerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-    gap: 14,
-    zIndex: 1,
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 18, paddingVertical: 16, gap: 14, zIndex: 1,
   },
   promoBannerIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 48, height: 48, borderRadius: 24,
+    alignItems: 'center', justifyContent: 'center',
   },
-  promoBannerTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: Colors.white,
-    marginBottom: 2,
-  },
-  promoBannerSub: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.8)',
-  },
+  promoBannerTitle: { fontSize: 20, fontWeight: '800', color: Colors.white, marginBottom: 2 },
+  promoBannerSub: { fontSize: 13, color: 'rgba(255,255,255,0.8)' },
   promoBannerCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
   },
-  promoBannerCtaText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.white,
-  },
-  promoDots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: 10,
-  },
-  promoDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.secondary[300],
-  },
-  promoDotActive: {
-    backgroundColor: Colors.primary[500],
-    width: 20,
-  },
+  promoBannerCtaText: { fontSize: 13, fontWeight: '700', color: Colors.white },
 
-  // ── Hero / Produkt dnia ──
+  // Hero
   heroSection: {
-    backgroundColor: Colors.white,
-    paddingTop: 16,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-    marginBottom: 8,
+    backgroundColor: Colors.white, paddingTop: 16, paddingBottom: 16,
+    paddingHorizontal: 16, marginBottom: 8,
   },
-  heroHeader: {
-    marginBottom: 12,
-  },
+  heroHeader: { marginBottom: 12 },
   heroBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#fffbeb',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#fde68a',
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: '#fffbeb', alignSelf: 'flex-start',
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
+    borderWidth: 1, borderColor: '#fde68a',
   },
-  heroBadgeText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#b45309',
-    letterSpacing: 1,
-  },
+  heroBadgeText: { fontSize: 12, fontWeight: '800', color: '#b45309', letterSpacing: 1 },
   heroCard: {
-    flexDirection: 'row',
-    backgroundColor: Colors.secondary[50],
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: Colors.secondary[200],
+    flexDirection: 'row', backgroundColor: Colors.secondary[50],
+    borderRadius: 16, overflow: 'hidden',
+    borderWidth: 1, borderColor: Colors.secondary[200],
   },
-  heroImage: {
-    width: SCREEN_WIDTH * 0.38,
-    height: 180,
-    backgroundColor: Colors.white,
-  },
-  heroInfo: {
-    flex: 1,
-    padding: 14,
-    justifyContent: 'center',
-    gap: 4,
-  },
+  heroImage: { width: SCREEN_WIDTH * 0.38, height: 180, backgroundColor: Colors.white },
+  heroInfo: { flex: 1, padding: 14, justifyContent: 'center', gap: 4 },
   heroName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Colors.secondary[800],
-    lineHeight: 20,
-    marginBottom: 4,
+    fontSize: 15, fontWeight: '600', color: Colors.secondary[800],
+    lineHeight: 20, marginBottom: 4,
   },
-  heroPriceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  heroPrice: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: Colors.primary[600],
-  },
+  heroPriceRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  heroPrice: { fontSize: 22, fontWeight: '800', color: Colors.primary[600] },
   heroDiscountBadge: {
-    backgroundColor: '#ef4444',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
+    backgroundColor: '#ef4444', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6,
   },
-  heroDiscountText: {
-    color: Colors.white,
-    fontSize: 12,
-    fontWeight: '700',
-  },
+  heroDiscountText: { color: Colors.white, fontSize: 12, fontWeight: '700' },
   heroOldPrice: {
-    fontSize: 13,
-    color: Colors.secondary[400],
-    textDecorationLine: 'line-through',
+    fontSize: 13, color: Colors.secondary[400], textDecorationLine: 'line-through',
   },
   heroCtaBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: Colors.primary[500],
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
-    marginTop: 8,
+    paddingHorizontal: 16, paddingVertical: 10,
+    borderRadius: 12, alignSelf: 'flex-start', marginTop: 8,
   },
-  heroCtaText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.white,
-  },
+  heroCtaText: { fontSize: 13, fontWeight: '700', color: Colors.white },
 
-  // ── Top 3 ──
+  // Top 3
   topSection: {
-    backgroundColor: Colors.white,
-    paddingTop: 16,
-    paddingBottom: 16,
-    marginBottom: 8,
+    backgroundColor: Colors.white, paddingTop: 16, paddingBottom: 16, marginBottom: 8,
   },
   topHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    marginBottom: 14,
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: 16, marginBottom: 14,
   },
-  topTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.secondary[900],
-  },
-  topScrollContent: {
-    paddingHorizontal: 16,
-    gap: 12,
-  },
+  topTitle: { fontSize: 18, fontWeight: '700', color: Colors.secondary[900] },
+  topScrollContent: { paddingHorizontal: 16, gap: 12 },
   topCard: {
-    width: 150,
-    backgroundColor: Colors.secondary[50],
-    borderRadius: 14,
-    padding: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.secondary[200],
-    position: 'relative',
+    width: 150, backgroundColor: Colors.secondary[50],
+    borderRadius: 14, padding: 12, alignItems: 'center',
+    borderWidth: 1, borderColor: Colors.secondary[200], position: 'relative',
   },
   topMedal: {
-    position: 'absolute',
-    top: -6,
-    left: -6,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1,
-    borderWidth: 2,
-    borderColor: Colors.white,
+    position: 'absolute', top: -6, left: -6, width: 28, height: 28,
+    borderRadius: 14, alignItems: 'center', justifyContent: 'center',
+    zIndex: 1, borderWidth: 2, borderColor: Colors.white,
   },
-  topMedalText: {
-    color: Colors.white,
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  topProductImage: {
-    width: 100,
-    height: 100,
-    marginBottom: 8,
-  },
+  topMedalText: { color: Colors.white, fontSize: 13, fontWeight: '800' },
+  topProductImage: { width: 100, height: 100, marginBottom: 8 },
   topProductName: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: Colors.secondary[700],
-    textAlign: 'center',
-    height: 32,
-    marginBottom: 4,
+    fontSize: 12, fontWeight: '500', color: Colors.secondary[700],
+    textAlign: 'center', height: 32, marginBottom: 4,
   },
-  topProductPrice: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.primary[600],
-  },
+  topProductPrice: { fontSize: 15, fontWeight: '700', color: Colors.primary[600] },
 
-  // ── Category tiles (replaces Inspiracje) ──
-  catTilesSection: {
-    backgroundColor: Colors.white,
-    paddingTop: 20,
-    paddingBottom: 16,
-    marginBottom: 8,
-    paddingHorizontal: 16,
-  },
-  catTilesTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.secondary[900],
-    marginBottom: 14,
-  },
-  catTilesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  catTile: {
-    width: (SCREEN_WIDTH - 32 - 10) / 2,
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: Colors.secondary[200],
-  },
-  catTileImageWrap: {
-    height: 90,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  catTileIconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1,
-  },
-  catTileInfo: {
-    padding: 10,
-    gap: 8,
-  },
-  catTileLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  catTileBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
-    alignSelf: 'flex-start',
-  },
-  catTileBtnText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.white,
-  },
-
-  // ── Trust strip ──
+  // Trust
   trustStrip: {
-    flexDirection: 'row',
-    backgroundColor: Colors.white,
-    paddingVertical: 16,
-    paddingHorizontal: 8,
-    marginBottom: 8,
+    flexDirection: 'row', backgroundColor: Colors.white,
+    paddingVertical: 16, paddingHorizontal: 8, marginBottom: 8,
     justifyContent: 'space-around',
   },
-  trustItem: {
-    alignItems: 'center',
-    flex: 1,
-    gap: 6,
-  },
+  trustItem: { alignItems: 'center', flex: 1, gap: 6 },
   trustIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 40, height: 40, borderRadius: 20,
     backgroundColor: Colors.primary[50],
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
   trustTitle: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: Colors.secondary[600],
-    textAlign: 'center',
-    lineHeight: 13,
+    fontSize: 10, fontWeight: '600', color: Colors.secondary[600],
+    textAlign: 'center', lineHeight: 13,
   },
-  randomHeader: {
-    paddingHorizontal: 16,
-    marginBottom: 16,
+
+  // Discover
+  discoverHeader: {
+    backgroundColor: Colors.white, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 4,
   },
-  randomTitleRow: {
-    flexDirection: 'row',
+  discoverTitleRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4,
+  },
+  discoverTitle: { fontSize: 18, fontWeight: '700', color: Colors.secondary[900] },
+  discoverSubtitle: { fontSize: 13, color: Colors.secondary[400] },
+  discoverGrid: {
+    flexDirection: 'row', flexWrap: 'wrap',
+    paddingHorizontal: 16, gap: 10,
+    backgroundColor: Colors.white, paddingBottom: 12,
+  },
+
+  // Load more
+  loadMoreWrap: {
+    backgroundColor: Colors.white, paddingVertical: 20, paddingHorizontal: 16,
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
   },
-  randomTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.secondary[900],
+  loadMoreBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: Colors.primary[500],
+    paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14,
   },
-  randomSubtitle: {
-    fontSize: 13,
-    color: Colors.secondary[400],
+  loadMoreBtnText: { fontSize: 15, fontWeight: '700', color: Colors.white },
+  loadMoreInner: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8,
   },
-  randomGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 16,
-    gap: 10,
-  },
-  loadingMore: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 20,
-    gap: 8,
-  },
-  loadingMoreText: {
-    fontSize: 13,
-    color: Colors.secondary[400],
-  },
-  endReached: {
-    alignItems: 'center',
-    paddingVertical: 24,
-    gap: 6,
-  },
-  endReachedText: {
-    fontSize: 13,
-    color: Colors.secondary[400],
-    textAlign: 'center',
-  },
+  loadMoreText: { fontSize: 13, color: Colors.secondary[400] },
 });

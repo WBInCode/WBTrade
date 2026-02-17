@@ -15,7 +15,7 @@ interface ProductCarouselProps {
 
 const CAROUSEL_CARD_WIDTH = 160;
 
-export default function ProductCarousel({
+function ProductCarousel({
   title,
   products,
   loading = false,
@@ -85,6 +85,9 @@ export default function ProductCarousel({
         showsHorizontalScrollIndicator={false}
         keyExtractor={(item, index) => `${item.id}-${index}`}
         contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}
+        initialNumToRender={3}
+        maxToRenderPerBatch={3}
+        windowSize={5}
         renderItem={({ item }) => (
           <ProductCard product={item} width={CAROUSEL_CARD_WIDTH} />
         )}
@@ -92,3 +95,5 @@ export default function ProductCarousel({
     </View>
   );
 }
+
+export default React.memo(ProductCarousel);
