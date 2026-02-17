@@ -44,6 +44,7 @@ export default function AddToCartModal({
   const [sameWarehouseProducts, setSameWarehouseProducts] = useState<Product[]>([]);
   const [loadingRelated, setLoadingRelated] = useState(false);
   const [addingIds, setAddingIds] = useState<Set<string>>(new Set());
+  const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
 
   // Fetch same-warehouse products
   useEffect(() => {
@@ -53,6 +54,7 @@ export default function AddToCartModal({
     }
 
     setLoadingRelated(true);
+    setAddedIds(new Set());
     api
       .get<{ products: Product[] }>(`/products/same-warehouse/${product.productId}?limit=4`)
       .then((data) => {
@@ -70,8 +72,8 @@ export default function AddToCartModal({
     setAddingIds((prev) => new Set(prev).add(relatedProduct.id));
     try {
       await addToCart(variantId, 1);
-      // Remove from list after adding
-      setSameWarehouseProducts((prev) => prev.filter((p) => p.id !== relatedProduct.id));
+      // Mark as added (keep visible with checkmark)
+      setAddedIds((prev) => new Set(prev).add(relatedProduct.id));
     } catch {
       // ignore
     } finally {
@@ -170,6 +172,7 @@ export default function AddToCartModal({
                       const price =
                         typeof p.price === 'string' ? parseFloat(p.price) : p.price || 0;
                       const isAdding = addingIds.has(p.id);
+                      const isAdded = addedIds.has(p.id);
 
                       return (
                         <View key={p.id} style={styles.crossSellItem}>
@@ -202,20 +205,27 @@ export default function AddToCartModal({
                           <Text style={styles.crossSellPrice}>
                             {price.toFixed(2)} zł
                           </Text>
-                          <TouchableOpacity
-                            style={[
-                              styles.addButton,
-                              isAdding && styles.addButtonDisabled,
-                            ]}
-                            onPress={() => handleAddRelated(p)}
-                            disabled={isAdding}
-                          >
-                            {isAdding ? (
-                              <ActivityIndicator size="small" color="#fff" />
-                            ) : (
-                              <Text style={styles.addButtonText}>Dodaj</Text>
-                            )}
-                          </TouchableOpacity>
+                          {isAdded ? (
+                            <View style={[styles.addButton, styles.addedButton]}>
+                              <Ionicons name="checkmark" size={14} color="#22C55E" />
+                              <Text style={styles.addedButtonText}>Dodano</Text>
+                            </View>
+                          ) : (
+                            <TouchableOpacity
+                              style={[
+                                styles.addButton,
+                                isAdding && styles.addButtonDisabled,
+                              ]}
+                              onPress={() => handleAddRelated(p)}
+                              disabled={isAdding}
+                            >
+                              {isAdding ? (
+                                <ActivityIndicator size="small" color="#fff" />
+                              ) : (
+                                <Text style={styles.addButtonText}>Dodaj</Text>
+                              )}
+                            </TouchableOpacity>
+                          )}
                         </View>
                       );
                     })}
@@ -428,12 +438,25 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 8,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 4,
   },
   addButtonDisabled: {
     opacity: 0.7,
   },
   addButtonText: {
     color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  addedButton: {
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  addedButtonText: {
+    color: '#22C55E',
     fontSize: 13,
     fontWeight: '600',
   },

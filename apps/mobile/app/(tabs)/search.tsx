@@ -9,7 +9,8 @@ import {
   FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api } from '../../services/api';
 import { Colors } from '../../constants/Colors';
 import ProductGrid from '../../components/product/ProductGrid';
@@ -35,6 +36,8 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 ];
 
 export default function SearchScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams<{ warehouse?: string }>();
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounce(query, 400);
 
@@ -44,6 +47,54 @@ export default function SearchScreen() {
   const [searched, setSearched] = useState(false);
   const [sort, setSort] = useState<SortOption>('relevance');
   const [showSort, setShowSort] = useState(false);
+  const [warehouseFilter, setWarehouseFilter] = useState<string | null>(null);
+
+  // Warehouse filter names
+  const WAREHOUSE_NAMES: Record<string, string> = {
+    'hp': 'Magazyn Zielona Góra',
+    'ikonka': 'Magazyn Białystok',
+    'btp': 'Magazyn Chotów',
+    'leker': 'Magazyn Chynów',
+    'outlet': 'Magazyn Rzeszów',
+  };
+
+  // Handle warehouse param from cart
+  useEffect(() => {
+    if (params.warehouse) {
+      setWarehouseFilter(params.warehouse);
+      loadWarehouseProducts(params.warehouse);
+    }
+  }, [params.warehouse]);
+
+  const loadWarehouseProducts = async (warehouse: string) => {
+    setLoading(true);
+    setSearched(true);
+    try {
+      const response = await api.get<{ products: Product[]; total: number }>('/products', {
+        warehouse,
+        sort: sort !== 'relevance' ? sort : undefined,
+        limit: 50,
+      });
+      setProducts(response.products || []);
+      setTotal(response.total || response.products?.length || 0);
+    } catch (err) {
+      console.error('Warehouse products error:', err);
+      setProducts([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clearWarehouseFilter = () => {
+    setWarehouseFilter(null);
+    setProducts([]);
+    setTotal(0);
+    setSearched(false);
+    setQuery('');
+    // Clear the route param
+    router.setParams({ warehouse: '' });
+  };
 
   // Suggestions
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -51,6 +102,7 @@ export default function SearchScreen() {
 
   // Live search
   useEffect(() => {
+    if (warehouseFilter) return; // Don't live-search when warehouse filter is active
     if (debouncedQuery.length < 2) {
       setProducts([]);
       setTotal(0);
@@ -61,7 +113,14 @@ export default function SearchScreen() {
 
     performSearch(debouncedQuery);
     fetchSuggestions(debouncedQuery);
-  }, [debouncedQuery, sort]);
+  }, [debouncedQuery, sort, warehouseFilter]);
+
+  // Reload warehouse products when sort changes
+  useEffect(() => {
+    if (warehouseFilter) {
+      loadWarehouseProducts(warehouseFilter);
+    }
+  }, [sort]);
 
   const performSearch = async (searchQuery: string) => {
     setLoading(true);
@@ -123,6 +182,19 @@ export default function SearchScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Search Header */}
       <View style={styles.searchHeader}>
+        {warehouseFilter ? (
+          <View style={styles.warehouseFilterBar}>
+            <View style={styles.warehouseFilterInfo}>
+              <Ionicons name="storefront-outline" size={18} color={Colors.primary[600]} />
+              <Text style={styles.warehouseFilterText}>
+                {WAREHOUSE_NAMES[warehouseFilter] || `Magazyn ${warehouseFilter}`}
+              </Text>
+            </View>
+            <TouchableOpacity style={styles.warehouseFilterClear} onPress={clearWarehouseFilter}>
+              <Ionicons name="close-circle" size={22} color={Colors.secondary[400]} />
+            </TouchableOpacity>
+          </View>
+        ) : (
         <View style={styles.searchInputContainer}>
           <FontAwesome name="search" size={16} color={Colors.secondary[400]} />
           <TextInput
@@ -147,6 +219,7 @@ export default function SearchScreen() {
             </TouchableOpacity>
           )}
         </View>
+        )}
       </View>
 
       {/* Suggestions */}
@@ -261,6 +334,30 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     gap: 8,
+  },
+  warehouseFilterBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.primary[50],
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: Colors.primary[200],
+  },
+  warehouseFilterInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  warehouseFilterText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.primary[700],
+  },
+  warehouseFilterClear: {
+    padding: 2,
   },
   searchInput: {
     flex: 1,
