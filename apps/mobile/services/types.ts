@@ -72,6 +72,7 @@ export interface Product {
   badge?: 'super-price' | 'outlet' | 'bestseller' | 'new';
   rating?: string | number;
   reviewCount?: number;
+  wholesaler?: string | null;
   storeName?: string;
   deliveryInfo?: string;
   createdAt?: string;

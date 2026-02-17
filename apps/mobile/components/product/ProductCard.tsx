@@ -1,10 +1,11 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, Dimensions, StyleSheet, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import Badge from '../ui/Badge';
+import { useCart } from '../../contexts/CartContext';
 import type { Product } from '../../services/types';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -19,6 +20,8 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, width }: ProductCardProps) {
   const router = useRouter();
+  const { addToCart } = useCart();
+  const [adding, setAdding] = useState(false);
   const cardWidth = width || CARD_WIDTH;
 
   const price = Number(
@@ -119,12 +122,38 @@ export default function ProductCard({ product, width }: ProductCardProps) {
 
       {/* Add to cart button */}
       <TouchableOpacity
-        style={[styles.addButton, !hasStock && styles.addButtonDisabled]}
-        onPress={() => router.push(`/product/${product.id}`)}
+        style={[styles.addButton, !hasStock && styles.addButtonDisabled, adding && styles.addButtonAdding]}
+        onPress={async () => {
+          if (!hasStock || adding) return;
+          const variantId = product.variants?.[0]?.id;
+          if (!variantId) {
+            router.push(`/product/${product.id}`);
+            return;
+          }
+          setAdding(true);
+          try {
+            await addToCart(variantId, 1, {
+              productId: product.id,
+              name: product.name,
+              imageUrl: imageUrl,
+              price,
+              quantity: 1,
+              warehouse: product.wholesaler || undefined,
+            });
+          } catch {}
+          setAdding(false);
+        }}
         activeOpacity={0.8}
+        disabled={!hasStock || adding}
       >
-        <FontAwesome name="shopping-cart" size={13} color={Colors.white} />
-        <Text style={styles.addButtonText}>Do koszyka</Text>
+        {adding ? (
+          <ActivityIndicator size="small" color={Colors.white} />
+        ) : (
+          <>
+            <FontAwesome name="shopping-cart" size={13} color={Colors.white} />
+            <Text style={styles.addButtonText}>Do koszyka</Text>
+          </>
+        )}
       </TouchableOpacity>
     </View>
   );
@@ -220,6 +249,9 @@ const styles = StyleSheet.create({
   },
   addButtonDisabled: {
     backgroundColor: Colors.secondary[300],
+  },
+  addButtonAdding: {
+    opacity: 0.8,
   },
   addButtonText: {
     color: Colors.white,

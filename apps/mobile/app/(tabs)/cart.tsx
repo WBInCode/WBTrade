@@ -1,42 +1,90 @@
-import React from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
+import {
+  StyleSheet,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  RefreshControl,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Image } from 'expo-image';
-import { FontAwesome } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { useCart } from '../../contexts/CartContext';
+import { useAuth } from '../../contexts/AuthContext';
+import CartItem from '../../components/cart/CartItem';
 import Button from '../../components/ui/Button';
 
 export default function CartScreen() {
   const router = useRouter();
-  const { cart, itemCount, updateQuantity, removeFromCart, loading } = useCart();
+  const { cart, itemCount, updateQuantity, removeFromCart, applyCoupon, removeCoupon, refreshCart, loading } = useCart();
+  const { isAuthenticated } = useAuth();
+  const [couponCode, setCouponCode] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+
   const items = cart?.items || [];
   const subtotal = cart?.subtotal || 0;
   const discount = cart?.discount || 0;
   const total = cart?.total || 0;
 
-  if (loading && items.length === 0) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Koszyk</Text>
-        </View>
-        <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color={Colors.primary[500]} />
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refreshCart();
+    setRefreshing(false);
+  };
 
-  if (itemCount === 0) {
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    setCouponError('');
+    try {
+      await applyCoupon(couponCode.trim());
+      setCouponCode('');
+    } catch (err: any) {
+      setCouponError(err.message || 'Nieprawidłowy kod kuponu');
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const handleRemoveCoupon = async () => {
+    try {
+      await removeCoupon();
+    } catch (err: any) {
+      Alert.alert('Błąd', err.message || 'Nie udało się usunąć kuponu');
+    }
+  };
+
+  const handleCheckout = () => {
+    if (!isAuthenticated) {
+      Alert.alert(
+        'Zaloguj się',
+        'Aby złożyć zamówienie musisz się zalogować lub kontynuować jako gość.',
+        [
+          { text: 'Anuluj', style: 'cancel' },
+          { text: 'Zaloguj się', onPress: () => router.push('/(auth)/login') },
+          { text: 'Kontynuuj jako gość', onPress: () => router.push('/checkout/') },
+        ]
+      );
+    } else {
+      router.push('/checkout/');
+    }
+  };
+
+  // Empty cart state
+  if (!loading && itemCount === 0) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Koszyk</Text>
         </View>
         <View style={styles.emptyContainer}>
-          <FontAwesome name="shopping-cart" size={64} color={Colors.secondary[300]} />
+          <Text style={styles.emptyIcon}>🛒</Text>
           <Text style={styles.emptyText}>Twój koszyk jest pusty</Text>
           <Text style={styles.emptyHint}>Dodaj produkty aby kontynuować zakupy</Text>
           <Button
@@ -48,6 +96,44 @@ export default function CartScreen() {
     );
   }
 
+  // Group items by warehouse (like web version)
+  // Merge Outlet into Rzeszów — they are the same warehouse
+  const warehouseGroups = items.reduce<Record<string, typeof items>>((groups, item) => {
+    let warehouse = item.variant.product.wholesaler || 'default';
+    if (warehouse === 'Outlet') warehouse = 'Rzeszów';
+    if (!groups[warehouse]) groups[warehouse] = [];
+    groups[warehouse].push(item);
+    return groups;
+  }, {});
+
+  const WAREHOUSE_CONFIG: Record<string, { name: string; color: string; bgColor: string; borderColor: string; icon: string; searchKey: string }> = {
+    'HP': { name: 'Magazyn Zielona Góra', color: '#1D4ED8', bgColor: '#EFF6FF', borderColor: '#BFDBFE', icon: '🏢', searchKey: 'hp' },
+    'Hurtownia Przemysłowa': { name: 'Magazyn Zielona Góra', color: '#1D4ED8', bgColor: '#EFF6FF', borderColor: '#BFDBFE', icon: '🏢', searchKey: 'hp' },
+    'Ikonka': { name: 'Magazyn Białystok', color: '#7C3AED', bgColor: '#F5F3FF', borderColor: '#DDD6FE', icon: '📦', searchKey: 'ikonka' },
+    'BTP': { name: 'Magazyn Chotów', color: '#047857', bgColor: '#ECFDF5', borderColor: '#A7F3D0', icon: '🌿', searchKey: 'btp' },
+    'Leker': { name: 'Magazyn Chynów', color: '#B91C1C', bgColor: '#FEF2F2', borderColor: '#FECACA', icon: '🏠', searchKey: 'leker' },
+    'Rzeszów': { name: 'Magazyn Rzeszów', color: '#BE185D', bgColor: '#FDF2F8', borderColor: '#FBCFE8', icon: '📍', searchKey: 'outlet' },
+  };
+
+  const getWarehouseInfo = (key: string) => {
+    return WAREHOUSE_CONFIG[key] || {
+      name: `Magazyn ${key}`,
+      color: '#374151',
+      bgColor: '#F9FAFB',
+      borderColor: '#E5E7EB',
+      icon: '📦',
+      searchKey: key.toLowerCase(),
+    };
+  };
+
+  const handleBrowseWarehouse = (warehouse: string) => {
+    const info = getWarehouseInfo(warehouse);
+    router.push({
+      pathname: '/(tabs)/search',
+      params: { warehouse: info.searchKey },
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -57,112 +143,133 @@ export default function CartScreen() {
         </Text>
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {items.map((item) => {
-          const imageUrl = item.variant?.product?.images?.[0]?.url;
-          const productName = item.variant?.product?.name || 'Produkt';
-          const variantName = item.variant?.name || '';
-          const unitPrice = Number(item.variant?.price) || 0;
-          const lineTotal = item.quantity * unitPrice;
-
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        {/* Cart items grouped by warehouse */}
+        {Object.entries(warehouseGroups).map(([warehouse, warehouseItems], index) => {
+          const wInfo = getWarehouseInfo(warehouse);
+          const showHeader = Object.keys(warehouseGroups).length > 1;
           return (
-            <View key={item.id} style={styles.cartItem}>
-              {/* Image */}
-              <TouchableOpacity
-                onPress={() => router.push(`/product/${item.variant?.product?.id}`)}
-                style={styles.itemImageContainer}
-              >
-                {imageUrl ? (
-                  <Image
-                    source={{ uri: imageUrl }}
-                    style={styles.itemImage}
-                    contentFit="cover"
-                    transition={200}
-                  />
-                ) : (
-                  <View style={styles.itemImagePlaceholder}>
-                    <FontAwesome name="image" size={20} color={Colors.secondary[300]} />
+            <View key={warehouse} style={[
+              styles.warehouseGroup,
+              showHeader && {
+                backgroundColor: Colors.white,
+                borderRadius: 14,
+                borderWidth: 1.5,
+                borderColor: wInfo.borderColor,
+                overflow: 'hidden',
+                marginBottom: 16,
+              },
+            ]}>
+              {showHeader && (
+                <View style={[styles.warehouseHeader, { backgroundColor: wInfo.bgColor, borderBottomColor: wInfo.borderColor }]}> 
+                  <View style={styles.warehouseHeaderLeft}>
+                    <Text style={styles.warehouseIcon}>{wInfo.icon}</Text>
+                    <View>
+                      <Text style={[styles.warehouseName, { color: wInfo.color }]}>{wInfo.name}</Text>
+                      <Text style={styles.warehouseCount}>
+                        {warehouseItems.length} {warehouseItems.length === 1 ? 'produkt' : warehouseItems.length < 5 ? 'produkty' : 'produktów'}
+                      </Text>
+                    </View>
                   </View>
-                )}
-              </TouchableOpacity>
-
-              {/* Info */}
-              <View style={styles.itemInfo}>
-                <Text style={styles.itemName} numberOfLines={2}>{productName}</Text>
-                {variantName ? (
-                  <Text style={styles.itemVariant}>{variantName}</Text>
-                ) : null}
-                <Text style={styles.itemUnitPrice}>{unitPrice.toFixed(2)} zł / szt.</Text>
-
-                {/* Quantity controls */}
-                <View style={styles.quantityRow}>
-                  <View style={styles.quantityControls}>
-                    <TouchableOpacity
-                      style={styles.qtyButton}
-                      onPress={() => {
-                        if (item.quantity <= 1) {
-                          removeFromCart(item.id);
-                        } else {
-                          updateQuantity(item.id, item.quantity - 1);
-                        }
-                      }}
-                    >
-                      <FontAwesome
-                        name={item.quantity <= 1 ? 'trash-o' : 'minus'}
-                        size={12}
-                        color={item.quantity <= 1 ? Colors.destructive : Colors.secondary[700]}
-                      />
-                    </TouchableOpacity>
-                    <Text style={styles.qtyText}>{item.quantity}</Text>
-                    <TouchableOpacity
-                      style={styles.qtyButton}
-                      onPress={() => updateQuantity(item.id, item.quantity + 1)}
-                    >
-                      <FontAwesome name="plus" size={12} color={Colors.secondary[700]} />
-                    </TouchableOpacity>
+                  <View style={[styles.warehouseBadge, { backgroundColor: wInfo.color + '15' }]}>
+                    <Text style={[styles.warehouseBadgeText, { color: wInfo.color }]}>Paczka {index + 1}</Text>
                   </View>
-
-                  <Text style={styles.itemTotal}>{lineTotal.toFixed(2)} zł</Text>
                 </View>
+              )}
+              <View style={showHeader ? styles.warehouseItems : undefined}>
+                {warehouseItems.map((item) => (
+                  <CartItem
+                    key={item.id}
+                    item={item}
+                    onUpdateQuantity={updateQuantity}
+                    onRemove={removeFromCart}
+                  />
+                ))}
               </View>
-
-              {/* Remove button */}
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => removeFromCart(item.id)}
-              >
-                <FontAwesome name="times" size={16} color={Colors.secondary[400]} />
-              </TouchableOpacity>
+              {showHeader && (
+                <TouchableOpacity
+                  style={[styles.browseWarehouseBtn, { borderTopColor: wInfo.borderColor }]}
+                  onPress={() => handleBrowseWarehouse(warehouse)}
+                >
+                  <Ionicons name="add-circle-outline" size={18} color={wInfo.color} />
+                  <Text style={[styles.browseWarehouseText, { color: wInfo.color }]}>
+                    Dodaj więcej z tego magazynu
+                  </Text>
+                  <Ionicons name="chevron-forward" size={16} color={wInfo.color} />
+                </TouchableOpacity>
+              )}
             </View>
           );
         })}
+
+        {/* Coupon section */}
+        <View style={styles.couponSection}>
+          <Text style={styles.couponLabel}>Kod rabatowy</Text>
+          {cart?.couponCode ? (
+            <View style={styles.couponApplied}>
+              <View style={styles.couponBadge}>
+                <Text style={styles.couponBadgeText}>🎫 {cart.couponCode}</Text>
+              </View>
+              <TouchableOpacity onPress={handleRemoveCoupon}>
+                <Text style={styles.couponRemove}>Usuń</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.couponInputRow}>
+              <TextInput
+                style={styles.couponInput}
+                placeholder="Wpisz kod kuponu"
+                value={couponCode}
+                onChangeText={setCouponCode}
+                autoCapitalize="characters"
+                autoCorrect={false}
+              />
+              <Button
+                title="Zastosuj"
+                onPress={handleApplyCoupon}
+                loading={couponLoading}
+                size="sm"
+                variant="outline"
+              />
+            </View>
+          )}
+          {couponError ? (
+            <Text style={styles.couponErrorText}>{couponError}</Text>
+          ) : null}
+        </View>
       </ScrollView>
 
-      {/* Summary */}
+      {/* Summary bar */}
       <View style={styles.summary}>
-        {discount > 0 && (
-          <>
+        <View style={styles.summaryRows}>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Suma produktów</Text>
+            <Text style={styles.summaryValue}>{subtotal.toFixed(2)} zł</Text>
+          </View>
+          {discount > 0 && (
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Suma produktów:</Text>
-              <Text style={styles.summarySecondary}>{subtotal.toFixed(2)} zł</Text>
+              <Text style={styles.discountLabel}>Rabat</Text>
+              <Text style={styles.discountValue}>-{discount.toFixed(2)} zł</Text>
             </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Rabat:</Text>
-              <Text style={[styles.summarySecondary, { color: Colors.success }]}>
-                -{discount.toFixed(2)} zł
-              </Text>
-            </View>
-          </>
-        )}
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryTotalLabel}>Do zapłaty:</Text>
-          <Text style={styles.summaryTotalValue}>{total.toFixed(2)} zł</Text>
+          )}
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Wysyłka</Text>
+            <Text style={styles.shippingInfo}>obliczona w następnym kroku</Text>
+          </View>
+          <View style={[styles.summaryRow, styles.totalRow]}>
+            <Text style={styles.totalLabel}>Do zapłaty</Text>
+            <Text style={styles.totalValue}>{total.toFixed(2)} zł</Text>
+          </View>
         </View>
         <Button
-          title="Przejdź do kasy"
-          onPress={() => {
-            alert('Checkout będzie dostępny wkrótce');
-          }}
+          title="Dostawa i płatność"
+          onPress={handleCheckout}
+          fullWidth
+          size="lg"
         />
       </View>
     </SafeAreaView>
@@ -188,145 +295,195 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     fontSize: 14,
-    color: Colors.secondary[500],
+    color: Colors.secondary[600],
     marginTop: 2,
   },
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 32,
-    gap: 12,
+    padding: 24,
+  },
+  emptyIcon: {
+    fontSize: 80,
+    marginBottom: 16,
   },
   emptyText: {
     fontSize: 20,
     fontWeight: '600',
     color: Colors.secondary[900],
+    marginBottom: 8,
   },
   emptyHint: {
     fontSize: 14,
-    color: Colors.secondary[500],
+    color: Colors.secondary[600],
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 24,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 12,
+    padding: 16,
+    paddingBottom: 24,
   },
-  cartItem: {
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 10,
+  warehouseGroup: {
+    marginBottom: 16,
+  },
+  warehouseHeader: {
     flexDirection: 'row',
-    position: 'relative',
-  },
-  itemImageContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: Colors.secondary[100],
-    marginRight: 12,
-  },
-  itemImage: {
-    width: '100%',
-    height: '100%',
-  },
-  itemImagePlaceholder: {
-    width: '100%',
-    height: '100%',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
   },
-  itemInfo: {
-    flex: 1,
+  warehouseHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
-  itemName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.secondary[900],
-    marginBottom: 2,
+  warehouseIcon: {
+    fontSize: 22,
   },
-  itemVariant: {
+  warehouseName: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  warehouseCount: {
     fontSize: 12,
     color: Colors.secondary[500],
-    marginBottom: 2,
+    marginTop: 1,
   },
-  itemUnitPrice: {
-    fontSize: 12,
-    color: Colors.secondary[400],
-    marginBottom: 8,
+  warehouseBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
-  quantityRow: {
+  warehouseBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  warehouseItems: {
+    paddingTop: 4,
+  },
+  browseWarehouseBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+  },
+  browseWarehouseText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  couponSection: {
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+  },
+  couponLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.secondary[700],
+    marginBottom: 10,
+  },
+  couponInputRow: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+  },
+  couponInput: {
+    flex: 1,
+    backgroundColor: Colors.secondary[100],
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: Colors.secondary[900],
+  },
+  couponApplied: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  quantityControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.secondary[200],
+  couponBadge: {
+    backgroundColor: Colors.success + '15',
     borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
-  qtyButton: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  qtyText: {
-    fontSize: 14,
+  couponBadgeText: {
+    color: Colors.success,
     fontWeight: '600',
-    color: Colors.secondary[900],
-    minWidth: 28,
-    textAlign: 'center',
+    fontSize: 14,
   },
-  itemTotal: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.secondary[900],
+  couponRemove: {
+    color: Colors.destructive,
+    fontWeight: '600',
+    fontSize: 14,
   },
-  removeButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
+  couponErrorText: {
+    color: Colors.destructive,
+    fontSize: 13,
+    marginTop: 6,
   },
   summary: {
     backgroundColor: Colors.white,
     padding: 16,
     borderTopWidth: 1,
     borderTopColor: Colors.secondary[200],
-    gap: 8,
+  },
+  summaryRows: {
+    marginBottom: 16,
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 8,
   },
   summaryLabel: {
     fontSize: 14,
-    color: Colors.secondary[500],
+    color: Colors.secondary[600],
   },
-  summarySecondary: {
+  summaryValue: {
     fontSize: 14,
-    color: Colors.secondary[700],
+    color: Colors.secondary[900],
+    fontWeight: '500',
   },
-  summaryTotalLabel: {
+  discountLabel: {
+    fontSize: 14,
+    color: Colors.success,
+  },
+  discountValue: {
+    fontSize: 14,
+    color: Colors.success,
+    fontWeight: '600',
+  },
+  shippingInfo: {
+    fontSize: 12,
+    color: Colors.secondary[400],
+    fontStyle: 'italic',
+  },
+  totalRow: {
+    marginTop: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.secondary[200],
+    marginBottom: 0,
+  },
+  totalLabel: {
     fontSize: 18,
     fontWeight: '700',
     color: Colors.secondary[900],
   },
-  summaryTotalValue: {
+  totalValue: {
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: '700',
     color: Colors.primary[600],
   },
 });
