@@ -203,6 +203,10 @@ app.listen(PORT, async () => {
     if (redis) {
       await redis.ping();
       console.log('✅ Redis connection verified');
+      // Wyczyść cache kategorii przy starcie serwera — nowa wersja kodu wymaga świeżych danych
+      const { invalidateCategoryCache } = await import('./lib/cache');
+      await invalidateCategoryCache();
+      console.log('✅ Category cache cleared on startup');
     } else {
       console.warn('⚠️  Redis unavailable - app will run without caching/workers');
     }
