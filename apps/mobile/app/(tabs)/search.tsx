@@ -1,124 +1,166 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList } from 'react-native';
-import { useRouter } from 'expo-router';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, TextInput, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-
+import { useLocalSearchParams } from 'expo-router';
+import { api } from '../../services/api';
 import { Colors } from '../../constants/Colors';
-import { useSearch } from '../../hooks/useSearch';
-import ProductCard from '../../components/product/ProductCard';
-import Spinner from '../../components/ui/Spinner';
+import ProductGrid from '../../components/product/ProductGrid';
+import type { Product } from '../../services/types';
 
 export default function SearchScreen() {
-  const router = useRouter();
+  const params = useLocalSearchParams();
+  const categorySlug = params.category as string | undefined;
+  
   const [query, setQuery] = useState('');
-  const { results, suggestions, debouncedQuery } = useSearch(query);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
+  const [categoryName, setCategoryName] = useState<string>('');
 
-  const products = results.data?.products || [];
-  const suggestionList = suggestions.data || [];
-  const showSuggestions = query.length >= 2 && suggestionList.length > 0 && products.length === 0;
+  // Load products by category on mount if category param exists
+  useEffect(() => {
+    if (categorySlug) {
+      loadCategoryProducts(categorySlug);
+    }
+  }, [categorySlug]);
+  const loadCategoryProducts = async (slug: string) => {
+    setLoading(true);
+    setSearched(true);
+    try {
+      // First get category details
+      const catResponse = await api.get<{ category: { name: string } }>(`/categories/${slug}`);
+      setCategoryName(catResponse.category?.name || slug);
+      
+      // Then get products for this category
+      const response = await api.get<{ products: Product[] }>('/products', {
+        category: slug,
+        limit: 100,
+      });
+      setProducts(response.products || []);
+    } catch (err) {
+      console.error('Category products error:', err);
+      setCategoryName(slug);
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleSearch = async (searchQuery: string) => {
+    if (!searchQuery.trim()) {
+      setProducts([]);
+      setSearched(false);
+      return;
+    }
+
+    setLoading(true);
+    setSearched(true);
+    try {
+      const response = await api.get<{ products: Product[] }>('/search', {
+        q: searchQuery,
+        limit: 50,
+      });
+      setProducts(response.products || []);
+    } catch (err) {
+      console.error('Search error:', err);
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.background }} edges={['top']}>
-      {/* Search bar */}
-      <View
-        style={{
-          backgroundColor: Colors.white,
-          paddingHorizontal: 16,
-          paddingVertical: 12,
-          borderBottomWidth: 1,
-          borderBottomColor: Colors.border,
-        }}
-      >
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: Colors.secondary[100],
-            borderRadius: 10,
-            paddingHorizontal: 12,
-            height: 44,
-          }}
-        >
-          <FontAwesome name="search" size={16} color={Colors.secondary[400]} />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Szukaj produktów..."
-            placeholderTextColor={Colors.secondary[400]}
-            style={{
-              flex: 1,
-              marginLeft: 10,
-              fontSize: 15,
-              color: Colors.secondary[900],
-            }}
-            autoFocus
-            returnKeyType="search"
-          />
-          {query.length > 0 && (
-            <TouchableOpacity onPress={() => setQuery('')}>
-              <FontAwesome name="times-circle" size={18} color={Colors.secondary[400]} />
-            </TouchableOpacity>
-          )}
+    <SafeAreaView style={styles.container} edges={['top']}>
+      {/* Category Header */}
+      {categoryName && (
+        <View style={styles.categoryHeader}>
+          <Text style={styles.categoryTitle}>{categoryName}</Text>
         </View>
+      )}
+      
+      {/* Search Bar */}
+      <View style={styles.searchBar}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Szukaj produktów..."
+          value={query}
+          onChangeText={setQuery}
+          onSubmitEditing={() => handleSearch(query)}
+          returnKeyType="search"
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
       </View>
 
-      {/* Suggestions */}
-      {showSuggestions && (
-        <View style={{ backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border }}>
-          {suggestionList.map((s: string, i: number) => (
-            <TouchableOpacity
-              key={i}
-              onPress={() => setQuery(s)}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                paddingHorizontal: 16,
-                paddingVertical: 12,
-                borderBottomWidth: i < suggestionList.length - 1 ? 1 : 0,
-                borderBottomColor: Colors.secondary[100],
-                gap: 10,
-              }}
-            >
-              <FontAwesome name="search" size={13} color={Colors.secondary[400]} />
-              <Text style={{ fontSize: 14, color: Colors.secondary[700] }}>{s}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-
       {/* Results */}
-      {query.length < 2 ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 }}>
-          <FontAwesome name="search" size={48} color={Colors.secondary[300]} />
-          <Text style={{ fontSize: 16, color: Colors.secondary[500], marginTop: 16, textAlign: 'center' }}>
-            Wpisz min. 2 znaki, aby wyszukać produkty
-          </Text>
-        </View>
-      ) : results.isLoading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Spinner size="large" />
-        </View>
-      ) : products.length === 0 && debouncedQuery.length >= 2 ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 }}>
-          <FontAwesome name="frown-o" size={48} color={Colors.secondary[300]} />
-          <Text style={{ fontSize: 16, color: Colors.secondary[500], marginTop: 16, textAlign: 'center' }}>
-            Brak wyników dla "{debouncedQuery}"
-          </Text>
-          <Text style={{ fontSize: 14, color: Colors.secondary[400], marginTop: 8, textAlign: 'center' }}>
-            Spróbuj innej frazy
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={products}
-          numColumns={2}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 16, gap: 10 }}
-          columnWrapperStyle={{ gap: 10 }}
-          renderItem={({ item }) => <ProductCard product={item} />}
-        />
-      )}
+      <ScrollView style={styles.scrollView}>
+        {loading ? (
+          <View style={styles.centerContent}>
+            <ActivityIndicator size="large" color={Colors.primary[600]} />
+          </View>
+        ) : searched ? (
+          products.length > 0 ? (
+            <ProductGrid products={products} />
+          ) : (
+            <View style={styles.centerContent}>
+              <Text style={styles.emptyText}>Nie znaleziono produktów</Text>
+              <Text style={styles.emptyHint}>Spróbuj użyć innych słów kluczowych</Text>
+            </View>
+          )
+        ) : (
+          <View style={styles.centerContent}>
+            <Text style={styles.emptyText}>🔍</Text>
+            <Text style={styles.emptyHint}>Wpisz nazwę produktu aby wyszukać</Text>
+          </View>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.secondary[50],
+  },
+  categoryHeader: {
+    backgroundColor: Colors.primary[600],
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+  },
+  categoryTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: Colors.white,
+  },
+  searchBar: {
+    backgroundColor: Colors.white,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.secondary[200],
+  },
+  searchInput: {
+    backgroundColor: Colors.secondary[100],
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: Colors.secondary[900],
+  },
+  scrollView: {
+    flex: 1,
+  },
+  centerContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 48,
+  },
+  emptyText: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  emptyHint: {
+    fontSize: 14,
+    color: Colors.secondary[600],
+    textAlign: 'center',
+  },
+});

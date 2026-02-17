@@ -1,219 +1,177 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, RefreshControl } from 'react-native';
-import { useRouter } from 'expo-router';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-
+import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { useCart } from '../../contexts/CartContext';
-import Spinner from '../../components/ui/Spinner';
 import Button from '../../components/ui/Button';
-
-function formatPrice(price: number) {
-  return price.toFixed(2).replace('.', ',') + ' zł';
-}
 
 export default function CartScreen() {
   const router = useRouter();
-  const { cart, loading, itemCount, updateQuantity, removeFromCart, refreshCart } = useCart();
+  const { cart, itemCount } = useCart();
+  const items = cart?.items || [];
+  const total = cart?.total || 0;
 
-  if (loading) {
+  if (itemCount === 0) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: Colors.background }} edges={['top']}>
-        <Spinner fullScreen />
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Koszyk</Text>
+        </View>
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyIcon}>🛒</Text>
+          <Text style={styles.emptyText}>Twój koszyk jest pusty</Text>
+          <Text style={styles.emptyHint}>Dodaj produkty aby kontynuować zakupy</Text>
+          <Button
+            title="Przeglądaj produkty"
+            onPress={() => router.push('/(tabs)')}
+          />
+        </View>
       </SafeAreaView>
     );
   }
 
-  const items = cart?.items || [];
-
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.background }} edges={['top']}>
-      {/* Header */}
-      <View
-        style={{
-          backgroundColor: Colors.white,
-          paddingHorizontal: 16,
-          paddingVertical: 14,
-          borderBottomWidth: 1,
-          borderBottomColor: Colors.border,
-        }}
-      >
-        <Text style={{ fontSize: 20, fontWeight: '700', color: Colors.secondary[900] }}>
-          Koszyk {itemCount > 0 ? `(${itemCount})` : ''}
-        </Text>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Koszyk</Text>
+        <Text style={styles.headerSubtitle}>{itemCount} {itemCount === 1 ? 'produkt' : 'produkty'}</Text>
       </View>
 
-      {items.length === 0 ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 }}>
-          <FontAwesome name="shopping-cart" size={56} color={Colors.secondary[300]} />
-          <Text style={{ fontSize: 18, fontWeight: '600', color: Colors.secondary[700], marginTop: 16 }}>
-            Koszyk jest pusty
-          </Text>
-          <Text style={{ fontSize: 14, color: Colors.secondary[500], marginTop: 8, textAlign: 'center' }}>
-            Dodaj produkty, aby rozpocząć zakupy
-          </Text>
-          <TouchableOpacity
-            onPress={() => router.push('/(tabs)/search')}
-            style={{
-              marginTop: 20,
-              backgroundColor: Colors.primary[500],
-              paddingHorizontal: 24,
-              paddingVertical: 12,
-              borderRadius: 8,
-            }}
-          >
-            <Text style={{ color: Colors.white, fontWeight: '600', fontSize: 14 }}>
-              Przeglądaj produkty
-            </Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <>
-          <ScrollView
-            style={{ flex: 1 }}
-            refreshControl={
-              <RefreshControl refreshing={false} onRefresh={refreshCart} colors={[Colors.primary[500]]} />
-            }
-          >
-            {items.map((item) => {
-              const imageUrl = item.variant.product.images?.[0]?.url;
-              const price = item.variant.price;
-
-              return (
-                <View
-                  key={item.id}
-                  style={{
-                    flexDirection: 'row',
-                    backgroundColor: Colors.white,
-                    marginHorizontal: 16,
-                    marginTop: 10,
-                    borderRadius: 10,
-                    padding: 12,
-                    gap: 12,
-                  }}
-                >
-                  {/* Image */}
-                  {imageUrl ? (
-                    <Image
-                      source={{ uri: imageUrl }}
-                      style={{ width: 80, height: 80, borderRadius: 8, backgroundColor: Colors.secondary[100] }}
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <View
-                      style={{
-                        width: 80,
-                        height: 80,
-                        borderRadius: 8,
-                        backgroundColor: Colors.secondary[100],
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <FontAwesome name="image" size={24} color={Colors.secondary[300]} />
-                    </View>
-                  )}
-
-                  {/* Details */}
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{ fontSize: 14, fontWeight: '500', color: Colors.secondary[900] }}
-                      numberOfLines={2}
-                    >
-                      {item.variant.product.name}
-                    </Text>
-                    {item.variant.name && (
-                      <Text style={{ fontSize: 12, color: Colors.secondary[500], marginTop: 2 }}>
-                        {item.variant.name}
-                      </Text>
-                    )}
-                    <Text style={{ fontSize: 15, fontWeight: '700', color: Colors.primary[500], marginTop: 6 }}>
-                      {formatPrice(price * item.quantity)}
-                    </Text>
-
-                    {/* Quantity controls */}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 12 }}>
-                      <TouchableOpacity
-                        onPress={() =>
-                          item.quantity > 1
-                            ? updateQuantity(item.id, item.quantity - 1)
-                            : removeFromCart(item.id)
-                        }
-                        style={{
-                          width: 30,
-                          height: 30,
-                          borderRadius: 6,
-                          backgroundColor: Colors.secondary[100],
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                        }}
-                      >
-                        <FontAwesome
-                          name={item.quantity > 1 ? 'minus' : 'trash'}
-                          size={12}
-                          color={Colors.secondary[600]}
-                        />
-                      </TouchableOpacity>
-                      <Text style={{ fontSize: 15, fontWeight: '600', color: Colors.secondary[900] }}>
-                        {item.quantity}
-                      </Text>
-                      <TouchableOpacity
-                        onPress={() => updateQuantity(item.id, item.quantity + 1)}
-                        style={{
-                          width: 30,
-                          height: 30,
-                          borderRadius: 6,
-                          backgroundColor: Colors.primary[50],
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                        }}
-                      >
-                        <FontAwesome name="plus" size={12} color={Colors.primary[500]} />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-
-                  {/* Remove button */}
-                  <TouchableOpacity onPress={() => removeFromCart(item.id)} style={{ padding: 4 }}>
-                    <FontAwesome name="times" size={16} color={Colors.secondary[400]} />
-                  </TouchableOpacity>
-                </View>
-              );
-            })}
-
-            <View style={{ height: 120 }} />
-          </ScrollView>
-
-          {/* Bottom summary */}
-          <View
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              backgroundColor: Colors.white,
-              borderTopWidth: 1,
-              borderTopColor: Colors.border,
-              paddingHorizontal: 16,
-              paddingVertical: 14,
-            }}
-          >
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-              <Text style={{ fontSize: 16, color: Colors.secondary[600] }}>Razem:</Text>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: Colors.secondary[900] }}>
-                {formatPrice(cart?.total || 0)}
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        {items.map((item) => (
+          <View key={item.id} style={styles.cartItem}>
+            <View style={styles.itemInfo}>
+              <Text style={styles.itemName} numberOfLines={2}>
+                {item.variant.product.name}
+              </Text>
+              <Text style={styles.itemPrice}>
+                {item.quantity} x {Number(item.variant.price).toFixed(2)} zł
               </Text>
             </View>
-            <Button
-              title="Przejdź do kasy"
-              onPress={() => router.push('/checkout')}
-              fullWidth
-              size="lg"
-            />
+            <Text style={styles.itemTotal}>
+              {(item.quantity * Number(item.variant.price)).toFixed(2)} zł
+            </Text>
           </View>
-        </>
-      )}
+        ))}
+      </ScrollView>
+
+      {/* Summary */}
+      <View style={styles.summary}>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Suma:</Text>
+          <Text style={styles.summaryValue}>{total.toFixed(2)} zł</Text>
+        </View>
+        <Button
+          title="Przejdź do kasy"
+          onPress={() => {
+            // TODO: Implement checkout flow
+            alert('Checkout będzie dostępny wkrótce');
+          }}
+        />
+      </View>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.secondary[50],
+  },
+  header: {
+    backgroundColor: Colors.white,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.secondary[200],
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: Colors.secondary[900],
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: Colors.secondary[600],
+    marginTop: 2,
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  emptyIcon: {
+    fontSize: 80,
+    marginBottom: 16,
+  },
+  emptyText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: Colors.secondary[900],
+    marginBottom: 8,
+  },
+  emptyHint: {
+    fontSize: 14,
+    color: Colors.secondary[600],
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+  },
+  cartItem: {
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  itemInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  itemName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.secondary[900],
+    marginBottom: 4,
+  },
+  itemPrice: {
+    fontSize: 14,
+    color: Colors.secondary[600],
+  },
+  itemTotal: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.primary[600],
+  },
+  summary: {
+    backgroundColor: Colors.white,
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.secondary[200],
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  summaryLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.secondary[900],
+  },
+  summaryValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: Colors.primary[600],
+  },
+});
