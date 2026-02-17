@@ -330,12 +330,11 @@ function HeaderContent() {
         </div>
       </div>
 
-      {/* Category Navigation Bar - Hides on scroll down */}
+      {/* Category Navigation Bar - Slides out on scroll down, no layout shift */}
       <div 
-        className="border-b border-gray-200 dark:border-secondary-700 bg-primary-500 dark:bg-primary-600"
-        style={{
-          display: isHeaderVisible ? 'block' : 'none'
-        }}
+        className={`border-b border-gray-200 dark:border-secondary-700 bg-primary-500 dark:bg-primary-600 transition-all duration-200 overflow-hidden ${
+          isHeaderVisible ? 'max-h-12 opacity-100' : 'max-h-0 opacity-0'
+        }`}
       >
         <div className="container-custom overflow-visible">
           <div className="flex items-center justify-between relative">
@@ -426,9 +425,21 @@ function HeaderContent() {
 export default function Header() {
   return (
     <Suspense fallback={
-      <header className="bg-white dark:bg-secondary-900 shadow-sm border-b border-gray-100 dark:border-secondary-700 sticky top-0 z-50">
-        <div className="container-custom h-16 flex items-center justify-center">
-          <div className="animate-pulse bg-gray-200 dark:bg-secondary-700 h-8 w-32 rounded"></div>
+      <header className="bg-white dark:bg-secondary-900 shadow-sm sticky top-0 z-50">
+        {/* Top bar - matches real header h-16 sm:h-20 */}
+        <div className="border-b border-gray-100 dark:border-secondary-700">
+          <div className="container-custom h-16 sm:h-20 flex items-center justify-between">
+            <div className="animate-pulse bg-gray-200 dark:bg-secondary-700 h-8 w-32 rounded"></div>
+            <div className="animate-pulse bg-gray-200 dark:bg-secondary-700 h-10 flex-1 max-w-xl mx-8 rounded-lg hidden md:block"></div>
+            <div className="flex gap-3">
+              <div className="animate-pulse bg-gray-200 dark:bg-secondary-700 h-8 w-8 rounded-full"></div>
+              <div className="animate-pulse bg-gray-200 dark:bg-secondary-700 h-8 w-8 rounded-full"></div>
+            </div>
+          </div>
+        </div>
+        {/* Category nav bar - matches real orange bar */}
+        <div className="border-b border-gray-200 dark:border-secondary-700 bg-primary-500 dark:bg-primary-600">
+          <div className="container-custom h-10"></div>
         </div>
       </header>
     }>

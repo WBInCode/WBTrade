@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface Slide {
   id: number;
@@ -132,9 +133,13 @@ export default function HeroBanner() {
             className={`absolute inset-0 transition-all duration-700 ease-in-out bg-gradient-to-r ${s.bgGradient}
               ${index === currentSlide ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}`}
           >
-            <div 
-              className="absolute inset-0 bg-cover bg-center opacity-20"
-              style={{ backgroundImage: `url('${s.bgImage}')` }}
+            <Image
+              src={s.bgImage}
+              alt=""
+              fill
+              sizes="100vw"
+              className="object-cover opacity-20"
+              priority={index === 0}
             />
           </div>
         ))}

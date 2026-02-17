@@ -70,23 +70,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [theme]);
 
-  // Prevent flash of incorrect theme
+  // Always render children to prevent CLS.
+  // Before mount, provide a stable default context so children render immediately.
+  // The inline <script> in layout.tsx applies the dark class before first paint.
   if (!mounted) {
     return (
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            (function() {
-              const theme = localStorage.getItem('wb-trade-theme') || 'system';
-              const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-              const isDark = theme === 'dark' || (theme === 'system' && systemDark);
-              if (isDark) {
-                document.documentElement.classList.add('dark');
-              }
-            })();
-          `,
-        }}
-      />
+      <ThemeContext.Provider value={{ theme: 'system', setTheme: () => {}, resolvedTheme: 'light' }}>
+        {children}
+      </ThemeContext.Provider>
     );
   }
 
