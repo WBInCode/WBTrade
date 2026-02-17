@@ -74,6 +74,8 @@ function RootLayoutNav() {
             <Stack>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen name="checkout" options={{ headerShown: false }} />
+              <Stack.Screen name="order/[id]" options={{ headerShown: false }} />
             </Stack>
           </ThemeProvider>
         </CartProvider>
