@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { CartItem, checkoutApi } from '../lib/api';
 import { roundMoney } from '../lib/currency';
 
@@ -214,12 +215,14 @@ export default function CartPackageView({
 
                     {/* Product Image */}
                     <Link href={`/products/${item.variant.product.slug || item.variant.product.id}`} className="shrink-0">
-                      <div className={`${isCompact ? 'w-14 h-14 sm:w-20 sm:h-20' : 'w-16 h-16 sm:w-24 sm:h-24 lg:w-28 lg:h-28'} rounded-lg sm:rounded-xl overflow-hidden bg-gray-100 dark:bg-secondary-700 border dark:border-secondary-600`}>
+                      <div className={`${isCompact ? 'w-14 h-14 sm:w-20 sm:h-20' : 'w-16 h-16 sm:w-24 sm:h-24 lg:w-28 lg:h-28'} rounded-lg sm:rounded-xl overflow-hidden bg-gray-100 dark:bg-secondary-700 border dark:border-secondary-600 relative`}>
                         {item.variant.product.images[0] && !failedImages.has(item.id) ? (
-                          <img
+                          <Image
                             src={item.variant.product.images[0].url}
                             alt={item.variant.product.images[0].alt || item.variant.product.name}
-                            className="w-full h-full object-cover"
+                            fill
+                            sizes="(max-width: 640px) 64px, 112px"
+                            className="object-cover"
                             onError={() => handleImageError(item.id)}
                           />
                         ) : (

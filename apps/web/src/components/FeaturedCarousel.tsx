@@ -7,16 +7,21 @@ import { productsApi, Product } from '@/lib/api';
 interface FeaturedCarouselProps {
   featuredProductIds?: string[]; // Optional: manually specify products
   fallbackLimit?: number;
+  initialProducts?: Product[]; // Pre-fetched from server component
 }
 
 export default function FeaturedCarousel({
   featuredProductIds,
   fallbackLimit = 20,
+  initialProducts,
 }: FeaturedCarouselProps) {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState<Product[]>(initialProducts || []);
+  const [loading, setLoading] = useState(!initialProducts);
 
   useEffect(() => {
+    // Skip fetch if we already have server-side data
+    if (initialProducts && initialProducts.length > 0) return;
+
     const fetchProducts = async () => {
       try {
         // Use new featured endpoint that supports admin-curated products

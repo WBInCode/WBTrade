@@ -1,5 +1,6 @@
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import Image from 'next/image';
 import Link from 'next/link';
 
 export const metadata = {
@@ -134,34 +135,42 @@ export default function CareersPage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-4">
-                <div className="rounded-2xl overflow-hidden shadow-lg">
-                  <img
+                <div className="rounded-2xl overflow-hidden shadow-lg relative h-48">
+                  <Image
                     src="https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=400&h=300&fit=crop"
                     alt="Zespół WB Trade"
-                    className="w-full h-48 object-cover"
+                    fill
+                    sizes="(max-width: 1024px) 50vw, 25vw"
+                    className="object-cover"
                   />
                 </div>
-                <div className="rounded-2xl overflow-hidden shadow-lg">
-                  <img
+                <div className="rounded-2xl overflow-hidden shadow-lg relative h-56">
+                  <Image
                     src="https://images.unsplash.com/photo-1531482615713-2afd69097998?w=400&h=400&fit=crop"
                     alt="Praca w biurze"
-                    className="w-full h-56 object-cover"
+                    fill
+                    sizes="(max-width: 1024px) 50vw, 25vw"
+                    className="object-cover"
                   />
                 </div>
               </div>
               <div className="space-y-4 pt-8">
-                <div className="rounded-2xl overflow-hidden shadow-lg">
-                  <img
+                <div className="rounded-2xl overflow-hidden shadow-lg relative h-56">
+                  <Image
                     src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=400&fit=crop"
                     alt="Spotkanie zespołu"
-                    className="w-full h-56 object-cover"
+                    fill
+                    sizes="(max-width: 1024px) 50vw, 25vw"
+                    className="object-cover"
                   />
                 </div>
-                <div className="rounded-2xl overflow-hidden shadow-lg">
-                  <img
+                <div className="rounded-2xl overflow-hidden shadow-lg relative h-48">
+                  <Image
                     src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=400&h=300&fit=crop"
                     alt="Integracja"
-                    className="w-full h-48 object-cover"
+                    fill
+                    sizes="(max-width: 1024px) 50vw, 25vw"
+                    className="object-cover"
                   />
                 </div>
               </div>

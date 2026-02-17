@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback, Suspense, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useParams, useSearchParams } from 'next/navigation';
 import { ordersApi, checkoutApi } from '@/lib/api';
 import { trackPurchase, EcommerceItem } from '@/lib/analytics';
@@ -371,9 +372,11 @@ function OrderConfirmationPageContent() {
       <header className="bg-white dark:bg-secondary-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <Link href="/" className="inline-block">
-            <img 
+            <Image 
               src="/images/logo.png" 
               alt="WB Trade" 
+              width={120}
+              height={40}
               className="h-10 w-auto"
             />
           </Link>
@@ -456,12 +459,14 @@ function OrderConfirmationPageContent() {
               const imageUrl = item.variant?.product?.images?.[0]?.url;
               return (
                 <div key={item.id} className="flex gap-4 p-3 border dark:border-secondary-600 rounded-lg">
-                  <div className="w-16 h-16 bg-gray-100 dark:bg-secondary-700 rounded-lg flex-shrink-0 overflow-hidden">
+                  <div className="w-16 h-16 bg-gray-100 dark:bg-secondary-700 rounded-lg flex-shrink-0 overflow-hidden relative">
                     {imageUrl ? (
-                      <img
+                      <Image
                         src={imageUrl}
                         alt={item.productName}
-                        className="w-full h-full object-cover"
+                        fill
+                        sizes="64px"
+                        className="object-cover"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-400">

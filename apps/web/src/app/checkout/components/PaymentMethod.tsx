@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { PaymentData } from '../page';
 import { getLogoUrl, PAYMENT_LOGOS } from '@/lib/logo-dev';
 
@@ -35,9 +36,11 @@ const PaymentIcon = ({ id }: { id: PaymentId }) => {
     case 'payu':
       const logoUrl = getLogoUrl(PAYMENT_LOGOS.payu, { size: 64, format: 'png' });
       return logoUrl ? (
-        <img 
+        <Image 
           src={logoUrl} 
           alt="PayU"
+          width={64}
+          height={28}
           className="h-6 sm:h-7 w-auto object-contain rounded"
         />
       ) : (

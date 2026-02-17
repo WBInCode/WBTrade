@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { ShippingData, PackageShippingSelection } from '../page';
 import { checkoutApi } from '../../../lib/api';
 import { roundMoney } from '../../../lib/currency';
@@ -602,11 +603,15 @@ export default function ShippingPerPackage({
                       className="flex items-center gap-2 px-2 py-1 bg-white/80 dark:bg-secondary-800/80 rounded-lg border border-white/50 dark:border-secondary-600"
                     >
                       {item.productImage && (
-                        <img
-                          src={item.productImage}
-                          alt=""
-                          className="w-8 h-8 object-cover rounded"
-                        />
+                        <div className="w-8 h-8 relative flex-shrink-0">
+                          <Image
+                            src={item.productImage}
+                            alt=""
+                            fill
+                            sizes="32px"
+                            className="object-cover rounded"
+                          />
+                        </div>
                       )}
                       <div className="min-w-0">
                         <p className="text-xs font-medium text-gray-900 dark:text-white truncate max-w-[120px] sm:max-w-[180px]">
@@ -711,7 +716,9 @@ export default function ShippingPerPackage({
                                       {slotItems.map((item, idx) => (
                                         <span key={idx} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-white/70 dark:bg-secondary-700 rounded text-[10px] text-gray-600 dark:text-gray-300">
                                           {item.productImage && (
-                                            <img src={item.productImage} alt="" className="w-4 h-4 rounded object-cover" />
+                                            <div className="w-4 h-4 relative flex-shrink-0">
+                                              <Image src={item.productImage} alt="" fill sizes="16px" className="rounded object-cover" />
+                                            </div>
                                           )}
                                           <span className="truncate max-w-[80px]">{item.productName.slice(0, 15)}...</span>
                                           {item.quantity > 1 && <span className="font-medium">×{item.quantity}</span>}
