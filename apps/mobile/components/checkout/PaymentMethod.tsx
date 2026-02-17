@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import Button from '../ui/Button';
+import { api } from '../../services/api';
 
 interface PaymentOption {
   id: string;
@@ -18,11 +20,11 @@ interface PaymentOption {
   extraFee: number;
 }
 
-const PAYMENT_OPTIONS: PaymentOption[] = [
+const FALLBACK_PAYMENT_OPTIONS: PaymentOption[] = [
   {
     id: 'payu',
     name: 'PayU',
-    description: 'BLIK, karta płatnicza, szybki przelew, Google Pay, Apple Pay',
+    description: 'BLIK, karta płatnicza, szybki przelew, Google Pay',
     icon: 'shield-checkmark-outline',
     extraFee: 0,
   },
@@ -35,9 +37,37 @@ interface PaymentMethodProps {
 
 export default function PaymentMethod({ onSubmit, onBack }: PaymentMethodProps) {
   const [selected, setSelected] = useState<string>('payu');
+  const [paymentOptions, setPaymentOptions] = useState<PaymentOption[]>(FALLBACK_PAYMENT_OPTIONS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadPaymentMethods = async () => {
+      try {
+        const response = await api.get<{ paymentMethods: any[] }>('/checkout/payment/methods');
+        if (response.paymentMethods && response.paymentMethods.length > 0) {
+          const mapped: PaymentOption[] = response.paymentMethods.map((m: any) => ({
+            id: m.type || m.id,
+            name: m.name,
+            description: m.description || 'Płatność online',
+            icon: 'shield-checkmark-outline' as keyof typeof Ionicons.glyphMap,
+            extraFee: m.fee || 0,
+          }));
+          setPaymentOptions(mapped);
+          if (mapped.length > 0 && !mapped.find(o => o.id === selected)) {
+            setSelected(mapped[0].id);
+          }
+        }
+      } catch (err) {
+        console.warn('Could not fetch payment methods, using fallback:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadPaymentMethods();
+  }, []);
 
   const handleSubmit = () => {
-    const option = PAYMENT_OPTIONS.find(o => o.id === selected);
+    const option = paymentOptions.find(o => o.id === selected);
     if (option) {
       onSubmit({
         method: option.id,
@@ -54,8 +84,15 @@ export default function PaymentMethod({ onSubmit, onBack }: PaymentMethodProps) 
         <Text style={styles.stepDesc}>Wybierz sposób płatności za zamówienie</Text>
       </View>
 
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.primary[500]} />
+          <Text style={styles.loadingText}>Ładowanie metod płatności...</Text>
+        </View>
+      ) : null}
+
       <View style={styles.optionsSection}>
-        {PAYMENT_OPTIONS.map(option => {
+        {paymentOptions.map(option => {
           const isSelected = selected === option.id;
 
           return (
@@ -134,6 +171,16 @@ export default function PaymentMethod({ onSubmit, onBack }: PaymentMethodProps) 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   content: { paddingBottom: 40 },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 24,
+  },
+  loadingText: {
+    marginTop: 8,
+    fontSize: 13,
+    color: Colors.secondary[500],
+  },
   stepHeader: {
     backgroundColor: Colors.white,
     paddingHorizontal: 16,

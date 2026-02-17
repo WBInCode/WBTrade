@@ -1,4 +1,4 @@
-import { api } from './api';
+import { api, saveSessionId, getSessionId } from './api';
 import type { Cart } from './types';
 
 // API wraps cart in { success, data, message? } — unwrap it
@@ -8,14 +8,35 @@ interface CartResponse {
   message?: string;
 }
 
-const unwrap = (res: CartResponse): Cart => res.data;
+// Unwrap and save session ID from cart response body
+const unwrap = async (res: CartResponse): Promise<Cart> => {
+  const cart = res.data;
+  // API returns sessionId in the cart object body (not in headers!)
+  if (cart?.sessionId) {
+    await saveSessionId(cart.sessionId);
+  }
+  return cart;
+};
+
+// Generate a session ID if none exists yet (same pattern as web app)
+async function ensureSessionId(): Promise<void> {
+  const existing = await getSessionId();
+  if (!existing) {
+    const id = 'sess_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+    await saveSessionId(id);
+  }
+}
 
 export const cartApi = {
-  getCart: () =>
-    api.get<CartResponse>('/cart').then(unwrap),
+  getCart: async () => {
+    await ensureSessionId();
+    return api.get<CartResponse>('/cart').then(unwrap);
+  },
 
-  addItem: (variantId: string, quantity: number = 1) =>
-    api.post<CartResponse>('/cart/items', { variantId, quantity }).then(unwrap),
+  addItem: async (variantId: string, quantity: number = 1) => {
+    await ensureSessionId();
+    return api.post<CartResponse>('/cart/items', { variantId, quantity }).then(unwrap);
+  },
 
   updateItem: (itemId: string, quantity: number) =>
     api.patch<CartResponse>(`/cart/items/${itemId}`, { quantity }).then(unwrap),

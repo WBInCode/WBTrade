@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -96,18 +97,41 @@ export default function CartScreen() {
   }
 
   // Group items by warehouse (like web version)
+  // Merge Outlet into Rzeszów — they are the same warehouse
   const warehouseGroups = items.reduce<Record<string, typeof items>>((groups, item) => {
-    const warehouse = item.variant.product.wholesaler || 'default';
+    let warehouse = item.variant.product.wholesaler || 'default';
+    if (warehouse === 'Outlet') warehouse = 'Rzeszów';
     if (!groups[warehouse]) groups[warehouse] = [];
     groups[warehouse].push(item);
     return groups;
   }, {});
 
-  const getWarehouseName = (key: string): string => {
-    if (key === 'default') return 'Magazyn WBTrade';
-    const parts = key.split('_');
-    if (parts.length > 1) return `Magazyn ${parts.slice(1).join(' ')}`;
-    return `Magazyn ${key}`;
+  const WAREHOUSE_CONFIG: Record<string, { name: string; color: string; bgColor: string; borderColor: string; icon: string; searchKey: string }> = {
+    'HP': { name: 'Magazyn Zielona Góra', color: '#1D4ED8', bgColor: '#EFF6FF', borderColor: '#BFDBFE', icon: '🏢', searchKey: 'hp' },
+    'Hurtownia Przemysłowa': { name: 'Magazyn Zielona Góra', color: '#1D4ED8', bgColor: '#EFF6FF', borderColor: '#BFDBFE', icon: '🏢', searchKey: 'hp' },
+    'Ikonka': { name: 'Magazyn Białystok', color: '#7C3AED', bgColor: '#F5F3FF', borderColor: '#DDD6FE', icon: '📦', searchKey: 'ikonka' },
+    'BTP': { name: 'Magazyn Chotów', color: '#047857', bgColor: '#ECFDF5', borderColor: '#A7F3D0', icon: '🌿', searchKey: 'btp' },
+    'Leker': { name: 'Magazyn Chynów', color: '#B91C1C', bgColor: '#FEF2F2', borderColor: '#FECACA', icon: '🏠', searchKey: 'leker' },
+    'Rzeszów': { name: 'Magazyn Rzeszów', color: '#BE185D', bgColor: '#FDF2F8', borderColor: '#FBCFE8', icon: '📍', searchKey: 'outlet' },
+  };
+
+  const getWarehouseInfo = (key: string) => {
+    return WAREHOUSE_CONFIG[key] || {
+      name: `Magazyn ${key}`,
+      color: '#374151',
+      bgColor: '#F9FAFB',
+      borderColor: '#E5E7EB',
+      icon: '📦',
+      searchKey: key.toLowerCase(),
+    };
+  };
+
+  const handleBrowseWarehouse = (warehouse: string) => {
+    const info = getWarehouseInfo(warehouse);
+    router.push({
+      pathname: '/(tabs)/search',
+      params: { warehouse: info.searchKey },
+    });
   };
 
   return (
@@ -125,27 +149,62 @@ export default function CartScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {/* Cart items grouped by warehouse */}
-        {Object.entries(warehouseGroups).map(([warehouse, warehouseItems]) => (
-          <View key={warehouse} style={styles.warehouseGroup}>
-            {Object.keys(warehouseGroups).length > 1 && (
-              <View style={styles.warehouseHeader}>
-                <Text style={styles.warehouseIcon}>📦</Text>
-                <Text style={styles.warehouseName}>{getWarehouseName(warehouse)}</Text>
-                <Text style={styles.warehouseCount}>
-                  {warehouseItems.length} {warehouseItems.length === 1 ? 'produkt' : 'produkty'}
-                </Text>
+        {Object.entries(warehouseGroups).map(([warehouse, warehouseItems], index) => {
+          const wInfo = getWarehouseInfo(warehouse);
+          const showHeader = Object.keys(warehouseGroups).length > 1;
+          return (
+            <View key={warehouse} style={[
+              styles.warehouseGroup,
+              showHeader && {
+                backgroundColor: Colors.white,
+                borderRadius: 14,
+                borderWidth: 1.5,
+                borderColor: wInfo.borderColor,
+                overflow: 'hidden',
+                marginBottom: 16,
+              },
+            ]}>
+              {showHeader && (
+                <View style={[styles.warehouseHeader, { backgroundColor: wInfo.bgColor, borderBottomColor: wInfo.borderColor }]}> 
+                  <View style={styles.warehouseHeaderLeft}>
+                    <Text style={styles.warehouseIcon}>{wInfo.icon}</Text>
+                    <View>
+                      <Text style={[styles.warehouseName, { color: wInfo.color }]}>{wInfo.name}</Text>
+                      <Text style={styles.warehouseCount}>
+                        {warehouseItems.length} {warehouseItems.length === 1 ? 'produkt' : warehouseItems.length < 5 ? 'produkty' : 'produktów'}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={[styles.warehouseBadge, { backgroundColor: wInfo.color + '15' }]}>
+                    <Text style={[styles.warehouseBadgeText, { color: wInfo.color }]}>Paczka {index + 1}</Text>
+                  </View>
+                </View>
+              )}
+              <View style={showHeader ? styles.warehouseItems : undefined}>
+                {warehouseItems.map((item) => (
+                  <CartItem
+                    key={item.id}
+                    item={item}
+                    onUpdateQuantity={updateQuantity}
+                    onRemove={removeFromCart}
+                  />
+                ))}
               </View>
-            )}
-            {warehouseItems.map((item) => (
-              <CartItem
-                key={item.id}
-                item={item}
-                onUpdateQuantity={updateQuantity}
-                onRemove={removeFromCart}
-              />
-            ))}
-          </View>
-        ))}
+              {showHeader && (
+                <TouchableOpacity
+                  style={[styles.browseWarehouseBtn, { borderTopColor: wInfo.borderColor }]}
+                  onPress={() => handleBrowseWarehouse(warehouse)}
+                >
+                  <Ionicons name="add-circle-outline" size={18} color={wInfo.color} />
+                  <Text style={[styles.browseWarehouseText, { color: wInfo.color }]}>
+                    Dodaj więcej z tego magazynu
+                  </Text>
+                  <Ionicons name="chevron-forward" size={16} color={wInfo.color} />
+                </TouchableOpacity>
+              )}
+            </View>
+          );
+        })}
 
         {/* Coupon section */}
         <View style={styles.couponSection}>
@@ -274,22 +333,51 @@ const styles = StyleSheet.create({
   warehouseHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-    paddingHorizontal: 4,
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  warehouseHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   warehouseIcon: {
-    fontSize: 16,
+    fontSize: 22,
   },
   warehouseName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.secondary[700],
-    flex: 1,
+    fontSize: 15,
+    fontWeight: '700',
   },
   warehouseCount: {
     fontSize: 12,
     color: Colors.secondary[500],
+    marginTop: 1,
+  },
+  warehouseBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  warehouseBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  warehouseItems: {
+    paddingTop: 4,
+  },
+  browseWarehouseBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+  },
+  browseWarehouseText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   couponSection: {
     backgroundColor: Colors.white,
