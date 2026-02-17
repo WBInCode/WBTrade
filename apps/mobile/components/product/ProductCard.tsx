@@ -18,7 +18,7 @@ interface ProductCardProps {
   width?: number;
 }
 
-export default function ProductCard({ product, width }: ProductCardProps) {
+function ProductCard({ product, width }: ProductCardProps) {
   const router = useRouter();
   const { addToCart } = useCart();
   const [adding, setAdding] = useState(false);
@@ -265,3 +265,5 @@ const styles = StyleSheet.create({
 });
 
 export { CARD_WIDTH, CARD_GAP, CARD_PADDING };
+
+export default React.memo(ProductCard);

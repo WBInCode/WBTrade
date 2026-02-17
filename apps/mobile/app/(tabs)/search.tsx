@@ -128,6 +128,7 @@ async function clearAllRecentSearches(): Promise<void> {
 // ═════════════════════════════════════════════════════════════
 export default function SearchScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ warehouse?: string }>();
   const inputRef = useRef<TextInput>(null);
 
   // ─── State ─────────────────────────────────────────────────
@@ -169,11 +170,11 @@ export default function SearchScreen() {
         sort: sort !== 'relevance' ? sort : undefined,
         limit: 50,
       });
-      setProducts(response.products || []);
+      setRawProducts(response.products || []);
       setTotal(response.total || response.products?.length || 0);
     } catch (err) {
       console.error('Warehouse products error:', err);
-      setProducts([]);
+      setRawProducts([]);
       setTotal(0);
     } finally {
       setLoading(false);
@@ -182,7 +183,7 @@ export default function SearchScreen() {
 
   const clearWarehouseFilter = () => {
     setWarehouseFilter(null);
-    setProducts([]);
+    setRawProducts([]);
     setTotal(0);
     setSearched(false);
     setQuery('');
@@ -392,7 +393,6 @@ export default function SearchScreen() {
             </TouchableOpacity>
           )}
         </View>
-        )}
       </View>
 
       {/* ── IDLE: Recent + Popular ── */}
