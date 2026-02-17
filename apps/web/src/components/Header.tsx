@@ -189,21 +189,21 @@ function HeaderContent() {
             <Link href="/" className="flex items-center shrink-0">
               {/* Light mode logo */}
               <Image 
-                src="/images/WB-TRADE-logo.png" 
+                src="/images/WB-TRADE-logo.webp" 
                 alt="WB Trade" 
                 width={200} 
                 height={120} 
                 className="h-12 sm:h-14 lg:h-16 w-auto object-contain dark:hidden"
                 priority
               />
-              {/* Dark mode logo */}
+              {/* Dark mode logo - no priority since it's hidden by default */}
               <Image 
-                src="/images/wb-trade-bez-tla.png" 
+                src="/images/wb-trade-bez-tla.webp" 
                 alt="WB Trade" 
                 width={200} 
                 height={120} 
                 className="h-12 sm:h-14 lg:h-16 w-auto object-contain hidden dark:block"
-                priority
+                loading="lazy"
               />
             </Link>
 
