@@ -78,6 +78,41 @@ export interface CategoryWithChildren {
 
 export class CategoriesService {
   /**
+   * Get all category IDs matching a slug — same logic as products.service.ts getAllCategoryIds.
+   * Finds ALL categories whose slug CONTAINS the search term (catches supplier-specific slugs
+   * like leker-zabawki-1234) and then recursively includes all their DB descendants.
+   */
+  private async getAllMatchingCategoryIds(slug: string): Promise<string[]> {
+    const matchingCategories = await prisma.category.findMany({
+      where: {
+        isActive: true,
+        slug: { contains: slug, mode: 'insensitive' },
+      },
+      select: { id: true },
+    });
+
+    if (matchingCategories.length === 0) return [];
+
+    const categoryIds = matchingCategories.map(c => c.id);
+
+    const getDescendants = async (parentIds: string[]): Promise<void> => {
+      if (parentIds.length === 0) return;
+      const children = await prisma.category.findMany({
+        where: { parentId: { in: parentIds }, isActive: true },
+        select: { id: true },
+      });
+      if (children.length > 0) {
+        const childIds = children.map(c => c.id);
+        categoryIds.push(...childIds);
+        await getDescendants(childIds);
+      }
+    };
+
+    await getDescendants(categoryIds);
+    return [...new Set(categoryIds)];
+  }
+
+  /**
    * Get all category IDs that have baselinkerCategoryId (valid Baselinker categories)
    */
   private async getBaselinkerCategoryIds(): Promise<Set<string>> {
@@ -332,33 +367,33 @@ export class CategoriesService {
 
     if (!category) return null;
 
-    // Collect all category IDs to count products
-    const allCategoryIds: string[] = [category.id];
+    // Collect all slugs from category + children + grandchildren
+    const allNodes: { id: string; slug: string }[] = [{ id: category.id, slug: category.slug }];
     for (const child of category.children) {
-      allCategoryIds.push(child.id);
+      allNodes.push({ id: child.id, slug: child.slug });
       for (const grandchild of child.children) {
-        allCategoryIds.push(grandchild.id);
+        allNodes.push({ id: grandchild.id, slug: grandchild.slug });
       }
     }
 
-    // Get visible product counts for all categories at once
-    const productCounts = await this.countVisibleProductsForCategories(allCategoryIds);
+    // Get expanded IDs for each slug (same logic as products.service.ts)
+    const nodeExpanded = await Promise.all(
+      allNodes.map(async node => ({
+        id: node.id,
+        expandedIds: await this.getAllMatchingCategoryIds(node.slug),
+      }))
+    );
 
-    // Helper to calculate total products including grandchildren
-    const calcChildProductCount = (child: typeof category.children[0]): number => {
-      let total = productCounts.get(child.id) || 0;
-      if (child.children) {
-        for (const grandchild of child.children) {
-          total += productCounts.get(grandchild.id) || 0;
-        }
-      }
-      return total;
-    };
+    // Single product count query for all expanded IDs
+    const allExpandedIds = new Set<string>();
+    nodeExpanded.forEach(({ expandedIds }) => expandedIds.forEach(id => allExpandedIds.add(id)));
+    const productCounts = await this.countVisibleProductsForCategories([...allExpandedIds]);
 
-    // Calculate total for all descendants
-    let totalProductCount = productCounts.get(category.id) || 0;
-    for (const child of category.children) {
-      totalProductCount += calcChildProductCount(child);
+    // Build map: category DB-id → slug-based product count
+    const nodeCountMap = new Map<string, number>();
+    for (const { id, expandedIds } of nodeExpanded) {
+      const count = expandedIds.reduce((sum, expandedId) => sum + (productCounts.get(expandedId) || 0), 0);
+      nodeCountMap.set(id, count);
     }
 
     return {
@@ -369,7 +404,7 @@ export class CategoriesService {
       image: category.image,
       order: category.order,
       isActive: category.isActive,
-      productCount: totalProductCount,
+      productCount: nodeCountMap.get(category.id) || 0,
       children: category.children.map(child => ({
         id: child.id,
         name: child.name,
@@ -378,7 +413,7 @@ export class CategoriesService {
         image: child.image,
         order: child.order,
         isActive: child.isActive,
-        productCount: calcChildProductCount(child),
+        productCount: nodeCountMap.get(child.id) || 0,
         children: child.children.map(grandchild => ({
           id: grandchild.id,
           name: grandchild.name,
@@ -387,7 +422,7 @@ export class CategoriesService {
           image: grandchild.image,
           order: grandchild.order,
           isActive: grandchild.isActive,
-          productCount: productCounts.get(grandchild.id) || 0,
+          productCount: nodeCountMap.get(grandchild.id) || 0,
         }))
       }))
     };
@@ -462,25 +497,42 @@ export class CategoriesService {
       }
     });
 
-    // Collect all category IDs to count products
-    const allCategoryIds: string[] = [];
-    const collectIds = (cats: any[]) => {
+    // Collect all category nodes (slug + id) from the tree
+    const allCategoryNodes: { id: string; slug: string }[] = [];
+    const collectNodes = (cats: any[]) => {
       for (const cat of cats) {
-        allCategoryIds.push(cat.id);
-        if (cat.children) collectIds(cat.children);
+        allCategoryNodes.push({ id: cat.id, slug: cat.slug });
+        if (cat.children) collectNodes(cat.children);
       }
     };
-    collectIds(categories);
+    collectNodes(categories);
 
-    // Get visible product counts for all categories at once
-    const productCounts = await this.countVisibleProductsForCategories(allCategoryIds);
+    // For each slug, get ALL matching category IDs (same logic as products.service.ts)
+    // This captures supplier-specific categories like leker-zabawki-1234 that aren't in the DB tree
+    const slugExpandedIds = await Promise.all(
+      allCategoryNodes.map(async node => ({
+        id: node.id,
+        expandedIds: await this.getAllMatchingCategoryIds(node.slug),
+      }))
+    );
 
-    // Transform and calculate total product counts
+    // Collect all unique IDs across all expansions for a single DB count query
+    const allExpandedIds = new Set<string>();
+    slugExpandedIds.forEach(({ expandedIds }) => expandedIds.forEach(id => allExpandedIds.add(id)));
+
+    // Single product count query for all expanded IDs
+    const productCounts = await this.countVisibleProductsForCategories([...allExpandedIds]);
+
+    // Build map: category node DB-id → total product count across all its matching categories
+    const nodeCountMap = new Map<string, number>();
+    for (const { id, expandedIds } of slugExpandedIds) {
+      const count = expandedIds.reduce((sum, expandedId) => sum + (productCounts.get(expandedId) || 0), 0);
+      nodeCountMap.set(id, count);
+    }
+
+    // Transform categories using slug-based counts (no more directCount + childrenCount aggregation)
     const transformCategory = (cat: any, parentId: string | null = null): CategoryWithChildren => {
       const children = cat.children ? cat.children.map((child: any) => transformCategory(child, cat.id)) : [];
-      const directCount = productCounts.get(cat.id) || 0;
-      const childrenCount = children.reduce((sum: number, child: CategoryWithChildren) => sum + (child.productCount || 0), 0);
-      
       return {
         id: cat.id,
         name: cat.name,
@@ -489,7 +541,7 @@ export class CategoriesService {
         image: cat.image || null,
         order: cat.order || 0,
         isActive: cat.isActive ?? true,
-        productCount: directCount + childrenCount,
+        productCount: nodeCountMap.get(cat.id) || 0,
         children: children.length > 0 ? children : undefined
       };
     };
