@@ -236,6 +236,44 @@ app.listen(PORT, async () => {
     createBaselinkerSyncWorker();
     await scheduleBaselinkerSync();
     console.log('✅ Baselinker sync scheduled (orders: 15min, stock: daily 00:00)');
+
+    // Clean up any RUNNING syncs left over from before this restart
+    const { prisma: prismaClient } = await import('./db');
+    const { BaselinkerSyncStatus } = await import('@prisma/client');
+    const stuckOnStartup = await prismaClient.baselinkerSyncLog.updateMany({
+      where: { status: BaselinkerSyncStatus.RUNNING },
+      data: {
+        status: BaselinkerSyncStatus.FAILED,
+        errors: ['Sync przerwany — serwer zrestartował się w trakcie synchronizacji'],
+        completedAt: new Date(),
+      },
+    });
+    if (stuckOnStartup.count > 0) {
+      console.log(`✅ Marked ${stuckOnStartup.count} stuck sync(s) as FAILED on startup`);
+    }
+
+    // Periodic cleanup: mark RUNNING syncs older than 30 min as FAILED (every 10 minutes)
+    setInterval(async () => {
+      try {
+        const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+        const stuck = await prismaClient.baselinkerSyncLog.updateMany({
+          where: {
+            status: BaselinkerSyncStatus.RUNNING,
+            startedAt: { lt: thirtyMinutesAgo },
+          },
+          data: {
+            status: BaselinkerSyncStatus.FAILED,
+            errors: ['Sync przekroczył limit 30 minut — oznaczony jako błąd'],
+            completedAt: new Date(),
+          },
+        });
+        if (stuck.count > 0) {
+          console.warn(`[SyncCleanup] Marked ${stuck.count} stuck sync(s) as FAILED (>30 min)`);
+        }
+      } catch (e) {
+        console.error('[SyncCleanup] Cleanup interval error:', e);
+      }
+    }, 10 * 60 * 1000);
     
     // 3. Payment reminder - daily at 10:00 AM
     const { createPaymentReminderWorker, schedulePaymentReminders } = await import('./workers/payment-reminder.worker');
