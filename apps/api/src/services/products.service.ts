@@ -35,7 +35,8 @@ const PACKAGE_TAGS = [
 const HIDDEN_TAGS = ['błąd zdjęcia', 'błąd zdjęcia '];
 
 // Domeny zdjęć które blokują hotlinking - produkty z takimi zdjęciami nie będą wyświetlane
-const BLOCKED_IMAGE_DOMAINS = ['b2b.leker.pl'];
+// b2b.leker.pl usunięte - produkty Leker ponownie widoczne, tag "błąd zdjęcia" filtruje wadliwe
+const BLOCKED_IMAGE_DOMAINS: string[] = [];
 
 // Filtr SQL dla warunku "produkt w paczce" oraz ukrywania produktów z błędami
 // Jeśli produkt ma "Paczkomaty i Kurier" to MUSI mieć też "produkt w paczce"

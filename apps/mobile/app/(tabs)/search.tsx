@@ -10,8 +10,8 @@ import {
   Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FontAwesome } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../../services/api';
@@ -141,6 +141,54 @@ export default function SearchScreen() {
   const [searched, setSearched] = useState(false);
   const [sort, setSort] = useState<SortOption>('relevance');
   const [showSort, setShowSort] = useState(false);
+  const [warehouseFilter, setWarehouseFilter] = useState<string | null>(null);
+
+  // Warehouse filter names
+  const WAREHOUSE_NAMES: Record<string, string> = {
+    'hp': 'Magazyn Zielona Góra',
+    'ikonka': 'Magazyn Białystok',
+    'btp': 'Magazyn Chotów',
+    'leker': 'Magazyn Chynów',
+    'outlet': 'Magazyn Rzeszów',
+  };
+
+  // Handle warehouse param from cart
+  useEffect(() => {
+    if (params.warehouse) {
+      setWarehouseFilter(params.warehouse);
+      loadWarehouseProducts(params.warehouse);
+    }
+  }, [params.warehouse]);
+
+  const loadWarehouseProducts = async (warehouse: string) => {
+    setLoading(true);
+    setSearched(true);
+    try {
+      const response = await api.get<{ products: Product[]; total: number }>('/products', {
+        warehouse,
+        sort: sort !== 'relevance' ? sort : undefined,
+        limit: 50,
+      });
+      setProducts(response.products || []);
+      setTotal(response.total || response.products?.length || 0);
+    } catch (err) {
+      console.error('Warehouse products error:', err);
+      setProducts([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clearWarehouseFilter = () => {
+    setWarehouseFilter(null);
+    setProducts([]);
+    setTotal(0);
+    setSearched(false);
+    setQuery('');
+    // Clear the route param
+    router.setParams({ warehouse: '' });
+  };
 
   // Infinite scroll
   const [displayCount, setDisplayCount] = useState(20);
@@ -179,6 +227,7 @@ export default function SearchScreen() {
 
   // ─── Live suggestions while typing ────────────────────────
   useEffect(() => {
+    if (warehouseFilter) return; // Don't live-search when warehouse filter is active
     if (debouncedQuery.length < 2) {
       setSuggestProducts([]);
       setSuggestCategories([]);
@@ -343,6 +392,7 @@ export default function SearchScreen() {
             </TouchableOpacity>
           )}
         </View>
+        )}
       </View>
 
       {/* ── IDLE: Recent + Popular ── */}
@@ -583,6 +633,30 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     paddingHorizontal: 14,
     gap: 8,
+  },
+  warehouseFilterBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.primary[50],
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: Colors.primary[200],
+  },
+  warehouseFilterInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  warehouseFilterText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.primary[700],
+  },
+  warehouseFilterClear: {
+    padding: 2,
   },
   searchInput: {
     flex: 1,
