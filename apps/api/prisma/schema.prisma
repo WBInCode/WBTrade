@@ -514,6 +514,8 @@ model BaselinkerSyncLog {
   type           BaselinkerSyncType
   status         BaselinkerSyncStatus
   itemsProcessed Int                  @default(0) @map("items_processed")
+  itemsChanged   Int                  @default(0) @map("items_changed")
+  changedSkus    Json?                @map("changed_skus")
   errors         Json?
   startedAt      DateTime             @default(now()) @map("started_at")
   completedAt    DateTime?            @map("completed_at")

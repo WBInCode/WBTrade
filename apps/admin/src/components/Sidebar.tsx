@@ -11,6 +11,7 @@ import {
   Box,
   LayoutDashboard,
   Sparkles,
+  Database,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -55,6 +56,7 @@ const menuItems = [
     icon: Box,
     submenu: [
       { title: 'Baselinker', href: '/baselinker' },
+      { title: 'Synchronizacja stanów', href: '/stock-sync' },
     ],
   },
 ];
