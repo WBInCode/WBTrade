@@ -183,7 +183,7 @@ export default function CustomerInvoicePage({ params }: { params: Promise<{ id: 
               </div>
               <div className="text-right">
                 <Image 
-                  src="/images/WB-TRADE-logo.png" 
+                  src="/images/WB-TRADE-logo.webp" 
                   alt="WB Trade" 
                   width={150}
                   height={48}

@@ -125,8 +125,8 @@ export default function HeroBanner() {
         </button>
 
         {/* Main Banner */}
-        <div className="relative rounded-xl sm:rounded-2xl overflow-hidden min-h-[280px] sm:min-h-[320px] lg:min-h-[380px]">
-        {/* Background slides */}
+        <div className="relative rounded-xl sm:rounded-2xl overflow-hidden h-[280px] sm:h-[320px] lg:h-[380px]">
+        {/* Background slides - only render active and adjacent slides */}
         {slides.map((s, index) => (
           <div
             key={s.id}
@@ -140,17 +140,18 @@ export default function HeroBanner() {
               sizes="100vw"
               className="object-cover opacity-20"
               priority={index === 0}
+              loading={index === 0 ? 'eager' : 'lazy'}
             />
           </div>
         ))}
 
         {/* Content */}
-        <div className="relative p-6 sm:p-8 lg:p-12 h-full flex flex-col justify-center min-h-[280px] sm:min-h-[320px] lg:min-h-[380px]">
+        <div className="relative p-6 sm:p-8 lg:p-12 h-full flex flex-col justify-center">
           {/* Text backdrop for better readability */}
           <div className="absolute inset-0 bg-gradient-to-r from-white/80 via-white/60 to-transparent dark:from-secondary-900/90 dark:via-secondary-900/70 dark:to-transparent"></div>
           <div
             key={currentSlide}
-            className="animate-fadeIn relative z-10"
+            className={`${direction === 'right' ? 'animate-fadeIn-right' : 'animate-fadeIn-left'} relative z-10`}
           >
             <span className={`inline-block ${slide.badgeColor} text-white text-[10px] sm:text-xs font-bold px-2.5 sm:px-3 py-1 rounded-full mb-3 sm:mb-4`}>
               {slide.badge}
@@ -200,33 +201,6 @@ export default function HeroBanner() {
         )}
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateX(${direction === 'right' ? '20px' : '-20px'});
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.5s ease-out;
-        }
-        @keyframes progress {
-          from {
-            width: 0%;
-          }
-          to {
-            width: 100%;
-          }
-        }
-        .animate-progress {
-          animation: progress 8s linear;
-        }
-      `}</style>
     </section>
   );
 }
