@@ -1,118 +1,244 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TextInput, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  StyleSheet,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  FlatList,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
+import { FontAwesome } from '@expo/vector-icons';
 import { api } from '../../services/api';
 import { Colors } from '../../constants/Colors';
 import ProductGrid from '../../components/product/ProductGrid';
 import type { Product } from '../../services/types';
 
+function useDebounce<T>(value: T, delay: number = 300): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
+
+type SortOption = 'relevance' | 'price_asc' | 'price_desc' | 'newest' | 'popularity';
+
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: 'relevance', label: 'Trafność' },
+  { value: 'popularity', label: 'Popularność' },
+  { value: 'newest', label: 'Najnowsze' },
+  { value: 'price_asc', label: 'Cena rosnąco' },
+  { value: 'price_desc', label: 'Cena malejąco' },
+];
+
 export default function SearchScreen() {
-  const params = useLocalSearchParams();
-  const categorySlug = params.category as string | undefined;
-  
   const [query, setQuery] = useState('');
+  const debouncedQuery = useDebounce(query, 400);
+
   const [products, setProducts] = useState<Product[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
-  const [categoryName, setCategoryName] = useState<string>('');
+  const [sort, setSort] = useState<SortOption>('relevance');
+  const [showSort, setShowSort] = useState(false);
 
-  // Load products by category on mount if category param exists
+  // Suggestions
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Live search
   useEffect(() => {
-    if (categorySlug) {
-      loadCategoryProducts(categorySlug);
+    if (debouncedQuery.length < 2) {
+      setProducts([]);
+      setTotal(0);
+      setSearched(false);
+      setSuggestions([]);
+      return;
     }
-  }, [categorySlug]);
-  const loadCategoryProducts = async (slug: string) => {
+
+    performSearch(debouncedQuery);
+    fetchSuggestions(debouncedQuery);
+  }, [debouncedQuery, sort]);
+
+  const performSearch = async (searchQuery: string) => {
     setLoading(true);
     setSearched(true);
+    setShowSuggestions(false);
     try {
-      // First get category details
-      const catResponse = await api.get<{ category: { name: string } }>(`/categories/${slug}`);
-      setCategoryName(catResponse.category?.name || slug);
-      
-      // Then get products for this category
-      const response = await api.get<{ products: Product[] }>('/products', {
-        category: slug,
-        limit: 100,
+      const response = await api.get<{ products: Product[]; total: number }>('/search', {
+        query: searchQuery,
+        sort: sort !== 'relevance' ? sort : undefined,
+        limit: 50,
       });
       setProducts(response.products || []);
+      setTotal(response.total || 0);
     } catch (err) {
-      console.error('Category products error:', err);
-      setCategoryName(slug);
-      setProducts([]);
+      console.error('Search error:', err);
+      // Fallback: try /products endpoint with search
+      try {
+        const fallback = await api.get<{ products: Product[] }>('/products', {
+          search: searchQuery,
+          sort: sort !== 'relevance' ? sort : undefined,
+          limit: 50,
+        });
+        setProducts(fallback.products || []);
+        setTotal(fallback.products?.length || 0);
+      } catch {
+        setProducts([]);
+        setTotal(0);
+      }
     } finally {
       setLoading(false);
     }
   };
-  const handleSearch = async (searchQuery: string) => {
-    if (!searchQuery.trim()) {
-      setProducts([]);
-      setSearched(false);
-      return;
-    }
 
-    setLoading(true);
-    setSearched(true);
+  const fetchSuggestions = async (searchQuery: string) => {
     try {
-      const response = await api.get<{ products: Product[] }>('/search', {
-        q: searchQuery,
-        limit: 50,
+      const data = await api.get<{ suggestions: string[] }>('/search/suggest', {
+        query: searchQuery,
       });
-      setProducts(response.products || []);
-    } catch (err) {
-      console.error('Search error:', err);
-      setProducts([]);
-    } finally {
-      setLoading(false);
+      setSuggestions(data.suggestions || []);
+    } catch {
+      setSuggestions([]);
     }
+  };
+
+  const handleSuggestionPress = (suggestion: string) => {
+    setQuery(suggestion);
+    setShowSuggestions(false);
+  };
+
+  const handleClear = () => {
+    setQuery('');
+    setProducts([]);
+    setTotal(0);
+    setSearched(false);
+    setSuggestions([]);
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Category Header */}
-      {categoryName && (
-        <View style={styles.categoryHeader}>
-          <Text style={styles.categoryTitle}>{categoryName}</Text>
+      {/* Search Header */}
+      <View style={styles.searchHeader}>
+        <View style={styles.searchInputContainer}>
+          <FontAwesome name="search" size={16} color={Colors.secondary[400]} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Szukaj produktów..."
+            placeholderTextColor={Colors.secondary[400]}
+            value={query}
+            onChangeText={(text) => {
+              setQuery(text);
+              setShowSuggestions(true);
+            }}
+            onSubmitEditing={() => {
+              if (query.length >= 2) performSearch(query);
+            }}
+            returnKeyType="search"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {query.length > 0 && (
+            <TouchableOpacity onPress={handleClear}>
+              <FontAwesome name="times-circle" size={18} color={Colors.secondary[400]} />
+            </TouchableOpacity>
+          )}
         </View>
-      )}
-      
-      {/* Search Bar */}
-      <View style={styles.searchBar}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Szukaj produktów..."
-          value={query}
-          onChangeText={setQuery}
-          onSubmitEditing={() => handleSearch(query)}
-          returnKeyType="search"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
       </View>
 
+      {/* Suggestions */}
+      {showSuggestions && suggestions.length > 0 && query.length >= 2 && (
+        <View style={styles.suggestionsContainer}>
+          {suggestions.slice(0, 5).map((suggestion, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.suggestionItem}
+              onPress={() => handleSuggestionPress(suggestion)}
+            >
+              <FontAwesome name="search" size={12} color={Colors.secondary[400]} />
+              <Text style={styles.suggestionText}>{suggestion}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      {/* Sort + Results count */}
+      {searched && !loading && products.length > 0 && (
+        <View style={styles.toolbar}>
+          <Text style={styles.resultCount}>
+            {total} wynik{total === 1 ? '' : total < 5 ? 'i' : 'ów'}
+          </Text>
+          <TouchableOpacity
+            style={styles.sortButton}
+            onPress={() => setShowSort(!showSort)}
+          >
+            <FontAwesome name="sort" size={14} color={Colors.secondary[600]} />
+            <Text style={styles.sortButtonText}>
+              {SORT_OPTIONS.find((o) => o.value === sort)?.label}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Sort dropdown */}
+      {showSort && (
+        <View style={styles.sortDropdown}>
+          {SORT_OPTIONS.map((option) => (
+            <TouchableOpacity
+              key={option.value}
+              style={[styles.sortOption, sort === option.value && styles.sortOptionActive]}
+              onPress={() => {
+                setSort(option.value);
+                setShowSort(false);
+              }}
+            >
+              <Text
+                style={[
+                  styles.sortOptionText,
+                  sort === option.value && styles.sortOptionTextActive,
+                ]}
+              >
+                {option.label}
+              </Text>
+              {sort === option.value && (
+                <FontAwesome name="check" size={12} color={Colors.primary[500]} />
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
       {/* Results */}
-      <ScrollView style={styles.scrollView}>
+      <View style={styles.results}>
         {loading ? (
           <View style={styles.centerContent}>
-            <ActivityIndicator size="large" color={Colors.primary[600]} />
+            <ActivityIndicator size="large" color={Colors.primary[500]} />
+            <Text style={styles.loadingText}>Szukam...</Text>
           </View>
         ) : searched ? (
           products.length > 0 ? (
             <ProductGrid products={products} />
           ) : (
             <View style={styles.centerContent}>
-              <Text style={styles.emptyText}>Nie znaleziono produktów</Text>
-              <Text style={styles.emptyHint}>Spróbuj użyć innych słów kluczowych</Text>
+              <FontAwesome name="search" size={40} color={Colors.secondary[300]} />
+              <Text style={styles.emptyTitle}>Nie znaleziono produktów</Text>
+              <Text style={styles.emptyHint}>
+                Spróbuj użyć innych słów kluczowych
+              </Text>
             </View>
           )
         ) : (
           <View style={styles.centerContent}>
-            <Text style={styles.emptyText}>🔍</Text>
-            <Text style={styles.emptyHint}>Wpisz nazwę produktu aby wyszukać</Text>
+            <FontAwesome name="search" size={48} color={Colors.secondary[200]} />
+            <Text style={styles.emptyHint}>
+              Wpisz minimum 2 znaki aby wyszukać
+            </Text>
           </View>
         )}
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -122,45 +248,127 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.secondary[50],
   },
-  categoryHeader: {
-    backgroundColor: Colors.primary[600],
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-  },
-  categoryTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: Colors.white,
-  },
-  searchBar: {
+  searchHeader: {
     backgroundColor: Colors.white,
-    padding: 16,
+    padding: 12,
     borderBottomWidth: 1,
     borderBottomColor: Colors.secondary[200],
   },
-  searchInput: {
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: Colors.secondary[100],
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 10,
     fontSize: 16,
     color: Colors.secondary[900],
   },
-  scrollView: {
+  suggestionsContainer: {
+    backgroundColor: Colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.secondary[200],
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.secondary[100],
+  },
+  suggestionText: {
+    fontSize: 14,
+    color: Colors.secondary[700],
+  },
+  toolbar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: Colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.secondary[200],
+  },
+  resultCount: {
+    fontSize: 13,
+    color: Colors.secondary[500],
+  },
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Colors.secondary[300],
+  },
+  sortButtonText: {
+    fontSize: 13,
+    color: Colors.secondary[700],
+  },
+  sortDropdown: {
+    backgroundColor: Colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.secondary[200],
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  sortOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.secondary[100],
+  },
+  sortOptionActive: {},
+  sortOptionText: {
+    fontSize: 14,
+    color: Colors.secondary[700],
+  },
+  sortOptionTextActive: {
+    color: Colors.primary[600],
+    fontWeight: '600',
+  },
+  results: {
     flex: 1,
   },
   centerContent: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 48,
+    paddingVertical: 60,
+    paddingHorizontal: 32,
+    gap: 12,
   },
-  emptyText: {
-    fontSize: 48,
-    marginBottom: 12,
+  loadingText: {
+    fontSize: 14,
+    color: Colors.secondary[500],
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.secondary[700],
   },
   emptyHint: {
     fontSize: 14,
-    color: Colors.secondary[600],
+    color: Colors.secondary[500],
     textAlign: 'center',
   },
 });
