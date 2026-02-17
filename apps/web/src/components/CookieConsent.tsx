@@ -8,6 +8,23 @@ const COOKIE_CONSENT_KEY = 'wb_cookie_consent';
 // Pages where cookie consent banner should not appear
 const EXCLUDED_PATHS = ['/privacy-plain', '/cookies-plain'];
 
+/**
+ * Push Google Consent Mode v2 update to dataLayer
+ */
+function updateGoogleConsent(analytics: boolean, marketing: boolean) {
+  if (typeof window === 'undefined') return;
+  window.dataLayer = window.dataLayer || [];
+  function gtag(...args: unknown[]) {
+    window.dataLayer.push(arguments);
+  }
+  gtag('consent', 'update', {
+    'ad_storage': marketing ? 'granted' : 'denied',
+    'ad_user_data': marketing ? 'granted' : 'denied',
+    'ad_personalization': marketing ? 'granted' : 'denied',
+    'analytics_storage': analytics ? 'granted' : 'denied',
+  });
+}
+
 export default function CookieConsent() {
   const [showBanner, setShowBanner] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -43,6 +60,7 @@ export default function CookieConsent() {
       timestamp: new Date().toISOString(),
     };
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consent));
+    updateGoogleConsent(true, true);
     setShowBanner(false);
   };
 
@@ -54,6 +72,7 @@ export default function CookieConsent() {
       timestamp: new Date().toISOString(),
     };
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consent));
+    updateGoogleConsent(false, false);
     setShowBanner(false);
   };
 
@@ -63,6 +82,7 @@ export default function CookieConsent() {
       timestamp: new Date().toISOString(),
     };
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consent));
+    updateGoogleConsent(preferences.analytics, preferences.marketing);
     setShowBanner(false);
     setShowSettings(false);
   };
