@@ -1,4 +1,5 @@
 import { prisma } from '../db';
+import { getCachedCategoryTree, setCachedCategoryTree } from '../lib/cache';
 
 // Tagi dostawy - produkty MUSZĄ mieć przynajmniej jeden z tych tagów żeby być widoczne
 const DELIVERY_TAGS = [
@@ -111,8 +112,8 @@ export class CategoriesService {
 
   /**
    * Count visible products for multiple categories at once
-   * Filtr SQL już uwzględnia warunek "produkt w paczce" przez VISIBLE_PRODUCT_WHERE
-   * Dodatkowo filtruje produkty z zablokowanymi domenami obrazków (Leker)
+   * Używa groupBy zamiast findMany dla wydajności — SQL COUNT zamiast ładowania tysięcy wierszy
+   * Nadal filtruje produkty z zablokowanymi domenami obrazków (Leker) osobno
    */
   private async countVisibleProductsForCategories(categoryIds: string[]): Promise<Map<string, number>> {
     const counts = new Map<string, number>();
@@ -124,9 +125,10 @@ export class CategoriesService {
     if (filteredCategoryIds.length === 0) {
       return counts;
     }
-    
-    // Pobierz produkty z obrazkami żeby móc odfiltrować te z zablokowanych domen (Leker)
-    const products = await prisma.product.findMany({
+
+    // Krok 1: Szybki COUNT z groupBy — nie ładuje wierszy do pamięci
+    const groupedCounts = await prisma.product.groupBy({
+      by: ['categoryId'],
       where: {
         categoryId: { in: filteredCategoryIds },
         price: { gt: 0 },
@@ -140,43 +142,63 @@ export class CategoriesService {
           }
         },
         tags: { hasSome: DELIVERY_TAGS },
-        // Nie pokazuj produktów z tagiem "błąd zdjęcia"
         NOT: {
           tags: { hasSome: HIDDEN_TAGS }
         },
-        // Jeśli ma "Paczkomaty i Kurier", musi mieć też "produkt w paczce"
         OR: [
           { NOT: { tags: { hasSome: PACZKOMAT_TAGS } } },
           { tags: { hasSome: PACKAGE_TAGS } },
         ],
       },
-      select: {
-        id: true,
-        categoryId: true,
+      _count: { id: true },
+    });
+
+    for (const group of groupedCounts) {
+      if (group.categoryId) {
+        counts.set(group.categoryId, group._count.id);
+      }
+    }
+
+    // Krok 2: Odejmij produkty z zablokowanymi domenami obrazków (Leker)
+    // Tylko pobieramy ID produktów z zablokowanymi obrazkami — znacznie mniej danych
+    const blockedProducts = await prisma.product.findMany({
+      where: {
+        categoryId: { in: filteredCategoryIds },
+        price: { gt: 0 },
+        variants: {
+          some: {
+            inventory: {
+              some: {
+                quantity: { gt: 0 }
+              }
+            }
+          }
+        },
+        tags: { hasSome: DELIVERY_TAGS },
+        NOT: {
+          tags: { hasSome: HIDDEN_TAGS }
+        },
+        OR: [
+          { NOT: { tags: { hasSome: PACZKOMAT_TAGS } } },
+          { tags: { hasSome: PACKAGE_TAGS } },
+        ],
         images: {
-          select: { url: true },
-          orderBy: { order: 'asc' },
-          take: 1,
+          some: {
+            OR: BLOCKED_IMAGE_DOMAINS.map(domain => ({
+              url: { contains: domain }
+            }))
+          }
         },
       },
+      select: {
+        categoryId: true,
+      },
     });
-    
-    // Filtruj produkty z zablokowanych domen obrazków (Leker b2b.leker.pl)
-    const visibleProducts = products.filter(product => {
-      const imageUrl = product.images[0]?.url;
-      if (!imageUrl) return true; // Brak obrazka = produkt widoczny
-      
-      // Sprawdź czy obrazek jest z zablokowanej domeny
-      const hasBlockedImage = BLOCKED_IMAGE_DOMAINS.some(domain => 
-        imageUrl.includes(domain)
-      );
-      return !hasBlockedImage;
-    });
-    
-    // Zlicz produkty per kategoria
-    for (const product of visibleProducts) {
-      if (product.categoryId) {
-        counts.set(product.categoryId, (counts.get(product.categoryId) || 0) + 1);
+
+    // Odejmij zablokowane produkty od count per kategoria
+    for (const product of blockedProducts) {
+      if (product.categoryId && counts.has(product.categoryId)) {
+        counts.set(product.categoryId, counts.get(product.categoryId)! - 1);
       }
     }
     
@@ -406,6 +428,12 @@ export class CategoriesService {
    * Filters by baselinkerCategoryId to return only Baselinker categories
    */
   async getMainCategories(): Promise<CategoryWithChildren[]> {
+    // Sprawdź cache — kategorie rzadko się zmieniają
+    const cached = await getCachedCategoryTree<CategoryWithChildren[]>();
+    if (cached) {
+      return cached;
+    }
+
     const categories = await prisma.category.findMany({
       where: { 
         isActive: true,
@@ -465,7 +493,12 @@ export class CategoriesService {
       };
     };
 
-    return categories.map(cat => transformCategory(cat, null));
+    const result = categories.map(cat => transformCategory(cat, null));
+
+    // Zapisz w cache na 30 minut
+    await setCachedCategoryTree(result);
+
+    return result;
   }
 
   /**
