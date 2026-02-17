@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { useCart } from '../../contexts/CartContext';
 import { productsApi } from '../../lib/api';
@@ -253,10 +254,12 @@ export default function WishlistPage() {
                     >
                       {/* Image */}
                       <Link href={`/products/${item.id}`} className="block relative aspect-square bg-gray-50 dark:bg-secondary-700">
-                        <img
+                        <Image
                           src={item.image}
                           alt={item.name}
-                          className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300"
+                          fill
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          className="object-contain p-4 group-hover:scale-105 transition-transform duration-300"
                         />
                         {item.compareAtPrice && Number(item.compareAtPrice) > Number(item.price) && (
                           <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
@@ -346,11 +349,13 @@ export default function WishlistPage() {
                       <div className="flex gap-4">
                         {/* Image */}
                         <Link href={`/products/${item.id}`} className="shrink-0">
-                          <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gray-50 dark:bg-secondary-700 rounded-lg overflow-hidden">
-                            <img
+                          <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gray-50 dark:bg-secondary-700 rounded-lg overflow-hidden relative">
+                            <Image
                               src={item.image}
                               alt={item.name}
-                              className="w-full h-full object-contain p-2"
+                              fill
+                              sizes="128px"
+                              className="object-contain p-2"
                             />
                           </div>
                         </Link>

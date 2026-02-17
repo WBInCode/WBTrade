@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { CheckoutData, AddressData, ShippingData, PaymentData } from '../page';
 
 interface OrderSummaryProps {
@@ -84,12 +85,14 @@ export default function OrderSummary({
         <div className="space-y-2 sm:space-y-3">
           {cart?.items?.map((item: any) => (
             <div key={item.id} className="flex gap-2 sm:gap-4 p-2 sm:p-3 bg-gray-50 dark:bg-secondary-700 rounded-lg">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white dark:bg-secondary-600 rounded-lg flex-shrink-0 border dark:border-secondary-500">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white dark:bg-secondary-600 rounded-lg flex-shrink-0 border dark:border-secondary-500 relative overflow-hidden">
                 {item.variant?.product?.images?.[0] && (
-                  <img
+                  <Image
                     src={item.variant.product.images[0].url}
                     alt={item.variant.product.name}
-                    className="w-full h-full object-cover rounded-lg"
+                    fill
+                    sizes="64px"
+                    className="object-cover rounded-lg"
                   />
                 )}
               </div>

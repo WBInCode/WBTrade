@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Header from '../../../../../components/Header';
 import Footer from '../../../../../components/Footer';
@@ -181,10 +182,12 @@ export default function CustomerInvoicePage({ params }: { params: Promise<{ id: 
                 <p className="text-gray-500 text-lg">{invoiceNumber}</p>
               </div>
               <div className="text-right">
-                <img 
+                <Image 
                   src="/images/WB-TRADE-logo.png" 
                   alt="WB Trade" 
-                  className="h-12 ml-auto mb-1"
+                  width={150}
+                  height={48}
+                  className="h-12 w-auto ml-auto mb-1"
                 />
                 <p className="text-gray-600 text-sm">Sp. z o.o.</p>
               </div>
