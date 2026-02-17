@@ -183,7 +183,7 @@ export default function CustomerInvoicePage({ params }: { params: Promise<{ id: 
               </div>
               <div className="text-right">
                 <Image 
-                  src="/images/WB-TRADE-logo.png" 
+                  src="/images/WB-TRADE-logo.webp" 
                   alt="WB Trade" 
                   width={150}
                   height={48}
@@ -386,7 +386,7 @@ export default function CustomerInvoicePage({ params }: { params: Promise<{ id: 
       <Footer />
 
       {/* Print Styles */}
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @media print {
           @page {
             size: A4;
@@ -402,7 +402,6 @@ export default function CustomerInvoicePage({ params }: { params: Promise<{ id: 
           .print\\:hidden {
             display: none !important;
           }
-          /* Prevent page breaks inside elements */
           table {
             page-break-inside: avoid;
           }
@@ -412,16 +411,14 @@ export default function CustomerInvoicePage({ params }: { params: Promise<{ id: 
           .bg-white {
             page-break-inside: avoid;
           }
-          /* Keep summary together */
           .w-80 {
             page-break-inside: avoid;
           }
-          /* Keep payment info together */
           .bg-gray-50 {
             page-break-inside: avoid;
           }
         }
-      `}</style>
+      `}} />
     </>
   );
 }

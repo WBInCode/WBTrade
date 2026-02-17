@@ -19,7 +19,7 @@ export function GoogleTagManager() {
       {/* GTM Script - loads async after page is interactive */}
       <Script
         id="gtm-script"
-        strategy="afterInteractive"
+        strategy="lazyOnload"
         dangerouslySetInnerHTML={{
           __html: `
             (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
