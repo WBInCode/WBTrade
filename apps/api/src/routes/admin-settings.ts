@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../db';
+import { invalidateCategoryCache } from '../lib/cache';
 
 const router = Router();
 
@@ -15,6 +16,20 @@ const parseJsonValue = (value: string | null | undefined): any => {
 
 // Note: These endpoints are under /api/admin/settings, accessed only from admin panel
 // The admin panel has its own authentication (ADMIN_ACCESS_SECRET)
+
+/**
+ * POST /api/admin/settings/cache/clear-categories
+ * Czyści cache kategorii w Redis (liczniki ofert)
+ */
+router.post('/cache/clear-categories', async (req, res) => {
+  try {
+    await invalidateCategoryCache();
+    res.json({ success: true, message: 'Cache kategorii wyczyszczony' });
+  } catch (error) {
+    console.error('Error clearing category cache:', error);
+    res.status(500).json({ message: 'Błąd podczas czyszczenia cache' });
+  }
+});
 
 /**
  * GET /api/admin/settings/carousels
