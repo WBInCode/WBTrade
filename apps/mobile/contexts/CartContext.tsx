@@ -1,13 +1,14 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { cartApi } from '../services/cart';
 import type { Cart } from '../services/types';
+import AddToCartModal, { type AddedProductInfo } from '../components/AddToCartModal';
 
 interface CartContextType {
   cart: Cart | null;
   loading: boolean;
   error: string | null;
   itemCount: number;
-  addToCart: (variantId: string, quantity?: number) => Promise<void>;
+  addToCart: (variantId: string, quantity?: number, productInfo?: AddedProductInfo) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   removeFromCart: (itemId: string) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -23,7 +24,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const itemCount = cart?.items.reduce((sum, item) => sum + item.quantity, 0) || 0;
+  // Add-to-cart modal state
+  const [modalVisible, setModalVisible] = useState(false);
+  const [addedProduct, setAddedProduct] = useState<AddedProductInfo | null>(null);
+
+  const itemCount = (cart?.items || []).reduce((sum, item) => sum + item.quantity, 0);
 
   const refreshCart = useCallback(async () => {
     try {
@@ -42,11 +47,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     refreshCart();
   }, [refreshCart]);
 
-  const addToCart = useCallback(async (variantId: string, quantity: number = 1) => {
+  const addToCart = useCallback(async (variantId: string, quantity: number = 1, productInfo?: AddedProductInfo) => {
     try {
       setError(null);
       const updatedCart = await cartApi.addItem(variantId, quantity);
       setCart(updatedCart);
+      // Show modal if product info provided
+      if (productInfo) {
+        setAddedProduct(productInfo);
+        setModalVisible(true);
+      }
     } catch (err: any) {
       setError(err.message);
       throw err;
@@ -125,6 +135,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       {children}
+      <AddToCartModal
+        visible={modalVisible}
+        product={addedProduct}
+        onClose={() => setModalVisible(false)}
+        addToCart={addToCart}
+      />
     </CartContext.Provider>
   );
 }
