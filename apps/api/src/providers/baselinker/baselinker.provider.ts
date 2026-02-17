@@ -28,6 +28,7 @@ const DEFAULT_MAX_REQUESTS_PER_MINUTE = 30; // Reduced from 100 to avoid rate li
 const DEFAULT_RETRY_ATTEMPTS = 5; // Increased retries
 const DEFAULT_RETRY_DELAY_MS = 2000; // Increased delay
 const PRODUCTS_PER_PAGE = 1000;
+const REQUEST_TIMEOUT_MS = 30000; // 30s timeout per API request
 
 /**
  * Token Bucket Rate Limiter
@@ -111,6 +112,7 @@ export class BaselinkerProvider implements IBaselinkerProvider {
             'Content-Type': 'application/x-www-form-urlencoded',
           },
           body: formData.toString(),
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         });
 
         // Handle rate limiting
