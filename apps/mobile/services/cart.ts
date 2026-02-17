@@ -1,3 +1,4 @@
+import * as Crypto from 'expo-crypto';
 import { api, saveSessionId, getSessionId } from './api';
 import type { Cart } from './types';
 
@@ -22,7 +23,7 @@ const unwrap = async (res: CartResponse): Promise<Cart> => {
 async function ensureSessionId(): Promise<void> {
   const existing = await getSessionId();
   if (!existing) {
-    const id = 'sess_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const id = 'sess_' + Crypto.randomUUID();
     await saveSessionId(id);
   }
 }
