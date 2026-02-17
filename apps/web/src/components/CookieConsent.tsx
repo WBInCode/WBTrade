@@ -14,15 +14,23 @@ const EXCLUDED_PATHS = ['/privacy-plain', '/cookies-plain'];
 function updateGoogleConsent(analytics: boolean, marketing: boolean) {
   if (typeof window === 'undefined') return;
   window.dataLayer = window.dataLayer || [];
-  function gtag(...args: unknown[]) {
-    window.dataLayer.push(arguments);
-  }
-  gtag('consent', 'update', {
-    'ad_storage': marketing ? 'granted' : 'denied',
-    'ad_user_data': marketing ? 'granted' : 'denied',
-    'ad_personalization': marketing ? 'granted' : 'denied',
-    'analytics_storage': analytics ? 'granted' : 'denied',
+  window.dataLayer.push({
+    event: 'consent_update',
+    consent_action: 'update',
+    ad_storage: marketing ? 'granted' : 'denied',
+    ad_user_data: marketing ? 'granted' : 'denied',
+    ad_personalization: marketing ? 'granted' : 'denied',
+    analytics_storage: analytics ? 'granted' : 'denied',
   });
+  // Also call gtag directly if available
+  if (typeof window.gtag === 'function') {
+    window.gtag('consent', 'update', {
+      'ad_storage': marketing ? 'granted' : 'denied',
+      'ad_user_data': marketing ? 'granted' : 'denied',
+      'ad_personalization': marketing ? 'granted' : 'denied',
+      'analytics_storage': analytics ? 'granted' : 'denied',
+    });
+  }
 }
 
 export default function CookieConsent() {
