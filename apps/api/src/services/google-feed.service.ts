@@ -1,22 +1,6 @@
 import prisma from '../db';
 import { ProductStatus } from '@prisma/client';
-
-interface GoogleFeedProduct {
-  id: string;
-  title: string;
-  description: string;
-  link: string;
-  imageLink: string;
-  additionalImageLinks: string[];
-  price: string;
-  salePrice?: string;
-  availability: 'in_stock' | 'out_of_stock' | 'preorder';
-  condition: 'new' | 'refurbished' | 'used';
-  brand?: string;
-  gtin?: string;
-  mpn?: string;
-  productType?: string;
-}
+import { Response } from 'express';
 
 /**
  * Escapes special XML characters
@@ -56,16 +40,206 @@ function truncate(text: string, maxLength: number): string {
 }
 
 /**
- * Generates Google Merchant Center XML feed
- * Optimized for low memory usage - uses pagination
+ * Builds XML for a single product item
  */
-export async function generateGoogleMerchantFeed(baseUrl: string): Promise<string> {
-  const BATCH_SIZE = 500; // Process 500 products at a time
+function buildProductXml(product: {
+  sku: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  price: any;
+  compareAtPrice: any;
+  barcode: string | null;
+  tags: string[];
+  baselinkerCategoryPath: string | null;
+  images: { url: string }[];
+  category: { name: string } | null;
+  variants: { inventory: { quantity: number; reserved: number }[] }[];
+}, baseUrl: string): string {
+  // Calculate total stock
+  let totalStock = 0;
+  for (const variant of product.variants) {
+    for (const inv of variant.inventory) {
+      totalStock += inv.quantity - inv.reserved;
+    }
+  }
+
+  const primaryImage = product.images[0]?.url || '';
+  const additionalImages = product.images.slice(1, 5).map((img: { url: string }) => img.url);
+  const availability = totalStock > 0 ? 'in_stock' : 'out_of_stock';
+
+  const price = `${Number(product.price).toFixed(2)} PLN`;
+  const salePrice = product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price)
+    ? `${Number(product.price).toFixed(2)} PLN`
+    : undefined;
+  const regularPrice = product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price)
+    ? `${Number(product.compareAtPrice).toFixed(2)} PLN`
+    : price;
+
+  const productType = product.category?.name || '';
+
+  let brand = 'WBTrade';
+  if (product.tags && product.tags.length > 0) {
+    const brandTag = product.tags.find((tag: string) => tag.toLowerCase().startsWith('brand:'));
+    if (brandTag) {
+      brand = brandTag.replace('brand:', '').trim();
+    }
+  }
+
+  const title = truncate(product.name, 150);
+  const description = truncate(stripHtml(product.description || product.name), 5000);
+  const link = `${baseUrl}/product/${product.slug}`;
+  const finalPrice = salePrice ? regularPrice : price;
+
+  let item = `
+    <item>
+      <g:id>${escapeXml(product.sku)}</g:id>
+      <g:title>${escapeXml(title)}</g:title>
+      <g:description>${escapeXml(description)}</g:description>
+      <g:link>${escapeXml(link)}</g:link>
+      <g:image_link>${escapeXml(primaryImage)}</g:image_link>`;
+
+  for (const imgUrl of additionalImages) {
+    item += `
+      <g:additional_image_link>${escapeXml(imgUrl)}</g:additional_image_link>`;
+  }
+
+  item += `
+      <g:price>${escapeXml(finalPrice)}</g:price>`;
+
+  if (salePrice) {
+    item += `
+      <g:sale_price>${escapeXml(salePrice)}</g:sale_price>`;
+  }
+
+  item += `
+      <g:availability>${availability}</g:availability>
+      <g:condition>new</g:condition>`;
+
+  if (brand) {
+    item += `
+      <g:brand>${escapeXml(brand)}</g:brand>`;
+  }
+
+  if (product.barcode) {
+    item += `
+      <g:gtin>${escapeXml(product.barcode)}</g:gtin>`;
+  }
+
+  item += `
+      <g:mpn>${escapeXml(product.sku)}</g:mpn>`;
+
+  if (productType) {
+    item += `
+      <g:product_type>${escapeXml(productType)}</g:product_type>`;
+  }
+
+  item += `
+    </item>`;
+
+  return item;
+}
+
+/**
+ * Streams Google Merchant Center XML feed directly to response
+ * Memory-efficient: processes products in small batches and writes immediately
+ * Does NOT accumulate all products in memory
+ */
+export async function streamGoogleMerchantFeed(baseUrl: string, res: Response): Promise<void> {
+  const BATCH_SIZE = 200; // Smaller batches for lower memory footprint
   let skip = 0;
   let hasMore = true;
-  const feedProducts: GoogleFeedProduct[] = [];
 
-  // Process products in batches to avoid memory issues
+  // Write XML header
+  res.write(`<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">
+  <channel>
+    <title>WBTrade - Sklep internetowy</title>
+    <link>${escapeXml(baseUrl)}</link>
+    <description>Produkty ze sklepu WBTrade</description>`);
+
+  // Stream products in batches
+  while (hasMore) {
+    const products = await prisma.product.findMany({
+      where: {
+        status: ProductStatus.ACTIVE,
+      },
+      select: {
+        sku: true,
+        name: true,
+        slug: true,
+        description: true,
+        price: true,
+        compareAtPrice: true,
+        barcode: true,
+        tags: true,
+        baselinkerCategoryPath: true,
+        images: {
+          select: { url: true },
+          orderBy: { order: 'asc' },
+          take: 5,
+        },
+        category: {
+          select: { name: true },
+        },
+        variants: {
+          select: {
+            inventory: {
+              select: { quantity: true, reserved: true },
+            },
+          },
+          take: 1,
+        },
+      },
+      skip,
+      take: BATCH_SIZE,
+    });
+
+    if (products.length === 0) {
+      hasMore = false;
+      break;
+    }
+
+    // Write each product's XML immediately, don't accumulate
+    for (const product of products) {
+      res.write(buildProductXml(product, baseUrl));
+    }
+
+    skip += BATCH_SIZE;
+
+    // Safety limit - max 50000 products
+    if (skip >= 50000) {
+      hasMore = false;
+    }
+
+    // Allow event loop to breathe between batches
+    await new Promise(resolve => setImmediate(resolve));
+  }
+
+  // Write XML footer and end response
+  res.write(`
+  </channel>
+</rss>`);
+  res.end();
+}
+
+/**
+ * Legacy non-streaming version (kept for backward compatibility if needed)
+ * WARNING: May cause OOM on large catalogs with limited memory
+ */
+export async function generateGoogleMerchantFeed(baseUrl: string): Promise<string> {
+  const BATCH_SIZE = 200;
+  let skip = 0;
+  let hasMore = true;
+  const chunks: string[] = [];
+
+  chunks.push(`<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">
+  <channel>
+    <title>WBTrade - Sklep internetowy</title>
+    <link>${escapeXml(baseUrl)}</link>
+    <description>Produkty ze sklepu WBTrade</description>`);
+
   while (hasMore) {
     const products = await prisma.product.findMany({
       where: {
@@ -108,138 +282,20 @@ export async function generateGoogleMerchantFeed(baseUrl: string): Promise<strin
     }
 
     for (const product of products) {
-      // Calculate total stock
-      let totalStock = 0;
-      for (const variant of product.variants) {
-        for (const inv of variant.inventory) {
-          totalStock += inv.quantity - inv.reserved;
-        }
-      }
-
-      const primaryImage = product.images[0]?.url || '';
-      const additionalImages = product.images.slice(1, 5).map((img: { url: string }) => img.url);
-
-      const availability: 'in_stock' | 'out_of_stock' | 'preorder' = totalStock > 0 ? 'in_stock' : 'out_of_stock';
-
-      const price = `${Number(product.price).toFixed(2)} PLN`;
-      const salePrice = product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price)
-        ? `${Number(product.price).toFixed(2)} PLN`
-        : undefined;
-      const regularPrice = product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price)
-        ? `${Number(product.compareAtPrice).toFixed(2)} PLN`
-        : price;
-
-      let productType = '';
-      if (product.category) {
-        productType = product.category.name;
-      }
-
-      let brand = 'WBTrade';
-      if (product.tags && product.tags.length > 0) {
-        const brandTag = product.tags.find((tag: string) => tag.toLowerCase().startsWith('brand:'));
-        if (brandTag) {
-          brand = brandTag.replace('brand:', '').trim();
-        }
-      }
-
-      feedProducts.push({
-        id: product.sku,
-        title: truncate(product.name, 150),
-        description: truncate(stripHtml(product.description || product.name), 5000),
-        link: `${baseUrl}/product/${product.slug}`,
-        imageLink: primaryImage,
-        additionalImageLinks: additionalImages,
-        price: salePrice ? regularPrice : price,
-        salePrice: salePrice,
-        availability,
-        condition: 'new',
-        brand,
-        gtin: product.barcode || undefined,
-        mpn: product.sku,
-        productType,
-      });
+      chunks.push(buildProductXml(product, baseUrl));
     }
 
     skip += BATCH_SIZE;
-    
-    // Safety limit - max 50000 products
     if (skip >= 50000) {
       hasMore = false;
     }
   }
 
-  return buildXmlFeed(feedProducts, baseUrl);
-}
-
-/**
- * Builds the XML feed string
- */
-function buildXmlFeed(products: GoogleFeedProduct[], baseUrl: string): string {
-  const xmlHeader = `<?xml version="1.0" encoding="UTF-8"?>
-<rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">
-  <channel>
-    <title>WBTrade - Sklep internetowy</title>
-    <link>${escapeXml(baseUrl)}</link>
-    <description>Produkty ze sklepu WBTrade</description>`;
-
-  const xmlFooter = `
+  chunks.push(`
   </channel>
-</rss>`;
+</rss>`);
 
-  const xmlItems = products.map(product => {
-    let item = `
-    <item>
-      <g:id>${escapeXml(product.id)}</g:id>
-      <g:title>${escapeXml(product.title)}</g:title>
-      <g:description>${escapeXml(product.description)}</g:description>
-      <g:link>${escapeXml(product.link)}</g:link>
-      <g:image_link>${escapeXml(product.imageLink)}</g:image_link>`;
-
-    // Additional images (up to 10)
-    for (const imgUrl of product.additionalImageLinks) {
-      item += `
-      <g:additional_image_link>${escapeXml(imgUrl)}</g:additional_image_link>`;
-    }
-
-    item += `
-      <g:price>${escapeXml(product.price)}</g:price>`;
-
-    if (product.salePrice) {
-      item += `
-      <g:sale_price>${escapeXml(product.salePrice)}</g:sale_price>`;
-    }
-
-    item += `
-      <g:availability>${product.availability}</g:availability>
-      <g:condition>${product.condition}</g:condition>`;
-
-    if (product.brand) {
-      item += `
-      <g:brand>${escapeXml(product.brand)}</g:brand>`;
-    }
-
-    if (product.gtin) {
-      item += `
-      <g:gtin>${escapeXml(product.gtin)}</g:gtin>`;
-    }
-
-    if (product.mpn) {
-      item += `
-      <g:mpn>${escapeXml(product.mpn)}</g:mpn>`;
-    }
-
-    if (product.productType) {
-      item += `
-      <g:product_type>${escapeXml(product.productType)}</g:product_type>`;
-    }
-
-    item += `
-    </item>`;
-
-    return item;
-  }).join('');
-
-  return xmlHeader + xmlItems + xmlFooter;
+  return chunks.join('');
 }
 
 /**

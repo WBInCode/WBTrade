@@ -1,12 +1,12 @@
 import { Router, Request, Response } from 'express';
-import { generateGoogleMerchantFeed, getFeedStats } from '../services/google-feed.service';
+import { streamGoogleMerchantFeed, generateGoogleMerchantFeed, getFeedStats } from '../services/google-feed.service';
 import { authGuard, adminOnly } from '../middleware/auth.middleware';
 
 const router = Router();
 
 /**
  * GET /api/feed/google
- * Returns Google Merchant Center XML feed
+ * Returns Google Merchant Center XML feed (streaming)
  * Public endpoint - accessible by Google bots
  */
 router.get('/google', async (req: Request, res: Response) => {
@@ -15,21 +15,22 @@ router.get('/google', async (req: Request, res: Response) => {
     const baseUrl = process.env.FRONTEND_URL?.split(',')[0]?.trim() 
       || `${req.protocol}://${req.get('host')}`;
 
-    const xmlFeed = await generateGoogleMerchantFeed(baseUrl);
-
     res.set({
       'Content-Type': 'application/xml; charset=utf-8',
       'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
       'X-Robots-Tag': 'noindex', // Don't index the feed itself
+      'Transfer-Encoding': 'chunked',
     });
 
-    res.send(xmlFeed);
+    await streamGoogleMerchantFeed(baseUrl, res);
   } catch (error) {
     console.error('Error generating Google feed:', error);
-    res.status(500).json({ 
-      error: 'Failed to generate feed',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    });
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        error: 'Failed to generate feed',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
   }
 });
 
@@ -52,28 +53,29 @@ router.get('/google/stats', authGuard, adminOnly, async (req: Request, res: Resp
 
 /**
  * GET /api/feed/google.xml
- * Alternative URL with .xml extension
+ * Alternative URL with .xml extension (streaming)
  */
 router.get('/google.xml', async (req: Request, res: Response) => {
   try {
     const baseUrl = process.env.FRONTEND_URL?.split(',')[0]?.trim() 
       || `${req.protocol}://${req.get('host')}`;
 
-    const xmlFeed = await generateGoogleMerchantFeed(baseUrl);
-
     res.set({
       'Content-Type': 'application/xml; charset=utf-8',
       'Cache-Control': 'public, max-age=3600',
       'X-Robots-Tag': 'noindex',
+      'Transfer-Encoding': 'chunked',
     });
 
-    res.send(xmlFeed);
+    await streamGoogleMerchantFeed(baseUrl, res);
   } catch (error) {
     console.error('Error generating Google feed:', error);
-    res.status(500).json({ 
-      error: 'Failed to generate feed',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    });
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        error: 'Failed to generate feed',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
   }
 });
 
