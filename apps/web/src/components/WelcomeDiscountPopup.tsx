@@ -160,7 +160,7 @@ export function WelcomeDiscountPopup() {
       </div>
 
       {/* CSS Animations */}
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
@@ -181,7 +181,7 @@ export function WelcomeDiscountPopup() {
         .animate-slideUp {
           animation: slideUp 0.3s ease-out;
         }
-      `}</style>
+      `}} />
     </>
   );
 }
