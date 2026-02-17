@@ -52,6 +52,36 @@ export default function RootLayout({
             __html: `(function(){var t=localStorage.getItem('wb-trade-theme')||'system';var d=window.matchMedia('(prefers-color-scheme:dark)').matches;if(t==='dark'||(t==='system'&&d))document.documentElement.classList.add('dark')})()`,
           }}
         />
+        {/* Google Consent Mode v2 - default denied MUST be before GTM */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('consent', 'default', {
+                'ad_storage': 'denied',
+                'ad_user_data': 'denied',
+                'ad_personalization': 'denied',
+                'analytics_storage': 'denied',
+                'functionality_storage': 'granted',
+                'security_storage': 'granted',
+                'wait_for_update': 500
+              });
+              // Restore consent from localStorage if already accepted
+              try {
+                var c = JSON.parse(localStorage.getItem('wb_cookie_consent') || 'null');
+                if (c) {
+                  gtag('consent', 'update', {
+                    'ad_storage': c.marketing ? 'granted' : 'denied',
+                    'ad_user_data': c.marketing ? 'granted' : 'denied',
+                    'ad_personalization': c.marketing ? 'granted' : 'denied',
+                    'analytics_storage': c.analytics ? 'granted' : 'denied'
+                  });
+                }
+              } catch(e) {}
+            `,
+          }}
+        />
         <GoogleTagManager />
       </head>
       <body className="font-sans">
