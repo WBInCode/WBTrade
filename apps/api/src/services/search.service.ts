@@ -63,7 +63,7 @@ export class SearchService {
   /**
    * Search products using Meilisearch
    */
-  async search(query: string, minPrice?: number, maxPrice?: number, limit = 50) {
+  async search(query: string, minPrice?: number, maxPrice?: number, limit = 100) {
     try {
       const index = getProductsIndex();
 
