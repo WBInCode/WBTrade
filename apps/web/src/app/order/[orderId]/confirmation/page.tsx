@@ -373,7 +373,7 @@ function OrderConfirmationPageContent() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <Link href="/" className="inline-block">
             <Image 
-              src="/images/logo.png" 
+              src="/images/logo.webp" 
               alt="WB Trade" 
               width={120}
               height={40}
