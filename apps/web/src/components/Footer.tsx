@@ -89,7 +89,7 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
             <Link href="/" className="inline-block mb-4">
               {/* Light mode logo */}
               <Image 
-                src="/images/WB-TRADE-logo.png" 
+                src="/images/WB-TRADE-logo.webp" 
                 alt="WB Trade" 
                 width={300} 
                 height={180} 
@@ -97,7 +97,7 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
               />
               {/* Dark mode logo */}
               <Image 
-                src="/images/wb-trade-bez-tla.png" 
+                src="/images/wb-trade-bez-tla.webp" 
                 alt="WB Trade" 
                 width={300} 
                 height={180} 
