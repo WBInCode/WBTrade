@@ -34,7 +34,7 @@ export default function ProductGrid({
     <FlatList
       data={products}
       numColumns={2}
-      keyExtractor={(item) => item.id}
+      keyExtractor={(item, index) => `${item.id}-${index}`}
       renderItem={({ item }) => (
         <View style={{ marginBottom: CARD_GAP }}>
           <ProductCard product={item} />
