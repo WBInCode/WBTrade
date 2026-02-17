@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { dashboardApi } from '../lib/api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
@@ -330,12 +331,14 @@ export default function SearchBar() {
                     selectedIndex === index ? 'bg-gray-50 dark:bg-secondary-700' : ''
                   }`}
                 >
-                  <div className="w-12 h-12 bg-gray-100 dark:bg-secondary-700 rounded-lg overflow-hidden flex-shrink-0">
+                  <div className="w-12 h-12 bg-gray-100 dark:bg-secondary-700 rounded-lg overflow-hidden flex-shrink-0 relative">
                     {product.image ? (
-                      <img 
+                      <Image 
                         src={product.image} 
                         alt={product.name}
-                        className="w-full h-full object-cover"
+                        fill
+                        sizes="48px"
+                        className="object-cover"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-secondary-500">

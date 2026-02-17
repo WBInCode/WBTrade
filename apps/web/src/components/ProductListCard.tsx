@@ -2,6 +2,7 @@
 
 import { useState, memo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Product } from '../lib/api';
 import { useWishlist } from '../contexts/WishlistContext';
 import { useCart } from '../contexts/CartContext';
@@ -148,15 +149,23 @@ export default memo(function ProductListCard({ product, showWishlist = true, vie
                 </svg>
               </button>
             )}
-            <div className="w-full h-full rounded-xl overflow-hidden bg-gray-50 dark:bg-secondary-700">
-              <img
-                src={mainImage}
-                alt={product.name}
-                loading="lazy"
-                decoding="async"
-                onError={() => setImgError(true)}
-                className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-              />
+            <div className="w-full h-full rounded-xl overflow-hidden bg-gray-50 dark:bg-secondary-700 relative">
+              {mainImage === PLACEHOLDER_IMAGE ? (
+                <img
+                  src={PLACEHOLDER_IMAGE}
+                  alt={product.name}
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <Image
+                  src={mainImage}
+                  alt={product.name}
+                  fill
+                  sizes="140px"
+                  className="object-contain group-hover:scale-105 transition-transform duration-300"
+                  onError={() => setImgError(true)}
+                />
+              )}
             </div>
             {badge && (
               <span className={`absolute bottom-3 left-3 text-[10px] font-bold px-2 py-0.5 rounded-lg ${badgeStyles[badge]}`}>
@@ -294,14 +303,22 @@ export default memo(function ProductListCard({ product, showWishlist = true, vie
       <Link href={`/products/${product.id}`} className="flex flex-col h-full">
         {/* Image */}
         <div className="relative aspect-square m-2 sm:m-3 overflow-hidden rounded-lg sm:rounded-xl">
-          <img
-            src={mainImage}
-            alt={product.name}
-            loading="lazy"
-            decoding="async"
-            onError={() => setImgError(true)}
-            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-          />
+          {mainImage === PLACEHOLDER_IMAGE ? (
+            <img
+              src={PLACEHOLDER_IMAGE}
+              alt={product.name}
+              className="w-full h-full object-contain"
+            />
+          ) : (
+            <Image
+              src={mainImage}
+              alt={product.name}
+              fill
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              className="object-contain group-hover:scale-105 transition-transform duration-300"
+              onError={() => setImgError(true)}
+            />
+          )}
           {badge && (
             <span className={`absolute top-1 left-1 sm:top-2 sm:left-2 text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded ${badgeStyles[badge]}`}>
               {badge === 'super-price' ? 'Super Cena' : 

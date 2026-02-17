@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
@@ -456,11 +457,13 @@ export default function OrdersPage() {
                           <>
                             {visibleItems.map((item) => (
                               <div key={item.id} className="p-4 flex items-center gap-4">
-                                <div className="w-16 h-16 bg-gray-100 dark:bg-secondary-700 rounded-lg overflow-hidden shrink-0">
-                                  <img
+                                <div className="w-16 h-16 bg-gray-100 dark:bg-secondary-700 rounded-lg overflow-hidden shrink-0 relative">
+                                  <Image
                                     src={item.variant?.product?.images?.[0]?.url || '/placeholder.png'}
                                     alt={item.productName}
-                                    className="w-full h-full object-cover"
+                                    fill
+                                    sizes="64px"
+                                    className="object-cover"
                                   />
                                 </div>
                                 <div className="flex-1 min-w-0">

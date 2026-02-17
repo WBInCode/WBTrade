@@ -3,9 +3,8 @@ import { CartProvider } from '../contexts/CartContext';
 import { AuthProvider } from '../contexts/AuthContext';
 import { WishlistProvider } from '../contexts/WishlistContext';
 import { ThemeProvider } from '../contexts/ThemeContext';
-import { WelcomeDiscountPopup } from '../components/WelcomeDiscountPopup';
-import CookieConsent from '../components/CookieConsent';
 import { GoogleTagManager, GoogleTagManagerNoScript } from '../components/analytics/GoogleTagManager';
+import LazyOverlays from '../components/LazyOverlays';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -45,8 +44,7 @@ export default function RootLayout({
             <CartProvider>
               <WishlistProvider>
                 {children}
-                <WelcomeDiscountPopup />
-                <CookieConsent />
+                <LazyOverlays />
               </WishlistProvider>
             </CartProvider>
           </AuthProvider>
