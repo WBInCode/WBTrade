@@ -44,7 +44,7 @@ const searchQuerySchema = z.object({
   limit: z.string().optional().transform((val) => {
     if (!val) return undefined;
     const num = parseInt(val, 10);
-    return isNaN(num) || num < 1 ? 20 : Math.min(num, 100);
+    return isNaN(num) || num < 1 ? 20 : Math.min(num, 500);
   }),
 });
 
