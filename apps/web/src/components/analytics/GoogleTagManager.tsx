@@ -16,10 +16,10 @@ export function GoogleTagManager() {
 
   return (
     <>
-      {/* GTM Script - loads async after page is interactive */}
+      {/* GTM Script - loads after page is interactive (not lazyOnload, so consent mode works) */}
       <Script
         id="gtm-script"
-        strategy="lazyOnload"
+        strategy="afterInteractive"
         dangerouslySetInnerHTML={{
           __html: `
             (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
