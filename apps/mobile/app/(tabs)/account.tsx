@@ -1,255 +1,228 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-
 import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../../components/ui/Button';
 
 interface MenuItemProps {
-  icon: React.ComponentProps<typeof FontAwesome>['name'];
-  label: string;
+  icon: string;
+  title: string;
   onPress: () => void;
-  danger?: boolean;
 }
 
-function MenuItem({ icon, label, onPress, danger }: MenuItemProps) {
+function MenuItem({ icon, title, onPress }: MenuItemProps) {
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 14,
-        backgroundColor: Colors.white,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.secondary[100],
-        gap: 14,
-      }}
-    >
-      <View
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: 8,
-          backgroundColor: danger ? '#FEF2F2' : Colors.primary[50],
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
-        <FontAwesome
-          name={icon}
-          size={16}
-          color={danger ? Colors.destructive : Colors.primary[500]}
-        />
+    <TouchableOpacity style={styles.menuItem} onPress={onPress}>
+      <View style={styles.menuItemLeft}>
+        <FontAwesome name={icon as any} size={20} color={Colors.primary[600]} />
+        <Text style={styles.menuItemText}>{title}</Text>
       </View>
-      <Text
-        style={{
-          flex: 1,
-          fontSize: 15,
-          color: danger ? Colors.destructive : Colors.secondary[900],
-          fontWeight: '500',
-        }}
-      >
-        {label}
-      </Text>
-      <FontAwesome name="chevron-right" size={12} color={Colors.secondary[400]} />
+      <FontAwesome name="chevron-right" size={16} color={Colors.secondary[400]} />
     </TouchableOpacity>
   );
 }
 
 export default function AccountScreen() {
   const router = useRouter();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, logout } = useAuth();
 
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.background }} edges={['top']}>
-      {/* Header */}
-      <View
-        style={{
-          backgroundColor: Colors.white,
-          paddingHorizontal: 16,
-          paddingVertical: 14,
-          borderBottomWidth: 1,
-          borderBottomColor: Colors.border,
-        }}
-      >
-        <Text style={{ fontSize: 20, fontWeight: '700', color: Colors.secondary[900] }}>
-          Konto
-        </Text>
-      </View>
-
-      <ScrollView style={{ flex: 1 }}>
-        {isAuthenticated && user ? (
-          <>
-            {/* User info */}
-            <View
-              style={{
-                backgroundColor: Colors.white,
-                margin: 16,
-                borderRadius: 12,
-                padding: 16,
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 14,
-              }}
-            >
-              <View
-                style={{
-                  width: 50,
-                  height: 50,
-                  borderRadius: 25,
-                  backgroundColor: Colors.primary[100],
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={{ fontSize: 20, fontWeight: '700', color: Colors.primary[600] }}>
-                  {user.firstName.charAt(0)}{user.lastName.charAt(0)}
-                </Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: Colors.secondary[900] }}>
-                  {user.firstName} {user.lastName}
-                </Text>
-                <Text style={{ fontSize: 13, color: Colors.secondary[500], marginTop: 2 }}>
-                  {user.email}
-                </Text>
-              </View>
-            </View>
-
-            {/* Menu */}
-            <View style={{ marginBottom: 16 }}>
-              <Text
-                style={{
-                  fontSize: 12,
-                  fontWeight: '600',
-                  color: Colors.secondary[500],
-                  textTransform: 'uppercase',
-                  paddingHorizontal: 16,
-                  marginBottom: 6,
-                }}
-              >
-                Zamówienia
-              </Text>
-              <MenuItem
-                icon="list-alt"
-                label="Moje zamówienia"
-                onPress={() => router.push('/account/orders')}
-              />
-            </View>
-
-            <View style={{ marginBottom: 16 }}>
-              <Text
-                style={{
-                  fontSize: 12,
-                  fontWeight: '600',
-                  color: Colors.secondary[500],
-                  textTransform: 'uppercase',
-                  paddingHorizontal: 16,
-                  marginBottom: 6,
-                }}
-              >
-                Ustawienia
-              </Text>
-              <MenuItem
-                icon="user"
-                label="Dane osobowe"
-                onPress={() => router.push('/account/profile')}
-              />
-              <MenuItem
-                icon="lock"
-                label="Zmień hasło"
-                onPress={() => router.push('/account/change-password')}
-              />
-            </View>
-
-            <View style={{ marginBottom: 16 }}>
-              <Text
-                style={{
-                  fontSize: 12,
-                  fontWeight: '600',
-                  color: Colors.secondary[500],
-                  textTransform: 'uppercase',
-                  paddingHorizontal: 16,
-                  marginBottom: 6,
-                }}
-              >
-                Pomoc
-              </Text>
-              <MenuItem
-                icon="question-circle"
-                label="FAQ"
-                onPress={() => router.push('/faq')}
-              />
-              <MenuItem
-                icon="envelope"
-                label="Kontakt"
-                onPress={() => router.push('/contact')}
-              />
-            </View>
-
-            {/* Logout */}
-            <View style={{ paddingHorizontal: 16, marginTop: 8, marginBottom: 32 }}>
-              <Button
-                title="Wyloguj się"
-                variant="outline"
-                onPress={logout}
-                fullWidth
-                icon={<FontAwesome name="sign-out" size={16} color={Colors.primary[500]} />}
-              />
-            </View>
-          </>
-        ) : (
-          /* Guest view */
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40, marginTop: 60 }}>
-            <View
-              style={{
-                width: 80,
-                height: 80,
-                borderRadius: 40,
-                backgroundColor: Colors.secondary[100],
-                justifyContent: 'center',
-                alignItems: 'center',
-                marginBottom: 20,
-              }}
-            >
-              <FontAwesome name="user" size={36} color={Colors.secondary[400]} />
-            </View>
-            <Text style={{ fontSize: 18, fontWeight: '600', color: Colors.secondary[900], marginBottom: 8 }}>
-              Zaloguj się
-            </Text>
-            <Text
-              style={{
-                fontSize: 14,
-                color: Colors.secondary[500],
-                textAlign: 'center',
-                marginBottom: 24,
-                lineHeight: 20,
-              }}
-            >
-              Zaloguj się, aby śledzić zamówienia, zapisać ulubione i szybciej kupować
-            </Text>
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Konto</Text>
+        </View>
+        <View style={styles.guestContainer}>
+          <FontAwesome name="user-circle" size={80} color={Colors.secondary[400]} />
+          <Text style={styles.guestText}>Zaloguj się lub utwórz konto</Text>
+          <Text style={styles.guestHint}>
+            Uzyskaj dostęp do swoich zamówień, historii zakupów i wiele więcej
+          </Text>
+          <View style={styles.guestButtons}>
             <Button
               title="Zaloguj się"
               onPress={() => router.push('/(auth)/login')}
-              fullWidth
-              size="lg"
             />
-            <TouchableOpacity
+            <Button
+              title="Utwórz konto"
+              variant="outline"
               onPress={() => router.push('/(auth)/register')}
-              style={{ marginTop: 16 }}
-            >
-              <Text style={{ color: Colors.primary[500], fontSize: 14, fontWeight: '600' }}>
-                Utwórz konto
-              </Text>
-            </TouchableOpacity>
+            />
           </View>
-        )}
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Konto</Text>
+      </View>
+
+      <ScrollView style={styles.scrollView}>
+        {/* User Info */}
+        <View style={styles.userInfo}>
+          <View style={styles.userAvatar}>
+            <FontAwesome name="user" size={32} color={Colors.white} />
+          </View>
+          <View style={styles.userDetails}>
+            <Text style={styles.userName}>
+              {user.firstName} {user.lastName}
+            </Text>
+            <Text style={styles.userEmail}>{user.email}</Text>
+          </View>
+        </View>
+
+        {/* Menu */}
+        <View style={styles.menu}>
+          <MenuItem
+            icon="shopping-bag"
+            title="Moje zamówienia"
+            onPress={() => {
+              // TODO: Navigate to orders
+              alert('Historia zamówień będzie dostępna wkrótce');
+            }}
+          />
+          <MenuItem
+            icon="map-marker"
+            title="Moje adresy"
+            onPress={() => {
+              // TODO: Navigate to addresses
+              alert('Zarządzanie adresami będzie dostępne wkrótce');
+            }}
+          />
+          <MenuItem
+            icon="user"
+            title="Edytuj profil"
+            onPress={() => {
+              // TODO: Navigate to profile edit
+              alert('Edycja profilu będzie dostępna wkrótce');
+            }}
+          />
+          <MenuItem
+            icon="lock"
+            title="Zmień hasło"
+            onPress={() => {
+              // TODO: Navigate to password change
+              alert('Zmiana hasła będzie dostępna wkrótce');
+            }}
+          />
+        </View>
+
+        {/* Logout */}
+        <View style={styles.logoutContainer}>
+          <Button
+            title="Wyloguj się"
+            variant="outline"
+            onPress={async () => {
+              await logout();
+              router.replace('/(tabs)');
+            }}
+          />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.secondary[50],
+  },
+  header: {
+    backgroundColor: Colors.white,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.secondary[200],
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: Colors.secondary[900],
+  },
+  guestContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+  },
+  guestText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: Colors.secondary[900],
+    marginTop: 24,
+    marginBottom: 8,
+  },
+  guestHint: {
+    fontSize: 14,
+    color: Colors.secondary[600],
+    textAlign: 'center',
+    marginBottom: 32,
+  },
+  guestButtons: {
+    width: '100%',
+    gap: 12,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  userInfo: {
+    backgroundColor: Colors.white,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  userAvatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: Colors.primary[600],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  userDetails: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.secondary[900],
+    marginBottom: 4,
+  },
+  userEmail: {
+    fontSize: 14,
+    color: Colors.secondary[600],
+  },
+  menu: {
+    backgroundColor: Colors.white,
+    marginBottom: 16,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.secondary[100],
+  },
+  menuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  menuItemText: {
+    fontSize: 16,
+    color: Colors.secondary[900],
+    marginLeft: 16,
+  },
+  logoutContainer: {
+    padding: 16,
+  },
+});

@@ -39,7 +39,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "apiUrl": "https://api.wbtrade.pl/api",
+      "apiUrl": "https://wbtrade-iv71.onrender.com/api",
       "eas": {
         "projectId": ""
       }
