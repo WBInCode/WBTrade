@@ -7,7 +7,7 @@ import { Colors } from '../../constants/Colors';
 import type { Product } from '../../services/types';
 
 interface ProductCarouselProps {
-  title: string;
+  title?: string;
   products: Product[];
   loading?: boolean;
   onSeeAll?: () => void;
@@ -15,7 +15,7 @@ interface ProductCarouselProps {
 
 const CAROUSEL_CARD_WIDTH = 160;
 
-export default function ProductCarousel({
+function ProductCarousel({
   title,
   products,
   loading = false,
@@ -23,18 +23,20 @@ export default function ProductCarousel({
 }: ProductCarouselProps) {
   if (loading) {
     return (
-      <View style={{ marginBottom: 24 }}>
-        <Text
-          style={{
-            fontSize: 18,
-            fontWeight: '700',
-            color: Colors.secondary[900],
-            paddingHorizontal: 16,
-            marginBottom: 12,
-          }}
-        >
-          {title}
-        </Text>
+      <View style={{ marginBottom: 8 }}>
+        {title && (
+          <Text
+            style={{
+              fontSize: 18,
+              fontWeight: '700',
+              color: Colors.secondary[900],
+              paddingHorizontal: 16,
+              marginBottom: 12,
+            }}
+          >
+            {title}
+          </Text>
+        )}
         <View style={{ height: 220, justifyContent: 'center', alignItems: 'center' }}>
           <Spinner size="small" />
         </View>
@@ -45,34 +47,36 @@ export default function ProductCarousel({
   if (products.length === 0) return null;
 
   return (
-    <View style={{ marginBottom: 24 }}>
-      {/* Header */}
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          paddingHorizontal: 16,
-          marginBottom: 12,
-        }}
-      >
-        <Text
+    <View style={{ marginBottom: 4 }}>
+      {/* Header (only if title is provided - backward compatible) */}
+      {title && (
+        <View
           style={{
-            fontSize: 18,
-            fontWeight: '700',
-            color: Colors.secondary[900],
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingHorizontal: 16,
+            marginBottom: 12,
           }}
         >
-          {title}
-        </Text>
-        {onSeeAll && (
-          <TouchableOpacity onPress={onSeeAll}>
-            <Text style={{ color: Colors.primary[500], fontSize: 14, fontWeight: '500' }}>
-              Pokaż wszystkie
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
+          <Text
+            style={{
+              fontSize: 18,
+              fontWeight: '700',
+              color: Colors.secondary[900],
+            }}
+          >
+            {title}
+          </Text>
+          {onSeeAll && (
+            <TouchableOpacity onPress={onSeeAll}>
+              <Text style={{ color: Colors.primary[500], fontSize: 14, fontWeight: '500' }}>
+                Pokaż wszystkie
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
 
       {/* Horizontal list */}
       <FlatList
@@ -81,6 +85,9 @@ export default function ProductCarousel({
         showsHorizontalScrollIndicator={false}
         keyExtractor={(item, index) => `${item.id}-${index}`}
         contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}
+        initialNumToRender={3}
+        maxToRenderPerBatch={3}
+        windowSize={5}
         renderItem={({ item }) => (
           <ProductCard product={item} width={CAROUSEL_CARD_WIDTH} />
         )}
@@ -88,3 +95,5 @@ export default function ProductCarousel({
     </View>
   );
 }
+
+export default React.memo(ProductCarousel);

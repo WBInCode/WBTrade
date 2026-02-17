@@ -18,7 +18,7 @@ interface ProductCardProps {
   width?: number;
 }
 
-export default function ProductCard({ product, width }: ProductCardProps) {
+function ProductCard({ product, width }: ProductCardProps) {
   const router = useRouter();
   const { addToCart } = useCart();
   const [adding, setAdding] = useState(false);
@@ -56,6 +56,7 @@ export default function ProductCard({ product, width }: ProductCardProps) {
     <View style={[styles.card, { width: cardWidth }]}>
       {/* Clickable area */}
       <TouchableOpacity
+        style={styles.clickable}
         onPress={() => router.push(`/product/${product.id}`)}
         activeOpacity={0.7}
       >
@@ -170,6 +171,8 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  clickable: {
+  },
   imageContainer: {
     width: '100%',
     aspectRatio: 1,
@@ -212,6 +215,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.secondary[800],
     lineHeight: 18,
+    height: 36,
     marginBottom: 4,
     fontWeight: '500',
   },
@@ -261,3 +265,5 @@ const styles = StyleSheet.create({
 });
 
 export { CARD_WIDTH, CARD_GAP, CARD_PADDING };
+
+export default React.memo(ProductCard);
