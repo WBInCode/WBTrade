@@ -331,8 +331,15 @@ export default function ProductDetailScreen() {
 
     setAddingToCart(true);
     try {
-      await addToCart(variantId, 1);
-      Alert.alert('Dodano do koszyka', `${product.name} został dodany do koszyka.`);
+      const price = Number(selectedVariant?.price || product.price) || 0;
+      await addToCart(variantId, 1, {
+        productId: product.id,
+        name: product.name,
+        imageUrl: product.images?.[0]?.url,
+        price,
+        quantity: 1,
+        warehouse: product.wholesaler || undefined,
+      });
     } catch (err: any) {
       Alert.alert('Błąd', err.message || 'Nie udało się dodać do koszyka');
     } finally {
