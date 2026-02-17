@@ -12,8 +12,9 @@ const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
 const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce|produkty?\s*w\s*paczce/i;
 // Tags that hide products completely
 const HIDDEN_TAGS = ['błąd zdjęcia', 'błąd zdjęcia '];
-// Image domains that block hotlinking - products with these images are hidden
-const BLOCKED_IMAGE_DOMAINS = ['b2b.leker.pl'];
+// Domeny zdjęć które blokują hotlinking - produkty z takimi zdjęciami nie będą wyświetlane
+// b2b.leker.pl usunięte - produkty Leker ponownie widoczne, tag "błąd zdjęcia" filtruje wadliwe
+const BLOCKED_IMAGE_DOMAINS: string[] = [];
 
 /**
  * Check if product should be visible based on delivery tags, error tags, and image URL

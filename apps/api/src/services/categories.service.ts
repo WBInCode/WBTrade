@@ -26,9 +26,9 @@ const PACKAGE_TAGS = [
   'produkt w paczce: 5',
 ];
 
-// UKRYWANIE PRODUKTÓW LEKER:
-// Domeny obrazków które blokują hotlinking - produkty z tymi obrazkami są ukryte
-const BLOCKED_IMAGE_DOMAINS = ['b2b.leker.pl'];
+// Domeny zdjęć które blokują hotlinking - produkty z takimi zdjęciami nie będą wyświetlane
+// b2b.leker.pl usunięte - produkty Leker ponownie widoczne, tag "błąd zdjęcia" filtruje wadliwe
+const BLOCKED_IMAGE_DOMAINS: string[] = [];
 // Tagi które ukrywają produkty całkowicie
 const HIDDEN_TAGS = ['błąd zdjęcia', 'błąd zdjęcia '];
 
@@ -159,49 +159,50 @@ export class CategoriesService {
       }
     }
 
-    // Krok 2: Odejmij produkty z zablokowanymi domenami obrazków (Leker)
-    // Tylko pobieramy ID produktów z zablokowanymi obrazkami — znacznie mniej danych
-    const blockedProducts = await prisma.product.findMany({
-      where: {
-        categoryId: { in: filteredCategoryIds },
-        price: { gt: 0 },
-        variants: {
-          some: {
-            inventory: {
-              some: {
-                quantity: { gt: 0 }
+    // Krok 2: Odejmij produkty z zablokowanymi domenami obrazków
+    // Pomijamy jeśli lista domen jest pusta
+    if (BLOCKED_IMAGE_DOMAINS.length > 0) {
+      const blockedProducts = await prisma.product.findMany({
+        where: {
+          categoryId: { in: filteredCategoryIds },
+          price: { gt: 0 },
+          variants: {
+            some: {
+              inventory: {
+                some: {
+                  quantity: { gt: 0 }
+                }
               }
             }
-          }
+          },
+          tags: { hasSome: DELIVERY_TAGS },
+          NOT: {
+            tags: { hasSome: HIDDEN_TAGS }
+          },
+          OR: [
+            { NOT: { tags: { hasSome: PACZKOMAT_TAGS } } },
+            { tags: { hasSome: PACKAGE_TAGS } },
+          ],
+          images: {
+            some: {
+              OR: BLOCKED_IMAGE_DOMAINS.map(domain => ({
+                url: { contains: domain }
+              }))
+            }
+          },
         },
-        tags: { hasSome: DELIVERY_TAGS },
-        NOT: {
-          tags: { hasSome: HIDDEN_TAGS }
+        select: {
+          categoryId: true,
         },
-        OR: [
-          { NOT: { tags: { hasSome: PACZKOMAT_TAGS } } },
-          { tags: { hasSome: PACKAGE_TAGS } },
-        ],
-        images: {
-          some: {
-            OR: BLOCKED_IMAGE_DOMAINS.map(domain => ({
-              url: { contains: domain }
-            }))
-          }
-        },
-      },
-      select: {
-        categoryId: true,
-      },
-    });
+      });
 
-    // Odejmij zablokowane produkty od count per kategoria
-    for (const product of blockedProducts) {
-      if (product.categoryId && counts.has(product.categoryId)) {
-        counts.set(product.categoryId, counts.get(product.categoryId)! - 1);
+      for (const product of blockedProducts) {
+        if (product.categoryId && counts.has(product.categoryId)) {
+          counts.set(product.categoryId, counts.get(product.categoryId)! - 1);
+        }
       }
     }
-    
+
     return counts;
   }
 

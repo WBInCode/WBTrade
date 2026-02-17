@@ -227,10 +227,11 @@ app.listen(PORT, async () => {
     console.log('✅ Reservation cleanup scheduled (every 5 minutes)');
     
     // 2. Baselinker order status sync - every 15 minutes
+    //    Stock sync - every hour
     const { createBaselinkerSyncWorker, scheduleBaselinkerSync } = await import('./workers/baselinker-sync.worker');
     createBaselinkerSyncWorker();
     await scheduleBaselinkerSync();
-    console.log('✅ Baselinker order status sync scheduled (every 15 minutes)');
+    console.log('✅ Baselinker sync scheduled (orders: 15min, stock: daily 00:00)');
     
     // 3. Payment reminder - daily at 10:00 AM
     const { createPaymentReminderWorker, schedulePaymentReminders } = await import('./workers/payment-reminder.worker');

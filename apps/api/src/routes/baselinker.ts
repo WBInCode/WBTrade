@@ -10,8 +10,10 @@ import { baselinkerController } from '../controllers/baselinker.controller';
 import { authGuard, adminOnly } from '../middleware/auth.middleware';
 import { orderStatusSyncService } from '../services/order-status-sync.service';
 import { paymentReminderService } from '../services/payment-reminder.service';
+import { PrismaClient } from '@prisma/client';
 
 const router = Router();
+const prisma = new PrismaClient();
 
 // Apply auth middleware to all routes
 router.use(authGuard);
@@ -68,6 +70,108 @@ router.post('/sync-all-stock', baselinkerController.syncAllStock);
 
 // Inventories list
 router.get('/inventories', baselinkerController.getInventories);
+
+// ========================================
+// Stock Sync Logs Endpoints
+// ========================================
+
+/**
+ * GET /api/admin/baselinker/stock-sync-logs
+ * Get stock synchronization logs with pagination
+ */
+router.get('/stock-sync-logs', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const skip = (page - 1) * limit;
+
+    const [logs, total] = await Promise.all([
+      prisma.baselinkerSyncLog.findMany({
+        where: { type: 'STOCK' },
+        orderBy: { startedAt: 'desc' },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          type: true,
+          status: true,
+          itemsProcessed: true,
+          itemsChanged: true,
+          errors: true,
+          startedAt: true,
+          completedAt: true,
+        },
+      }),
+      prisma.baselinkerSyncLog.count({ where: { type: 'STOCK' } }),
+    ]);
+
+    res.json({
+      success: true,
+      logs,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ success: false, error: msg });
+  }
+});
+
+/**
+ * GET /api/admin/baselinker/stock-sync-logs/:id
+ * Get single stock sync log with changed SKUs
+ */
+router.get('/stock-sync-logs/:id', async (req, res) => {
+  try {
+    const log = await prisma.baselinkerSyncLog.findUnique({
+      where: { id: req.params.id },
+    });
+
+    if (!log) {
+      return res.status(404).json({ success: false, error: 'Log not found' });
+    }
+
+    res.json({ success: true, log });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ success: false, error: msg });
+  }
+});
+
+/**
+ * GET /api/admin/baselinker/stock-sync-logs/:id/export
+ * Export changed SKUs as CSV (Excel-compatible)
+ */
+router.get('/stock-sync-logs/:id/export', async (req, res) => {
+  try {
+    const log = await prisma.baselinkerSyncLog.findUnique({
+      where: { id: req.params.id },
+    });
+
+    if (!log) {
+      return res.status(404).json({ success: false, error: 'Log not found' });
+    }
+
+    const changedSkus = (log.changedSkus as any[]) || [];
+
+    // BOM for Excel UTF-8 recognition
+    const BOM = '\uFEFF';
+    const header = 'SKU;Stary stan;Nowy stan;Magazyn';
+    const rows = changedSkus.map(
+      (s: any) => `${s.sku};${s.oldQty};${s.newQty};${s.inventory}`
+    );
+    const csv = BOM + [header, ...rows].join('\n');
+
+    const date = log.startedAt.toISOString().slice(0, 10);
+    const filename = `stock-sync-${date}-${log.id.slice(0, 8)}.csv`;
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csv);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ success: false, error: msg });
+  }
+});
 
 // ========================================
 // Payment Reminder Admin Endpoints
