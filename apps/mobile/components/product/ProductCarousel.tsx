@@ -79,7 +79,7 @@ export default function ProductCarousel({
         data={products}
         horizontal
         showsHorizontalScrollIndicator={false}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}
         renderItem={({ item }) => (
           <ProductCard product={item} width={CAROUSEL_CARD_WIDTH} />
