@@ -358,6 +358,8 @@ export class BaselinkerService {
    */
   private async runSync(syncLogId: string, type: string, mode?: string): Promise<void> {
     let itemsProcessed = 0;
+    let itemsChanged = 0;
+    let allChangedSkus: { sku: string; oldQty: number; newQty: number; inventory: string }[] = [];
     const errors: string[] = [];
 
     try {
@@ -380,6 +382,8 @@ export class BaselinkerService {
 
         const stockResult = await this.syncStock(provider, stored.inventoryId);
         itemsProcessed += stockResult.processed;
+        itemsChanged += stockResult.changed;
+        allChangedSkus.push(...stockResult.changedSkus);
         errors.push(...stockResult.errors);
 
         // Reindex Meilisearch
@@ -397,12 +401,16 @@ export class BaselinkerService {
         console.log('[BaselinkerSync] Syncing stock after products sync...');
         const stockResult = await this.syncStock(provider, stored.inventoryId);
         itemsProcessed += stockResult.processed;
+        itemsChanged += stockResult.changed;
+        allChangedSkus.push(...stockResult.changedSkus);
         errors.push(...stockResult.errors);
         
         await this.reindexMeilisearch();
       } else if (type === 'stock') {
         const result = await this.syncStock(provider, stored.inventoryId);
         itemsProcessed = result.processed;
+        itemsChanged = result.changed;
+        allChangedSkus = result.changedSkus;
         errors.push(...result.errors);
       } else if (type === 'images') {
         const result = await this.syncImages(provider, stored.inventoryId);
@@ -416,6 +424,8 @@ export class BaselinkerService {
         data: {
           status: errors.length > 0 ? BaselinkerSyncStatus.FAILED : BaselinkerSyncStatus.SUCCESS,
           itemsProcessed,
+          itemsChanged,
+          changedSkus: allChangedSkus.length > 0 ? allChangedSkus : undefined,
           errors: errors.length > 0 ? errors : undefined,
           completedAt: new Date(),
         },
@@ -434,10 +444,89 @@ export class BaselinkerService {
         data: {
           status: BaselinkerSyncStatus.FAILED,
           itemsProcessed,
+          itemsChanged,
+          changedSkus: allChangedSkus.length > 0 ? allChangedSkus : undefined,
           errors: [error instanceof Error ? error.message : 'Unknown error', ...errors],
           completedAt: new Date(),
         },
       });
+    }
+  }
+
+  /**
+   * Run stock sync directly (awaited) — for use by BullMQ worker
+   * Creates sync log, runs sync, updates log with results
+   */
+  async runStockSyncDirect(): Promise<{ syncLogId: string; success: boolean; itemsProcessed: number; itemsChanged: number }> {
+    // Clean up stuck syncs
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+    await prisma.baselinkerSyncLog.updateMany({
+      where: {
+        status: BaselinkerSyncStatus.RUNNING,
+        startedAt: { lt: thirtyMinutesAgo },
+      },
+      data: {
+        status: BaselinkerSyncStatus.FAILED,
+        errors: ['Sync timed out - marked as failed'],
+        completedAt: new Date(),
+      },
+    });
+
+    const syncLog = await prisma.baselinkerSyncLog.create({
+      data: {
+        type: BaselinkerSyncType.STOCK,
+        status: BaselinkerSyncStatus.RUNNING,
+      },
+    });
+
+    console.log(`[BaselinkerSync] Starting direct stock sync (logId: ${syncLog.id})`);
+
+    try {
+      const stored = await this.getDecryptedToken();
+      if (!stored) throw new Error('No Baselinker configuration found');
+
+      const provider = await this.createProvider();
+      const result = await this.syncStock(provider, stored.inventoryId);
+
+      const status = result.errors.length > 0 ? BaselinkerSyncStatus.FAILED : BaselinkerSyncStatus.SUCCESS;
+
+      await prisma.baselinkerSyncLog.update({
+        where: { id: syncLog.id },
+        data: {
+          status,
+          itemsProcessed: result.processed,
+          itemsChanged: result.changed,
+          changedSkus: result.changedSkus.length > 0 ? result.changedSkus : undefined,
+          errors: result.errors.length > 0 ? result.errors : undefined,
+          completedAt: new Date(),
+        },
+      });
+
+      await prisma.baselinkerConfig.updateMany({
+        data: { lastSyncAt: new Date() },
+      });
+
+      console.log(`[BaselinkerSync] Direct stock sync complete: ${result.processed} processed, ${result.changed} changed`);
+
+      return {
+        syncLogId: syncLog.id,
+        success: result.errors.length === 0,
+        itemsProcessed: result.processed,
+        itemsChanged: result.changed,
+      };
+    } catch (error) {
+      console.error('[BaselinkerSync] Direct stock sync error:', error);
+
+      await prisma.baselinkerSyncLog.update({
+        where: { id: syncLog.id },
+        data: {
+          status: BaselinkerSyncStatus.FAILED,
+          errors: [error instanceof Error ? error.message : 'Unknown error'],
+          completedAt: new Date(),
+        },
+      });
+
+      return { syncLogId: syncLog.id, success: false, itemsProcessed: 0, itemsChanged: 0 };
     }
   }
 
@@ -1329,17 +1418,22 @@ export class BaselinkerService {
 
   /**
    * Sync stock levels from Baselinker
+   * Iterates over ALL inventories to match products with prefixed baselinkerProductId
    */
   async syncStock(
     provider: BaselinkerProvider,
     inventoryId: string
-  ): Promise<{ processed: number; errors: string[] }> {
+  ): Promise<{ processed: number; errors: string[]; changed: number; changedSkus: { sku: string; oldQty: number; newQty: number; inventory: string }[] }> {
     const errors: string[] = [];
     let processed = 0;
+    let changed = 0;
+    const changedSkus: { sku: string; oldQty: number; newQty: number; inventory: string }[] = [];
+
+    // Śledzimy najlepsze dane per wariant przez WSZYSTKIE inwentarze
+    // Zapobiega nadpisywaniu stock=5 (Leker) przez stock=0 (Główny) dla tego samego wariantu
+    const bestStockPerVariant = new Map<string, { quantity: number; reserved: number; inventoryName: string }>();
 
     try {
-      const stockEntries = await provider.getInventoryProductsStock(inventoryId);
-
       // Get default location
       let defaultLocation = await prisma.location.findFirst({
         where: { type: 'WAREHOUSE', isActive: true },
@@ -1356,58 +1450,124 @@ export class BaselinkerService {
         });
       }
 
-      for (const entry of stockEntries) {
+      // Fetch all inventories to sync stock from each one
+      const inventories = await provider.getInventories();
+      
+      // Map inventory name to prefix used in baselinkerProductId
+      const inventoryPrefixMap: Record<string, string> = {
+        'HP': 'hp-',
+        'BTP': 'btp-',
+        'Leker': 'leker-',
+        'ikonka': '', // ikonka products have no prefix
+        'Główny': '', // Main inventory - no prefix
+      };
+
+      for (const inv of inventories) {
+        // Skip non-product inventories (empik, zwroty)
+        if (inv.name.includes('empik') || inv.name.includes('zwrot')) {
+          continue;
+        }
+
+        const prefix = inventoryPrefixMap[inv.name] ?? '';
+        console.log(`[BaselinkerSync] Syncing stock from inventory: ${inv.name} (${inv.inventory_id}), prefix: "${prefix}"`);
+
         try {
-          const baselinkerProductId = entry.product_id.toString();
+          const stockEntries = await provider.getInventoryProductsStock(inv.inventory_id.toString());
+          console.log(`[BaselinkerSync] Fetched ${stockEntries.length} stock entries from ${inv.name}`);
 
-          // Find product variant
-          const variant = await prisma.productVariant.findFirst({
-            where: {
-              OR: [
-                { baselinkerVariantId: `default-${baselinkerProductId}` },
-                { product: { baselinkerProductId } },
-              ],
-            },
-          });
+          for (const entry of stockEntries) {
+            try {
+              const numericId = entry.product_id.toString();
+              const prefixedId = prefix ? `${prefix}${numericId}` : numericId;
 
-          if (!variant) {
-            continue;
+              // Find product variant - try both prefixed and non-prefixed IDs
+              const variant = await prisma.productVariant.findFirst({
+                where: {
+                  OR: [
+                    { baselinkerVariantId: `default-${numericId}` },
+                    { baselinkerVariantId: numericId },
+                    { baselinkerVariantId: prefixedId },
+                    { product: { baselinkerProductId: numericId } },
+                    { product: { baselinkerProductId: prefixedId } },
+                  ],
+                },
+              });
+
+              if (!variant) {
+                continue;
+              }
+
+              // Calculate total stock from all warehouses
+              const totalStock = Object.values(entry.stock as Record<string, number>).reduce((sum: number, qty: number) => sum + qty, 0);
+              const totalReserved = Object.values(entry.reservations as Record<string, number>).reduce((sum: number, qty: number) => sum + qty, 0);
+
+              // Sprawdź czy już mamy lepsze dane dla tego wariantu z poprzedniego inwentarza.
+              // Zapobiega nadpisaniu stock=5 (Leker) przez stock=0 (Główny) dla tego samego wariantu,
+              // gdy ten sam produkt pojawia się w wielu inwentarzach BaseLinker.
+              const previousBest = bestStockPerVariant.get(variant.id);
+              if (previousBest && totalStock <= previousBest.quantity) {
+                continue; // Poprzedni inwentarz miał równy lub wyższy stan — pomijamy
+              }
+              bestStockPerVariant.set(variant.id, { quantity: totalStock, reserved: totalReserved, inventoryName: inv.name });
+
+              // Check current stock to detect changes
+              const existingInventory = await prisma.inventory.findUnique({
+                where: {
+                  variantId_locationId: {
+                    variantId: variant.id,
+                    locationId: defaultLocation.id,
+                  },
+                },
+              });
+
+              const oldQty = existingInventory?.quantity ?? 0;
+
+              // Upsert inventory
+              await prisma.inventory.upsert({
+                where: {
+                  variantId_locationId: {
+                    variantId: variant.id,
+                    locationId: defaultLocation.id,
+                  },
+                },
+                update: {
+                  quantity: totalStock,
+                  reserved: totalReserved,
+                },
+                create: {
+                  variantId: variant.id,
+                  locationId: defaultLocation.id,
+                  quantity: totalStock,
+                  reserved: totalReserved,
+                },
+              });
+
+              // Track changes
+              if (oldQty !== totalStock) {
+                changed++;
+                changedSkus.push({
+                  sku: variant.sku || prefixedId,
+                  oldQty,
+                  newQty: totalStock,
+                  inventory: inv.name,
+                });
+              }
+
+              processed++;
+            } catch (error) {
+              errors.push(`Stock ${entry.product_id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            }
           }
-
-          // Calculate total stock from all warehouses
-          const totalStock = Object.values(entry.stock as Record<string, number>).reduce((sum: number, qty: number) => sum + qty, 0);
-          const totalReserved = Object.values(entry.reservations as Record<string, number>).reduce((sum: number, qty: number) => sum + qty, 0);
-
-          // Upsert inventory
-          await prisma.inventory.upsert({
-            where: {
-              variantId_locationId: {
-                variantId: variant.id,
-                locationId: defaultLocation.id,
-              },
-            },
-            update: {
-              quantity: totalStock,
-              reserved: totalReserved,
-            },
-            create: {
-              variantId: variant.id,
-              locationId: defaultLocation.id,
-              quantity: totalStock,
-              reserved: totalReserved,
-            },
-          });
-
-          processed++;
         } catch (error) {
-          errors.push(`Stock ${entry.product_id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          errors.push(`Failed to fetch stock from ${inv.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       }
     } catch (error) {
-      errors.push(`Failed to fetch stock: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      errors.push(`Failed to fetch inventories: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
-    return { processed, errors };
+    console.log(`[BaselinkerSync] Stock sync complete: ${processed} processed, ${changed} changed, ${errors.length} errors`);
+    return { processed, errors, changed, changedSkus };
   }
 
   /**
