@@ -162,8 +162,8 @@ export async function generateGoogleMerchantFeed(baseUrl: string): Promise<strin
 
     skip += BATCH_SIZE;
     
-    // Safety limit - max 10000 products
-    if (skip >= 10000) {
+    // Safety limit - max 50000 products
+    if (skip >= 50000) {
       hasMore = false;
     }
   }
