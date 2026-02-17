@@ -98,6 +98,26 @@ module.exports = {
                     },
                 ],
             },
+            {
+                // Cache Next.js static assets (JS, CSS bundles)
+                source: '/_next/static/:path*',
+                headers: [
+                    {
+                        key: 'Cache-Control',
+                        value: 'public, max-age=31536000, immutable',
+                    },
+                ],
+            },
+            {
+                // Cache SVG and other static files
+                source: '/:path*.svg',
+                headers: [
+                    {
+                        key: 'Cache-Control',
+                        value: 'public, max-age=31536000, immutable',
+                    },
+                ],
+            },
         ];
     },
     

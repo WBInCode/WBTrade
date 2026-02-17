@@ -42,6 +42,11 @@ export default function RootLayout({
   return (
     <html lang="pl" className={inter.variable} suppressHydrationWarning>
       <head>
+        {/* Preconnect to critical origins for faster resource fetching */}
+        <link rel="preconnect" href="https://images.unsplash.com" />
+        <link rel="dns-prefetch" href="https://images.unsplash.com" />
+        <link rel="preconnect" href={process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'} />
+        <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'} />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){var t=localStorage.getItem('wb-trade-theme')||'system';var d=window.matchMedia('(prefers-color-scheme:dark)').matches;if(t==='dark'||(t==='system'&&d))document.documentElement.classList.add('dark')})()`,
