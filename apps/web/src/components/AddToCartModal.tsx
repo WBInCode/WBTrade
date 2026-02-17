@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { Product, productsApi } from '../lib/api';
 
@@ -159,10 +160,12 @@ export default function AddToCartModal({ isOpen, product, onClose, onAddToCart }
           {/* Product info */}
           <div className="flex items-center gap-3 sm:gap-4 bg-gray-50 dark:bg-secondary-700 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
             <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 bg-white dark:bg-secondary-600 rounded-lg overflow-hidden">
-              <img
+              <Image
                 src={product.image}
                 alt={product.name}
-                className="w-full h-full object-contain"
+                fill
+                sizes="80px"
+                className="object-contain"
               />
             </div>
             <div className="flex-1 min-w-0">
@@ -223,11 +226,13 @@ export default function AddToCartModal({ isOpen, product, onClose, onAddToCart }
                       className="bg-gray-50 dark:bg-secondary-700 hover:bg-gray-100 dark:hover:bg-secondary-600 rounded-lg p-2 sm:p-3 transition-colors group"
                     >
                       <Link href={`/products/${p.id}`} onClick={onClose}>
-                        <div className="aspect-square bg-white dark:bg-secondary-600 rounded-lg overflow-hidden mb-1.5 sm:mb-2">
-                          <img
+                        <div className="aspect-square bg-white dark:bg-secondary-600 rounded-lg overflow-hidden mb-1.5 sm:mb-2 relative">
+                          <Image
                             src={p.image || '/placeholder.png'}
                             alt={p.name}
-                            className="w-full h-full object-contain group-hover:scale-105 transition-transform"
+                            fill
+                            sizes="(max-width: 640px) 40vw, 200px"
+                            className="object-contain group-hover:scale-105 transition-transform"
                           />
                         </div>
                         <p className="text-[10px] sm:text-xs font-medium text-gray-900 dark:text-white line-clamp-2 mb-1 min-h-[1.75rem] sm:min-h-[2rem]">

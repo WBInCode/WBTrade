@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import Image from 'next/image';
 import { CartItem } from '@/lib/api';
 import { roundMoney } from '@/lib/currency';
 
@@ -125,10 +126,12 @@ export default function CheckoutPackagesList({
               <div key={item.id} className="flex gap-2 group relative">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 dark:bg-secondary-700 rounded-lg flex-shrink-0 relative overflow-hidden">
                   {item.variant?.product?.images?.[0] && (
-                    <img
+                    <Image
                       src={item.variant.product.images[0].url}
                       alt={item.variant.product.name}
-                      className="w-full h-full object-cover"
+                      fill
+                      sizes="48px"
+                      className="object-cover"
                     />
                   )}
                 </div>

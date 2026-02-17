@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, useParams } from 'next/navigation';
 import Header from '../../../../components/Header';
 import Footer from '../../../../components/Footer';
@@ -676,11 +677,13 @@ export default function OrderDetailsPage() {
                   <div key={item.id} className="p-4 sm:p-5">
                     <div className="flex gap-3 sm:gap-4">
                       {/* Image */}
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 dark:bg-secondary-700 rounded-lg overflow-hidden shrink-0">
-                        <img
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 dark:bg-secondary-700 rounded-lg overflow-hidden shrink-0 relative">
+                        <Image
                           src={item.variant?.product?.images?.[0]?.url || '/placeholder.png'}
                           alt={item.productName}
-                          className="w-full h-full object-cover"
+                          fill
+                          sizes="80px"
+                          className="object-cover"
                         />
                       </div>
                       
@@ -888,11 +891,13 @@ export default function OrderDetailsPage() {
                                   <>
                                     {visibleItems.map((item, itemIndex) => (
                                       <div key={item.variantId || itemIndex} className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-gray-100 dark:bg-secondary-700 rounded overflow-hidden shrink-0">
-                                          <img
+                                        <div className="w-10 h-10 bg-gray-100 dark:bg-secondary-700 rounded overflow-hidden shrink-0 relative">
+                                          <Image
                                             src={item.image || '/placeholder.png'}
                                             alt={item.productName}
-                                            className="w-full h-full object-cover"
+                                            fill
+                                            sizes="40px"
+                                            className="object-cover"
                                           />
                                         </div>
                                         <div className="flex-1 min-w-0">

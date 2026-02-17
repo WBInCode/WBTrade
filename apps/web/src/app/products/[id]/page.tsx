@@ -3,6 +3,7 @@
 import { notFound, useRouter } from 'next/navigation';
 import { useState, use, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import Breadcrumb from '../../../components/Breadcrumb';
@@ -562,11 +563,14 @@ export default function ProductPage({ params }: ProductPageProps) {
               )}
               
               {/* Main Image */}
-              <div className="aspect-square overflow-hidden rounded-lg mb-3 sm:mb-4 max-w-full">
-                <img
+              <div className="aspect-square overflow-hidden rounded-lg mb-3 sm:mb-4 max-w-full relative">
+                <Image
                   src={mainImage}
                   alt={product.name}
-                  className="w-full h-full object-contain max-w-full"
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 66vw"
+                  className="object-contain max-w-full"
+                  priority
                 />
               </div>
 
@@ -576,14 +580,16 @@ export default function ProductPage({ params }: ProductPageProps) {
                   <button
                     key={image.id}
                     onClick={() => setSelectedImage(index)}
-                    className={`shrink-0 w-14 h-14 sm:w-20 sm:h-20 rounded-md sm:rounded-lg overflow-hidden border-2 transition-colors ${
+                    className={`shrink-0 w-14 h-14 sm:w-20 sm:h-20 rounded-md sm:rounded-lg overflow-hidden border-2 transition-colors relative ${
                       selectedImage === index ? 'border-orange-500' : 'border-gray-200 dark:border-secondary-700 hover:border-gray-300 dark:hover:border-secondary-600'
                     }`}
                   >
-                    <img
+                    <Image
                       src={image.url}
                       alt={image.alt || `Product image ${index + 1}`}
-                      className="w-full h-full object-cover"
+                      fill
+                      sizes="80px"
+                      className="object-cover"
                     />
                   </button>
                 ))}
@@ -1213,12 +1219,15 @@ export default function ProductPage({ params }: ProductPageProps) {
                             {review.images && review.images.length > 0 && (
                               <div className="flex gap-2 mb-4">
                                 {review.images.map((img) => (
-                                  <img
-                                    key={img.id}
-                                    src={img.imageUrl}
-                                    alt={img.altText || 'Review image'}
-                                    className="w-20 h-20 object-cover rounded-lg"
-                                  />
+                                  <div key={img.id} className="relative w-20 h-20">
+                                    <Image
+                                      src={img.imageUrl}
+                                      alt={img.altText || 'Review image'}
+                                      fill
+                                      sizes="80px"
+                                      className="object-cover rounded-lg"
+                                    />
+                                  </div>
                                 ))}
                               </div>
                             )}
