@@ -9,6 +9,7 @@ import 'react-native-reanimated';
 import '../global.css';
 
 import { useColorScheme } from '@/components/useColorScheme';
+import { Colors } from '../constants/Colors';
 import { AuthProvider } from '../contexts/AuthContext';
 import { CartProvider } from '../contexts/CartContext';
 import { useAuthRedirect } from '../hooks/useProtectedRoute';
@@ -74,6 +75,24 @@ function RootLayoutNav() {
             <Stack>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="product/[id]"
+                options={{
+                  headerShown: true,
+                  title: 'Produkt',
+                  headerBackTitle: 'Wróć',
+                  headerTintColor: Colors.primary[500],
+                }}
+              />
+              <Stack.Screen
+                name="category/[slug]"
+                options={{
+                  headerShown: true,
+                  title: 'Kategoria',
+                  headerBackTitle: 'Wróć',
+                  headerTintColor: Colors.primary[500],
+                }}
+              />
             </Stack>
           </ThemeProvider>
         </CartProvider>
