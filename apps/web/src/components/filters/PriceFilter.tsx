@@ -114,7 +114,7 @@ function PriceFilterContent({ priceRange }: PriceFilterProps) {
       
       {priceRange && priceRange.min > 0 && priceRange.max > 0 && (
         <p className="text-xs text-gray-400 dark:text-secondary-500 mt-2">
-          Zakres: {priceRange.min.toLocaleString()} - {priceRange.max.toLocaleString()} zł
+          Zakres: {priceRange.min.toFixed(2).replace('.', ',')} - {priceRange.max.toFixed(2).replace('.', ',')} zł
         </p>
       )}
     </div>
