@@ -137,7 +137,7 @@ function ProductsContent() {
         // Tabs only change the sort order or add filters
         
         if (activeTab === 'bestsellers') {
-          // Bestsellers: products from current category sorted by popularity_score (salesCount*3 + viewCount*0.1)
+          // Bestsellers: products from current category sorted by sales_count (actual sold units)
           const response = await productsApi.getAll({
             page: currentPage,
             limit: ITEMS_PER_PAGE,
@@ -145,7 +145,7 @@ function ProductsContent() {
             minPrice: minPrice ? parseFloat(minPrice) : undefined,
             maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
             search: searchQuery || undefined,
-            sort: 'popularity',
+            sort: 'bestsellers',
             brand: brand || undefined,
             warehouse: warehouse || undefined,
           });
