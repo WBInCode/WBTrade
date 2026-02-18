@@ -57,6 +57,7 @@ const suggestionsQuerySchema = z.object({
     .min(1, 'Query parameter is required')
     .max(100, 'Zapytanie jest za dlugie')
     .transform(sanitizeSearchQuery),
+  category: z.string().max(200).optional(),
 });
 
 /**
@@ -99,7 +100,7 @@ export async function getSuggestions(req: Request, res: Response): Promise<void>
   }
 
   try {
-    const suggestions = await searchService.suggest(validation.data.query);
+    const suggestions = await searchService.suggest(validation.data.query, validation.data.category);
     res.status(200).json(suggestions);
   } catch (error) {
     console.error('Suggestion error:', error);
