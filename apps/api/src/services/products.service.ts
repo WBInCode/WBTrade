@@ -555,12 +555,15 @@ export class ProductsService {
     // Sort out-of-stock products to the end (preserves original order within each group)
     transformedProducts = sortOutOfStockToEnd(transformedProducts);
 
+    // For random sort we only fetched up to fetchLimit products, so cap total to avoid phantom pages
+    const effectiveTotal = useRandomSort ? Math.min(totalCount, fetchLimit) : totalCount;
+
     return {
       products: transformedProducts,
-      total: hideOldZeroStock ? transformedProducts.length : totalCount,
+      total: effectiveTotal,
       page,
       limit,
-      totalPages: Math.ceil((hideOldZeroStock ? transformedProducts.length : totalCount) / limit),
+      totalPages: Math.ceil(effectiveTotal / limit),
     };
   }
 
