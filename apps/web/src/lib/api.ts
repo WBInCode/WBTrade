@@ -352,6 +352,7 @@ export interface ProductFilters {
   brand?: string;
   warehouse?: string; // Filtr magazynu: leker, hp, btp (może być wiele oddzielone przecinkiem)
   sessionSeed?: number; // Seed for consistent random sorting within a session
+  discounted?: boolean; // Filtr tylko przecenionych produktów (compareAtPrice > price)
   [key: string]: string | number | boolean | undefined; // Allow dynamic specification filters
 }
 

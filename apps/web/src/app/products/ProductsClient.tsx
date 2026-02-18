@@ -133,56 +133,63 @@ function ProductsContent() {
         setLoading(true);
       }
       try {
-        // For bestsellers tab, use dedicated bestsellers endpoint (same as carousel on homepage)
-        // Always show global bestsellers, ignore category filter
+        // All tabs use the same getAll endpoint with category context
+        // Tabs only change the sort order or add filters
+        
         if (activeTab === 'bestsellers') {
-          const response = await productsApi.getBestsellers({
-            limit: 20,
-            days: 90,
-          });
-          
-          setProducts(response.products);
-          setTotalProducts(response.products.length);
-          setTotalPages(1); // Bestsellers is a fixed list of 20 products
-        }
-        // For new products tab, use dedicated new-arrivals endpoint (same as carousel on homepage)
-        // Shows products from last 14 days only
-        else if (activeTab === 'new') {
-          const response = await productsApi.getNewProducts({
-            limit: 20,
-            days: 14,
-          });
-          
-          setProducts(response.products);
-          setTotalProducts(response.products.length);
-          setTotalPages(1); // New products is a fixed list
-        }
-        // For discounted tab, we need to fetch more and filter client-side
-        else if (activeTab === 'discounted') {
+          // Bestsellers: products from current category sorted by sales_count (actual sold units)
           const response = await productsApi.getAll({
-            page: 1,
-            limit: 100,
+            page: currentPage,
+            limit: ITEMS_PER_PAGE,
             category: currentCategorySlug || undefined,
             minPrice: minPrice ? parseFloat(minPrice) : undefined,
             maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
             search: searchQuery || undefined,
-            sort: sort as 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'newest',
+            sort: 'bestsellers',
             brand: brand || undefined,
             warehouse: warehouse || undefined,
           });
           
-          // Filter only discounted products
-          const discountedProducts = response.products.filter(
-            (p) => p.compareAtPrice && Number(p.compareAtPrice) > Number(p.price)
-          );
+          setProducts(response.products);
+          setTotalProducts(response.total);
+          setTotalPages(response.totalPages);
+        }
+        else if (activeTab === 'new') {
+          // Nowości: products from current category sorted by newest first
+          const response = await productsApi.getAll({
+            page: currentPage,
+            limit: ITEMS_PER_PAGE,
+            category: currentCategorySlug || undefined,
+            minPrice: minPrice ? parseFloat(minPrice) : undefined,
+            maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+            search: searchQuery || undefined,
+            sort: 'newest',
+            brand: brand || undefined,
+            warehouse: warehouse || undefined,
+          });
           
-          // Apply pagination client-side
-          const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-          const paginatedProducts = discountedProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+          setProducts(response.products);
+          setTotalProducts(response.total);
+          setTotalPages(response.totalPages);
+        }
+        else if (activeTab === 'discounted') {
+          // Przecenione: only discounted products from current category (server-side filter)
+          const response = await productsApi.getAll({
+            page: currentPage,
+            limit: ITEMS_PER_PAGE,
+            category: currentCategorySlug || undefined,
+            minPrice: minPrice ? parseFloat(minPrice) : undefined,
+            maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+            search: searchQuery || undefined,
+            sort: sort as 'price_asc' | 'price_desc' | 'price-asc' | 'price-desc' | 'name_asc' | 'name_desc' | 'newest',
+            brand: brand || undefined,
+            warehouse: warehouse || undefined,
+            discounted: true,
+          });
           
-          setProducts(paginatedProducts);
-          setTotalProducts(discountedProducts.length);
-          setTotalPages(Math.ceil(discountedProducts.length / ITEMS_PER_PAGE));
+          setProducts(response.products);
+          setTotalProducts(response.total);
+          setTotalPages(response.totalPages);
         } else {
           // "All" tab - show all products with filters
           // Use popularity sort by default for better discovery
