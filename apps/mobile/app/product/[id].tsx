@@ -448,12 +448,12 @@ export default function ProductDetailScreen() {
                   hasDiscount && { color: Colors.destructive },
                 ]}
               >
-                {Number(price).toFixed(2)} zł
+                {Number(price).toFixed(2).replace('.', ',')} zł
               </Text>
               {hasDiscount && (
                 <>
                   <Text style={styles.comparePrice}>
-                    {Number(comparePrice).toFixed(2)} zł
+                    {Number(comparePrice).toFixed(2).replace('.', ',')} zł
                   </Text>
                   <View style={styles.discountBadge}>
                     <Text style={styles.discountBadgeText}>
@@ -467,7 +467,7 @@ export default function ProductDetailScreen() {
             {/* OMNIBUS - Lowest price 30 days */}
             {lowestPrice30 && (
               <Text style={styles.omnibusText}>
-                Najniższa cena z 30 dni: {Number(lowestPrice30).toFixed(2)} zł
+                Najniższa cena z 30 dni: {Number(lowestPrice30).toFixed(2).replace('.', ',')} zł
               </Text>
             )}
           </View>

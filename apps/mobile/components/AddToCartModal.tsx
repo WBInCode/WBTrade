@@ -141,7 +141,7 @@ export default function AddToCartModal({
                   {product.name}
                 </Text>
                 <Text style={styles.productQty}>Ilość: {product.quantity}</Text>
-                <Text style={styles.productPrice}>{product.price.toFixed(2)} zł</Text>
+                <Text style={styles.productPrice}>{product.price.toFixed(2).replace('.', ',')} zł</Text>
               </View>
             </View>
 
@@ -203,7 +203,7 @@ export default function AddToCartModal({
                             {p.name}
                           </Text>
                           <Text style={styles.crossSellPrice}>
-                            {price.toFixed(2)} zł
+                            {price.toFixed(2).replace('.', ',')} zł
                           </Text>
                           {isAdded ? (
                             <View style={[styles.addButton, styles.addedButton]}>

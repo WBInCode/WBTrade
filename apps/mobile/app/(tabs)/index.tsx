@@ -68,6 +68,7 @@ interface HomeData {
   featured: Product[];
   newArrivals: Product[];
   categories: Category[];
+  mostWishlisted: Product | null;
 }
 
 // Section item types for FlatList virtualization
@@ -80,7 +81,7 @@ type SectionItem =
   | { type: 'top3'; products: Product[] }
   | { type: 'trust' }
   | { type: 'discover-header' }
-  | { type: 'discover-grid'; products: Product[] }
+  | { type: 'discover-row'; products: Product[] }
   | { type: 'load-more' };
 
 // ═══════════════════════════════════════════════════════
@@ -222,7 +223,7 @@ const HeroSection = React.memo(function HeroSection({ product }: { product: Prod
         <View style={styles.heroInfo}>
           <Text style={styles.heroName} numberOfLines={2}>{product.name}</Text>
           <View style={styles.heroPriceRow}>
-            <Text style={styles.heroPrice}>{Number(product.price).toFixed(2)} zł</Text>
+            <Text style={styles.heroPrice}>{Number(product.price).toFixed(2).replace('.', ',')} zł</Text>
             {product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price) && (
               <View style={styles.heroDiscountBadge}>
                 <Text style={styles.heroDiscountText}>
@@ -232,7 +233,7 @@ const HeroSection = React.memo(function HeroSection({ product }: { product: Prod
             )}
           </View>
           {product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price) && (
-            <Text style={styles.heroOldPrice}>{Number(product.compareAtPrice).toFixed(2)} zł</Text>
+            <Text style={styles.heroOldPrice}>{Number(product.compareAtPrice).toFixed(2).replace('.', ',')} zł</Text>
           )}
           <View style={styles.heroCtaBtn}>
             <Text style={styles.heroCtaText}>Zobacz produkt</Text>
@@ -267,7 +268,7 @@ const Top3Section = React.memo(function Top3Section({ products }: { products: Pr
               <Image source={{ uri: product.images[0].url }} style={styles.topProductImage} contentFit="contain" />
             )}
             <Text style={styles.topProductName} numberOfLines={2}>{product.name}</Text>
-            <Text style={styles.topProductPrice}>{Number(product.price).toFixed(2)} zł</Text>
+            <Text style={styles.topProductPrice}>{Number(product.price).toFixed(2).replace('.', ',')} zł</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -307,11 +308,11 @@ const DiscoverHeader = React.memo(function DiscoverHeader() {
   );
 });
 
-const DiscoverGrid = React.memo(function DiscoverGrid({ products }: { products: Product[] }) {
+const DiscoverRow = React.memo(function DiscoverRow({ products }: { products: Product[] }) {
   return (
     <View style={styles.discoverGrid}>
-      {products.map((product, index) => (
-        <ProductCard key={`${product.id}-${index}`} product={product} />
+      {products.map((product) => (
+        <ProductCard key={product.id} product={product} />
       ))}
     </View>
   );
@@ -338,11 +339,12 @@ export default function HomeScreen() {
   const loadData = useCallback(async () => {
     try {
       setError(null);
-      const [bestRes, featRes, catRes, newRes] = await Promise.allSettled([
+      const [bestRes, featRes, catRes, newRes, heroRes] = await Promise.allSettled([
         api.get<{ products: Product[] }>('/products/bestsellers', { limit: 6 }),
         api.get<{ products: Product[] }>('/products/featured', { limit: 6 }),
         api.get<{ categories: Category[] }>('/categories/main'),
         api.get<{ products: Product[] }>('/products/new-arrivals', { limit: 6 }),
+        api.get<{ product: Product | null }>('/products/most-wishlisted'),
       ]);
 
       const results: HomeData = {
@@ -350,6 +352,7 @@ export default function HomeScreen() {
         featured: featRes.status === 'fulfilled' ? featRes.value.products || [] : [],
         categories: catRes.status === 'fulfilled' ? catRes.value.categories || [] : [],
         newArrivals: newRes.status === 'fulfilled' ? newRes.value.products || [] : [],
+        mostWishlisted: heroRes.status === 'fulfilled' ? heroRes.value.product || null : null,
       };
 
       if (!results.bestsellers.length && !results.featured.length) {
@@ -426,7 +429,7 @@ export default function HomeScreen() {
     if (data.featured.length > 0) {
       items.push({ type: 'carousel', title: 'Polecane', products: data.featured, key: 'feat' });
     }
-    const heroProduct = data.featured[0] || data.bestsellers[0];
+    const heroProduct = data.mostWishlisted || data.featured[0] || data.bestsellers[0];
     if (heroProduct) {
       items.push({ type: 'hero', product: heroProduct });
     }
@@ -442,7 +445,10 @@ export default function HomeScreen() {
     items.push({ type: 'trust' });
     if (discoverProducts.length > 0) {
       items.push({ type: 'discover-header' });
-      items.push({ type: 'discover-grid', products: discoverProducts });
+      // Split discover products into rows of 2 for virtualization
+      for (let i = 0; i < discoverProducts.length; i += 2) {
+        items.push({ type: 'discover-row', products: discoverProducts.slice(i, i + 2) });
+      }
     }
     if (hasMoreDiscover) {
       items.push({ type: 'load-more' });
@@ -468,8 +474,8 @@ export default function HomeScreen() {
         return <TrustSection />;
       case 'discover-header':
         return <DiscoverHeader />;
-      case 'discover-grid':
-        return <DiscoverGrid products={item.products} />;
+      case 'discover-row':
+        return <DiscoverRow products={item.products} />;
       case 'load-more':
         return (
           <View style={styles.loadMoreWrap}>
@@ -478,13 +484,15 @@ export default function HomeScreen() {
                 <ActivityIndicator size="small" color={Colors.primary[500]} />
                 <Text style={styles.loadMoreText}>Ładuję produkty...</Text>
               </View>
-            ) : (
+            ) : discoverProducts.length === 0 ? (
               <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMoreDiscover} activeOpacity={0.7}>
                 <FontAwesome name="plus-circle" size={18} color={Colors.white} />
-                <Text style={styles.loadMoreBtnText}>
-                  {discoverProducts.length === 0 ? 'Odkryj więcej produktów' : 'Załaduj więcej'}
-                </Text>
+                <Text style={styles.loadMoreBtnText}>Odkryj więcej produktów</Text>
               </TouchableOpacity>
+            ) : (
+              <View style={styles.loadMoreInner}>
+                <Text style={styles.loadMoreText}>Przewiń w dół, aby załadować więcej</Text>
+              </View>
             )}
           </View>
         );
@@ -536,9 +544,11 @@ export default function HomeScreen() {
             colors={[Colors.primary[500]]}
           />
         }
+        onEndReached={loadMoreDiscover}
+        onEndReachedThreshold={0.5}
         initialNumToRender={4}
-        maxToRenderPerBatch={2}
-        windowSize={5}
+        maxToRenderPerBatch={3}
+        windowSize={7}
         removeClippedSubviews={true}
         showsVerticalScrollIndicator={false}
       />

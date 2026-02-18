@@ -161,7 +161,7 @@ export default function OrderSummary({
                   </View>
                 </View>
                 <Text style={styles.pkgPrice}>
-                  {pkg.price === 0 ? 'Gratis' : `${pkg.price.toFixed(2)} zł`}
+                  {pkg.price === 0 ? 'Gratis' : `${pkg.price.toFixed(2).replace('.', ',')} zł`}
                 </Text>
               </View>
             );
@@ -170,7 +170,7 @@ export default function OrderSummary({
           <View>
             <Text style={styles.summaryText}>{shipping.methodName || shipping.method}</Text>
             <Text style={styles.shippingPrice}>
-              {shippingCost === 0 ? 'Gratis' : `${shippingCost.toFixed(2)} zł`}
+              {shippingCost === 0 ? 'Gratis' : `${shippingCost.toFixed(2).replace('.', ',')} zł`}
             </Text>
           </View>
         )}
@@ -220,10 +220,10 @@ export default function OrderSummary({
                   <Text style={styles.productVariant}>{item.variant.name}</Text>
                 )}
                 <Text style={styles.productQty}>
-                  {item.quantity} × {price.toFixed(2)} zł
+                  {item.quantity} × {price.toFixed(2).replace('.', ',')} zł
                 </Text>
               </View>
-              <Text style={styles.productTotal}>{lineTotal.toFixed(2)} zł</Text>
+              <Text style={styles.productTotal}>{lineTotal.toFixed(2).replace('.', ',')} zł</Text>
             </View>
           );
         })}
@@ -233,25 +233,25 @@ export default function OrderSummary({
       <View style={styles.priceSection}>
         <View style={styles.priceRow}>
           <Text style={styles.priceLabel}>Produkty:</Text>
-          <Text style={styles.priceValue}>{subtotal.toFixed(2)} zł</Text>
+          <Text style={styles.priceValue}>{subtotal.toFixed(2).replace('.', ',')} zł</Text>
         </View>
         {discount > 0 && (
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>Rabat:</Text>
             <Text style={[styles.priceValue, { color: '#16A34A' }]}>
-              -{discount.toFixed(2)} zł
+              -{discount.toFixed(2).replace('.', ',')} zł
             </Text>
           </View>
         )}
         <View style={styles.priceRow}>
           <Text style={styles.priceLabel}>Dostawa:</Text>
           <Text style={styles.priceValue}>
-            {shippingCost === 0 ? 'Gratis' : `${shippingCost.toFixed(2)} zł`}
+            {shippingCost === 0 ? 'Gratis' : `${shippingCost.toFixed(2).replace('.', ',')} zł`}
           </Text>
         </View>
         <View style={[styles.priceRow, styles.totalRow]}>
           <Text style={styles.totalLabel}>Do zapłaty:</Text>
-          <Text style={styles.totalValue}>{total.toFixed(2)} zł</Text>
+          <Text style={styles.totalValue}>{total.toFixed(2).replace('.', ',')} zł</Text>
         </View>
       </View>
 
@@ -285,7 +285,7 @@ export default function OrderSummary({
       {/* Submit */}
       <View style={styles.submitSection}>
         <Button
-          title={`🛒 Zamawiam i płacę – ${total.toFixed(2)} zł`}
+          title={`🛒 Zamawiam i płacę – ${total.toFixed(2).replace('.', ',')} zł`}
           onPress={onSubmit}
           disabled={!acceptTerms}
           loading={loading}

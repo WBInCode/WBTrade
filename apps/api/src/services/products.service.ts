@@ -1975,6 +1975,40 @@ export class ProductsService {
   }
 
   /**
+   * Get the most wishlisted product (Product of the Day)
+   * Returns the product that has been added to wishlists the most
+   */
+  async getMostWishlisted(): Promise<any | null> {
+    // Count wishlist additions per product, get the top one
+    const topWishlisted = await prisma.wishlistItem.groupBy({
+      by: ['productId'],
+      _count: { productId: true },
+      orderBy: { _count: { productId: 'desc' } },
+      take: 1,
+    });
+
+    if (topWishlisted.length === 0) return null;
+
+    const product = await prisma.product.findUnique({
+      where: { id: topWishlisted[0].productId, status: 'ACTIVE' },
+      include: {
+        images: { orderBy: { order: 'asc' } },
+        category: true,
+        variants: {
+          include: { inventory: true },
+        },
+      },
+    });
+
+    if (!product) return null;
+
+    return {
+      ...transformProduct(product),
+      wishlistCount: topWishlisted[0]._count.productId,
+    };
+  }
+
+  /**
    * Get products from the same warehouse/wholesaler as the given product
    * Used for "Zamów w jednej przesyłce" recommendations
    */

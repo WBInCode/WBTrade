@@ -410,6 +410,19 @@ export async function getSeasonal(req: Request, res: Response): Promise<void> {
 }
 
 /**
+ * Get the most wishlisted product (Product of the Day)
+ */
+export async function getMostWishlisted(req: Request, res: Response): Promise<void> {
+  try {
+    const product = await productsService.getMostWishlisted();
+    res.status(200).json({ product });
+  } catch (error) {
+    console.error('Error fetching most wishlisted product:', error);
+    res.status(500).json({ message: 'Error retrieving most wishlisted product' });
+  }
+}
+
+/**
  * Get new products (added in the last 14 days, admin-curated or automatic)
  */
 export async function getNewProducts(req: Request, res: Response): Promise<void> {

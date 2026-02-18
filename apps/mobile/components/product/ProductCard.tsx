@@ -105,11 +105,11 @@ function ProductCard({ product, width }: ProductCardProps) {
                 hasDiscount && { color: Colors.destructive },
               ]}
             >
-              {price.toFixed(2)} zł
+              {price.toFixed(2).replace('.', ',')} zł
             </Text>
             {hasDiscount && (
               <Text style={styles.oldPrice}>
-                {compareAt.toFixed(2)} zł
+                {compareAt.toFixed(2).replace('.', ',')} zł
               </Text>
             )}
           </View>

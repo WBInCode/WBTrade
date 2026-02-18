@@ -748,7 +748,8 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       // Create payment session with PayU
       // Get first URL from FRONTEND_URL (may be comma-separated)
       const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').split(',')[0].trim();
-      
+      const isMobile = req.headers['x-platform'] === 'mobile';
+
       // Map frontend payment method to API payment method type
       const mappedPaymentMethod = mapPaymentMethod(paymentMethod);
       console.log(`💳 Payment method mapping: ${paymentMethod} → ${mappedPaymentMethod}`);
@@ -783,8 +784,12 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
           lastName: customerLastName,
         },
         description: `Zamówienie ${order.orderNumber}`,
-        returnUrl: `${frontendUrl}/order/${order.id}/confirmation`,
-        cancelUrl: `${frontendUrl}/checkout?orderId=${order.id}&cancelled=true`,
+        returnUrl: isMobile
+          ? `wbtrade://order/${order.id}/confirmation`
+          : `${frontendUrl}/order/${order.id}/confirmation`,
+        cancelUrl: isMobile
+          ? `wbtrade://order/${order.id}/payment?cancelled=true`
+          : `${frontendUrl}/checkout?orderId=${order.id}&cancelled=true`,
         notifyUrl: `${process.env.APP_URL || 'http://localhost:5000'}/api/webhooks/payu`,
         metadata: {
           customerIp: req.ip || req.socket.remoteAddress || '127.0.0.1',
@@ -955,7 +960,8 @@ export async function retryPayment(req: Request, res: Response): Promise<void> {
 
     // Create new payment session with PayU
     const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').split(',')[0].trim();
-    
+    const isMobile = req.headers['x-platform'] === 'mobile';
+
     // Get customer email from order
     const customerEmail = order.guestEmail || userEmail || (req as any).user?.email || '';
     
@@ -971,8 +977,12 @@ export async function retryPayment(req: Request, res: Response): Promise<void> {
         lastName: order.guestLastName || '',
       },
       description: `Zamówienie ${order.orderNumber}`,
-      returnUrl: `${frontendUrl}/order/${order.id}/confirmation`,
-      cancelUrl: `${frontendUrl}/order/${order.id}/payment?retry=true`,
+      returnUrl: isMobile
+        ? `wbtrade://order/${order.id}/confirmation`
+        : `${frontendUrl}/order/${order.id}/confirmation`,
+      cancelUrl: isMobile
+        ? `wbtrade://order/${order.id}/payment?retry=true`
+        : `${frontendUrl}/order/${order.id}/payment?retry=true`,
       notifyUrl: `${process.env.APP_URL || 'http://localhost:5000'}/api/webhooks/payu`,
       metadata: {
         customerIp: req.ip || req.socket.remoteAddress || '127.0.0.1',

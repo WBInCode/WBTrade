@@ -507,7 +507,7 @@ export default function SearchScreen() {
               )}
               <View style={styles.suggestionContent}>
                 <Text style={styles.suggestionName} numberOfLines={2}>{product.name}</Text>
-                <Text style={styles.suggestionPrice}>{Number(product.price).toFixed(2)} zł</Text>
+                <Text style={styles.suggestionPrice}>{Number(product.price).toFixed(2).replace('.', ',')} zł</Text>
                 {product.categoryName && (
                   <Text style={styles.suggestionMeta}>{product.categoryName}</Text>
                 )}

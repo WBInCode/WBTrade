@@ -103,9 +103,9 @@ export default function CartItem({ item, onUpdateQuantity, onRemove }: CartItemP
             </View>
           )}
           <View style={styles.priceRow}>
-            <Text style={styles.price}>{price.toFixed(2)} zł</Text>
+            <Text style={styles.price}>{price.toFixed(2).replace('.', ',')} zł</Text>
             {compareAtPrice && compareAtPrice > price && (
-              <Text style={styles.comparePrice}>{compareAtPrice.toFixed(2)} zł</Text>
+              <Text style={styles.comparePrice}>{compareAtPrice.toFixed(2).replace('.', ',')} zł</Text>
             )}
           </View>
         </View>
@@ -127,7 +127,7 @@ export default function CartItem({ item, onUpdateQuantity, onRemove }: CartItemP
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.lineTotal}>{lineTotal.toFixed(2)} zł</Text>
+        <Text style={styles.lineTotal}>{lineTotal.toFixed(2).replace('.', ',')} zł</Text>
 
         <TouchableOpacity onPress={handleRemove} style={styles.removeButton}>
           <Text style={styles.removeText}>✕</Text>
