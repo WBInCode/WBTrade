@@ -16,8 +16,11 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { useCart } from '../../contexts/CartContext';
+import { useWishlist } from '../../contexts/WishlistContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../services/api';
 import ProductCarousel from '../../components/product/ProductCarousel';
+import AddToListModal from '../../components/AddToListModal';
 import type { Product, ProductVariant } from '../../services/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -56,6 +59,34 @@ interface Review {
   helpfulCount?: number;
   createdAt: string;
   user?: { firstName: string; lastName: string };
+}
+
+// --- Wishlist Button ---
+function WishlistButton({ productId }: { productId: string }) {
+  const { isInWishlist, toggle } = useWishlist();
+  const { user } = useAuth();
+  const router = useRouter();
+  const isFav = isInWishlist(productId);
+
+  return (
+    <TouchableOpacity
+      style={[styles.wishlistBtn, isFav && styles.wishlistBtnActive]}
+      onPress={() => {
+        if (!user) {
+          router.push('/(auth)/login');
+          return;
+        }
+        toggle(productId);
+      }}
+      activeOpacity={0.7}
+    >
+      <FontAwesome
+        name={isFav ? 'heart' : 'heart-o'}
+        size={20}
+        color={isFav ? Colors.destructive : Colors.secondary[500]}
+      />
+    </TouchableOpacity>
+  );
 }
 
 // --- Image Gallery ---
@@ -170,6 +201,7 @@ export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { addToCart } = useCart();
+  const { user } = useAuth();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -178,6 +210,7 @@ export default function ProductDetailScreen() {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
   const [addingToCart, setAddingToCart] = useState(false);
+  const [showListModal, setShowListModal] = useState(false);
 
   const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -516,26 +549,45 @@ export default function ProductDetailScreen() {
             </Text>
           </View>
 
-          {/* Add to Cart */}
+          {/* Add to Cart + Wishlist */}
+          <View style={styles.cartRow}>
+            <TouchableOpacity
+              style={[
+                styles.addToCartButton,
+                stockInfo.status === 'out' && styles.addToCartDisabled,
+              ]}
+              onPress={handleAddToCart}
+              disabled={addingToCart || stockInfo.status === 'out'}
+              activeOpacity={0.8}
+            >
+              {addingToCart ? (
+                <ActivityIndicator color={Colors.white} size="small" />
+              ) : (
+                <>
+                  <FontAwesome name="shopping-cart" size={18} color={Colors.white} />
+                  <Text style={styles.addToCartText}>
+                    {stockInfo.status === 'out' ? 'Niedostępny' : 'Dodaj do koszyka'}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+            <WishlistButton productId={product.id} />
+          </View>
+
+          {/* Add to Shopping List */}
           <TouchableOpacity
-            style={[
-              styles.addToCartButton,
-              stockInfo.status === 'out' && styles.addToCartDisabled,
-            ]}
-            onPress={handleAddToCart}
-            disabled={addingToCart || stockInfo.status === 'out'}
-            activeOpacity={0.8}
+            style={styles.addToListBtn}
+            onPress={() => {
+              if (!user) {
+                router.push('/(auth)/login');
+                return;
+              }
+              setShowListModal(true);
+            }}
+            activeOpacity={0.7}
           >
-            {addingToCart ? (
-              <ActivityIndicator color={Colors.white} size="small" />
-            ) : (
-              <>
-                <FontAwesome name="shopping-cart" size={18} color={Colors.white} />
-                <Text style={styles.addToCartText}>
-                  {stockInfo.status === 'out' ? 'Niedostępny' : 'Dodaj do koszyka'}
-                </Text>
-              </>
-            )}
+            <FontAwesome name="list-ul" size={16} color={Colors.primary[500]} />
+            <Text style={styles.addToListText}>Dodaj do listy zakupowej</Text>
           </TouchableOpacity>
 
           {/* Store/Warehouse info */}
@@ -672,6 +724,16 @@ export default function ProductDetailScreen() {
           <View style={{ height: 40 }} />
         </View>
       </ScrollView>
+
+      {/* Add to Shopping List Modal */}
+      {product && (
+        <AddToListModal
+          visible={showListModal}
+          onClose={() => setShowListModal(false)}
+          productId={product.id}
+          productName={product.name}
+        />
+      )}
     </>
   );
 }
@@ -893,7 +955,14 @@ const styles = StyleSheet.create({
   },
 
   // Add to cart
+  cartRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 16,
+  },
   addToCartButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -901,7 +970,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     gap: 10,
-    marginBottom: 16,
   },
   addToCartDisabled: {
     backgroundColor: Colors.secondary[300],
@@ -910,6 +978,37 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: 16,
     fontWeight: '700',
+  },
+  wishlistBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.secondary[200],
+    backgroundColor: Colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  wishlistBtnActive: {
+    borderColor: Colors.destructive,
+    backgroundColor: '#fef2f2',
+  },
+  addToListBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: Colors.primary[200],
+    borderRadius: 10,
+    backgroundColor: Colors.primary[50],
+  },
+  addToListText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.primary[600],
   },
 
   // Store

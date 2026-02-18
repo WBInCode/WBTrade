@@ -153,6 +153,42 @@ export interface Cart {
   total: number;
 }
 
+// --- Addresses ---
+
+export interface Address {
+  id: string;
+  userId: string | null;
+  label: string | null;
+  type: 'SHIPPING' | 'BILLING';
+  firstName: string;
+  lastName: string;
+  companyName: string | null;
+  nip: string | null;
+  street: string;
+  city: string;
+  postalCode: string;
+  country: string;
+  phone: string | null;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AddressFormData {
+  label?: string;
+  type?: 'SHIPPING' | 'BILLING';
+  firstName: string;
+  lastName: string;
+  companyName?: string;
+  nip?: string;
+  street: string;
+  city: string;
+  postalCode: string;
+  country?: string;
+  phone?: string;
+  isDefault?: boolean;
+}
+
 // --- Orders ---
 
 export interface OrderAddress {
@@ -210,6 +246,74 @@ export interface Order {
   wantInvoice?: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+// --- Wishlist ---
+
+export interface WishlistItem {
+  id: string;
+  productId: string;
+  variantId: string | null;
+  createdAt: string;
+  product: {
+    id: string;
+    name: string;
+    slug: string;
+    price: number | string;
+    compareAtPrice: number | string | null;
+    images: { url: string; alt: string | null }[];
+    status?: string;
+    variants?: {
+      id: string;
+      stock: number;
+    }[];
+    badge?: string;
+  };
+}
+
+export interface WishlistResponse {
+  items: WishlistItem[];
+  count: number;
+}
+
+// --- Shopping Lists ---
+
+export interface ShoppingListItem {
+  id: string;
+  productId: string;
+  variantId: string | null;
+  quantity: number;
+  note: string | null;
+  createdAt: string;
+  product: {
+    id: string;
+    name: string;
+    slug: string;
+    price: number | string;
+    compareAtPrice: number | string | null;
+    images: { url: string; alt: string | null }[];
+    status?: string;
+  };
+  variant?: {
+    id: string;
+    name: string;
+    price: number;
+    compareAtPrice: number | null;
+  } | null;
+}
+
+export interface ShoppingList {
+  id: string;
+  name: string;
+  description: string | null;
+  itemCount: number;
+  createdAt: string;
+  updatedAt: string;
+  items: ShoppingListItem[];
+}
+
+export interface ShoppingListsResponse {
+  lists: ShoppingList[];
 }
 
 // --- Shipping & Checkout ---

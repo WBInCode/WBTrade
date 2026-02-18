@@ -43,6 +43,7 @@ model User {
   searchHistory              SearchHistory[]
   auditLogs                  SecurityAuditLog[]
   wishlistItems              WishlistItem[]
+  shoppingLists              ShoppingList[]
 
   @@map("users")
 }
@@ -127,6 +128,7 @@ model Product {
   category               Category?        @relation(fields: [categoryId], references: [id])
   reviews                Review[]
   wishlistItems          WishlistItem[]
+  shoppingListItems      ShoppingListItem[]
 
   @@index([slug])
   @@index([sku])
@@ -208,6 +210,7 @@ model ProductVariant {
   product             Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
   stockMovements      StockMovement[]
   wishlistItems       WishlistItem[]
+  shoppingListItems   ShoppingListItem[]
 
   @@index([productId])
   @@index([sku])
@@ -492,6 +495,38 @@ model SearchHistory {
   @@index([query])
   @@index([createdAt])
   @@map("search_history")
+}
+
+model ShoppingList {
+  id          String             @id @default(cuid())
+  userId      String             @map("user_id")
+  name        String
+  description String?
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       ShoppingListItem[]
+
+  @@index([userId])
+  @@map("shopping_lists")
+}
+
+model ShoppingListItem {
+  id        String          @id @default(cuid())
+  listId    String          @map("list_id")
+  productId String          @map("product_id")
+  variantId String?         @map("variant_id")
+  quantity  Int             @default(1)
+  note      String?
+  createdAt DateTime        @default(now()) @map("created_at")
+  list      ShoppingList    @relation(fields: [listId], references: [id], onDelete: Cascade)
+  product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant   ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@unique([listId, productId])
+  @@index([listId])
+  @@index([productId])
+  @@map("shopping_list_items")
 }
 
 model BaselinkerConfig {
