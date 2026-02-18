@@ -94,6 +94,22 @@ function HeaderContent() {
     return () => window.removeEventListener('resize', checkScrollPosition);
   }, [categories]);
 
+  // Auto-scroll to active category and center it
+  useEffect(() => {
+    const nav = categoryNavRef.current;
+    if (!nav) return;
+    const activeLink = nav.querySelector<HTMLElement>('[data-active="true"]');
+    if (!activeLink) return;
+
+    // Wait a tick for layout to settle (categories may load async)
+    requestAnimationFrame(() => {
+      const navRect = nav.getBoundingClientRect();
+      const linkRect = activeLink.getBoundingClientRect();
+      const offset = linkRect.left - navRect.left + nav.scrollLeft - (navRect.width / 2) + (linkRect.width / 2);
+      nav.scrollTo({ left: Math.max(0, offset), behavior: 'smooth' });
+    });
+  }, [currentCategorySlug, categories]);
+
   // Handle category bar visibility on scroll
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -368,6 +384,7 @@ function HeaderContent() {
               {/* All Products button */}
               <Link
                 href="/products"
+                data-active={isOnProductsPage && !currentCategorySlug ? 'true' : undefined}
                 className={`px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors ${
                   isOnProductsPage && !currentCategorySlug
                     ? 'text-primary-500 bg-white'
@@ -382,6 +399,7 @@ function HeaderContent() {
                   <Link
                     key={category.slug}
                     href={`/products?category=${category.slug}`}
+                    data-active={isActive ? 'true' : undefined}
                     className={`px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors ${
                       isActive
                         ? 'text-primary-500 bg-white'
