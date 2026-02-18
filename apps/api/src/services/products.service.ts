@@ -958,10 +958,9 @@ export class ProductsService {
       
       // Create inventory entries for variants with default location
       if (product.variants && product.variants.length > 0) {
-        // Get default location (first available)
+        // Get default location by code MAIN
         const defaultLocation = await prisma.location.findFirst({
-          where: { isActive: true },
-          orderBy: { name: 'asc' },
+          where: { code: 'MAIN', isActive: true },
         });
         
         if (defaultLocation) {
@@ -1127,10 +1126,9 @@ export class ProductsService {
    * Update stock for multiple variants
    */
   async updateVariantsStock(variantIds: string[], quantity: number) {
-    // Get default location
+    // Get default location by code MAIN
     const defaultLocation = await prisma.location.findFirst({
-      where: { isActive: true },
-      orderBy: { name: 'asc' },
+      where: { code: 'MAIN', isActive: true },
     });
     
     if (!defaultLocation) {
