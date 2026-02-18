@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, memo } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import Link from 'next/link';
 import { Product } from '../lib/api';
 import { useWishlist } from '../contexts/WishlistContext';
@@ -62,7 +62,26 @@ export interface ProductCardProps {
 
 export default memo(function ProductCard({ product, showDelivery = false, showWishlist = true, showAddToCart = true }: ProductCardProps) {
   const [imgError, setImgError] = useState(false);
-  const mainImage = imgError || !product.images?.[0]?.url ? PLACEHOLDER_IMAGE : product.images[0].url;
+  const imgRef = useRef<HTMLImageElement>(null);
+  const productImage = product.images?.[0]?.url;
+  const mainImage = imgError || !productImage ? PLACEHOLDER_IMAGE : productImage;
+
+  // Attach error handler via useEffect ONLY (not via onError JSX prop)
+  // to avoid state changes during hydration which cause mismatch
+  useEffect(() => {
+    const img = imgRef.current;
+    if (!img) return;
+
+    const onError = () => setImgError(true);
+    img.addEventListener('error', onError);
+
+    // Image may have already failed before listener was attached
+    if (img.complete && img.naturalWidth === 0 && productImage) {
+      setImgError(true);
+    }
+
+    return () => img.removeEventListener('error', onError);
+  }, [productImage]);
   const hasDiscount = product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price);
   const discountPercent = hasDiscount 
     ? Math.round((1 - Number(product.price) / Number(product.compareAtPrice)) * 100)
@@ -140,16 +159,13 @@ export default memo(function ProductCard({ product, showDelivery = false, showWi
         {/* Image */}
         <div className="relative aspect-square m-2 sm:m-3 rounded-xl sm:rounded-2xl overflow-hidden bg-gray-50 dark:bg-secondary-700">
           {/* Always use <img> to avoid hydration mismatch between <img> and next/image <Image> */}
+          {/* onError is handled via useEffect to prevent state changes during hydration */}
           <img
+            ref={imgRef}
             src={mainImage}
             alt={product.name}
             loading="lazy"
-            className={`absolute inset-0 w-full h-full rounded-lg ${
-              mainImage === PLACEHOLDER_IMAGE
-                ? 'object-contain'
-                : 'object-contain group-hover:scale-105 transition-transform duration-300'
-            }`}
-            onError={() => setImgError(true)}
+            className="absolute inset-0 w-full h-full rounded-lg object-contain group-hover:scale-105 transition-transform duration-300"
           />
           {/* Discount Badge */}
           {hasDiscount && (
