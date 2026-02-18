@@ -485,7 +485,7 @@ function OrderConfirmationPageContent() {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="font-semibold text-orange-500">
-                      {Number(item.total).toFixed(2)} zł
+                      {Number(item.total).toFixed(2).replace('.', ',')} zł
                     </p>
                   </div>
                 </div>
@@ -497,7 +497,7 @@ function OrderConfirmationPageContent() {
           <div className="mt-6 pt-4 border-t space-y-2">
             <div className="flex justify-between items-center text-gray-600">
               <span>Całkowity koszt produktów</span>
-              <span>{Number(order?.subtotal || 0).toFixed(2)} zł</span>
+              <span>{Number(order?.subtotal || 0).toFixed(2).replace('.', ',')} zł</span>
             </div>
             {Number(order?.discount || 0) > 0 && (
               <div className="flex justify-between items-center text-green-600">
@@ -507,17 +507,17 @@ function OrderConfirmationPageContent() {
                   </svg>
                   Rabat (kupon)
                 </span>
-                <span>-{Number(order?.discount || 0).toFixed(2)} zł</span>
+                <span>-{Number(order?.discount || 0).toFixed(2).replace('.', ',')} zł</span>
               </div>
             )}
             <div className="flex justify-between items-center text-gray-600">
               <span>Dostawa</span>
-              <span>{Number(order?.shipping || 0).toFixed(2)} zł</span>
+              <span>{Number(order?.shipping || 0).toFixed(2).replace('.', ',')} zł</span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t">
               <span className="text-lg font-bold">Razem</span>
               <span className="text-2xl font-bold text-orange-600">
-                {Number(order?.total || 0).toFixed(2)} zł
+                {Number(order?.total || 0).toFixed(2).replace('.', ',')} zł
               </span>
             </div>
           </div>

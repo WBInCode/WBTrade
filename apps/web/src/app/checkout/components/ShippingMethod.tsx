@@ -323,7 +323,7 @@ export default function ShippingMethod({ initialData, onSubmit, onBack, onPriceC
                 <div className="flex items-center gap-4">
                   <ShippingIcon id={provider.id} />
                   <span className="text-gray-900 font-medium min-w-[60px] text-right">
-                    {provider.price.toFixed(2)} zł
+                    {provider.price.toFixed(2).replace('.', ',')} zł
                   </span>
                 </div>
               </label>

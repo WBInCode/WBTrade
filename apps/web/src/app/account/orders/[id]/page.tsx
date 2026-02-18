@@ -698,7 +698,7 @@ export default function OrderDetailsPage() {
                         {/* Mobile: price and quantity inline */}
                         <div className="flex items-center justify-between mt-2 sm:hidden">
                           <span className="text-xs text-gray-500 dark:text-gray-400">Ilość: <span className="font-medium text-gray-900 dark:text-white">{item.quantity}</span></span>
-                          <span className="font-semibold text-gray-900 dark:text-white">{Number(item.unitPrice).toFixed(2)} zł</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">{Number(item.unitPrice).toFixed(2).replace('.', ',')} zł</span>
                         </div>
                       </div>
                       
@@ -709,7 +709,7 @@ export default function OrderDetailsPage() {
                           <p className="font-medium text-gray-900 dark:text-white">{item.quantity}</p>
                         </div>
                         <div className="text-right shrink-0">
-                          <span className="font-semibold text-gray-900 dark:text-white">{Number(item.unitPrice).toFixed(2)} zł</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">{Number(item.unitPrice).toFixed(2).replace('.', ',')} zł</span>
                         </div>
                       </div>
                     </div>
@@ -722,7 +722,7 @@ export default function OrderDetailsPage() {
                 <div className="max-w-xs ml-auto space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500 dark:text-gray-400">Całkowity koszt produktów</span>
-                    <span className="text-gray-900 dark:text-white">{Number(order.subtotal).toFixed(2)} zł</span>
+                    <span className="text-gray-900 dark:text-white">{Number(order.subtotal).toFixed(2).replace('.', ',')} zł</span>
                   </div>
                   
                   {/* Per-package shipping breakdown */}
@@ -735,7 +735,7 @@ export default function OrderDetailsPage() {
                             <span className="text-xs ml-1">• {getShippingMethodName(pkg.method)}</span>
                           </span>
                           <span className="text-gray-900 dark:text-white">
-                            {pkg.price === 0 ? 'Bezpłatna' : `${Number(pkg.price).toFixed(2)} zł`}
+                            {pkg.price === 0 ? 'Bezpłatna' : `${Number(pkg.price).toFixed(2).replace('.', ',')} zł`}
                           </span>
                         </div>
                       ))}
@@ -743,24 +743,24 @@ export default function OrderDetailsPage() {
                   ) : (
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500 dark:text-gray-400">Dostawa ({getShippingMethodName(order.shippingMethod)})</span>
-                      <span className="text-gray-900 dark:text-white">{Number(order.shipping) === 0 ? 'Bezpłatna' : `${Number(order.shipping).toFixed(2)} zł`}</span>
+                      <span className="text-gray-900 dark:text-white">{Number(order.shipping) === 0 ? 'Bezpłatna' : `${Number(order.shipping).toFixed(2).replace('.', ',')} zł`}</span>
                     </div>
                   )}
                   {Number(order.discount) > 0 && (
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500 dark:text-gray-400">Rabat</span>
-                      <span className="text-green-600">-{Number(order.discount).toFixed(2)} zł</span>
+                      <span className="text-green-600">-{Number(order.discount).toFixed(2).replace('.', ',')} zł</span>
                     </div>
                   )}
                   {Number(order.tax) > 0 && (
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500 dark:text-gray-400">VAT</span>
-                      <span className="text-gray-900 dark:text-white">{Number(order.tax).toFixed(2)} zł</span>
+                      <span className="text-gray-900 dark:text-white">{Number(order.tax).toFixed(2).replace('.', ',')} zł</span>
                     </div>
                   )}
                   <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200 dark:border-secondary-700">
                     <span className="text-gray-900 dark:text-white">Razem</span>
-                    <span className="text-gray-900 dark:text-white">{Number(order.total).toFixed(2)} zł</span>
+                    <span className="text-gray-900 dark:text-white">{Number(order.total).toFixed(2).replace('.', ',')} zł</span>
                   </div>
                 </div>
               </div>
@@ -1276,7 +1276,7 @@ export default function OrderDetailsPage() {
                         <span className="font-medium">Zamówienie:</span> #{order.orderNumber}
                       </p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        <span className="font-medium">Kwota do zwrotu:</span> {Number(order.total).toFixed(2)} zł
+                        <span className="font-medium">Kwota do zwrotu:</span> {Number(order.total).toFixed(2).replace('.', ',')} zł
                       </p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
                         <span className="font-medium">Pozostało dni:</span> {refundEligibility?.daysRemaining} z 14

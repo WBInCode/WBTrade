@@ -240,7 +240,7 @@ export default function AddToCartModal({ isOpen, product, onClose, onAddToCart }
                         </p>
                       </Link>
                       <p className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white mb-1.5 sm:mb-2">
-                        {p.price.toFixed(2)} zł
+                        {p.price.toFixed(2).replace('.', ',')} zł
                       </p>
                       <button
                         onClick={() => handleAddSameWarehouseProduct(p)}

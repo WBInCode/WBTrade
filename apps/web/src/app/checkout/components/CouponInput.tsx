@@ -77,7 +77,7 @@ export default function CouponInput({
                 Kod: <span className="font-mono">{appliedCoupon}</span>
               </p>
               <p className="text-xs text-green-600 dark:text-green-400">
-                Zniżka: -{discount.toFixed(2)} zł
+                Zniżka: -{discount.toFixed(2).replace('.', ',')} zł
               </p>
             </div>
           </div>

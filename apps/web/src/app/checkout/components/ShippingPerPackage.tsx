@@ -588,7 +588,7 @@ export default function ShippingPerPackage({
                 </div>
                 {selectedMethod && (
                   <div className="text-right">
-                    <div className="text-lg font-bold text-gray-900 dark:text-white">{selectedMethod.price.toFixed(2)} zł</div>
+                    <div className="text-lg font-bold text-gray-900 dark:text-white">{selectedMethod.price.toFixed(2).replace('.', ',')} zł</div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">{selectedMethod.name}</div>
                   </div>
                 )}
@@ -691,7 +691,7 @@ export default function ShippingPerPackage({
 
                         {/* Price */}
                         <span className="text-gray-900 dark:text-white font-bold text-base whitespace-nowrap">
-                          {method.price.toFixed(2)} zł
+                          {method.price.toFixed(2).replace('.', ',')} zł
                         </span>
                       </div>
                     </label>
@@ -891,7 +891,7 @@ export default function ShippingPerPackage({
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs text-gray-600 dark:text-gray-400">Do darmowej dostawy:</span>
                     <span className="text-sm font-semibold text-orange-600">
-                      {(300 - pkgOpt.package.warehouseValue).toFixed(2)} zł
+                      {(300 - pkgOpt.package.warehouseValue).toFixed(2).replace('.', ',')} zł
                     </span>
                   </div>
                   <div className="h-1.5 bg-orange-200 rounded-full overflow-hidden">
@@ -923,7 +923,7 @@ export default function ShippingPerPackage({
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-600 dark:text-gray-400">Łączny koszt dostawy:</span>
             <span className="text-xl font-bold text-gray-900 dark:text-white">
-              {calculateTotalPrice(packagesWithOptions, selectedMethods).toFixed(2)} zł
+              {calculateTotalPrice(packagesWithOptions, selectedMethods).toFixed(2).replace('.', ',')} zł
             </span>
           </div>
         </div>

@@ -474,7 +474,7 @@ export default function OrdersPage() {
                                   <p className="text-sm text-gray-500 dark:text-gray-400">Ilość: {item.quantity}</p>
                                 </div>
                                 <div className="text-right shrink-0">
-                                  <span className="font-semibold text-gray-900 dark:text-white">{Number(item.unitPrice).toFixed(2)} zł</span>
+                                  <span className="font-semibold text-gray-900 dark:text-white">{Number(item.unitPrice).toFixed(2).replace('.', ',')} zł</span>
                                 </div>
                               </div>
                             ))}
@@ -513,7 +513,7 @@ export default function OrdersPage() {
                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                         <div className="text-left sm:text-right">
                           <span className="text-sm text-gray-500 dark:text-gray-400">Suma:</span>
-                          <span className="ml-2 text-lg font-bold text-gray-900 dark:text-white">{Number(order.total).toFixed(2)} zł</span>
+                          <span className="ml-2 text-lg font-bold text-gray-900 dark:text-white">{Number(order.total).toFixed(2).replace('.', ',')} zł</span>
                         </div>
                         <div className="flex gap-2">
                           {order.status === 'SHIPPED' && order.trackingNumber && (
