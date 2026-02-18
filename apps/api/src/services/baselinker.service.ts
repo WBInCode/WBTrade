@@ -1429,14 +1429,10 @@ export class BaselinkerService {
     let changed = 0;
     const changedSkus: { sku: string; oldQty: number; newQty: number; inventory: string }[] = [];
 
-    // Śledzimy najlepsze dane per wariant przez WSZYSTKIE inwentarze
-    // Zapobiega nadpisywaniu stock=5 (Leker) przez stock=0 (Główny) dla tego samego wariantu
-    const bestStockPerVariant = new Map<string, { quantity: number; reserved: number; inventoryName: string }>();
-
     try {
-      // Get default location
+      // Get default location by code MAIN
       let defaultLocation = await prisma.location.findFirst({
-        where: { type: 'WAREHOUSE', isActive: true },
+        where: { code: 'MAIN', type: 'WAREHOUSE', isActive: true },
       });
 
       if (!defaultLocation) {
@@ -1480,17 +1476,22 @@ export class BaselinkerService {
               const numericId = entry.product_id.toString();
               const prefixedId = prefix ? `${prefix}${numericId}` : numericId;
 
-              // Find product variant - try both prefixed and non-prefixed IDs
-              const variant = await prisma.productVariant.findFirst({
-                where: {
-                  OR: [
+              // Find product variant - use prefix-aware lookup to avoid cross-inventory contamination
+              // When processing a prefixed inventory (e.g. Leker), only match products with that prefix
+              // to prevent overwriting stock of a Główny product that shares the same numeric ID
+              const searchConditions = prefix
+                ? [
+                    { baselinkerVariantId: prefixedId },
+                    { product: { baselinkerProductId: prefixedId } },
+                  ]
+                : [
                     { baselinkerVariantId: `default-${numericId}` },
                     { baselinkerVariantId: numericId },
-                    { baselinkerVariantId: prefixedId },
                     { product: { baselinkerProductId: numericId } },
-                    { product: { baselinkerProductId: prefixedId } },
-                  ],
-                },
+                  ];
+
+              const variant = await prisma.productVariant.findFirst({
+                where: { OR: searchConditions },
               });
 
               if (!variant) {
@@ -1498,17 +1499,11 @@ export class BaselinkerService {
               }
 
               // Calculate total stock from all warehouses
-              const totalStock = Object.values(entry.stock as Record<string, number>).reduce((sum: number, qty: number) => sum + qty, 0);
-              const totalReserved = Object.values(entry.reservations as Record<string, number>).reduce((sum: number, qty: number) => sum + qty, 0);
+              const totalStock = Object.values((entry.stock || {}) as Record<string, number>).reduce((sum: number, qty: number) => sum + qty, 0);
+              const totalReserved = Object.values((entry.reservations || {}) as Record<string, number>).reduce((sum: number, qty: number) => sum + qty, 0);
 
-              // Sprawdź czy już mamy lepsze dane dla tego wariantu z poprzedniego inwentarza.
-              // Zapobiega nadpisaniu stock=5 (Leker) przez stock=0 (Główny) dla tego samego wariantu,
-              // gdy ten sam produkt pojawia się w wielu inwentarzach BaseLinker.
-              const previousBest = bestStockPerVariant.get(variant.id);
-              if (previousBest && totalStock <= previousBest.quantity) {
-                continue; // Poprzedni inwentarz miał równy lub wyższy stan — pomijamy
-              }
-              bestStockPerVariant.set(variant.id, { quantity: totalStock, reserved: totalReserved, inventoryName: inv.name });
+              // With prefix-aware lookup, each product is only matched by its own inventory,
+              // so we can safely write the stock value directly without "best stock wins" logic.
 
               // Check current stock to detect changes
               const existingInventory = await prisma.inventory.findUnique({

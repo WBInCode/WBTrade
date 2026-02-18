@@ -286,9 +286,9 @@ async function updateStock(products: Array<{ id: string; stock: number }>): Prom
   
   for (const product of products) {
     try {
-      // Znajdź domyślną lokalizację magazynową
+      // Znajdź domyślną lokalizację magazynową (MAIN)
       const defaultLocation = await prisma.location.findFirst({
-        where: { type: 'WAREHOUSE' },
+        where: { type: 'WAREHOUSE', code: 'MAIN' },
       });
 
       if (!defaultLocation) continue;

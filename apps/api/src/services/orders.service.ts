@@ -280,8 +280,27 @@ export class OrdersService {
         },
       });
 
-      // Reserve inventory for each item
+      // Reserve inventory for each item (with stock validation)
       for (const item of data.items) {
+        const inventory = await tx.inventory.findFirst({
+          where: { variantId: item.variantId },
+        });
+
+        const available = inventory
+          ? inventory.quantity - inventory.reserved
+          : 0;
+
+        if (available < item.quantity) {
+          const variant = await tx.productVariant.findUnique({
+            where: { id: item.variantId },
+            include: { product: { select: { name: true } } },
+          });
+          throw new Error(
+            `Niewystarczająca ilość produktu "${variant?.product.name || 'Unknown'}". ` +
+            `Dostępne: ${Math.max(0, available)} szt., żądane: ${item.quantity} szt.`
+          );
+        }
+
         await tx.inventory.updateMany({
           where: { variantId: item.variantId },
           data: {
@@ -391,6 +410,32 @@ export class OrdersService {
    */
   async updateStatus(id: string, status: OrderStatus, note?: string, createdBy?: string) {
     return prisma.$transaction(async (tx) => {
+      // Get current order state before updating
+      const currentOrder = await tx.order.findUnique({
+        where: { id },
+        include: { items: true },
+      });
+
+      if (!currentOrder) throw new Error('Order not found');
+
+      // When order transitions to SHIPPED — goods leave warehouse:
+      // decrement quantity (stock goes down) and release reservation
+      const shippingStatuses = ['SHIPPED', 'DELIVERED', 'COMPLETED'];
+      const wasNotShipped = !shippingStatuses.includes(currentOrder.status);
+      const isNowShipped = shippingStatuses.includes(status);
+
+      if (wasNotShipped && isNowShipped) {
+        for (const item of currentOrder.items) {
+          await tx.inventory.updateMany({
+            where: { variantId: item.variantId },
+            data: {
+              quantity: { decrement: item.quantity },
+              reserved: { decrement: item.quantity },
+            },
+          });
+        }
+      }
+
       // Update order status
       const order = await tx.order.update({
         where: { id },
@@ -736,12 +781,18 @@ export class OrdersService {
         throw new Error('Order cannot be refunded in current status');
       }
 
-      // Return inventory (add back to stock)
+      // Return inventory (add back to stock) and clear any remaining reservations
       for (const item of order.items) {
+        // Check if order was already shipped (quantity already decremented)
+        const wasShipped = ['DELIVERED', 'SHIPPED'].includes(order.status);
+
         await tx.inventory.updateMany({
           where: { variantId: item.variantId },
           data: {
+            // Add stock back (it was decremented on shipment)
             quantity: { increment: item.quantity },
+            // If somehow reservation still exists (e.g. direct status change), clear it
+            ...(wasShipped ? {} : { reserved: { decrement: item.quantity } }),
           },
         });
       }
