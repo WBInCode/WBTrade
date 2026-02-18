@@ -6,9 +6,9 @@ interface ProductCardSkeletonProps {
 
 export default function ProductCardSkeleton({ showDelivery = false }: ProductCardSkeletonProps) {
   return (
-    <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 animate-pulse">
+    <div className="bg-white dark:bg-secondary-800 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-secondary-700 animate-pulse overflow-hidden">
       {/* Image skeleton */}
-      <div className="aspect-square bg-gray-200 dark:bg-secondary-700 rounded-t-lg" />
+      <div className="aspect-square bg-gray-200 dark:bg-secondary-700 m-2 sm:m-3 rounded-xl sm:rounded-2xl" />
 
       {/* Info skeleton */}
       <div className="p-3">
@@ -65,10 +65,10 @@ export function ProductGridSkeleton({
 // List card skeleton (for product list page)
 export function ProductListCardSkeleton() {
   return (
-    <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-4 animate-pulse">
+    <div className="bg-white dark:bg-secondary-800 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-secondary-700 p-4 animate-pulse overflow-hidden">
       <div className="flex gap-4">
         {/* Image skeleton */}
-        <div className="w-32 h-32 bg-gray-200 dark:bg-secondary-700 rounded-lg flex-shrink-0" />
+        <div className="w-32 h-32 bg-gray-200 dark:bg-secondary-700 rounded-xl flex-shrink-0" />
         
         {/* Content skeleton */}
         <div className="flex-1 min-w-0">
@@ -99,7 +99,7 @@ export function ProductsPageSkeleton() {
     <div className="flex gap-6">
       {/* Sidebar skeleton */}
       <aside className="hidden lg:block w-64 flex-shrink-0">
-        <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-4 animate-pulse">
+        <div className="bg-white dark:bg-secondary-800 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-secondary-700 p-4 animate-pulse overflow-hidden">
           {/* Filter sections */}
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="mb-6">

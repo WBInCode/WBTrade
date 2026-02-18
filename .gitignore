@@ -56,6 +56,9 @@ apps/api/sync-images.js
 apps/api/generate-promo-codes.js
 apps/api/promo-codes-*
 
+# Debug/test/migration scripts
+apps/api/scripts/
+
 # Debug/test scripts (may contain user data)
 apps/api/check-*.ts
 apps/api/check-*.js
