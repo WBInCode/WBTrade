@@ -6,6 +6,8 @@ import { FontAwesome } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import Badge from '../ui/Badge';
 import { useCart } from '../../contexts/CartContext';
+import { useWishlist } from '../../contexts/WishlistContext';
+import { useAuth } from '../../contexts/AuthContext';
 import type { Product } from '../../services/types';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -21,7 +23,10 @@ interface ProductCardProps {
 function ProductCard({ product, width }: ProductCardProps) {
   const router = useRouter();
   const { addToCart } = useCart();
+  const { isInWishlist, toggle: toggleWishlist } = useWishlist();
+  const { user } = useAuth();
   const [adding, setAdding] = useState(false);
+  const isFav = isInWishlist(product.id);
   const cardWidth = width || CARD_WIDTH;
 
   const price = Number(
@@ -90,6 +95,27 @@ function ProductCard({ product, width }: ProductCardProps) {
               </Text>
             </View>
           )}
+
+          {/* Heart / Favourite */}
+          <TouchableOpacity
+            style={styles.heartBtn}
+            onPress={(e) => {
+              e.stopPropagation();
+              if (!user) {
+                router.push('/(auth)/login');
+                return;
+              }
+              toggleWishlist(product.id);
+            }}
+            activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <FontAwesome
+              name={isFav ? 'heart' : 'heart-o'}
+              size={18}
+              color={isFav ? Colors.destructive : Colors.secondary[400]}
+            />
+          </TouchableOpacity>
         </View>
 
         {/* Info */}
@@ -205,6 +231,22 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: 11,
     fontWeight: '700',
+  },
+  heartBtn: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    elevation: 3,
   },
   info: {
     padding: 10,

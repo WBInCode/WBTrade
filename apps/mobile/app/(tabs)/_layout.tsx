@@ -6,6 +6,7 @@ import { View, Text } from 'react-native';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useCart } from '../../contexts/CartContext';
+import { useWishlist } from '../../contexts/WishlistContext';
 
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>['name'];
@@ -44,6 +45,36 @@ function CartIcon({ color }: { color: string }) {
   );
 }
 
+function WishlistIcon({ color }: { color: string }) {
+  const { count } = useWishlist();
+
+  return (
+    <View>
+      <FontAwesome name="heart" size={22} color={color} style={{ marginBottom: -3 }} />
+      {count > 0 && (
+        <View
+          style={{
+            position: 'absolute',
+            top: -6,
+            right: -10,
+            backgroundColor: '#ef4444',
+            borderRadius: 10,
+            minWidth: 18,
+            height: 18,
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingHorizontal: 4,
+          }}
+        >
+          <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>
+            {count > 99 ? '99+' : count}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
@@ -69,6 +100,13 @@ export default function TabLayout() {
         options={{
           title: 'Szukaj',
           tabBarIcon: ({ color }) => <TabBarIcon name="search" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="wishlist"
+        options={{
+          title: 'Ulubione',
+          tabBarIcon: ({ color }) => <WishlistIcon color={color} />,
         }}
       />
       <Tabs.Screen
