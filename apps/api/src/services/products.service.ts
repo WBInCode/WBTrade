@@ -237,37 +237,25 @@ export class ProductsService {
    * Get all descendant category IDs for a given category slug or ID (including the category itself)
    */
   private async getAllCategoryIds(categorySlugOrId: string): Promise<string[]> {
-    // Try to find the category by exact slug first
+    const prefixes = ['btp-', 'hp-', 'leker-', 'ikonka-'];
+
+    // Find ALL matching categories at once: exact slug + supplier prefixes + contains
+    // This ensures product listing aggregates products from all supplier variants
+    // matching the same base category (e.g. gadzety, btp-gadzety, hp-gadzety)
     let categories = await prisma.category.findMany({
-      where: { slug: categorySlugOrId },
+      where: { 
+        OR: [
+          { slug: categorySlugOrId },
+          ...prefixes.map(prefix => ({
+            slug: { startsWith: `${prefix}${categorySlugOrId}` }
+          })),
+          {
+            slug: { contains: categorySlugOrId, mode: 'insensitive' as const }
+          }
+        ]
+      },
       select: { id: true },
     });
-
-    // If not found by exact slug, try with common prefixes from all suppliers
-    if (categories.length === 0) {
-      const prefixes = ['btp-', 'hp-', 'leker-', 'ikonka-'];
-      
-      // Find ALL matching categories from all suppliers
-      categories = await prisma.category.findMany({
-        where: { 
-          OR: [
-            ...prefixes.map(prefix => ({
-              slug: {
-                startsWith: `${prefix}${categorySlugOrId}`
-              }
-            })),
-            // Also match if slug contains the search term (removes numeric IDs)
-            {
-              slug: {
-                contains: categorySlugOrId,
-                mode: 'insensitive' as const
-              }
-            }
-          ]
-        },
-        select: { id: true },
-      });
-    }
 
     // If not found by slug patterns, try by ID
     if (categories.length === 0) {
@@ -305,7 +293,7 @@ export class ProductsService {
 
     await getDescendants(categoryIds);
 
-    return categoryIds;
+    return [...new Set(categoryIds)];
   }
 
   /**

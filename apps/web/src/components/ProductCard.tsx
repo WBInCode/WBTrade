@@ -2,7 +2,6 @@
 
 import { useState, memo } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Product } from '../lib/api';
 import { useWishlist } from '../contexts/WishlistContext';
 import { useCart } from '../contexts/CartContext';
@@ -139,23 +138,19 @@ export default memo(function ProductCard({ product, showDelivery = false, showWi
 
       <Link href={`/products/${product.id}`} className="flex flex-col flex-grow">
         {/* Image */}
-        <div className="relative aspect-square m-2 sm:m-3 rounded-xl sm:rounded-2xl overflow-hidden">
-          {mainImage === PLACEHOLDER_IMAGE ? (
-            <img
-              src={PLACEHOLDER_IMAGE}
-              alt={product.name}
-              className="w-full h-full object-contain"
-            />
-          ) : (
-            <Image
-              src={mainImage}
-              alt={product.name}
-              fill
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              className="object-contain group-hover:scale-105 transition-transform duration-300"
-              onError={() => setImgError(true)}
-            />
-          )}
+        <div className="relative aspect-square m-2 sm:m-3 rounded-xl sm:rounded-2xl overflow-hidden bg-gray-50 dark:bg-secondary-700">
+          {/* Always use <img> to avoid hydration mismatch between <img> and next/image <Image> */}
+          <img
+            src={mainImage}
+            alt={product.name}
+            loading="lazy"
+            className={`absolute inset-0 w-full h-full rounded-lg ${
+              mainImage === PLACEHOLDER_IMAGE
+                ? 'object-contain'
+                : 'object-contain group-hover:scale-105 transition-transform duration-300'
+            }`}
+            onError={() => setImgError(true)}
+          />
           {/* Discount Badge */}
           {hasDiscount && (
             <div className="absolute top-1.5 left-1.5 sm:top-2.5 sm:left-2.5">
