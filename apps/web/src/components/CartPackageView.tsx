@@ -182,7 +182,7 @@ export default function CartPackageView({
                 </div>
               </label>
               <div className="text-right shrink-0">
-                <p className="font-bold text-sm sm:text-lg text-gray-900 dark:text-white whitespace-nowrap">{pkg.subtotal.toFixed(2)}<span className="text-xs sm:text-base ml-0.5">zł</span></p>
+                <p className="font-bold text-sm sm:text-lg text-gray-900 dark:text-white whitespace-nowrap">{pkg.subtotal.toFixed(2).replace('.', ',')}<span className="text-xs sm:text-base ml-0.5">zł</span></p>
               </div>
             </div>
           </div>
@@ -247,7 +247,7 @@ export default function CartPackageView({
                         {/* Price - visible on mobile */}
                         <div className="text-right shrink-0 sm:hidden">
                           <p className="font-bold text-gray-900 dark:text-white text-sm whitespace-nowrap">
-                            {(item.variant.price * item.quantity).toFixed(2)} zł
+                            {(item.variant.price * item.quantity).toFixed(2).replace('.', ',')} zł
                           </p>
                         </div>
                       </div>
@@ -262,7 +262,7 @@ export default function CartPackageView({
                           {availableStock > 0 ? `Dostępne: ${availableStock}` : 'Brak'}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {item.quantity} × {item.variant.price.toFixed(2)} zł
+                          {item.quantity} × {item.variant.price.toFixed(2).replace('.', ',')} zł
                         </p>
                       </div>
 
@@ -338,11 +338,11 @@ export default function CartPackageView({
                     <div className="hidden sm:flex flex-col items-end gap-2 shrink-0">
                       <div className="text-right">
                         <p className={`font-bold text-gray-900 dark:text-white ${isCompact ? 'text-lg' : 'text-xl'}`}>
-                          {(item.variant.price * item.quantity).toFixed(2)} zł
+                          {(item.variant.price * item.quantity).toFixed(2).replace('.', ',')} zł
                         </p>
                         {item.variant.compareAtPrice && item.variant.compareAtPrice > item.variant.price && (
                           <p className="text-sm text-gray-400 line-through">
-                            {(item.variant.compareAtPrice * item.quantity).toFixed(2)} zł
+                            {(item.variant.compareAtPrice * item.quantity).toFixed(2).replace('.', ',')} zł
                           </p>
                         )}
                       </div>
@@ -388,7 +388,7 @@ export default function CartPackageView({
                 {pkg.subtotal >= 300 ? (
                   <span className="font-semibold text-green-600 dark:text-green-400 text-sm sm:text-base">GRATIS!</span>
                 ) : pkg.shippingPrice > 0 ? (
-                  <span className="font-semibold text-orange-600 dark:text-orange-400 text-sm sm:text-base">{pkg.shippingPrice.toFixed(2)} zł</span>
+                  <span className="font-semibold text-orange-600 dark:text-orange-400 text-sm sm:text-base">{pkg.shippingPrice.toFixed(2).replace('.', ',')} zł</span>
                 ) : (
                   <span className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">obliczana przy zamówieniu</span>
                 )}
@@ -405,7 +405,7 @@ export default function CartPackageView({
                   />
                 </div>
                 <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
-                  <span className="font-medium text-orange-600 dark:text-orange-400">{(300 - pkg.subtotal).toFixed(2)} zł</span> do darmowej dostawy
+                  <span className="font-medium text-orange-600 dark:text-orange-400">{(300 - pkg.subtotal).toFixed(2).replace('.', ',')} zł</span> do darmowej dostawy
                 </p>
               </div>
             )}

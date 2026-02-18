@@ -144,7 +144,7 @@ export default function CheckoutPackagesList({
                       {item.quantity} szt.
                     </span>
                     <span className="text-xs font-semibold text-orange-600">
-                      {(item.variant?.price * item.quantity).toFixed(2)} zł
+                      {(item.variant?.price * item.quantity).toFixed(2).replace('.', ',')} zł
                     </span>
                   </div>
                 </div>
@@ -199,7 +199,7 @@ export default function CheckoutPackagesList({
           {/* Package Subtotal */}
           <div className="bg-gray-50 dark:bg-secondary-700 px-3 py-1.5 border-t dark:border-secondary-600 flex items-center justify-between">
             <span className="text-[10px] text-gray-500 dark:text-gray-400">Wartość przesyłki:</span>
-            <span className="text-xs font-semibold dark:text-white">{pkg.subtotal.toFixed(2)} zł</span>
+            <span className="text-xs font-semibold dark:text-white">{pkg.subtotal.toFixed(2).replace('.', ',')} zł</span>
           </div>
         </div>
       ))}

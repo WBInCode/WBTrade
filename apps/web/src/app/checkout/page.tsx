@@ -757,27 +757,27 @@ function CheckoutPageContent() {
               <div className="border-t dark:border-secondary-700 pt-3 sm:pt-4 space-y-1.5 sm:space-y-2">
                 <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-gray-600 dark:text-gray-400">Produkty</span>
-                  <span className="dark:text-white">{totals.subtotal.toFixed(2)} zł</span>
+                  <span className="dark:text-white">{totals.subtotal.toFixed(2).replace('.', ',')} zł</span>
                 </div>
                 <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-gray-600 dark:text-gray-400">Szacowana dostawa</span>
-                  <span className="dark:text-white">{totals.shipping.toFixed(2)} zł</span>
+                  <span className="dark:text-white">{totals.shipping.toFixed(2).replace('.', ',')} zł</span>
                 </div>
                 {totals.paymentFee > 0 && (
                   <div className="flex justify-between text-xs sm:text-sm">
                     <span className="text-gray-600 dark:text-gray-400">Opłata za płatność</span>
-                    <span className="dark:text-white">{totals.paymentFee.toFixed(2)} zł</span>
+                    <span className="dark:text-white">{totals.paymentFee.toFixed(2).replace('.', ',')} zł</span>
                   </div>
                 )}
                 {totals.discount > 0 && (
                   <div className="flex justify-between text-xs sm:text-sm text-green-600">
                     <span>Rabat</span>
-                    <span>-{totals.discount.toFixed(2)} zł</span>
+                    <span>-{totals.discount.toFixed(2).replace('.', ',')} zł</span>
                   </div>
                 )}
                 <div className="flex justify-between text-base sm:text-lg font-bold pt-2 border-t dark:border-secondary-700">
                   <span className="dark:text-white">Razem</span>
-                  <span className="text-orange-600">{totals.total.toFixed(2)} zł</span>
+                  <span className="text-orange-600">{totals.total.toFixed(2).replace('.', ',')} zł</span>
                 </div>
               </div>
 

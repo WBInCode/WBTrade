@@ -155,7 +155,7 @@ export default function WishlistPage() {
             {items.length > 0 && (
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-gray-500 dark:text-gray-400">Łączna wartość:</span>
-                <span className="text-xl font-bold text-primary-600">{totalValue.toFixed(2)} zł</span>
+                <span className="text-xl font-bold text-primary-600">{totalValue.toFixed(2).replace('.', ',')} zł</span>
               </div>
             )}
           </div>
@@ -289,11 +289,11 @@ export default function WishlistPage() {
                         </Link>
                         <div className="flex items-baseline gap-2 mb-3">
                           <span className="text-lg font-bold text-primary-600 dark:text-primary-400">
-                            {Number(item.price).toFixed(2)} zł
+                            {Number(item.price).toFixed(2).replace('.', ',')} zł
                           </span>
                           {item.compareAtPrice && Number(item.compareAtPrice) > Number(item.price) && (
                             <span className="text-sm text-gray-400 dark:text-secondary-500 line-through">
-                              {Number(item.compareAtPrice).toFixed(2)} zł
+                              {Number(item.compareAtPrice).toFixed(2).replace('.', ',')} zł
                             </span>
                           )}
                         </div>
@@ -381,12 +381,12 @@ export default function WishlistPage() {
                           
                           <div className="flex items-baseline gap-2 mt-2">
                             <span className="text-lg sm:text-xl font-bold text-primary-600 dark:text-primary-400">
-                              {Number(item.price).toFixed(2)} zł
+                              {Number(item.price).toFixed(2).replace('.', ',')} zł
                             </span>
                             {item.compareAtPrice && Number(item.compareAtPrice) > Number(item.price) && (
                               <>
                                 <span className="text-xs sm:text-sm text-gray-400 dark:text-secondary-500 line-through">
-                                  {Number(item.compareAtPrice).toFixed(2)} zł
+                                  {Number(item.compareAtPrice).toFixed(2).replace('.', ',')} zł
                                 </span>
                                 <span className="text-xs sm:text-sm text-red-500 font-medium">
                                   -{Math.round((1 - Number(item.price) / Number(item.compareAtPrice)) * 100)}%
@@ -456,7 +456,7 @@ export default function WishlistPage() {
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Dodaj wszystkie do koszyka</h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {items.length} produktów za łącznie {totalValue.toFixed(2)} zł
+                        {items.length} produktów za łącznie {totalValue.toFixed(2).replace('.', ',')} zł
                       </p>
                     </div>
                     <button

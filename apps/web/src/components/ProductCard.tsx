@@ -188,13 +188,13 @@ export default memo(function ProductCard({ product, showDelivery = false, showWi
           <div className="mt-1.5 sm:mt-2">
             <div className="flex items-baseline gap-0.5 sm:gap-1">
               <span className="text-sm sm:text-lg font-bold text-gray-900 dark:text-secondary-100">
-                {Number(product.price).toFixed(2)}
+                {Number(product.price).toFixed(2).replace('.', ',')}
               </span>
               <span className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-secondary-100">zł</span>
             </div>
             {hasDiscount && (
               <span className="text-[10px] sm:text-xs text-gray-400 dark:text-secondary-500 line-through">
-                {Number(product.compareAtPrice).toFixed(2)} zł
+                {Number(product.compareAtPrice).toFixed(2).replace('.', ',')} zł
               </span>
             )}
           </div>

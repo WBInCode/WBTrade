@@ -104,7 +104,7 @@ export default function OrderSummary({
                 <div className="flex justify-between items-center mt-1">
                   <span className="text-[11px] sm:text-sm text-gray-500 dark:text-gray-400">Ilość: {item.quantity}</span>
                   <span className="text-sm sm:text-base font-semibold text-orange-600">
-                    {(item.variant?.price * item.quantity).toFixed(2)} zł
+                    {(item.variant?.price * item.quantity).toFixed(2).replace('.', ',')} zł
                   </span>
                 </div>
               </div>
@@ -176,7 +176,7 @@ export default function OrderSummary({
                       {pkg.paczkomatCode && (
                         <span className="text-orange-600 ml-1">({pkg.paczkomatCode})</span>
                       )}
-                      <span className="text-gray-500 ml-1">– {pkg.price.toFixed(2)} zł</span>
+                      <span className="text-gray-500 ml-1">– {pkg.price.toFixed(2).replace('.', ',')} zł</span>
                     </div>
                     {pkg.useCustomAddress && pkg.customAddress && (
                       <div className="mt-1 ml-2 sm:ml-4 text-[10px] sm:text-xs text-gray-500 border-l-2 border-orange-200 pl-2">
@@ -220,7 +220,7 @@ export default function OrderSummary({
               {shipping.price === 0 ? (
                 <span className="text-green-600">GRATIS</span>
               ) : (
-                <span>Razem: {shipping.price.toFixed(2)} zł</span>
+                <span>Razem: {shipping.price.toFixed(2).replace('.', ',')} zł</span>
               )}
             </p>
           </div>
@@ -240,7 +240,7 @@ export default function OrderSummary({
             <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{paymentMethodNames[payment.method]}</p>
             {payment.extraFee > 0 && (
               <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Opłata: +{payment.extraFee.toFixed(2)} zł
+                Opłata: +{payment.extraFee.toFixed(2).replace('.', ',')} zł
               </p>
             )}
           </div>
@@ -259,21 +259,21 @@ export default function OrderSummary({
         <div className="space-y-1.5 sm:space-y-2">
           <div className="flex justify-between text-xs sm:text-sm">
             <span className="text-gray-600 dark:text-gray-400">Produkty</span>
-            <span className="dark:text-white">{totals.subtotal.toFixed(2)} zł</span>
+            <span className="dark:text-white">{totals.subtotal.toFixed(2).replace('.', ',')} zł</span>
           </div>
           <div className="flex justify-between text-xs sm:text-sm">
             <span className="text-gray-600 dark:text-gray-400">Dostawa</span>
-            <span className="dark:text-white">{totals.shipping === 0 ? 'GRATIS' : `${totals.shipping.toFixed(2)} zł`}</span>
+            <span className="dark:text-white">{totals.shipping === 0 ? 'GRATIS' : `${totals.shipping.toFixed(2).replace('.', ',')} zł`}</span>
           </div>
           {totals.paymentFee > 0 && (
             <div className="flex justify-between text-xs sm:text-sm">
               <span className="text-gray-600 dark:text-gray-400">Opłata za płatność</span>
-              <span className="dark:text-white">{totals.paymentFee.toFixed(2)} zł</span>
+              <span className="dark:text-white">{totals.paymentFee.toFixed(2).replace('.', ',')} zł</span>
             </div>
           )}
           <div className="flex justify-between text-base sm:text-xl font-bold pt-2 sm:pt-3 border-t dark:border-secondary-600">
             <span className="dark:text-white">Do zapłaty</span>
-            <span className="text-orange-600">{totals.total.toFixed(2)} zł</span>
+            <span className="text-orange-600">{totals.total.toFixed(2).replace('.', ',')} zł</span>
           </div>
         </div>
       </div>
@@ -346,7 +346,7 @@ export default function OrderSummary({
           </>
         ) : (
           <>
-            🛒 Zamawiam i płacę – {totals.total.toFixed(2)} zł
+            🛒 Zamawiam i płacę – {totals.total.toFixed(2).replace('.', ',')} zł
           </>
         )}
       </button>
