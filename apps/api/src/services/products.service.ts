@@ -82,6 +82,7 @@ interface ProductFilters {
   warehouse?: string; // Filtr magazynu: leker, hp, btp (może być wiele oddzielone przecinkiem)
   hideOldZeroStock?: boolean; // Ukryj produkty ze stanem 0 starsze niż 14 dni
   sessionSeed?: number; // Seed for consistent random sorting
+  discounted?: boolean; // Filtr tylko przecenionych produktów (compareAtPrice > price)
 }
 
 interface ProductsListResult {
@@ -324,6 +325,7 @@ export class ProductsService {
       warehouse,
       hideOldZeroStock = false,
       sessionSeed,
+      discounted = false,
     } = filters;
 
     // If search is provided, use Meilisearch for better results
@@ -428,6 +430,13 @@ export class ProductsService {
       };
     }
 
+    // Filter only discounted products (compareAtPrice > price)
+    if (discounted) {
+      where.compareAtPrice = { not: null };
+      // We'll do the compareAtPrice > price check after fetching since Prisma doesn't support column comparison natively
+      // But we can at least ensure compareAtPrice exists
+    }
+
     // Filter by warehouse (based on baselinkerProductId prefix)
     if (warehouse) {
       const warehouses = warehouse.split(',').map(w => w.trim().toLowerCase());
@@ -484,9 +493,10 @@ export class ProductsService {
     }
 
     // Execute queries in parallel
-    // For random sort, we need to fetch more products and shuffle them
-    const fetchLimit = useRandomSort ? 500 : limit;
-    const fetchSkip = useRandomSort ? 0 : skip;
+    // For random sort or discounted filter, we need to fetch more products
+    const needsPostFetch = useRandomSort || discounted;
+    const fetchLimit = needsPostFetch ? 500 : limit;
+    const fetchSkip = needsPostFetch ? 0 : skip;
     
     const [products, totalCount] = await Promise.all([
       prisma.product.findMany({
@@ -511,6 +521,18 @@ export class ProductsService {
 
     // Transform products
     let transformedProducts = transformProducts(products);
+
+    // Filter only discounted products (compareAtPrice > price) - post-fetch filter
+    let discountedTotal = 0;
+    if (discounted) {
+      transformedProducts = transformedProducts.filter(
+        (p: any) => p.compareAtPrice && Number(p.compareAtPrice) > Number(p.price)
+      );
+      discountedTotal = transformedProducts.length;
+      // Apply pagination for discounted products (since we fetched all)
+      const startIndex = (page - 1) * limit;
+      transformedProducts = transformedProducts.slice(startIndex, startIndex + limit);
+    }
     
     // Apply random shuffle if requested (seeded by session for consistency within a browsing session)
     if (useRandomSort && transformedProducts.length > 0) {
@@ -555,8 +577,10 @@ export class ProductsService {
     // Sort out-of-stock products to the end (preserves original order within each group)
     transformedProducts = sortOutOfStockToEnd(transformedProducts);
 
-    // For random sort we only fetched up to fetchLimit products, so cap total to avoid phantom pages
-    const effectiveTotal = useRandomSort ? Math.min(totalCount, fetchLimit) : totalCount;
+    // Calculate effective total
+    const effectiveTotal = discounted 
+      ? discountedTotal 
+      : (useRandomSort ? Math.min(totalCount, fetchLimit) : totalCount);
 
     return {
       products: transformedProducts,
