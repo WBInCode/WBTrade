@@ -97,18 +97,33 @@ function HeaderContent() {
   // Auto-scroll to active category and center it
   useEffect(() => {
     const nav = categoryNavRef.current;
-    if (!nav) return;
-    const activeLink = nav.querySelector<HTMLElement>('[data-active="true"]');
+    if (!nav || !isOnProductsPage) return;
+
+    // Find the active link: either by data-active or by matching href
+    let activeLink: HTMLElement | null = nav.querySelector<HTMLElement>('[data-active="true"]');
+    
+    if (!activeLink && currentCategorySlug) {
+      // Fallback: find link by href containing the category slug
+      activeLink = nav.querySelector<HTMLElement>(`a[href*="category=${currentCategorySlug}"]`);
+    }
+    if (!activeLink && !currentCategorySlug) {
+      // "Wszystkie produkty" link
+      activeLink = nav.querySelector<HTMLElement>('a[href="/products"]');
+    }
     if (!activeLink) return;
 
-    // Wait a tick for layout to settle (categories may load async)
-    requestAnimationFrame(() => {
+    // Small delay to ensure layout is stable after navigation
+    const timer = setTimeout(() => {
       const navRect = nav.getBoundingClientRect();
-      const linkRect = activeLink.getBoundingClientRect();
+      const linkRect = activeLink!.getBoundingClientRect();
       const offset = linkRect.left - navRect.left + nav.scrollLeft - (navRect.width / 2) + (linkRect.width / 2);
       nav.scrollTo({ left: Math.max(0, offset), behavior: 'smooth' });
-    });
-  }, [currentCategorySlug, categories]);
+      // Update arrow visibility after scroll
+      setTimeout(checkScrollPosition, 400);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [currentCategorySlug, categories, categoryPath, isOnProductsPage]);
 
   // Handle category bar visibility on scroll
   useEffect(() => {
