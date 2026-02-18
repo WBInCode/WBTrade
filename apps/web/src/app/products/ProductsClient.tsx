@@ -145,7 +145,7 @@ function ProductsContent() {
             minPrice: minPrice ? parseFloat(minPrice) : undefined,
             maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
             search: searchQuery || undefined,
-            sort: 'bestsellers',
+            sort: 'popularity',
             brand: brand || undefined,
             warehouse: warehouse || undefined,
           });
