@@ -127,7 +127,8 @@ export default function ProductListHeader({
 
       {/* Sort & View */}
       <div className="flex items-center justify-between sm:justify-end gap-4">
-        {/* Sort */}
+        {/* Sort - hidden for Bestsellery and Nowości tabs (they have fixed sorting) */}
+        {activeTab !== 'bestsellers' && activeTab !== 'new' && (
         <div className="flex items-center gap-2">
           <span className="text-sm text-secondary-500 dark:text-secondary-400">Sortuj:</span>
           <select
@@ -142,6 +143,7 @@ export default function ProductListHeader({
             ))}
           </select>
         </div>
+        )}
 
         {/* View Toggle */}
         <div className="flex items-center border border-gray-300 dark:border-secondary-600 rounded-lg overflow-hidden">

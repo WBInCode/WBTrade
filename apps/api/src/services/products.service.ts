@@ -487,6 +487,10 @@ export class ProductsService {
         // Add secondary sort by id for stable pagination when scores are equal
         orderBy = [{ popularityScore: 'desc' }, { id: 'asc' }];
         break;
+      case 'bestsellers':
+        // Sort by sales count only (number of sold units)
+        orderBy = [{ salesCount: 'desc' }, { id: 'asc' }];
+        break;
       case 'newest':
       default:
         orderBy = [{ createdAt: 'desc' }, { id: 'asc' }];
