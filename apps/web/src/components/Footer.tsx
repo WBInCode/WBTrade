@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { getLogoUrl, PAYMENT_LOGOS, SOCIAL_LOGOS } from '@/lib/logo-dev';
+import FooterNewsletter from './FooterNewsletter';
 
 // Helper component for conditional logo rendering
 function LogoImage({ src, alt, width, height, className }: { src: string | null; alt: string; width: number; height: number; className?: string }) {
@@ -177,21 +178,7 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
             </ul>
 
             {/* Newsletter */}
-            <div className="mt-6">
-              <h6 className="font-bold text-secondary-900 dark:text-secondary-100 mb-3">Newsletter</h6>
-              <div className="flex gap-2">
-                <input 
-                  type="email" 
-                  placeholder="Twój email" 
-                  className="flex-1 px-4 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 placeholder-secondary-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                />
-                <button className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+            <FooterNewsletter />
           </div>
         </div>
       </div>
@@ -201,10 +188,12 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
         <div className="container-custom py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-secondary-500 dark:text-secondary-400">Akceptowane metody płatności</p>
-            <div className="flex items-center gap-4">
-              <LogoImage src={getLogoUrl(PAYMENT_LOGOS.visa)} alt="Visa" width={40} height={28} className="object-contain rounded-md" />
-              <div className="bg-white rounded-md p-1">
-                <LogoImage src={getLogoUrl(PAYMENT_LOGOS.blik)} alt="BLIK" width={40} height={28} className="object-contain" />
+            <div className="flex items-center gap-3">
+              <div className="w-[48px] h-[32px] flex items-center justify-center">
+                <LogoImage src={getLogoUrl(PAYMENT_LOGOS.visa)} alt="Visa" width={48} height={32} className="object-contain rounded-md w-[48px] h-[32px]" />
+              </div>
+              <div className="w-[48px] h-[32px] flex items-center justify-center bg-white rounded-md p-0.5">
+                <LogoImage src={getLogoUrl(PAYMENT_LOGOS.blik)} alt="BLIK" width={48} height={32} className="object-contain w-[44px] h-[28px]" />
               </div>
             </div>
           </div>
