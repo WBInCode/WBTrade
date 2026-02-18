@@ -11,6 +11,7 @@ import {
   getFeatured,
   getSeasonal,
   getNewProducts,
+  getMostWishlisted,
   getSameWarehouseProducts
 } from '../controllers/products.controller';
 import { reviewsController } from '../controllers/reviews.controller';
@@ -39,6 +40,9 @@ router.get('/seasonal', getSeasonal);
 
 // Route to get new products (added in last 14 days)
 router.get('/new-arrivals', getNewProducts);
+
+// Route to get the most wishlisted product (Product of the Day)
+router.get('/most-wishlisted', getMostWishlisted);
 
 // Route to get products from the same warehouse (for "Zamów w jednej przesyłce")
 router.get('/same-warehouse/:productId', getSameWarehouseProducts);

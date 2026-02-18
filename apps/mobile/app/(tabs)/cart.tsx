@@ -248,12 +248,12 @@ export default function CartScreen() {
         <View style={styles.summaryRows}>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Suma produktów</Text>
-            <Text style={styles.summaryValue}>{subtotal.toFixed(2)} zł</Text>
+            <Text style={styles.summaryValue}>{subtotal.toFixed(2).replace('.', ',')} zł</Text>
           </View>
           {discount > 0 && (
             <View style={styles.summaryRow}>
               <Text style={styles.discountLabel}>Rabat</Text>
-              <Text style={styles.discountValue}>-{discount.toFixed(2)} zł</Text>
+              <Text style={styles.discountValue}>-{discount.toFixed(2).replace('.', ',')} zł</Text>
             </View>
           )}
           <View style={styles.summaryRow}>
@@ -262,7 +262,7 @@ export default function CartScreen() {
           </View>
           <View style={[styles.summaryRow, styles.totalRow]}>
             <Text style={styles.totalLabel}>Do zapłaty</Text>
-            <Text style={styles.totalValue}>{total.toFixed(2)} zł</Text>
+            <Text style={styles.totalValue}>{total.toFixed(2).replace('.', ',')} zł</Text>
           </View>
         </View>
         <Button

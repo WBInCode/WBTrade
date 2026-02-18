@@ -534,7 +534,7 @@ export default function ShippingPerPackage({ postalCode, onSubmit, onBack }: Shi
                 </View>
                 {selectedMethod && (
                   <View style={styles.packageHeaderRight}>
-                    <Text style={styles.headerPrice}>{selectedMethod.price.toFixed(2)} zł</Text>
+                    <Text style={styles.headerPrice}>{selectedMethod.price.toFixed(2).replace('.', ',')} zł</Text>
                     <Text style={styles.headerMethodName}>{selectedMethod.name}</Text>
                   </View>
                 )}
@@ -595,7 +595,7 @@ export default function ShippingPerPackage({ postalCode, onSubmit, onBack }: Shi
 
                         {/* Price */}
                         <Text style={styles.methodPrice}>
-                          {method.price === 0 ? 'Gratis' : `${method.price.toFixed(2)} zł`}
+                          {method.price === 0 ? 'Gratis' : `${method.price.toFixed(2).replace('.', ',')} zł`}
                         </Text>
                       </TouchableOpacity>
 
@@ -760,7 +760,7 @@ export default function ShippingPerPackage({ postalCode, onSubmit, onBack }: Shi
                   <View style={styles.freeShippingHeader}>
                     <Text style={styles.freeShippingLabel}>Do darmowej dostawy:</Text>
                     <Text style={styles.freeShippingAmount}>
-                      {(300 - pkgInfo.warehouseValue).toFixed(2)} zł
+                      {(300 - pkgInfo.warehouseValue).toFixed(2).replace('.', ',')} zł
                     </Text>
                   </View>
                   <View style={styles.progressTrack}>
@@ -785,7 +785,7 @@ export default function ShippingPerPackage({ postalCode, onSubmit, onBack }: Shi
         {/* Total */}
         <View style={styles.totalSection}>
           <Text style={styles.totalLabel}>Łączny koszt dostawy:</Text>
-          <Text style={styles.totalPrice}>{totalShipping.toFixed(2)} zł</Text>
+          <Text style={styles.totalPrice}>{totalShipping.toFixed(2).replace('.', ',')} zł</Text>
         </View>
 
         {/* Error */}

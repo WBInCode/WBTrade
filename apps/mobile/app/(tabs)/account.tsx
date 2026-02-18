@@ -82,34 +82,22 @@ export default function AccountScreen() {
           <MenuItem
             icon="shopping-bag"
             title="Moje zamówienia"
-            onPress={() => {
-              // TODO: Navigate to orders
-              alert('Historia zamówień będzie dostępna wkrótce');
-            }}
+            onPress={() => router.push('/account/orders')}
           />
           <MenuItem
             icon="map-marker"
             title="Moje adresy"
-            onPress={() => {
-              // TODO: Navigate to addresses
-              alert('Zarządzanie adresami będzie dostępne wkrótce');
-            }}
+            onPress={() => router.push('/account/addresses')}
           />
           <MenuItem
             icon="user"
             title="Edytuj profil"
-            onPress={() => {
-              // TODO: Navigate to profile edit
-              alert('Edycja profilu będzie dostępna wkrótce');
-            }}
+            onPress={() => router.push('/account/profile')}
           />
           <MenuItem
             icon="lock"
             title="Zmień hasło"
-            onPress={() => {
-              // TODO: Navigate to password change
-              alert('Zmiana hasła będzie dostępna wkrótce');
-            }}
+            onPress={() => router.push('/account/password')}
           />
         </View>
 

@@ -118,7 +118,7 @@ export default function PaymentMethod({ onSubmit, onBack }: PaymentMethodProps) 
                 <Text style={styles.optionDesc}>{option.description}</Text>
                 {option.extraFee > 0 && (
                   <Text style={styles.optionFee}>
-                    Dodatkowa opłata: {option.extraFee.toFixed(2)} zł
+                    Dodatkowa opłata: {option.extraFee.toFixed(2).replace('.', ',')} zł
                   </Text>
                 )}
                 {isSelected && (

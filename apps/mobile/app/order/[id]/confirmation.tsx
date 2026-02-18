@@ -267,10 +267,10 @@ export default function OrderConfirmation() {
                 <Text style={styles.productVariant}>{item.variantName}</Text>
               )}
               <Text style={styles.productPrice}>
-                {item.quantity} × {item.unitPrice.toFixed(2)} zł
+                {item.quantity} × {item.unitPrice.toFixed(2).replace('.', ',')} zł
               </Text>
             </View>
-            <Text style={styles.productTotal}>{item.total.toFixed(2)} zł</Text>
+            <Text style={styles.productTotal}>{item.total.toFixed(2).replace('.', ',')} zł</Text>
           </View>
         ))}
       </View>
@@ -280,23 +280,23 @@ export default function OrderConfirmation() {
         <Text style={styles.sectionTitle}>Podsumowanie</Text>
         <View style={styles.priceRow}>
           <Text style={styles.priceLabel}>Produkty:</Text>
-          <Text style={styles.priceValue}>{order.subtotal.toFixed(2)} zł</Text>
+          <Text style={styles.priceValue}>{order.subtotal.toFixed(2).replace('.', ',')} zł</Text>
         </View>
         {order.discount > 0 && (
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>Rabat:</Text>
             <Text style={[styles.priceValue, { color: Colors.success }]}>
-              -{order.discount.toFixed(2)} zł
+              -{order.discount.toFixed(2).replace('.', ',')} zł
             </Text>
           </View>
         )}
         <View style={styles.priceRow}>
           <Text style={styles.priceLabel}>Dostawa:</Text>
-          <Text style={styles.priceValue}>{order.shipping.toFixed(2)} zł</Text>
+          <Text style={styles.priceValue}>{order.shipping.toFixed(2).replace('.', ',')} zł</Text>
         </View>
         <View style={[styles.priceRow, styles.totalRow]}>
           <Text style={styles.totalLabel}>Razem:</Text>
-          <Text style={styles.totalValue}>{order.total.toFixed(2)} zł</Text>
+          <Text style={styles.totalValue}>{order.total.toFixed(2).replace('.', ',')} zł</Text>
         </View>
       </View>
 
