@@ -18,8 +18,6 @@ function HeaderContent() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [categories, setCategories] = useState<CategoryWithChildren[]>([]);
   const [categoryPath, setCategoryPath] = useState<{ id: string; name: string; slug: string }[]>([]);
-  const [showLeftArrow, setShowLeftArrow] = useState(false);
-  const [showRightArrow, setShowRightArrow] = useState(false);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const { itemCount } = useCart();
   const { user, isAuthenticated, logout } = useAuth();
@@ -30,6 +28,8 @@ function HeaderContent() {
   const categoryNavRef = useRef<HTMLElement>(null);
   const megaMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const scrollEndTimerRef = useRef<NodeJS.Timeout>(undefined);
+  const isResettingScroll = useRef(false);
   
   // Get current category from URL
   const currentCategorySlug = searchParams.get('category');
@@ -69,15 +69,6 @@ function HeaderContent() {
   // Get current main category from path
   const currentMainCategory = categoryPath.length > 0 ? categoryPath[0] : null;
 
-  // Check scroll position for category nav arrows
-  const checkScrollPosition = () => {
-    const nav = categoryNavRef.current;
-    if (nav) {
-      setShowLeftArrow(nav.scrollLeft > 0);
-      setShowRightArrow(nav.scrollLeft < nav.scrollWidth - nav.clientWidth - 10);
-    }
-  };
-
   // Scroll category nav
   const scrollCategories = (direction: 'left' | 'right') => {
     const nav = categoryNavRef.current;
@@ -87,28 +78,68 @@ function HeaderContent() {
     }
   };
 
-  // Initialize scroll check
-  useEffect(() => {
-    checkScrollPosition();
-    window.addEventListener('resize', checkScrollPosition);
-    return () => window.removeEventListener('resize', checkScrollPosition);
-  }, [categories]);
+  // Infinite carousel scroll handler - resets position when scrolled past boundaries
+  const handleCarouselScroll = () => {
+    if (isResettingScroll.current) return;
+    if (scrollEndTimerRef.current) clearTimeout(scrollEndTimerRef.current);
 
-  // Auto-scroll to active category and center it
+    scrollEndTimerRef.current = setTimeout(() => {
+      const nav = categoryNavRef.current;
+      if (!nav || categories.length === 0) return;
+
+      const setWidth = nav.scrollWidth / 3;
+
+      if (nav.scrollLeft < setWidth * 0.25 || nav.scrollLeft > setWidth * 1.75) {
+        isResettingScroll.current = true;
+        nav.style.scrollBehavior = 'auto';
+
+        if (nav.scrollLeft < setWidth * 0.25) {
+          nav.scrollLeft += setWidth;
+        } else {
+          nav.scrollLeft -= setWidth;
+        }
+
+        requestAnimationFrame(() => {
+          nav.style.scrollBehavior = '';
+          isResettingScroll.current = false;
+        });
+      }
+    }, 150);
+  };
+
+  // Initialize infinite carousel position and auto-scroll to active category
   useEffect(() => {
     const nav = categoryNavRef.current;
-    if (!nav || !isOnProductsPage) return;
+    if (!nav || categories.length === 0) return;
 
-    // Find the active link: either by data-active or by matching href
+    // Position at start of middle set for infinite carousel (instant)
+    const setWidth = nav.scrollWidth / 3;
+    nav.style.scrollBehavior = 'auto';
+    nav.scrollLeft = setWidth;
+    nav.style.scrollBehavior = '';
+
+    if (!isOnProductsPage) return;
+
+    // Find the active link in the middle set (data-active="true" is only on middle set)
     let activeLink: HTMLElement | null = nav.querySelector<HTMLElement>('[data-active="true"]');
-    
+
     if (!activeLink && currentCategorySlug) {
-      // Fallback: find link by href containing the category slug
-      activeLink = nav.querySelector<HTMLElement>(`a[href*="category=${currentCategorySlug}"]`);
+      // Fallback: find by href, pick the middle set match (index 1 of 3)
+      const allMatching = nav.querySelectorAll<HTMLElement>(`a[href*="category=${currentCategorySlug}"]`);
+      if (allMatching.length >= 2) {
+        activeLink = allMatching[Math.floor(allMatching.length / 2)];
+      } else if (allMatching.length === 1) {
+        activeLink = allMatching[0];
+      }
     }
     if (!activeLink && !currentCategorySlug) {
-      // "Wszystkie produkty" link
-      activeLink = nav.querySelector<HTMLElement>('a[href="/products"]');
+      // "Wszystkie produkty" link - pick the middle set match
+      const allLinks = nav.querySelectorAll<HTMLElement>('a[href="/products"]');
+      if (allLinks.length >= 2) {
+        activeLink = allLinks[Math.floor(allLinks.length / 2)];
+      } else if (allLinks.length === 1) {
+        activeLink = allLinks[0];
+      }
     }
     if (!activeLink) return;
 
@@ -118,11 +149,12 @@ function HeaderContent() {
       const linkRect = activeLink!.getBoundingClientRect();
       const offset = linkRect.left - navRect.left + nav.scrollLeft - (navRect.width / 2) + (linkRect.width / 2);
       nav.scrollTo({ left: Math.max(0, offset), behavior: 'smooth' });
-      // Update arrow visibility after scroll
-      setTimeout(checkScrollPosition, 400);
     }, 100);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      if (scrollEndTimerRef.current) clearTimeout(scrollEndTimerRef.current);
+    };
   }, [currentCategorySlug, categories, categoryPath, isOnProductsPage]);
 
   // Handle category bar visibility on scroll
@@ -370,7 +402,7 @@ function HeaderContent() {
         <div className="container-custom overflow-visible">
           <div className="flex items-center justify-between relative">
             {/* Left Arrow */}
-            {showLeftArrow && (
+            {categories.length > 0 && (
               <button
                 onClick={() => scrollCategories('left')}
                 className="absolute left-0 z-10 h-full px-2 bg-gradient-to-r from-primary-500 via-primary-500 dark:from-primary-600 dark:via-primary-600 to-transparent flex items-center"
@@ -384,7 +416,7 @@ function HeaderContent() {
             
             <nav 
               ref={categoryNavRef}
-              onScroll={checkScrollPosition}
+              onScroll={handleCarouselScroll}
               className="flex items-center gap-1 overflow-x-auto scrollbar-hide py-2 px-1"
             >
               <button
@@ -396,39 +428,45 @@ function HeaderContent() {
                 </svg>
                 Kategorie
               </button>
-              {/* All Products button */}
-              <Link
-                href="/products"
-                data-active={isOnProductsPage && !currentCategorySlug ? 'true' : undefined}
-                className={`px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors ${
-                  isOnProductsPage && !currentCategorySlug
-                    ? 'text-primary-500 bg-white'
-                    : 'text-white hover:bg-primary-600'
-                }`}
-              >
-                Wszystkie produkty
-              </Link>
-              {categories.map((category) => {
-                const isActive = isOnProductsPage && currentMainCategory?.slug === category.slug;
-                return (
+              {/* Infinite carousel: render categories 3 times (clone-before, original, clone-after) */}
+              {[0, 1, 2].flatMap((setIndex) => {
+                const isOriginal = setIndex === 1;
+                return [
                   <Link
-                    key={category.slug}
-                    href={`/products?category=${category.slug}`}
-                    data-active={isActive ? 'true' : undefined}
+                    key={`all-${setIndex}`}
+                    href="/products"
+                    data-active={isOriginal && isOnProductsPage && !currentCategorySlug ? 'true' : undefined}
                     className={`px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors ${
-                      isActive
+                      isOnProductsPage && !currentCategorySlug
                         ? 'text-primary-500 bg-white'
                         : 'text-white hover:bg-primary-600'
                     }`}
                   >
-                    {cleanCategoryName(category.name)}
-                  </Link>
-                );
+                    Wszystkie produkty
+                  </Link>,
+                  ...categories.map((category) => {
+                    const isActive = isOnProductsPage && currentMainCategory?.slug === category.slug;
+                    return (
+                      <Link
+                        key={`${setIndex}-${category.slug}`}
+                        href={`/products?category=${category.slug}`}
+                        data-active={isOriginal && isActive ? 'true' : undefined}
+                        className={`px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors ${
+                          isActive
+                            ? 'text-primary-500 bg-white'
+                            : 'text-white hover:bg-primary-600'
+                        }`}
+                      >
+                        {cleanCategoryName(category.name)}
+                      </Link>
+                    );
+                  })
+                ];
               })}
             </nav>
             
             {/* Right Arrow */}
-            {showRightArrow && (
+            {categories.length > 0 && (
               <button
                 onClick={() => scrollCategories('right')}
                 className="absolute right-0 z-10 h-full pl-4 pr-1 bg-gradient-to-l from-primary-500 dark:from-primary-600 from-60% to-transparent flex items-center"
