@@ -78,15 +78,25 @@ export interface CategoryWithChildren {
 
 export class CategoriesService {
   /**
-   * Get all category IDs matching a slug — same logic as products.service.ts getAllCategoryIds.
-   * Finds ALL categories whose slug CONTAINS the search term (catches supplier-specific slugs
-   * like leker-zabawki-1234) and then recursively includes all their DB descendants.
+   * Get all category IDs matching a slug — finds ALL categories whose slug CONTAINS
+   * the search term (catches supplier-specific slugs like leker-zabawki-1234, btp-gadzety etc.)
+   * and then recursively includes all their DB descendants.
+   * MUST use same logic as products.service.ts getAllCategoryIds.
    */
   private async getAllMatchingCategoryIds(slug: string): Promise<string[]> {
+    const prefixes = ['btp-', 'hp-', 'leker-', 'ikonka-'];
+
+    // Find ALL matching categories: exact slug + supplier prefixes + contains
     const matchingCategories = await prisma.category.findMany({
       where: {
         isActive: true,
-        slug: { contains: slug, mode: 'insensitive' },
+        OR: [
+          { slug },
+          ...prefixes.map(prefix => ({
+            slug: { startsWith: `${prefix}${slug}` }
+          })),
+          { slug: { contains: slug, mode: 'insensitive' as const } },
+        ],
       },
       select: { id: true },
     });
