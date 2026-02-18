@@ -165,15 +165,56 @@ export class SearchService {
   }
 
   /**
+   * Get all descendant category IDs for a given slug (including the category itself)
+   */
+  private async getAllCategoryIds(categorySlug: string): Promise<string[]> {
+    const category = await prisma.category.findFirst({
+      where: { slug: categorySlug, isActive: true },
+      select: { id: true },
+    });
+
+    if (!category) return [];
+
+    const categoryIds: string[] = [category.id];
+
+    const getDescendants = async (parentIds: string[]): Promise<void> => {
+      const children = await prisma.category.findMany({
+        where: { parentId: { in: parentIds }, isActive: true },
+        select: { id: true },
+      });
+      if (children.length > 0) {
+        const childIds = children.map(c => c.id);
+        categoryIds.push(...childIds);
+        await getDescendants(childIds);
+      }
+    };
+
+    await getDescendants(categoryIds);
+    return [...new Set(categoryIds)];
+  }
+
+  /**
    * Get search suggestions (autocomplete) using Meilisearch
    */
-  async suggest(query: string) {
+  async suggest(query: string, categorySlug?: string) {
     try {
       const index = getProductsIndex();
+
+      // Build filter
+      const filters: string[] = ['status = "ACTIVE"'];
+      
+      // If category slug provided, resolve to all descendant categoryIds and filter
+      if (categorySlug) {
+        const allCategoryIds = await this.getAllCategoryIds(categorySlug);
+        if (allCategoryIds.length > 0) {
+          const categoryFilter = allCategoryIds.map(id => `categoryId = "${id}"`).join(' OR ');
+          filters.push(`(${categoryFilter})`);
+        }
+      }
       
       const results = await index.search<MeiliProduct>(query, {
         limit: 20, // Fetch more to account for filtering
-        filter: 'status = "ACTIVE"',
+        filter: filters.join(' AND '),
         attributesToRetrieve: ['id', 'name', 'slug', 'image', 'price', 'categoryName'],
       });
 
@@ -226,18 +267,19 @@ export class SearchService {
       };
     } catch (error) {
       console.error('Meilisearch suggest error, falling back to Prisma:', error);
-      return this.suggestWithPrisma(query);
+      return this.suggestWithPrisma(query, categorySlug);
     }
   }
 
   /**
    * Fallback suggestions using Prisma
    */
-  private async suggestWithPrisma(query: string) {
+  private async suggestWithPrisma(query: string, categorySlug?: string) {
     const products = await prisma.product.findMany({
       where: {
         status: 'ACTIVE',
         name: { contains: query, mode: 'insensitive' },
+        ...(categorySlug ? { categoryId: { in: await this.getAllCategoryIds(categorySlug) } } : {}),
       },
       select: {
         id: true,

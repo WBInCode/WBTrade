@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { dashboardApi } from '../lib/api';
+import { dashboardApi, categoriesApi, CategoryWithChildren } from '../lib/api';
+import { cleanCategoryName } from '../lib/categories';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -60,10 +61,14 @@ export default function SearchBar() {
   const [popularSearches, setPopularSearches] = useState<string[]>(defaultPopularSearches);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [categories, setCategories] = useState<CategoryWithChildren[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<{ slug: string; name: string } | null>(null);
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Load recent searches from localStorage and fetch popular searches
@@ -93,6 +98,17 @@ export default function SearchBar() {
     };
     
     fetchPopularSearches();
+    
+    // Fetch categories for dropdown
+    const fetchCategories = async () => {
+      try {
+        const response = await categoriesApi.getMain();
+        setCategories(response.categories);
+      } catch (e) {
+        console.error('Failed to fetch categories');
+      }
+    };
+    fetchCategories();
   }, []);
 
   // Save recent search
@@ -125,8 +141,9 @@ export default function SearchBar() {
     setIsLoading(true);
     
     try {
+      const categoryParam = selectedCategory ? `&category=${encodeURIComponent(selectedCategory.slug)}` : '';
       const response = await fetch(
-        `${API_URL}/search/suggest?query=${encodeURIComponent(searchQuery.trim())}`
+        `${API_URL}/search/suggest?query=${encodeURIComponent(searchQuery.trim())}${categoryParam}`
       );
       
       if (!response.ok) {
@@ -151,7 +168,7 @@ export default function SearchBar() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [selectedCategory]);
 
   // Debounced search
   useEffect(() => {
@@ -176,7 +193,7 @@ export default function SearchBar() {
     };
   }, [query, searchProducts]);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -186,6 +203,12 @@ export default function SearchBar() {
         !inputRef.current.contains(event.target as Node)
       ) {
         setIsOpen(false);
+      }
+      if (
+        categoryDropdownRef.current &&
+        !categoryDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsCategoryDropdownOpen(false);
       }
     };
 
@@ -223,7 +246,8 @@ export default function SearchBar() {
         // Silently ignore errors - this is optional functionality
       });
       setIsOpen(false);
-      router.push(`/products?search=${encodeURIComponent(query.trim())}`);
+      const categoryParam = selectedCategory ? `&category=${encodeURIComponent(selectedCategory.slug)}` : '';
+      router.push(`/products?search=${encodeURIComponent(query.trim())}${categoryParam}`);
     }
   };
 
@@ -240,7 +264,8 @@ export default function SearchBar() {
     // Record search for personalized recommendations
     dashboardApi.recordSearch(search).catch(() => {});
     setIsOpen(false);
-    router.push(`/products?search=${encodeURIComponent(search)}`);
+    const categoryParam = selectedCategory ? `&category=${encodeURIComponent(selectedCategory.slug)}` : '';
+    router.push(`/products?search=${encodeURIComponent(search)}${categoryParam}`);
   };
 
   const handlePopularSearchClick = (search: string) => {
@@ -249,7 +274,8 @@ export default function SearchBar() {
     // Record search for personalized recommendations
     dashboardApi.recordSearch(search).catch(() => {});
     setIsOpen(false);
-    router.push(`/products?search=${encodeURIComponent(search)}`);
+    const categoryParam = selectedCategory ? `&category=${encodeURIComponent(selectedCategory.slug)}` : '';
+    router.push(`/products?search=${encodeURIComponent(search)}${categoryParam}`);
   };
 
   const formatPrice = (price: number) => {
@@ -272,12 +298,86 @@ export default function SearchBar() {
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
-          placeholder="Czego szukasz..."
+          placeholder={selectedCategory ? `Szukaj w: ${cleanCategoryName(selectedCategory.name)}...` : 'Czego szukasz...'}
           className="flex-1 h-11 rounded-l-lg border border-r-0 border-gray-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-4 py-2 
                      text-sm text-secondary-900 dark:text-secondary-100 placeholder:text-gray-400 dark:placeholder:text-secondary-500
                      focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           autoComplete="off"
         />
+
+        {/* Category dropdown button - right side, between input and search button */}
+        <div ref={categoryDropdownRef} className="relative hidden md:block">
+          <button
+            type="button"
+            onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+            className={`h-11 px-3 border-y border-l border-gray-300 dark:border-secondary-600
+                       text-sm transition-colors flex items-center gap-1.5 whitespace-nowrap
+                       ${selectedCategory 
+                         ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400' 
+                         : 'bg-gray-50 dark:bg-secondary-700 text-secondary-500 dark:text-secondary-400 hover:bg-gray-100 dark:hover:bg-secondary-600'
+                       }`}
+          >
+            <span className="truncate max-w-[150px]">{selectedCategory ? cleanCategoryName(selectedCategory.name) : 'Kategorie'}</span>
+            {selectedCategory ? (
+              <span
+                role="button"
+                tabIndex={-1}
+                onClick={(e) => { e.stopPropagation(); setSelectedCategory(null); }}
+                className="ml-0.5 p-0.5 rounded-full hover:bg-primary-200 dark:hover:bg-primary-800 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </span>
+            ) : (
+              <svg className={`w-3.5 h-3.5 flex-shrink-0 transition-transform ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            )}
+          </button>
+
+          {/* Category dropdown list */}
+          {isCategoryDropdownOpen && (
+            <div className="absolute top-full right-0 mt-1 w-72 bg-white dark:bg-secondary-800 rounded-lg shadow-xl dark:shadow-secondary-950/50 border border-gray-200 dark:border-secondary-700 z-[60] max-h-[400px] overflow-y-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCategory(null);
+                  setIsCategoryDropdownOpen(false);
+                }}
+                className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center gap-2 ${
+                  !selectedCategory 
+                    ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 font-medium' 
+                    : 'text-secondary-700 dark:text-secondary-200 hover:bg-gray-50 dark:hover:bg-secondary-700'
+                }`}
+              >
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+                Wszystkie kategorie
+              </button>
+              {categories.map((category) => (
+                <button
+                  key={category.slug}
+                  type="button"
+                  onClick={() => {
+                    setSelectedCategory({ slug: category.slug, name: category.name });
+                    setIsCategoryDropdownOpen(false);
+                    inputRef.current?.focus();
+                  }}
+                  className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
+                    selectedCategory?.slug === category.slug 
+                      ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 font-medium' 
+                      : 'text-secondary-700 dark:text-secondary-200 hover:bg-gray-50 dark:hover:bg-secondary-700'
+                  }`}
+                >
+                  {cleanCategoryName(category.name)}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         <button
           type="submit"
           className="px-6 h-11 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-r-lg transition-colors flex items-center gap-2"
@@ -358,7 +458,7 @@ export default function SearchBar() {
                 </button>
               ))}
               <Link 
-                href={`/products?search=${encodeURIComponent(query)}`}
+                href={`/products?search=${encodeURIComponent(query)}${selectedCategory ? `&category=${encodeURIComponent(selectedCategory.slug)}` : ''}`}
                 onClick={() => {
                   saveRecentSearch(query);
                   setIsOpen(false);
