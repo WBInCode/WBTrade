@@ -417,7 +417,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
           {/* Left: Image Gallery */}
           <div className="md:col-span-1 lg:col-span-2 min-w-0">
-            <div className="bg-white dark:bg-secondary-800 rounded-lg p-2 sm:p-4 relative overflow-hidden">
+            <div className="bg-white dark:bg-secondary-800 rounded-xl sm:rounded-2xl p-2 sm:p-4 relative overflow-hidden">
               {/* Badge */}
               {product.badge && (
                 <span className="absolute top-3 left-3 sm:top-6 sm:left-6 bg-orange-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 sm:px-3 sm:py-1.5 rounded z-10 uppercase">
@@ -426,7 +426,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
               )}
               
               {/* Main Image */}
-              <div className="aspect-square overflow-hidden rounded-lg mb-3 sm:mb-4 max-w-full relative">
+              <div className="aspect-square overflow-hidden rounded-xl sm:rounded-2xl mb-3 sm:mb-4 max-w-full relative">
                 <Image
                   src={mainImage}
                   alt={product.name}
@@ -462,7 +462,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
 
           {/* Right: Product Info Panel */}
           <div className="md:col-span-1 lg:col-span-1 min-w-0">
-            <div className="bg-white dark:bg-secondary-800 rounded-lg p-4 sm:p-6 md:sticky md:top-24 overflow-hidden">
+            <div className="bg-white dark:bg-secondary-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:sticky md:top-24 overflow-hidden">
               {/* Title */}
               <h1 className="text-base sm:text-xl font-semibold text-gray-900 dark:text-white mb-1 leading-snug break-words">
                 {product.name}
@@ -742,9 +742,128 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
               })()}
 
               {/* Delivery Info */}
-              
-              <div className="border-t dark:border-secondary-700 pt-3 sm:pt-4 space-y-2 sm:space-y-3">
-              </div>
+              {(() => {
+                const tags = product?.tags || [];
+                const price = Number(product.price);
+
+                // Check if gabaryt
+                const gabarytTag = tags.find(t => /^((\d+(?:\.\d{2})?)\s*)?gabaryt$/i.test(t));
+                const isGabaryt = !!gabarytTag;
+                const gabarytMatch = gabarytTag?.match(/^(\d+(?:\.\d{2})?)\s*gabaryt$/i);
+                const gabarytPrice = gabarytMatch ? parseFloat(gabarytMatch[1]) : 49.99;
+
+                // Check if courier only ("Tylko kurier")
+                const isCourierOnly = tags.some(t => /^tylko\s*kurier$/i.test(t));
+                
+                // Check weight tag for courier-only items
+                let weightPrice: number | null = null;
+                if (isCourierOnly) {
+                  for (const tag of tags) {
+                    const wMatch = tag.match(/^do\s*(\d+(?:[,\.]\d+)?)\s*kg$/i);
+                    if (wMatch) {
+                      const kg = parseFloat(wMatch[1].replace(',', '.'));
+                      if (kg <= 20) weightPrice = 25.99;
+                      else weightPrice = 28.99;
+                      break;
+                    }
+                  }
+                  if (weightPrice === null) weightPrice = 28.99;
+                }
+
+                // Free shipping threshold
+                const freeShippingThreshold = 300;
+                const qualifiesForFreeShipping = price >= freeShippingThreshold;
+
+                // Determine available methods
+                type ShippingOption = { name: string; icon: React.ReactNode; price: number; freeEligible: boolean };
+                const methods: ShippingOption[] = [];
+
+                if (isGabaryt) {
+                  methods.push({
+                    name: 'Wysyłka gabaryt (kurier)',
+                    icon: (
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+                      </svg>
+                    ),
+                    price: gabarytPrice,
+                    freeEligible: false,
+                  });
+                } else if (isCourierOnly) {
+                  methods.push({
+                    name: 'Kurier DPD',
+                    icon: (
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+                      </svg>
+                    ),
+                    price: weightPrice!,
+                    freeEligible: true,
+                  });
+                } else {
+                  // Standard: both Paczkomat and Kurier available
+                  methods.push({
+                    name: 'InPost Paczkomat',
+                    icon: (
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                      </svg>
+                    ),
+                    price: 15.99,
+                    freeEligible: true,
+                  });
+                  methods.push({
+                    name: 'Kurier InPost / DPD',
+                    icon: (
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+                      </svg>
+                    ),
+                    price: 19.99,
+                    freeEligible: true,
+                  });
+                }
+
+                return (
+                  <div className="border-t dark:border-secondary-700 pt-3 sm:pt-4 space-y-2 sm:space-y-3">
+                    <h4 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-1.5">
+                      <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+                      </svg>
+                      Opcje dostawy
+                    </h4>
+                    <div className="space-y-1.5 sm:space-y-2">
+                      {methods.map((method, idx) => {
+                        const isFree = method.freeEligible && qualifiesForFreeShipping;
+                        return (
+                          <div key={idx} className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg bg-gray-50 dark:bg-secondary-700/50">
+                            <div className="flex items-center gap-2">
+                              {method.icon}
+                              <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">{method.name}</span>
+                            </div>
+                            {isFree ? (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] sm:text-xs text-gray-400 line-through">{method.price.toFixed(2)} zł</span>
+                                <span className="text-xs sm:text-sm font-bold text-green-600 dark:text-green-400">GRATIS</span>
+                              </div>
+                            ) : (
+                              <span className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">{method.price.toFixed(2)} zł</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {!qualifiesForFreeShipping && !isGabaryt && (
+                      <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                        <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Darmowa wysyłka od {freeShippingThreshold} zł (brakuje {(freeShippingThreshold - price).toFixed(2)} zł)
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Seller Info */}
               <div className="border-t dark:border-secondary-700 mt-4 pt-4 hidden">
@@ -779,7 +898,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
         </div>
 
         {/* Tabs Section */}
-        <div className="bg-white dark:bg-secondary-800 rounded-lg mb-8">
+        <div className="bg-white dark:bg-secondary-800 rounded-xl sm:rounded-2xl mb-8">
           {/* Tab Headers */}
           <div className="border-b dark:border-secondary-700">
             <div className="flex">
