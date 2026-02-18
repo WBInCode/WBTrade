@@ -80,7 +80,7 @@ export default function CategoryPage() {
           {loading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {[...Array(20)].map((_, i) => (
-                <div key={i} className="bg-white dark:bg-secondary-800 rounded-lg h-[320px] animate-pulse" />
+                <div key={i} className="bg-white dark:bg-secondary-800 rounded-xl sm:rounded-2xl h-[320px] animate-pulse overflow-hidden" />
               ))}
             </div>
           ) : products.length > 0 ? (
