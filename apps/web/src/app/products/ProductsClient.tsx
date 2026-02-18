@@ -145,7 +145,7 @@ function ProductsContent() {
             minPrice: minPrice ? parseFloat(minPrice) : undefined,
             maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
             search: searchQuery || undefined,
-            sort: 'bestsellers',
+            sort: 'popularity',
             brand: brand || undefined,
             warehouse: warehouse || undefined,
           });
@@ -380,8 +380,8 @@ function ProductsContent() {
             {loading && products.length === 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4">
                 {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-2 sm:p-4 animate-pulse">
-                    <div className="bg-gray-200 dark:bg-secondary-700 aspect-square rounded-lg mb-2 sm:mb-4"></div>
+                  <div key={i} className="bg-white dark:bg-secondary-800 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-secondary-700 p-2 sm:p-4 animate-pulse overflow-hidden">
+                    <div className="bg-gray-200 dark:bg-secondary-700 aspect-square rounded-xl sm:rounded-2xl mb-2 sm:mb-4"></div>
                     <div className="bg-gray-200 dark:bg-secondary-700 h-4 rounded w-3/4 mb-2"></div>
                     <div className="bg-gray-200 dark:bg-secondary-700 h-4 rounded w-1/2 mb-2"></div>
                     <div className="bg-gray-200 dark:bg-secondary-700 h-6 rounded w-1/3"></div>
@@ -389,7 +389,7 @@ function ProductsContent() {
                 ))}
               </div>
             ) : !loading && !transitioning && products.length === 0 ? (
-              <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-12 text-center">
+              <div className="bg-white dark:bg-secondary-800 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-secondary-700 p-12 text-center">
                 <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>

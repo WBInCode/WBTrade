@@ -89,6 +89,7 @@ export interface ServerProduct {
   specifications?: Record<string, unknown>;
   rating?: string;
   reviewCount?: number;
+  tags?: string[];
 }
 
 export interface ServerProductsResponse {
