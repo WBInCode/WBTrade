@@ -8,7 +8,7 @@ const router = Router();
 // GET /api/coupons/my — get all user's coupons
 router.get('/my', authGuard, async (req, res) => {
   try {
-    const userId = (req as any).userId;
+    const userId = (req as any).user?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -54,7 +54,7 @@ router.get('/my', authGuard, async (req, res) => {
 // GET /api/coupons/welcome — get user's welcome discount
 router.get('/welcome', authGuard, async (req, res) => {
   try {
-    const userId = (req as any).userId;
+    const userId = (req as any).user?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
