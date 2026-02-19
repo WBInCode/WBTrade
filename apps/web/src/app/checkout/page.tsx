@@ -16,7 +16,7 @@ import PaymentMethod from './components/PaymentMethod';
 import OrderSummary from './components/OrderSummary';
 import CheckoutPackagesList from './components/CheckoutPackagesList';
 import CouponInput from './components/CouponInput';
-import { trackBeginCheckout, trackAddPaymentInfo, trackAddShippingInfo, EcommerceItem } from '@/lib/analytics';
+import { trackBeginCheckout, trackAddPaymentInfo, trackAddShippingInfo, cartItemToGA4 } from '@/lib/analytics';
 
 export interface AddressData {
   firstName: string;
@@ -149,14 +149,7 @@ function CheckoutPageContent() {
     if (checkoutItems.length > 0 && !beginCheckoutTracked.current) {
       beginCheckoutTracked.current = true;
       
-      const items: EcommerceItem[] = checkoutItems.map((item, index) => ({
-        item_id: item.variant?.sku || item.id,
-        item_name: item.variant?.product?.name || 'Produkt',
-        item_variant: item.variant?.name,
-        price: item.variant?.price || 0,
-        quantity: item.quantity,
-        index,
-      }));
+      const items = checkoutItems.map((item, index) => cartItemToGA4(item, index));
 
       const totalValue = checkoutItems.reduce((sum, item) => sum + ((item.variant?.price || 0) * item.quantity), 0);
       trackBeginCheckout(items, totalValue, cart?.couponCode || undefined);
@@ -284,14 +277,7 @@ function CheckoutPageContent() {
     setCheckoutData(prev => ({ ...prev, shipping }));
 
     // Track add_shipping_info
-    const items: EcommerceItem[] = checkoutItems.map((item, index) => ({
-      item_id: item.variant?.sku || item.id,
-      item_name: item.variant?.product?.name || 'Produkt',
-      item_variant: item.variant?.name,
-      price: item.variant?.price || 0,
-      quantity: item.quantity,
-      index,
-    }));
+    const items = checkoutItems.map((item, index) => cartItemToGA4(item, index));
     const totalValue = checkoutItems.reduce((sum, item) => sum + ((item.variant?.price || 0) * item.quantity), 0);
     trackAddShippingInfo(items, totalValue, shipping.method);
 
@@ -313,14 +299,7 @@ function CheckoutPageContent() {
     setCheckoutData(prev => ({ ...prev, payment }));
 
     // Track add_payment_info
-    const items: EcommerceItem[] = checkoutItems.map((item, index) => ({
-      item_id: item.variant?.sku || item.id,
-      item_name: item.variant?.product?.name || 'Produkt',
-      item_variant: item.variant?.name,
-      price: item.variant?.price || 0,
-      quantity: item.quantity,
-      index,
-    }));
+    const items = checkoutItems.map((item, index) => cartItemToGA4(item, index));
     const totalValue = checkoutItems.reduce((sum, item) => sum + ((item.variant?.price || 0) * item.quantity), 0);
     trackAddPaymentInfo(items, totalValue, payment.method);
 

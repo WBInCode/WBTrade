@@ -103,6 +103,7 @@ export default memo(function ProductListCard({ product, showWishlist = true, vie
         price: String(product.price),
         quantity: 1,
         productId: product.id,
+        sku: product.sku,
       });
       setAdded(true);
       setTimeout(() => setAdded(false), 2000);

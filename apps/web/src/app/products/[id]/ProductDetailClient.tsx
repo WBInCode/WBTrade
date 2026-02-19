@@ -12,7 +12,7 @@ import ProductCard from '../../../components/ProductCard';
 import { useCart } from '../../../contexts/CartContext';
 import { useWishlist } from '../../../contexts/WishlistContext';
 import { cleanCategoryName } from '../../../lib/categories';
-import { trackViewItem, EcommerceItem } from '../../../lib/analytics';
+import { trackViewItem, toGA4Item } from '../../../lib/analytics';
 
 interface ProductDetailClientProps {
   product: Product;
@@ -169,6 +169,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
         price: String(selectedVariant.price || product.price),
         quantity: quantity,
         productId: product.id,
+        sku: product.sku,
       });
     } catch (err: any) {
       console.error('Failed to add to cart:', err);
@@ -189,7 +190,14 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     setCartError(null);
     try {
       // Add to cart and redirect to cart page
-      await addToCart(selectedVariant.id, quantity);
+      await addToCart(selectedVariant.id, quantity, {
+        name: product.name,
+        image: product.images?.[0]?.url || '',
+        price: String(selectedVariant.price || product.price),
+        quantity: quantity,
+        productId: product.id,
+        sku: product.sku,
+      });
       router.push('/cart');
     } catch (err: any) {
       console.error('Failed to buy now:', err);
@@ -204,13 +212,13 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     viewItemTracked.current = true;
 
     const price = Number(product.price) || 0;
-    const item: EcommerceItem = {
-      item_id: product.sku || product.id,
-      item_name: product.name,
-      item_category: product.category?.name,
+    const item = toGA4Item({
+      productSku: product.sku || product.id,
+      productName: product.name,
+      category: product.category?.name,
       price,
       quantity: 1,
-    };
+    });
     trackViewItem(item, price);
   }, [product]);
 

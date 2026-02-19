@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useParams, useSearchParams } from 'next/navigation';
 import { ordersApi, checkoutApi } from '@/lib/api';
-import { trackPurchase, EcommerceItem } from '@/lib/analytics';
+import { trackPurchase, toGA4Item } from '@/lib/analytics';
 
 interface OrderItem {
   id: string;
@@ -112,10 +112,10 @@ function OrderConfirmationPageContent() {
     if (order && !purchaseTracked.current) {
       purchaseTracked.current = true;
       
-      const items: EcommerceItem[] = order.items.map((item, index) => ({
-        item_id: item.sku || item.id,
-        item_name: item.productName,
-        item_variant: item.variantName,
+      const items = order.items.map((item, index) => toGA4Item({
+        productSku: item.sku || item.id,
+        productName: item.productName,
+        variantName: item.variantName,
         price: item.unitPrice,
         quantity: item.quantity,
         index,
