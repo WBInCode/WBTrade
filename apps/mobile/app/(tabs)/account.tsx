@@ -124,6 +124,11 @@ export default function AccountScreen() {
             onPress={() => router.push('/account/orders')}
           />
           <MenuItem
+            icon="ticket"
+            title="Moje rabaty"
+            onPress={() => router.push('/account/discounts')}
+          />
+          <MenuItem
             icon="heart"
             title="Ulubione"
             onPress={() => router.push('/(tabs)/wishlist')}
