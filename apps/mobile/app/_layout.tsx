@@ -88,9 +88,16 @@ function GiftNotificationHandler() {
             code: data.discount.couponCode,
           });
           setGiftVisible(true);
+        } else {
+          // API responded but no discount yet (async generation) — show with default
+          setDiscountData({ percent: 20, code: 'Sprawdź w Moje rabaty' });
+          setGiftVisible(true);
         }
       } catch (err) {
+        // API endpoint may not be deployed yet — show gift with default values
         console.warn('Could not fetch welcome discount:', err);
+        setDiscountData({ percent: 20, code: 'Sprawdź w Moje rabaty' });
+        setGiftVisible(true);
       }
     }, 1500);
 
