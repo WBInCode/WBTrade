@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { cartApi, Cart, CartItem } from '../lib/api';
 import AddToCartModal from '../components/AddToCartModal';
-import { trackAddToCart, trackRemoveFromCart, EcommerceItem } from '../lib/analytics';
+import { trackAddToCart, trackRemoveFromCart, toGA4Item } from '../lib/analytics';
 
 interface AddedProductInfo {
   name: string;
@@ -11,6 +11,7 @@ interface AddedProductInfo {
   price: string;
   quantity: number;
   productId?: string; // Added for same-warehouse recommendations
+  sku?: string; // Product SKU for GA4 tracking consistency
 }
 
 interface CartContextType {
@@ -77,12 +78,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       // Track add to cart event for analytics
       if (productInfo) {
         const priceNum = parseFloat(productInfo.price.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
-        const analyticsItem: EcommerceItem = {
-          item_id: variantId,
-          item_name: productInfo.name,
+        const analyticsItem = toGA4Item({
+          productSku: productInfo.sku || variantId,
+          productName: productInfo.name,
           price: priceNum,
           quantity: quantity,
-        };
+        });
         trackAddToCart(analyticsItem, priceNum * quantity);
         
         // Show modal
@@ -112,13 +113,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const removedItem = cart?.items.find(item => item.id === itemId);
       if (removedItem) {
         const price = removedItem.variant?.price || 0;
-        const analyticsItem: EcommerceItem = {
-          item_id: removedItem.variant?.sku || removedItem.variant?.id || itemId,
-          item_name: removedItem.variant?.product?.name || 'Produkt',
-          item_variant: removedItem.variant?.name,
+        const analyticsItem = toGA4Item({
+          productSku: removedItem.variant?.sku || itemId,
+          productName: removedItem.variant?.product?.name || 'Produkt',
+          variantName: removedItem.variant?.name,
           price,
           quantity: removedItem.quantity,
-        };
+        });
         trackRemoveFromCart(analyticsItem, price * removedItem.quantity);
       }
       const updatedCart = await cartApi.removeItem(itemId);

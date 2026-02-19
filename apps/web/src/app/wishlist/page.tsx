@@ -82,6 +82,7 @@ export default function WishlistPage() {
         price: item.price,
         quantity: 1,
         productId: item.id,
+        sku: undefined, // Wishlist items don't store SKU; variant.sku will be used in cart events
       });
       setAddedToCartIds(prev => new Set(prev).add(item.id));
       // Don't auto-remove for individual items unless not adding all
