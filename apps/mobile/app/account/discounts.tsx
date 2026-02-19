@@ -144,7 +144,7 @@ export default function DiscountsScreen() {
       const data = await couponsApi.getMyCoupons();
       setCoupons(data.coupons);
     } catch (err) {
-      console.error('Failed to fetch coupons:', err);
+      console.warn('Failed to fetch coupons:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
