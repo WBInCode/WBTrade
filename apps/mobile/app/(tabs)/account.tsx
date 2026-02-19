@@ -134,6 +134,11 @@ export default function AccountScreen() {
             onPress={() => router.push('/(tabs)/wishlist')}
           />
           <MenuItem
+            icon="star"
+            title="Moje opinie"
+            onPress={() => router.push('/account/reviews')}
+          />
+          <MenuItem
             icon="list-ul"
             title="Listy zakupowe"
             onPress={() => router.push('/account/shopping-lists')}

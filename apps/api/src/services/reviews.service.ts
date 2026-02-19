@@ -133,7 +133,36 @@ export const reviewsService = {
       },
     });
 
+    // Update product rating stats
+    await this.updateProductRatingStats(productId);
+
     return review;
+  },
+
+  /**
+   * Recalculate and update product's average_rating and review_count
+   */
+  async updateProductRatingStats(productId: string) {
+    const stats = await prisma.review.aggregate({
+      where: {
+        productId,
+        isApproved: true,
+      },
+      _avg: {
+        rating: true,
+      },
+      _count: {
+        rating: true,
+      },
+    });
+
+    await prisma.product.update({
+      where: { id: productId },
+      data: {
+        average_rating: stats._avg.rating ? Number(stats._avg.rating.toFixed(1)) : null,
+        review_count: stats._count.rating,
+      },
+    });
   },
 
   /**
@@ -305,7 +334,7 @@ export const reviewsService = {
       throw new Error('Rating must be between 1 and 5');
     }
 
-    return prisma.review.update({
+    const updated = await prisma.review.update({
       where: { id: reviewId },
       data: {
         rating: data.rating,
@@ -323,6 +352,11 @@ export const reviewsService = {
         images: true,
       },
     });
+
+    // Update product rating stats
+    await this.updateProductRatingStats(review.productId);
+
+    return updated;
   },
 
   /**
@@ -341,9 +375,14 @@ export const reviewsService = {
       throw new Error('You can only delete your own reviews');
     }
 
+    const productId = review.productId;
+
     await prisma.review.delete({
       where: { id: reviewId },
     });
+
+    // Update product rating stats
+    await this.updateProductRatingStats(productId);
 
     return { success: true };
   },
@@ -375,6 +414,66 @@ export const reviewsService = {
         },
       });
     }
+  },
+
+  /**
+   * Get all reviews by a specific user (for "Moje opinie" page)
+   */
+  async getUserReviews(userId: string, params: ReviewsQueryParams = {}) {
+    const { page = 1, limit = 10, sort = 'newest' } = params;
+    const skip = (page - 1) * limit;
+
+    let orderBy: Prisma.ReviewOrderByWithRelationInput;
+    switch (sort) {
+      case 'oldest':
+        orderBy = { createdAt: 'asc' };
+        break;
+      case 'highest':
+        orderBy = { rating: 'desc' };
+        break;
+      case 'lowest':
+        orderBy = { rating: 'asc' };
+        break;
+      case 'newest':
+      default:
+        orderBy = { createdAt: 'desc' };
+    }
+
+    const [reviews, total] = await Promise.all([
+      prisma.review.findMany({
+        where: { userId },
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              images: {
+                orderBy: { order: 'asc' },
+                take: 1,
+              },
+            },
+          },
+          images: {
+            orderBy: { order: 'asc' },
+          },
+        },
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      prisma.review.count({
+        where: { userId },
+      }),
+    ]);
+
+    return {
+      reviews,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   },
 
   /**

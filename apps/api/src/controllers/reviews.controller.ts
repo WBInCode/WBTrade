@@ -40,7 +40,7 @@ const createReviewSchema = z.object({
     .transform((val) => (val ? sanitizeText(val) : undefined)),
   content: z
     .string()
-    .min(10, 'Tresc opinii musi miec co najmniej 10 znaków')
+    .min(10, 'Tresc opinii musi miec co najmniej 10 znakï¿½w')
     .max(5000, 'Tresc opinii jest za dluga')
     .transform(sanitizeText),
 });
@@ -187,6 +187,34 @@ export const reviewsController = {
     } catch (error) {
       console.error('Error checking review eligibility:', error);
       res.status(500).json({ message: 'Nie udalo sie sprawdzic uprawnienia do opinii' });
+    }
+  },
+
+  /**
+   * Get current user's reviews
+   * GET /api/reviews/mine
+   */
+  async getUserReviews(req: Request, res: Response) {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: 'Wymagane uwierzytelnienie' });
+      }
+
+      const validation = reviewsQuerySchema.safeParse(req.query);
+
+      if (!validation.success) {
+        return res.status(400).json({
+          message: 'Nieprawidlowe parametry zapytania',
+          errors: validation.error.flatten().fieldErrors,
+        });
+      }
+
+      const result = await reviewsService.getUserReviews(userId, validation.data);
+      res.json(result);
+    } catch (error) {
+      console.error('Error fetching user reviews:', error);
+      res.status(500).json({ message: 'Nie udalo sie pobrac opinii' });
     }
   },
 

@@ -67,6 +67,7 @@ interface HomeData {
   bestsellers: Product[];
   featured: Product[];
   newArrivals: Product[];
+  topRated: Product[];
   categories: Category[];
   mostWishlisted: Product | null;
 }
@@ -214,7 +215,7 @@ const HeroSection = React.memo(function HeroSection({ product }: { product: Prod
       </View>
       <TouchableOpacity
         style={styles.heroCard}
-        onPress={() => router.push(`/product/${product.slug}` as any)}
+        onPress={() => router.push(`/product/${product.id}` as any)}
         activeOpacity={0.9}
       >
         {product.images?.[0]?.url && (
@@ -258,7 +259,7 @@ const Top3Section = React.memo(function Top3Section({ products }: { products: Pr
           <TouchableOpacity
             key={product.id}
             style={styles.topCard}
-            onPress={() => router.push(`/product/${product.slug}` as any)}
+            onPress={() => router.push(`/product/${product.id}` as any)}
             activeOpacity={0.9}
           >
             <View style={[styles.topMedal, { backgroundColor: ['#f59e0b', '#9ca3af', '#cd7f32'][index] }]}>
@@ -339,12 +340,13 @@ export default function HomeScreen() {
   const loadData = useCallback(async () => {
     try {
       setError(null);
-      const [bestRes, featRes, catRes, newRes, heroRes] = await Promise.allSettled([
+      const [bestRes, featRes, catRes, newRes, heroRes, topRatedRes] = await Promise.allSettled([
         api.get<{ products: Product[] }>('/products/bestsellers', { limit: 6 }),
         api.get<{ products: Product[] }>('/products/featured', { limit: 6 }),
         api.get<{ categories: Category[] }>('/categories/main'),
         api.get<{ products: Product[] }>('/products/new-arrivals', { limit: 6 }),
         api.get<{ product: Product | null }>('/products/most-wishlisted'),
+        api.get<{ products: Product[] }>('/products/top-rated', { limit: 6 }),
       ]);
 
       const results: HomeData = {
@@ -353,6 +355,7 @@ export default function HomeScreen() {
         categories: catRes.status === 'fulfilled' ? catRes.value.categories || [] : [],
         newArrivals: newRes.status === 'fulfilled' ? newRes.value.products || [] : [],
         mostWishlisted: heroRes.status === 'fulfilled' ? heroRes.value.product || null : null,
+        topRated: topRatedRes.status === 'fulfilled' ? topRatedRes.value.products || [] : [],
       };
 
       if (!results.bestsellers.length && !results.featured.length) {
@@ -438,6 +441,9 @@ export default function HomeScreen() {
     }
     if (data.bestsellers.length >= 3) {
       items.push({ type: 'top3', products: data.bestsellers });
+    }
+    if (data.topRated.length > 0) {
+      items.push({ type: 'carousel', title: 'Najlepiej oceniane', products: data.topRated, key: 'top-rated' });
     }
     if (data.newArrivals.length > 0) {
       items.push({ type: 'carousel', title: 'Nowości', products: data.newArrivals, key: 'new' });
