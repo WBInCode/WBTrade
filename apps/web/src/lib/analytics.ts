@@ -41,6 +41,59 @@ export interface EcommerceItem {
 }
 
 /**
+ * Build a GA4 EcommerceItem with consistent item_id.
+ * ALWAYS uses product SKU as item_id (source of truth for GA4 funnel).
+ *
+ * Use this function everywhere to avoid item_id mismatches between events.
+ */
+export function toGA4Item(params: {
+  productSku: string;
+  productName: string;
+  variantName?: string;
+  category?: string;
+  price: number;
+  quantity: number;
+  index?: number;
+}): EcommerceItem {
+  return {
+    item_id: params.productSku,
+    item_name: params.productName,
+    item_variant: params.variantName && params.variantName !== 'Domyślny' ? params.variantName : undefined,
+    item_category: params.category,
+    price: params.price,
+    quantity: params.quantity,
+    index: params.index,
+  };
+}
+
+/**
+ * Build GA4 item from a cart item object (CartItem from API).
+ * Uses variant.sku as item_id (equals product.sku in 99.7% of products).
+ */
+export function cartItemToGA4(item: {
+  id: string;
+  quantity: number;
+  variant: {
+    id: string;
+    name: string;
+    sku: string;
+    price: number;
+    product: {
+      name: string;
+    };
+  };
+}, index?: number): EcommerceItem {
+  return toGA4Item({
+    productSku: item.variant.sku,
+    productName: item.variant.product.name,
+    variantName: item.variant.name,
+    price: item.variant.price,
+    quantity: item.quantity,
+    index,
+  });
+}
+
+/**
  * Push event to dataLayer
  */
 export function pushToDataLayer(event: DataLayerEvent): void {

@@ -121,6 +121,7 @@ export default memo(function ProductCard({ product, showDelivery = false, showWi
           price: String(product.price),
           image: mainImage,
           quantity: 1,
+          sku: product.sku,
         }
       );
     }
