@@ -630,6 +630,7 @@ enum AuthProvider {
 enum CouponSource {
   MANUAL
   WELCOME_DISCOUNT
+  APP_DOWNLOAD
   REFERRAL
   CAMPAIGN
   NEWSLETTER
