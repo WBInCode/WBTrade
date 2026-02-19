@@ -10,6 +10,10 @@ import {
   ActivityIndicator,
   StyleSheet,
   ViewToken,
+  Animated,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
@@ -18,6 +22,7 @@ import { Colors } from '../../constants/Colors';
 import { useCart } from '../../contexts/CartContext';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import { api } from '../../services/api';
 import ProductCarousel from '../../components/product/ProductCarousel';
 import AddToListModal from '../../components/AddToListModal';
@@ -768,6 +773,32 @@ export default function ProductDetailScreen() {
   const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
 
+  // Review form state
+  const [canReview, setCanReview] = useState(false);
+  const [hasReviewed, setHasReviewed] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewTitle, setReviewTitle] = useState('');
+  const [reviewContent, setReviewContent] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+
+  // Newsletter badge animation
+  const nlAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(nlAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
+        Animated.timing(nlAnim, { toValue: 0, duration: 2000, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
+  const nlScale = nlAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.02, 1] });
+  const nlOpacity = nlAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.85, 1, 0.85] });
+
+  const { show: showToast } = useToast();
+
   const [warehouseProducts, setWarehouseProducts] = useState<Product[]>([]);
   const [warehouseSource, setWarehouseSource] = useState<'warehouse' | 'category'>('warehouse');
 
@@ -795,25 +826,37 @@ export default function ProductDetailScreen() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  // Fetch reviews + same warehouse
+  // Fetch reviews + same warehouse (use product.id = CUID, not route param which may be slug)
   useEffect(() => {
-    if (!id) return;
+    if (!product) return;
+    const pid = product.id;
 
     // Reviews stats
     api
-      .get<ReviewStats>(`/products/${id}/reviews/stats`)
+      .get<ReviewStats>(`/products/${pid}/reviews/stats`)
       .then(setReviewStats)
       .catch(() => {});
 
     // Reviews list
     api
-      .get<{ reviews: Review[] }>(`/products/${id}/reviews?limit=5&sort=newest`)
+      .get<{ reviews: Review[] }>(`/products/${pid}/reviews?limit=5&sort=newest`)
       .then((data) => setReviews(data.reviews || []))
       .catch(() => {});
 
+    // Can review check
+    if (user) {
+      api
+        .get<{ canReview: boolean; hasReviewed: boolean }>(`/products/${pid}/reviews/can-review`)
+        .then((data) => {
+          setCanReview(data.canReview);
+          setHasReviewed(data.hasReviewed);
+        })
+        .catch(() => {});
+    }
+
     // Same warehouse products
     api
-      .get<{ products: Product[] }>(`/products/same-warehouse/${id}?limit=10`)
+      .get<{ products: Product[] }>(`/products/same-warehouse/${pid}?limit=10`)
       .then((data) => {
         const prods = data.products || [];
         if (prods.length > 0) {
@@ -822,7 +865,7 @@ export default function ProductDetailScreen() {
         setWarehouseProducts(prods);
       })
       .catch(() => {});
-  }, [id]);
+  }, [product?.id]);
 
   // Fallback: if no warehouse products, fetch from same category
   useEffect(() => {
@@ -990,6 +1033,48 @@ export default function ProductDetailScreen() {
   const stockInfo = getStockInfo();
   const attributeKeys = getAttributeKeys();
 
+  // Submit review handler
+  const handleSubmitReview = async () => {
+    if (reviewRating === 0) {
+      showToast('Wybierz ocenę (1-5 gwiazdek)', 'error');
+      return;
+    }
+    if (reviewContent.trim().length < 10) {
+      showToast('Treść opinii musi mieć minimum 10 znaków', 'error');
+      return;
+    }
+    if (!product) return;
+    setSubmittingReview(true);
+    try {
+      const pid = product.id;
+      await api.post('/reviews', {
+        productId: pid,
+        rating: reviewRating,
+        title: reviewTitle.trim() || undefined,
+        content: reviewContent.trim(),
+      });
+      showToast('Dziękujemy za opinię!', 'success');
+      setShowReviewForm(false);
+      setReviewRating(0);
+      setReviewTitle('');
+      setReviewContent('');
+      setCanReview(false);
+      setHasReviewed(true);
+      // Refresh reviews & product data for updated rating
+      api.get<ReviewStats>(`/products/${pid}/reviews/stats`).then(setReviewStats).catch(() => {});
+      api.get<{ reviews: Review[] }>(`/products/${pid}/reviews?limit=5&sort=newest`).then((d) => setReviews(d.reviews || [])).catch(() => {});
+      // Re-fetch product to get updated average_rating and review_count
+      api.get<any>(`/products/${pid}`).then((data) => {
+        const prod: Product = data.product || data;
+        setProduct(prod);
+      }).catch(() => {});
+    } catch (err: any) {
+      showToast(err.message || 'Nie udało się dodać opinii', 'error');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
   return (
     <>
       <Stack.Screen options={{ title: product.name.substring(0, 30) }} />
@@ -1084,6 +1169,13 @@ export default function ProductDetailScreen() {
                 Najniższa cena z 30 dni: {Number(lowestPrice30).toFixed(2).replace('.', ',')} zł
               </Text>
             )}
+
+            {/* Newsletter discount badge — animated */}
+            <Animated.View style={[styles.newsletterBadge, { transform: [{ scale: nlScale }], opacity: nlOpacity }]}>
+              <FontAwesome name="ticket" size={13} color={Colors.primary[600]} style={{ transform: [{ rotate: '-45deg' }] }} />
+              <Text style={styles.newsletterBadgeText}>10% rabatu z newsletterem</Text>
+              <FontAwesome name="chevron-right" size={10} color={Colors.primary[600]} />
+            </Animated.View>
           </View>
 
           {/* Variant Selection */}
@@ -1194,91 +1286,190 @@ export default function ProductDetailScreen() {
             </Accordion>
           )}
 
-          {/* Reviews Section */}
-          {reviewStats && reviewStats.totalReviews > 0 && (
-            <View style={styles.reviewsSection}>
-              <Text style={styles.sectionTitle}>Opinie klientów</Text>
-
-              {/* Rating Overview */}
-              <View style={styles.reviewOverview}>
-                <View style={styles.reviewOverviewLeft}>
-                  <Text style={styles.reviewBigRating}>
+          {/* Reviews Section — x-kom style */}
+          <View style={styles.reviewsSection}>
+            {/* Header row: "Opinie 4.5 ★★★★★ (26 opinii)" */}
+            <View style={styles.reviewsSectionHeader}>
+              <Text style={styles.reviewsSectionTitle}>Opinie</Text>
+              {reviewStats && reviewStats.totalReviews > 0 && (
+                <>
+                  <Text style={styles.reviewsSectionRating}>
                     {reviewStats.averageRating.toFixed(1)}
                   </Text>
-                  <StarRating rating={reviewStats.averageRating} size={20} />
-                  <Text style={styles.reviewCount}>
-                    {reviewStats.totalReviews}{' '}
+                  <StarRating rating={reviewStats.averageRating} size={14} />
+                  <Text style={styles.reviewsSectionCount}>
+                    ({reviewStats.totalReviews}{' '}
                     {reviewStats.totalReviews === 1
                       ? 'opinia'
                       : reviewStats.totalReviews < 5
                         ? 'opinie'
-                        : 'opinii'}
+                        : 'opinii'})
                   </Text>
-                </View>
-                <View style={styles.reviewOverviewRight}>
-                  {[5, 4, 3, 2, 1].map((rating) => {
-                    const dist = reviewStats.distribution.find(
-                      (d) => d.rating === rating
-                    );
-                    const count = dist?.count || 0;
-                    const pct =
-                      reviewStats.totalReviews > 0
-                        ? (count / reviewStats.totalReviews) * 100
-                        : 0;
-                    return (
-                      <View key={rating} style={styles.ratingBarRow}>
-                        <Text style={styles.ratingBarLabel}>{rating}</Text>
-                        <FontAwesome
-                          name="star"
-                          size={10}
-                          color={Colors.warning}
-                        />
-                        <View style={styles.ratingBar}>
-                          <View
-                            style={[styles.ratingBarFill, { width: `${pct}%` }]}
-                          />
-                        </View>
-                        <Text style={styles.ratingBarCount}>{count}</Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
+                </>
+              )}
+            </View>
 
-              {/* Review List */}
-              {reviews.map((review) => (
-                <View key={review.id} style={styles.reviewCard}>
-                  <View style={styles.reviewHeader}>
-                    <StarRating rating={review.rating} size={12} />
+            {/* Horizontal scrollable review cards */}
+            {reviews.length > 0 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.reviewsHScroll}
+              >
+                {reviews.map((review) => (
+                  <View key={review.id} style={styles.reviewHCard}>
+                    <View style={styles.reviewHCardHeader}>
+                      <StarRating rating={review.rating} size={12} />
+                      <Text style={styles.reviewHCardAuthor}>
+                        {review.user
+                          ? `${review.user.firstName} | `
+                          : ''}
+                        {new Date(review.createdAt).toLocaleDateString('pl-PL', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                        })}
+                        {', '}
+                        {new Date(review.createdAt).toLocaleTimeString('pl-PL', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </Text>
+                    </View>
+                    {review.title && (
+                      <Text style={styles.reviewHCardTitle}>
+                        {review.title}
+                      </Text>
+                    )}
+                    <Text style={styles.reviewHCardContent} numberOfLines={4}>
+                      {review.content}
+                    </Text>
                     {review.isVerifiedPurchase && (
-                      <View style={styles.verifiedBadge}>
-                        <FontAwesome
-                          name="check-circle"
-                          size={12}
-                          color={Colors.success}
-                        />
-                        <Text style={styles.verifiedText}>Zweryfikowany zakup</Text>
+                      <View style={styles.reviewHCardVerified}>
+                        <FontAwesome name="check-circle" size={11} color={Colors.success} />
+                        <Text style={styles.reviewHCardVerifiedText}>Zweryfikowany zakup</Text>
                       </View>
                     )}
                   </View>
-                  {review.title && (
-                    <Text style={styles.reviewTitle}>{review.title}</Text>
-                  )}
-                  <Text style={styles.reviewContent}>{review.content}</Text>
-                  <View style={styles.reviewFooter}>
-                    <Text style={styles.reviewAuthor}>
-                      {review.user
-                        ? `${review.user.firstName} ${review.user.lastName.charAt(0)}.`
-                        : 'Anonim'}
-                    </Text>
-                    <Text style={styles.reviewDate}>
-                      {new Date(review.createdAt).toLocaleDateString('pl-PL')}
-                    </Text>
+                ))}
+              </ScrollView>
+            )}
+
+            {/* "Zobacz wszystkie opinie" button */}
+            {reviewStats && reviewStats.totalReviews > 0 && (
+              <TouchableOpacity
+                style={styles.seeAllReviewsBtn}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.seeAllReviewsText}>
+                  Zobacz wszystkie opinie ({reviewStats.totalReviews})
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* "Masz ten produkt?" CTA */}
+            <View style={styles.reviewCta}>
+              <Text style={styles.reviewCtaTitle}>Masz ten produkt?</Text>
+              <Text style={styles.reviewCtaSubtitle}>Oceń go i pomóż innym w wyborze</Text>
+              {!showReviewForm ? (
+                <TouchableOpacity
+                  style={styles.addReviewBtn}
+                  onPress={() => {
+                    if (!user) {
+                      router.push('/(auth)/login');
+                      return;
+                    }
+                    if (hasReviewed) {
+                      showToast('Już oceniłeś ten produkt', 'info');
+                      return;
+                    }
+                    setShowReviewForm(true);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.addReviewBtnText}>Dodaj opinię</Text>
+                </TouchableOpacity>
+              ) : (
+                /* Review Form */
+                <View style={styles.reviewForm}>
+                  {/* Star picker */}
+                  <Text style={styles.reviewFormLabel}>Twoja ocena</Text>
+                  <View style={styles.starPicker}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <TouchableOpacity
+                        key={star}
+                        onPress={() => setReviewRating(star)}
+                        activeOpacity={0.7}
+                        hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                      >
+                        <FontAwesome
+                          name={star <= reviewRating ? 'star' : 'star-o'}
+                          size={32}
+                          color={star <= reviewRating ? Colors.warning : Colors.secondary[300]}
+                        />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  {/* Title */}
+                  <Text style={styles.reviewFormLabel}>Tytuł (opcjonalnie)</Text>
+                  <TextInput
+                    style={styles.reviewFormInput}
+                    placeholder="Np. Świetny produkt!"
+                    value={reviewTitle}
+                    onChangeText={setReviewTitle}
+                    maxLength={200}
+                  />
+
+                  {/* Content */}
+                  <Text style={styles.reviewFormLabel}>Treść opinii</Text>
+                  <TextInput
+                    style={[styles.reviewFormInput, styles.reviewFormTextarea]}
+                    placeholder="Opisz swoje wrażenia z używania produktu..."
+                    value={reviewContent}
+                    onChangeText={setReviewContent}
+                    multiline
+                    numberOfLines={4}
+                    maxLength={5000}
+                    textAlignVertical="top"
+                  />
+                  <Text style={styles.reviewFormCharCount}>
+                    {reviewContent.length}/5000 (min. 10)
+                  </Text>
+
+                  {/* Buttons */}
+                  <View style={styles.reviewFormButtons}>
+                    <TouchableOpacity
+                      style={styles.reviewFormCancel}
+                      onPress={() => {
+                        setShowReviewForm(false);
+                        setReviewRating(0);
+                        setReviewTitle('');
+                        setReviewContent('');
+                      }}
+                    >
+                      <Text style={styles.reviewFormCancelText}>Anuluj</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.reviewFormSubmit,
+                        (submittingReview || reviewRating === 0 || reviewContent.trim().length < 10) && styles.reviewFormSubmitDisabled,
+                      ]}
+                      onPress={handleSubmitReview}
+                      disabled={submittingReview || reviewRating === 0 || reviewContent.trim().length < 10}
+                      activeOpacity={0.8}
+                    >
+                      {submittingReview ? (
+                        <ActivityIndicator size="small" color={Colors.white} />
+                      ) : (
+                        <Text style={styles.reviewFormSubmitText}>Wyślij opinię</Text>
+                      )}
+                    </TouchableOpacity>
                   </View>
                 </View>
-              ))}
+              )}
             </View>
-          )}
+          </View>
 
           {/* Same Warehouse Products */}
           {warehouseProducts.length > 0 && (
@@ -1465,6 +1656,26 @@ const styles = StyleSheet.create({
     color: Colors.secondary[400],
     marginTop: 4,
     fontStyle: 'italic',
+  },
+  newsletterBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: Colors.primary[50],
+    borderWidth: 1,
+    borderColor: Colors.primary[200],
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginTop: 10,
+    alignSelf: 'flex-start',
+    borderStyle: 'dashed',
+  },
+  newsletterBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.primary[600],
+    letterSpacing: 0.2,
   },
 
   // Variants
@@ -1691,85 +1902,203 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
-  // Reviews
+  // Reviews — x-kom style
   reviewsSection: {
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: Colors.secondary[200],
   },
+  reviewsSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+    flexWrap: 'wrap',
+  },
+  reviewsSectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.secondary[900],
+  },
+  reviewsSectionRating: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.secondary[800],
+  },
+  reviewsSectionCount: {
+    fontSize: 13,
+    color: Colors.secondary[500],
+  },
+
+  // Horizontal review cards
+  reviewsHScroll: {
+    paddingRight: 16,
+    gap: 12,
+    marginBottom: 12,
+  },
+  reviewHCard: {
+    width: SCREEN_WIDTH * 0.72,
+    backgroundColor: Colors.secondary[50],
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: Colors.secondary[100],
+  },
+  reviewHCardHeader: {
+    marginBottom: 6,
+  },
+  reviewHCardAuthor: {
+    fontSize: 12,
+    color: Colors.secondary[400],
+    marginTop: 4,
+  },
+  reviewHCardTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.secondary[800],
+    marginBottom: 4,
+  },
+  reviewHCardContent: {
+    fontSize: 13,
+    color: Colors.secondary[600],
+    lineHeight: 19,
+  },
+  reviewHCardVerified: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 8,
+  },
+  reviewHCardVerifiedText: {
+    fontSize: 11,
+    color: Colors.success,
+    fontWeight: '500',
+  },
+
+  // See all reviews button
+  seeAllReviewsBtn: {
+    borderWidth: 1,
+    borderColor: Colors.primary[300],
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  seeAllReviewsText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.primary[600],
+  },
+
+  // "Masz ten produkt?" CTA
+  reviewCta: {
+    backgroundColor: Colors.secondary[50],
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.secondary[100],
+  },
+  reviewCtaTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.secondary[900],
+    marginBottom: 4,
+  },
+  reviewCtaSubtitle: {
+    fontSize: 13,
+    color: Colors.secondary[500],
+    marginBottom: 16,
+  },
+  addReviewBtn: {
+    backgroundColor: Colors.primary[500],
+    borderRadius: 10,
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+  },
+  addReviewBtnText: {
+    color: Colors.white,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+
+  // Review form
+  reviewForm: {
+    width: '100%',
+    marginTop: 4,
+  },
+  reviewFormLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.secondary[700],
+    marginBottom: 6,
+    marginTop: 12,
+  },
+  starPicker: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 4,
+  },
+  reviewFormInput: {
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.secondary[200],
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: Colors.secondary[900],
+  },
+  reviewFormTextarea: {
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  reviewFormCharCount: {
+    fontSize: 11,
+    color: Colors.secondary[400],
+    textAlign: 'right',
+    marginTop: 4,
+  },
+  reviewFormButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+    marginTop: 16,
+  },
+  reviewFormCancel: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.secondary[300],
+  },
+  reviewFormCancelText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.secondary[600],
+  },
+  reviewFormSubmit: {
+    backgroundColor: Colors.primary[500],
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  reviewFormSubmitDisabled: {
+    backgroundColor: Colors.secondary[300],
+  },
+  reviewFormSubmitText: {
+    color: Colors.white,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  // Old review styles kept for compatibility
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: Colors.secondary[900],
     marginBottom: 16,
-  },
-  reviewOverview: {
-    flexDirection: 'row',
-    marginBottom: 20,
-    gap: 20,
-  },
-  reviewOverviewLeft: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 80,
-  },
-  reviewBigRating: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: Colors.secondary[900],
-  },
-  reviewCount: {
-    fontSize: 12,
-    color: Colors.secondary[500],
-    marginTop: 4,
-  },
-  reviewOverviewRight: {
-    flex: 1,
-    gap: 4,
-  },
-  ratingBarRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  ratingBarLabel: {
-    fontSize: 12,
-    color: Colors.secondary[600],
-    width: 12,
-    textAlign: 'right',
-  },
-  ratingBar: {
-    flex: 1,
-    height: 6,
-    backgroundColor: Colors.secondary[200],
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  ratingBarFill: {
-    height: '100%',
-    backgroundColor: Colors.warning,
-    borderRadius: 3,
-  },
-  ratingBarCount: {
-    fontSize: 11,
-    color: Colors.secondary[400],
-    width: 20,
-    textAlign: 'right',
-  },
-
-  // Review card
-  reviewCard: {
-    backgroundColor: Colors.secondary[50],
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 10,
-  },
-  reviewHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 6,
   },
   verifiedBadge: {
     flexDirection: 'row',
@@ -1791,20 +2120,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.secondary[600],
     lineHeight: 20,
-  },
-  reviewFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-  reviewAuthor: {
-    fontSize: 12,
-    color: Colors.secondary[500],
-    fontWeight: '500',
-  },
-  reviewDate: {
-    fontSize: 12,
-    color: Colors.secondary[400],
   },
 
   // Warehouse section

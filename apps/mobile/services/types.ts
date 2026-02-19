@@ -86,7 +86,7 @@ export interface ProductFilters {
   minPrice?: number;
   maxPrice?: number;
   search?: string;
-  sort?: 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'newest' | 'random' | 'relevance' | 'popularity';
+  sort?: 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'newest' | 'random' | 'relevance' | 'popularity' | 'top-rated';
   status?: string;
   brand?: string;
   warehouse?: string;

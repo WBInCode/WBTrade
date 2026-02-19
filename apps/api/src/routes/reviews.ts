@@ -4,6 +4,9 @@ import { authGuard } from '../middleware/auth.middleware';
 
 const router = Router();
 
+// Get current user's reviews (requires authentication)
+router.get('/mine', authGuard, reviewsController.getUserReviews);
+
 // Create a new review (requires authentication)
 router.post('/', authGuard, reviewsController.createReview);
 

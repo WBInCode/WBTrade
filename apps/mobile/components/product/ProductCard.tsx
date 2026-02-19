@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Dimensions, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, Dimensions, StyleSheet, ActivityIndicator, Animated } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -28,6 +28,21 @@ function ProductCard({ product, width }: ProductCardProps) {
   const [adding, setAdding] = useState(false);
   const isFav = isInWishlist(product.id);
   const cardWidth = width || CARD_WIDTH;
+
+  // Newsletter badge animation
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmerAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
+        Animated.timing(shimmerAnim, { toValue: 0, duration: 2000, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
+  const badgeScale = shimmerAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.03, 1] });
+  const badgeOpacity = shimmerAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.85, 1, 0.85] });
 
   const price = Number(
     typeof product.price === 'string' ? parseFloat(product.price) : product.price
@@ -124,6 +139,25 @@ function ProductCard({ product, width }: ProductCardProps) {
             {product.name}
           </Text>
 
+          {/* Star rating */}
+          <View style={styles.ratingRow}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <FontAwesome
+                key={star}
+                name="star"
+                size={10}
+                color={
+                  star <= Math.round(Number(product.rating || 0))
+                    ? '#f59e0b'
+                    : Colors.secondary[200]
+                }
+              />
+            ))}
+            <Text style={styles.ratingText}>
+              ({product.reviewCount || 0})
+            </Text>
+          </View>
+
           <View style={styles.priceRow}>
             <Text
               style={[
@@ -139,6 +173,13 @@ function ProductCard({ product, width }: ProductCardProps) {
               </Text>
             )}
           </View>
+
+          {/* Newsletter discount badge — animated like x-kom */}
+          <Animated.View style={[styles.newsletterBadge, { transform: [{ scale: badgeScale }], opacity: badgeOpacity }]}>
+            <FontAwesome name="ticket" size={10} color={Colors.primary[600]} style={{ transform: [{ rotate: '-45deg' }] }} />
+            <Text style={styles.newsletterBadgeText}>10% rabatu z newsletterem</Text>
+            <FontAwesome name="chevron-right" size={8} color={Colors.primary[600]} />
+          </Animated.View>
 
           {/* Delivery info */}
           <Text style={[styles.deliveryText, !hasStock && styles.deliveryOutOfStock]}>
@@ -258,8 +299,19 @@ const styles = StyleSheet.create({
     color: Colors.secondary[800],
     lineHeight: 18,
     height: 36,
-    marginBottom: 4,
+    marginBottom: 2,
     fontWeight: '500',
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    marginBottom: 2,
+  },
+  ratingText: {
+    fontSize: 10,
+    color: Colors.secondary[400],
+    marginLeft: 2,
   },
   priceRow: {
     flexDirection: 'row',
@@ -284,6 +336,26 @@ const styles = StyleSheet.create({
   },
   deliveryOutOfStock: {
     color: Colors.destructive,
+  },
+  newsletterBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: Colors.primary[50],
+    borderWidth: 1,
+    borderColor: Colors.primary[200],
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    marginBottom: 4,
+    alignSelf: 'flex-start',
+    borderStyle: 'dashed',
+  },
+  newsletterBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: Colors.primary[600],
+    letterSpacing: 0.1,
   },
   addButton: {
     flexDirection: 'row',
