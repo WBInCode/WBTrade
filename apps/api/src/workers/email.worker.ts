@@ -7,7 +7,14 @@ import { Worker, Job } from 'bullmq';
 import { Resend } from 'resend';
 import { QUEUE_NAMES, queueConnection } from '../lib/queue';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy-init Resend to avoid crash when RESEND_API_KEY is not yet loaded
+let resend: Resend | null = null;
+function getResend(): Resend {
+  if (!resend) {
+    resend = new Resend(process.env.RESEND_API_KEY || '');
+  }
+  return resend;
+}
 const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@wb-trade.pl';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://wb-trade.pl';
 
@@ -143,7 +150,7 @@ async function sendEmail(
       return;
     }
 
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
       from: FROM_EMAIL,
       to: [to],
       subject,

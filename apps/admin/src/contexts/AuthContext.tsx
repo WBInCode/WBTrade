@@ -10,7 +10,7 @@ interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'ADMIN' | 'MANAGER' | 'WAREHOUSE' | 'SUPPORT';
+  role: 'ADMIN' | 'WAREHOUSE' | 'CUSTOMER';
 }
 
 interface AuthContextType {
@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
         console.log('checkAuth: user data:', data.user);
         // Sprawdź czy użytkownik ma uprawnienia admina
-        if (['ADMIN', 'MANAGER', 'WAREHOUSE', 'SUPPORT'].includes(data.user.role)) {
+        if (['ADMIN', 'WAREHOUSE'].includes(data.user.role)) {
           setUser(data.user);
           setToken(accessToken);
           console.log('checkAuth: token set successfully');
@@ -110,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Sprawdź czy użytkownik ma uprawnienia do panelu admin
-    if (!['ADMIN', 'MANAGER', 'WAREHOUSE', 'SUPPORT'].includes(data.user.role)) {
+    if (!['ADMIN', 'WAREHOUSE'].includes(data.user.role)) {
       throw new Error('Brak uprawnień do panelu administracyjnego');
     }
 

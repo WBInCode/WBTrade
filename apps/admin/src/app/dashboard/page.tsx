@@ -121,9 +121,7 @@ function ChartTooltip({ active, payload, label }: any) {
       <p className="text-xs text-slate-400 mb-1">{label}</p>
       {payload.map((entry: any, i: number) => (
         <p key={i} className="text-sm font-medium" style={{ color: entry.color }}>
-          {entry.name}: {entry.name.includes('Przychód') || entry.name.includes('Anulowane (kwota)')
-            ? formatCurrency(entry.value)
-            : `${entry.value} zam.`}
+          {entry.name === 'Przychód' ? formatCurrency(entry.value) : `${entry.value} zam.`}
         </p>
       ))}
     </div>
@@ -185,7 +183,7 @@ function KPICard({
 }
 
 // ── Main Dashboard ──
-export default function HomepagePage() {
+export default function DashboardPage() {
   const [kpis, setKpis] = useState<DashboardKPIs | null>(null);
   const [salesChart, setSalesChart] = useState<SalesChartData[]>([]);
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
@@ -244,12 +242,10 @@ export default function HomepagePage() {
     status,
   }));
 
-  // Summary stats from chart (excluding cancelled)
+  // Summary stats from chart
   const totalRevenue = salesChart.reduce((sum, d) => sum + d.revenue, 0);
   const totalOrders = salesChart.reduce((sum, d) => sum + d.orders, 0);
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-  const totalCancelledRevenue = salesChart.reduce((sum, d) => sum + (d.cancelledRevenue || 0), 0);
-  const totalCancelledOrders = salesChart.reduce((sum, d) => sum + (d.cancelledOrders || 0), 0);
 
   if (loading) {
     return (
@@ -355,9 +351,6 @@ export default function HomepagePage() {
               <h2 className="text-white font-semibold">Sprzedaż</h2>
               <p className="text-xs text-slate-400 mt-0.5">
                 {formatCurrency(totalRevenue)} łączny przychód • {totalOrders} zamówień
-                {totalCancelledOrders > 0 && (
-                  <span className="text-red-400/70"> • {totalCancelledOrders} anulowanych ({formatCurrency(totalCancelledRevenue)})</span>
-                )}
               </p>
             </div>
             <div className="flex gap-1 bg-slate-900 rounded-lg p-0.5">
@@ -384,10 +377,6 @@ export default function HomepagePage() {
                     <stop offset="0%" stopColor="#f97316" stopOpacity={0.3} />
                     <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
                   </linearGradient>
-                  <linearGradient id="gradientCancelled" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#ef4444" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                  </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                 <XAxis
@@ -406,13 +395,6 @@ export default function HomepagePage() {
                   tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
                 />
                 <Tooltip content={<ChartTooltip />} />
-                <Legend
-                  verticalAlign="top"
-                  height={28}
-                  iconType="circle"
-                  iconSize={8}
-                  wrapperStyle={{ fontSize: '11px', color: '#94a3b8' }}
-                />
                 <Area
                   type="monotone"
                   dataKey="revenue"
@@ -423,19 +405,6 @@ export default function HomepagePage() {
                   dot={false}
                   activeDot={{ r: 4, fill: '#f97316' }}
                 />
-                {totalCancelledRevenue > 0 && (
-                  <Area
-                    type="monotone"
-                    dataKey="cancelledRevenue"
-                    stroke="#ef4444"
-                    strokeWidth={1.5}
-                    strokeDasharray="5 3"
-                    fill="url(#gradientCancelled)"
-                    name="Anulowane (kwota)"
-                    dot={false}
-                    activeDot={{ r: 3, fill: '#ef4444' }}
-                  />
-                )}
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -503,9 +472,6 @@ export default function HomepagePage() {
             <p className="text-xs text-slate-400 mt-0.5">
               Śr. {(totalOrders / (salesChart.length || 1)).toFixed(1)} zamówień/dzień •
               Śr. wartość {formatCurrency(avgOrderValue)}
-              {totalCancelledOrders > 0 && (
-                <span className="text-red-400/70"> • {totalCancelledOrders} anulowanych</span>
-              )}
             </p>
           </div>
         </div>
@@ -529,17 +495,7 @@ export default function HomepagePage() {
                 allowDecimals={false}
               />
               <Tooltip content={<ChartTooltip />} />
-              <Legend
-                verticalAlign="top"
-                height={28}
-                iconType="circle"
-                iconSize={8}
-                wrapperStyle={{ fontSize: '11px', color: '#94a3b8' }}
-              />
-              <Bar dataKey="orders" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Zamówienia" maxBarSize={20} stackId="orders" />
-              {totalCancelledOrders > 0 && (
-                <Bar dataKey="cancelledOrders" fill="#ef4444" radius={[4, 4, 0, 0]} name="Anulowane" maxBarSize={20} stackId="cancelled" />
-              )}
+              <Bar dataKey="orders" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Zamówienia" maxBarSize={20} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -662,7 +618,7 @@ export default function HomepagePage() {
         <h2 className="text-white font-semibold mb-4">
           Podsumowanie ({chartDays} dni)
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="text-center p-3 bg-slate-900/50 rounded-lg">
             <p className="text-2xl font-bold text-orange-400">{formatCurrency(totalRevenue)}</p>
             <p className="text-xs text-slate-400 mt-1">Łączny przychód</p>
@@ -680,10 +636,6 @@ export default function HomepagePage() {
               {(totalOrders / (salesChart.length || 1)).toFixed(1)}
             </p>
             <p className="text-xs text-slate-400 mt-1">Śr. zamówień / dzień</p>
-          </div>
-          <div className="text-center p-3 bg-slate-900/50 rounded-lg border border-red-500/10">
-            <p className="text-2xl font-bold text-red-400">{totalCancelledOrders}</p>
-            <p className="text-xs text-slate-400 mt-1">Anulowane ({formatCurrency(totalCancelledRevenue)})</p>
           </div>
         </div>
       </div>

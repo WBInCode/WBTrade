@@ -3,8 +3,9 @@
 import { Search, Menu, LogOut, User } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import NotificationBell from '@/components/NotificationBell';
 
-export default function Header() {
+export default function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
   const { user, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
@@ -16,13 +17,16 @@ export default function Header() {
   };
 
   return (
-    <header className="h-16 bg-admin-sidebar border-b border-admin-border flex items-center justify-between px-6">
+    <header className="h-16 bg-admin-sidebar border-b border-admin-border flex items-center justify-between px-4 sm:px-6">
       {/* Left side - breadcrumb/title */}
       <div className="flex items-center gap-4">
-        <button className="lg:hidden p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700/30">
+        <button
+          onClick={onMenuToggle}
+          className="lg:hidden p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700/30"
+        >
           <Menu className="w-5 h-5" />
         </button>
-        <div>
+        <div className="hidden sm:block">
           <h1 className="text-lg font-semibold text-white">Panel administracyjny</h1>
           <p className="text-xs text-slate-400">WBTrade</p>
         </div>
@@ -30,18 +34,24 @@ export default function Header() {
 
       {/* Right side */}
       <div className="flex items-center gap-3">
-        {/* Search */}
-        <div className="hidden md:flex items-center bg-slate-800 rounded-lg px-3 py-2">
+        {/* Search — opens Command Palette on click */}
+        <button
+          onClick={() => {
+            document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
+          }}
+          className="hidden md:flex items-center bg-slate-800 rounded-lg px-3 py-2 hover:bg-slate-700 transition-colors cursor-pointer"
+        >
           <Search className="w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Szukaj produktów, zamówień..."
-            className="bg-transparent border-none outline-none text-sm text-white placeholder-slate-400 ml-2 w-64"
-          />
+          <span className="text-sm text-slate-400 ml-2 w-64 text-left">
+            Szukaj produktów, zamówień...
+          </span>
           <kbd className="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 text-xs text-slate-400 bg-slate-700 rounded">
             ⌘K
           </kbd>
-        </div>
+        </button>
+
+        {/* Notifications */}
+        <NotificationBell />
 
         {/* User menu */}
         {user && (
