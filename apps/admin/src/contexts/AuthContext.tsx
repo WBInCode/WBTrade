@@ -10,7 +10,7 @@ interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'ADMIN' | 'WAREHOUSE' | 'CUSTOMER';
+  role: 'ADMIN' | 'MANAGER' | 'WAREHOUSE' | 'CUSTOMER';
 }
 
 interface AuthContextType {
