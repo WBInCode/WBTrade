@@ -298,8 +298,9 @@ router.post('/campaigns/:id/send', async (req: Request, res: Response) => {
 
     // Send campaign directly (no Redis needed)
     // Run async — respond immediately so the UI doesn't timeout
-    sendCampaign(req.params.id).catch((err) => {
-      console.error(`[Newsletter] Background send failed for ${req.params.id}:`, err);
+    const campaignId = req.params.id;
+    sendCampaign(campaignId).catch((err) => {
+      console.error('[Newsletter] Background send failed for campaign:', campaignId, err);
     });
 
     res.json({ message: 'Kampania została przekazana do wysyłki' });

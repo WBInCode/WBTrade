@@ -1089,7 +1089,7 @@ export class BaselinkerService {
 
       if (productsToFetch.length === 0) {
         console.log('[BaselinkerSync] No products to process, skipping fetch');
-        return { processed: 0, errors, skipped };
+        return { processed: 0, errors, skipped, changedProducts };
       }
 
       // Fetch detailed data only for changed products
