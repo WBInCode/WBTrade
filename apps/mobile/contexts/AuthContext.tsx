@@ -7,6 +7,8 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  justRegistered: boolean;
+  clearJustRegistered: () => void;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (data: RegisterData) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
@@ -19,6 +21,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [justRegistered, setJustRegistered] = useState(false);
+
+  const clearJustRegistered = useCallback(() => {
+    setJustRegistered(false);
+  }, []);
 
   // Load user on mount
   useEffect(() => {
@@ -68,6 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
       await saveTokens(tokens);
       setUser(result.user);
+      setJustRegistered(true);
       return { success: true };
     } catch (error: any) {
       return { success: false, error: error.message || 'Rejestracja nie powiodła się' };
@@ -111,6 +119,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         isLoading,
         isAuthenticated: !!user,
+        justRegistered,
+        clearJustRegistered,
         login,
         register,
         logout,

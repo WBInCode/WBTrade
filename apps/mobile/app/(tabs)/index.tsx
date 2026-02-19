@@ -717,13 +717,13 @@ const styles = StyleSheet.create({
   topScrollContent: { paddingHorizontal: 16, gap: 12 },
   topCard: {
     width: 150, backgroundColor: Colors.secondary[50],
-    borderRadius: 14, padding: 12, alignItems: 'center',
+    borderRadius: 14, padding: 12, paddingTop: 16, alignItems: 'center',
     borderWidth: 1, borderColor: Colors.secondary[200], position: 'relative',
   },
   topMedal: {
-    position: 'absolute', top: -6, left: -6, width: 28, height: 28,
-    borderRadius: 14, alignItems: 'center', justifyContent: 'center',
-    zIndex: 1, borderWidth: 2, borderColor: Colors.white,
+    position: 'absolute', top: 6, left: 6, width: 26, height: 26,
+    borderRadius: 13, alignItems: 'center', justifyContent: 'center',
+    zIndex: 1,
   },
   topMedalText: { color: Colors.white, fontSize: 13, fontWeight: '800' },
   topProductImage: { width: 100, height: 100, marginBottom: 8 },
