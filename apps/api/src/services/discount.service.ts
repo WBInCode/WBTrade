@@ -126,8 +126,8 @@ export class DiscountService {
       return { valid: false, error: 'Kod rabatowy został już wykorzystany' };
     }
 
-    // For welcome discounts, check if it belongs to this user
-    if (coupon.couponSource === 'WELCOME_DISCOUNT' && coupon.userId) {
+    // For personal discounts, check if it belongs to this user
+    if ((coupon.couponSource === 'WELCOME_DISCOUNT' || coupon.couponSource === 'APP_DOWNLOAD') && coupon.userId) {
       if (coupon.userId !== userId) {
         return { valid: false, error: 'Ten kod rabatowy należy do innego użytkownika' };
       }
@@ -242,6 +242,80 @@ export class DiscountService {
     return {
       couponCode: coupon.code,
       discountPercent: NEWSLETTER_DISCOUNT_PERCENT,
+      expiresAt,
+    };
+  }
+
+  /**
+   * Generate app download discount (-5%)
+   * Format: APP-XXXXXX (6 random alphanumeric chars)
+   * 5% discount, valid for 30 days, single use
+   */
+  async generateAppDownloadDiscount(userId: string, userEmail: string): Promise<WelcomeDiscountResult> {
+    const APP_DISCOUNT_PERCENT = 5;
+    const APP_DISCOUNT_VALID_DAYS = 30;
+
+    // Check if user already has an app download discount
+    const existingCoupon = await prisma.coupon.findFirst({
+      where: {
+        userId,
+        couponSource: 'APP_DOWNLOAD',
+      },
+    });
+
+    if (existingCoupon) {
+      if (existingCoupon.expiresAt && existingCoupon.expiresAt > new Date() && existingCoupon.usedCount < (existingCoupon.maximumUses || 1)) {
+        return {
+          couponCode: existingCoupon.code,
+          discountPercent: Number(existingCoupon.value),
+          expiresAt: existingCoupon.expiresAt,
+        };
+      }
+      throw new Error('APP_DOWNLOAD_EXISTS');
+    }
+
+    // Generate unique code
+    let code: string;
+    let attempts = 0;
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    do {
+      const randomPart = Array.from(
+        crypto.randomBytes(6),
+        (byte) => chars[byte % chars.length]
+      ).join('');
+      code = `APP-${randomPart}`;
+      const existing = await prisma.coupon.findUnique({ where: { code } });
+      if (!existing) break;
+      attempts++;
+    } while (attempts < 10);
+
+    if (attempts >= 10) {
+      throw new Error('Nie udało się wygenerować unikalnego kodu');
+    }
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + APP_DISCOUNT_VALID_DAYS);
+
+    const coupon = await prisma.coupon.create({
+      data: {
+        code: code!,
+        description: `Zniżka -${APP_DISCOUNT_PERCENT}% za pobranie aplikacji mobilnej dla ${userEmail}`,
+        type: 'PERCENTAGE',
+        value: APP_DISCOUNT_PERCENT,
+        maximumUses: 1,
+        usedCount: 0,
+        expiresAt,
+        isActive: true,
+        userId,
+        couponSource: 'APP_DOWNLOAD',
+      },
+    });
+
+    console.log(`✅ [DiscountService] Generated app download code ${code} for ${userEmail}, expires ${expiresAt.toISOString()}`);
+
+    return {
+      couponCode: coupon.code,
+      discountPercent: APP_DISCOUNT_PERCENT,
       expiresAt,
     };
   }

@@ -30,4 +30,8 @@ export const couponsApi = {
   /** Get user's welcome discount (if active) */
   getWelcomeDiscount: () =>
     api.get<{ discount: WelcomeDiscount | null }>('/coupons/welcome'),
+
+  /** Claim app download discount (-5%) */
+  claimAppDownload: () =>
+    api.post<{ discount: WelcomeDiscount }>('/coupons/claim-app-download'),
 };
