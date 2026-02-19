@@ -7,6 +7,7 @@ import {
   X, Download, Eye, ChevronRight, RefreshCw
 } from 'lucide-react';
 import Link from 'next/link';
+import { getAuthToken } from '@/lib/api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -192,9 +193,13 @@ export default function ImportProductsPage() {
       const product = validProducts[i];
       
       try {
+        const token = getAuthToken();
         const response = await fetch(`${API_URL}/products`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
           body: JSON.stringify({
             name: product.name,
             sku: product.sku,

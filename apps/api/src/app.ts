@@ -33,6 +33,12 @@ import reportsRoutes from './routes/reports';
 import uploadRoutes from './routes/upload';
 import priceHistoryRoutes from './routes/price-history';
 import adminSettingsRoutes from './routes/admin-settings';
+import adminCouponsRoutes from './routes/admin-coupons';
+import adminNotificationsRoutes from './routes/admin-notifications';
+import adminNewsletterRoutes from './routes/admin-newsletter';
+import adminActivityLogRoutes from './routes/admin-activity-log';
+import adminOmnibusRoutes from './routes/admin-omnibus';
+import adminWarehouseRoutes from './routes/admin-warehouse';
 import newsletterRoutes from './routes/newsletter';
 import contactRoutes from './routes/contact';
 import feedRoutes from './routes/feed';
@@ -166,6 +172,12 @@ app.post('/api/webhooks/payu', payuWebhook);
 app.use('/api/webhooks', checkoutRoutes); // Other webhook routes
 app.use('/api/admin/dashboard', adminDashboardRoutes); // Admin dashboard
 app.use('/api/admin/settings', adminSettingsRoutes); // Admin settings (carousels, etc.)
+app.use('/api/admin/coupons', adminCouponsRoutes); // Admin coupons management
+app.use('/api/admin/notifications', adminNotificationsRoutes); // Admin notifications
+app.use('/api/admin/newsletter', adminNewsletterRoutes); // Admin newsletter management
+app.use('/api/admin/activity-log', adminActivityLogRoutes); // Admin activity log / audit trail
+app.use('/api/admin/omnibus', adminOmnibusRoutes); // Admin Omnibus + top products
+app.use('/api/admin/warehouse', adminWarehouseRoutes); // Admin WMS warehouse management
 app.use('/api/admin/baselinker', baselinkerRoutes); // Baselinker integration
 app.use('/api/newsletter', newsletterRoutes); // Newsletter subscription
 app.use('/api/contact', contactRoutes); // Contact forms & complaints
@@ -284,6 +296,10 @@ app.listen(PORT, async () => {
     createPaymentReminderWorker();
     await schedulePaymentReminders();
     console.log('✅ Payment reminder scheduled (daily at 10:00 AM)');
+    
+    // 4. Newsletter campaign scheduler - every minute (no Redis needed)
+    const { startNewsletterScheduler } = await import('./workers/newsletter-campaign.worker');
+    startNewsletterScheduler();
     
     console.log('✅ All cron jobs started');
   } catch (error) {

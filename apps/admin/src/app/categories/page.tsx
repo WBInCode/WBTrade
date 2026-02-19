@@ -5,6 +5,7 @@ import {
   FolderTree, ChevronRight, Package, 
   X, Save, Search, Check, Image as ImageIcon
 } from 'lucide-react';
+import { getAuthToken } from '@/lib/api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -50,7 +51,13 @@ export default function CategoriesPage() {
   async function loadCategories() {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/categories`);
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/categories`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
       const data = await response.json();
       const categoriesArray = Array.isArray(data) ? data : (data.categories || []);
       
@@ -87,7 +94,13 @@ export default function CategoriesPage() {
 
   async function loadProducts() {
     try {
-      const response = await fetch(`${API_URL}/products?limit=1000`);
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/products?limit=1000`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
       const data = await response.json();
       const productsArray = Array.isArray(data) ? data : (data.products || []);
       setProducts(productsArray);
@@ -128,9 +141,13 @@ export default function CategoriesPage() {
       for (const productId of productsToAssign) {
         const currentProduct = products.find(p => p.id === productId);
         if (currentProduct?.categoryId !== assigningCategory.id) {
+          const token = getAuthToken();
           await fetch(`${API_URL}/products/${productId}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { Authorization: `Bearer ${token}` }),
+            },
             body: JSON.stringify({ categoryId: assigningCategory.id })
           });
         }
@@ -140,9 +157,13 @@ export default function CategoriesPage() {
       const productsInCategory = products.filter(p => p.categoryId === assigningCategory.id);
       for (const product of productsInCategory) {
         if (!selectedProducts.has(product.id)) {
+          const token = getAuthToken();
           await fetch(`${API_URL}/products/${product.id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { Authorization: `Bearer ${token}` }),
+            },
             body: JSON.stringify({ categoryId: null })
           });
         }
