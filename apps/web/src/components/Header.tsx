@@ -395,7 +395,7 @@ function HeaderContent() {
       {/* Category Navigation Bar - Slides out on scroll down, no layout shift */}
       <div 
         className={`border-b border-gray-200 dark:border-secondary-700 bg-primary-500 dark:bg-primary-600 transition-all duration-200 overflow-hidden ${
-          isHeaderVisible ? 'max-h-12 opacity-100' : 'max-h-0 opacity-0'
+          isHeaderVisible ? 'max-h-14 opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
         <div className="container-custom overflow-visible">
@@ -416,7 +416,7 @@ function HeaderContent() {
             <nav 
               ref={categoryNavRef}
               onScroll={handleCarouselScroll}
-              className="flex items-center gap-1 overflow-x-auto scrollbar-hide py-2 px-1"
+              className="flex items-center gap-1 overflow-x-auto scrollbar-hide pt-2 pb-3 px-1"
               style={categories.length > 0 ? { visibility: 'hidden' } : undefined}
             >
               <button
