@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, Suspense } from 'react';
 import { useSearchParams, usePathname } from 'next/navigation';
 import SearchBar from './SearchBar';
 import MegaMenu from './MegaMenu';
@@ -107,55 +107,54 @@ function HeaderContent() {
     }, 150);
   };
 
-  // Initialize infinite carousel position and auto-scroll to active category
-  useEffect(() => {
+  // Position carousel scroll INSTANTLY before paint on every navigation / category change
+  // This prevents the flash of triple-rendered links during client-side navigation
+  useLayoutEffect(() => {
     const nav = categoryNavRef.current;
     if (!nav || categories.length === 0) return;
 
-    // Position at start of middle set for infinite carousel (instant)
-    const setWidth = nav.scrollWidth / 3;
     nav.style.scrollBehavior = 'auto';
-    nav.scrollLeft = setWidth;
-    nav.style.scrollBehavior = '';
 
-    if (!isOnProductsPage) return;
+    // Find the active link to center on
+    let activeLink: HTMLElement | null = null;
 
-    // Find the active link in the middle set (data-active="true" is only on middle set)
-    let activeLink: HTMLElement | null = nav.querySelector<HTMLElement>('[data-active="true"]');
+    if (isOnProductsPage) {
+      // Try data-active first (only on middle/original set)
+      activeLink = nav.querySelector<HTMLElement>('[data-active="true"]');
 
-    if (!activeLink && currentCategorySlug) {
-      // Fallback: find by href, pick the middle set match (index 1 of 3)
-      const allMatching = nav.querySelectorAll<HTMLElement>(`a[href*="category=${currentCategorySlug}"]`);
-      if (allMatching.length >= 2) {
-        activeLink = allMatching[Math.floor(allMatching.length / 2)];
-      } else if (allMatching.length === 1) {
-        activeLink = allMatching[0];
+      if (!activeLink && currentCategorySlug) {
+        const allMatching = nav.querySelectorAll<HTMLElement>(`a[href*="category=${currentCategorySlug}"]`);
+        if (allMatching.length >= 2) {
+          activeLink = allMatching[Math.floor(allMatching.length / 2)];
+        } else if (allMatching.length === 1) {
+          activeLink = allMatching[0];
+        }
+      }
+      if (!activeLink && !currentCategorySlug) {
+        const allLinks = nav.querySelectorAll<HTMLElement>('a[href="/products"]');
+        if (allLinks.length >= 2) {
+          activeLink = allLinks[Math.floor(allLinks.length / 2)];
+        } else if (allLinks.length === 1) {
+          activeLink = allLinks[0];
+        }
       }
     }
-    if (!activeLink && !currentCategorySlug) {
-      // "Wszystkie produkty" link - pick the middle set match
-      const allLinks = nav.querySelectorAll<HTMLElement>('a[href="/products"]');
-      if (allLinks.length >= 2) {
-        activeLink = allLinks[Math.floor(allLinks.length / 2)];
-      } else if (allLinks.length === 1) {
-        activeLink = allLinks[0];
-      }
-    }
-    if (!activeLink) return;
 
-    // Small delay to ensure layout is stable after navigation
-    const timer = setTimeout(() => {
+    if (activeLink) {
+      // Center the active link instantly
       const navRect = nav.getBoundingClientRect();
-      const linkRect = activeLink!.getBoundingClientRect();
+      const linkRect = activeLink.getBoundingClientRect();
       const offset = linkRect.left - navRect.left + nav.scrollLeft - (navRect.width / 2) + (linkRect.width / 2);
-      nav.scrollTo({ left: Math.max(0, offset), behavior: 'smooth' });
-    }, 100);
+      nav.scrollLeft = Math.max(0, offset);
+    } else {
+      // No active link — just position at middle set
+      const setWidth = nav.scrollWidth / 3;
+      nav.scrollLeft = setWidth;
+    }
 
-    return () => {
-      clearTimeout(timer);
-      if (scrollEndTimerRef.current) clearTimeout(scrollEndTimerRef.current);
-    };
-  }, [currentCategorySlug, categories, categoryPath, isOnProductsPage]);
+    nav.style.scrollBehavior = '';
+    nav.style.visibility = 'visible';
+  }, [categories, currentCategorySlug, categoryPath, isOnProductsPage]);
 
   // Handle category bar visibility on scroll
   useEffect(() => {
@@ -418,6 +417,7 @@ function HeaderContent() {
               ref={categoryNavRef}
               onScroll={handleCarouselScroll}
               className="flex items-center gap-1 overflow-x-auto scrollbar-hide py-2 px-1"
+              style={categories.length > 0 ? { visibility: 'hidden' } : undefined}
             >
               <button
                 onClick={() => setIsCategoryOpen(!isCategoryOpen)}
@@ -429,40 +429,54 @@ function HeaderContent() {
                 Kategorie
               </button>
               {/* Infinite carousel: render categories 3 times (clone-before, original, clone-after) */}
-              {[0, 1, 2].flatMap((setIndex) => {
-                const isOriginal = setIndex === 1;
-                return [
-                  <Link
-                    key={`all-${setIndex}`}
-                    href="/products"
-                    data-active={isOriginal && isOnProductsPage && !currentCategorySlug ? 'true' : undefined}
-                    className={`px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors ${
-                      isOnProductsPage && !currentCategorySlug
-                        ? 'text-primary-500 bg-white'
-                        : 'text-white hover:bg-primary-600'
-                    }`}
-                  >
-                    Wszystkie produkty
-                  </Link>,
-                  ...categories.map((category) => {
-                    const isActive = isOnProductsPage && currentMainCategory?.slug === category.slug;
-                    return (
-                      <Link
-                        key={`${setIndex}-${category.slug}`}
-                        href={`/products?category=${category.slug}`}
-                        data-active={isOriginal && isActive ? 'true' : undefined}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors ${
-                          isActive
-                            ? 'text-primary-500 bg-white'
-                            : 'text-white hover:bg-primary-600'
-                        }`}
-                      >
-                        {cleanCategoryName(category.name)}
-                      </Link>
-                    );
-                  })
-                ];
-              })}
+              {/* Only use triple-render when categories are loaded; otherwise show single link to avoid duplicates */}
+              {categories.length > 0 ? (
+                [0, 1, 2].flatMap((setIndex) => {
+                  const isOriginal = setIndex === 1;
+                  return [
+                    <Link
+                      key={`all-${setIndex}`}
+                      href="/products"
+                      data-active={isOriginal && isOnProductsPage && !currentCategorySlug ? 'true' : undefined}
+                      className={`px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors ${
+                        isOriginal && isOnProductsPage && !currentCategorySlug
+                          ? 'text-primary-500 bg-white'
+                          : 'text-white hover:bg-primary-600'
+                      }`}
+                    >
+                      Wszystkie produkty
+                    </Link>,
+                    ...categories.map((category) => {
+                      const isActive = isOnProductsPage && currentMainCategory?.slug === category.slug;
+                      return (
+                        <Link
+                          key={`${setIndex}-${category.slug}`}
+                          href={`/products?category=${category.slug}`}
+                          data-active={isOriginal && isActive ? 'true' : undefined}
+                          className={`px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors ${
+                            isOriginal && isActive
+                              ? 'text-primary-500 bg-white'
+                              : 'text-white hover:bg-primary-600'
+                          }`}
+                        >
+                          {cleanCategoryName(category.name)}
+                        </Link>
+                      );
+                    })
+                  ];
+                })
+              ) : (
+                <Link
+                  href="/products"
+                  className={`px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors ${
+                    isOnProductsPage && !currentCategorySlug
+                      ? 'text-primary-500 bg-white'
+                      : 'text-white hover:bg-primary-600'
+                  }`}
+                >
+                  Wszystkie produkty
+                </Link>
+              )}
             </nav>
             
             {/* Right Arrow */}
