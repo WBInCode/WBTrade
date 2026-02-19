@@ -2,6 +2,42 @@ import prisma from '../db';
 import { ProductStatus } from '@prisma/client';
 import { Response } from 'express';
 
+// Tags that hide products from the storefront (must match products.service.ts)
+const HIDDEN_TAGS = ['błąd zdjęcia', 'błąd zdjęcia '];
+
+// Delivery tags — products MUST have at least one to be visible
+const DELIVERY_TAGS = [
+  'Paczkomaty i Kurier', 'paczkomaty i kurier',
+  'Tylko kurier', 'tylko kurier',
+  'do 2 kg', 'do 5 kg', 'do 10 kg', 'do 20 kg', 'do 31,5 kg',
+];
+
+// Google Merchant only accepts JPEG, PNG, GIF — not WebP
+const GOOGLE_ALLOWED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif'];
+
+/**
+ * Returns true if the URL points to a Google-accepted image format
+ */
+function isGoogleAcceptedImage(url: string): boolean {
+  if (!url) return false;
+  const lower = url.toLowerCase().split('?')[0]; // strip query params
+  return GOOGLE_ALLOWED_IMAGE_EXTENSIONS.some(ext => lower.endsWith(ext));
+}
+
+/**
+ * Try to convert a .webp URL to .jpg equivalent (common CDN pattern)
+ * Returns original URL if not webp
+ */
+function convertImageUrl(url: string): string {
+  if (!url) return url;
+  const lower = url.toLowerCase().split('?')[0];
+  if (lower.endsWith('.webp')) {
+    // Replace .webp with .jpg — many CDNs serve the correct format
+    return url.replace(/\.webp(\?.*)?$/i, '.jpg$1');
+  }
+  return url;
+}
+
 /**
  * Escapes special XML characters
  */
@@ -64,8 +100,17 @@ function buildProductXml(product: {
     }
   }
 
-  const primaryImage = product.images[0]?.url || '';
-  const additionalImages = product.images.slice(1, 5).map((img: { url: string }) => img.url);
+  const primaryImageRaw = product.images[0]?.url || '';
+  const primaryImage = convertImageUrl(primaryImageRaw);
+  
+  // Skip product if primary image is missing or still not in accepted format after conversion
+  if (!primaryImage || !isGoogleAcceptedImage(primaryImage)) {
+    return ''; // Will be filtered out
+  }
+  
+  const additionalImages = product.images.slice(1, 5)
+    .map((img: { url: string }) => convertImageUrl(img.url))
+    .filter(url => isGoogleAcceptedImage(url));
   const availability = totalStock > 0 ? 'in_stock' : 'out_of_stock';
 
   const price = `${Number(product.price).toFixed(2)} PLN`;
@@ -88,7 +133,7 @@ function buildProductXml(product: {
 
   const title = truncate(product.name, 150);
   const description = truncate(stripHtml(product.description || product.name), 5000);
-  const link = `${baseUrl}/product/${product.slug}`;
+  const link = `${baseUrl}/products/${product.slug}`;
   const finalPrice = salePrice ? regularPrice : price;
 
   let item = `
@@ -163,6 +208,9 @@ export async function streamGoogleMerchantFeed(baseUrl: string, res: Response): 
     const products = await prisma.product.findMany({
       where: {
         status: ProductStatus.ACTIVE,
+        NOT: { tags: { hasSome: HIDDEN_TAGS } },
+        tags: { hasSome: DELIVERY_TAGS },
+        images: { some: {} },
       },
       select: {
         sku: true,
@@ -202,7 +250,10 @@ export async function streamGoogleMerchantFeed(baseUrl: string, res: Response): 
 
     // Write each product's XML immediately, don't accumulate
     for (const product of products) {
-      res.write(buildProductXml(product, baseUrl));
+      const xml = buildProductXml(product, baseUrl);
+      if (xml) { // Skip products with invalid images
+        res.write(xml);
+      }
     }
 
     skip += BATCH_SIZE;
@@ -244,6 +295,9 @@ export async function generateGoogleMerchantFeed(baseUrl: string): Promise<strin
     const products = await prisma.product.findMany({
       where: {
         status: ProductStatus.ACTIVE,
+        NOT: { tags: { hasSome: HIDDEN_TAGS } },
+        tags: { hasSome: DELIVERY_TAGS },
+        images: { some: {} },
       },
       select: {
         sku: true,
@@ -282,7 +336,10 @@ export async function generateGoogleMerchantFeed(baseUrl: string): Promise<strin
     }
 
     for (const product of products) {
-      chunks.push(buildProductXml(product, baseUrl));
+      const xml = buildProductXml(product, baseUrl);
+      if (xml) {
+        chunks.push(xml);
+      }
     }
 
     skip += BATCH_SIZE;
