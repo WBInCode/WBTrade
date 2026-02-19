@@ -25,7 +25,442 @@ import type { Product, ProductVariant } from '../../services/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Strip HTML tags and decode basic entities
+// Decode HTML entities
+function decodeEntities(text: string): string {
+  return text
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&oacute;/g, 'ó')
+    .replace(/&eacute;/g, 'é')
+    .replace(/&#\d+;/g, (m) => {
+      const code = parseInt(m.replace(/&#|;/g, ''));
+      return String.fromCharCode(code);
+    })
+    .replace(/ {2,}/g, ' ')
+    .trim();
+}
+
+// Parse HTML into structured blocks for rendering
+type HtmlBlock = { type: 'heading' | 'paragraph' | 'list' | 'table'; text?: string; items?: string[]; rows?: Array<[string, string]> };
+
+function parseHtmlBlocks(html: string): HtmlBlock[] {
+  const blocks: HtmlBlock[] = [];
+
+  // 1) Extract <table> blocks first
+  let cleaned = html.replace(/\r\n/g, '\n').replace(/\t/g, ' ');
+
+  const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
+  cleaned = cleaned.replace(tableRegex, (_, tableContent) => {
+    const rows: Array<[string, string]> = [];
+    const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+    const tdRegex = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
+    let trMatch;
+    while ((trMatch = trRegex.exec(tableContent)) !== null) {
+      const cells: string[] = [];
+      let tdMatch;
+      tdRegex.lastIndex = 0;
+      while ((tdMatch = tdRegex.exec(trMatch[1])) !== null) {
+        cells.push(decodeEntities(tdMatch[1].replace(/<[^>]*>/g, '').trim()));
+      }
+      if (cells.length >= 2) rows.push([cells[0], cells[1]]);
+    }
+    if (rows.length > 0) blocks.push({ type: 'table', rows });
+    return '';
+  });
+
+  // 2) Extract <ul>/<ol> lists
+  const ulRegex = /<[uo]l[^>]*>([\s\S]*?)<\/[uo]l>/gi;
+  cleaned = cleaned.replace(ulRegex, (_, listContent) => {
+    const items: string[] = [];
+    const liRegex = /<li[^>]*>([\s\S]*?)<\/li>/gi;
+    let liMatch;
+    while ((liMatch = liRegex.exec(listContent)) !== null) {
+      let text = decodeEntities(liMatch[1].replace(/<[^>]*>/g, '').trim());
+      // Strip leading dash/bullet that some formats add inside <li>
+      text = text.replace(/^[\-–•·]\s*/, '');
+      if (text) items.push(text);
+    }
+    if (items.length > 0) {
+      // Check if list items look like specs (key - value or key: value)
+      const specLike = items.filter(item =>
+        /^[^:\-–]{2,35}\s*[\-–]\s*\S/.test(item) || /^[^:]{2,30}:\s/.test(item)
+      );
+      if (specLike.length >= 3 && specLike.length >= items.length * 0.6) {
+        const rows: Array<[string, string]> = items.map(item => {
+          // Try "key - value" format first
+          const dashMatch = item.match(/^(.{2,35}?)\s*[\-–]\s+(.+)$/);
+          if (dashMatch) return [dashMatch[1].trim(), dashMatch[2].trim()];
+          // Try "key: value" format
+          const colonIdx = item.indexOf(':');
+          if (colonIdx > 0 && colonIdx < 40) return [item.slice(0, colonIdx).trim(), item.slice(colonIdx + 1).trim()];
+          return [item, ''];
+        });
+        blocks.push({ type: 'table', rows });
+      } else {
+        blocks.push({ type: 'list', items });
+      }
+    }
+    return '';
+  });
+
+  // 3) Extract <h1>-<h6> headings
+  cleaned = cleaned.replace(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi, (_, content) => {
+    const text = decodeEntities(content.replace(/<[^>]*>/g, '').trim());
+    if (text) blocks.push({ type: 'heading', text });
+    return '';
+  });
+
+  // 4) Convert <strong>/<b> into heading markers or keep as text with separators
+  cleaned = cleaned.replace(/<(?:strong|b)[^>]*>([\s\S]*?)<\/(?:strong|b)>/gi, (_, inner) => {
+    // Split by <br> inside strong — each part may be separate heading/text
+    const parts = inner.split(/<br\s*\/?>/gi).map((p: string) => p.replace(/<[^>]*>/g, '').trim()).filter(Boolean);
+    if (parts.length === 0) return '';
+    return parts.map((part: string) => {
+      if (part.endsWith(':') && part.length <= 60) {
+        return '\n===SHEADING===' + part + '===ESHEADING===\n';
+      }
+      return ' ' + part + ' ';
+    }).join('\n');
+  });
+
+  // 5) Process <P> blocks — split by <BR> to detect bullets inside paragraphs
+  const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
+  cleaned = cleaned.replace(pRegex, (_, pContent) => {
+    processParagraphContent(pContent, blocks);
+    return '';
+  });
+
+  // 6) Process any remaining text outside <P> tags (handles no-<P> formats)
+  if (cleaned.trim()) {
+    processRemainingContent(cleaned, blocks);
+  }
+
+  // 7) Merge consecutive list blocks
+  const merged: HtmlBlock[] = [];
+  for (const block of blocks) {
+    if (block.type === 'list' && merged.length > 0 && merged[merged.length - 1].type === 'list') {
+      merged[merged.length - 1].items!.push(...block.items!);
+    } else {
+      merged.push(block);
+    }
+  }
+
+  // 8) Strip any remaining ===SHEADING=== / ===ESHEADING=== markers (safety net)
+  for (const block of merged) {
+    if (block.text) {
+      block.text = block.text.replace(/===SHEADING===|===ESHEADING===/g, '').trim();
+    }
+    if (block.items) {
+      block.items = block.items.map(item => item.replace(/===SHEADING===|===ESHEADING===/g, '').trim()).filter(Boolean);
+    }
+  }
+
+  // 9) Filter out empty blocks
+  return merged.filter(b => {
+    if (b.type === 'list') return (b.items?.length ?? 0) > 0;
+    if (b.type === 'table') return (b.rows?.length ?? 0) > 0;
+    return b.text && b.text.length > 0;
+  });
+}
+
+// Process inner content of a <P> tag — handles bullets separated by <BR>
+function processParagraphContent(pContent: string, blocks: HtmlBlock[]) {
+  // Split content by <BR> tags, normalize whitespace within each segment
+  const segments = pContent
+    .split(/<br\s*\/?>/gi)
+    .map(s => decodeEntities(s.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()))
+    .filter(Boolean);
+
+  if (segments.length === 0) return;
+
+  // Extract ===SHEADING=== markers as heading blocks, keep remaining segments
+  const cleanSegments: string[] = [];
+  for (const seg of segments) {
+    if (seg.includes('===SHEADING===')) {
+      const match = seg.match(/===SHEADING===([\s\S]*?)===ESHEADING===/);
+      if (match) {
+        const headingText = match[1].trim();
+        if (headingText) blocks.push({ type: 'heading', text: headingText });
+      }
+      const after = seg.replace(/===SHEADING===[\s\S]*?===ESHEADING===/g, '').trim();
+      if (after) cleanSegments.push(after);
+    } else {
+      cleanSegments.push(seg);
+    }
+  }
+
+  if (cleanSegments.length === 0) return;
+
+  // Check if segments contain bullet points (•, -, –)
+  const bulletSegments = cleanSegments.filter(s => /^[•·\-–]\s/.test(s));
+
+  if (bulletSegments.length >= 2) {
+    // This <P> is a bullet list with possible heading before bullets
+    const items: string[] = [];
+    for (const seg of cleanSegments) {
+      if (/^[•·\-–]\s/.test(seg)) {
+        items.push(seg.replace(/^[•·\-–]\s*/, ''));
+      } else if (items.length === 0 && seg.length > 0) {
+        // Text before bullets — treat as heading or paragraph
+        if (isLikelyHeading(seg)) {
+          blocks.push({ type: 'heading', text: seg });
+        } else {
+          blocks.push({ type: 'paragraph', text: seg });
+        }
+      }
+    }
+    if (items.length > 0) {
+      // Check if items look like specs (key: value pairs)
+      const specItems = items.filter(item => /^[^:]{2,30}:\s/.test(item));
+      if (specItems.length >= 3 && specItems.length >= items.length * 0.6) {
+        // Convert to table
+        const rows: Array<[string, string]> = items.map(item => {
+          const colonIdx = item.indexOf(':');
+          if (colonIdx > 0 && colonIdx < 40) {
+            return [item.slice(0, colonIdx).trim(), item.slice(colonIdx + 1).trim()];
+          }
+          return [item, ''];
+        });
+        blocks.push({ type: 'table', rows });
+      } else {
+        blocks.push({ type: 'list', items });
+      }
+    }
+  } else if (bulletSegments.length === 1) {
+    // Mixed: some text + one bullet. Treat all as paragraph
+    const fullText = cleanSegments.join(' ');
+    blocks.push({ type: 'paragraph', text: fullText });
+  } else {
+    // Regular paragraph — join segments into one text
+    const fullText = cleanSegments.join(' ');
+    if (isLikelyHeading(fullText)) {
+      blocks.push({ type: 'heading', text: fullText });
+    } else {
+      blocks.push({ type: 'paragraph', text: fullText });
+    }
+  }
+}
+
+// Process remaining content that has no <P> wrappers (uses <br>, <strong> etc)
+function processRemainingContent(content: string, blocks: HtmlBlock[]) {
+  // Split by <br> tags
+  const segments = content
+    .split(/<br\s*\/?>/gi)
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  let currentParagraph = '';
+  const bulletItems: string[] = [];
+
+  const flushParagraph = () => {
+    if (currentParagraph.trim()) {
+      const text = decodeEntities(currentParagraph.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim());
+      if (text) blocks.push({ type: 'paragraph', text });
+      currentParagraph = '';
+    }
+  };
+
+  const flushBullets = () => {
+    if (bulletItems.length > 0) {
+      blocks.push({ type: 'list', items: [...bulletItems] });
+      bulletItems.length = 0;
+    }
+  };
+
+  for (const seg of segments) {
+    // Check for heading markers
+    if (seg.includes('===SHEADING===')) {
+      flushParagraph();
+      flushBullets();
+      const match = seg.match(/===SHEADING===([\s\S]*?)===ESHEADING===/);
+      if (match) {
+        const headingText = decodeEntities(match[1].trim());
+        if (headingText) blocks.push({ type: 'heading', text: headingText });
+      }
+      const after = seg.replace(/.*===ESHEADING===/, '').trim();
+      if (after) {
+        const text = decodeEntities(after.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim());
+        if (text) currentParagraph = text;
+      }
+      continue;
+    }
+
+    const text = decodeEntities(seg.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim());
+    if (!text) continue;
+
+    // Check if this is a bullet item
+    if (/^[•·\-–]\s/.test(text)) {
+      flushParagraph();
+      bulletItems.push(text.replace(/^[•·\-–]\s*/, ''));
+    } else {
+      // Regular text — flush bullets first if we had any
+      flushBullets();
+      if (currentParagraph) {
+        currentParagraph += ' ' + text;
+      } else {
+        currentParagraph = text;
+      }
+    }
+  }
+
+  flushBullets();
+  flushParagraph();
+}
+
+// Detect if a short text is likely a heading
+function isLikelyHeading(text: string): boolean {
+  if (text.length < 3) return false;
+  // ALL CAPS (allow digits, spaces, punctuation) — up to 120 chars
+  if (text.length <= 120 && /^[A-ZĄĆĘŁŃÓŚŻŹ0-9\s\-–:,./+()!?]+$/.test(text) && text.length > 5) return true;
+  // Ends with : or ? and is short
+  if (/[?:]$/.test(text) && text.length <= 60) return true;
+  return false;
+}
+
+// Render parsed HTML blocks as React Native components
+function HtmlContent({ html }: { html: string }) {
+  const blocks = parseHtmlBlocks(html);
+
+  return (
+    <View>
+      {blocks.map((block, i) => {
+        switch (block.type) {
+          case 'heading':
+            return (
+              <Text key={i} style={[htmlStyles.heading, i === 0 && { marginTop: 0 }]}>
+                {block.text}
+              </Text>
+            );
+          case 'paragraph':
+            return (
+              <Text key={i} style={htmlStyles.paragraph}>
+                {block.text}
+              </Text>
+            );
+          case 'list':
+            return (
+              <View key={i} style={htmlStyles.list}>
+                {block.items!.map((item, j) => (
+                  <View key={j} style={[htmlStyles.listItem, j === block.items!.length - 1 && { marginBottom: 0 }]}>
+                    <View style={htmlStyles.bulletDot} />
+                    <Text style={htmlStyles.listItemText}>{item}</Text>
+                  </View>
+                ))}
+              </View>
+            );
+          case 'table':
+            return (
+              <View key={i} style={htmlStyles.table}>
+                {block.rows!.map(([key, value], j) => (
+                  <View
+                    key={j}
+                    style={[
+                      htmlStyles.tableRow,
+                      j % 2 === 0 ? htmlStyles.tableRowEven : null,
+                      j === block.rows!.length - 1 ? htmlStyles.tableRowLast : null,
+                    ]}
+                  >
+                    <Text style={htmlStyles.tableKey}>{key}</Text>
+                    <Text style={htmlStyles.tableValue}>{value}</Text>
+                  </View>
+                ))}
+              </View>
+            );
+          default:
+            return null;
+        }
+      })}
+    </View>
+  );
+}
+
+const htmlStyles = StyleSheet.create({
+  heading: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.secondary[800],
+    marginBottom: 6,
+    marginTop: 20,
+    paddingBottom: 6,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.secondary[200],
+  },
+  paragraph: {
+    fontSize: 14,
+    color: Colors.secondary[600],
+    lineHeight: 22,
+    marginBottom: 12,
+  },
+  list: {
+    backgroundColor: Colors.secondary[50],
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginBottom: 14,
+  },
+  listItem: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  bullet: {
+    fontSize: 14,
+    color: Colors.primary[500],
+    marginRight: 10,
+    lineHeight: 21,
+  },
+  bulletDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.primary[500],
+    marginRight: 10,
+    marginTop: 8,
+  },
+  listItemText: {
+    fontSize: 14,
+    color: Colors.secondary[700],
+    lineHeight: 21,
+    flex: 1,
+  },
+  table: {
+    borderRadius: 10,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: Colors.secondary[200],
+    marginBottom: 14,
+  },
+  tableRow: {
+    flexDirection: 'row',
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.secondary[200],
+  },
+  tableRowEven: {
+    backgroundColor: Colors.secondary[50],
+  },
+  tableRowLast: {
+    borderBottomWidth: 0,
+  },
+  tableKey: {
+    fontSize: 13,
+    color: Colors.secondary[500],
+    flex: 1,
+  },
+  tableValue: {
+    fontSize: 13,
+    color: Colors.secondary[800],
+    fontWeight: '500',
+    flex: 1,
+    textAlign: 'right',
+  },
+});
+
+// Legacy stripHtml for simple strings
 function stripHtml(html: string): string {
   return html
     .replace(/<br\s*\/?>/gi, '\n')
@@ -165,6 +600,124 @@ function StarRating({ rating, size = 16 }: { rating: number; size?: number }) {
   return <View style={{ flexDirection: 'row' }}>{stars}</View>;
 }
 
+// --- Product Info Tabs (Opis / Specyfikacja) ---
+function ProductInfoTabs({
+  description,
+  specifications,
+}: {
+  description?: string;
+  specifications?: Record<string, string>;
+}) {
+  const [activeTab, setActiveTab] = useState<'opis' | 'spec'>('opis');
+
+  const allBlocks = description ? parseHtmlBlocks(description) : [];
+  // Skip the first block if it's an ALL-CAPS heading (redundant product title)
+  const filtered = allBlocks.length > 0 && allBlocks[0].type === 'heading'
+    && allBlocks[0].text && allBlocks[0].text === allBlocks[0].text.toUpperCase()
+    ? allBlocks.slice(1)
+    : allBlocks;
+  const descBlocks = filtered.filter(b => b.type !== 'table');
+  const tableBlocks = filtered.filter(b => b.type === 'table');
+  const specEntries = specifications ? Object.entries(specifications) : [];
+  const hasSpec = tableBlocks.length > 0 || specEntries.length > 0;
+
+  if (descBlocks.length === 0 && !hasSpec) return null;
+
+  const tabs: { key: 'opis' | 'spec'; label: string }[] = [{ key: 'opis', label: 'Opis' }];
+  if (hasSpec) tabs.push({ key: 'spec', label: 'Specyfikacja' });
+
+  // Collect all spec rows into one flat list for the spec tab
+  const allSpecRows: Array<[string, string]> = [];
+  for (const entry of specEntries) allSpecRows.push([entry[0], String(entry[1])]);
+  for (const block of tableBlocks) {
+    if (block.rows) allSpecRows.push(...block.rows);
+  }
+
+  return (
+    <View style={styles.tabsWrap}>
+      {/* Tab bar */}
+      <View style={styles.tabBar}>
+        {tabs.map(t => {
+          const active = activeTab === t.key;
+          return (
+            <TouchableOpacity
+              key={t.key}
+              style={[styles.tabBtn, active && styles.tabBtnActive]}
+              onPress={() => setActiveTab(t.key)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>
+                {t.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* Opis tab */}
+      {activeTab === 'opis' && (
+        <View style={styles.tabBody}>
+          {descBlocks.map((block, i) => {
+            switch (block.type) {
+              case 'heading':
+                return (
+                  <Text key={i} style={[htmlStyles.heading, i === 0 && { marginTop: 4 }]}>
+                    {block.text}
+                  </Text>
+                );
+              case 'paragraph':
+                return (
+                  <Text key={i} style={[htmlStyles.paragraph, i === 0 && { marginTop: 0 }]}>
+                    {block.text}
+                  </Text>
+                );
+              case 'list':
+                return (
+                  <View key={i} style={htmlStyles.list}>
+                    {block.items!.map((item, j) => (
+                      <View key={j} style={[htmlStyles.listItem, j === block.items!.length - 1 && { marginBottom: 0 }]}>
+                        <View style={htmlStyles.bulletDot} />
+                        <Text style={htmlStyles.listItemText}>{item}</Text>
+                      </View>
+                    ))}
+                  </View>
+                );
+              default:
+                return null;
+            }
+          })}
+          {descBlocks.length === 0 && (
+            <Text style={htmlStyles.paragraph}>Brak opisu produktu.</Text>
+          )}
+        </View>
+      )}
+
+      {/* Specyfikacja tab */}
+      {activeTab === 'spec' && (
+        <View style={styles.tabBody}>
+          <View style={styles.specTableWrap}>
+            {allSpecRows.map(([key, value], idx) => (
+              <View
+                key={idx}
+                style={[
+                  styles.specRow,
+                  idx % 2 === 0 && styles.specRowAlt,
+                ]}
+              >
+                <Text style={styles.specLabel}>{key}</Text>
+                <Text style={styles.specVal}>{value}</Text>
+              </View>
+            ))}
+          </View>
+          {allSpecRows.length === 0 && (
+            <Text style={htmlStyles.paragraph}>Brak specyfikacji.</Text>
+          )}
+        </View>
+      )}
+    </View>
+  );
+}
+
 // --- Accordion ---
 function Accordion({
   title,
@@ -216,6 +769,7 @@ export default function ProductDetailScreen() {
   const [reviews, setReviews] = useState<Review[]>([]);
 
   const [warehouseProducts, setWarehouseProducts] = useState<Product[]>([]);
+  const [warehouseSource, setWarehouseSource] = useState<'warehouse' | 'category'>('warehouse');
 
   // Fetch product
   useEffect(() => {
@@ -260,9 +814,36 @@ export default function ProductDetailScreen() {
     // Same warehouse products
     api
       .get<{ products: Product[] }>(`/products/same-warehouse/${id}?limit=10`)
-      .then((data) => setWarehouseProducts(data.products || []))
+      .then((data) => {
+        const prods = data.products || [];
+        if (prods.length > 0) {
+          setWarehouseSource('warehouse');
+        }
+        setWarehouseProducts(prods);
+      })
       .catch(() => {});
   }, [id]);
+
+  // Fallback: if no warehouse products, fetch from same category
+  useEffect(() => {
+    if (!product || warehouseProducts.length > 0 || loading) return;
+
+    const categoryId = product.categoryId || (product.category as any)?.id;
+    if (!categoryId) return;
+
+    api
+      .get<any>(`/products?categoryId=${categoryId}&limit=11`)
+      .then((data) => {
+        const prods = (data.products || data.data || [])
+          .filter((p: Product) => p.id !== product.id)
+          .slice(0, 10);
+        if (prods.length > 0) {
+          setWarehouseSource('category');
+          setWarehouseProducts(prods);
+        }
+      })
+      .catch(() => {});
+  }, [product, warehouseProducts.length, loading]);
 
   // --- Price helpers ---
   const getPrice = useCallback(() => {
@@ -598,29 +1179,18 @@ export default function ProductDetailScreen() {
             </View>
           )}
 
-          {/* Description Accordion */}
-          {product.description && (
-            <Accordion title="Opis produktu">
-              <Text style={styles.descriptionText}>{stripHtml(product.description)}</Text>
-            </Accordion>
-          )}
-
-          {/* Specifications Accordion */}
-          {product.specifications && Object.keys(product.specifications).length > 0 && (
-            <Accordion title="Specyfikacja">
-              {Object.entries(product.specifications).map(([key, value]) => (
-                <View key={key} style={styles.specRow}>
-                  <Text style={styles.specKey}>{key}</Text>
-                  <Text style={styles.specValue}>{value}</Text>
-                </View>
-              ))}
-            </Accordion>
+          {/* Description & Specifications Tabs */}
+          {(product.description || (product.specifications && Object.keys(product.specifications).length > 0)) && (
+            <ProductInfoTabs
+              description={product.description}
+              specifications={product.specifications}
+            />
           )}
 
           {/* Delivery Info */}
           {product.deliveryInfo && (
             <Accordion title="Dostawa">
-              <Text style={styles.descriptionText}>{stripHtml(product.deliveryInfo)}</Text>
+              <HtmlContent html={product.deliveryInfo} />
             </Accordion>
           )}
 
@@ -714,7 +1284,7 @@ export default function ProductDetailScreen() {
           {warehouseProducts.length > 0 && (
             <View style={styles.warehouseSection}>
               <ProductCarousel
-                title="Inne produkty z tego magazynu"
+                title={warehouseSource === 'warehouse' ? 'Inne produkty z tego magazynu' : 'Podobne produkty'}
                 products={warehouseProducts}
               />
             </View>
@@ -1047,32 +1617,78 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
   },
 
-  // Description
-  descriptionText: {
+  // ─── Product Info Tabs ───
+  tabsWrap: {
+    marginTop: 24,
+    marginHorizontal: -16,
+    backgroundColor: Colors.white,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: Colors.secondary[50],
+    marginHorizontal: 16,
+    borderRadius: 10,
+    padding: 3,
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  tabBtnActive: {
+    backgroundColor: Colors.white,
+    elevation: 1,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+  },
+  tabLabel: {
     fontSize: 14,
-    color: Colors.secondary[600],
-    lineHeight: 22,
+    fontWeight: '600',
+    color: Colors.secondary[400],
+  },
+  tabLabelActive: {
+    color: Colors.secondary[900],
+  },
+  tabBody: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 8,
   },
 
-  // Specifications
+  // ─── Spec rows (Specyfikacja tab) ───
+  specTableWrap: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: Colors.secondary[200],
+  },
   specRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.secondary[100],
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.secondary[200],
+    backgroundColor: Colors.white,
   },
-  specKey: {
+  specRowAlt: {
+    backgroundColor: Colors.secondary[50],
+  },
+  specLabel: {
     fontSize: 13,
     color: Colors.secondary[500],
     flex: 1,
+    lineHeight: 20,
   },
-  specValue: {
-    fontSize: 13,
-    color: Colors.secondary[800],
+  specVal: {
+    fontSize: 14,
+    color: Colors.secondary[900],
     fontWeight: '500',
-    flex: 1,
-    textAlign: 'right',
+    flex: 1.3,
+    paddingLeft: 12,
+    lineHeight: 20,
   },
 
   // Reviews
