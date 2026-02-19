@@ -10,10 +10,15 @@ import {
   ChevronDown,
   Box,
   LayoutDashboard,
-  Sparkles,
   Database,
+  Ticket,
+  Mail,
+  Activity,
+  BarChart3,
+  Warehouse,
 } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const menuItems = [
   {
@@ -21,6 +26,7 @@ const menuItems = [
     href: '/homepage',
     icon: LayoutDashboard,
     submenu: [
+      { title: 'Dashboard', href: '/homepage' },
       { title: 'Karuzele produktów', href: '/homepage/carousels' },
     ],
   },
@@ -30,6 +36,7 @@ const menuItems = [
     icon: Package,
     submenu: [
       { title: 'Lista produktów', href: '/products' },
+      { title: 'Aktualizuj produkty', href: '/products/update' },
       { title: 'Kategorie', href: '/categories' },
     ],
   },
@@ -46,9 +53,39 @@ const menuItems = [
     ],
   },
   {
+    title: 'Kupony',
+    href: '/coupons',
+    icon: Ticket,
+  },
+  {
+    title: 'Newsletter',
+    href: '/newsletter',
+    icon: Mail,
+  },
+  {
     title: 'Użytkownicy',
     href: '/users',
     icon: Users,
+  },
+  {
+    title: 'Activity Log',
+    href: '/activity-log',
+    icon: Activity,
+  },
+  {
+    title: 'Omnibus & Top',
+    href: '/omnibus',
+    icon: BarChart3,
+  },
+  {
+    title: 'Magazyn (WMS)',
+    href: '/warehouse',
+    icon: Warehouse,
+    submenu: [
+      { title: 'Stan magazynowy', href: '/warehouse' },
+      { title: 'Ruchy magazynowe', href: '/warehouse/movements' },
+      { title: 'Lokalizacje', href: '/warehouse/locations' },
+    ],
   },
   {
     title: 'Integracje',
@@ -61,8 +98,9 @@ const menuItems = [
   },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
   const [openMenus, setOpenMenus] = useState<string[]>(['Produkty', 'Zamówienia']);
 
   const toggleMenu = (title: string) => {
@@ -77,10 +115,10 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-64 bg-admin-sidebar border-r border-admin-border flex flex-col">
+    <aside className="w-64 h-full bg-admin-sidebar border-r border-admin-border flex flex-col">
       {/* Logo */}
-      <div className="h-16 flex items-center px-6 border-b border-admin-border">
-        <Link href="/" className="flex items-center gap-2">
+      <div className="h-16 flex items-center justify-between px-6 border-b border-admin-border">
+        <Link href="/" className="flex items-center gap-2" onClick={onClose}>
           <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
             <Box className="w-5 h-5 text-white" />
           </div>
@@ -155,13 +193,13 @@ export default function Sidebar() {
       <div className="p-3 border-t border-admin-border">
         <div className="flex items-center gap-3 px-3 py-2">
           <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
-            JK
+            {user ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}` : '??'}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white truncate">Jan Kowalski</p>
-            <p className="text-xs text-slate-400">Administrator</p>
+            <p className="text-sm font-medium text-white truncate">{user ? `${user.firstName} ${user.lastName}` : 'Ładowanie...'}</p>
+            <p className="text-xs text-slate-400">{user?.role === 'ADMIN' ? 'Administrator' : user?.role === 'WAREHOUSE' ? 'Magazynier' : user?.role || ''}</p>
           </div>
-          <button className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700/30 transition-colors">
+          <button onClick={logout} className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700/30 transition-colors" title="Wyloguj">
             <LogOut className="w-4 h-4" />
           </button>
         </div>

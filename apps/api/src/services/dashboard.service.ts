@@ -17,6 +17,8 @@ interface SalesChartData {
   date: string;
   revenue: number;
   orders: number;
+  cancelledRevenue: number;
+  cancelledOrders: number;
 }
 
 interface RecentOrder {
@@ -61,20 +63,22 @@ export class DashboardService {
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    // Zamówienia dziś
+    // Zamówienia dziś (bez anulowanych/zwróconych)
     const ordersToday = await prisma.order.count({
       where: {
-        createdAt: { gte: today }
+        createdAt: { gte: today },
+        status: { notIn: ['CANCELLED', 'REFUNDED'] }
       }
     });
 
-    // Zamówienia wczoraj (do porównania)
+    // Zamówienia wczoraj (do porównania, bez anulowanych/zwróconych)
     const ordersYesterday = await prisma.order.count({
       where: {
         createdAt: {
           gte: yesterday,
           lt: today
-        }
+        },
+        status: { notIn: ['CANCELLED', 'REFUNDED'] }
       }
     });
 
@@ -160,7 +164,7 @@ export class DashboardService {
     startDate.setDate(startDate.getDate() - days);
     startDate.setHours(0, 0, 0, 0);
 
-    // Pobierz zamówienia z ostatnich 30 dni
+    // Pobierz zamówienia z ostatnich X dni (bez anulowanych/zwróconych)
     const orders = await prisma.order.findMany({
       where: {
         createdAt: { gte: startDate },
@@ -172,18 +176,30 @@ export class DashboardService {
       }
     });
 
+    // Pobierz anulowane/zwrócone osobno
+    const cancelledOrders = await prisma.order.findMany({
+      where: {
+        createdAt: { gte: startDate },
+        status: { in: ['CANCELLED', 'REFUNDED'] }
+      },
+      select: {
+        createdAt: true,
+        total: true
+      }
+    });
+
     // Grupuj po dniach
-    const dailyData: Record<string, { revenue: number; orders: number }> = {};
+    const dailyData: Record<string, { revenue: number; orders: number; cancelledRevenue: number; cancelledOrders: number }> = {};
 
     // Inicjalizuj wszystkie dni
     for (let i = 0; i < days; i++) {
       const date = new Date(startDate);
       date.setDate(date.getDate() + i);
       const dateKey = date.toISOString().split('T')[0];
-      dailyData[dateKey] = { revenue: 0, orders: 0 };
+      dailyData[dateKey] = { revenue: 0, orders: 0, cancelledRevenue: 0, cancelledOrders: 0 };
     }
 
-    // Wypełnij danymi
+    // Wypełnij danymi (aktywne)
     for (const order of orders) {
       const dateKey = order.createdAt.toISOString().split('T')[0];
       if (dailyData[dateKey]) {
@@ -192,11 +208,22 @@ export class DashboardService {
       }
     }
 
+    // Wypełnij danymi (anulowane)
+    for (const order of cancelledOrders) {
+      const dateKey = order.createdAt.toISOString().split('T')[0];
+      if (dailyData[dateKey]) {
+        dailyData[dateKey].cancelledRevenue += order.total.toNumber();
+        dailyData[dateKey].cancelledOrders += 1;
+      }
+    }
+
     // Konwertuj do tablicy
     return Object.entries(dailyData).map(([date, data]) => ({
       date,
       revenue: Math.round(data.revenue * 100) / 100,
-      orders: data.orders
+      orders: data.orders,
+      cancelledRevenue: Math.round(data.cancelledRevenue * 100) / 100,
+      cancelledOrders: data.cancelledOrders
     }));
   }
 

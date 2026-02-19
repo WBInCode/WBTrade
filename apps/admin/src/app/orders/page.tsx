@@ -109,6 +109,7 @@ export default function OrdersPage() {
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [actionMenuId, setActionMenuId] = useState<string | null>(null);
   const [pendingCancellationsCount, setPendingCancellationsCount] = useState(0);
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
 
   // Load pending cancellations count
   useEffect(() => {
@@ -160,6 +161,9 @@ export default function OrdersPage() {
       setOrders(data.orders || []);
       setTotalPages(data.pagination?.totalPages || 1);
       setTotal(data.pagination?.total || 0);
+      if (data.statusCounts) {
+        setStatusCounts(data.statusCounts);
+      }
     } catch (error) {
       console.error('Failed to load orders:', error);
     } finally {
@@ -233,11 +237,6 @@ export default function OrdersPage() {
     setDateTo('');
     setPage(1);
   };
-
-  const statusCounts = orders.reduce((acc, order) => {
-    acc[order.status] = (acc[order.status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
 
   return (
     <div className="space-y-6">

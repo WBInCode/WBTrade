@@ -128,6 +128,13 @@ export async function getProducts(req: Request, res: Response): Promise<void> {
     }
 
     const filters = validation.data;
+
+    // Track search query for analytics (works for all users, not just authenticated)
+    if (filters.search && filters.search.trim().length >= 2) {
+      const { trackSearch } = require('../services/search-analytics.service');
+      trackSearch(filters.search);
+    }
+
     const result = await productsService.getAll(filters);
     res.status(200).json(result);
   } catch (error) {

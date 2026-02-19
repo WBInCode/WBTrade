@@ -7,7 +7,7 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/products');
+    router.replace('/homepage');
   }, [router]);
 
   return (

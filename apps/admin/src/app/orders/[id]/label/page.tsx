@@ -3,6 +3,7 @@
 import { useState, useEffect, use, useRef } from 'react';
 import { ArrowLeft, Printer, Download, Package, Truck, QrCode } from 'lucide-react';
 import Link from 'next/link';
+import { getAuthToken } from '@/lib/api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -48,7 +49,13 @@ export default function ShippingLabelPage({ params }: { params: Promise<{ id: st
   async function loadOrder() {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/orders/${id}`);
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/orders/${id}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
       if (!response.ok) throw new Error('Order not found');
       const data = await response.json();
       setOrder(data);
