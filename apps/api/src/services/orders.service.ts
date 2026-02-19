@@ -151,7 +151,7 @@ export class OrdersService {
       if (dateTo) where.createdAt.lte = dateTo;
     }
 
-    const [orders, total] = await Promise.all([
+    const [orders, total, statusCountsRaw] = await Promise.all([
       prisma.order.findMany({
         where,
         skip,
@@ -164,10 +164,22 @@ export class OrdersService {
         },
       }),
       prisma.order.count({ where }),
+      // Always get counts for ALL statuses (unfiltered) for the status cards
+      prisma.order.groupBy({
+        by: ['status'],
+        _count: true,
+      }),
     ]);
+
+    // Convert groupBy result to a simple { STATUS: count } object
+    const statusCounts: Record<string, number> = {};
+    statusCountsRaw.forEach((item) => {
+      statusCounts[item.status] = item._count;
+    });
 
     return {
       orders,
+      statusCounts,
       pagination: {
         total,
         page,

@@ -360,6 +360,7 @@ export class BaselinkerService {
     let itemsProcessed = 0;
     let itemsChanged = 0;
     let allChangedSkus: { sku: string; oldQty: number; newQty: number; inventory: string }[] = [];
+    let allChangedProducts: { sku: string; name: string; changes: string[] }[] = [];
     const errors: string[] = [];
 
     try {
@@ -378,6 +379,7 @@ export class BaselinkerService {
 
         const prodResult = await this.syncProducts(provider, stored.inventoryId, mode);
         itemsProcessed += prodResult.processed;
+        allChangedProducts.push(...prodResult.changedProducts);
         errors.push(...prodResult.errors);
 
         const stockResult = await this.syncStock(provider, stored.inventoryId);
@@ -395,6 +397,7 @@ export class BaselinkerService {
       } else if (type === 'products') {
         const result = await this.syncProducts(provider, stored.inventoryId, mode);
         itemsProcessed = result.processed;
+        allChangedProducts = result.changedProducts;
         errors.push(...result.errors);
         
         // Po synchronizacji produktów, synchronizuj też stany magazynowe
@@ -419,13 +422,14 @@ export class BaselinkerService {
       }
 
       // Update sync log as success
+      const changedData = allChangedSkus.length > 0 ? allChangedSkus : (allChangedProducts.length > 0 ? allChangedProducts : undefined);
       await prisma.baselinkerSyncLog.update({
         where: { id: syncLogId },
         data: {
           status: errors.length > 0 ? BaselinkerSyncStatus.FAILED : BaselinkerSyncStatus.SUCCESS,
           itemsProcessed,
-          itemsChanged,
-          changedSkus: allChangedSkus.length > 0 ? allChangedSkus : undefined,
+          itemsChanged: itemsChanged || allChangedProducts.length,
+          changedSkus: changedData,
           errors: errors.length > 0 ? errors : undefined,
           completedAt: new Date(),
         },
@@ -962,10 +966,11 @@ export class BaselinkerService {
     provider: BaselinkerProvider,
     inventoryId: string,
     mode?: string
-  ): Promise<{ processed: number; errors: string[]; skipped: number }> {
+  ): Promise<{ processed: number; errors: string[]; skipped: number; changedProducts: { sku: string; name: string; changes: string[] }[] }> {
     const errors: string[] = [];
     let processed = 0;
     let skipped = 0;
+    const changedProducts: { sku: string; name: string; changes: string[] }[] = [];
 
     try {
       console.log(`[BaselinkerSync] Starting products sync with mode: ${mode || 'all'}...`);
@@ -1084,7 +1089,7 @@ export class BaselinkerService {
 
       if (productsToFetch.length === 0) {
         console.log('[BaselinkerSync] No products to process, skipping fetch');
-        return { processed: 0, errors, skipped };
+        return { processed: 0, errors, skipped, changedProducts };
       }
 
       // Fetch detailed data only for changed products
@@ -1147,12 +1152,23 @@ export class BaselinkerService {
               // Check if product exists
               const existingProduct = await tx.product.findUnique({
                 where: { baselinkerProductId },
-                select: { id: true, price: true },
+                select: { id: true, price: true, name: true, sku: true, barcode: true, description: true, categoryId: true },
               });
 
               let product;
               
               if (existingProduct) {
+                // Track what changed
+                const productChanges: string[] = [];
+                if (existingProduct.name !== name) productChanges.push(`Nazwa: "${existingProduct.name}" → "${name}"`);
+                const existingSku = existingProduct.sku;
+                const newSku = await this.ensureUniqueSku(sku, baselinkerProductId);
+                if (existingSku !== newSku) productChanges.push(`SKU: ${existingSku} → ${newSku}`);
+                if (existingProduct.barcode !== productEan) productChanges.push(`EAN: ${existingProduct.barcode || 'brak'} → ${productEan || 'brak'}`);
+                const currentPrice = Number(existingProduct.price);
+                if (Math.abs(currentPrice - productPrice) > 0.01) productChanges.push(`Cena: ${currentPrice.toFixed(2)} → ${productPrice.toFixed(2)} zł`);
+                if (existingProduct.categoryId !== (category?.id || null)) productChanges.push('Kategoria zmieniona');
+                
                 // Product exists - update without price first
                 product = await tx.product.update({
                   where: { baselinkerProductId },
@@ -1160,7 +1176,7 @@ export class BaselinkerService {
                     name,
                     slug,
                     description,
-                    sku: await this.ensureUniqueSku(sku, baselinkerProductId),
+                    sku: newSku,
                     barcode: productEan,
                     categoryId: category?.id || null,
                     baselinkerCategoryPath: baselinkerCategoryPath,
@@ -1170,10 +1186,12 @@ export class BaselinkerService {
                   },
                 });
                 
-                // Handle price change with Omnibus compliance (outside transaction)
-                // Note: We track price changes after the transaction
-                const currentPrice = Number(existingProduct.price);
-                if (currentPrice !== productPrice) {
+                if (productChanges.length > 0) {
+                  changedProducts.push({ sku: newSku, name, changes: productChanges });
+                }
+                
+                // Handle price change with Omnibus compliance
+                if (Math.abs(currentPrice - productPrice) > 0.01) {
                   // Schedule price update with history (will be executed after tx)
                   await priceHistoryService.updateProductPrice({
                     productId: existingProduct.id,
@@ -1341,7 +1359,7 @@ export class BaselinkerService {
       errors.push(`Failed to fetch products: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
-    return { processed, errors, skipped };
+    return { processed, errors, skipped, changedProducts };
   }
 
   /**

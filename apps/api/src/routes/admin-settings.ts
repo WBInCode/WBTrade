@@ -1,8 +1,12 @@
 import { Router } from 'express';
 import { prisma } from '../db';
 import { invalidateCategoryCache } from '../lib/cache';
+import { authGuard, adminOnly } from '../middleware/auth.middleware';
 
 const router = Router();
+
+// All admin settings routes require authentication + admin role
+router.use(authGuard, adminOnly);
 
 // Helper to safely parse JSON string
 const parseJsonValue = (value: string | null | undefined): any => {
@@ -13,9 +17,6 @@ const parseJsonValue = (value: string | null | undefined): any => {
     return value;
   }
 };
-
-// Note: These endpoints are under /api/admin/settings, accessed only from admin panel
-// The admin panel has its own authentication (ADMIN_ACCESS_SECRET)
 
 /**
  * POST /api/admin/settings/cache/clear-categories
