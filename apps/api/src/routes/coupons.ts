@@ -51,6 +51,26 @@ router.get('/my', authGuard, async (req, res) => {
   }
 });
 
+// POST /api/coupons/claim-app-download — claim app download discount (-5%)
+router.post('/claim-app-download', authGuard, async (req, res) => {
+  try {
+    const userId = (req as any).user?.userId;
+    const email = (req as any).user?.email || '';
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const result = await discountService.generateAppDownloadDiscount(userId, email);
+    return res.json({ discount: result });
+  } catch (error: any) {
+    if (error.message === 'APP_DOWNLOAD_EXISTS') {
+      return res.status(409).json({ error: 'Rabat za pobranie aplikacji został już przyznany' });
+    }
+    console.error('[CouponsRoute] Error claiming app download discount:', error);
+    return res.status(500).json({ error: 'Nie udało się przyznać rabatu' });
+  }
+});
+
 // GET /api/coupons/welcome — get user's welcome discount
 router.get('/welcome', authGuard, async (req, res) => {
   try {
