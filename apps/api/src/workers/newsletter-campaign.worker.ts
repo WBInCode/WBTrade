@@ -17,6 +17,33 @@ const prisma = new PrismaClient();
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://wb-trade.pl';
 
+/**
+ * Safely convert HTML content to plain text.
+ * Iteratively strips tags and decodes entities to avoid incomplete sanitization.
+ */
+function stripHtmlToText(html: string): string {
+  // Iteratively remove HTML tags until none remain
+  let text = html;
+  let prev = '';
+  while (text !== prev) {
+    prev = text;
+    text = text.replace(/<[^>]*>/g, '');
+  }
+  // Decode common HTML entities
+  const entityMap: Record<string, string> = {
+    '&nbsp;': ' ',
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&#39;': "'",
+  };
+  for (const [entity, char] of Object.entries(entityMap)) {
+    text = text.split(entity).join(char);
+  }
+  return text.trim();
+}
+
 // Batch size for sending (to avoid overloading Resend API)
 const BATCH_SIZE = 10;
 // Delay between batches (ms) — Resend free tier: 100 emails/day, 1/sec
@@ -113,13 +140,7 @@ export async function sendCampaign(campaignId: string): Promise<{ sent: number; 
       const htmlWithUnsubscribe = wrapWithUnsubscribe(campaign.content, subscriber.token);
 
       // Strip HTML tags for plain text version
-      const textContent = campaign.content
-        .replace(/<[^>]*>/g, '')
-        .replace(/&nbsp;/g, ' ')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .trim();
+      const textContent = stripHtmlToText(campaign.content);
 
       await sendEmailDirect({
         to: subscriber.email,

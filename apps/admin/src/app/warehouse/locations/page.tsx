@@ -184,7 +184,7 @@ export default function LocationsPage() {
             return (
               <div key={t}>
                 <h2 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${info.color}`}>
-                  <span className={`w-2 h-2 rounded-full ${info.bg.replace('bg-', 'bg-').replace('/20', '')}`}></span>
+                  <span className={`w-2 h-2 rounded-full ${info.bg.replace('/20', '')}`}></span>
                   {info.label} ({grouped[t].length})
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
