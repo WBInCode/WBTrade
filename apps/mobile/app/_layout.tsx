@@ -12,6 +12,8 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { Colors } from '../constants/Colors';
 import { AuthProvider } from '../contexts/AuthContext';
 import { CartProvider } from '../contexts/CartContext';
+import { WishlistProvider } from '../contexts/WishlistContext';
+import { ToastProvider } from '../contexts/ToastContext';
 import { useAuthRedirect } from '../hooks/useProtectedRoute';
 
 export {
@@ -70,6 +72,8 @@ function RootLayoutNav() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <CartProvider>
+          <ToastProvider>
+          <WishlistProvider>
           <AuthRedirectHandler />
           <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
             <Stack>
@@ -97,6 +101,8 @@ function RootLayoutNav() {
               />
             </Stack>
           </ThemeProvider>
+          </WishlistProvider>
+          </ToastProvider>
         </CartProvider>
       </AuthProvider>
     </QueryClientProvider>

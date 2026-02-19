@@ -41,8 +41,10 @@
     "extra": {
       "apiUrl": "https://wbtrade-iv71.onrender.com/api",
       "eas": {
-        "projectId": ""
-      }
-    }
+        "projectId": "9e3ccf4b-aed1-4f12-a6be-3083af7b0121"
+      },
+      "router": {}
+    },
+    "owner": "wbincode"
   }
 }
