@@ -7,11 +7,9 @@ const router = Router();
 
 // Create a new review (requires authentication + rate limited)
 router.post('/', authGuard, reviewRateLimiter, reviewsController.createReview);
+
 // Get current user's reviews (requires authentication)
 router.get('/mine', authGuard, reviewsController.getUserReviews);
-
-// Create a new review (requires authentication)
-router.post('/', authGuard, reviewsController.createReview);
 
 // Update a review (requires authentication)
 router.put('/:reviewId', authGuard, reviewsController.updateReview);
