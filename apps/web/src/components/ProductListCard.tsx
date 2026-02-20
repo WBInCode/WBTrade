@@ -174,9 +174,32 @@ export default memo(function ProductListCard({ product, showWishlist = true, vie
           {/* Info */}
           <div className="flex-1 py-3 pr-3 flex flex-col min-w-0">
             {/* Product Name */}
-            <h3 className="text-sm font-medium text-secondary-800 dark:text-secondary-100 line-clamp-2 mb-2 pr-2">
+            <h3 className="text-sm font-medium text-secondary-800 dark:text-secondary-100 line-clamp-2 mb-1 pr-2">
               {product.name}
             </h3>
+
+            {/* Rating - always visible */}
+            <div className="flex items-center gap-1 mb-1">
+              <div className="flex items-center">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <svg
+                    key={star}
+                    className={`w-3.5 h-3.5 ${
+                      star <= Math.round(Number(product.rating || 0))
+                        ? 'text-orange-400'
+                        : 'text-gray-300 dark:text-secondary-600'
+                    }`}
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+              </div>
+              <span className="text-xs text-gray-500 dark:text-secondary-400">
+                ({product.reviewCount || 0} {(product.reviewCount || 0) === 1 ? 'opinia' : 'opinii'})
+              </span>
+            </div>
 
             {/* Price */}
             <div className="flex flex-wrap items-baseline gap-2 mb-2">
@@ -321,9 +344,32 @@ export default memo(function ProductListCard({ product, showWishlist = true, vie
         {/* Info */}
         <div className="p-2 sm:p-3 flex flex-col flex-grow">
           {/* Product Name */}
-          <h3 className="text-xs sm:text-sm text-secondary-800 dark:text-secondary-100 line-clamp-2 mb-1 sm:mb-2 min-h-[2rem] sm:min-h-[2.5rem]">
+          <h3 className="text-xs sm:text-sm text-secondary-800 dark:text-secondary-100 line-clamp-2 mb-1 min-h-[2rem] sm:min-h-[2.5rem]">
             {product.name}
           </h3>
+
+          {/* Rating - always visible */}
+          <div className="flex items-center gap-1 mb-0.5 sm:mb-1">
+            <div className="flex items-center">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <svg
+                  key={star}
+                  className={`w-3 h-3 ${
+                    star <= Math.round(Number(product.rating || 0))
+                      ? 'text-orange-400'
+                      : 'text-gray-300 dark:text-secondary-600'
+                  }`}
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+              ))}
+            </div>
+            <span className="text-[10px] sm:text-xs text-gray-500 dark:text-secondary-400">
+              ({product.reviewCount || 0} {(product.reviewCount || 0) === 1 ? 'opinia' : 'opinii'})
+            </span>
+          </div>
 
           {/* Price */}
           <div className="flex flex-wrap items-baseline gap-1 sm:gap-2 mb-1 sm:mb-2">

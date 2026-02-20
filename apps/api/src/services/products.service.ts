@@ -134,6 +134,9 @@ function transformProduct(product: any): any {
     stock: totalStock,
     // Ensure tags are always an array
     tags: product.tags || [],
+    // Map DB field names to frontend-friendly names
+    rating: product.average_rating ? Number(product.average_rating) : null,
+    reviewCount: product.review_count || 0,
   };
 }
 
@@ -479,6 +482,10 @@ export class ProductsService {
         // Sort by sales count only (number of sold units)
         orderBy = [{ salesCount: 'desc' }, { id: 'asc' }];
         break;
+      case 'top-rated':
+        // Sort by average rating, then by review count for tiebreaking
+        orderBy = [{ average_rating: 'desc' }, { review_count: 'desc' }, { id: 'asc' }];
+        break;
       case 'newest':
       default:
         orderBy = [{ createdAt: 'desc' }, { id: 'asc' }];
@@ -660,6 +667,9 @@ export class ProductsService {
           // Sort by popularityScore (salesCount*3 + viewCount*0.1)
           // Add secondary sort by id for stable pagination when scores are equal
           meiliSort = ['popularityScore:desc', 'id:asc'];
+          break;
+        case 'top-rated':
+          meiliSort = ['average_rating:desc', 'review_count:desc', 'id:asc'];
           break;
         case 'newest':
         default:
@@ -851,6 +861,9 @@ export class ProductsService {
       case 'popularity':
       case 'relevance':
         orderBy = [{ popularityScore: 'desc' }, { id: 'asc' }];
+        break;
+      case 'top-rated':
+        orderBy = [{ average_rating: 'desc' }, { review_count: 'desc' }, { id: 'asc' }];
         break;
     }
 
@@ -2005,6 +2018,42 @@ export class ProductsService {
     return {
       ...transformProduct(product),
       wishlistCount: topWishlisted[0]._count.productId,
+    };
+  }
+
+  /**
+   * Get top-rated products (highest average_rating with minimum review_count)
+   */
+  async getTopRated(options: {
+    limit?: number;
+    minReviews?: number;
+  } = {}): Promise<{ products: any[] }> {
+    const { limit = 20, minReviews = 1 } = options;
+
+    const products = await prisma.product.findMany({
+      where: {
+        status: 'ACTIVE',
+        review_count: { gte: minReviews },
+        average_rating: { not: null },
+        tags: { hasSome: DELIVERY_TAGS },
+        ...PACKAGE_FILTER_WHERE,
+      },
+      include: {
+        images: { orderBy: { order: 'asc' } },
+        category: true,
+        variants: {
+          include: { inventory: true },
+        },
+      },
+      orderBy: [
+        { average_rating: 'desc' },
+        { review_count: 'desc' },
+      ],
+      take: limit,
+    });
+
+    return {
+      products: filterProductsWithPackageInfo(transformProducts(products)),
     };
   }
 
