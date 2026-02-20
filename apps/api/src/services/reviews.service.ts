@@ -154,36 +154,8 @@ export const reviewsService = {
 
     // Update product aggregate rating
     await updateProductReviewStats(productId);
-    // Update product rating stats
-    await this.updateProductRatingStats(productId);
 
     return review;
-  },
-
-  /**
-   * Recalculate and update product's average_rating and review_count
-   */
-  async updateProductRatingStats(productId: string) {
-    const stats = await prisma.review.aggregate({
-      where: {
-        productId,
-        isApproved: true,
-      },
-      _avg: {
-        rating: true,
-      },
-      _count: {
-        rating: true,
-      },
-    });
-
-    await prisma.product.update({
-      where: { id: productId },
-      data: {
-        average_rating: stats._avg.rating ? Number(stats._avg.rating.toFixed(1)) : null,
-        review_count: stats._count.rating,
-      },
-    });
   },
 
   /**
@@ -397,8 +369,6 @@ export const reviewsService = {
     if (data.rating !== undefined && data.rating !== review.rating) {
       await updateProductReviewStats(review.productId);
     }
-    // Update product rating stats
-    await this.updateProductRatingStats(review.productId);
 
     return updated;
   },
@@ -427,8 +397,6 @@ export const reviewsService = {
 
     // Update product aggregate after deletion
     await updateProductReviewStats(productId);
-    // Update product rating stats
-    await this.updateProductRatingStats(productId);
 
     return { success: true };
   },
