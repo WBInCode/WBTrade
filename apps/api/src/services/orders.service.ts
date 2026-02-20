@@ -376,12 +376,46 @@ export class OrdersService {
   /**
    * Get user's orders
    */
-  async getUserOrders(userId: string, page = 1, limit = 10) {
+  async getUserOrders(userId: string, page = 1, limit = 10, status?: string, search?: string) {
     const skip = (page - 1) * limit;
+
+    // Build where clause with optional status filter
+    const where: any = { userId };
+
+    if (status) {
+      // UNPAID groups OPEN + PENDING + paymentStatus PENDING (excluding CANCELLED/REFUNDED)
+      if (status === 'UNPAID') {
+        where.OR = [
+          { status: 'OPEN' },
+          { status: 'PENDING' },
+          { paymentStatus: 'PENDING', status: { notIn: ['CANCELLED', 'REFUNDED'] } },
+        ];
+      } else {
+        where.status = status;
+      }
+    }
+
+    if (search) {
+      const searchWhere = {
+        OR: [
+          { orderNumber: { contains: search, mode: 'insensitive' as const } },
+          { items: { some: { productName: { contains: search, mode: 'insensitive' as const } } } },
+        ],
+      };
+      // Merge search conditions with existing where
+      if (where.OR) {
+        // Already have OR from status filter, wrap in AND
+        const statusCondition = { OR: where.OR };
+        delete where.OR;
+        where.AND = [statusCondition, searchWhere];
+      } else {
+        where.AND = [searchWhere];
+      }
+    }
 
     const [orders, total] = await Promise.all([
       prisma.order.findMany({
-        where: { userId },
+        where,
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
@@ -405,7 +439,7 @@ export class OrdersService {
           },
         },
       }),
-      prisma.order.count({ where: { userId } }),
+      prisma.order.count({ where }),
     ]);
 
     return {

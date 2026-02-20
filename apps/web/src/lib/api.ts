@@ -554,7 +554,7 @@ export interface PackageShippingInfo {
 export interface Order {
   id: string;
   orderNumber: string;
-  status: 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
+  status: 'OPEN' | 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
   paymentStatus?: 'PENDING' | 'AWAITING_CONFIRMATION' | 'PAID' | 'FAILED' | 'REFUNDED' | 'CANCELLED';
   items: OrderItem[];
   shippingAddress?: OrderAddress;
@@ -621,8 +621,8 @@ export const ordersApi = {
   create: (orderData: CreateOrderData) =>
     api.post<Order>('/orders', orderData),
     
-  getAll: (page?: number, limit?: number) =>
-    api.get<OrdersListResponse>('/orders', { page, limit }),
+  getAll: (page?: number, limit?: number, status?: string, search?: string) =>
+    api.get<OrdersListResponse>('/orders', { page, limit, status: status || undefined, search: search || undefined }),
     
   getById: (id: string) =>
     api.get<Order>(`/orders/${id}`),
