@@ -43,11 +43,12 @@ export function Badge({
 
 // Mapowanie statusów zamówień na warianty Badge
 export const orderStatusBadge: Record<string, { variant: BadgeProps['variant']; label: string }> = {
-  PENDING: { variant: 'warning', label: 'Oczekujące' },
-  CONFIRMED: { variant: 'info', label: 'Potwierdzone' },
+  OPEN: { variant: 'warning', label: 'Oczekuje na płatność' },
+  PENDING: { variant: 'warning', label: 'Oczekuje na płatność' },
+  CONFIRMED: { variant: 'info', label: 'Opłacone' },
   PROCESSING: { variant: 'info', label: 'W realizacji' },
-  SHIPPED: { variant: 'info', label: 'Wysłane' },
-  DELIVERED: { variant: 'success', label: 'Dostarczone' },
-  CANCELLED: { variant: 'error', label: 'Anulowane' },
-  REFUNDED: { variant: 'error', label: 'Zwrócone' },
+  SHIPPED: { variant: 'info', label: 'W drodze' },
+  DELIVERED: { variant: 'success', label: 'Dostarczono' },
+  CANCELLED: { variant: 'error', label: 'Anulowano' },
+  REFUNDED: { variant: 'default', label: 'Zwrócono' },
 };
