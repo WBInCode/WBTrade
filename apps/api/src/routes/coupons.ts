@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import crypto from 'crypto';
+import { v4 as uuidv4 } from 'uuid';
 import { authGuard } from '../middleware/auth.middleware';
 import { discountService } from '../services/discount.service';
 import { prisma } from '../db';
@@ -68,6 +70,54 @@ router.post('/claim-app-download', authGuard, async (req, res) => {
     }
     console.error('[CouponsRoute] Error claiming app download discount:', error);
     return res.status(500).json({ error: 'Nie udało się przyznać rabatu' });
+  }
+});
+
+// POST /api/coupons/claim-newsletter — subscribe to newsletter and claim -10% discount
+router.post('/claim-newsletter', authGuard, async (req, res) => {
+  try {
+    const userId = (req as any).user?.userId;
+    const email = (req as any).user?.email || '';
+    if (!userId || !email) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // 1. Subscribe to newsletter (auto-verify since user is authenticated)
+    const existing = await prisma.newsletter_subscriptions.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    if (!existing) {
+      const token = crypto.randomBytes(32).toString('hex');
+      await prisma.newsletter_subscriptions.create({
+        data: {
+          id: uuidv4(),
+          email: normalizedEmail,
+          token,
+          is_verified: true,
+          verified_at: new Date(),
+        },
+      });
+    } else if (existing.unsubscribed_at) {
+      await prisma.newsletter_subscriptions.update({
+        where: { email: normalizedEmail },
+        data: {
+          unsubscribed_at: null,
+          is_verified: true,
+          verified_at: new Date(),
+          subscribed_at: new Date(),
+        },
+      });
+    }
+
+    // 2. Generate newsletter discount
+    const result = await discountService.generateNewsletterDiscount(normalizedEmail, userId);
+    return res.json({ discount: result });
+  } catch (error: any) {
+    console.error('[CouponsRoute] Error claiming newsletter discount:', error);
+    return res.status(500).json({ error: 'Nie udało się przyznać rabatu newsletterowego' });
   }
 });
 
