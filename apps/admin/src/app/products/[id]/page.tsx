@@ -7,6 +7,7 @@ import {
   Tag, Box, BarChart3, Calendar, Truck
 } from 'lucide-react';
 import Link from 'next/link';
+import { getAuthToken } from '@/lib/api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -64,7 +65,13 @@ export default function ProductDetailPage() {
   async function loadProduct() {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/products/${productId}`);
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/products/${productId}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
       if (!response.ok) throw new Error('Product not found');
       const data = await response.json();
       setProduct(data);
@@ -81,7 +88,14 @@ export default function ProductDetailPage() {
     if (!confirm('Czy na pewno chcesz usunac ten produkt?')) return;
     
     try {
-      await fetch(`${API_URL}/products/${productId}`, { method: 'DELETE' });
+      const token = getAuthToken();
+      await fetch(`${API_URL}/products/${productId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
       router.push('/products');
     } catch (error) {
       console.error('Failed to delete:', error);

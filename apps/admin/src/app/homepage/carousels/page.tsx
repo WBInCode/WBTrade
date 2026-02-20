@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, X, GripVertical, Save, Trash2, Eye, Star, Flame, Gift, Snowflake, Sparkles } from 'lucide-react';
 import Image from 'next/image';
+import { getAuthToken } from '@/lib/api';
 
 interface Product {
   id: string;
@@ -105,8 +106,12 @@ export default function CarouselsPage() {
 
   const loadSettings = async () => {
     try {
+      const token = getAuthToken();
       const response = await fetch(`${API_URL}/admin/settings/carousels`, {
-        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
       });
       if (response.ok) {
         const data = await response.json();
@@ -137,7 +142,13 @@ export default function CarouselsPage() {
     const products: Product[] = [];
     for (const id of productIds) {
       try {
-        const response = await fetch(`${API_URL}/products/${id}`, { credentials: 'include' });
+        const token = getAuthToken();
+        const response = await fetch(`${API_URL}/products/${id}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        });
         if (response.ok) {
           const product = await response.json();
           if (product) products.push(product);
@@ -156,13 +167,18 @@ export default function CarouselsPage() {
     }
 
     try {
-      // Fetch each product by ID to ensure we get them all
+      // Deduplicate IDs to avoid duplicate key errors
+      const uniqueIds = [...new Set(productIds)];
       const products: Product[] = [];
       
-      for (const id of productIds) {
+      for (const id of uniqueIds) {
         try {
+          const token = getAuthToken();
           const response = await fetch(`${API_URL}/products/${id}`, {
-            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { Authorization: `Bearer ${token}` }),
+            },
           });
           if (response.ok) {
             const product = await response.json();
@@ -190,8 +206,12 @@ export default function CarouselsPage() {
         url += `&search=${encodeURIComponent(query)}`;
       }
       
+      const token = getAuthToken();
       const response = await fetch(url, {
-        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
       });
       
       if (response.ok) {
@@ -308,10 +328,13 @@ export default function CarouselsPage() {
         [c.id]: { productIds: c.productIds, isAutomatic: c.isAutomatic }
       }), {});
 
+      const token = getAuthToken();
       const response = await fetch(`${API_URL}/admin/settings/carousels`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
         body: JSON.stringify({ 
           carousels: carouselData,
           excludedProductIds: excludedProductIds,
@@ -593,7 +616,7 @@ export default function CarouselsPage() {
                   <div className="space-y-2 max-h-96 overflow-y-auto">
                     {selectedProducts.map((product, index) => (
                       <div
-                        key={product.id}
+                        key={`${product.id}-${index}`}
                         className="flex items-center gap-3 p-3 bg-slate-900 rounded-lg border border-slate-700"
                       >
                         <div className="flex flex-col gap-1">

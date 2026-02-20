@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { 
-  getProducts, 
-  getProductById, 
+import {
+  getProducts,
+  getProductById,
   getProductBySlug,
-  createProduct, 
-  updateProduct, 
+  createProduct,
+  updateProduct,
   deleteProduct,
   getFilters,
   getBestsellers,
@@ -12,6 +12,7 @@ import {
   getSeasonal,
   getNewProducts,
   getMostWishlisted,
+  getTopRated,
   getSameWarehouseProducts
 } from '../controllers/products.controller';
 import { reviewsController } from '../controllers/reviews.controller';
@@ -43,6 +44,9 @@ router.get('/new-arrivals', getNewProducts);
 
 // Route to get the most wishlisted product (Product of the Day)
 router.get('/most-wishlisted', getMostWishlisted);
+
+// Route to get top-rated products
+router.get('/top-rated', getTopRated);
 
 // Route to get products from the same warehouse (for "Zamów w jednej przesyłce")
 router.get('/same-warehouse/:productId', getSameWarehouseProducts);

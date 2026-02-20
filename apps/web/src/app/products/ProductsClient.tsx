@@ -172,6 +172,24 @@ function ProductsContent() {
           setTotalProducts(response.total);
           setTotalPages(response.totalPages);
         }
+        else if (activeTab === 'top-rated') {
+          // Najlepiej oceniane: products sorted by rating
+          const response = await productsApi.getAll({
+            page: currentPage,
+            limit: ITEMS_PER_PAGE,
+            category: currentCategorySlug || undefined,
+            minPrice: minPrice ? parseFloat(minPrice) : undefined,
+            maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+            search: searchQuery || undefined,
+            sort: 'top-rated',
+            brand: brand || undefined,
+            warehouse: warehouse || undefined,
+          });
+
+          setProducts(response.products);
+          setTotalProducts(response.total);
+          setTotalPages(response.totalPages);
+        }
         else if (activeTab === 'discounted') {
           // Przecenione: only discounted products from current category (server-side filter)
           const response = await productsApi.getAll({

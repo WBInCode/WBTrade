@@ -7,6 +7,7 @@ import {
   ChevronRight, Edit2, Save, X
 } from 'lucide-react';
 import Link from 'next/link';
+import { getAuthToken } from '@/lib/api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -149,7 +150,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   async function loadOrder() {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/orders/${id}`);
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/orders/${id}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
       if (!response.ok) throw new Error('Order not found');
       const data = await response.json();
       setOrder(data);
@@ -178,9 +185,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     
     try {
       setSaving(true);
+      const token = getAuthToken();
       const response = await fetch(`${API_URL}/orders/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
         body: JSON.stringify({ status: newStatus, note: statusNote }),
       });
       
@@ -200,8 +211,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     if (!confirm('Czy na pewno chcesz anulować to zamówienie? Ta operacja zwolni zarezerwowany towar.')) return;
     
     try {
+      const token = getAuthToken();
       await fetch(`${API_URL}/orders/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
       });
       await loadOrder();
     } catch (error) {
@@ -214,9 +230,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     if (reason === null) return; // User cancelled
     
     try {
+      const token = getAuthToken();
       const response = await fetch(`${API_URL}/orders/${id}/refund`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
         body: JSON.stringify({ reason: reason || 'Zwrot na życzenie klienta' }),
       });
       
@@ -235,8 +255,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     if (!confirm('Czy na pewno chcesz przywrócić to zamówienie? Towar zostanie ponownie zarezerwowany.')) return;
     
     try {
+      const token = getAuthToken();
       const response = await fetch(`${API_URL}/orders/${id}/restore`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
       });
       
       if (response.ok) {

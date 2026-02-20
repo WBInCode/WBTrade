@@ -8,12 +8,17 @@ const BestsellersCarousel = dynamic(() => import('./BestsellersCarousel'), { ssr
 const NewProductsCarousel = dynamic(() => import('./NewProductsCarousel'), { ssr: false });
 const ToysCarousel = dynamic(() => import('./ToysCarousel'), { ssr: false });
 const SeasonalCarousel = dynamic(() => import('./SeasonalCarousel'), { ssr: false });
+const TopRatedCarousel = dynamic(() => import('./TopRatedCarousel'), { ssr: false });
 
 export default function BelowFoldCarousels() {
   return (
     <>
       <LazyCarousel>
         <BestsellersCarousel />
+      </LazyCarousel>
+
+      <LazyCarousel>
+        <TopRatedCarousel />
       </LazyCarousel>
 
       <LazyCarousel>

@@ -4,15 +4,19 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 import '../global.css';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { Colors } from '../constants/Colors';
-import { AuthProvider } from '../contexts/AuthContext';
+import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { CartProvider } from '../contexts/CartContext';
+import { WishlistProvider } from '../contexts/WishlistContext';
+import { ToastProvider } from '../contexts/ToastContext';
 import { useAuthRedirect } from '../hooks/useProtectedRoute';
+import GiftNotification from '../components/GiftNotification';
+import { couponsApi } from '../services/coupons';
 
 export {
   ErrorBoundary,
@@ -63,6 +67,58 @@ function AuthRedirectHandler() {
   return null;
 }
 
+function GiftNotificationHandler() {
+  const { justRegistered, clearJustRegistered } = useAuth();
+  const [giftVisible, setGiftVisible] = useState(false);
+  const [discountData, setDiscountData] = useState<{ percent: number; code: string }>({
+    percent: 0,
+    code: '',
+  });
+
+  useEffect(() => {
+    if (!justRegistered) return;
+
+    // Wait a moment for the registration redirect to settle, then fetch discount
+    const timer = setTimeout(async () => {
+      try {
+        const data = await couponsApi.getWelcomeDiscount();
+        if (data.discount) {
+          setDiscountData({
+            percent: data.discount.discountPercent,
+            code: data.discount.couponCode,
+          });
+          setGiftVisible(true);
+        } else {
+          // API responded but no discount yet (async generation) — show with default
+          setDiscountData({ percent: 20, code: 'Sprawdź w Moje rabaty' });
+          setGiftVisible(true);
+        }
+      } catch (err) {
+        // API endpoint may not be deployed yet — show gift with default values
+        console.warn('Could not fetch welcome discount:', err);
+        setDiscountData({ percent: 20, code: 'Sprawdź w Moje rabaty' });
+        setGiftVisible(true);
+      }
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [justRegistered]);
+
+  const handleClaim = () => {
+    setGiftVisible(false);
+    clearJustRegistered();
+  };
+
+  return (
+    <GiftNotification
+      visible={giftVisible}
+      discountPercent={discountData.percent}
+      couponCode={discountData.code}
+      onClaim={handleClaim}
+    />
+  );
+}
+
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
@@ -70,7 +126,10 @@ function RootLayoutNav() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <CartProvider>
+          <ToastProvider>
+          <WishlistProvider>
           <AuthRedirectHandler />
+          <GiftNotificationHandler />
           <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
             <Stack>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -97,6 +156,8 @@ function RootLayoutNav() {
               />
             </Stack>
           </ThemeProvider>
+          </WishlistProvider>
+          </ToastProvider>
         </CartProvider>
       </AuthProvider>
     </QueryClientProvider>
