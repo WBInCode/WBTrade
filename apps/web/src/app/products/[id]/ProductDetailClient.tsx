@@ -14,6 +14,7 @@ import { useWishlist } from '../../../contexts/WishlistContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { cleanCategoryName } from '../../../lib/categories';
 import { trackViewItem, toGA4Item } from '../../../lib/analytics';
+import AddToListModal from '../../../components/AddToListModal';
 
 interface ProductDetailClientProps {
   product: Product;
@@ -37,6 +38,9 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
 
   // Cart error state for displaying error messages
   const [cartError, setCartError] = useState<string | null>(null);
+
+  // Add to shopping list modal
+  const [showAddToListModal, setShowAddToListModal] = useState(false);
 
   // Reviews state
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -738,6 +742,19 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                 {isInWishlist(product.id) ? 'W ulubionych' : 'Dodaj do ulubionych'}
               </button>
 
+              {/* Add to Shopping List Button */}
+              {isAuthenticated && (
+                <button
+                  onClick={() => setShowAddToListModal(true)}
+                  className="w-full border-2 border-gray-300 dark:border-secondary-600 text-gray-600 dark:text-gray-300 hover:border-orange-400 dark:hover:border-orange-500/50 hover:text-orange-500 dark:hover:text-orange-400 hover:bg-orange-50/50 dark:hover:bg-orange-900/10 font-semibold py-2.5 sm:py-3 rounded-lg mb-3 sm:mb-4 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                  </svg>
+                  Dodaj do listy zakupowej
+                </button>
+              )}
+
               {/* Stock Status */}
               {!isOutOfStock && (
                 <div className="flex items-center gap-2 text-xs sm:text-sm text-green-600 mb-2 sm:mb-3">
@@ -1135,6 +1152,9 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                           </svg>
                           Dodałeś już opinię o tym produkcie.
                         </p>
+                      </div>
+                    )}
+
                     {/* "Masz ten produkt?" CTA - x-kom style */}
                     {!showReviewForm && (
                       <div className="bg-gray-50 dark:bg-secondary-700/50 rounded-xl p-5 sm:p-6 mb-6 border border-gray-100 dark:border-secondary-600">
@@ -1142,25 +1162,25 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                           Masz ten produkt?
                         </h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                          Oce\u0144 go i pom\u00f3\u017c innym w wyborze
+                          Oceń go i pomóż innym w wyborze
                         </p>
                         {canReviewInfo?.canReview ? (
                           <button
                             onClick={() => setShowReviewForm(true)}
                             className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
                           >
-                            Dodaj opini\u0119
+                            Dodaj opinię
                           </button>
                         ) : canReviewInfo?.hasReviewed ? (
                           <p className="text-sm text-green-600 dark:text-green-400 font-medium">
-                            Ju\u017c oceni\u0142e\u015b ten produkt
+                            Już oceniłeś ten produkt
                           </p>
                         ) : (
                           <a
                             href="/login"
                             className="inline-block bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
                           >
-                            Zaloguj si\u0119, aby oceni\u0107
+                            Zaloguj się, aby ocenić
                           </a>
                         )}
                       </div>
@@ -1442,6 +1462,15 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
       </main>
 
       <Footer />
+
+      {/* Add to Shopping List Modal */}
+      <AddToListModal
+        isOpen={showAddToListModal}
+        onClose={() => setShowAddToListModal(false)}
+        productId={product.id}
+        productName={product.name}
+        variantId={selectedVariant?.id}
+      />
     </div>
   );
 }
