@@ -156,3 +156,36 @@ export const sensitiveOperationLimiter = createRedisRateLimiter({
   keyPrefix: 'sensitive',
   message: 'Too many sensitive operations. Please try again later.',
 });
+
+/**
+ * Review creation rate limiter
+ * 5 reviews per hour per IP (prevents review spam)
+ */
+export const reviewRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: process.env.NODE_ENV === 'production' ? 5 : 50,
+  message: {
+    message: 'Zbyt wiele opinii w krótkim czasie. Spróbuj ponownie za godzinę.',
+    code: 'REVIEW_RATE_LIMIT_EXCEEDED',
+    retryAfter: 60 * 60,
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
+});
+
+/**
+ * Review helpful vote rate limiter
+ * 30 votes per 15 minutes per IP (prevents vote spam)
+ */
+export const reviewHelpfulRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: process.env.NODE_ENV === 'production' ? 30 : 200,
+  message: {
+    message: 'Zbyt wiele głosów w krótkim czasie. Spróbuj ponownie za chwilę.',
+    code: 'HELPFUL_RATE_LIMIT_EXCEEDED',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
+});
