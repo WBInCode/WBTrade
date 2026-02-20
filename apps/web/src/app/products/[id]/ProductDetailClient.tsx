@@ -11,6 +11,7 @@ import { productsApi, reviewsApi, Product, Review, ReviewStats, CanReviewResult 
 import ProductCard from '../../../components/ProductCard';
 import { useCart } from '../../../contexts/CartContext';
 import { useWishlist } from '../../../contexts/WishlistContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import { cleanCategoryName } from '../../../lib/categories';
 import { trackViewItem, toGA4Item } from '../../../lib/analytics';
 
@@ -28,6 +29,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
 
   // Analytics dedup ref
@@ -50,6 +52,16 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
   const [reviewFormData, setReviewFormData] = useState({ rating: 5, title: '', content: '' });
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewError, setReviewError] = useState('');
+
+  // Track which reviews the user has already voted on (localStorage)
+  const [votedReviews, setVotedReviews] = useState<Record<string, 'helpful' | 'not_helpful'>>({});
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('review_votes');
+      if (stored) setVotedReviews(JSON.parse(stored));
+    } catch {}
+  }, []);
 
   const variantAttributes = useMemo(() => {
     const variants = product?.variants || [];
@@ -280,6 +292,11 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     fetchReviews();
   }, [product?.id, reviewsPage, reviewsSortBy]);
 
+  // Reset to page 1 when sort changes
+  useEffect(() => {
+    setReviewsPage(1);
+  }, [reviewsSortBy]);
+
   // Handle review submission
   const handleSubmitReview = async () => {
     if (!product?.id) return;
@@ -321,6 +338,9 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
 
   // Mark review as helpful
   const handleMarkHelpful = async (reviewId: string, helpful: boolean) => {
+    // Prevent duplicate votes
+    if (votedReviews[reviewId]) return;
+
     try {
       await reviewsApi.markHelpful(reviewId, helpful);
       // Update the review in local state
@@ -329,6 +349,10 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
           ? { ...r, helpfulCount: helpful ? r.helpfulCount + 1 : r.helpfulCount, notHelpfulCount: !helpful ? r.notHelpfulCount + 1 : r.notHelpfulCount }
           : r
       ));
+      // Track vote in localStorage
+      const newVotes = { ...votedReviews, [reviewId]: helpful ? 'helpful' as const : 'not_helpful' as const };
+      setVotedReviews(newVotes);
+      try { localStorage.setItem('review_votes', JSON.stringify(newVotes)); } catch {}
     } catch (error) {
       console.error('Failed to mark review:', error);
     }
@@ -411,6 +435,8 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
 
   const tabs = [
     { id: 'description', label: 'Opis produktu' },
+    ...(specifications.length > 0 ? [{ id: 'parameters', label: 'Parametry' }] : []),
+    { id: 'reviews', label: `Opinie (${reviewStats?.totalReviews || 0})` },
   ];
 
   return (
@@ -1029,7 +1055,15 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                             ))}
                           </div>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {reviewStats?.totalReviews || 0} {(reviewStats?.totalReviews || 0) === 1 ? 'opinia' : 'opinii'}
+                            {reviewStats?.totalReviews || 0} {(() => {
+                              const count = reviewStats?.totalReviews || 0;
+                              if (count === 1) return 'opinia';
+                              if (count >= 2 && count <= 4) return 'opinie';
+                              if (count >= 12 && count <= 14) return 'opinii';
+                              const lastDigit = count % 10;
+                              if (lastDigit >= 2 && lastDigit <= 4) return 'opinie';
+                              return 'opinii';
+                            })()}
                           </p>
                         </div>
                       </div>
@@ -1059,13 +1093,49 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                     </div>
 
                     {/* Add Review Button / Form */}
-                    {canReviewInfo?.canReview && !showReviewForm && (
-                      <button
-                        onClick={() => setShowReviewForm(true)}
-                        className="mb-6 bg-orange-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-orange-600 transition-colors"
-                      >
-                        Napisz opinię
-                      </button>
+                    {canReviewInfo?.canReview && isAuthenticated && !showReviewForm && (
+                      <div className="mb-6">
+                        <button
+                          onClick={() => setShowReviewForm(true)}
+                          className="bg-orange-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-orange-600 transition-colors"
+                        >
+                          Napisz opinię
+                        </button>
+                        {canReviewInfo && !canReviewInfo.hasPurchased && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                            Twoja opinia będzie oznaczona jako niezweryfikowana. Opinie zweryfikowane mogą dodawać tylko klienci, którzy zakupili ten produkt.
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Login prompt for unauthenticated users */}
+                    {!isAuthenticated && (
+                      <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex items-center gap-3">
+                        <svg className="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div>
+                          <p className="text-sm text-blue-700 dark:text-blue-300">
+                            Aby dodać opinię, musisz być zalogowany.
+                          </p>
+                          <a href="/login" className="text-sm font-medium text-orange-500 hover:text-orange-600 underline">
+                            Zaloguj się
+                          </a>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Already reviewed message */}
+                    {isAuthenticated && canReviewInfo?.hasReviewed && (
+                      <div className="mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                        <p className="text-sm text-green-700 dark:text-green-300 flex items-center gap-2">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          Dodałeś już opinię o tym produkcie.
+                        </p>
+                      </div>
                     )}
 
                     {showReviewForm && (
@@ -1073,7 +1143,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Twoja opinia</h3>
                         
                         {/* Rating Selection */}
-                        <div className="mb-4 hidden">
+                        <div className="mb-4">
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ocena</label>
                           <div className="flex gap-1">
                             {[1, 2, 3, 4, 5].map((star) => (
@@ -1191,6 +1261,11 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                                       Zweryfikowany zakup
                                     </span>
                                   )}
+                                  {!review.isVerifiedPurchase && (
+                                    <span className="text-xs bg-gray-100 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-full">
+                                      Niezweryfikowana
+                                    </span>
+                                  )}
                                 </div>
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
                                   {review.user.firstName} {review.user.lastName.charAt(0)}.
@@ -1227,7 +1302,14 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                               <span>Czy ta opinia była pomocna?</span>
                               <button
                                 onClick={() => handleMarkHelpful(review.id, true)}
-                                className="flex items-center gap-1 hover:text-green-600 transition-colors"
+                                disabled={!!votedReviews[review.id]}
+                                className={`flex items-center gap-1 transition-colors ${
+                                  votedReviews[review.id] === 'helpful'
+                                    ? 'text-green-600 dark:text-green-400 font-medium'
+                                    : votedReviews[review.id]
+                                      ? 'opacity-50 cursor-not-allowed'
+                                      : 'hover:text-green-600'
+                                }`}
                               >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
@@ -1236,7 +1318,14 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                               </button>
                               <button
                                 onClick={() => handleMarkHelpful(review.id, false)}
-                                className="flex items-center gap-1 hover:text-red-600 transition-colors"
+                                disabled={!!votedReviews[review.id]}
+                                className={`flex items-center gap-1 transition-colors ${
+                                  votedReviews[review.id] === 'not_helpful'
+                                    ? 'text-red-600 dark:text-red-400 font-medium'
+                                    : votedReviews[review.id]
+                                      ? 'opacity-50 cursor-not-allowed'
+                                      : 'hover:text-red-600'
+                                }`}
                               >
                                 <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
@@ -1282,10 +1371,10 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                         <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
                           Ten produkt nie ma jeszcze żadnych opinii. Bądź pierwszą osobą, która podzieli się swoją opinią!
                         </p>
-                        {!canReviewInfo?.canReview && (
-                          <p className="text-sm text-gray-400 dark:text-gray-500">
-                            Opinie mogą dodawać tylko klienci, którzy zakupili ten produkt.
-                          </p>
+                        {!isAuthenticated && (
+                          <a href="/login" className="inline-block text-sm font-medium text-orange-500 hover:text-orange-600 underline">
+                            Zaloguj się, aby dodać opinię
+                          </a>
                         )}
                       </div>
                     )}
