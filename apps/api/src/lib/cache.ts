@@ -32,12 +32,12 @@ export const CACHE_TTL = {
 export async function cacheGet<T>(key: string): Promise<T | null> {
   const redis = getRedisClient();
   if (!redis) return null;
-  
-  const data = await redis.get(key);
-  
-  if (!data) return null;
-  
+
   try {
+    const data = await redis.get(key);
+
+    if (!data) return null;
+
     return JSON.parse(data) as T;
   } catch {
     return null;
@@ -54,7 +54,11 @@ export async function cacheSet<T>(
 ): Promise<void> {
   const redis = getRedisClient();
   if (!redis) return;
-  await redis.set(key, JSON.stringify(value), 'EX', ttlSeconds);
+  try {
+    await redis.set(key, JSON.stringify(value), 'EX', ttlSeconds);
+  } catch {
+    // Redis unavailable — skip caching silently
+  }
 }
 
 /**
@@ -63,7 +67,11 @@ export async function cacheSet<T>(
 export async function cacheDelete(key: string): Promise<void> {
   const redis = getRedisClient();
   if (!redis) return;
-  await redis.del(key);
+  try {
+    await redis.del(key);
+  } catch {
+    // Redis unavailable — skip silently
+  }
 }
 
 /**
@@ -72,13 +80,17 @@ export async function cacheDelete(key: string): Promise<void> {
 export async function cacheDeletePattern(pattern: string): Promise<number> {
   const redis = getRedisClient();
   if (!redis) return 0;
-  
-  const keys = await redis.keys(pattern);
-  
-  if (keys.length === 0) return 0;
-  
-  await redis.del(...keys);
-  return keys.length;
+
+  try {
+    const keys = await redis.keys(pattern);
+
+    if (keys.length === 0) return 0;
+
+    await redis.del(...keys);
+    return keys.length;
+  } catch {
+    return 0;
+  }
 }
 
 // ========================================
