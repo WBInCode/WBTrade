@@ -14,6 +14,25 @@ export interface ReviewsQueryParams {
   sort?: 'newest' | 'oldest' | 'highest' | 'lowest' | 'helpful';
 }
 
+/**
+ * Helper: Recalculate and update product average_rating and review_count
+ */
+async function updateProductReviewStats(productId: string) {
+  const stats = await prisma.review.aggregate({
+    where: { productId, isApproved: true },
+    _avg: { rating: true },
+    _count: { rating: true },
+  });
+
+  await prisma.product.update({
+    where: { id: productId },
+    data: {
+      average_rating: stats._avg.rating ? Number(stats._avg.rating.toFixed(2)) : 0,
+      review_count: stats._count.rating,
+    },
+  });
+}
+
 export const reviewsService = {
   /**
    * Check if user has purchased the product
@@ -133,6 +152,8 @@ export const reviewsService = {
       },
     });
 
+    // Update product aggregate rating
+    await updateProductReviewStats(productId);
     // Update product rating stats
     await this.updateProductRatingStats(productId);
 
@@ -222,12 +243,24 @@ export const reviewsService = {
       }),
     ]);
 
+    // Map image fields for frontend compatibility (url -> imageUrl, alt -> altText)
+    const mappedReviews = reviews.map(r => ({
+      ...r,
+      images: r.images?.map(img => ({
+        id: img.id,
+        imageUrl: img.url,
+        altText: img.alt,
+      })) || [],
+    }));
+
     return {
-      reviews,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      reviews: mappedReviews,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   },
 
@@ -281,11 +314,18 @@ export const reviewsService = {
       5: total > 0 ? Math.round((ratingDistribution[5] / total) * 100) : 0,
     };
 
+    // Build array-based distribution for frontend compatibility
+    const distributionArray = [5, 4, 3, 2, 1].map(r => ({
+      rating: r,
+      count: ratingDistribution[r],
+    }));
+
     return {
       averageRating: stats._avg.rating ? Number(stats._avg.rating.toFixed(1)) : 0,
       totalReviews: total,
       ratingDistribution,
       ratingPercentages,
+      distribution: distributionArray,
     };
   },
 
@@ -353,6 +393,10 @@ export const reviewsService = {
       },
     });
 
+    // If rating changed, update product aggregate
+    if (data.rating !== undefined && data.rating !== review.rating) {
+      await updateProductReviewStats(review.productId);
+    }
     // Update product rating stats
     await this.updateProductRatingStats(review.productId);
 
@@ -381,6 +425,8 @@ export const reviewsService = {
       where: { id: reviewId },
     });
 
+    // Update product aggregate after deletion
+    await updateProductReviewStats(productId);
     // Update product rating stats
     await this.updateProductRatingStats(productId);
 

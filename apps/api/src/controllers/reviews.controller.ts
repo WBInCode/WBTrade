@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
+import DOMPurify from 'isomorphic-dompurify';
 import { reviewsService } from '../services/reviews.service';
 
 // ============================================
@@ -7,14 +8,21 @@ import { reviewsService } from '../services/reviews.service';
 // ============================================
 
 /**
- * Helper to sanitize text - removes potential XSS and HTML tags
+ * Sanitize text using DOMPurify - strips ALL HTML/JS, returning plain text only.
+ * Protects against XSS, HTML injection, entity encoding tricks, data URIs,
+ * unicode bypasses, CSS expressions, SVG/MathML vectors, etc.
  */
 const sanitizeText = (text: string): string => {
-  return text
-    .replace(/<[^>]*>/g, '') // Remove HTML tags
-    .replace(/[<>]/g, '') // Remove remaining angle brackets
-    .replace(/javascript:/gi, '') // Remove javascript: protocol
-    .replace(/on\w+=/gi, '') // Remove event handlers
+  // DOMPurify with ALLOWED_TAGS=[] strips all HTML, returning only text content
+  const clean = DOMPurify.sanitize(text, {
+    ALLOWED_TAGS: [],      // No HTML tags allowed
+    ALLOWED_ATTR: [],      // No attributes allowed
+    KEEP_CONTENT: true,    // Keep text content of stripped tags
+  });
+  // Additional protection: strip any remaining control characters and normalize whitespace
+  return clean
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control chars
+    .replace(/\s+/g, ' ')  // Normalize whitespace
     .trim();
 };
 
