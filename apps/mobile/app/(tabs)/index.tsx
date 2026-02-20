@@ -12,10 +12,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { api } from '../../services/api';
 import { Colors } from '../../constants/Colors';
+import { getCategoryIcon, ICON_BG_COLORS, ICON_COLORS } from '../../constants/CategoryIcons';
 import { useCart } from '../../contexts/CartContext';
 import ProductCarousel from '../../components/product/ProductCarousel';
 import ProductCard from '../../components/product/ProductCard';
@@ -23,43 +24,14 @@ import type { Product, Category } from '../../services/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Category icons mapping
-const CATEGORY_ICONS: Record<string, string> = {
-  elektronika: 'laptop',
-  agd: 'home',
-  'dom-i-ogrod': 'tree',
-  sport: 'futbol-o',
-  moda: 'shopping-bag',
-  dziecko: 'child',
-  zdrowie: 'heartbeat',
-  motoryzacja: 'car',
-  narzedzia: 'wrench',
-  zabawki: 'gamepad',
-  ksiazki: 'book',
-  muzyka: 'music',
-  default: 'th-large',
-};
-
-function getCategoryIcon(slug?: string): string {
-  if (!slug) return CATEGORY_ICONS.default;
-  const key = Object.keys(CATEGORY_ICONS).find((k) => slug.toLowerCase().includes(k));
-  return key ? CATEGORY_ICONS[key] : CATEGORY_ICONS.default;
-}
-
-const CATEGORY_COLORS = [
-  Colors.primary[100], '#e0f2fe', '#fce7f3', '#d1fae5', '#fef3c7',
-  '#ede9fe', '#fde68a', '#ccfbf1', '#fee2e2', '#e0e7ff',
-];
-const CATEGORY_ICON_COLORS = [
-  Colors.primary[600], '#0284c7', '#db2777', '#059669', '#d97706',
-  '#7c3aed', '#b45309', '#0d9488', '#dc2626', '#4f46e5',
-];
+// Category colors imported from shared constants (ICON_BG_COLORS, ICON_COLORS)
+// Category icon resolution imported from shared getCategoryIcon()
 
 const PROMO_BANNERS = [
-  { id: 'elektronika', title: 'Elektronika', subtitle: 'Odkryj hity technologiczne', icon: 'laptop' as const, bgColor: '#1e3a5f', accentColor: '#60a5fa', icon2: 'microchip' as const },
-  { id: 'dom-i-ogrod', title: 'Dom i ogród', subtitle: 'Wiosenne inspiracje dla domu', icon: 'tree' as const, bgColor: '#14532d', accentColor: '#4ade80', icon2: 'leaf' as const },
-  { id: 'sport', title: 'Sport', subtitle: 'Wyposaż się na nowy sezon!', icon: 'futbol-o' as const, bgColor: '#78350f', accentColor: '#fbbf24', icon2: 'star' as const },
-  { id: 'dziecko', title: 'Dla dzieci', subtitle: 'Najlepsze dla Twojego malucha', icon: 'child' as const, bgColor: '#4c1d95', accentColor: '#a78bfa', icon2: 'heart' as const },
+  { id: 'elektronika', title: 'Elektronika', subtitle: 'Odkryj hity technologiczne', icon: 'laptop' as const, bgColor: '#1e3a5f', accentColor: '#60a5fa', icon2: 'chip' as const },
+  { id: 'dom-i-ogrod', title: 'Dom i ogród', subtitle: 'Wiosenne inspiracje dla domu', icon: 'home-roof' as const, bgColor: '#14532d', accentColor: '#4ade80', icon2: 'flower-tulip-outline' as const },
+  { id: 'sport', title: 'Sport', subtitle: 'Wyposaż się na nowy sezon!', icon: 'basketball' as const, bgColor: '#78350f', accentColor: '#fbbf24', icon2: 'trophy-outline' as const },
+  { id: 'dziecko', title: 'Dla dzieci', subtitle: 'Najlepsze dla Twojego malucha', icon: 'baby-face-outline' as const, bgColor: '#4c1d95', accentColor: '#a78bfa', icon2: 'teddy-bear' as const },
 ];
 const BANNER_WIDTH = SCREEN_WIDTH - 32;
 
@@ -129,8 +101,8 @@ const CategoriesSection = React.memo(function CategoriesSection({ categories }: 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScrollContent}>
         {categories.map((cat, index) => (
           <TouchableOpacity key={cat.id} style={styles.categoryCircleWrap} onPress={() => router.push(`/category/${cat.slug}`)}>
-            <View style={[styles.categoryCircle, { backgroundColor: CATEGORY_COLORS[index % CATEGORY_COLORS.length] }]}>
-              <FontAwesome name={getCategoryIcon(cat.slug) as any} size={22} color={CATEGORY_ICON_COLORS[index % CATEGORY_ICON_COLORS.length]} />
+            <View style={[styles.categoryCircle, { backgroundColor: ICON_BG_COLORS[index % ICON_BG_COLORS.length] }]}>
+              <MaterialCommunityIcons name={getCategoryIcon(cat.slug) as any} size={24} color={ICON_COLORS[index % ICON_COLORS.length]} />
             </View>
             <Text style={styles.categoryCircleLabel} numberOfLines={2}>{cat.name}</Text>
           </TouchableOpacity>
@@ -164,12 +136,12 @@ const PromoSection = React.memo(function PromoSection() {
             activeOpacity={0.9}
           >
             <View style={styles.promoDecorWrap}>
-              <FontAwesome name={banner.icon} size={80} color={banner.accentColor} style={{ opacity: 0.12, position: 'absolute', top: -10, right: -10 }} />
-              <FontAwesome name={banner.icon2} size={50} color={banner.accentColor} style={{ opacity: 0.08, position: 'absolute', bottom: 10, right: 60 }} />
+              <MaterialCommunityIcons name={banner.icon} size={80} color={banner.accentColor} style={{ opacity: 0.12, position: 'absolute', top: -10, right: -10 }} />
+              <MaterialCommunityIcons name={banner.icon2} size={50} color={banner.accentColor} style={{ opacity: 0.08, position: 'absolute', bottom: 10, right: 60 }} />
             </View>
             <View style={styles.promoBannerContent}>
               <View style={[styles.promoBannerIconWrap, { backgroundColor: banner.accentColor }]}>
-                <FontAwesome name={banner.icon} size={24} color={Colors.white} />
+                <MaterialCommunityIcons name={banner.icon} size={24} color={Colors.white} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.promoBannerTitle}>{banner.title}</Text>
