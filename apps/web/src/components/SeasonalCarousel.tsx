@@ -37,7 +37,7 @@ const seasonConfigs: Record<Season, SeasonConfig> = {
     tag: 'jesien',
   },
   winter: {
-    title: 'Zimowa Wyprzedaż',
+    title: 'Kolekcja Zimowa',
     subtitle: 'Najlepsze okazje zimowe',
     accentColor: 'blue',
     icon: '❄️',
