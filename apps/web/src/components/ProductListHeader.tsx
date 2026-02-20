@@ -17,6 +17,7 @@ interface SortOption {
 
 const sortOptions: SortOption[] = [
   { value: 'popularity', label: 'Popularność' },
+  { value: 'top-rated', label: 'Najlepiej oceniane' },
   { value: 'price-asc', label: 'Cena: od najniższej' },
   { value: 'price-desc', label: 'Cena: od najwyższej' },
   { value: 'newest', label: 'Najnowsze' },
@@ -76,6 +77,7 @@ export default function ProductListHeader({
   const tabs = [
     { id: 'all', label: 'Wszystkie' },
     { id: 'bestsellers', label: 'Bestsellery' },
+    { id: 'top-rated', label: 'Najlepiej oceniane' },
     { id: 'discounted', label: 'Przecenione' },
     { id: 'new', label: 'Nowości' },
   ];
@@ -128,7 +130,7 @@ export default function ProductListHeader({
       {/* Sort & View */}
       <div className="flex items-center justify-between sm:justify-end gap-4">
         {/* Sort - hidden for Bestsellery and Nowości tabs (they have fixed sorting) */}
-        {activeTab !== 'bestsellers' && activeTab !== 'new' && (
+        {activeTab !== 'bestsellers' && activeTab !== 'new' && activeTab !== 'top-rated' && (
         <div className="flex items-center gap-2">
           <span className="text-sm text-secondary-500 dark:text-secondary-400">Sortuj:</span>
           <select

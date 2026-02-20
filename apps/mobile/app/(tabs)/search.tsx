@@ -35,11 +35,12 @@ function useDebounce<T>(value: T, delay: number = 300): T {
 }
 
 // ─── Sort ────────────────────────────────────────────────────
-type SortOption = 'relevance' | 'price_asc' | 'price_desc' | 'newest' | 'popularity';
+type SortOption = 'relevance' | 'price_asc' | 'price_desc' | 'newest' | 'popularity' | 'top-rated';
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'relevance', label: 'Trafność' },
   { value: 'popularity', label: 'Popularność' },
+  { value: 'top-rated', label: 'Najlepiej oceniane' },
   { value: 'newest', label: 'Najnowsze' },
   { value: 'price_asc', label: 'Cena rosnąco' },
   { value: 'price_desc', label: 'Cena malejąco' },
@@ -58,6 +59,12 @@ function sortProducts(products: Product[], sortBy: SortOption): Product[] {
         const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return db - da;
+      });
+    case 'top-rated':
+      return sorted.sort((a, b) => {
+        const ratingDiff = Number(b.rating || 0) - Number(a.rating || 0);
+        if (ratingDiff !== 0) return ratingDiff;
+        return (b.reviewCount || 0) - (a.reviewCount || 0);
       });
     default:
       return sorted;

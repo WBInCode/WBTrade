@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,13 +8,15 @@ import {
   TextInput,
   Alert,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { couponsApi, UserCoupon } from '../../services/coupons';
 import CartItem from '../../components/cart/CartItem';
 import Button from '../../components/ui/Button';
 
@@ -26,6 +28,40 @@ export default function CartScreen() {
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [userCoupons, setUserCoupons] = useState<UserCoupon[]>([]);
+  const [couponsLoading, setCouponsLoading] = useState(false);
+
+  // Fetch user's active coupons
+  const fetchUserCoupons = useCallback(async () => {
+    if (!isAuthenticated) return;
+    setCouponsLoading(true);
+    try {
+      const res = await couponsApi.getMyCoupons();
+      const active = (res.coupons || []).filter(c => c.status === 'active');
+      setUserCoupons(active);
+    } catch {
+      // silently fail
+    } finally {
+      setCouponsLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    fetchUserCoupons();
+  }, [fetchUserCoupons]);
+
+  const handleQuickApply = async (code: string) => {
+    setCouponLoading(true);
+    setCouponError('');
+    try {
+      await applyCoupon(code);
+      setCouponCode('');
+    } catch (err: any) {
+      setCouponError(err.message || 'Nieprawidłowy kod kuponu');
+    } finally {
+      setCouponLoading(false);
+    }
+  };
 
   const items = cart?.items || [];
   const subtotal = cart?.subtotal || 0;
@@ -240,6 +276,50 @@ export default function CartScreen() {
           {couponError ? (
             <Text style={styles.couponErrorText}>{couponError}</Text>
           ) : null}
+
+          {/* User's available coupons */}
+          {isAuthenticated && !cart?.couponCode && userCoupons.length > 0 && (
+            <View style={styles.availableCoupons}>
+              <Text style={styles.availableCouponsLabel}>Twoje dostępne kupony:</Text>
+              {userCoupons.map((c) => {
+                const valueLabel =
+                  c.type === 'PERCENTAGE'
+                    ? `-${c.value}%`
+                    : c.type === 'FREE_SHIPPING'
+                      ? 'Darmowa dostawa'
+                      : `-${c.value} zł`;
+                const remaining = c.expiresAt
+                  ? Math.max(0, Math.ceil((new Date(c.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+                  : null;
+
+                return (
+                  <TouchableOpacity
+                    key={c.id}
+                    style={styles.couponChip}
+                    onPress={() => handleQuickApply(c.code)}
+                    activeOpacity={0.7}
+                    disabled={couponLoading}
+                  >
+                    <View style={styles.couponChipLeft}>
+                      <FontAwesome name="ticket" size={14} color={Colors.primary[600]} style={{ transform: [{ rotate: '-45deg' }] }} />
+                      <View>
+                        <Text style={styles.couponChipCode}>{c.code}</Text>
+                        {remaining !== null && (
+                          <Text style={styles.couponChipExpiry}>
+                            {remaining > 0 ? `Ważny jeszcze ${remaining} dn.` : 'Ostatni dzień!'}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                    <View style={styles.couponChipRight}>
+                      <Text style={styles.couponChipValue}>{valueLabel}</Text>
+                      <Text style={styles.couponChipUse}>Użyj</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -430,6 +510,64 @@ const styles = StyleSheet.create({
     color: Colors.destructive,
     fontSize: 13,
     marginTop: 6,
+  },
+  availableCoupons: {
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: Colors.secondary[100],
+  },
+  availableCouponsLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.secondary[500],
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  couponChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.primary[600] + '08',
+    borderWidth: 1,
+    borderColor: Colors.primary[600] + '25',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 8,
+  },
+  couponChipLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  couponChipCode: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.secondary[800],
+    letterSpacing: 0.3,
+  },
+  couponChipExpiry: {
+    fontSize: 11,
+    color: Colors.secondary[400],
+    marginTop: 1,
+  },
+  couponChipRight: {
+    alignItems: 'flex-end',
+    marginLeft: 8,
+  },
+  couponChipValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.primary[600],
+  },
+  couponChipUse: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.primary[600],
+    marginTop: 2,
   },
   summary: {
     backgroundColor: Colors.white,
