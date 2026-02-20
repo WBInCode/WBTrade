@@ -25,7 +25,7 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'name_asc', label: 'Nazwa A-Z' },
 ];
 
-const PAGE_LIMIT = 20;
+const PAGE_LIMIT = 48;
 
 export default function CategoryScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -39,6 +39,7 @@ export default function CategoryScreen() {
   // Pagination
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
 
   // Filters & Sort
@@ -64,7 +65,8 @@ export default function CategoryScreen() {
       setError(null);
 
       try {
-        const res = await api.get<ProductsResponse>('/products', {
+        // API returns flat: { products, total, page, limit, totalPages }
+        const res = await api.get<any>('/products', {
           category: slug,
           sort,
           page: pageNum,
@@ -77,7 +79,8 @@ export default function CategoryScreen() {
           setProducts((prev) => [...prev, ...(res.products || [])]);
         }
 
-        setTotalPages(res.pagination?.pages || 1);
+        setTotalPages(res.totalPages ?? res.pagination?.pages ?? 1);
+        setTotalProducts(res.total ?? res.pagination?.total ?? 0);
         setPage(pageNum);
       } catch (err: any) {
         setError(err.message || 'Nie udało się pobrać produktów');
@@ -155,7 +158,7 @@ export default function CategoryScreen() {
         {/* Sort bar */}
         <View style={styles.toolbar}>
           <Text style={styles.resultCount}>
-            {products.length} produkt{products.length === 1 ? '' : products.length < 5 ? 'y' : 'ów'}
+            {totalProducts} produkt{totalProducts === 1 ? '' : totalProducts < 5 ? 'y' : 'ów'}
           </Text>
           <TouchableOpacity
             style={styles.sortButton}
