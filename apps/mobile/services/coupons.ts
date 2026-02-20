@@ -34,4 +34,8 @@ export const couponsApi = {
   /** Claim app download discount (-5%) */
   claimAppDownload: () =>
     api.post<{ discount: WelcomeDiscount }>('/coupons/claim-app-download'),
+
+  /** Claim newsletter discount (-10%) — subscribes + generates coupon */
+  claimNewsletter: () =>
+    api.post<{ discount: WelcomeDiscount }>('/coupons/claim-newsletter'),
 };
