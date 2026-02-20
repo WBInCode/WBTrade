@@ -8,10 +8,11 @@ import Header from '../../../../components/Header';
 import Footer from '../../../../components/Footer';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { ordersApi, Order, OrderTrackingPackage } from '../../../../lib/api';
+import { getStatusLabel, getStatusColor } from '../../../../lib/order-status';
 
 // Order status types
-type OrderStatus = 'OPEN' | 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
-type PaymentStatus = 'PENDING' | 'AWAITING_CONFIRMATION' | 'PAID' | 'FAILED' | 'REFUNDED' | 'CANCELLED';
+type OrderStatusType = 'OPEN' | 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
+type PaymentStatusType = 'PENDING' | 'AWAITING_CONFIRMATION' | 'PAID' | 'FAILED' | 'REFUNDED' | 'CANCELLED';
 
 // Sidebar navigation items
 const sidebarItems = [
@@ -68,52 +69,9 @@ function SidebarIcon({ icon }: { icon: string }) {
   }
 }
 
-function getStatusColor(status: OrderStatus): string {
-  switch (status) {
-    case 'OPEN':
-      return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300';
-    case 'PENDING':
-      return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300';
-    case 'CONFIRMED':
-    case 'PROCESSING':
-      return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
-    case 'SHIPPED':
-      return 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300';
-    case 'DELIVERED':
-      return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
-    case 'CANCELLED':
-      return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300';
-    case 'REFUNDED':
-      return 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300';
-    default:
-      return 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300';
-  }
-}
+// Status colors and labels imported from shared order-status utils
 
-function getStatusLabel(status: OrderStatus): string {
-  switch (status) {
-    case 'OPEN':
-      return 'Oczekuje na płatność';
-    case 'PENDING':
-      return 'Oczekuje na płatność';
-    case 'CONFIRMED':
-      return 'Potwierdzone';
-    case 'PROCESSING':
-      return 'W realizacji';
-    case 'SHIPPED':
-      return 'W drodze';
-    case 'DELIVERED':
-      return 'Dostarczono';
-    case 'CANCELLED':
-      return 'Anulowano';
-    case 'REFUNDED':
-      return 'Zwrócono';
-    default:
-      return status;
-  }
-}
-
-function getPaymentStatusBadge(status?: PaymentStatus) {
+function getPaymentStatusBadge(status?: PaymentStatusType) {
   switch (status) {
     case 'PAID':
       return <span className="inline-flex items-center gap-1 text-green-600 text-sm"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg> Opłacono</span>;
@@ -211,7 +169,7 @@ function getWarehouseName(wholesaler: string | null | undefined): string {
   return WAREHOUSE_NAMES[wholesaler] || 'Magazyn główny';
 }
 
-function getStatusTimelineSteps(status: OrderStatus, paymentStatus?: PaymentStatus): { label: string; isCompleted: boolean; isCurrent: boolean }[] {
+function getStatusTimelineSteps(status: OrderStatusType, paymentStatus?: PaymentStatusType): { label: string; isCompleted: boolean; isCurrent: boolean }[] {
   const allSteps = [
     { key: 'PENDING', label: 'Zamówienie złożone' },
     { key: 'CONFIRMED', label: 'Płatność potwierdzona' },
@@ -469,7 +427,7 @@ export default function OrderDetailsPage() {
     avatar: `${user?.firstName?.[0] || 'U'}${user?.lastName?.[0] || ''}`,
   };
 
-  const statusSteps = getStatusTimelineSteps(order.status as OrderStatus, order.paymentStatus as PaymentStatus);
+  const statusSteps = getStatusTimelineSteps(order.status as OrderStatusType, order.paymentStatus as PaymentStatusType);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-secondary-900">
@@ -544,8 +502,8 @@ export default function OrderDetailsPage() {
                     <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white break-all sm:break-normal">
                       Zamówienie #{order.orderNumber}
                     </h1>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium w-fit ${getStatusColor(order.status as OrderStatus)}`}>
-                      {getStatusLabel(order.status as OrderStatus)}
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium w-fit ${getStatusColor(order.status, order.paymentStatus)}`}>
+                      {getStatusLabel(order.status, order.paymentStatus)}
                     </span>
                   </div>
                 </div>

@@ -8,6 +8,7 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import ProductCard from '../../components/ProductCard';
 import { Product, dashboardApi, checkoutApi, productsApi, DashboardStats, DashboardOrder } from '../../lib/api';
+import { getStatusLabel, getStatusColor } from '../../lib/order-status';
 import { useAuth } from '../../contexts/AuthContext';
 
 // Sidebar navigation items
@@ -100,53 +101,6 @@ function StatIcon({ icon }: { icon: string }) {
       );
     default:
       return null;
-  }
-}
-
-function getStatusColor(status: string) {
-  switch (status) {
-    case 'SHIPPED':
-      return 'bg-blue-100 text-blue-700';
-    case 'DELIVERED':
-      return 'bg-green-100 text-green-700';
-    case 'OPEN':
-    case 'PENDING':
-      return 'bg-orange-100 text-orange-700';
-    case 'CONFIRMED':
-      return 'bg-blue-100 text-blue-700';
-    case 'PROCESSING':
-      return 'bg-purple-100 text-purple-700';
-    case 'CANCELLED':
-    case 'REFUNDED':
-      return 'bg-red-100 text-red-700';
-    default:
-      return 'bg-gray-100 text-gray-700';
-  }
-}
-
-function getStatusLabel(status: string, paymentStatus: string) {
-  if (paymentStatus === 'PENDING') {
-    return 'Oczekuje na płatność';
-  }
-  switch (status) {
-    case 'OPEN':
-      return 'Oczekuje na płatność';
-    case 'PENDING':
-      return 'Oczekuje';
-    case 'CONFIRMED':
-      return 'Potwierdzone';
-    case 'PROCESSING':
-      return 'W realizacji';
-    case 'SHIPPED':
-      return 'W drodze';
-    case 'DELIVERED':
-      return 'Dostarczono';
-    case 'CANCELLED':
-      return 'Anulowano';
-    case 'REFUNDED':
-      return 'Zwrócono';
-    default:
-      return status;
   }
 }
 
@@ -470,11 +424,7 @@ function AccountPageContent() {
                           Zamówienie #{order.orderNumber} • Złożone {formatOrderDate(order.orderDate)}
                         </p>
                         <div className="flex items-center gap-2">
-                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                            order.paymentStatus === 'PENDING' 
-                              ? 'bg-orange-100 text-orange-700'
-                              : getStatusColor(order.status)
-                          }`}>
+                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusColor(order.status, order.paymentStatus)}`}>
                             {getStatusLabel(order.status, order.paymentStatus)}
                           </span>
                           {order.status === 'SHIPPED' && order.trackingNumber && (
