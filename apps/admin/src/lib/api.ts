@@ -137,6 +137,8 @@ export interface SalesChartData {
   date: string;
   revenue: number;
   orders: number;
+  cancelledRevenue: number;
+  cancelledOrders: number;
 }
 
 export interface RecentOrder {
@@ -179,7 +181,7 @@ export interface DashboardSummary {
 }
 
 // Pobierz token z localStorage
-function getAuthToken(): string | null {
+export function getAuthToken(): string | null {
   if (typeof window === 'undefined') return null;
   const tokens = localStorage.getItem('admin_auth_tokens');
   if (!tokens) return null;

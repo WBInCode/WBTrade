@@ -44,7 +44,7 @@ const productQuerySchema = z.object({
     return isNaN(num) || num < 0 ? undefined : num;
   }),
   search: z.string().max(200).optional().transform((val) => val ? sanitizeText(val) : undefined),
-  sort: z.enum(['price_asc', 'price_desc', 'price-asc', 'price-desc', 'name_asc', 'name_desc', 'newest', 'oldest', 'popular', 'random', 'popularity', 'relevance', 'bestsellers']).optional(),
+  sort: z.enum(['price_asc', 'price_desc', 'price-asc', 'price-desc', 'name_asc', 'name_desc', 'newest', 'oldest', 'popular', 'random', 'popularity', 'relevance', 'bestsellers', 'top-rated']).optional(),
   status: z.enum(['ACTIVE', 'DRAFT', 'ARCHIVED']).optional(),
   // Filtr magazynu: leker, hp, btp (może być wiele oddzielone przecinkiem)
   warehouse: z.string().max(50).optional(),
@@ -128,6 +128,13 @@ export async function getProducts(req: Request, res: Response): Promise<void> {
     }
 
     const filters = validation.data;
+
+    // Track search query for analytics (works for all users, not just authenticated)
+    if (filters.search && filters.search.trim().length >= 2) {
+      const { trackSearch } = require('../services/search-analytics.service');
+      trackSearch(filters.search);
+    }
+
     const result = await productsService.getAll(filters);
     res.status(200).json(result);
   } catch (error) {
@@ -435,6 +442,22 @@ export async function getNewProducts(req: Request, res: Response): Promise<void>
   } catch (error) {
     console.error('Error fetching new products:', error);
     res.status(500).json({ message: 'Error retrieving new products' });
+  }
+}
+
+/**
+ * Get top-rated products
+ */
+export async function getTopRated(req: Request, res: Response): Promise<void> {
+  try {
+    const limit = parseInt(req.query.limit as string) || 20;
+    const minReviews = parseInt(req.query.minReviews as string) || 1;
+
+    const result = await productsService.getTopRated({ limit, minReviews });
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('Error fetching top-rated products:', error);
+    res.status(500).json({ message: 'Error retrieving top-rated products' });
   }
 }
 

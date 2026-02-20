@@ -510,7 +510,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
               )}
 
               {/* Rating */}
-              <div className="flex items-center gap-2 mb-4 hidden">
+              <div className="flex items-center gap-2 mb-4">
                 <div className="flex items-center">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <svg
@@ -1135,6 +1135,34 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                           </svg>
                           Dodałeś już opinię o tym produkcie.
                         </p>
+                    {/* "Masz ten produkt?" CTA - x-kom style */}
+                    {!showReviewForm && (
+                      <div className="bg-gray-50 dark:bg-secondary-700/50 rounded-xl p-5 sm:p-6 mb-6 border border-gray-100 dark:border-secondary-600">
+                        <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-1">
+                          Masz ten produkt?
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                          Oce\u0144 go i pom\u00f3\u017c innym w wyborze
+                        </p>
+                        {canReviewInfo?.canReview ? (
+                          <button
+                            onClick={() => setShowReviewForm(true)}
+                            className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                          >
+                            Dodaj opini\u0119
+                          </button>
+                        ) : canReviewInfo?.hasReviewed ? (
+                          <p className="text-sm text-green-600 dark:text-green-400 font-medium">
+                            Ju\u017c oceni\u0142e\u015b ten produkt
+                          </p>
+                        ) : (
+                          <a
+                            href="/login"
+                            className="inline-block bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                          >
+                            Zaloguj si\u0119, aby oceni\u0107
+                          </a>
+                        )}
                       </div>
                     )}
 

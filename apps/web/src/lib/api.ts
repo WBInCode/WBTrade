@@ -347,7 +347,7 @@ export interface ProductFilters {
   minPrice?: number;
   maxPrice?: number;
   search?: string;
-  sort?: 'price_asc' | 'price_desc' | 'price-asc' | 'price-desc' | 'name_asc' | 'name_desc' | 'newest' | 'random' | 'relevance' | 'popularity';
+  sort?: 'price_asc' | 'price_desc' | 'price-asc' | 'price-desc' | 'name_asc' | 'name_desc' | 'newest' | 'random' | 'relevance' | 'popularity' | 'top-rated';
   status?: 'active' | 'draft' | 'archived';
   brand?: string;
   warehouse?: string; // Filtr magazynu: leker, hp, btp (może być wiele oddzielone przecinkiem)
@@ -428,6 +428,16 @@ export const productsApi = {
     return getCachedOrFetch(
       cacheKey,
       () => api.get<{ products: Product[] }>('/products/new-arrivals', options as Record<string, string | number | boolean>),
+      2 * 60 * 1000 // 2 minutes
+    );
+  },
+
+  // Get top-rated products - cached for 2 min
+  getTopRated: (options?: { limit?: number; minReviews?: number }) => {
+    const cacheKey = `top-rated:${JSON.stringify(options || {})}`;
+    return getCachedOrFetch(
+      cacheKey,
+      () => api.get<{ products: Product[] }>('/products/top-rated', options as Record<string, string | number | boolean>),
       2 * 60 * 1000 // 2 minutes
     );
   },
@@ -1410,7 +1420,28 @@ export interface ReviewsListResponse {
   };
 }
 
+export interface UserReview extends Review {
+  product: {
+    id: string;
+    name: string;
+    slug: string;
+    images: { id: string; url: string; altText: string | null; order: number }[];
+  };
+}
+
+export interface UserReviewsResponse {
+  reviews: UserReview[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export const reviewsApi = {
+  // Get current user's reviews
+  getUserReviews: (options?: { page?: number; limit?: number; sort?: 'newest' | 'oldest' | 'highest' | 'lowest' }) =>
+    api.get<UserReviewsResponse>('/reviews/mine', options),
+
   // Get reviews for a product
   getProductReviews: (productId: string, options?: { page?: number; limit?: number; sort?: 'newest' | 'oldest' | 'highest' | 'lowest' | 'helpful' }) =>
     api.get<ReviewsListResponse>(`/products/${productId}/reviews`, options),

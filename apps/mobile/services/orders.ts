@@ -10,6 +10,41 @@ export const ordersApi = {
 
   cancel: (id: string) =>
     api.delete<any>(`/orders/${id}`),
+
+  getTracking: (id: string) =>
+    api.get<{
+      orderId: string;
+      packages: Array<{
+        packageIndex: number;
+        courierCode: string;
+        courierName: string;
+        trackingNumber: string | null;
+        trackingLink?: string;
+        isSent: boolean;
+      }>;
+    }>(`/orders/${id}/tracking`),
+
+  getRefundEligibility: (id: string) =>
+    api.get<{
+      eligible: boolean;
+      reason?: string;
+      daysRemaining?: number;
+      deliveredAt?: string;
+    }>(`/orders/${id}/refund-eligibility`),
+
+  requestRefund: (id: string, reason?: string) =>
+    api.post<{
+      success: boolean;
+      refundNumber?: string;
+      returnAddress?: {
+        name: string;
+        contactPerson: string;
+        street: string;
+        city: string;
+        postalCode: string;
+        country: string;
+      };
+    }>(`/orders/${id}/request-refund`, { reason }),
 };
 
 export const checkoutApi = {

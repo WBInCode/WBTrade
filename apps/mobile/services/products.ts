@@ -29,6 +29,9 @@ export const productsApi = {
   getSameWarehouse: (productId: string, limit?: number) =>
     api.get<{ products: Product[] }>(`/products/same-warehouse/${productId}`, { limit }),
 
+  getTopRated: (limit?: number) =>
+    api.get<{ products: Product[] }>('/products/top-rated', { limit }),
+
   search: (query: string, filters?: ProductFilters) =>
     api.get<ProductsResponse>('/search', { query, ...filters } as Record<string, any>),
 

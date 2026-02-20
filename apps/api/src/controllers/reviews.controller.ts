@@ -199,6 +199,34 @@ export const reviewsController = {
   },
 
   /**
+   * Get current user's reviews
+   * GET /api/reviews/mine
+   */
+  async getUserReviews(req: Request, res: Response) {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: 'Wymagane uwierzytelnienie' });
+      }
+
+      const validation = reviewsQuerySchema.safeParse(req.query);
+
+      if (!validation.success) {
+        return res.status(400).json({
+          message: 'Nieprawidlowe parametry zapytania',
+          errors: validation.error.flatten().fieldErrors,
+        });
+      }
+
+      const result = await reviewsService.getUserReviews(userId, validation.data);
+      res.json(result);
+    } catch (error) {
+      console.error('Error fetching user reviews:', error);
+      res.status(500).json({ message: 'Nie udalo sie pobrac opinii' });
+    }
+  },
+
+  /**
    * Update a review
    * PUT /api/reviews/:reviewId
    */
