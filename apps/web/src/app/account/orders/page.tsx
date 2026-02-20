@@ -8,9 +8,10 @@ import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import { useAuth } from '../../../contexts/AuthContext';
 import { ordersApi, checkoutApi, Order } from '../../../lib/api';
+import { getStatusLabel, getStatusColor, matchesFilter, isUnpaidOrder, ORDER_FILTER_TABS } from '../../../lib/order-status';
 
 // Order status types
-type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
+type OrderStatusType = 'OPEN' | 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
 
 // Sidebar navigation items
 const sidebarItems = [
@@ -22,15 +23,7 @@ const sidebarItems = [
   { id: 'settings', label: 'Ustawienia', icon: 'settings', href: '/account/settings' },
 ];
 
-// Filter tabs
-const filterTabs = [
-  { id: 'all', label: 'Wszystkie' },
-  { id: 'PENDING', label: 'Oczekujące' },
-  { id: 'SHIPPED', label: 'W drodze' },
-  { id: 'DELIVERED', label: 'Dostarczone' },
-  { id: 'CANCELLED', label: 'Anulowane' },
-  { id: 'REFUNDED', label: 'Zwroty' },
-];
+// Filter tabs imported from shared utils
 
 function SidebarIcon({ icon }: { icon: string }) {
   switch (icon) {
@@ -77,48 +70,7 @@ function SidebarIcon({ icon }: { icon: string }) {
   }
 }
 
-function getStatusColor(status: string): string {
-  switch (status) {
-    case 'OPEN':
-    case 'PENDING':
-      return 'bg-yellow-100 text-yellow-700';
-    case 'CONFIRMED':
-    case 'PROCESSING':
-      return 'bg-blue-100 text-blue-700';
-    case 'SHIPPED':
-      return 'bg-indigo-100 text-indigo-700';
-    case 'DELIVERED':
-      return 'bg-green-100 text-green-700';
-    case 'CANCELLED':
-      return 'bg-red-100 text-red-700';
-    case 'REFUNDED':
-      return 'bg-gray-100 text-gray-700';
-    default:
-      return 'bg-gray-100 text-gray-700';
-  }
-}
-
-function getStatusLabel(status: string): string {
-  switch (status) {
-    case 'OPEN':
-    case 'PENDING':
-      return 'Oczekuje na płatność';
-    case 'CONFIRMED':
-      return 'Opłacone';
-    case 'PROCESSING':
-      return 'W realizacji';
-    case 'SHIPPED':
-      return 'W drodze';
-    case 'DELIVERED':
-      return 'Dostarczono';
-    case 'CANCELLED':
-      return 'Anulowano';
-    case 'REFUNDED':
-      return 'Zwrócono';
-    default:
-      return status;
-  }
-}
+// Status colors and labels are imported from shared order-status utils
 
 function getStatusIcon(status: string) {
   switch (status) {
@@ -257,19 +209,17 @@ export default function OrdersPage() {
 
   // Filter orders based on active filter and search query
   const filteredOrders = orders.filter((order) => {
-    const matchesFilter = activeFilter === 'all' || order.status === activeFilter;
+    const filterMatch = matchesFilter(order, activeFilter);
     const matchesSearch = searchQuery === '' || 
       order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.items.some(item => item.productName.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesFilter && matchesSearch;
+    return filterMatch && matchesSearch;
   });
 
-  // Count orders by status
+  // Count orders by filter group (handles OPEN+PENDING as UNPAID)
   const orderCounts = {
     all: orders.length,
-    PENDING: orders.filter(o => o.status === 'PENDING').length,
-    CONFIRMED: orders.filter(o => o.status === 'CONFIRMED').length,
-    PROCESSING: orders.filter(o => o.status === 'PROCESSING').length,
+    UNPAID: orders.filter(o => isUnpaidOrder(o.status, o.paymentStatus)).length,
     SHIPPED: orders.filter(o => o.status === 'SHIPPED').length,
     DELIVERED: orders.filter(o => o.status === 'DELIVERED').length,
     CANCELLED: orders.filter(o => o.status === 'CANCELLED').length,
@@ -373,7 +323,7 @@ export default function OrdersPage() {
 
               {/* Filter Tabs */}
               <div className="flex items-center gap-1 p-2 overflow-x-auto">
-                {filterTabs.map((tab) => (
+                {ORDER_FILTER_TABS.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveFilter(tab.id)}
@@ -439,9 +389,9 @@ export default function OrdersPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${getStatusColor(order.status, order.paymentStatus)}`}>
                           {getStatusIcon(order.status)}
-                          {getStatusLabel(order.status)}
+                          {getStatusLabel(order.status, order.paymentStatus)}
                         </span>
                       </div>
                     </div>

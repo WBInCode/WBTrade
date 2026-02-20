@@ -97,6 +97,8 @@ const ordersQuerySchema = z.object({
     const num = parseInt(val || '10', 10);
     return isNaN(num) || num < 1 ? 10 : Math.min(num, 100);
   }),
+  status: z.string().optional(),
+  search: z.string().optional(),
 });
 
 /**
@@ -219,9 +221,9 @@ export async function getUserOrders(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const { page, limit } = validation.data;
+    const { page, limit, status, search } = validation.data;
     
-    const result = await ordersService.getUserOrders(userId, page, limit);
+    const result = await ordersService.getUserOrders(userId, page, limit, status, search);
     
     res.status(200).json(result);
   } catch (error) {
