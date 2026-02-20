@@ -1,5 +1,5 @@
 # Dockerfile dla API - wersja produkcyjna dla Render
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 
 # Instalowanie zależności systemowych wymaganych przez Prisma i inne pakiety
 RUN apk add --no-cache libc6-compat openssl
@@ -33,7 +33,7 @@ RUN npx prisma generate
 RUN pnpm build
 
 # Stage końcowy - tylko niezbędne pliki
-FROM node:18-alpine AS production
+FROM node:20-alpine AS production
 
 RUN apk add --no-cache libc6-compat bash openssl
 WORKDIR /app
