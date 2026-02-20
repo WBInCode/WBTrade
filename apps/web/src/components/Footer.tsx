@@ -178,7 +178,9 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
             </ul>
 
             {/* Newsletter */}
-            <FooterNewsletter />
+            <div id="newsletter">
+              <FooterNewsletter />
+            </div>
           </div>
         </div>
       </div>
