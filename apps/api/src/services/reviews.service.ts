@@ -14,6 +14,25 @@ export interface ReviewsQueryParams {
   sort?: 'newest' | 'oldest' | 'highest' | 'lowest' | 'helpful';
 }
 
+/**
+ * Helper: Recalculate and update product average_rating and review_count
+ */
+async function updateProductReviewStats(productId: string) {
+  const stats = await prisma.review.aggregate({
+    where: { productId, isApproved: true },
+    _avg: { rating: true },
+    _count: { rating: true },
+  });
+
+  await prisma.product.update({
+    where: { id: productId },
+    data: {
+      average_rating: stats._avg.rating ? Number(stats._avg.rating.toFixed(2)) : 0,
+      review_count: stats._count.rating,
+    },
+  });
+}
+
 export const reviewsService = {
   /**
    * Check if user has purchased the product
@@ -133,6 +152,9 @@ export const reviewsService = {
       },
     });
 
+    // Update product aggregate rating
+    await updateProductReviewStats(productId);
+
     return review;
   },
 
@@ -193,12 +215,24 @@ export const reviewsService = {
       }),
     ]);
 
+    // Map image fields for frontend compatibility (url -> imageUrl, alt -> altText)
+    const mappedReviews = reviews.map(r => ({
+      ...r,
+      images: r.images?.map(img => ({
+        id: img.id,
+        imageUrl: img.url,
+        altText: img.alt,
+      })) || [],
+    }));
+
     return {
-      reviews,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      reviews: mappedReviews,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   },
 
@@ -252,11 +286,18 @@ export const reviewsService = {
       5: total > 0 ? Math.round((ratingDistribution[5] / total) * 100) : 0,
     };
 
+    // Build array-based distribution for frontend compatibility
+    const distributionArray = [5, 4, 3, 2, 1].map(r => ({
+      rating: r,
+      count: ratingDistribution[r],
+    }));
+
     return {
       averageRating: stats._avg.rating ? Number(stats._avg.rating.toFixed(1)) : 0,
       totalReviews: total,
       ratingDistribution,
       ratingPercentages,
+      distribution: distributionArray,
     };
   },
 
@@ -305,7 +346,7 @@ export const reviewsService = {
       throw new Error('Rating must be between 1 and 5');
     }
 
-    return prisma.review.update({
+    const updated = await prisma.review.update({
       where: { id: reviewId },
       data: {
         rating: data.rating,
@@ -323,6 +364,13 @@ export const reviewsService = {
         images: true,
       },
     });
+
+    // If rating changed, update product aggregate
+    if (data.rating !== undefined && data.rating !== review.rating) {
+      await updateProductReviewStats(review.productId);
+    }
+
+    return updated;
   },
 
   /**
@@ -341,9 +389,14 @@ export const reviewsService = {
       throw new Error('You can only delete your own reviews');
     }
 
+    const productId = review.productId;
+
     await prisma.review.delete({
       where: { id: reviewId },
     });
+
+    // Update product aggregate after deletion
+    await updateProductReviewStats(productId);
 
     return { success: true };
   },
