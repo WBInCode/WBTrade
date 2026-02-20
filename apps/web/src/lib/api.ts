@@ -1471,4 +1471,98 @@ export const reviewsApi = {
     api.post<Review>(`/reviews/${reviewId}/helpful`, { helpful }),
 };
 
+// ============================================
+// COUPONS API
+// ============================================
+
+export interface UserCoupon {
+  id: string;
+  code: string;
+  description: string | null;
+  type: 'PERCENTAGE' | 'FIXED_AMOUNT' | 'FREE_SHIPPING';
+  value: number;
+  minimumAmount: number | null;
+  maximumUses: number | null;
+  usedCount: number;
+  expiresAt: string | null;
+  isActive: boolean;
+  couponSource: string;
+  createdAt: string;
+  status: 'active' | 'used' | 'expired';
+}
+
+export const couponsApi = {
+  getMyCoupons: () =>
+    api.get<{ coupons: UserCoupon[] }>('/coupons/my'),
+
+  claimAppDownload: () =>
+    api.post<{ discount: { couponCode: string; discountPercent: number; expiresAt: string } }>('/coupons/claim-app-download'),
+};
+
+// ============================================
+// SHOPPING LISTS API
+// ============================================
+
+export interface ShoppingListItem {
+  id: string;
+  productId: string;
+  variantId: string | null;
+  quantity: number;
+  note: string | null;
+  createdAt: string;
+  product: {
+    id: string;
+    name: string;
+    slug: string;
+    price: number;
+    compareAtPrice: number | null;
+    images: { url: string; alt: string | null }[];
+    status: string;
+  };
+  variant?: {
+    id: string;
+    name: string;
+    price: number;
+    compareAtPrice: number | null;
+  } | null;
+}
+
+export interface ShoppingList {
+  id: string;
+  name: string;
+  description: string | null;
+  itemCount: number;
+  createdAt: string;
+  updatedAt: string;
+  items?: ShoppingListItem[];
+}
+
+export interface ShoppingListsResponse {
+  lists: ShoppingList[];
+  total: number;
+}
+
+export const shoppingListApi = {
+  getAll: () =>
+    api.get<ShoppingListsResponse>('/shopping-lists'),
+
+  getOne: (listId: string) =>
+    api.get<ShoppingList>(`/shopping-lists/${listId}`),
+
+  create: (name: string, description?: string) =>
+    api.post<ShoppingList>('/shopping-lists', { name, description }),
+
+  update: (listId: string, data: { name?: string; description?: string }) =>
+    api.put<ShoppingList>(`/shopping-lists/${listId}`, data),
+
+  delete: (listId: string) =>
+    api.delete<void>(`/shopping-lists/${listId}`),
+
+  addItem: (listId: string, productId: string, variantId?: string, quantity?: number, note?: string) =>
+    api.post<ShoppingListItem>(`/shopping-lists/${listId}/items`, { productId, variantId, quantity, note }),
+
+  removeItem: (listId: string, itemId: string) =>
+    api.delete<void>(`/shopping-lists/${listId}/items/${itemId}`),
+};
+
 export default api;
