@@ -34,4 +34,12 @@ export const couponsApi = {
   /** Claim app download discount (-5%) */
   claimAppDownload: () =>
     api.post<{ discount: WelcomeDiscount }>('/coupons/claim-app-download'),
+
+  /** Claim surprise bonus coupon (-25%) for collecting all discounts */
+  claimSurprise: () =>
+    api.post<{ discount: WelcomeDiscount }>('/coupons/claim-surprise'),
+
+  /** Check newsletter subscription status */
+  getNewsletterStatus: (email: string) =>
+    api.get<{ success: boolean; subscribed: boolean; verified: boolean }>('/newsletter/status', { email }),
 };
