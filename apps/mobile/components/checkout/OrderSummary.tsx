@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,8 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import type { ThemeColors } from '../../constants/Colors';
 import { useCart } from '../../contexts/CartContext';
 import type { AddressData } from '../../hooks/useCheckout';
 import type { PackageShippingSelection } from './ShippingPerPackage';
@@ -16,7 +17,7 @@ import Button from '../ui/Button';
 
 // ──── Warehouse Config (same as ShippingPerPackage) ────
 
-const getWarehouseConfig = (wholesaler?: string): { name: string; color: string } => {
+const getWarehouseConfig = (wholesaler?: string, colors?: ThemeColors): { name: string; color: string } => {
   const configs: Record<string, { name: string; color: string }> = {
     'HP': { name: 'Magazyn Zielona Góra', color: '#1D4ED8' },
     'Hurtownia Przemysłowa': { name: 'Magazyn Zielona Góra', color: '#1D4ED8' },
@@ -26,7 +27,7 @@ const getWarehouseConfig = (wholesaler?: string): { name: string; color: string 
     'Rzeszów': { name: 'Magazyn Rzeszów', color: '#BE185D' },
     'Outlet': { name: 'Magazyn Rzeszów', color: '#BE185D' },
   };
-  return configs[wholesaler || ''] || { name: 'Magazyn', color: '#374151' };
+  return configs[wholesaler || ''] || { name: 'Magazyn', color: colors?.textSecondary || '#374151' };
 };
 
 const METHOD_NAMES: Record<string, string> = {
@@ -78,6 +79,8 @@ export default function OrderSummary({
   error,
 }: OrderSummaryProps) {
   const { cart } = useCart();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const items = cart?.items || [];
   const subtotal = cart?.subtotal || 0;
@@ -97,7 +100,7 @@ export default function OrderSummary({
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <View style={styles.sectionLeft}>
-            <Ionicons name="location-outline" size={18} color="#F97316" />
+            <Ionicons name="location-outline" size={18} color={colors.tint} />
             <Text style={styles.sectionTitle}>Adres dostawy</Text>
           </View>
           <TouchableOpacity onPress={() => onGoToStep(0)}>
@@ -132,7 +135,7 @@ export default function OrderSummary({
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <View style={styles.sectionLeft}>
-            <Ionicons name="car-outline" size={18} color="#F97316" />
+            <Ionicons name="car-outline" size={18} color={colors.tint} />
             <Text style={styles.sectionTitle}>Dostawa</Text>
           </View>
           <TouchableOpacity onPress={() => onGoToStep(1)}>
@@ -142,7 +145,7 @@ export default function OrderSummary({
 
         {packageShipping.length > 0 ? (
           packageShipping.map((pkg, idx) => {
-            const wConfig = getWarehouseConfig(pkg.wholesaler);
+            const wConfig = getWarehouseConfig(pkg.wholesaler, colors);
             return (
               <View key={pkg.packageId} style={styles.pkgShippingRow}>
                 <View style={styles.pkgShippingLeft}>
@@ -180,7 +183,7 @@ export default function OrderSummary({
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <View style={styles.sectionLeft}>
-            <Ionicons name="card-outline" size={18} color="#F97316" />
+            <Ionicons name="card-outline" size={18} color={colors.tint} />
             <Text style={styles.sectionTitle}>Płatność</Text>
           </View>
           <TouchableOpacity onPress={() => onGoToStep(2)}>
@@ -194,7 +197,7 @@ export default function OrderSummary({
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <View style={styles.sectionLeft}>
-            <Ionicons name="bag-outline" size={18} color="#F97316" />
+            <Ionicons name="bag-outline" size={18} color={colors.tint} />
             <Text style={styles.sectionTitle}>Produkty ({items.length})</Text>
           </View>
         </View>
@@ -238,7 +241,7 @@ export default function OrderSummary({
         {discount > 0 && (
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>Rabat:</Text>
-            <Text style={[styles.priceValue, { color: '#16A34A' }]}>
+            <Text style={[styles.priceValue, { color: colors.success }]}>
               -{discount.toFixed(2).replace('.', ',')} zł
             </Text>
           </View>
@@ -307,24 +310,24 @@ export default function OrderSummary({
 
 // ──── Styles ────
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   content: { paddingBottom: 40 },
 
   // Header
   headerSection: {
-    backgroundColor: '#FFF7ED',
+    backgroundColor: colors.tintLight,
     paddingHorizontal: 16,
     paddingVertical: 18,
     borderBottomWidth: 1,
-    borderBottomColor: '#FED7AA',
+    borderBottomColor: colors.tintMuted,
   },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: Colors.secondary[900] },
-  headerDesc: { fontSize: 13, color: Colors.secondary[500], marginTop: 4 },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: colors.text },
+  headerDesc: { fontSize: 13, color: colors.textMuted, marginTop: 4 },
 
   // Sections
   section: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     marginTop: 8,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -343,34 +346,34 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.secondary[800],
+    color: colors.text,
   },
   changeLink: {
     fontSize: 13,
-    color: '#EA580C',
+    color: colors.tint,
     fontWeight: '600',
   },
   summaryText: {
     fontSize: 13,
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
     lineHeight: 19,
   },
   shippingPrice: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#F97316',
+    color: colors.tint,
     marginTop: 4,
   },
   invoiceSummary: {
     marginTop: 10,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: colors.border,
   },
   invoiceLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.secondary[700],
+    color: colors.textSecondary,
     marginBottom: 2,
   },
 
@@ -381,15 +384,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: colors.borderLight,
   },
   pkgShippingLeft: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, flex: 1 },
   pkgDot: { width: 8, height: 8, borderRadius: 4, marginTop: 5 },
-  pkgMethodName: { fontSize: 13, fontWeight: '600', color: Colors.secondary[800] },
-  pkgWarehouse: { fontSize: 11, color: Colors.secondary[500], marginTop: 1 },
-  pkgPaczkomat: { fontSize: 11, color: '#C2410C', marginTop: 2 },
-  pkgCustomAddr: { fontSize: 10, color: Colors.secondary[500], marginTop: 2, fontStyle: 'italic' },
-  pkgPrice: { fontSize: 14, fontWeight: '600', color: Colors.secondary[800] },
+  pkgMethodName: { fontSize: 13, fontWeight: '600', color: colors.text },
+  pkgWarehouse: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
+  pkgPaczkomat: { fontSize: 11, color: colors.tint, marginTop: 2 },
+  pkgCustomAddr: { fontSize: 10, color: colors.textMuted, marginTop: 2, fontStyle: 'italic' },
+  pkgPrice: { fontSize: 14, fontWeight: '600', color: colors.text },
 
   // Products
   productRow: {
@@ -397,41 +400,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: colors.borderLight,
   },
   productImage: {
     width: 44,
     height: 44,
     borderRadius: 6,
     marginRight: 10,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.backgroundTertiary,
   },
   productInfo: { flex: 1 },
   productName: {
     fontSize: 13,
     fontWeight: '500',
-    color: Colors.secondary[800],
+    color: colors.text,
   },
   productVariant: {
     fontSize: 12,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     marginTop: 1,
   },
   productQty: {
     fontSize: 12,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     marginTop: 2,
   },
   productTotal: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.secondary[800],
+    color: colors.text,
     marginLeft: 8,
   },
 
   // Pricing
   priceSection: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     marginTop: 8,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -441,16 +444,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 6,
   },
-  priceLabel: { fontSize: 14, color: Colors.secondary[600] },
-  priceValue: { fontSize: 14, fontWeight: '500', color: Colors.secondary[800] },
+  priceLabel: { fontSize: 14, color: colors.textSecondary },
+  priceValue: { fontSize: 14, fontWeight: '500', color: colors.text },
   totalRow: {
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: colors.border,
     paddingTop: 10,
     marginTop: 4,
   },
-  totalLabel: { fontSize: 16, fontWeight: '700', color: Colors.secondary[900] },
-  totalValue: { fontSize: 20, fontWeight: '700', color: '#F97316' },
+  totalLabel: { fontSize: 16, fontWeight: '700', color: colors.text },
+  totalValue: { fontSize: 20, fontWeight: '700', color: colors.tint },
 
   // Terms
   termsSection: { paddingHorizontal: 16, paddingVertical: 14 },
@@ -464,36 +467,36 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: '#D1D5DB',
+    borderColor: colors.inputBorder,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 1,
   },
   checkboxChecked: {
-    backgroundColor: '#F97316',
-    borderColor: '#F97316',
+    backgroundColor: colors.tint,
+    borderColor: colors.tint,
   },
   termsText: {
     flex: 1,
     fontSize: 13,
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
     lineHeight: 18,
   },
   termsLink: {
-    color: '#EA580C',
+    color: colors.tint,
     textDecorationLine: 'underline',
   },
 
   // Error
   errorBox: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: colors.destructiveBg,
     marginHorizontal: 16,
     padding: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: colors.border,
   },
-  errorText: { fontSize: 13, color: '#991B1B' },
+  errorText: { fontSize: 13, color: colors.destructiveText },
 
   // Submit
   submitSection: {
@@ -503,7 +506,7 @@ const styles = StyleSheet.create({
   },
   footerNote: {
     fontSize: 11,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     textAlign: 'center',
     marginTop: 8,
     lineHeight: 15,
@@ -517,7 +520,7 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 15,
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
     fontWeight: '500',
   },
 });
