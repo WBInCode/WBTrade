@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,8 @@ import {
   TextInput,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import type { ThemeColors } from '../../constants/Colors';
 import { useCart } from '../../contexts/CartContext';
 import { api } from '../../services/api';
 import Button from '../ui/Button';
@@ -93,7 +94,7 @@ interface ShippingPerPackageProps {
 
 // ──── Warehouse Config ────
 
-const getWarehouseConfig = (wholesaler: string | null): { name: string; color: string; bgColor: string; borderColor: string } => {
+const getWarehouseConfig = (wholesaler: string | null, colors: ThemeColors): { name: string; color: string; bgColor: string; borderColor: string } => {
   const configs: Record<string, { name: string; color: string; bgColor: string; borderColor: string }> = {
     'HP': { name: 'Magazyn Zielona Góra', color: '#1D4ED8', bgColor: '#EFF6FF', borderColor: '#BFDBFE' },
     'Hurtownia Przemysłowa': { name: 'Magazyn Zielona Góra', color: '#1D4ED8', bgColor: '#EFF6FF', borderColor: '#BFDBFE' },
@@ -103,36 +104,48 @@ const getWarehouseConfig = (wholesaler: string | null): { name: string; color: s
     'Rzeszów': { name: 'Magazyn Rzeszów', color: '#BE185D', bgColor: '#FDF2F8', borderColor: '#FBCFE8' },
     'Outlet': { name: 'Magazyn Rzeszów', color: '#BE185D', bgColor: '#FDF2F8', borderColor: '#FBCFE8' },
   };
-  return configs[wholesaler || ''] || { name: 'Magazyn Chynów', color: '#374151', bgColor: '#F9FAFB', borderColor: '#E5E7EB' };
+  return configs[wholesaler || ''] || { name: 'Magazyn Chynów', color: colors.textSecondary, bgColor: colors.backgroundSecondary, borderColor: colors.border };
 };
 
-// ──── Shipping Provider Icon ────
+// ──── Shipping Provider Icon (static styles — no theme dependency) ────
 
-const ShippingIcon = ({ id }: { id: string }) => {
+const shippingIconStyles = StyleSheet.create({
+  providerBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 4,
+    marginRight: 8,
+    minWidth: 44,
+    alignItems: 'center',
+  },
+  providerBadgeText: { fontSize: 9, fontWeight: '800' },
+});
+
+const ShippingIcon = ({ id, colors }: { id: string; colors: ThemeColors }) => {
   switch (id) {
     case 'inpost_paczkomat':
     case 'inpost_kurier':
       return (
-        <View style={[styles.providerBadge, { backgroundColor: '#FFCD00' }]}>
-          <Text style={[styles.providerBadgeText, { color: '#1D1D1B' }]}>InPost</Text>
+        <View style={[shippingIconStyles.providerBadge, { backgroundColor: '#FFCD00' }]}>
+          <Text style={[shippingIconStyles.providerBadgeText, { color: colors.text }]}>InPost</Text>
         </View>
       );
     case 'dpd_kurier':
       return (
-        <View style={[styles.providerBadge, { backgroundColor: '#DC0032' }]}>
-          <Text style={[styles.providerBadgeText, { color: '#fff' }]}>DPD</Text>
+        <View style={[shippingIconStyles.providerBadge, { backgroundColor: '#DC0032' }]}>
+          <Text style={[shippingIconStyles.providerBadgeText, { color: '#fff' }]}>DPD</Text>
         </View>
       );
     case 'wysylka_gabaryt':
       return (
-        <View style={[styles.providerBadge, { backgroundColor: '#F97316' }]}>
-          <Text style={[styles.providerBadgeText, { color: '#fff' }]}>📦</Text>
+        <View style={[shippingIconStyles.providerBadge, { backgroundColor: '#F97316' }]}>
+          <Text style={[shippingIconStyles.providerBadgeText, { color: '#fff' }]}>📦</Text>
         </View>
       );
     case 'odbior_osobisty_outlet':
       return (
-        <View style={[styles.providerBadge, { backgroundColor: '#16A34A' }]}>
-          <Text style={[styles.providerBadgeText, { color: '#fff' }]}>📍</Text>
+        <View style={[shippingIconStyles.providerBadge, { backgroundColor: '#16A34A' }]}>
+          <Text style={[shippingIconStyles.providerBadgeText, { color: '#fff' }]}>📍</Text>
         </View>
       );
     default:
@@ -181,6 +194,8 @@ const roundMoney = (v: number) => Math.round(v * 100) / 100;
 
 export default function ShippingPerPackage({ postalCode, onSubmit, onBack }: ShippingPerPackageProps) {
   const { cart } = useCart();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [packages, setPackages] = useState<PackageWithOptions[]>([]);
@@ -446,7 +461,7 @@ export default function ShippingPerPackage({ postalCode, onSubmit, onBack }: Shi
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#F97316" />
+        <ActivityIndicator size="large" color={colors.tint} />
         <Text style={styles.loadingText}>Ładowanie opcji dostawy...</Text>
       </View>
     );
@@ -503,7 +518,7 @@ export default function ShippingPerPackage({ postalCode, onSubmit, onBack }: Shi
         {/* Packages */}
         {packages.map((pkg, pkgIndex) => {
           const pkgInfo = pkg.package;
-          const wConfig = getWarehouseConfig(pkgInfo.wholesaler ?? null);
+          const wConfig = getWarehouseConfig(pkgInfo.wholesaler ?? null, colors);
           const isGabaryt = pkgInfo.type === 'gabaryt';
           const selectedMethod = pkg.shippingMethods.find(m => m.id === selections[pkgInfo.id] && m.available);
 
@@ -515,7 +530,7 @@ export default function ShippingPerPackage({ postalCode, onSubmit, onBack }: Shi
               {/* Package header */}
               <View style={styles.packageHeader}>
                 <View style={styles.packageHeaderLeft}>
-                  <View style={[styles.packageNumber, { backgroundColor: '#fff' }]}>
+                  <View style={[styles.packageNumber, { backgroundColor: colors.card }]}>
                     <Text style={[styles.packageNumberText, { color: wConfig.color }]}>{pkgIndex + 1}</Text>
                   </View>
                   <View>
@@ -583,7 +598,7 @@ export default function ShippingPerPackage({ postalCode, onSubmit, onBack }: Shi
                         </View>
 
                         {/* Provider icon */}
-                        <ShippingIcon id={method.id} />
+                        <ShippingIcon id={method.id} colors={colors} />
 
                         {/* Name + delivery time */}
                         <View style={styles.methodTextArea}>
@@ -686,7 +701,7 @@ export default function ShippingPerPackage({ postalCode, onSubmit, onBack }: Shi
                               value={customAddresses[pkgInfo.id]?.firstName || ''}
                               onChangeText={v => updateCustomAddress(pkgInfo.id, 'firstName', v)}
                               placeholder="Jan"
-                              placeholderTextColor="#9CA3AF"
+                              placeholderTextColor={colors.placeholder}
                             />
                           </View>
                           <View style={styles.formHalf}>
@@ -696,7 +711,7 @@ export default function ShippingPerPackage({ postalCode, onSubmit, onBack }: Shi
                               value={customAddresses[pkgInfo.id]?.lastName || ''}
                               onChangeText={v => updateCustomAddress(pkgInfo.id, 'lastName', v)}
                               placeholder="Kowalski"
-                              placeholderTextColor="#9CA3AF"
+                              placeholderTextColor={colors.placeholder}
                             />
                           </View>
                         </View>
@@ -707,7 +722,7 @@ export default function ShippingPerPackage({ postalCode, onSubmit, onBack }: Shi
                           onChangeText={v => updateCustomAddress(pkgInfo.id, 'phone', v)}
                           placeholder="+48 123 456 789"
                           keyboardType="phone-pad"
-                          placeholderTextColor="#9CA3AF"
+                          placeholderTextColor={colors.placeholder}
                         />
                         <Text style={styles.formLabel}>Ulica i numer *</Text>
                         <TextInput
@@ -715,7 +730,7 @@ export default function ShippingPerPackage({ postalCode, onSubmit, onBack }: Shi
                           value={customAddresses[pkgInfo.id]?.street || ''}
                           onChangeText={v => updateCustomAddress(pkgInfo.id, 'street', v)}
                           placeholder="ul. Przykładowa 10"
-                          placeholderTextColor="#9CA3AF"
+                          placeholderTextColor={colors.placeholder}
                         />
                         <View style={styles.formRow}>
                           <View style={styles.formHalf}>
@@ -725,7 +740,7 @@ export default function ShippingPerPackage({ postalCode, onSubmit, onBack }: Shi
                               value={customAddresses[pkgInfo.id]?.apartment || ''}
                               onChangeText={v => updateCustomAddress(pkgInfo.id, 'apartment', v)}
                               placeholder="5A"
-                              placeholderTextColor="#9CA3AF"
+                              placeholderTextColor={colors.placeholder}
                             />
                           </View>
                           <View style={styles.formHalf}>
@@ -736,7 +751,7 @@ export default function ShippingPerPackage({ postalCode, onSubmit, onBack }: Shi
                               onChangeText={v => updateCustomAddress(pkgInfo.id, 'postalCode', v)}
                               placeholder="00-001"
                               keyboardType="numeric"
-                              placeholderTextColor="#9CA3AF"
+                              placeholderTextColor={colors.placeholder}
                             />
                           </View>
                         </View>
@@ -746,7 +761,7 @@ export default function ShippingPerPackage({ postalCode, onSubmit, onBack }: Shi
                           value={customAddresses[pkgInfo.id]?.city || ''}
                           onChangeText={v => updateCustomAddress(pkgInfo.id, 'city', v)}
                           placeholder="Warszawa"
-                          placeholderTextColor="#9CA3AF"
+                          placeholderTextColor={colors.placeholder}
                         />
                       </View>
                     )}
@@ -818,57 +833,57 @@ export default function ShippingPerPackage({ postalCode, onSubmit, onBack }: Shi
 
 // ──── Styles ────
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   content: { paddingBottom: 40 },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
-  loadingText: { marginTop: 12, fontSize: 14, color: Colors.secondary[500] },
-  errorTextCenter: { fontSize: 14, color: Colors.destructive, marginBottom: 12, textAlign: 'center' },
+  loadingText: { marginTop: 12, fontSize: 14, color: colors.textMuted },
+  errorTextCenter: { fontSize: 14, color: colors.destructive, marginBottom: 12, textAlign: 'center' },
 
   // Header
   headerSection: {
-    backgroundColor: '#FFF7ED',
+    backgroundColor: colors.tintLight,
     paddingHorizontal: 16,
     paddingVertical: 18,
     borderBottomWidth: 1,
-    borderBottomColor: '#FED7AA',
+    borderBottomColor: colors.border,
   },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: Colors.secondary[900] },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: colors.text },
   headerBadges: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
   shipmentBadge: {
-    backgroundColor: '#FFEDD5',
+    backgroundColor: colors.tintMuted,
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 16,
   },
-  shipmentBadgeText: { fontSize: 13, fontWeight: '600', color: '#C2410C' },
+  shipmentBadgeText: { fontSize: 13, fontWeight: '600', color: colors.tint },
   gabarytBadge: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: colors.warningBg,
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 16,
   },
-  gabarytBadgeText: { fontSize: 13, fontWeight: '600', color: '#92400E' },
-  headerDesc: { fontSize: 13, color: Colors.secondary[500], marginTop: 8, lineHeight: 18 },
+  gabarytBadgeText: { fontSize: 13, fontWeight: '600', color: colors.warningText },
+  headerDesc: { fontSize: 13, color: colors.textMuted, marginTop: 8, lineHeight: 18 },
 
   // Warnings
   warningBox: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: colors.warningBg,
     marginHorizontal: 12,
     marginTop: 12,
     padding: 12,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#FDE68A',
+    borderColor: colors.border,
   },
-  warningTitle: { fontSize: 13, fontWeight: '600', color: '#92400E', marginBottom: 4 },
-  warningText: { fontSize: 12, color: '#92400E', marginTop: 2 },
+  warningTitle: { fontSize: 13, fontWeight: '600', color: colors.warningText, marginBottom: 4 },
+  warningText: { fontSize: 12, color: colors.warningText, marginTop: 2 },
 
   // Package card
   packageCard: {
@@ -892,7 +907,7 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 2,
@@ -908,10 +923,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   gabarytTagText: { fontSize: 9, fontWeight: '800', color: '#fff' },
-  itemCountText: { fontSize: 11, color: Colors.secondary[500], marginTop: 1 },
+  itemCountText: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
   packageHeaderRight: { alignItems: 'flex-end' },
-  headerPrice: { fontSize: 17, fontWeight: '700', color: Colors.secondary[900] },
-  headerMethodName: { fontSize: 11, color: Colors.secondary[500] },
+  headerPrice: { fontSize: 17, fontWeight: '700', color: colors.text },
+  headerMethodName: { fontSize: 11, color: colors.textMuted },
 
   // Product chips
   productChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 14, paddingBottom: 10 },
@@ -921,34 +936,34 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    backgroundColor: 'rgba(255,255,255,0.8)',
+    backgroundColor: colors.card,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.5)',
+    borderColor: colors.borderLight,
   },
   chipImage: { width: 28, height: 28, borderRadius: 4 },
   chipInfo: { maxWidth: 120 },
-  chipName: { fontSize: 11, fontWeight: '500', color: Colors.secondary[900] },
-  chipQty: { fontSize: 9, color: Colors.secondary[500] },
+  chipName: { fontSize: 11, fontWeight: '500', color: colors.text },
+  chipQty: { fontSize: 9, color: colors.textMuted },
   moreChip: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    backgroundColor: 'rgba(0,0,0,0.05)',
+    backgroundColor: colors.backgroundTertiary,
     borderRadius: 8,
     justifyContent: 'center',
   },
-  moreChipText: { fontSize: 11, color: Colors.secondary[500] },
+  moreChipText: { fontSize: 11, color: colors.textMuted },
 
   // Shipping methods
   methodsContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
   methodsSectionLabel: {
     fontSize: 10,
     fontWeight: '600',
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     letterSpacing: 0.5,
     marginBottom: 8,
   },
@@ -958,28 +973,28 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 10,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
     borderRadius: 10,
     marginBottom: 6,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
   },
   methodCardSelected: {
-    borderColor: '#FB923C',
-    backgroundColor: '#FFF7ED',
+    borderColor: colors.tint,
+    backgroundColor: colors.tintLight,
   },
   radioOuter: {
     width: 20,
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#D1D5DB',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
   },
   radioOuterSelected: {
-    borderColor: '#F97316',
-    backgroundColor: '#F97316',
+    borderColor: colors.tint,
+    backgroundColor: colors.tint,
   },
   radioInner: {
     width: 8,
@@ -987,32 +1002,23 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: '#fff',
   },
-  providerBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 4,
-    marginRight: 8,
-    minWidth: 44,
-    alignItems: 'center',
-  },
-  providerBadgeText: { fontSize: 9, fontWeight: '800' },
   methodTextArea: { flex: 1 },
-  methodName: { fontSize: 14, fontWeight: '500', color: Colors.secondary[900] },
-  methodDelivery: { fontSize: 11, color: Colors.secondary[500], marginTop: 1 },
-  methodPrice: { fontSize: 15, fontWeight: '700', color: Colors.secondary[900], marginLeft: 8 },
+  methodName: { fontSize: 14, fontWeight: '500', color: colors.text },
+  methodDelivery: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
+  methodPrice: { fontSize: 15, fontWeight: '700', color: colors.text, marginLeft: 8 },
 
   // Paczkomat
   paczkomatSection: { paddingLeft: 10, paddingBottom: 4 },
   paczkomatSlot: {
     marginTop: 6,
     padding: 10,
-    backgroundColor: '#FFF9E6',
+    backgroundColor: colors.warningBg,
     borderWidth: 1,
     borderColor: '#FFCD00',
     borderRadius: 10,
   },
   slotHeader: { marginBottom: 8 },
-  slotLabel: { fontSize: 11, fontWeight: '600', color: '#1D1D1B' },
+  slotLabel: { fontSize: 11, fontWeight: '600', color: colors.text },
   slotItems: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 },
   slotItemChip: {
     flexDirection: 'row',
@@ -1020,11 +1026,11 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: 4,
   },
-  slotItemText: { fontSize: 9, color: Colors.secondary[600], maxWidth: 80 },
-  slotItemQty: { fontSize: 9, fontWeight: '600', color: Colors.secondary[700] },
+  slotItemText: { fontSize: 9, color: colors.textSecondary, maxWidth: 80 },
+  slotItemQty: { fontSize: 9, fontWeight: '600', color: colors.textSecondary },
   selectedPaczkomat: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   paczkomatIcon: {
     width: 30,
@@ -1036,23 +1042,23 @@ const styles = StyleSheet.create({
   },
   paczkomatIconText: { fontSize: 16 },
   paczkomatInfo: { flex: 1 },
-  paczkomatCode: { fontSize: 13, fontWeight: '600', color: Colors.secondary[900] },
-  paczkomatAddr: { fontSize: 11, color: Colors.secondary[500] },
-  changeBtn: { fontSize: 12, color: '#EA580C', fontWeight: '600' },
+  paczkomatCode: { fontSize: 13, fontWeight: '600', color: colors.text },
+  paczkomatAddr: { fontSize: 11, color: colors.textMuted },
+  changeBtn: { fontSize: 12, color: colors.tint, fontWeight: '600' },
   selectPaczkomatBtn: {
     backgroundColor: '#FFCD00',
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
   },
-  selectPaczkomatText: { fontSize: 13, fontWeight: '700', color: '#1D1D1B' },
+  selectPaczkomatText: { fontSize: 13, fontWeight: '700', color: colors.text },
 
   // Custom address
   customAddrSection: {
     marginTop: 8,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: colors.backgroundTertiary,
   },
   customAddrToggle: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   checkboxOuter: {
@@ -1060,43 +1066,43 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: '#D1D5DB',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkboxChecked: { backgroundColor: '#F97316', borderColor: '#F97316' },
+  checkboxChecked: { backgroundColor: colors.tint, borderColor: colors.tint },
   checkboxMark: { fontSize: 11, color: '#fff', fontWeight: '700' },
-  customAddrLabel: { fontSize: 13, color: Colors.secondary[700] },
+  customAddrLabel: { fontSize: 13, color: colors.textSecondary },
   customAddrForm: {
     marginTop: 10,
     padding: 12,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
   },
-  customAddrTitle: { fontSize: 13, fontWeight: '600', color: Colors.secondary[900], marginBottom: 10 },
+  customAddrTitle: { fontSize: 13, fontWeight: '600', color: colors.text, marginBottom: 10 },
   formRow: { flexDirection: 'row', gap: 8 },
   formHalf: { flex: 1 },
-  formLabel: { fontSize: 11, color: Colors.secondary[600], marginBottom: 3, marginTop: 6 },
+  formLabel: { fontSize: 11, color: colors.textSecondary, marginBottom: 3, marginTop: 6 },
   formInput: {
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: colors.inputBorder,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 8,
     fontSize: 13,
-    color: Colors.secondary[900],
-    backgroundColor: '#fff',
+    color: colors.text,
+    backgroundColor: colors.card,
   },
 
   // Free shipping progress
   freeShippingBar: {
-    backgroundColor: '#FFF7ED',
+    backgroundColor: colors.tintLight,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: '#FFEDD5',
+    borderTopColor: colors.tintMuted,
   },
   freeShippingHeader: {
     flexDirection: 'row',
@@ -1104,56 +1110,56 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 6,
   },
-  freeShippingLabel: { fontSize: 11, color: Colors.secondary[600] },
-  freeShippingAmount: { fontSize: 13, fontWeight: '600', color: '#EA580C' },
+  freeShippingLabel: { fontSize: 11, color: colors.textSecondary },
+  freeShippingAmount: { fontSize: 13, fontWeight: '600', color: colors.tint },
   progressTrack: {
     height: 5,
-    backgroundColor: '#FED7AA',
+    backgroundColor: colors.tintMuted,
     borderRadius: 3,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
     borderRadius: 3,
-    backgroundColor: '#F97316',
+    backgroundColor: colors.tint,
   },
   freeShippingDone: {
-    backgroundColor: '#ECFDF5',
+    backgroundColor: colors.successBg,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: '#A7F3D0',
+    borderTopColor: colors.border,
   },
-  freeShippingDoneText: { fontSize: 13, fontWeight: '600', color: '#047857' },
+  freeShippingDoneText: { fontSize: 13, fontWeight: '600', color: colors.successText },
 
   // Total
   totalSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.backgroundSecondary,
     marginHorizontal: 12,
     marginTop: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
   },
-  totalLabel: { fontSize: 14, color: Colors.secondary[600] },
-  totalPrice: { fontSize: 20, fontWeight: '700', color: Colors.secondary[900] },
+  totalLabel: { fontSize: 14, color: colors.textSecondary },
+  totalPrice: { fontSize: 20, fontWeight: '700', color: colors.text },
 
   // Error
   errorBox: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: colors.destructiveBg,
     marginHorizontal: 12,
     marginTop: 8,
     padding: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: colors.border,
   },
-  errorText: { fontSize: 12, color: '#991B1B' },
+  errorText: { fontSize: 12, color: colors.destructiveText },
 
   // Buttons
   buttonRow: {
@@ -1165,6 +1171,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   backButton: { paddingVertical: 14, paddingHorizontal: 16 },
-  backText: { fontSize: 15, color: Colors.secondary[600], fontWeight: '500' },
+  backText: { fontSize: 15, color: colors.textSecondary, fontWeight: '500' },
   nextButton: { flex: 1 },
 });

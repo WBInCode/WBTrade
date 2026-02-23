@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,8 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Colors } from '../constants/Colors';
+import { useThemeColors } from '../hooks/useThemeColors';
+import type { ThemeColors } from '../constants/Colors';
 import { api } from '../services/api';
 import type { Product } from '../services/types';
 
@@ -41,6 +42,8 @@ export default function AddToCartModal({
   addToCart,
 }: AddToCartModalProps) {
   const router = useRouter();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [sameWarehouseProducts, setSameWarehouseProducts] = useState<Product[]>([]);
   const [loadingRelated, setLoadingRelated] = useState(false);
   const [addingIds, setAddingIds] = useState<Set<string>>(new Set());
@@ -108,7 +111,7 @@ export default function AddToCartModal({
         <View style={styles.modal}>
           {/* Close button */}
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Ionicons name="close" size={22} color={Colors.secondary[500]} />
+            <Ionicons name="close" size={22} color={colors.textMuted} />
           </TouchableOpacity>
 
           <ScrollView
@@ -118,7 +121,7 @@ export default function AddToCartModal({
           >
             {/* Success icon */}
             <View style={styles.successCircle}>
-              <Ionicons name="checkmark" size={32} color="#22C55E" />
+              <Ionicons name="checkmark" size={32} color={colors.success} />
             </View>
 
             <Text style={styles.title}>Produkt dodany do koszyka!</Text>
@@ -133,7 +136,7 @@ export default function AddToCartModal({
                 />
               ) : (
                 <View style={[styles.productImage, styles.imagePlaceholder]}>
-                  <FontAwesome name="image" size={20} color={Colors.secondary[300]} />
+                  <FontAwesome name="image" size={20} color={colors.inputBorder} />
                 </View>
               )}
               <View style={styles.productInfo}>
@@ -162,7 +165,7 @@ export default function AddToCartModal({
 
                 {loadingRelated ? (
                   <View style={styles.loadingRow}>
-                    <ActivityIndicator size="small" color={Colors.primary[500]} />
+                    <ActivityIndicator size="small" color={colors.tint} />
                     <Text style={styles.loadingText}>Ładowanie...</Text>
                   </View>
                 ) : (
@@ -194,7 +197,7 @@ export default function AddToCartModal({
                                 <FontAwesome
                                   name="image"
                                   size={14}
-                                  color={Colors.secondary[300]}
+                                  color={colors.inputBorder}
                                 />
                               </View>
                             )}
@@ -207,7 +210,7 @@ export default function AddToCartModal({
                           </Text>
                           {isAdded ? (
                             <View style={[styles.addButton, styles.addedButton]}>
-                              <Ionicons name="checkmark" size={14} color="#22C55E" />
+                              <Ionicons name="checkmark" size={14} color={colors.success} />
                               <Text style={styles.addedButtonText}>Dodano</Text>
                             </View>
                           ) : (
@@ -238,7 +241,7 @@ export default function AddToCartModal({
           {/* Action buttons */}
           <View style={styles.actions}>
             <TouchableOpacity style={styles.continueButton} onPress={onClose}>
-              <Ionicons name="arrow-back" size={16} color={Colors.secondary[700]} />
+              <Ionicons name="arrow-back" size={16} color={colors.textSecondary} />
               <Text style={styles.continueText}>Kupuj dalej</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.goToCartButton} onPress={handleGoToCart}>
@@ -265,7 +268,7 @@ function getWarehouseLabel(w: string): string {
   return map[w] || `Magazyn ${w}`;
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -275,7 +278,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modal: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '85%',
@@ -289,7 +292,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Colors.secondary[100],
+    backgroundColor: colors.backgroundTertiary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -304,7 +307,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#DCFCE7',
+    backgroundColor: colors.successBg,
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
@@ -313,7 +316,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -321,7 +324,7 @@ const styles = StyleSheet.create({
   // Product card
   productCard: {
     flexDirection: 'row',
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: 12,
     padding: 12,
     gap: 12,
@@ -331,12 +334,12 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 8,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
   },
   imagePlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.secondary[100],
+    backgroundColor: colors.backgroundTertiary,
   },
   productInfo: {
     flex: 1,
@@ -345,18 +348,18 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 14,
     fontWeight: '500',
-    color: Colors.secondary[800],
+    color: colors.text,
     lineHeight: 18,
   },
   productQty: {
     fontSize: 12,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     marginTop: 2,
   },
   productPrice: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.primary[600],
+    color: colors.tint,
     marginTop: 4,
   },
 
@@ -374,7 +377,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: '#DBEAFE',
+    backgroundColor: colors.tintLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -384,11 +387,11 @@ const styles = StyleSheet.create({
   crossSellTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.secondary[800],
+    color: colors.text,
   },
   crossSellWarehouse: {
     fontSize: 12,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     marginTop: 1,
   },
   loadingRow: {
@@ -399,7 +402,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 13,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
   crossSellGrid: {
     flexDirection: 'row',
@@ -408,7 +411,7 @@ const styles = StyleSheet.create({
   },
   crossSellItem: {
     width: (SCREEN_WIDTH - 40 - 10) / 2 - 1,
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: 10,
     padding: 8,
   },
@@ -423,18 +426,18 @@ const styles = StyleSheet.create({
   },
   crossSellName: {
     fontSize: 12,
-    color: Colors.secondary[700],
+    color: colors.textSecondary,
     lineHeight: 16,
     marginBottom: 4,
   },
   crossSellPrice: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
     marginBottom: 8,
   },
   addButton: {
-    backgroundColor: '#F97316',
+    backgroundColor: colors.tint,
     borderRadius: 8,
     paddingVertical: 8,
     alignItems: 'center',
@@ -446,17 +449,17 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   addButtonText: {
-    color: '#fff',
+    color: colors.textInverse,
     fontSize: 13,
     fontWeight: '600',
   },
   addedButton: {
-    backgroundColor: '#F0FDF4',
+    backgroundColor: colors.successBg,
     borderWidth: 1,
-    borderColor: '#BBF7D0',
+    borderColor: colors.border,
   },
   addedButtonText: {
-    color: '#22C55E',
+    color: colors.success,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -468,7 +471,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     gap: 10,
     borderTopWidth: 1,
-    borderTopColor: Colors.secondary[100],
+    borderTopColor: colors.backgroundTertiary,
   },
   continueButton: {
     flex: 1,
@@ -479,13 +482,13 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: Colors.secondary[300],
-    backgroundColor: '#fff',
+    borderColor: colors.inputBorder,
+    backgroundColor: colors.card,
   },
   continueText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.secondary[700],
+    color: colors.textSecondary,
   },
   goToCartButton: {
     flex: 1,
@@ -495,11 +498,11 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 14,
     borderRadius: 10,
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
   },
   goToCartText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: colors.textInverse,
   },
 });

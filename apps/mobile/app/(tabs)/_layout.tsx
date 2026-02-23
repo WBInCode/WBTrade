@@ -3,8 +3,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
 import { View, Text } from 'react-native';
 
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
+import { useThemeColors } from '../../hooks/useThemeColors';
 import { useCart } from '../../contexts/CartContext';
 import { useWishlist } from '../../contexts/WishlistContext';
 
@@ -17,6 +16,7 @@ function TabBarIcon(props: {
 
 function CartIcon({ color }: { color: string }) {
   const { itemCount } = useCart();
+  const colors = useThemeColors();
 
   return (
     <View>
@@ -27,7 +27,7 @@ function CartIcon({ color }: { color: string }) {
             position: 'absolute',
             top: -6,
             right: -10,
-            backgroundColor: '#ef4444',
+            backgroundColor: colors.badge,
             borderRadius: 10,
             minWidth: 18,
             height: 18,
@@ -36,7 +36,7 @@ function CartIcon({ color }: { color: string }) {
             paddingHorizontal: 4,
           }}
         >
-          <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>
+          <Text style={{ color: colors.badgeText, fontSize: 10, fontWeight: '700' }}>
             {itemCount > 99 ? '99+' : itemCount}
           </Text>
         </View>
@@ -47,6 +47,7 @@ function CartIcon({ color }: { color: string }) {
 
 function WishlistIcon({ color }: { color: string }) {
   const { count } = useWishlist();
+  const colors = useThemeColors();
 
   return (
     <View>
@@ -57,7 +58,7 @@ function WishlistIcon({ color }: { color: string }) {
             position: 'absolute',
             top: -6,
             right: -10,
-            backgroundColor: '#ef4444',
+            backgroundColor: colors.badge,
             borderRadius: 10,
             minWidth: 18,
             height: 18,
@@ -66,7 +67,7 @@ function WishlistIcon({ color }: { color: string }) {
             paddingHorizontal: 4,
           }}
         >
-          <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>
+          <Text style={{ color: colors.badgeText, fontSize: 10, fontWeight: '700' }}>
             {count > 99 ? '99+' : count}
           </Text>
         </View>
@@ -76,14 +77,16 @@ function WishlistIcon({ color }: { color: string }) {
 }
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const colors = useThemeColors();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: colors.tint,
+        tabBarInactiveTintColor: colors.tabIconDefault,
         tabBarStyle: {
-          borderTopColor: Colors[colorScheme ?? 'light'].border,
+          backgroundColor: colors.tabBarBackground,
+          borderTopColor: colors.tabBarBorder,
         },
         headerShown: false,
       }}

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -11,7 +11,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Colors } from '../../../constants/Colors';
+import { useThemeColors } from '../../../hooks/useThemeColors';
+import type { ThemeColors } from '../../../constants/Colors';
 import { ordersApi } from '../../../services/orders';
 import type { Order } from '../../../services/types';
 
@@ -25,18 +26,19 @@ interface StatusConfig {
   text: string;
 }
 
-const STATUS_MAP: Record<StatusKey, StatusConfig> = {
-  PENDING: { label: 'Nowe', bg: '#dbeafe', text: '#1e40af' },
-  CONFIRMED: { label: 'Potwierdzone', bg: '#dbeafe', text: '#1e40af' },
-  PROCESSING: { label: 'W realizacji', bg: '#fef3c7', text: '#92400e' },
-  SHIPPED: { label: 'Wysłane', bg: '#ffedd5', text: '#c2410c' },
-  DELIVERED: { label: 'Dostarczone', bg: '#f3f4f6', text: '#374151' },
-  CANCELLED: { label: 'Anulowane', bg: '#fee2e2', text: '#991b1b' },
-  REFUNDED: { label: 'Zwrócone', bg: '#fce7f3', text: '#9d174d' },
-};
+const getStatusMap = (colors: ThemeColors): Record<StatusKey, StatusConfig> => ({
+  PENDING: { label: 'Nowe', bg: colors.warningBg, text: colors.warningText },
+  CONFIRMED: { label: 'Potwierdzone', bg: colors.tintLight, text: colors.tint },
+  PROCESSING: { label: 'W realizacji', bg: colors.tintLight, text: colors.tint },
+  SHIPPED: { label: 'Wysłane', bg: colors.tintMuted, text: colors.tint },
+  DELIVERED: { label: 'Dostarczone', bg: colors.successBg, text: colors.successText },
+  CANCELLED: { label: 'Anulowane', bg: colors.destructiveBg, text: colors.destructiveText },
+  REFUNDED: { label: 'Zwrócone', bg: colors.backgroundTertiary, text: colors.textSecondary },
+});
 
-function getStatusConfig(status: string): StatusConfig {
-  return STATUS_MAP[status as StatusKey] ?? { label: status, bg: '#f3f4f6', text: '#374151' };
+function getStatusConfig(status: string, colors: ThemeColors): StatusConfig {
+  const statusMap = getStatusMap(colors);
+  return statusMap[status as StatusKey] ?? { label: status, bg: colors.backgroundTertiary, text: colors.textSecondary };
 }
 
 // --- Format helpers ---
@@ -59,7 +61,9 @@ const OrderCard = React.memo(function OrderCard({
   order: Order;
   onPress: () => void;
 }) {
-  const statusCfg = getStatusConfig(order.status);
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const statusCfg = getStatusConfig(order.status, colors);
   const itemCount = order.items?.length ?? 0;
 
   return (
@@ -72,12 +76,12 @@ const OrderCard = React.memo(function OrderCard({
       </View>
 
       <View style={styles.cardRow}>
-        <FontAwesome name="calendar-o" size={14} color={Colors.secondary[400]} />
+        <FontAwesome name="calendar-o" size={14} color={colors.textMuted} />
         <Text style={styles.cardLabel}>{formatDate(order.createdAt)}</Text>
       </View>
 
       <View style={styles.cardRow}>
-        <FontAwesome name="cube" size={14} color={Colors.secondary[400]} />
+        <FontAwesome name="cube" size={14} color={colors.textMuted} />
         <Text style={styles.cardLabel}>
           {itemCount} {itemCount === 1 ? 'produkt' : itemCount < 5 ? 'produkty' : 'produktów'}
         </Text>
@@ -89,7 +93,7 @@ const OrderCard = React.memo(function OrderCard({
       </View>
 
       <View style={styles.cardArrow}>
-        <FontAwesome name="chevron-right" size={14} color={Colors.secondary[300]} />
+        <FontAwesome name="chevron-right" size={14} color={colors.inputBorder} />
       </View>
     </TouchableOpacity>
   );
@@ -99,6 +103,9 @@ const OrderCard = React.memo(function OrderCard({
 
 export default function OrdersScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -172,10 +179,10 @@ export default function OrdersScreen() {
     if (!loadingMore) return null;
     return (
       <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color={Colors.primary[500]} />
+        <ActivityIndicator size="small" color={colors.tint} />
       </View>
     );
-  }, [loadingMore]);
+  }, [loadingMore, styles, colors]);
 
   // --- empty / error / loading states ---
 
@@ -184,7 +191,7 @@ export default function OrdersScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <Stack.Screen options={{ title: 'Moje zamówienia' }} />
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.primary[500]} />
+          <ActivityIndicator size="large" color={colors.tint} />
           <Text style={styles.loadingText}>Ładowanie zamówień…</Text>
         </View>
       </SafeAreaView>
@@ -196,7 +203,7 @@ export default function OrdersScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <Stack.Screen options={{ title: 'Moje zamówienia' }} />
         <View style={styles.center}>
-          <FontAwesome name="exclamation-circle" size={48} color={Colors.destructive} />
+          <FontAwesome name="exclamation-circle" size={48} color={colors.destructive} />
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={onRefresh}>
             <Text style={styles.retryText}>Spróbuj ponownie</Text>
@@ -211,7 +218,7 @@ export default function OrdersScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <Stack.Screen options={{ title: 'Moje zamówienia' }} />
         <View style={styles.center}>
-          <FontAwesome name="shopping-bag" size={64} color={Colors.secondary[300]} />
+          <FontAwesome name="shopping-bag" size={64} color={colors.inputBorder} />
           <Text style={styles.emptyTitle}>Nie masz jeszcze zamówień</Text>
           <Text style={styles.emptyHint}>Złóż swoje pierwsze zamówienie już dziś!</Text>
           <TouchableOpacity
@@ -237,8 +244,8 @@ export default function OrdersScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={[Colors.primary[500]]}
-            tintColor={Colors.primary[500]}
+            colors={[colors.tint]}
+            tintColor={colors.tint}
           />
         }
         onEndReached={onEndReached}
@@ -251,10 +258,10 @@ export default function OrdersScreen() {
 
 // --- Styles ---
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundSecondary,
   },
   center: {
     flex: 1,
@@ -269,12 +276,12 @@ const styles = StyleSheet.create({
 
   // card
   card: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: colors.border,
     position: 'relative',
   },
   cardTop: {
@@ -286,7 +293,7 @@ const styles = StyleSheet.create({
   orderNumber: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
   },
   chip: {
     paddingHorizontal: 10,
@@ -305,7 +312,7 @@ const styles = StyleSheet.create({
   },
   cardLabel: {
     fontSize: 13,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
   cardBottom: {
     flexDirection: 'row',
@@ -314,16 +321,16 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: colors.border,
   },
   totalLabel: {
     fontSize: 14,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
   totalValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.primary[600],
+    color: colors.tint,
   },
   cardArrow: {
     position: 'absolute',
@@ -335,25 +342,25 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
 
   // error
   errorText: {
     marginTop: 12,
     fontSize: 15,
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   retryBtn: {
     marginTop: 16,
     paddingHorizontal: 24,
     paddingVertical: 10,
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
     borderRadius: 8,
   },
   retryText: {
-    color: Colors.white,
+    color: colors.textInverse,
     fontWeight: '600',
     fontSize: 14,
   },
@@ -363,23 +370,23 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.secondary[800],
+    color: colors.text,
   },
   emptyHint: {
     marginTop: 8,
     fontSize: 14,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     textAlign: 'center',
   },
   browseBtn: {
     marginTop: 20,
     paddingHorizontal: 28,
     paddingVertical: 12,
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
     borderRadius: 8,
   },
   browseBtnText: {
-    color: Colors.white,
+    color: colors.textInverse,
     fontWeight: '600',
     fontSize: 15,
   },

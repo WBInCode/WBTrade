@@ -15,7 +15,7 @@ import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { api } from '../../services/api';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
 import { useCart } from '../../contexts/CartContext';
 import ProductCarousel from '../../components/product/ProductCarousel';
 import ProductCard from '../../components/product/ProductCard';
@@ -45,15 +45,6 @@ function getCategoryIcon(slug?: string): string {
   const key = Object.keys(CATEGORY_ICONS).find((k) => slug.toLowerCase().includes(k));
   return key ? CATEGORY_ICONS[key] : CATEGORY_ICONS.default;
 }
-
-const CATEGORY_COLORS = [
-  Colors.primary[100], '#e0f2fe', '#fce7f3', '#d1fae5', '#fef3c7',
-  '#ede9fe', '#fde68a', '#ccfbf1', '#fee2e2', '#e0e7ff',
-];
-const CATEGORY_ICON_COLORS = [
-  Colors.primary[600], '#0284c7', '#db2777', '#059669', '#d97706',
-  '#7c3aed', '#b45309', '#0d9488', '#dc2626', '#4f46e5',
-];
 
 const PROMO_BANNERS = [
   { id: 'elektronika', title: 'Elektronika', subtitle: 'Odkryj hity technologiczne', icon: 'laptop' as const, bgColor: '#1e3a5f', accentColor: '#60a5fa', icon2: 'microchip' as const },
@@ -92,8 +83,9 @@ type SectionItem =
 const HeaderSection = React.memo(function HeaderSection() {
   const router = useRouter();
   const { itemCount } = useCart();
+  const colors = useThemeColors();
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
       <View style={styles.headerTop}>
         <Image
           source={require('../../assets/images/wb-trade-logo.png')}
@@ -101,22 +93,22 @@ const HeaderSection = React.memo(function HeaderSection() {
           contentFit="contain"
         />
         <View style={styles.headerIcons}>
-          <TouchableOpacity onPress={() => router.push('/(tabs)/search')} style={styles.headerIconBtn}>
-            <FontAwesome name="bell-o" size={20} color={Colors.secondary[600]} />
+          <TouchableOpacity onPress={() => router.push('/(tabs)/search')} style={[styles.headerIconBtn, { backgroundColor: colors.backgroundTertiary }]}>
+            <FontAwesome name="bell-o" size={20} color={colors.icon} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push('/(tabs)/cart')} style={styles.headerIconBtn}>
-            <FontAwesome name="shopping-cart" size={20} color={Colors.secondary[600]} />
+          <TouchableOpacity onPress={() => router.push('/(tabs)/cart')} style={[styles.headerIconBtn, { backgroundColor: colors.backgroundTertiary }]}>
+            <FontAwesome name="shopping-cart" size={20} color={colors.icon} />
             {itemCount > 0 && (
-              <View style={styles.cartBadge}>
-                <Text style={styles.cartBadgeText}>{itemCount > 9 ? '9+' : itemCount}</Text>
+              <View style={[styles.cartBadge, { backgroundColor: colors.badge, borderColor: colors.card }]}>
+                <Text style={[styles.cartBadgeText, { color: colors.badgeText }]}>{itemCount > 9 ? '9+' : itemCount}</Text>
               </View>
             )}
           </TouchableOpacity>
         </View>
       </View>
-      <TouchableOpacity style={styles.searchBar} onPress={() => router.push('/(tabs)/search')} activeOpacity={0.8}>
-        <FontAwesome name="search" size={15} color={Colors.secondary[400]} />
-        <Text style={styles.searchPlaceholder}>Czego szukasz?</Text>
+      <TouchableOpacity style={[styles.searchBar, { backgroundColor: colors.searchBackground }]} onPress={() => router.push('/(tabs)/search')} activeOpacity={0.8}>
+        <FontAwesome name="search" size={15} color={colors.searchPlaceholder} />
+        <Text style={[styles.searchPlaceholder, { color: colors.searchPlaceholder }]}>Czego szukasz?</Text>
       </TouchableOpacity>
     </View>
   );
@@ -124,22 +116,31 @@ const HeaderSection = React.memo(function HeaderSection() {
 
 const CategoriesSection = React.memo(function CategoriesSection({ categories }: { categories: Category[] }) {
   const router = useRouter();
+  const colors = useThemeColors();
+  const CATEGORY_COLORS = [
+    colors.tintMuted, colors.tintLight, colors.tintLight, colors.successBg, colors.warningBg,
+    colors.tintLight, colors.warningBg, colors.successBg, colors.destructiveBg, colors.tintLight,
+  ];
+  const CATEGORY_ICON_COLORS = [
+    colors.tint, colors.tint, colors.destructive, colors.success, colors.warning,
+    colors.tint, colors.warning, colors.success, colors.destructive, colors.tint,
+  ];
   return (
-    <View style={styles.categoriesSection}>
+    <View style={[styles.categoriesSection, { backgroundColor: colors.card }]}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScrollContent}>
         {categories.map((cat, index) => (
           <TouchableOpacity key={cat.id} style={styles.categoryCircleWrap} onPress={() => router.push(`/category/${cat.slug}`)}>
             <View style={[styles.categoryCircle, { backgroundColor: CATEGORY_COLORS[index % CATEGORY_COLORS.length] }]}>
               <FontAwesome name={getCategoryIcon(cat.slug) as any} size={22} color={CATEGORY_ICON_COLORS[index % CATEGORY_ICON_COLORS.length]} />
             </View>
-            <Text style={styles.categoryCircleLabel} numberOfLines={2}>{cat.name}</Text>
+            <Text style={[styles.categoryCircleLabel, { color: colors.textSecondary }]} numberOfLines={2}>{cat.name}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
-      <TouchableOpacity style={styles.allCategoriesBtn} onPress={() => router.push('/categories')} activeOpacity={0.7}>
-        <FontAwesome name="th-list" size={15} color={Colors.primary[500]} />
-        <Text style={styles.allCategoriesBtnText}>Wszystkie kategorie</Text>
-        <FontAwesome name="chevron-right" size={12} color={Colors.secondary[400]} />
+      <TouchableOpacity style={[styles.allCategoriesBtn, { borderColor: colors.border, backgroundColor: colors.background }]} onPress={() => router.push('/categories')} activeOpacity={0.7}>
+        <FontAwesome name="th-list" size={15} color={colors.tint} />
+        <Text style={[styles.allCategoriesBtnText, { color: colors.textSecondary }]}>Wszystkie kategorie</Text>
+        <FontAwesome name="chevron-right" size={12} color={colors.textMuted} />
       </TouchableOpacity>
     </View>
   );
@@ -147,8 +148,9 @@ const CategoriesSection = React.memo(function CategoriesSection({ categories }: 
 
 const PromoSection = React.memo(function PromoSection() {
   const router = useRouter();
+  const colors = useThemeColors();
   return (
-    <View style={styles.promoSection}>
+    <View style={[styles.promoSection, { backgroundColor: colors.card }]}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -169,15 +171,15 @@ const PromoSection = React.memo(function PromoSection() {
             </View>
             <View style={styles.promoBannerContent}>
               <View style={[styles.promoBannerIconWrap, { backgroundColor: banner.accentColor }]}>
-                <FontAwesome name={banner.icon} size={24} color={Colors.white} />
+                <FontAwesome name={banner.icon} size={24} color={colors.textInverse} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.promoBannerTitle}>{banner.title}</Text>
+                <Text style={[styles.promoBannerTitle, { color: colors.textInverse }]}>{banner.title}</Text>
                 <Text style={styles.promoBannerSub}>{banner.subtitle}</Text>
               </View>
               <View style={[styles.promoBannerCta, { backgroundColor: banner.accentColor }]}>
-                <Text style={styles.promoBannerCtaText}>Zobacz</Text>
-                <FontAwesome name="chevron-right" size={10} color={Colors.white} />
+                <Text style={[styles.promoBannerCtaText, { color: colors.textInverse }]}>Zobacz</Text>
+                <FontAwesome name="chevron-right" size={10} color={colors.textInverse} />
               </View>
             </View>
           </TouchableOpacity>
@@ -189,13 +191,14 @@ const PromoSection = React.memo(function PromoSection() {
 
 const CarouselSection = React.memo(function CarouselSection({ title, products }: { title: string; products: Product[] }) {
   const router = useRouter();
+  const colors = useThemeColors();
   return (
-    <View style={styles.productSection}>
+    <View style={[styles.productSection, { backgroundColor: colors.card }]}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>{title}</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
         <TouchableOpacity onPress={() => router.push('/(tabs)/search')} style={styles.seeAllBtn}>
-          <Text style={styles.seeAllText}>Więcej</Text>
-          <FontAwesome name="chevron-right" size={11} color={Colors.primary[500]} />
+          <Text style={[styles.seeAllText, { color: colors.tint }]}>Więcej</Text>
+          <FontAwesome name="chevron-right" size={11} color={colors.tint} />
         </TouchableOpacity>
       </View>
       <ProductCarousel products={products} />
@@ -205,40 +208,41 @@ const CarouselSection = React.memo(function CarouselSection({ title, products }:
 
 const HeroSection = React.memo(function HeroSection({ product }: { product: Product }) {
   const router = useRouter();
+  const colors = useThemeColors();
   return (
-    <View style={styles.heroSection}>
+    <View style={[styles.heroSection, { backgroundColor: colors.card }]}>
       <View style={styles.heroHeader}>
-        <View style={styles.heroBadge}>
-          <FontAwesome name="star" size={11} color="#f59e0b" />
-          <Text style={styles.heroBadgeText}>PRODUKT DNIA</Text>
+        <View style={[styles.heroBadge, { backgroundColor: colors.warningBg, borderColor: colors.warning }]}>
+          <FontAwesome name="star" size={11} color={colors.warning} />
+          <Text style={[styles.heroBadgeText, { color: colors.warningText }]}>PRODUKT DNIA</Text>
         </View>
       </View>
       <TouchableOpacity
-        style={styles.heroCard}
+        style={[styles.heroCard, { backgroundColor: colors.background, borderColor: colors.border }]}
         onPress={() => router.push(`/product/${product.id}` as any)}
         activeOpacity={0.9}
       >
         {product.images?.[0]?.url && (
-          <Image source={{ uri: product.images[0].url }} style={styles.heroImage} contentFit="contain" />
+          <Image source={{ uri: product.images[0].url }} style={[styles.heroImage, { backgroundColor: colors.card }]} contentFit="contain" />
         )}
         <View style={styles.heroInfo}>
-          <Text style={styles.heroName} numberOfLines={2}>{product.name}</Text>
+          <Text style={[styles.heroName, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
           <View style={styles.heroPriceRow}>
-            <Text style={styles.heroPrice}>{Number(product.price).toFixed(2).replace('.', ',')} zł</Text>
+            <Text style={[styles.heroPrice, { color: colors.tint }]}>{Number(product.price).toFixed(2).replace('.', ',')} zł</Text>
             {product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price) && (
-              <View style={styles.heroDiscountBadge}>
-                <Text style={styles.heroDiscountText}>
+              <View style={[styles.heroDiscountBadge, { backgroundColor: colors.destructive }]}>
+                <Text style={[styles.heroDiscountText, { color: colors.textInverse }]}>
                   -{Math.round((1 - Number(product.price) / Number(product.compareAtPrice)) * 100)}%
                 </Text>
               </View>
             )}
           </View>
           {product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price) && (
-            <Text style={styles.heroOldPrice}>{Number(product.compareAtPrice).toFixed(2).replace('.', ',')} zł</Text>
+            <Text style={[styles.heroOldPrice, { color: colors.textMuted }]}>{Number(product.compareAtPrice).toFixed(2).replace('.', ',')} zł</Text>
           )}
-          <View style={styles.heroCtaBtn}>
-            <Text style={styles.heroCtaText}>Zobacz produkt</Text>
-            <FontAwesome name="arrow-right" size={12} color={Colors.white} />
+          <View style={[styles.heroCtaBtn, { backgroundColor: colors.tint }]}>
+            <Text style={[styles.heroCtaText, { color: colors.textInverse }]}>Zobacz produkt</Text>
+            <FontAwesome name="arrow-right" size={12} color={colors.textInverse} />
           </View>
         </View>
       </TouchableOpacity>
@@ -248,28 +252,29 @@ const HeroSection = React.memo(function HeroSection({ product }: { product: Prod
 
 const Top3Section = React.memo(function Top3Section({ products }: { products: Product[] }) {
   const router = useRouter();
+  const colors = useThemeColors();
   return (
-    <View style={styles.topSection}>
+    <View style={[styles.topSection, { backgroundColor: colors.card }]}>
       <View style={styles.topHeader}>
         <FontAwesome name="trophy" size={18} color="#f59e0b" />
-        <Text style={styles.topTitle}>Top 3 tego tygodnia</Text>
+        <Text style={[styles.topTitle, { color: colors.text }]}>Top 3 tego tygodnia</Text>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.topScrollContent}>
         {products.slice(0, 3).map((product, index) => (
           <TouchableOpacity
             key={product.id}
-            style={styles.topCard}
+            style={[styles.topCard, { backgroundColor: colors.background, borderColor: colors.border }]}
             onPress={() => router.push(`/product/${product.id}` as any)}
             activeOpacity={0.9}
           >
             <View style={[styles.topMedal, { backgroundColor: ['#f59e0b', '#9ca3af', '#cd7f32'][index] }]}>
-              <Text style={styles.topMedalText}>{index + 1}</Text>
+              <Text style={[styles.topMedalText, { color: colors.textInverse }]}>{index + 1}</Text>
             </View>
             {product.images?.[0]?.url && (
               <Image source={{ uri: product.images[0].url }} style={styles.topProductImage} contentFit="contain" />
             )}
-            <Text style={styles.topProductName} numberOfLines={2}>{product.name}</Text>
-            <Text style={styles.topProductPrice}>{Number(product.price).toFixed(2).replace('.', ',')} zł</Text>
+            <Text style={[styles.topProductName, { color: colors.textSecondary }]} numberOfLines={2}>{product.name}</Text>
+            <Text style={[styles.topProductPrice, { color: colors.tint }]}>{Number(product.price).toFixed(2).replace('.', ',')} zł</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -278,8 +283,9 @@ const Top3Section = React.memo(function Top3Section({ products }: { products: Pr
 });
 
 const TrustSection = React.memo(function TrustSection() {
+  const colors = useThemeColors();
   return (
-    <View style={styles.trustStrip}>
+    <View style={[styles.trustStrip, { backgroundColor: colors.card }]}>
       {([
         { icon: 'truck' as const, title: 'Szybka wysyłka' },
         { icon: 'shield' as const, title: 'Bezpieczne\npłatności' },
@@ -287,10 +293,10 @@ const TrustSection = React.memo(function TrustSection() {
         { icon: 'headphones' as const, title: 'Wsparcie\n24/7' },
       ]).map((item) => (
         <View key={item.title} style={styles.trustItem}>
-          <View style={styles.trustIconWrap}>
-            <FontAwesome name={item.icon} size={18} color={Colors.primary[500]} />
+          <View style={[styles.trustIconWrap, { backgroundColor: colors.tintLight }]}>
+            <FontAwesome name={item.icon} size={18} color={colors.tint} />
           </View>
-          <Text style={styles.trustTitle}>{item.title}</Text>
+          <Text style={[styles.trustTitle, { color: colors.textSecondary }]}>{item.title}</Text>
         </View>
       ))}
     </View>
@@ -298,20 +304,22 @@ const TrustSection = React.memo(function TrustSection() {
 });
 
 const DiscoverHeader = React.memo(function DiscoverHeader() {
+  const colors = useThemeColors();
   return (
-    <View style={styles.discoverHeader}>
+    <View style={[styles.discoverHeader, { backgroundColor: colors.card }]}>
       <View style={styles.discoverTitleRow}>
-        <FontAwesome name="random" size={16} color={Colors.primary[500]} />
-        <Text style={styles.discoverTitle}>Odkryj coś dla siebie</Text>
+        <FontAwesome name="random" size={16} color={colors.tint} />
+        <Text style={[styles.discoverTitle, { color: colors.text }]}>Odkryj coś dla siebie</Text>
       </View>
-      <Text style={styles.discoverSubtitle}>Produkty dobrane losowo</Text>
+      <Text style={[styles.discoverSubtitle, { color: colors.textMuted }]}>Produkty dobrane losowo</Text>
     </View>
   );
 });
 
 const DiscoverRow = React.memo(function DiscoverRow({ products }: { products: Product[] }) {
+  const colors = useThemeColors();
   return (
-    <View style={styles.discoverGrid}>
+    <View style={[styles.discoverGrid, { backgroundColor: colors.card }]}>
       {products.map((product) => (
         <ProductCard key={product.id} product={product} />
       ))}
@@ -323,6 +331,7 @@ const DiscoverRow = React.memo(function DiscoverRow({ products }: { products: Pr
 // Main HomeScreen — uses FlatList for virtualization
 // ═══════════════════════════════════════════════════════
 export default function HomeScreen() {
+  const colors = useThemeColors();
   const [data, setData] = useState<HomeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -484,20 +493,20 @@ export default function HomeScreen() {
         return <DiscoverRow products={item.products} />;
       case 'load-more':
         return (
-          <View style={styles.loadMoreWrap}>
+          <View style={[styles.loadMoreWrap, { backgroundColor: colors.card }]}>
             {discoverLoading ? (
               <View style={styles.loadMoreInner}>
-                <ActivityIndicator size="small" color={Colors.primary[500]} />
-                <Text style={styles.loadMoreText}>Ładuję produkty...</Text>
+                <ActivityIndicator size="small" color={colors.tint} />
+                <Text style={[styles.loadMoreText, { color: colors.textMuted }]}>Ładuję produkty...</Text>
               </View>
             ) : discoverProducts.length === 0 ? (
-              <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMoreDiscover} activeOpacity={0.7}>
-                <FontAwesome name="plus-circle" size={18} color={Colors.white} />
-                <Text style={styles.loadMoreBtnText}>Odkryj więcej produktów</Text>
+              <TouchableOpacity style={[styles.loadMoreBtn, { backgroundColor: colors.tint }]} onPress={loadMoreDiscover} activeOpacity={0.7}>
+                <FontAwesome name="plus-circle" size={18} color={colors.textInverse} />
+                <Text style={[styles.loadMoreBtnText, { color: colors.textInverse }]}>Odkryj więcej produktów</Text>
               </TouchableOpacity>
             ) : (
               <View style={styles.loadMoreInner}>
-                <Text style={styles.loadMoreText}>Przewiń w dół, aby załadować więcej</Text>
+                <Text style={[styles.loadMoreText, { color: colors.textMuted }]}>Przewiń w dół, aby załadować więcej</Text>
               </View>
             )}
           </View>
@@ -505,7 +514,7 @@ export default function HomeScreen() {
       default:
         return null;
     }
-  }, [discoverLoading, discoverProducts.length, loadMoreDiscover]);
+  }, [colors, discoverLoading, discoverProducts.length, loadMoreDiscover]);
 
   const keyExtractor = useCallback((item: SectionItem, index: number) => {
     if (item.type === 'carousel') return `carousel-${item.key}`;
@@ -514,9 +523,9 @@ export default function HomeScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
         <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color={Colors.primary[500]} />
+          <ActivityIndicator size="large" color={colors.tint} />
         </View>
       </SafeAreaView>
     );
@@ -524,18 +533,18 @@ export default function HomeScreen() {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
         <View style={styles.centerContent}>
-          <FontAwesome name="exclamation-triangle" size={40} color={Colors.secondary[300]} />
-          <Text style={styles.errorText}>{error}</Text>
-          <Text style={styles.errorHint}>Pociągnij w dół aby spróbować ponownie</Text>
+          <FontAwesome name="exclamation-triangle" size={40} color={colors.textMuted} />
+          <Text style={[styles.errorText, { color: colors.destructive }]}>{error}</Text>
+          <Text style={[styles.errorHint, { color: colors.textSecondary }]}>Pociągnij w dół aby spróbować ponownie</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <FlatList
         data={sections}
         renderItem={renderItem}
@@ -546,8 +555,8 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={Colors.primary[500]}
-            colors={[Colors.primary[500]]}
+            tintColor={colors.tint}
+            colors={[colors.tint]}
           />
         }
         onEndReached={loadMoreDiscover}
@@ -563,19 +572,18 @@ export default function HomeScreen() {
 }
 
 // ═══════════════════════════════════════════════════════
-// Styles
+// Styles (structural only — colors applied inline)
 // ═══════════════════════════════════════════════════════
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.secondary[100] },
+  container: { flex: 1 },
   list: { flex: 1 },
   listContent: { paddingBottom: 24 },
   centerContent: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
 
   // Header
   header: {
-    backgroundColor: Colors.white,
     paddingHorizontal: 16, paddingTop: 6, paddingBottom: 12,
-    borderBottomWidth: 1, borderBottomColor: Colors.secondary[200],
+    borderBottomWidth: 1,
   },
   headerTop: {
     flexDirection: 'row', justifyContent: 'space-between',
@@ -585,27 +593,24 @@ const styles = StyleSheet.create({
   headerIcons: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   headerIconBtn: {
     position: 'relative', width: 36, height: 36, borderRadius: 18,
-    backgroundColor: Colors.secondary[100],
     alignItems: 'center', justifyContent: 'center',
   },
   cartBadge: {
     position: 'absolute', top: -4, right: -4,
-    backgroundColor: Colors.destructive,
     borderRadius: 10, minWidth: 18, height: 18,
     alignItems: 'center', justifyContent: 'center',
-    paddingHorizontal: 4, borderWidth: 2, borderColor: Colors.white,
+    paddingHorizontal: 4, borderWidth: 2,
   },
-  cartBadgeText: { color: Colors.white, fontSize: 10, fontWeight: '700' },
+  cartBadgeText: { fontSize: 10, fontWeight: '700' },
   searchBar: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.secondary[100],
     borderRadius: 24, paddingHorizontal: 16, paddingVertical: 11, gap: 10,
   },
-  searchPlaceholder: { fontSize: 15, color: Colors.secondary[400] },
+  searchPlaceholder: { fontSize: 15 },
 
   // Categories
   categoriesSection: {
-    backgroundColor: Colors.white, paddingTop: 16, paddingBottom: 4, marginBottom: 8,
+    paddingTop: 16, paddingBottom: 4, marginBottom: 8,
   },
   categoriesScrollContent: { paddingHorizontal: 12, gap: 4 },
   categoryCircleWrap: { alignItems: 'center', width: 72 },
@@ -614,39 +619,38 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginBottom: 6,
   },
   categoryCircleLabel: {
-    fontSize: 11, color: Colors.secondary[700], textAlign: 'center',
+    fontSize: 11, textAlign: 'center',
     lineHeight: 14, fontWeight: '500',
   },
   allCategoriesBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     marginTop: 10, marginHorizontal: 16, paddingVertical: 10,
-    borderRadius: 10, borderWidth: 1, borderColor: Colors.secondary[200],
-    backgroundColor: Colors.secondary[50],
+    borderRadius: 10, borderWidth: 1,
   },
-  allCategoriesBtnText: { fontSize: 14, fontWeight: '600', color: Colors.secondary[700] },
+  allCategoriesBtnText: { fontSize: 14, fontWeight: '600' },
 
   // Product sections
   productSection: {
-    backgroundColor: Colors.white, paddingTop: 16, paddingBottom: 8, marginBottom: 8,
+    paddingTop: 16, paddingBottom: 8, marginBottom: 8,
   },
   sectionHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 16, marginBottom: 12,
   },
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: Colors.secondary[900] },
+  sectionTitle: { fontSize: 18, fontWeight: '700' },
   seeAllBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     paddingVertical: 4, paddingHorizontal: 2,
   },
-  seeAllText: { fontSize: 14, fontWeight: '500', color: Colors.primary[500] },
+  seeAllText: { fontSize: 14, fontWeight: '500' },
 
   // Error
-  errorText: { fontSize: 16, color: Colors.destructive, textAlign: 'center' },
-  errorHint: { fontSize: 14, color: Colors.secondary[500], textAlign: 'center' },
+  errorText: { fontSize: 16, textAlign: 'center' },
+  errorHint: { fontSize: 14, textAlign: 'center' },
 
   // Promo
   promoSection: {
-    backgroundColor: Colors.white, paddingTop: 12, paddingBottom: 16, marginBottom: 8,
+    paddingTop: 12, paddingBottom: 16, marginBottom: 8,
   },
   promoScrollContent: { paddingHorizontal: 16, gap: 12 },
   promoBanner: {
@@ -662,128 +666,125 @@ const styles = StyleSheet.create({
     width: 48, height: 48, borderRadius: 24,
     alignItems: 'center', justifyContent: 'center',
   },
-  promoBannerTitle: { fontSize: 20, fontWeight: '800', color: Colors.white, marginBottom: 2 },
+  promoBannerTitle: { fontSize: 20, fontWeight: '800', marginBottom: 2 },
   promoBannerSub: { fontSize: 13, color: 'rgba(255,255,255,0.8)' },
   promoBannerCta: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
   },
-  promoBannerCtaText: { fontSize: 13, fontWeight: '700', color: Colors.white },
+  promoBannerCtaText: { fontSize: 13, fontWeight: '700' },
 
   // Hero
   heroSection: {
-    backgroundColor: Colors.white, paddingTop: 16, paddingBottom: 16,
+    paddingTop: 16, paddingBottom: 16,
     paddingHorizontal: 16, marginBottom: 8,
   },
   heroHeader: { marginBottom: 12 },
   heroBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: '#fffbeb', alignSelf: 'flex-start',
+    alignSelf: 'flex-start',
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
-    borderWidth: 1, borderColor: '#fde68a',
+    borderWidth: 1,
   },
-  heroBadgeText: { fontSize: 12, fontWeight: '800', color: '#b45309', letterSpacing: 1 },
+  heroBadgeText: { fontSize: 12, fontWeight: '800', letterSpacing: 1 },
   heroCard: {
-    flexDirection: 'row', backgroundColor: Colors.secondary[50],
+    flexDirection: 'row',
     borderRadius: 16, overflow: 'hidden',
-    borderWidth: 1, borderColor: Colors.secondary[200],
+    borderWidth: 1,
   },
-  heroImage: { width: SCREEN_WIDTH * 0.38, height: 180, backgroundColor: Colors.white },
+  heroImage: { width: SCREEN_WIDTH * 0.38, height: 180 },
   heroInfo: { flex: 1, padding: 14, justifyContent: 'center', gap: 4 },
   heroName: {
-    fontSize: 15, fontWeight: '600', color: Colors.secondary[800],
+    fontSize: 15, fontWeight: '600',
     lineHeight: 20, marginBottom: 4,
   },
   heroPriceRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  heroPrice: { fontSize: 22, fontWeight: '800', color: Colors.primary[600] },
+  heroPrice: { fontSize: 22, fontWeight: '800' },
   heroDiscountBadge: {
-    backgroundColor: '#ef4444', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6,
+    paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6,
   },
-  heroDiscountText: { color: Colors.white, fontSize: 12, fontWeight: '700' },
+  heroDiscountText: { fontSize: 12, fontWeight: '700' },
   heroOldPrice: {
-    fontSize: 13, color: Colors.secondary[400], textDecorationLine: 'line-through',
+    fontSize: 13, textDecorationLine: 'line-through',
   },
   heroCtaBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: Colors.primary[500],
     paddingHorizontal: 16, paddingVertical: 10,
     borderRadius: 12, alignSelf: 'flex-start', marginTop: 8,
   },
-  heroCtaText: { fontSize: 13, fontWeight: '700', color: Colors.white },
+  heroCtaText: { fontSize: 13, fontWeight: '700' },
 
   // Top 3
   topSection: {
-    backgroundColor: Colors.white, paddingTop: 16, paddingBottom: 16, marginBottom: 8,
+    paddingTop: 16, paddingBottom: 16, marginBottom: 8,
   },
   topHeader: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     paddingHorizontal: 16, marginBottom: 14,
   },
-  topTitle: { fontSize: 18, fontWeight: '700', color: Colors.secondary[900] },
+  topTitle: { fontSize: 18, fontWeight: '700' },
   topScrollContent: { paddingHorizontal: 16, gap: 12 },
   topCard: {
-    width: 150, backgroundColor: Colors.secondary[50],
+    width: 150,
     borderRadius: 14, padding: 12, paddingTop: 16, alignItems: 'center',
-    borderWidth: 1, borderColor: Colors.secondary[200], position: 'relative',
+    borderWidth: 1, position: 'relative',
   },
   topMedal: {
     position: 'absolute', top: 6, left: 6, width: 26, height: 26,
     borderRadius: 13, alignItems: 'center', justifyContent: 'center',
     zIndex: 1,
   },
-  topMedalText: { color: Colors.white, fontSize: 13, fontWeight: '800' },
+  topMedalText: { fontSize: 13, fontWeight: '800' },
   topProductImage: { width: 100, height: 100, marginBottom: 8 },
   topProductName: {
-    fontSize: 12, fontWeight: '500', color: Colors.secondary[700],
+    fontSize: 12, fontWeight: '500',
     textAlign: 'center', height: 32, marginBottom: 4,
   },
-  topProductPrice: { fontSize: 15, fontWeight: '700', color: Colors.primary[600] },
+  topProductPrice: { fontSize: 15, fontWeight: '700' },
 
   // Trust
   trustStrip: {
-    flexDirection: 'row', backgroundColor: Colors.white,
+    flexDirection: 'row',
     paddingVertical: 16, paddingHorizontal: 8, marginBottom: 8,
     justifyContent: 'space-around',
   },
   trustItem: { alignItems: 'center', flex: 1, gap: 6 },
   trustIconWrap: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: Colors.primary[50],
     alignItems: 'center', justifyContent: 'center',
   },
   trustTitle: {
-    fontSize: 10, fontWeight: '600', color: Colors.secondary[600],
+    fontSize: 10, fontWeight: '600',
     textAlign: 'center', lineHeight: 13,
   },
 
   // Discover
   discoverHeader: {
-    backgroundColor: Colors.white, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 4,
+    paddingHorizontal: 16, paddingTop: 20, paddingBottom: 4,
   },
   discoverTitleRow: {
     flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4,
   },
-  discoverTitle: { fontSize: 18, fontWeight: '700', color: Colors.secondary[900] },
-  discoverSubtitle: { fontSize: 13, color: Colors.secondary[400] },
+  discoverTitle: { fontSize: 18, fontWeight: '700' },
+  discoverSubtitle: { fontSize: 13 },
   discoverGrid: {
     flexDirection: 'row', flexWrap: 'wrap',
     paddingHorizontal: 16, gap: 10,
-    backgroundColor: Colors.white, paddingBottom: 12,
+    paddingBottom: 12,
   },
 
   // Load more
   loadMoreWrap: {
-    backgroundColor: Colors.white, paddingVertical: 20, paddingHorizontal: 16,
+    paddingVertical: 20, paddingHorizontal: 16,
     alignItems: 'center',
   },
   loadMoreBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: Colors.primary[500],
     paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14,
   },
-  loadMoreBtnText: { fontSize: 15, fontWeight: '700', color: Colors.white },
+  loadMoreBtnText: { fontSize: 15, fontWeight: '700' },
   loadMoreInner: {
     flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8,
   },
-  loadMoreText: { fontSize: 13, color: Colors.secondary[400] },
+  loadMoreText: { fontSize: 13 },
 });

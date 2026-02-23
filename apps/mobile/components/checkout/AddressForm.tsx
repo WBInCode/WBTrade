@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,8 @@ import {
   FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import type { ThemeColors } from '../../constants/Colors';
 import { useAuth } from '../../contexts/AuthContext';
 import type { AddressData } from '../../hooks/useCheckout';
 import Button from '../ui/Button';
@@ -98,6 +99,8 @@ export default function AddressForm({
   guestEmail,
 }: AddressFormProps) {
   const { isAuthenticated, user } = useAuth();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [form, setForm] = useState<AddressData>({
     ...initialData,
@@ -258,7 +261,7 @@ export default function AddressForm({
 
       {/* Saved addresses */}
       {loadingAddresses ? (
-        <ActivityIndicator size="small" color="#F97316" style={{ marginVertical: 12 }} />
+        <ActivityIndicator size="small" color={colors.tint} style={{ marginVertical: 12 }} />
       ) : savedAddresses.length > 0 ? (
         <View style={styles.savedSection}>
           <Text style={styles.sectionTitle}>Zapisane adresy</Text>
@@ -334,7 +337,7 @@ export default function AddressForm({
             >
               <Text style={styles.countryFlag}>{selectedCountry.flag}</Text>
               <Text style={styles.countryDial}>{selectedCountry.dialCode}</Text>
-              <Ionicons name="chevron-down" size={14} color={Colors.secondary[500]} />
+              <Ionicons name="chevron-down" size={14} color={colors.textMuted} />
             </TouchableOpacity>
             <TextInput
               style={[styles.phoneInput, errors.phone ? styles.inputError : null]}
@@ -433,7 +436,7 @@ export default function AddressForm({
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Wybierz kraj</Text>
               <TouchableOpacity onPress={() => setShowCountryPicker(false)}>
-                <Ionicons name="close" size={24} color={Colors.secondary[700]} />
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             <FlatList
@@ -455,7 +458,7 @@ export default function AddressForm({
                   <Text style={styles.countryRowName}>{item.name}</Text>
                   <Text style={styles.countryRowDial}>{item.dialCode}</Text>
                   {item.code === selectedCountry.code && (
-                    <Ionicons name="checkmark" size={18} color="#F97316" />
+                    <Ionicons name="checkmark" size={18} color={colors.tint} />
                   )}
                 </TouchableOpacity>
               )}
@@ -469,24 +472,24 @@ export default function AddressForm({
 
 // ──── Styles ────
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   content: { paddingBottom: 40 },
 
   // Header
   headerSection: {
-    backgroundColor: '#FFF7ED',
+    backgroundColor: colors.tintLight,
     paddingHorizontal: 16,
     paddingVertical: 18,
     borderBottomWidth: 1,
-    borderBottomColor: '#FED7AA',
+    borderBottomColor: colors.border,
   },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: Colors.secondary[900] },
-  headerDesc: { fontSize: 13, color: Colors.secondary[500], marginTop: 4 },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: colors.text },
+  headerDesc: { fontSize: 13, color: colors.textMuted, marginTop: 4 },
 
   // Saved addresses
   savedSection: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     marginTop: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -494,7 +497,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.secondary[800],
+    color: colors.text,
     marginBottom: 10,
   },
   savedCard: {
@@ -503,13 +506,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 12,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
     borderRadius: 10,
     marginBottom: 8,
   },
   savedCardSelected: {
-    borderColor: '#FB923C',
-    backgroundColor: '#FFF7ED',
+    borderColor: colors.tint,
+    backgroundColor: colors.tintLight,
   },
   savedRadio: { marginRight: 12 },
   radioOuter: {
@@ -517,11 +520,11 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#D1D5DB',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  radioOuterSelected: { borderColor: '#F97316', backgroundColor: '#F97316' },
+  radioOuterSelected: { borderColor: colors.tint, backgroundColor: colors.tint },
   radioInner: {
     width: 8,
     height: 8,
@@ -532,17 +535,17 @@ const styles = StyleSheet.create({
   savedName: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.secondary[800],
+    color: colors.text,
   },
   savedAddr: {
     fontSize: 13,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     marginTop: 2,
   },
 
   // Form
   formSection: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     marginTop: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -553,24 +556,24 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '500',
-    color: Colors.secondary[700],
+    color: colors.textSecondary,
     marginBottom: 4,
   },
-  required: { color: '#EF4444' },
+  required: { color: colors.destructive },
   input: {
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 11,
     fontSize: 15,
-    color: Colors.secondary[900],
-    backgroundColor: '#fff',
+    color: colors.text,
+    backgroundColor: colors.card,
   },
-  inputError: { borderColor: '#EF4444' },
+  inputError: { borderColor: colors.destructive },
   errorText: {
     fontSize: 12,
-    color: '#EF4444',
+    color: colors.destructive,
     marginTop: 3,
   },
 
@@ -583,27 +586,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 11,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
     borderRadius: 10,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.backgroundSecondary,
   },
   countryFlag: { fontSize: 18 },
-  countryDial: { fontSize: 13, color: Colors.secondary[700], fontWeight: '500' },
+  countryDial: { fontSize: 13, color: colors.textSecondary, fontWeight: '500' },
   phoneInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 11,
     fontSize: 15,
-    color: Colors.secondary[900],
-    backgroundColor: '#fff',
+    color: colors.text,
+    backgroundColor: colors.card,
   },
 
   // Invoice
   invoiceSection: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     marginTop: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -613,7 +616,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginTop: 8,
@@ -621,7 +624,7 @@ const styles = StyleSheet.create({
   switchLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: Colors.secondary[800],
+    color: colors.text,
   },
 
   // Submit
@@ -638,7 +641,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     maxHeight: '70%',
@@ -650,9 +653,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: colors.border,
   },
-  modalTitle: { fontSize: 17, fontWeight: '600', color: Colors.secondary[900] },
+  modalTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
   countryRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -660,10 +663,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     gap: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: colors.backgroundTertiary,
   },
-  countryRowSelected: { backgroundColor: '#FFF7ED' },
+  countryRowSelected: { backgroundColor: colors.tintLight },
   countryRowFlag: { fontSize: 22 },
-  countryRowName: { flex: 1, fontSize: 15, color: Colors.secondary[800] },
-  countryRowDial: { fontSize: 14, color: Colors.secondary[500], fontWeight: '500' },
+  countryRowName: { flex: 1, fontSize: 15, color: colors.text },
+  countryRowDial: { fontSize: 14, color: colors.textMuted, fontWeight: '500' },
 });

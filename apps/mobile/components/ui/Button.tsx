@@ -1,6 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import type { ThemeColors } from '../../constants/Colors';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost';
 type ButtonSize = 'sm' | 'md' | 'lg';
@@ -16,24 +17,24 @@ interface ButtonProps {
   icon?: React.ReactNode;
 }
 
-const variantStyles: Record<ButtonVariant, { container: ViewStyle; text: TextStyle }> = {
+const getVariantStyles = (colors: ThemeColors): Record<ButtonVariant, { container: ViewStyle; text: TextStyle }> => ({
   primary: {
-    container: { backgroundColor: Colors.primary[500] },
-    text: { color: Colors.white },
+    container: { backgroundColor: colors.tint },
+    text: { color: colors.textInverse },
   },
   secondary: {
-    container: { backgroundColor: Colors.secondary[800] },
-    text: { color: Colors.white },
+    container: { backgroundColor: colors.text },
+    text: { color: colors.textInverse },
   },
   outline: {
-    container: { backgroundColor: 'transparent', borderWidth: 1, borderColor: Colors.primary[500] },
-    text: { color: Colors.primary[500] },
+    container: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.tint },
+    text: { color: colors.tint },
   },
   ghost: {
     container: { backgroundColor: 'transparent' },
-    text: { color: Colors.primary[500] },
+    text: { color: colors.tint },
   },
-};
+});
 
 const sizeStyles: Record<ButtonSize, { container: ViewStyle; text: TextStyle }> = {
   sm: {
@@ -60,7 +61,9 @@ export default function Button({
   fullWidth = false,
   icon,
 }: ButtonProps) {
+  const colors = useThemeColors();
   const isDisabled = disabled || loading;
+  const variantStyles = getVariantStyles(colors);
   const vStyle = variantStyles[variant];
   const sStyle = sizeStyles[size];
 
@@ -85,7 +88,7 @@ export default function Button({
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variant === 'outline' || variant === 'ghost' ? Colors.primary[500] : Colors.white}
+          color={variant === 'outline' || variant === 'ghost' ? colors.tint : colors.textInverse}
         />
       ) : (
         <>

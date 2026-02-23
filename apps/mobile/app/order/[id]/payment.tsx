@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,8 @@ import { WebView, type WebViewNavigation } from 'react-native-webview';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../../constants/Colors';
+import { useThemeColors } from '../../../hooks/useThemeColors';
+import type { ThemeColors } from '../../../constants/Colors';
 import Button from '../../../components/ui/Button';
 
 export default function PaymentScreen() {
@@ -20,6 +21,8 @@ export default function PaymentScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [canGoBack, setCanGoBack] = useState(false);
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const paymentUrl = decodeURIComponent(url || '');
 
@@ -69,7 +72,7 @@ export default function PaymentScreen() {
   if (!paymentUrl) {
     return (
       <SafeAreaView style={styles.centered}>
-        <Ionicons name="alert-circle-outline" size={48} color={Colors.destructive} />
+        <Ionicons name="alert-circle-outline" size={48} color={colors.destructive} />
         <Text style={styles.errorText}>Brak adresu URL płatności</Text>
         <Button
           title="Wróć do zamówienia"
@@ -94,21 +97,21 @@ export default function PaymentScreen() {
             }
           }}
         >
-          <Ionicons name="chevron-back" size={24} color={Colors.secondary[800]} />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Płatność PayU</Text>
         <TouchableOpacity
           style={styles.headerButton}
           onPress={() => router.replace(`/order/${id}/confirmation` as any)}
         >
-          <Ionicons name="close" size={24} color={Colors.secondary[800]} />
+          <Ionicons name="close" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
 
       {/* Loading indicator */}
       {loading && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color={Colors.primary[500]} />
+          <ActivityIndicator size="large" color={colors.tint} />
           <Text style={styles.loadingText}>Ładowanie strony płatności...</Text>
         </View>
       )}
@@ -116,7 +119,7 @@ export default function PaymentScreen() {
       {/* Error state */}
       {error && (
         <View style={styles.centered}>
-          <Ionicons name="alert-circle-outline" size={48} color={Colors.destructive} />
+          <Ionicons name="alert-circle-outline" size={48} color={colors.destructive} />
           <Text style={styles.errorText}>{error}</Text>
           <Button
             title="Spróbuj ponownie"
@@ -152,17 +155,17 @@ export default function PaymentScreen() {
 
       {/* Security info bar */}
       <View style={styles.securityBar}>
-        <Ionicons name="lock-closed" size={14} color={Colors.success} />
+        <Ionicons name="lock-closed" size={14} color={colors.success} />
         <Text style={styles.securityText}>Bezpieczna płatność PayU</Text>
       </View>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
   },
   centered: {
     flex: 1,
@@ -170,7 +173,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     gap: 12,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -179,8 +182,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    backgroundColor: Colors.white,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.card,
   },
   headerButton: {
     padding: 8,
@@ -188,7 +191,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.secondary[900],
+    color: colors.text,
   },
   loadingOverlay: {
     position: 'absolute',
@@ -198,17 +201,17 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: colors.overlay,
     zIndex: 10,
   },
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
   errorText: {
     fontSize: 14,
-    color: Colors.destructive,
+    color: colors.destructive,
     textAlign: 'center',
   },
   webview: {
@@ -220,12 +223,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 6,
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundSecondary,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: colors.border,
   },
   securityText: {
     fontSize: 12,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
 });

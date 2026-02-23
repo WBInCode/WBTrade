@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { api } from '../services/api';
-import { Colors } from '../constants/Colors';
+import { useThemeColors } from '../hooks/useThemeColors';
 import type { Category } from '../services/types';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -44,37 +44,21 @@ function getCategoryIcon(slug?: string): string {
   return key ? CATEGORY_ICONS[key] : CATEGORY_ICONS.default;
 }
 
-const ICON_BG_COLORS = [
-  Colors.primary[100],
-  '#e0f2fe',
-  '#fce7f3',
-  '#d1fae5',
-  '#fef3c7',
-  '#ede9fe',
-  '#fde68a',
-  '#ccfbf1',
-  '#fee2e2',
-  '#e0e7ff',
-];
-
-const ICON_COLORS = [
-  Colors.primary[600],
-  '#0284c7',
-  '#db2777',
-  '#059669',
-  '#d97706',
-  '#7c3aed',
-  '#b45309',
-  '#0d9488',
-  '#dc2626',
-  '#4f46e5',
-];
-
 export default function CategoriesScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
+
+  const ICON_BG_COLORS = [
+    colors.tintMuted, '#e0f2fe', '#fce7f3', '#d1fae5', '#fef3c7',
+    '#ede9fe', '#fde68a', '#ccfbf1', '#fee2e2', '#e0e7ff',
+  ];
+  const ICON_COLORS = [
+    colors.tint, '#0284c7', '#db2777', '#059669', '#d97706',
+    '#7c3aed', '#b45309', '#0d9488', '#dc2626', '#4f46e5',
+  ];
 
   useEffect(() => {
     (async () => {
@@ -112,7 +96,7 @@ export default function CategoriesScreen() {
       return (
         <View key={child.id}>
           <TouchableOpacity
-            style={styles.childItem}
+            style={[styles.childItem, { borderTopColor: colors.borderLight }]}
             onPress={() => {
               if (hasGrandchildren) {
                 toggleExpand(child.id);
@@ -123,22 +107,22 @@ export default function CategoriesScreen() {
             activeOpacity={0.6}
           >
             <View style={styles.childLeft}>
-              <View style={styles.childDot} />
-              <Text style={styles.childName} numberOfLines={1}>
+              <View style={[styles.childDot, { backgroundColor: colors.border }]} />
+              <Text style={[styles.childName, { color: colors.textSecondary }]} numberOfLines={1}>
                 {child.name}
               </Text>
               {child.productCount != null && child.productCount > 0 && (
-                <Text style={styles.childCount}>({child.productCount})</Text>
+                <Text style={[styles.childCount, { color: colors.textMuted }]}>({child.productCount})</Text>
               )}
             </View>
             {hasGrandchildren ? (
               <FontAwesome
                 name={isExpanded ? 'chevron-up' : 'chevron-down'}
                 size={11}
-                color={Colors.secondary[400]}
+                color={colors.textMuted}
               />
             ) : (
-              <FontAwesome name="chevron-right" size={11} color={Colors.secondary[300]} />
+              <FontAwesome name="chevron-right" size={11} color={colors.border} />
             )}
           </TouchableOpacity>
 
@@ -148,17 +132,17 @@ export default function CategoriesScreen() {
               {child.children!.map((gc) => (
                 <TouchableOpacity
                   key={gc.id}
-                  style={styles.grandchildItem}
+                  style={[styles.grandchildItem, { borderTopColor: colors.backgroundSecondary }]}
                   onPress={() => router.push(`/category/${gc.slug}`)}
                   activeOpacity={0.6}
                 >
-                  <Text style={styles.grandchildName} numberOfLines={1}>
+                  <Text style={[styles.grandchildName, { color: colors.textSecondary }]} numberOfLines={1}>
                     {gc.name}
                   </Text>
                   {gc.productCount != null && gc.productCount > 0 && (
-                    <Text style={styles.grandchildCount}>({gc.productCount})</Text>
+                    <Text style={[styles.grandchildCount, { color: colors.textMuted }]}>({gc.productCount})</Text>
                   )}
-                  <FontAwesome name="chevron-right" size={10} color={Colors.secondary[300]} />
+                  <FontAwesome name="chevron-right" size={10} color={colors.border} />
                 </TouchableOpacity>
               ))}
             </View>
@@ -173,22 +157,22 @@ export default function CategoriesScreen() {
       <Stack.Screen
         options={{
           title: 'Wszystkie kategorie',
-          headerStyle: { backgroundColor: Colors.white },
-          headerTintColor: Colors.secondary[800],
+          headerStyle: { backgroundColor: colors.card },
+          headerTintColor: colors.text,
           headerShadowVisible: false,
           headerTitleStyle: { fontWeight: '700', fontSize: 17 },
         }}
       />
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.card }]} edges={['bottom']}>
         {loading ? (
           <View style={styles.centerContent}>
-            <ActivityIndicator size="large" color={Colors.primary[500]} />
-            <Text style={styles.loadingText}>Ładowanie kategorii...</Text>
+            <ActivityIndicator size="large" color={colors.tint} />
+            <Text style={[styles.loadingText, { color: colors.textMuted }]}>Ładowanie kategorii...</Text>
           </View>
         ) : categories.length === 0 ? (
           <View style={styles.centerContent}>
-            <FontAwesome name="folder-open-o" size={48} color={Colors.secondary[300]} />
-            <Text style={styles.emptyText}>Brak kategorii</Text>
+            <FontAwesome name="folder-open-o" size={48} color={colors.border} />
+            <Text style={[styles.emptyText, { color: colors.textMuted }]}>Brak kategorii</Text>
           </View>
         ) : (
           <ScrollView
@@ -202,14 +186,14 @@ export default function CategoriesScreen() {
               onPress={() => router.push('/(tabs)/search')}
               activeOpacity={0.7}
             >
-              <View style={[styles.allProductsIcon]}>
-                <FontAwesome name="th" size={18} color={Colors.primary[500]} />
+              <View style={[styles.allProductsIcon, { backgroundColor: colors.tintLight }]}>
+                <FontAwesome name="th" size={18} color={colors.tint} />
               </View>
-              <Text style={styles.allProductsText}>Wszystkie produkty</Text>
-              <FontAwesome name="chevron-right" size={12} color={Colors.secondary[400]} />
+              <Text style={[styles.allProductsText, { color: colors.text }]}>Wszystkie produkty</Text>
+              <FontAwesome name="chevron-right" size={12} color={colors.textMuted} />
             </TouchableOpacity>
 
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />
 
             {/* Category tree */}
             {categories.map((cat, index) => {
@@ -245,11 +229,11 @@ export default function CategoriesScreen() {
                         />
                       </View>
                       <View style={styles.parentInfo}>
-                        <Text style={styles.parentName} numberOfLines={1}>
+                        <Text style={[styles.parentName, { color: colors.text }]} numberOfLines={1}>
                           {cat.name}
                         </Text>
                         {cat.productCount != null && cat.productCount > 0 && (
-                          <Text style={styles.parentCount}>
+                          <Text style={[styles.parentCount, { color: colors.textMuted }]}>
                             {cat.productCount} produkt{cat.productCount === 1 ? '' : cat.productCount < 5 ? 'y' : 'ów'}
                           </Text>
                         )}
@@ -259,10 +243,10 @@ export default function CategoriesScreen() {
                       <FontAwesome
                         name={isExpanded ? 'chevron-up' : 'chevron-down'}
                         size={13}
-                        color={Colors.secondary[400]}
+                        color={colors.textMuted}
                       />
                     ) : (
-                      <FontAwesome name="chevron-right" size={13} color={Colors.secondary[300]} />
+                      <FontAwesome name="chevron-right" size={13} color={colors.border} />
                     )}
                   </TouchableOpacity>
 
@@ -273,17 +257,17 @@ export default function CategoriesScreen() {
                       onPress={() => router.push(`/category/${cat.slug}`)}
                       activeOpacity={0.6}
                     >
-                      <Text style={styles.seeAllInCategoryText}>
+                      <Text style={[styles.seeAllInCategoryText, { color: colors.tint }]}>
                         Zobacz wszystko w "{cat.name}"
                       </Text>
-                      <FontAwesome name="arrow-right" size={11} color={Colors.primary[500]} />
+                      <FontAwesome name="arrow-right" size={11} color={colors.tint} />
                     </TouchableOpacity>
                   )}
 
                   {/* Children */}
                   {hasChildren && isExpanded && renderChildren(cat.children!, index)}
 
-                  <View style={styles.divider} />
+                  <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />
                 </View>
               );
             })}
@@ -297,7 +281,6 @@ export default function CategoriesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.white,
   },
   scrollView: {
     flex: 1,
@@ -314,11 +297,9 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 14,
-    color: Colors.secondary[500],
   },
   emptyText: {
     fontSize: 16,
-    color: Colors.secondary[500],
     marginTop: 8,
   },
 
@@ -334,7 +315,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.primary[50],
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -342,12 +322,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.secondary[800],
   },
 
   divider: {
     height: 1,
-    backgroundColor: Colors.secondary[100],
     marginHorizontal: 16,
   },
 
@@ -379,11 +357,9 @@ const styles = StyleSheet.create({
   parentName: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.secondary[800],
   },
   parentCount: {
     fontSize: 12,
-    color: Colors.secondary[400],
     marginTop: 2,
   },
 
@@ -397,7 +373,6 @@ const styles = StyleSheet.create({
   },
   seeAllInCategoryText: {
     fontSize: 13,
-    color: Colors.primary[500],
     fontWeight: '500',
   },
 
@@ -410,7 +385,6 @@ const styles = StyleSheet.create({
     paddingRight: 16,
     paddingVertical: 11,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.secondary[100],
   },
   childLeft: {
     flex: 1,
@@ -422,16 +396,13 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: Colors.secondary[300],
   },
   childName: {
     fontSize: 14,
-    color: Colors.secondary[700],
     flexShrink: 1,
   },
   childCount: {
     fontSize: 12,
-    color: Colors.secondary[400],
   },
 
   // ── Grandchild category ──
@@ -445,15 +416,12 @@ const styles = StyleSheet.create({
     paddingRight: 16,
     paddingVertical: 9,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.secondary[50],
   },
   grandchildName: {
     flex: 1,
     fontSize: 13,
-    color: Colors.secondary[600],
   },
   grandchildCount: {
     fontSize: 11,
-    color: Colors.secondary[400],
   },
 });

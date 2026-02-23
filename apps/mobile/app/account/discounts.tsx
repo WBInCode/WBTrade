@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -13,7 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import type { ThemeColors } from '../../constants/Colors';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { couponsApi, UserCoupon } from '../../services/coupons';
@@ -45,6 +46,8 @@ function sourceLabel(source: string): string {
 // CouponCard — active/inactive user coupon
 // ═══════════════════════════════════════
 function CouponCard({ coupon }: { coupon: UserCoupon }) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { show } = useToast();
   const isActive = coupon.status === 'active';
   const remaining = daysLeft(coupon.expiresAt);
@@ -77,13 +80,13 @@ function CouponCard({ coupon }: { coupon: UserCoupon }) {
             </View>
             {coupon.status === 'used' && (
               <View style={styles.usedBadge}>
-                <FontAwesome name="check" size={10} color={Colors.white} />
+                <FontAwesome name="check" size={10} color={colors.textInverse} />
                 <Text style={styles.usedBadgeText}>Wykorzystany</Text>
               </View>
             )}
             {coupon.status === 'expired' && (
               <View style={styles.expiredBadge}>
-                <FontAwesome name="clock-o" size={10} color={Colors.white} />
+                <FontAwesome name="clock-o" size={10} color={colors.textInverse} />
                 <Text style={styles.expiredBadgeText}>Wygasł</Text>
               </View>
             )}
@@ -103,7 +106,7 @@ function CouponCard({ coupon }: { coupon: UserCoupon }) {
             {coupon.code}
           </Text>
           {isActive && (
-            <FontAwesome name="copy" size={16} color={Colors.primary[500]} />
+            <FontAwesome name="copy" size={16} color={colors.tint} />
           )}
         </TouchableOpacity>
 
@@ -111,7 +114,7 @@ function CouponCard({ coupon }: { coupon: UserCoupon }) {
         <View style={styles.infoRow}>
           {coupon.expiresAt && (
             <View style={styles.infoItem}>
-              <FontAwesome name="calendar" size={12} color={Colors.secondary[400]} />
+              <FontAwesome name="calendar" size={12} color={colors.textMuted} />
               <Text style={styles.infoText}>
                 {isActive && remaining !== null
                   ? `Ważny jeszcze ${remaining} ${remaining === 1 ? 'dzień' : 'dni'}`
@@ -121,7 +124,7 @@ function CouponCard({ coupon }: { coupon: UserCoupon }) {
           )}
           {coupon.minimumAmount && (
             <View style={styles.infoItem}>
-              <FontAwesome name="shopping-cart" size={12} color={Colors.secondary[400]} />
+              <FontAwesome name="shopping-cart" size={12} color={colors.textMuted} />
               <Text style={styles.infoText}>Min. {coupon.minimumAmount} zł</Text>
             </View>
           )}
@@ -154,6 +157,8 @@ interface EarnableItem {
 }
 
 function EarnableCard({ item }: { item: EarnableItem }) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const isLocked = !item.unlocked;
 
   return (
@@ -163,7 +168,7 @@ function EarnableCard({ item }: { item: EarnableItem }) {
         <FontAwesome
           name={item.icon as any}
           size={22}
-          color={isLocked ? Colors.secondary[400] : Colors.primary[500]}
+          color={isLocked ? colors.textMuted : colors.tint}
         />
       </View>
 
@@ -190,10 +195,10 @@ function EarnableCard({ item }: { item: EarnableItem }) {
             disabled={item.claiming}
           >
             {item.claiming ? (
-              <ActivityIndicator size="small" color={Colors.white} />
+              <ActivityIndicator size="small" color={colors.textInverse} />
             ) : (
               <>
-                <FontAwesome name="check" size={12} color={Colors.white} style={{ marginRight: 6 }} />
+                <FontAwesome name="check" size={12} color={colors.textInverse} style={{ marginRight: 6 }} />
                 <Text style={styles.earnClaimText}>Odbierz</Text>
               </>
             )}
@@ -201,13 +206,13 @@ function EarnableCard({ item }: { item: EarnableItem }) {
         )}
         {item.claimed && (
           <View style={styles.earnClaimedBadge}>
-            <FontAwesome name="check-circle" size={12} color={Colors.success} />
+            <FontAwesome name="check-circle" size={12} color={colors.success} />
             <Text style={styles.earnClaimedText}>Odebrano</Text>
           </View>
         )}
         {isLocked && (
           <View style={styles.earnLockedBadge}>
-            <FontAwesome name="lock" size={11} color={Colors.secondary[400]} />
+            <FontAwesome name="lock" size={11} color={colors.textMuted} />
             <Text style={styles.earnLockedText}>Do odblokowania</Text>
           </View>
         )}
@@ -220,6 +225,8 @@ function EarnableCard({ item }: { item: EarnableItem }) {
 // Main Screen
 // ═══════════════════════════════════════
 export default function DiscountsScreen() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { isAuthenticated } = useAuth();
   const { show } = useToast();
   const [coupons, setCoupons] = useState<UserCoupon[]>([]);
@@ -333,13 +340,13 @@ export default function DiscountsScreen() {
       <Stack.Screen
         options={{
           title: 'Moje rabaty',
-          headerTintColor: Colors.primary[500],
+          headerTintColor: colors.tint,
         }}
       />
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.primary[500]} />
+          <ActivityIndicator size="large" color={colors.tint} />
         </View>
       ) : (
         <ScrollView
@@ -349,7 +356,7 @@ export default function DiscountsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor={Colors.primary[500]}
+              tintColor={colors.tint}
             />
           }
         >
@@ -357,7 +364,7 @@ export default function DiscountsScreen() {
           {activeCoupons.length > 0 && (
             <>
               <View style={styles.sectionHeader}>
-                <FontAwesome name="ticket" size={16} color={Colors.primary[500]} />
+                <FontAwesome name="ticket" size={16} color={colors.tint} />
                 <Text style={styles.sectionTitle}>Aktywne ({activeCoupons.length})</Text>
               </View>
               {activeCoupons.map(c => (
@@ -368,7 +375,7 @@ export default function DiscountsScreen() {
 
           {/* ═══ Earnable coupons ═══ */}
           <View style={[styles.sectionHeader, activeCoupons.length > 0 && { marginTop: 28 }]}>
-            <FontAwesome name="trophy" size={16} color={Colors.warning} />
+            <FontAwesome name="trophy" size={16} color={colors.warning} />
             <Text style={styles.sectionTitle}>Rabaty do zdobycia</Text>
           </View>
           <Text style={styles.sectionSubtitle}>
@@ -383,8 +390,8 @@ export default function DiscountsScreen() {
           {inactiveCoupons.length > 0 && (
             <>
               <View style={[styles.sectionHeader, { marginTop: 28 }]}>
-                <FontAwesome name="history" size={16} color={Colors.secondary[400]} />
-                <Text style={[styles.sectionTitle, { color: Colors.secondary[500] }]}>
+                <FontAwesome name="history" size={16} color={colors.textMuted} />
+                <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
                   Historia ({inactiveCoupons.length})
                 </Text>
               </View>
@@ -397,7 +404,7 @@ export default function DiscountsScreen() {
           {/* Empty state — only when no coupons at all */}
           {coupons.length === 0 && (
             <View style={styles.emptyMini}>
-              <FontAwesome name="ticket" size={28} color={Colors.secondary[300]} />
+              <FontAwesome name="ticket" size={28} color={colors.inputBorder} />
               <Text style={styles.emptyMiniText}>
                 Jeszcze nie masz kuponów. Wykonaj zadania powyżej, żeby zdobyć rabaty!
               </Text>
@@ -409,10 +416,10 @@ export default function DiscountsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundSecondary,
   },
   center: {
     flex: 1,
@@ -433,11 +440,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
   },
   sectionSubtitle: {
     fontSize: 13,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     marginBottom: 14,
     marginTop: 2,
     lineHeight: 18,
@@ -448,28 +455,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 24,
     paddingHorizontal: 20,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 16,
     marginTop: 8,
     gap: 10,
   },
   emptyMiniText: {
     fontSize: 13,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 19,
   },
 
   // ── Coupon Card ──
   card: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 16,
     marginBottom: 12,
     flexDirection: 'row',
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: colors.shadow,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.06,
         shadowRadius: 8,
@@ -482,10 +489,10 @@ const styles = StyleSheet.create({
   },
   cardAccent: {
     width: 5,
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
   },
   cardAccentInactive: {
-    backgroundColor: Colors.secondary[300],
+    backgroundColor: colors.inputBorder,
   },
   cardContent: {
     flex: 1,
@@ -506,27 +513,27 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   sourceBadge: {
-    backgroundColor: Colors.primary[50],
+    backgroundColor: colors.tintLight,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
   },
   sourceBadgeInactive: {
-    backgroundColor: Colors.secondary[100],
+    backgroundColor: colors.backgroundTertiary,
   },
   sourceText: {
     fontSize: 11,
     fontWeight: '600',
-    color: Colors.primary[600],
+    color: colors.tint,
   },
   sourceTextInactive: {
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
   usedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: Colors.success,
+    backgroundColor: colors.success,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
@@ -534,13 +541,13 @@ const styles = StyleSheet.create({
   usedBadgeText: {
     fontSize: 10,
     fontWeight: '600',
-    color: Colors.white,
+    color: colors.textInverse,
   },
   expiredBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: Colors.secondary[400],
+    backgroundColor: colors.textMuted,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
@@ -548,15 +555,15 @@ const styles = StyleSheet.create({
   expiredBadgeText: {
     fontSize: 10,
     fontWeight: '600',
-    color: Colors.white,
+    color: colors.textInverse,
   },
   valueText: {
     fontSize: 22,
     fontWeight: '900',
-    color: Colors.primary[600],
+    color: colors.tint,
   },
   valueTextInactive: {
-    color: Colors.secondary[400],
+    color: colors.textMuted,
   },
 
   // ── Code ──
@@ -564,27 +571,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: Colors.secondary[200],
+    borderColor: colors.border,
     borderStyle: 'dashed',
   },
   codeRowInactive: {
     borderStyle: 'solid',
-    borderColor: Colors.secondary[200],
+    borderColor: colors.border,
   },
   codeText: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.secondary[800],
+    color: colors.text,
     letterSpacing: 1.5,
   },
   codeTextInactive: {
-    color: Colors.secondary[400],
+    color: colors.textMuted,
   },
 
   // ── Info ──
@@ -601,18 +608,18 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 12,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
   hintText: {
     fontSize: 11,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     marginTop: 8,
     fontStyle: 'italic',
   },
 
   // ═══ Earnable Card ═══
   earnCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 16,
     marginBottom: 10,
     flexDirection: 'row',
@@ -620,7 +627,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: colors.shadow,
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.05,
         shadowRadius: 6,
@@ -629,20 +636,20 @@ const styles = StyleSheet.create({
     }),
   },
   earnCardLocked: {
-    backgroundColor: Colors.secondary[100],
+    backgroundColor: colors.backgroundTertiary,
     opacity: 0.7,
   },
   earnIconWrap: {
     width: 46,
     height: 46,
     borderRadius: 14,
-    backgroundColor: Colors.primary[50],
+    backgroundColor: colors.tintLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
   earnIconWrapLocked: {
-    backgroundColor: Colors.secondary[200],
+    backgroundColor: colors.border,
   },
   earnContent: {
     flex: 1,
@@ -656,36 +663,36 @@ const styles = StyleSheet.create({
   earnTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
     flex: 1,
   },
   earnTitleLocked: {
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
   earnDiscount: {
     fontSize: 16,
     fontWeight: '900',
-    color: Colors.primary[600],
+    color: colors.tint,
     marginLeft: 8,
   },
   earnDiscountLocked: {
-    color: Colors.secondary[400],
+    color: colors.textMuted,
   },
   earnDesc: {
     fontSize: 12,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     lineHeight: 17,
     marginBottom: 6,
   },
   earnDescLocked: {
-    color: Colors.secondary[400],
+    color: colors.textMuted,
   },
 
   // Claim button
   earnClaimBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
     paddingVertical: 7,
     paddingHorizontal: 14,
     borderRadius: 8,
@@ -695,7 +702,7 @@ const styles = StyleSheet.create({
   earnClaimText: {
     fontSize: 12,
     fontWeight: '700',
-    color: Colors.white,
+    color: colors.textInverse,
   },
   earnClaimedBadge: {
     flexDirection: 'row',
@@ -706,7 +713,7 @@ const styles = StyleSheet.create({
   earnClaimedText: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.success,
+    color: colors.success,
   },
   earnLockedBadge: {
     flexDirection: 'row',
@@ -717,6 +724,6 @@ const styles = StyleSheet.create({
   earnLockedText: {
     fontSize: 11,
     fontWeight: '500',
-    color: Colors.secondary[400],
+    color: colors.textMuted,
   },
 });

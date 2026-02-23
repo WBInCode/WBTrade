@@ -10,7 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
 
 const registerSchema = z.object({
   firstName: z
@@ -45,6 +45,7 @@ export default function RegisterScreen() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const colors = useThemeColors();
 
   const { control, handleSubmit } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
@@ -79,7 +80,7 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.white }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.card }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
@@ -93,8 +94,8 @@ export default function RegisterScreen() {
             onPress={() => router.back()}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 }}
           >
-            <FontAwesome name="arrow-left" size={16} color={Colors.secondary[600]} />
-            <Text style={{ color: Colors.secondary[600], fontSize: 14 }}>Wróć</Text>
+            <FontAwesome name="arrow-left" size={16} color={colors.textSecondary} />
+            <Text style={{ color: colors.textSecondary, fontSize: 14 }}>Wróć</Text>
           </TouchableOpacity>
 
           {/* Header */}
@@ -103,7 +104,7 @@ export default function RegisterScreen() {
               style={{
                 fontSize: 28,
                 fontWeight: '700',
-                color: Colors.primary[500],
+                color: colors.tint,
                 marginBottom: 8,
               }}
             >
@@ -113,13 +114,13 @@ export default function RegisterScreen() {
               style={{
                 fontSize: 22,
                 fontWeight: '600',
-                color: Colors.secondary[900],
+                color: colors.text,
                 marginBottom: 4,
               }}
             >
               Utwórz konto
             </Text>
-            <Text style={{ fontSize: 15, color: Colors.secondary[500] }}>
+            <Text style={{ fontSize: 15, color: colors.textMuted }}>
               Dołącz do nas i zacznij kupować
             </Text>
           </View>
@@ -128,9 +129,9 @@ export default function RegisterScreen() {
           {error && (
             <View
               style={{
-                backgroundColor: '#FEF2F2',
+                backgroundColor: colors.destructiveBg,
                 borderWidth: 1,
-                borderColor: '#FECACA',
+                borderColor: colors.border,
                 borderRadius: 8,
                 padding: 12,
                 marginBottom: 20,
@@ -139,8 +140,8 @@ export default function RegisterScreen() {
                 gap: 8,
               }}
             >
-              <FontAwesome name="exclamation-circle" size={16} color={Colors.destructive} />
-              <Text style={{ color: Colors.destructive, fontSize: 14, flex: 1 }}>
+              <FontAwesome name="exclamation-circle" size={16} color={colors.destructive} />
+              <Text style={{ color: colors.destructive, fontSize: 14, flex: 1 }}>
                 {error}
               </Text>
             </View>
@@ -214,22 +215,22 @@ export default function RegisterScreen() {
                 height: 22,
                 borderRadius: 4,
                 borderWidth: 2,
-                borderColor: acceptTerms ? Colors.primary[500] : Colors.secondary[300],
-                backgroundColor: acceptTerms ? Colors.primary[500] : 'transparent',
+                borderColor: acceptTerms ? colors.tint : colors.inputBorder,
+                backgroundColor: acceptTerms ? colors.tint : 'transparent',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginTop: 1,
               }}
             >
               {acceptTerms && (
-                <FontAwesome name="check" size={13} color={Colors.white} />
+                <FontAwesome name="check" size={13} color={colors.textInverse} />
               )}
             </View>
-            <Text style={{ flex: 1, fontSize: 13, color: Colors.secondary[600], lineHeight: 18 }}>
+            <Text style={{ flex: 1, fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>
               Akceptuję{' '}
-              <Text style={{ color: Colors.primary[500], fontWeight: '500' }}>regulamin</Text>
+              <Text style={{ color: colors.tint, fontWeight: '500' }}>regulamin</Text>
               {' '}oraz{' '}
-              <Text style={{ color: Colors.primary[500], fontWeight: '500' }}>
+              <Text style={{ color: colors.tint, fontWeight: '500' }}>
                 politykę prywatności
               </Text>
             </Text>
@@ -246,11 +247,11 @@ export default function RegisterScreen() {
 
           {/* Login link */}
           <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 24 }}>
-            <Text style={{ color: Colors.secondary[500], fontSize: 14 }}>
+            <Text style={{ color: colors.textMuted, fontSize: 14 }}>
               Masz już konto?{' '}
             </Text>
             <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-              <Text style={{ color: Colors.primary[500], fontSize: 14, fontWeight: '600' }}>
+              <Text style={{ color: colors.tint, fontSize: 14, fontWeight: '600' }}>
                 Zaloguj się
               </Text>
             </TouchableOpacity>

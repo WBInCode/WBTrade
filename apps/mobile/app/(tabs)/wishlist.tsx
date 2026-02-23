@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -13,7 +13,8 @@ import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import type { ThemeColors } from '../../constants/Colors';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
@@ -26,6 +27,8 @@ function WishlistCard({ item, onRemove }: { item: WishlistItem; onRemove: () => 
   const router = useRouter();
   const { addToCart } = useCart();
   const [adding, setAdding] = React.useState(false);
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const p = item.product;
   const price = Number(typeof p.price === 'string' ? parseFloat(p.price as string) : p.price) || 0;
@@ -69,7 +72,7 @@ function WishlistCard({ item, onRemove }: { item: WishlistItem; onRemove: () => 
             <Image source={{ uri: imageUrl }} style={styles.image} contentFit="cover" transition={200} />
           ) : (
             <View style={styles.imagePlaceholder}>
-              <FontAwesome name="image" size={24} color={Colors.secondary[300]} />
+              <FontAwesome name="image" size={24} color={colors.border} />
             </View>
           )}
         </View>
@@ -81,7 +84,7 @@ function WishlistCard({ item, onRemove }: { item: WishlistItem; onRemove: () => 
           </Text>
 
           <View style={styles.priceRow}>
-            <Text style={[styles.price, hasDiscount && { color: Colors.destructive }]}>
+            <Text style={[styles.price, hasDiscount && { color: colors.destructive }]}>
               {price.toFixed(2).replace('.', ',')} zł
             </Text>
             {hasDiscount && (
@@ -98,7 +101,7 @@ function WishlistCard({ item, onRemove }: { item: WishlistItem; onRemove: () => 
 
         {/* Remove */}
         <TouchableOpacity style={styles.removeBtn} onPress={onRemove} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <FontAwesome name="times" size={16} color={Colors.secondary[400]} />
+          <FontAwesome name="times" size={16} color={colors.textMuted} />
         </TouchableOpacity>
       </TouchableOpacity>
 
@@ -110,10 +113,10 @@ function WishlistCard({ item, onRemove }: { item: WishlistItem; onRemove: () => 
         activeOpacity={0.8}
       >
         {adding ? (
-          <ActivityIndicator color={Colors.white} size="small" />
+          <ActivityIndicator color={colors.textInverse} size="small" />
         ) : (
           <>
-            <FontAwesome name="shopping-cart" size={14} color={Colors.white} />
+            <FontAwesome name="shopping-cart" size={14} color={colors.textInverse} />
             <Text style={styles.addBtnText}>
               {hasStock ? 'Dodaj do koszyka' : 'Niedostępny'}
             </Text>
@@ -128,6 +131,8 @@ export default function WishlistScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { items, loading, count, remove, refresh } = useWishlist();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   // Refresh on focus
   useFocusEffect(
@@ -145,7 +150,7 @@ export default function WishlistScreen() {
         </View>
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIcon}>
-            <FontAwesome name="heart-o" size={64} color={Colors.secondary[300]} />
+            <FontAwesome name="heart-o" size={64} color={colors.border} />
           </View>
           <Text style={styles.emptyTitle}>Zaloguj się</Text>
           <Text style={styles.emptySubtitle}>
@@ -168,7 +173,7 @@ export default function WishlistScreen() {
           <Text style={styles.headerTitle}>Ulubione</Text>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary[500]} />
+          <ActivityIndicator size="large" color={colors.tint} />
         </View>
       </SafeAreaView>
     );
@@ -183,7 +188,7 @@ export default function WishlistScreen() {
         </View>
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIcon}>
-            <FontAwesome name="heart-o" size={64} color={Colors.secondary[300]} />
+            <FontAwesome name="heart-o" size={64} color={colors.border} />
           </View>
           <Text style={styles.emptyTitle}>Brak ulubionych</Text>
           <Text style={styles.emptySubtitle}>
@@ -233,17 +238,17 @@ export default function WishlistScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.secondary[100],
+    backgroundColor: colors.backgroundTertiary,
   },
   header: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.headerBackground,
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.secondary[200],
+    borderBottomColor: colors.cardBorder,
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'space-between',
@@ -251,11 +256,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
   },
   headerCount: {
     fontSize: 13,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
 
   // ─── Loading ───
@@ -271,7 +276,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 32,
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundSecondary,
   },
   emptyIcon: {
     marginBottom: 16,
@@ -279,12 +284,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: Colors.secondary[900],
+    color: colors.text,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 24,
@@ -303,7 +308,7 @@ const styles = StyleSheet.create({
 
   // ─── Card ───
   card: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 12,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -320,7 +325,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 10,
-    backgroundColor: Colors.secondary[100],
+    backgroundColor: colors.backgroundTertiary,
     overflow: 'hidden',
   },
   image: {
@@ -340,7 +345,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.secondary[900],
+    color: colors.text,
     lineHeight: 20,
     marginBottom: 6,
   },
@@ -353,20 +358,20 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
   },
   oldPrice: {
     fontSize: 12,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     textDecorationLine: 'line-through',
   },
   stockText: {
     fontSize: 12,
     fontWeight: '500',
-    color: Colors.success,
+    color: colors.success,
   },
   stockOut: {
-    color: Colors.destructive,
+    color: colors.destructive,
   },
   removeBtn: {
     width: 28,
@@ -380,15 +385,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
     paddingVertical: 10,
     gap: 6,
   },
   addBtnDisabled: {
-    backgroundColor: Colors.secondary[300],
+    backgroundColor: colors.border,
   },
   addBtnText: {
-    color: Colors.white,
+    color: colors.textInverse,
     fontSize: 13,
     fontWeight: '600',
   },
