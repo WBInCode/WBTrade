@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
+  Animated,
   StyleSheet,
   View,
   Text,
@@ -38,6 +39,7 @@ function sourceLabel(source: string): string {
     case 'NEWSLETTER': return 'Newsletter';
     case 'REFERRAL': return 'Polecenie';
     case 'CAMPAIGN': return 'Kampania';
+    case 'ALL_COLLECTED_BONUS': return '\uD83C\uDF81 Niespodzianka';
     default: return 'Rabat';
   }
 }
@@ -227,13 +229,17 @@ function EarnableCard({ item }: { item: EarnableItem }) {
 export default function DiscountsScreen() {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { show } = useToast();
   const [coupons, setCoupons] = useState<UserCoupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [claimingApp, setClaimingApp] = useState(false);
   const [appClaimed, setAppClaimed] = useState(false);
+  const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
+  const [surpriseClaimed, setSurpriseClaimed] = useState(false);
+  const [claimingSurprise, setClaimingSurprise] = useState(false);
+  const surpriseGlow = useRef(new Animated.Value(0)).current;
 
   const fetchCoupons = useCallback(async () => {
     try {
@@ -242,6 +248,12 @@ export default function DiscountsScreen() {
       // Check if app download already claimed
       const hasApp = data.coupons.some(c => c.couponSource === 'APP_DOWNLOAD');
       if (hasApp) setAppClaimed(true);
+      // Check if newsletter coupon already exists
+      const hasNewsletter = data.coupons.some(c => c.couponSource === 'NEWSLETTER');
+      if (hasNewsletter) setNewsletterSubscribed(true);
+      // Check if surprise bonus already claimed
+      const hasSurprise = data.coupons.some(c => c.couponSource === 'ALL_COLLECTED_BONUS');
+      if (hasSurprise) setSurpriseClaimed(true);
     } catch (err) {
       console.warn('Failed to fetch coupons:', err);
     } finally {
@@ -249,6 +261,19 @@ export default function DiscountsScreen() {
       setRefreshing(false);
     }
   }, []);
+
+  // Check newsletter subscription status
+  useEffect(() => {
+    if (isAuthenticated && user?.email) {
+      couponsApi.getNewsletterStatus(user.email)
+        .then(result => {
+          if (result.subscribed && result.verified) {
+            setNewsletterSubscribed(true);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isAuthenticated, user?.email]);
 
   useEffect(() => {
     if (isAuthenticated) fetchCoupons();
@@ -281,8 +306,35 @@ export default function DiscountsScreen() {
     }
   };
 
+  const handleClaimSurprise = async () => {
+    setClaimingSurprise(true);
+    try {
+      await couponsApi.claimSurprise();
+      setSurpriseClaimed(true);
+      show('\uD83C\uDF89 Kupon-niespodzianka -25% przyznany!', 'success');
+      fetchCoupons();
+    } catch (err: any) {
+      if (err?.statusCode === 409) {
+        setSurpriseClaimed(true);
+        show('Kupon-niespodzianka został już odebrany', 'info');
+      } else if (err?.statusCode === 400) {
+        show('Zbierz najpierw wszystkie rabaty', 'error');
+      } else {
+        show('Nie udało się odebrać kuponu', 'error');
+      }
+    } finally {
+      setClaimingSurprise(false);
+    }
+  };
+
   const activeCoupons = coupons.filter(c => c.status === 'active');
   const inactiveCoupons = coupons.filter(c => c.status !== 'active');
+
+  // Check how many earnable items are claimed
+  const claimedCount = [appClaimed, newsletterSubscribed].filter(Boolean).length;
+  const totalEarnableCount = 5; // app, newsletter, review, referral, birthday
+  const allEarnableClaimed = claimedCount >= 3; // For now: app + newsletter + welcome = enough to unlock surprise
+  const showSurpriseSection = allEarnableClaimed || surpriseClaimed;
 
   // ── Earnable coupons list ──
   const earnableItems: EarnableItem[] = [
@@ -303,8 +355,8 @@ export default function DiscountsScreen() {
       title: 'Zapisz się do newslettera',
       description: 'Bądź na bieżąco z promocjami i otrzymaj kod rabatowy',
       discount: '-10%',
-      unlocked: false,
-      claimed: false,
+      unlocked: newsletterSubscribed,
+      claimed: newsletterSubscribed,
     },
     {
       id: 'first-review',
@@ -385,6 +437,78 @@ export default function DiscountsScreen() {
           {earnableItems.map(item => (
             <EarnableCard key={item.id} item={item} />
           ))}
+
+          {/* ═══ Surprise bonus section ═══ */}
+          {showSurpriseSection && (
+            <View style={styles.surpriseSection}>
+              <View style={styles.surpriseGradient}>
+                <View style={styles.surpriseIconRow}>
+                  <Text style={styles.surpriseEmoji}>\uD83C\uDF81</Text>
+                  <View style={styles.surpriseStars}>
+                    <FontAwesome name="star" size={10} color="#FFD700" />
+                    <FontAwesome name="star" size={14} color="#FFD700" />
+                    <FontAwesome name="star" size={10} color="#FFD700" />
+                  </View>
+                </View>
+
+                <Text style={styles.surpriseTitle}>Kupon-Niespodzianka!</Text>
+                <Text style={styles.surpriseSubtitle}>
+                  Zebrałeś wszystkie dostępne rabaty — gratulacje! Odbierz specjalny bonus.
+                </Text>
+
+                <View style={styles.surpriseValueRow}>
+                  <Text style={styles.surpriseValue}>-25%</Text>
+                  <Text style={styles.surpriseValueLabel}>na dowolne zakupy</Text>
+                </View>
+
+                {!surpriseClaimed ? (
+                  <TouchableOpacity
+                    style={styles.surpriseClaimBtn}
+                    onPress={handleClaimSurprise}
+                    activeOpacity={0.8}
+                    disabled={claimingSurprise}
+                  >
+                    {claimingSurprise ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <>
+                        <FontAwesome name="gift" size={16} color="#fff" style={{ marginRight: 8 }} />
+                        <Text style={styles.surpriseClaimText}>Odbierz niespodziankę</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.surpriseClaimedRow}>
+                    <FontAwesome name="check-circle" size={18} color="#4CAF50" />
+                    <Text style={styles.surpriseClaimedText}>Kupon odebrany! Sprawdź w aktywnych kuponach powyżej.</Text>
+                  </View>
+                )}
+
+                <Text style={styles.surpriseNote}>
+                  Ważny 60 dni • Jednorazowy • Nie łączy się z innymi
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Progress toward surprise */}
+          {!showSurpriseSection && (
+            <View style={styles.surpriseProgress}>
+              <View style={styles.surpriseProgressHeader}>
+                <Text style={styles.surpriseProgressEmoji}>\uD83C\uDF81</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.surpriseProgressTitle}>Kupon-Niespodzianka</Text>
+                  <Text style={styles.surpriseProgressDesc}>
+                    Zbierz wszystkie rabaty i odblokuj specjalny bonus -25%!
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.progressBarWrap}>
+                <View style={[styles.progressBarFill, { width: `${(claimedCount / 3) * 100}%` }]} />
+              </View>
+              <Text style={styles.progressText}>{claimedCount}/3 rabatów zebranych</Text>
+            </View>
+          )}
 
           {/* ═══ Inactive coupons ═══ */}
           {inactiveCoupons.length > 0 && (
@@ -725,5 +849,155 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     color: colors.textMuted,
+  },
+
+  // ═══ Surprise Section ═══
+  surpriseSection: {
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  surpriseGradient: {
+    backgroundColor: colors.card,
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFD700',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#FFD700',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+      },
+      android: { elevation: 6 },
+    }),
+  },
+  surpriseIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  surpriseEmoji: {
+    fontSize: 36,
+  },
+  surpriseStars: {
+    flexDirection: 'row',
+    gap: 3,
+    alignItems: 'center',
+  },
+  surpriseTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#FFD700',
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  surpriseSubtitle: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 19,
+    marginBottom: 16,
+    paddingHorizontal: 8,
+  },
+  surpriseValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+    marginBottom: 18,
+  },
+  surpriseValue: {
+    fontSize: 38,
+    fontWeight: '900',
+    color: '#FFD700',
+  },
+  surpriseValueLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  surpriseClaimBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFD700',
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 14,
+    width: '100%',
+    marginBottom: 12,
+  },
+  surpriseClaimText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1a1a1a',
+  },
+  surpriseClaimedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  surpriseClaimedText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#4CAF50',
+  },
+  surpriseNote: {
+    fontSize: 11,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+
+  // ═══ Surprise Progress ═══
+  surpriseProgress: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 16,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderStyle: 'dashed' as const,
+  },
+  surpriseProgressHeader: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 12,
+    marginBottom: 12,
+  },
+  surpriseProgressEmoji: {
+    fontSize: 28,
+  },
+  surpriseProgressTitle: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: colors.text,
+    marginBottom: 2,
+  },
+  surpriseProgressDesc: {
+    fontSize: 12,
+    color: colors.textMuted,
+    lineHeight: 17,
+  },
+  progressBarWrap: {
+    height: 8,
+    backgroundColor: colors.backgroundTertiary,
+    borderRadius: 4,
+    overflow: 'hidden' as const,
+    marginBottom: 6,
+  },
+  progressBarFill: {
+    height: '100%' as any,
+    backgroundColor: '#FFD700',
+    borderRadius: 4,
+  },
+  progressText: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: colors.textMuted,
+    textAlign: 'center' as const,
   },
 });

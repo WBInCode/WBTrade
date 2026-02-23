@@ -11,6 +11,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { api } from '../../services/api';
 
 const registerSchema = z.object({
   firstName: z
@@ -45,6 +46,7 @@ export default function RegisterScreen() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [acceptNewsletter, setAcceptNewsletter] = useState(false);
   const colors = useThemeColors();
 
   const { control, handleSubmit } = useForm<RegisterForm>({
@@ -68,6 +70,14 @@ export default function RegisterScreen() {
         password: data.password,
       });
       if (result.success) {
+        // Subscribe to newsletter if checkbox was checked
+        if (acceptNewsletter) {
+          try {
+            await api.post('/newsletter/subscribe', { email: data.email, source: 'registration' });
+          } catch {
+            // Don't block registration if newsletter subscribe fails
+          }
+        }
         router.replace('/(tabs)');
       } else {
         setError(result.error || 'Rejestracja nie powiodła się');
@@ -206,7 +216,7 @@ export default function RegisterScreen() {
               flexDirection: 'row',
               alignItems: 'flex-start',
               gap: 10,
-              marginBottom: 24,
+              marginBottom: 12,
             }}
           >
             <View
@@ -234,6 +244,50 @@ export default function RegisterScreen() {
                 politykę prywatności
               </Text>
             </Text>
+          </TouchableOpacity>
+
+          {/* Newsletter checkbox */}
+          <TouchableOpacity
+            onPress={() => setAcceptNewsletter(!acceptNewsletter)}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              gap: 10,
+              marginBottom: 24,
+            }}
+          >
+            <View
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: 4,
+                borderWidth: 2,
+                borderColor: acceptNewsletter ? colors.tint : colors.inputBorder,
+                backgroundColor: acceptNewsletter ? colors.tint : 'transparent',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginTop: 1,
+              }}
+            >
+              {acceptNewsletter && (
+                <FontAwesome name="check" size={13} color={colors.textInverse} />
+              )}
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>
+                Chcę otrzymywać newsletter z{' '}
+                <Text style={{ fontWeight: '600', color: colors.text }}>
+                  ekskluzywnymi kuponami rabatowymi
+                </Text>
+                {' '}i informacjami o promocjach
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                <FontAwesome name="gift" size={12} color={colors.tint} />
+                <Text style={{ fontSize: 11, color: colors.tint, fontWeight: '600' }}>
+                  Otrzymasz kupon rabatowy po potwierdzeniu!
+                </Text>
+              </View>
+            </View>
           </TouchableOpacity>
 
           {/* Submit */}

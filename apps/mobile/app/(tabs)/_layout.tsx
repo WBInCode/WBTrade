@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
 import { View, Text } from 'react-native';
@@ -6,6 +6,8 @@ import { View, Text } from 'react-native';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useCart } from '../../contexts/CartContext';
 import { useWishlist } from '../../contexts/WishlistContext';
+import { ChatBubble } from '../../components/ChatBot';
+import ChatBotModal from '../../components/ChatBot';
 
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>['name'];
@@ -78,9 +80,12 @@ function WishlistIcon({ color }: { color: string }) {
 
 export default function TabLayout() {
   const colors = useThemeColors();
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatActive, setChatActive] = useState(false); // true when minimized with conversation
 
   return (
-    <Tabs
+    <View style={{ flex: 1 }}>
+      <Tabs
       screenOptions={{
         tabBarActiveTintColor: colors.tint,
         tabBarInactiveTintColor: colors.tabIconDefault,
@@ -127,5 +132,28 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+
+      {/* Floating chat bubble */}
+      <View
+        style={{
+          position: 'absolute',
+          bottom: 90,
+          right: 16,
+          zIndex: 100,
+        }}
+      >
+        <ChatBubble
+          onPress={() => { setChatOpen(true); setChatActive(true); }}
+          hasActiveChat={chatActive && !chatOpen}
+        />
+      </View>
+
+      {/* Chat bot modal */}
+      <ChatBotModal
+        visible={chatOpen}
+        onMinimize={() => setChatOpen(false)}
+        onEndChat={() => { setChatOpen(false); setChatActive(false); }}
+      />
+    </View>
   );
 }
