@@ -446,6 +446,21 @@ export async function getNewProducts(req: Request, res: Response): Promise<void>
 }
 
 /**
+ * Get toys carousel products (manual admin selections + automatic bestsellers from toys category)
+ */
+export async function getToys(req: Request, res: Response): Promise<void> {
+  try {
+    const limit = parseInt(req.query.limit as string) || 20;
+
+    const products = await productsService.getToys({ limit });
+    res.status(200).json({ products });
+  } catch (error) {
+    console.error('Error fetching toys products:', error);
+    res.status(500).json({ message: 'Error retrieving toys products' });
+  }
+}
+
+/**
  * Get top-rated products
  */
 export async function getTopRated(req: Request, res: Response): Promise<void> {
@@ -480,5 +495,30 @@ export async function getSameWarehouseProducts(req: Request, res: Response): Pro
   } catch (error) {
     console.error('Error fetching same warehouse products:', error);
     res.status(500).json({ message: 'Error retrieving same warehouse products' });
+  }
+}
+
+/**
+ * Get multiple products by IDs (batch endpoint to avoid N+1 requests)
+ */
+export async function getProductsByIds(req: Request, res: Response): Promise<void> {
+  try {
+    const { ids } = req.body;
+    
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      res.status(400).json({ message: 'ids array is required' });
+      return;
+    }
+
+    if (ids.length > 100) {
+      res.status(400).json({ message: 'Maximum 100 product IDs allowed' });
+      return;
+    }
+
+    const products = await productsService.getByIds(ids);
+    res.status(200).json({ products });
+  } catch (error) {
+    console.error('Error fetching products by IDs:', error);
+    res.status(500).json({ message: 'Error retrieving products' });
   }
 }

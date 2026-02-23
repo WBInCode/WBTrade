@@ -64,19 +64,42 @@ router.post('/carousels', async (req, res) => {
   try {
     const { carousels, excludedProductIds } = req.body;
 
+    // Validate: deduplicate productIds and enforce max limit per carousel
+    const MAX_PRODUCTS_PER_CAROUSEL = 50;
+    const sanitizedCarousels: Record<string, any> = {};
+    
+    if (carousels && typeof carousels === 'object') {
+      for (const [key, value] of Object.entries(carousels as Record<string, any>)) {
+        const ids = value?.productIds;
+        if (Array.isArray(ids)) {
+          // Deduplicate and limit
+          const uniqueIds = [...new Set(ids as string[])].slice(0, MAX_PRODUCTS_PER_CAROUSEL);
+          sanitizedCarousels[key] = {
+            ...value,
+            productIds: uniqueIds,
+          };
+        } else {
+          sanitizedCarousels[key] = value;
+        }
+      }
+    }
+
     // Save carousels
     await prisma.settings.upsert({
       where: { key: 'homepage_carousels' },
-      update: { value: JSON.stringify(carousels) },
-      create: { key: 'homepage_carousels', value: JSON.stringify(carousels) },
+      update: { value: JSON.stringify(sanitizedCarousels) },
+      create: { key: 'homepage_carousels', value: JSON.stringify(sanitizedCarousels) },
     });
 
-    // Save exclusions
+    // Save exclusions (deduplicated)
     if (excludedProductIds !== undefined) {
+      const uniqueExcluded = Array.isArray(excludedProductIds)
+        ? [...new Set(excludedProductIds as string[])]
+        : [];
       await prisma.settings.upsert({
         where: { key: 'carousel_exclusions' },
-        update: { value: JSON.stringify({ excludedProductIds }) },
-        create: { key: 'carousel_exclusions', value: JSON.stringify({ excludedProductIds }) },
+        update: { value: JSON.stringify({ excludedProductIds: uniqueExcluded }) },
+        create: { key: 'carousel_exclusions', value: JSON.stringify({ excludedProductIds: uniqueExcluded }) },
       });
     }
 
