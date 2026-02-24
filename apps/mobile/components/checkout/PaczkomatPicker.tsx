@@ -10,6 +10,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
+import { useThemeColors } from '../../hooks/useThemeColors';
 
 export interface InPostPoint {
   name: string;
@@ -34,6 +35,7 @@ interface PaczkomatPickerProps {
 const INPOST_TOKEN = 'eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJzQlpXVzFNZzVlQnpDYU1XU3JvTlBjRWFveFpXcW9Ua2FuZVB3X291LWxvIn0.eyJleHAiOjIwNDkwMzA2NjksImlhdCI6MTczMzY3MDY2OSwiYXV0aF90aW1lIjoxNzMzNjcwNjY5LCJqdGkiOiJiNmUyYmRiOC1iZjFmLTQxNzktOTk5ZC1kNmFlMWY4MjdjNzMiLCJpc3MiOiJodHRwczovL2xvZ2luLmlucG9zdC5wbC9hdXRoL3JlYWxtcy9leHRlcm5hbCIsInN1YiI6ImY6MTJhZTVjODItZTlhNC00NThmLWFhNTItMWViMDNlYmFjOTRlOmtKS1dWdGJZX3R3eVRiUDlFeXU3MmFiUFhCSjlhNXh3eFBKd05pZGhJTjgiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJzaGlweCIsInNlc3Npb25fc3RhdGUiOiIzMjY3NzllYi0xMmU5LTQwMjgtODJiMy04MGMzNmIzODRjMWIiLCJzY29wZSI6Im9wZW5pZCBhcGk6YXBpcG9pbnRzIiwic2lkIjoiMzI2Nzc5ZWItMTJlOS00MDI4LTgyYjMtODBjMzZiMzg0YzFiIiwiYWxsb3dlZF9yZWZlcnJlcnMiOiIiLCJ1dWlkIjoiNWExOTEzYjQtMjI3NC01Y2VjLThmZjItNTQ3NThlMmYwNDg0In0.XvzpVGInkjHpQX9lsLNRNXPLAMT1rUdvMFJ7sBU1lHNYTPPOuH2qmw0M6d8V3MO6RB3LFaTdZnr77hkwX2EoNpJLmWCsYbkaoWg0qHYaJn_oWBJ5LAqYbMiNc_JYchRWqP-sBpXaRUWBXCCJZtb4v7gDIc2RL8E7EjrwZ8b_0bIelLEGODwi9bIfRm--TmpBlvSqEBt0lBPGsD4DjXxYKiV7Vkdz9KIEA7OYF6a1f0PaV62bHvti_ILKnIRYMpFXcjRF14xLK3UZN3Gj7WcHFHlNz1FLKCuFxJCPRFCFo0J1f6l0zVHTh9_40Gv8cboY9vbvUMRxaVOkD6IhtBVFA';
 
 export default function PaczkomatPicker({ isOpen, onClose, onPointSelect }: PaczkomatPickerProps) {
+  const colors = useThemeColors();
   const webViewRef = useRef<WebView>(null);
 
   const htmlContent = `
@@ -115,7 +117,7 @@ export default function PaczkomatPicker({ isOpen, onClose, onPointSelect }: Pacz
         <WebView
           ref={webViewRef}
           source={{ html: htmlContent }}
-          style={styles.webView}
+          style={[styles.webView, { backgroundColor: colors.background }]}
           onMessage={handleMessage}
           javaScriptEnabled={true}
           domStorageEnabled={true}
@@ -125,8 +127,8 @@ export default function PaczkomatPicker({ isOpen, onClose, onPointSelect }: Pacz
           geolocationEnabled={true}
           startInLoadingState={true}
           renderLoading={() => (
-            <View style={styles.loading}>
-              <Text style={styles.loadingText}>Ładowanie mapy...</Text>
+            <View style={[styles.loading, { backgroundColor: colors.background }]}>
+              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Ładowanie mapy...</Text>
             </View>
           )}
         />
@@ -189,7 +191,6 @@ const styles = StyleSheet.create({
   },
   webView: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   loading: {
     position: 'absolute',
@@ -199,10 +200,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
   },
   loadingText: {
     fontSize: 14,
-    color: '#666',
   },
 });

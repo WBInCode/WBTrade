@@ -634,6 +634,7 @@ enum CouponSource {
   REFERRAL
   CAMPAIGN
   NEWSLETTER
+  ALL_COLLECTED_BONUS
 }
 
 enum UserRole {

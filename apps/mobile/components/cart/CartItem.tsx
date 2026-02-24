@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,7 +8,8 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import type { ThemeColors } from '../../constants/Colors';
 import type { CartItem as CartItemType } from '../../services/types';
 
 interface CartItemProps {
@@ -19,6 +20,8 @@ interface CartItemProps {
 
 export default function CartItem({ item, onUpdateQuantity, onRemove }: CartItemProps) {
   const router = useRouter();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { variant } = item;
   const product = variant.product;
   const imageUrl = product.images?.[0]?.url;
@@ -144,9 +147,9 @@ export default function CartItem({ item, onUpdateQuantity, onRemove }: CartItemP
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
@@ -159,7 +162,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 8,
-    backgroundColor: Colors.secondary[100],
+    backgroundColor: colors.backgroundTertiary,
   },
   imagePlaceholder: {
     alignItems: 'center',
@@ -174,12 +177,12 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.secondary[900],
+    color: colors.text,
     lineHeight: 20,
   },
   variantName: {
     fontSize: 12,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     marginTop: 2,
   },
   attributesRow: {
@@ -190,8 +193,8 @@ const styles = StyleSheet.create({
   },
   attributeText: {
     fontSize: 11,
-    color: Colors.secondary[600],
-    backgroundColor: Colors.secondary[100],
+    color: colors.textSecondary,
+    backgroundColor: colors.backgroundTertiary,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -205,11 +208,11 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
   },
   comparePrice: {
     fontSize: 13,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     textDecorationLine: 'line-through',
   },
   bottomRow: {
@@ -219,13 +222,13 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: Colors.secondary[200],
+    borderTopColor: colors.border,
   },
   quantityControl: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.secondary[300],
+    borderColor: colors.border,
     borderRadius: 8,
   },
   qtyButton: {
@@ -240,26 +243,26 @@ const styles = StyleSheet.create({
   qtyButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.secondary[700],
+    color: colors.textSecondary,
   },
   qtyButtonTextDisabled: {
-    color: Colors.secondary[300],
+    color: colors.border,
   },
   qtyValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.secondary[900],
+    color: colors.text,
     minWidth: 32,
     textAlign: 'center',
     borderLeftWidth: 1,
     borderRightWidth: 1,
-    borderColor: Colors.secondary[300],
+    borderColor: colors.border,
     paddingVertical: 6,
   },
   lineTotal: {
     fontSize: 17,
     fontWeight: '700',
-    color: Colors.primary[600],
+    color: colors.tint,
   },
   removeButton: {
     width: 36,
@@ -267,16 +270,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 18,
-    backgroundColor: Colors.secondary[100],
+    backgroundColor: colors.backgroundTertiary,
   },
   removeText: {
     fontSize: 16,
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   stockWarning: {
     fontSize: 12,
-    color: Colors.warning,
+    color: colors.warning,
     marginTop: 8,
     fontWeight: '500',
   },

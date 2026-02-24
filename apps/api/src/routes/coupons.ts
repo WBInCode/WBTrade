@@ -11,12 +11,22 @@ const router = Router();
 router.get('/my', authGuard, async (req, res) => {
   try {
     const userId = (req as any).user?.userId;
+    const email = (req as any).user?.email || '';
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const coupons = await prisma.coupon.findMany({
-      where: { userId },
+      where: {
+        OR: [
+          { userId },
+          // Also find newsletter coupons by email (may not have userId set)
+          {
+            couponSource: 'NEWSLETTER',
+            description: { contains: email },
+          },
+        ],
+      },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
@@ -116,8 +126,34 @@ router.post('/claim-newsletter', authGuard, async (req, res) => {
     const result = await discountService.generateNewsletterDiscount(normalizedEmail, userId);
     return res.json({ discount: result });
   } catch (error: any) {
+    if (error.message?.includes('already') || error.message?.includes('EXISTS')) {
+      return res.status(409).json({ error: 'Rabat za newsletter został już odebrany' });
+    }
     console.error('[CouponsRoute] Error claiming newsletter discount:', error);
     return res.status(500).json({ error: 'Nie udało się przyznać rabatu newsletterowego' });
+  }
+});
+
+// POST /api/coupons/claim-surprise — claim surprise bonus for collecting all discounts (-25%)
+router.post('/claim-surprise', authGuard, async (req, res) => {
+  try {
+    const userId = (req as any).user?.userId;
+    const email = (req as any).user?.email || '';
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const result = await discountService.generateSurpriseDiscount(userId, email);
+    return res.json({ discount: result });
+  } catch (error: any) {
+    if (error.message === 'SURPRISE_ALREADY_CLAIMED') {
+      return res.status(409).json({ error: 'Kupon-niespodzianka został już odebrany' });
+    }
+    if (error.message === 'NOT_ALL_COLLECTED') {
+      return res.status(400).json({ error: 'Musisz najpierw zebrać wszystkie dostępne rabaty' });
+    }
+    console.error('[CouponsRoute] Error claiming surprise discount:', error);
+    return res.status(500).json({ error: 'Nie udało się przyznać kuponu-niespodzianki' });
   }
 });
 

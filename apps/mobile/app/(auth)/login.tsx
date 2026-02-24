@@ -10,7 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
 
 const loginSchema = z.object({
   email: z
@@ -29,6 +29,7 @@ export default function LoginScreen() {
   const { login } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const colors = useThemeColors();
 
   const { control, handleSubmit } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -53,7 +54,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.white }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.card }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
@@ -68,7 +69,7 @@ export default function LoginScreen() {
               style={{
                 fontSize: 28,
                 fontWeight: '700',
-                color: Colors.primary[500],
+                color: colors.tint,
                 marginBottom: 8,
               }}
             >
@@ -78,13 +79,13 @@ export default function LoginScreen() {
               style={{
                 fontSize: 22,
                 fontWeight: '600',
-                color: Colors.secondary[900],
+                color: colors.text,
                 marginBottom: 4,
               }}
             >
               Witaj ponownie!
             </Text>
-            <Text style={{ fontSize: 15, color: Colors.secondary[500] }}>
+            <Text style={{ fontSize: 15, color: colors.textMuted }}>
               Zaloguj się do swojego konta
             </Text>
           </View>
@@ -93,9 +94,9 @@ export default function LoginScreen() {
           {error && (
             <View
               style={{
-                backgroundColor: '#FEF2F2',
+                backgroundColor: colors.destructiveBg,
                 borderWidth: 1,
-                borderColor: '#FECACA',
+                borderColor: colors.border,
                 borderRadius: 8,
                 padding: 12,
                 marginBottom: 20,
@@ -104,8 +105,8 @@ export default function LoginScreen() {
                 gap: 8,
               }}
             >
-              <FontAwesome name="exclamation-circle" size={16} color={Colors.destructive} />
-              <Text style={{ color: Colors.destructive, fontSize: 14, flex: 1 }}>
+              <FontAwesome name="exclamation-circle" size={16} color={colors.destructive} />
+              <Text style={{ color: colors.destructive, fontSize: 14, flex: 1 }}>
                 {error}
               </Text>
             </View>
@@ -136,7 +137,7 @@ export default function LoginScreen() {
             onPress={() => router.push('/(auth)/forgot-password')}
             style={{ alignSelf: 'flex-end', marginBottom: 24, marginTop: -8 }}
           >
-            <Text style={{ color: Colors.primary[500], fontSize: 14 }}>
+            <Text style={{ color: colors.tint, fontSize: 14 }}>
               Zapomniałeś hasła?
             </Text>
           </TouchableOpacity>
@@ -152,11 +153,11 @@ export default function LoginScreen() {
 
           {/* Register link */}
           <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 24 }}>
-            <Text style={{ color: Colors.secondary[500], fontSize: 14 }}>
+            <Text style={{ color: colors.textMuted, fontSize: 14 }}>
               Nie masz konta?{' '}
             </Text>
             <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-              <Text style={{ color: Colors.primary[500], fontSize: 14, fontWeight: '600' }}>
+              <Text style={{ color: colors.tint, fontSize: 14, fontWeight: '600' }}>
                 Zarejestruj się
               </Text>
             </TouchableOpacity>
@@ -172,8 +173,8 @@ export default function LoginScreen() {
               gap: 6,
             }}
           >
-            <FontAwesome name="lock" size={12} color={Colors.secondary[400]} />
-            <Text style={{ color: Colors.secondary[400], fontSize: 12 }}>
+            <FontAwesome name="lock" size={12} color={colors.textMuted} />
+            <Text style={{ color: colors.textMuted, fontSize: 12 }}>
               Połączenie szyfrowane SSL. Twoje dane są bezpieczne.
             </Text>
           </View>

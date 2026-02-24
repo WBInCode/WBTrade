@@ -3,7 +3,7 @@ import { View, Text, FlatList, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import ProductCard from './ProductCard';
 import Spinner from '../ui/Spinner';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
 import type { Product } from '../../services/types';
 
 interface ProductCarouselProps {
@@ -21,6 +21,8 @@ function ProductCarousel({
   loading = false,
   onSeeAll,
 }: ProductCarouselProps) {
+  const colors = useThemeColors();
+
   if (loading) {
     return (
       <View style={{ marginBottom: 8 }}>
@@ -29,7 +31,7 @@ function ProductCarousel({
             style={{
               fontSize: 18,
               fontWeight: '700',
-              color: Colors.secondary[900],
+              color: colors.text,
               paddingHorizontal: 16,
               marginBottom: 12,
             }}
@@ -63,14 +65,14 @@ function ProductCarousel({
             style={{
               fontSize: 18,
               fontWeight: '700',
-              color: Colors.secondary[900],
+              color: colors.text,
             }}
           >
             {title}
           </Text>
           {onSeeAll && (
             <TouchableOpacity onPress={onSeeAll}>
-              <Text style={{ color: Colors.primary[500], fontSize: 14, fontWeight: '500' }}>
+              <Text style={{ color: colors.tint, fontSize: 14, fontWeight: '500' }}>
                 Pokaż wszystkie
               </Text>
             </TouchableOpacity>

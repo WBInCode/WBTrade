@@ -3,13 +3,19 @@ import { prisma } from '../db';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import { emailService } from '../services/email.service';
+import { discountService } from '../services/discount.service';
 
 const router = express.Router();
 
 // Subscribe to newsletter
+// Accepts optional `source` field: 
+//   'registration' = auto-verify + generate coupon
+//   'app_discounts' = auto-verify only (coupon claimed separately)
 router.post('/subscribe', async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, source } = req.body;
+    const autoVerify = source === 'registration' || source === 'app_discounts';
+    const generateCoupon = source === 'registration'; // Only generate coupon on registration
 
     if (!email || !email.includes('@')) {
       return res.status(400).json({
@@ -34,11 +40,30 @@ router.post('/subscribe', async (req, res) => {
           where: { email: normalizedEmail },
           data: {
             unsubscribed_at: null,
-            is_verified: false,
+            is_verified: autoVerify ? true : false,
+            verified_at: autoVerify ? new Date() : null,
             token: newToken,
             subscribed_at: new Date(),
           },
         });
+
+        if (autoVerify) {
+          // Generate newsletter discount coupon only on registration
+          if (generateCoupon) {
+            try {
+              await discountService.generateNewsletterDiscount(normalizedEmail);
+            } catch (e) {
+              console.warn('Newsletter discount generation failed (re-sub):', e);
+            }
+          }
+          return res.status(200).json({
+            success: true,
+            message: generateCoupon
+              ? 'Zapisano do newslettera! Kupon rabatowy -10% czeka w zakładce Moje Rabaty.'
+              : 'Zapisano do newslettera!',
+            verified: true,
+          });
+        }
 
         // Send verification email
         await emailService.sendNewsletterVerificationEmail(normalizedEmail, newToken);
@@ -53,6 +78,32 @@ router.post('/subscribe', async (req, res) => {
         return res.status(200).json({
           success: true,
           message: 'Ten adres e-mail jest już zapisany do newslettera.',
+          verified: true,
+        });
+      }
+
+      if (autoVerify) {
+        // Auto-verify existing unverified subscription
+        await prisma.newsletter_subscriptions.update({
+          where: { email: normalizedEmail },
+          data: {
+            is_verified: true,
+            verified_at: new Date(),
+          },
+        });
+        if (generateCoupon) {
+          try {
+            await discountService.generateNewsletterDiscount(normalizedEmail);
+          } catch (e) {
+            console.warn('Newsletter discount generation failed (auto-verify):', e);
+          }
+        }
+        return res.status(200).json({
+          success: true,
+          message: generateCoupon
+            ? 'Zapisano do newslettera! Kupon rabatowy -10% czeka w zakładce Moje Rabaty.'
+            : 'Zapisano do newslettera!',
+          verified: true,
         });
       }
 
@@ -72,9 +123,28 @@ router.post('/subscribe', async (req, res) => {
         id: uuidv4(),
         email: normalizedEmail,
         token,
-        is_verified: false,
+        is_verified: autoVerify ? true : false,
+        verified_at: autoVerify ? new Date() : undefined,
       },
     });
+
+    if (autoVerify) {
+      // Generate newsletter discount coupon only on registration
+      if (generateCoupon) {
+        try {
+          await discountService.generateNewsletterDiscount(normalizedEmail);
+        } catch (e) {
+          console.warn('Newsletter discount generation failed (new sub):', e);
+        }
+      }
+      return res.status(201).json({
+        success: true,
+        message: generateCoupon
+          ? 'Zapisano do newslettera! Kupon rabatowy -10% czeka w zakładce Moje Rabaty.'
+          : 'Zapisano do newslettera!',
+        verified: true,
+      });
+    }
 
     // Send verification email
     await emailService.sendNewsletterVerificationEmail(normalizedEmail, token);
@@ -122,6 +192,13 @@ router.get('/verify/:token', async (req, res) => {
         verified_at: new Date(),
       },
     });
+
+    // Generate newsletter discount coupon
+    try {
+      await discountService.generateNewsletterDiscount(subscription.email);
+    } catch (e) {
+      console.warn('Newsletter discount generation failed (verify):', e);
+    }
 
     // Send welcome email
     await emailService.sendNewsletterWelcomeEmail(subscription.email, token);
@@ -178,6 +255,47 @@ router.get('/unsubscribe/:token', async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Wystąpił błąd. Spróbuj ponownie później.',
+    });
+  }
+});
+
+// Check newsletter subscription status by email
+router.get('/status', async (req, res) => {
+  try {
+    const email = req.query.email as string;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        subscribed: false,
+        verified: false,
+      });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const subscription = await prisma.newsletter_subscriptions.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    if (!subscription || subscription.unsubscribed_at) {
+      return res.status(200).json({
+        success: true,
+        subscribed: false,
+        verified: false,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      subscribed: true,
+      verified: subscription.is_verified,
+    });
+  } catch (error) {
+    console.error('Newsletter status error:', error);
+    return res.status(200).json({
+      success: true,
+      subscribed: false,
+      verified: false,
     });
   }
 });

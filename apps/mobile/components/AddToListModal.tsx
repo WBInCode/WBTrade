@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Modal,
   View,
@@ -12,7 +12,8 @@ import {
   Platform,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { Colors } from '../constants/Colors';
+import { useThemeColors } from '../hooks/useThemeColors';
+import type { ThemeColors } from '../constants/Colors';
 import { shoppingListApi } from '../services/shopping-lists';
 import { useToast } from '../contexts/ToastContext';
 import type { ShoppingList } from '../services/types';
@@ -25,6 +26,8 @@ interface AddToListModalProps {
 }
 
 export default function AddToListModal({ visible, onClose, productId, productName }: AddToListModalProps) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [lists, setLists] = useState<ShoppingList[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -92,7 +95,7 @@ export default function AddToListModal({ visible, onClose, productId, productNam
       >
         <View style={styles.listItemLeft}>
           <View style={styles.listIcon}>
-            <FontAwesome name="list-ul" size={16} color={Colors.primary[500]} />
+            <FontAwesome name="list-ul" size={16} color={colors.tint} />
           </View>
           <View style={styles.listItemInfo}>
             <Text style={styles.listItemName} numberOfLines={1}>{item.name}</Text>
@@ -102,9 +105,9 @@ export default function AddToListModal({ visible, onClose, productId, productNam
           </View>
         </View>
         {isAdding ? (
-          <ActivityIndicator size="small" color={Colors.primary[500]} />
+          <ActivityIndicator size="small" color={colors.tint} />
         ) : (
-          <FontAwesome name="plus" size={16} color={Colors.primary[500]} />
+          <FontAwesome name="plus" size={16} color={colors.tint} />
         )}
       </TouchableOpacity>
     );
@@ -127,7 +130,7 @@ export default function AddToListModal({ visible, onClose, productId, productNam
           <View style={styles.header}>
             <Text style={styles.title}>Dodaj do listy</Text>
             <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <FontAwesome name="times" size={20} color={Colors.secondary[500]} />
+              <FontAwesome name="times" size={20} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
 
@@ -138,7 +141,7 @@ export default function AddToListModal({ visible, onClose, productId, productNam
           {/* List of existing lists */}
           {loading ? (
             <View style={styles.loadingWrap}>
-              <ActivityIndicator size="large" color={Colors.primary[500]} />
+              <ActivityIndicator size="large" color={colors.tint} />
             </View>
           ) : (
             <>
@@ -154,7 +157,7 @@ export default function AddToListModal({ visible, onClose, productId, productNam
 
               {lists.length === 0 && !showNewListInput && (
                 <View style={styles.emptyWrap}>
-                  <FontAwesome name="list-ul" size={40} color={Colors.secondary[300]} />
+                  <FontAwesome name="list-ul" size={40} color={colors.inputBorder} />
                   <Text style={styles.emptyText}>Nie masz jeszcze żadnych list</Text>
                   <Text style={styles.emptySubtext}>Utwórz swoją pierwszą listę zakupową</Text>
                 </View>
@@ -168,7 +171,7 @@ export default function AddToListModal({ visible, onClose, productId, productNam
               <TextInput
                 style={styles.newListInput}
                 placeholder="Nazwa nowej listy..."
-                placeholderTextColor={Colors.secondary[400]}
+                placeholderTextColor={colors.placeholder}
                 value={newListName}
                 onChangeText={setNewListName}
                 autoFocus
@@ -190,7 +193,7 @@ export default function AddToListModal({ visible, onClose, productId, productNam
                   disabled={!newListName.trim() || creating}
                 >
                   {creating ? (
-                    <ActivityIndicator size="small" color={Colors.white} />
+                    <ActivityIndicator size="small" color={colors.textInverse} />
                   ) : (
                     <Text style={styles.createBtnText}>Utwórz i dodaj</Text>
                   )}
@@ -203,7 +206,7 @@ export default function AddToListModal({ visible, onClose, productId, productNam
               onPress={() => setShowNewListInput(true)}
               activeOpacity={0.7}
             >
-              <FontAwesome name="plus-circle" size={20} color={Colors.primary[500]} />
+              <FontAwesome name="plus-circle" size={20} color={colors.tint} />
               <Text style={styles.newListBtnText}>Utwórz nową listę</Text>
             </TouchableOpacity>
           )}
@@ -213,7 +216,7 @@ export default function AddToListModal({ visible, onClose, productId, productNam
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -223,7 +226,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   sheet: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
@@ -240,11 +243,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
   },
   productName: {
     fontSize: 13,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     marginBottom: 12,
   },
   loadingWrap: {
@@ -271,7 +274,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: Colors.primary[50],
+    backgroundColor: colors.tintLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -281,16 +284,16 @@ const styles = StyleSheet.create({
   listItemName: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.secondary[800],
+    color: colors.text,
   },
   listItemCount: {
     fontSize: 12,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     marginTop: 1,
   },
   separator: {
     height: 1,
-    backgroundColor: Colors.secondary[100],
+    backgroundColor: colors.backgroundTertiary,
   },
   emptyWrap: {
     alignItems: 'center',
@@ -300,12 +303,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
     marginTop: 4,
   },
   emptySubtext: {
     fontSize: 13,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
   },
   newListSection: {
     marginTop: 16,
@@ -313,13 +316,13 @@ const styles = StyleSheet.create({
   },
   newListInput: {
     borderWidth: 1,
-    borderColor: Colors.secondary[200],
+    borderColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: Colors.secondary[800],
-    backgroundColor: Colors.secondary[50],
+    color: colors.inputText,
+    backgroundColor: colors.backgroundSecondary,
   },
   newListActions: {
     flexDirection: 'row',
@@ -330,28 +333,28 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: Colors.secondary[200],
+    borderColor: colors.border,
     alignItems: 'center',
   },
   cancelBtnText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
   },
   createBtn: {
     flex: 2,
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
     alignItems: 'center',
   },
   createBtnDisabled: {
-    backgroundColor: Colors.secondary[300],
+    backgroundColor: colors.inputBorder,
   },
   createBtnText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.white,
+    color: colors.textInverse,
   },
   newListBtn: {
     flexDirection: 'row',
@@ -360,11 +363,11 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     marginTop: 8,
     borderTopWidth: 1,
-    borderTopColor: Colors.secondary[100],
+    borderTopColor: colors.backgroundTertiary,
   },
   newListBtnText: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.primary[500],
+    color: colors.tint,
   },
 });

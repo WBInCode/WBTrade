@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { Colors } from '../constants/Colors';
+import { useThemeColors } from '../hooks/useThemeColors';
 
 type ToastType = 'success' | 'error' | 'info';
 
@@ -81,10 +81,11 @@ function ToastItem({ toast }: { toast: Toast }) {
     return () => clearTimeout(timer);
   }, []);
 
+  const colors = useThemeColors();
   const iconName =
     toast.type === 'success' ? 'check-circle' : toast.type === 'error' ? 'times-circle' : 'info-circle';
   const bgColor =
-    toast.type === 'success' ? Colors.success : toast.type === 'error' ? Colors.destructive : Colors.primary[500];
+    toast.type === 'success' ? colors.success : toast.type === 'error' ? colors.destructive : colors.tint;
 
   return (
     <Animated.View
@@ -93,8 +94,8 @@ function ToastItem({ toast }: { toast: Toast }) {
         { backgroundColor: bgColor, opacity, transform: [{ translateY }] },
       ]}
     >
-      <FontAwesome name={iconName} size={16} color={Colors.white} />
-      <Text style={styles.toastText} numberOfLines={2}>{toast.message}</Text>
+      <FontAwesome name={iconName} size={16} color={colors.textInverse} />
+      <Text style={[styles.toastText, { color: colors.textInverse }]} numberOfLines={2}>{toast.message}</Text>
     </Animated.View>
   );
 }
@@ -133,7 +134,6 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
   },
   toastText: {
-    color: Colors.white,
     fontSize: 14,
     fontWeight: '600',
     flex: 1,
