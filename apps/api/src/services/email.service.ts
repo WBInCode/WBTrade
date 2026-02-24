@@ -1,10 +1,20 @@
 import { Resend } from 'resend';
 import { discountService } from './discount.service';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // ============================================
 // EMAIL SERVICE
 // Wysyłka emaili przez Resend
 // ============================================
+
+// Debug file logger for email tracing
+const EMAIL_DEBUG_LOG = path.resolve(__dirname, '../../email-debug.log');
+function debugLog(msg: string) {
+  const line = `[${new Date().toISOString()}] ${msg}\n`;
+  fs.appendFileSync(EMAIL_DEBUG_LOG, line);
+  console.log(msg);
+}
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@wb-trade.pl';
@@ -40,8 +50,14 @@ export class EmailService {
     discountPercent: number,
     expiresAt: Date
   ): Promise<EmailResult> {
+    debugLog(`[EmailService] ========== sendWelcomeDiscountEmail CALLED ==========`);
+    debugLog(`[EmailService] To: ${to}, FirstName: ${firstName}, Code: ${couponCode}`);
+    debugLog(`[EmailService] RESEND_API_KEY const present: ${!!RESEND_API_KEY}`);
+    debugLog(`[EmailService] RESEND_API_KEY const length: ${RESEND_API_KEY.length}`);
+    debugLog(`[EmailService] FROM_EMAIL: ${FROM_EMAIL}`);
     try {
       const resend = getResend();
+      debugLog(`[EmailService] Got Resend instance`);
       
       const formattedExpiry = expiresAt.toLocaleDateString('pl-PL', {
         day: 'numeric',
@@ -49,6 +65,7 @@ export class EmailService {
         year: 'numeric',
       });
 
+      debugLog(`[EmailService] Calling resend.emails.send()...`);
       const { data, error } = await resend.emails.send({
         from: FROM_EMAIL,
         to: [to],
@@ -58,14 +75,14 @@ export class EmailService {
       });
 
       if (error) {
-        console.error('[EmailService] Resend error:', error);
+        debugLog(`[EmailService] ❌ Resend error: ${JSON.stringify(error)}`);
         return { success: false, error: error.message };
       }
 
-      console.log(`✅ [EmailService] Welcome discount email sent to ${to}, messageId: ${data?.id}`);
+      debugLog(`✅ [EmailService] Welcome discount email sent to ${to}, messageId: ${data?.id}`);
       return { success: true, messageId: data?.id };
     } catch (err: any) {
-      console.error('[EmailService] Exception:', err.message);
+      debugLog(`[EmailService] ❌ Exception: ${err.message}`);
       return { success: false, error: err.message };
     }
   }
@@ -327,13 +344,17 @@ Zespół WB Trade
     to: string,
     unsubscribeToken: string
   ): Promise<EmailResult> {
+    debugLog(`[EmailService] ========== sendNewsletterWelcomeEmail CALLED ==========`);
+    debugLog(`[EmailService] To: ${to}`);
     try {
       const resend = getResend();
+      debugLog(`[EmailService] Got Resend instance`);
       
       // Generate 10% discount code for newsletter subscriber
       let discountCode = '';
       let discountExpiry = '';
       try {
+        debugLog(`[EmailService] Generating newsletter discount...`);
         const discount = await discountService.generateNewsletterDiscount(to);
         discountCode = discount.couponCode;
         discountExpiry = discount.expiresAt.toLocaleDateString('pl-PL', { 
@@ -341,13 +362,15 @@ Zespół WB Trade
           month: 'long', 
           year: 'numeric' 
         });
+        debugLog(`[EmailService] Newsletter discount generated: ${discountCode}`);
       } catch (discountErr) {
-        console.error('[EmailService] Failed to generate newsletter discount:', discountErr);
+        debugLog(`[EmailService] Failed to generate newsletter discount: ${discountErr}`);
         // Continue without discount code
       }
       
       const unsubscribeUrl = `${SITE_URL}/newsletter/unsubscribe?token=${unsubscribeToken}`;
 
+      debugLog(`[EmailService] Calling resend.emails.send() for newsletter...`);
       const { data, error } = await resend.emails.send({
         from: FROM_EMAIL,
         to: [to],
@@ -357,14 +380,14 @@ Zespół WB Trade
       });
 
       if (error) {
-        console.error('[EmailService] Newsletter welcome error:', error);
+        debugLog(`[EmailService] ❌ Newsletter welcome error: ${JSON.stringify(error)}`);
         return { success: false, error: error.message };
       }
 
-      console.log(`✅ [EmailService] Newsletter welcome email sent to ${to} with discount ${discountCode}, messageId: ${data?.id} [BUILD: 2026-02-03-v2]`);
+      debugLog(`✅ [EmailService] Newsletter welcome email sent to ${to} with discount ${discountCode}, messageId: ${data?.id}`);
       return { success: true, messageId: data?.id };
     } catch (err: any) {
-      console.error('[EmailService] Newsletter welcome exception:', err.message);
+      debugLog(`[EmailService] ❌ Newsletter welcome exception: ${err.message}`);
       return { success: false, error: err.message };
     }
   }
