@@ -8,11 +8,14 @@ import { discountService } from '../services/discount.service';
 const router = express.Router();
 
 // Subscribe to newsletter
-// Accepts optional `source` field: 'registration' = auto-verify (user already confirmed email during registration)
+// Accepts optional `source` field: 
+//   'registration' = auto-verify + generate coupon
+//   'app_discounts' = auto-verify only (coupon claimed separately)
 router.post('/subscribe', async (req, res) => {
   try {
     const { email, source } = req.body;
-    const autoVerify = source === 'registration';
+    const autoVerify = source === 'registration' || source === 'app_discounts';
+    const generateCoupon = source === 'registration'; // Only generate coupon on registration
 
     if (!email || !email.includes('@')) {
       return res.status(400).json({
@@ -45,15 +48,19 @@ router.post('/subscribe', async (req, res) => {
         });
 
         if (autoVerify) {
-          // Generate newsletter discount coupon immediately
-          try {
-            await discountService.generateNewsletterDiscount(normalizedEmail);
-          } catch (e) {
-            console.warn('Newsletter discount generation failed (re-sub):', e);
+          // Generate newsletter discount coupon only on registration
+          if (generateCoupon) {
+            try {
+              await discountService.generateNewsletterDiscount(normalizedEmail);
+            } catch (e) {
+              console.warn('Newsletter discount generation failed (re-sub):', e);
+            }
           }
           return res.status(200).json({
             success: true,
-            message: 'Zapisano do newslettera! Kupon rabatowy -10% czeka w zakładce Moje Rabaty.',
+            message: generateCoupon
+              ? 'Zapisano do newslettera! Kupon rabatowy -10% czeka w zakładce Moje Rabaty.'
+              : 'Zapisano do newslettera!',
             verified: true,
           });
         }
@@ -84,14 +91,18 @@ router.post('/subscribe', async (req, res) => {
             verified_at: new Date(),
           },
         });
-        try {
-          await discountService.generateNewsletterDiscount(normalizedEmail);
-        } catch (e) {
-          console.warn('Newsletter discount generation failed (auto-verify):', e);
+        if (generateCoupon) {
+          try {
+            await discountService.generateNewsletterDiscount(normalizedEmail);
+          } catch (e) {
+            console.warn('Newsletter discount generation failed (auto-verify):', e);
+          }
         }
         return res.status(200).json({
           success: true,
-          message: 'Zapisano do newslettera! Kupon rabatowy -10% czeka w zakładce Moje Rabaty.',
+          message: generateCoupon
+            ? 'Zapisano do newslettera! Kupon rabatowy -10% czeka w zakładce Moje Rabaty.'
+            : 'Zapisano do newslettera!',
           verified: true,
         });
       }
@@ -118,15 +129,19 @@ router.post('/subscribe', async (req, res) => {
     });
 
     if (autoVerify) {
-      // Generate newsletter discount coupon immediately
-      try {
-        await discountService.generateNewsletterDiscount(normalizedEmail);
-      } catch (e) {
-        console.warn('Newsletter discount generation failed (new sub):', e);
+      // Generate newsletter discount coupon only on registration
+      if (generateCoupon) {
+        try {
+          await discountService.generateNewsletterDiscount(normalizedEmail);
+        } catch (e) {
+          console.warn('Newsletter discount generation failed (new sub):', e);
+        }
       }
       return res.status(201).json({
         success: true,
-        message: 'Zapisano do newslettera! Kupon rabatowy -10% czeka w zakładce Moje Rabaty.',
+        message: generateCoupon
+          ? 'Zapisano do newslettera! Kupon rabatowy -10% czeka w zakładce Moje Rabaty.'
+          : 'Zapisano do newslettera!',
         verified: true,
       });
     }
