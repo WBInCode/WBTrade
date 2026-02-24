@@ -167,7 +167,7 @@ export async function apiFetch<T>(endpoint: string, options: FetchOptions = {}):
 
   if (!response.ok) {
     throw new ApiError(
-      data?.message || `Request failed with status ${response.status}`,
+      data?.message || data?.error || `Request failed with status ${response.status}`,
       response.status,
       data?.errors,
     );
