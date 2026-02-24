@@ -47,9 +47,47 @@ export const ordersApi = {
     }>(`/orders/${id}/request-refund`, { reason }),
 };
 
+export interface ShippingPackageOption {
+  package: {
+    id: string;
+    type: 'standard' | 'gabaryt';
+    wholesaler: string | null;
+    items: Array<{
+      productId: string;
+      productName: string;
+      variantId: string;
+      quantity: number;
+      isGabaryt: boolean;
+      productImage?: string;
+    }>;
+    isPaczkomatAvailable: boolean;
+    isInPostOnly: boolean;
+    isCourierOnly: boolean;
+    warehouseValue: number;
+    hasFreeShipping: boolean;
+    paczkomatPackageCount: number;
+  };
+  shippingMethods: Array<{
+    id: string;
+    name: string;
+    price: number;
+    available: boolean;
+    message?: string;
+    estimatedDelivery: string;
+  }>;
+  selectedMethod: string;
+}
+
 export const checkoutApi = {
   getShippingMethods: (postalCode: string, city?: string) =>
     api.get<{ methods: ShippingMethod[] }>('/checkout/shipping/methods', { postalCode, city }),
+
+  getShippingPerPackage: (items: Array<{ variantId: string; quantity: number }>) =>
+    api.post<{
+      packagesWithOptions: ShippingPackageOption[];
+      totalShippingCost: number;
+      warnings: string[];
+    }>('/checkout/shipping/per-package', { items }),
 
   getPaymentMethods: () =>
     api.get<{ methods: any[] }>('/checkout/payment/methods'),
