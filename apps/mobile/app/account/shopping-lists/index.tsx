@@ -14,11 +14,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { useThemeColors } from '../../hooks/useThemeColors';
-import type { ThemeColors } from '../../constants/Colors';
-import { api } from '../../services/api';
-import { useAuth } from '../../contexts/AuthContext';
-import Button from '../../components/ui/Button';
+import { useThemeColors } from '../../../hooks/useThemeColors';
+import type { ThemeColors } from '../../../constants/Colors';
+import { api } from '../../../services/api';
+import { useAuth } from '../../../contexts/AuthContext';
+import Button from '../../../components/ui/Button';
 
 interface ShoppingList {
   id: string;
