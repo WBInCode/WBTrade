@@ -701,6 +701,7 @@ enum BaselinkerSyncType {
   CATEGORIES
   STOCK
   IMAGES
+  PRICE
 }
 
 enum BaselinkerSyncStatus {
