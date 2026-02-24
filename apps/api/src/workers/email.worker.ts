@@ -6,6 +6,16 @@
 import { Worker, Job } from 'bullmq';
 import { Resend } from 'resend';
 import { QUEUE_NAMES, queueConnection } from '../lib/queue';
+import * as fs from 'fs';
+import * as path from 'path';
+
+// Debug file logger for email tracing
+const EMAIL_DEBUG_LOG = path.resolve(__dirname, '../../email-debug.log');
+function debugLog(msg: string) {
+  const line = `[${new Date().toISOString()}] ${msg}\n`;
+  fs.appendFileSync(EMAIL_DEBUG_LOG, line);
+  console.log(msg);
+}
 
 // Lazy-init Resend to avoid crash when RESEND_API_KEY is not yet loaded
 let resend: Resend | null = null;
@@ -140,16 +150,23 @@ async function sendEmail(
   html: string,
   text: string
 ): Promise<void> {
+  debugLog(`[EmailWorker] ========== sendEmail CALLED ==========`);
+  debugLog(`[EmailWorker] To: ${to}`);
+  debugLog(`[EmailWorker] Subject: ${subject}`);
+  debugLog(`[EmailWorker] RESEND_API_KEY present: ${!!process.env.RESEND_API_KEY}`);
+  debugLog(`[EmailWorker] RESEND_API_KEY length: ${(process.env.RESEND_API_KEY || '').length}`);
+  debugLog(`[EmailWorker] FROM_EMAIL: ${FROM_EMAIL}`);
   try {
     // If no API key configured, log only (development mode)
     if (!process.env.RESEND_API_KEY) {
-      console.log(`[EmailWorker] No RESEND_API_KEY - logging email instead`);
-      console.log(`[EmailWorker] To: ${to}`);
-      console.log(`[EmailWorker] Subject: ${subject}`);
-      console.log(`[EmailWorker] Text preview: ${text.substring(0, 100)}...`);
+      debugLog(`[EmailWorker] ❌ No RESEND_API_KEY - logging email instead`);
+      debugLog(`[EmailWorker] To: ${to}`);
+      debugLog(`[EmailWorker] Subject: ${subject}`);
+      debugLog(`[EmailWorker] Text preview: ${text.substring(0, 100)}...`);
       return;
     }
 
+    debugLog(`[EmailWorker] Calling resend.emails.send()...`);
     const { data, error } = await getResend().emails.send({
       from: FROM_EMAIL,
       to: [to],
@@ -159,13 +176,13 @@ async function sendEmail(
     });
 
     if (error) {
-      console.error(`[EmailWorker] Resend error:`, error);
+      debugLog(`[EmailWorker] ❌ Resend error: ${JSON.stringify(error)}`);
       throw new Error(`Failed to send email: ${error.message}`);
     }
 
-    console.log(`[EmailWorker] Email sent successfully to ${to}`, data);
+    debugLog(`[EmailWorker] ✅ Email sent successfully to ${to}, ID: ${data?.id}`);
   } catch (error: any) {
-    console.error(`[EmailWorker] Failed to send email to ${to}:`, error);
+    debugLog(`[EmailWorker] ❌ Failed to send email to ${to}: ${error.message}`);
     throw error;
   }
 }
@@ -175,15 +192,21 @@ async function sendEmail(
  * This is the fallback for when background workers are not running
  */
 export async function sendEmailDirect(data: EmailJobData): Promise<void> {
+  debugLog(`[EmailWorker] ========== sendEmailDirect CALLED ==========`);
+  debugLog(`[EmailWorker] Template: ${data.template}, To: ${data.to}`);
   const { to, template, context } = data;
   
   const templateFn = EMAIL_TEMPLATES[template];
   if (!templateFn) {
+    debugLog(`[EmailWorker] ❌ Unknown template: ${template}`);
     throw new Error(`Unknown email template: ${template}`);
   }
   
+  debugLog(`[EmailWorker] Template found, generating content...`);
   const { subject, html, text } = templateFn(context);
+  debugLog(`[EmailWorker] Content generated, subject: ${subject}`);
   await sendEmail(to, subject, html, text);
+  debugLog(`[EmailWorker] ========== sendEmailDirect COMPLETE ==========`);
 }
 
 /**

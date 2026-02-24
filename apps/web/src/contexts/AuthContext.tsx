@@ -43,6 +43,7 @@ interface RegisterData {
   password: string;
   firstName: string;
   lastName: string;
+  newsletter?: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
