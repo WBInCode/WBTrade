@@ -20,7 +20,7 @@ COPY pnpm-workspace.yaml ./
 COPY apps/api ./apps/api
 COPY packages ./packages
 
-# Instalacja zależności
+# Instalacja zależności (cache bust: 2026-02-24)
 RUN pnpm install --frozen-lockfile
 
 # Zmiana katalogu na API do budowania
