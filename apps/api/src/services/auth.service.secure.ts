@@ -33,6 +33,13 @@ import {
 } from '../lib/audit';
 import { validatePassword } from '../lib/validation';
 
+// Structured logger (console only, dev mode only)
+function debugLog(msg: string) {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(msg);
+  }
+}
+
 // ============================================
 // CONFIGURATION - NO FALLBACKS IN PRODUCTION!
 // ============================================
@@ -266,12 +273,12 @@ export class SecureAuthService {
         },
       });
     } catch (emailErr: any) {
-      console.error(`[SecureAuthService] Failed to send verification email to ${normalizedEmail}:`, emailErr.message);
+      console.error('[SecureAuthService] Failed to send verification email:', emailErr.message);
       // Don't block registration if email fails
     }
 
     // Generate welcome discount code and send email (async, don't block registration)
-    console.log(`[SecureAuthService] Starting welcome discount for ${user.email}...`);
+    debugLog('[SecureAuthService] Starting welcome discount...');
     this.sendWelcomeDiscount(user.id, user.email, user.firstName || '').catch((err) => {
       console.error('[SecureAuthService] Failed to send welcome discount:', err.message);
     });
@@ -296,11 +303,11 @@ export class SecureAuthService {
    */
   private async sendWelcomeDiscount(userId: string, email: string, firstName: string): Promise<void> {
     try {
-      console.log(`[SecureAuthService] Generating discount for user ${userId}...`);
+      debugLog('[SecureAuthService] Generating discount...');
       const discount = await discountService.generateWelcomeDiscount(userId, email);
-      console.log(`[SecureAuthService] Discount generated: ${discount.couponCode}`);
+      debugLog('[SecureAuthService] Discount generated');
       
-      console.log(`[SecureAuthService] Sending email to ${email}...`);
+      debugLog('[SecureAuthService] Sending welcome email...');
       const result = await emailService.sendWelcomeDiscountEmail(
         email,
         firstName || email.split('@')[0],
@@ -310,12 +317,12 @@ export class SecureAuthService {
       );
       
       if (result.success) {
-        console.log(`✅ [SecureAuthService] Welcome discount sent to ${email}: ${discount.couponCode}`);
+        debugLog('✅ [SecureAuthService] Welcome discount sent successfully');
       } else {
-        console.error(`❌ [SecureAuthService] Email failed for ${email}: ${result.error}`);
+        console.error('❌ [SecureAuthService] Welcome email failed:', result.error);
       }
     } catch (err: any) {
-      console.error(`[SecureAuthService] Welcome discount error for ${email}:`, err.message);
+      console.error('[SecureAuthService] Welcome discount error:', err.message);
       // Don't throw - registration should succeed even if discount email fails
     }
   }
@@ -326,7 +333,7 @@ export class SecureAuthService {
    */
   private async subscribeToNewsletter(userId: string, email: string, firstName: string): Promise<void> {
     try {
-      console.log(`[SecureAuthService] Subscribing ${email} to newsletter...`);
+      debugLog('[SecureAuthService] Subscribing to newsletter...');
 
       // Check if already subscribed
       const existing = await prisma.newsletter_subscriptions.findUnique({
@@ -363,12 +370,12 @@ export class SecureAuthService {
 
       // Generate newsletter discount code
       const discount = await discountService.generateNewsletterDiscount(email, userId);
-      console.log(`✅ [SecureAuthService] Newsletter subscription + discount for ${email}: ${discount.couponCode}`);
+      debugLog('✅ [SecureAuthService] Newsletter subscription + discount created');
 
       // Send newsletter welcome email with discount code
       await emailService.sendNewsletterWelcomeEmail(email, token);
     } catch (err: any) {
-      console.error(`[SecureAuthService] Newsletter subscription error for ${email}:`, err.message);
+      console.error('[SecureAuthService] Newsletter subscription error:', err.message);
       // Don't throw - registration should succeed even if newsletter subscription fails
     }
   }

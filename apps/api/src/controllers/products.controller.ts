@@ -164,7 +164,7 @@ export async function getProductById(req: Request, res: Response): Promise<void>
     res.status(200).json(product);
   } catch (error) {
     console.error('Error fetching product:', error);
-    res.status(500).json({ message: 'Error retrieving product', error });
+    res.status(500).json({ message: 'Error retrieving product' });
   }
 }
 
@@ -189,7 +189,7 @@ export async function getProductBySlug(req: Request, res: Response): Promise<voi
     res.status(200).json(product);
   } catch (error) {
     console.error('Error fetching product:', error);
-    res.status(500).json({ message: 'Error retrieving product', error });
+    res.status(500).json({ message: 'Error retrieving product' });
   }
 }
 
@@ -198,7 +198,8 @@ export async function getProductBySlug(req: Request, res: Response): Promise<voi
  */
 export async function createProduct(req: Request, res: Response): Promise<void> {
   try {
-    console.log('Creating product, req.body:', JSON.stringify(req.body, null, 2));
+    // Log only field names, not full body contents
+    console.log('Creating product, fields:', Object.keys(req.body).join(', '));
     
     const validation = createProductSchema.safeParse(req.body);
     
@@ -211,7 +212,7 @@ export async function createProduct(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    console.log('Validation passed, data:', JSON.stringify(validation.data, null, 2));
+    console.log('Validation passed for product creation');
 
     const { images, variants, categoryId, stock, lowStockThreshold, weight, shortDescription, ...productData } = validation.data;
     
@@ -246,7 +247,7 @@ export async function createProduct(req: Request, res: Response): Promise<void> 
       }),
     };
 
-    console.log('Prisma data:', JSON.stringify(prismaData, null, 2));
+    console.log('Prisma data prepared for product creation');
 
     // If categoryId is provided, verify it exists first
     if (categoryId) {
@@ -262,7 +263,7 @@ export async function createProduct(req: Request, res: Response): Promise<void> 
   } catch (error: any) {
     console.error('Error creating product:', error);
     console.error('Error details:', error?.message, error?.code, error?.meta);
-    res.status(500).json({ message: 'Error creating product', details: error?.message });
+    res.status(500).json({ message: 'Error creating product' });
   }
 }
 
@@ -280,7 +281,8 @@ export async function updateProduct(req: Request, res: Response): Promise<void> 
       return;
     }
     
-    console.log('Update product req.body:', JSON.stringify(req.body, null, 2));
+    // Log only field names, not full body contents
+    console.log('Update product, fields:', Object.keys(req.body).join(', '));
     const validation = updateProductSchema.safeParse(req.body);
     
     if (!validation.success) {
@@ -347,7 +349,7 @@ export async function deleteProduct(req: Request, res: Response): Promise<void> 
     res.status(200).json({ message: 'Product deleted successfully' });
   } catch (error) {
     console.error('Error deleting product:', error);
-    res.status(500).json({ message: 'Error deleting product', error });
+    res.status(500).json({ message: 'Error deleting product' });
   }
 }
 
@@ -361,7 +363,7 @@ export async function getFilters(req: Request, res: Response): Promise<void> {
     res.status(200).json(filters);
   } catch (error) {
     console.error('Error fetching filters:', error);
-    res.status(500).json({ message: 'Error retrieving filters', error });
+    res.status(500).json({ message: 'Error retrieving filters' });
   }
 }
 

@@ -30,7 +30,7 @@ router.get('/:slug/products', async (req: Request, res: Response) => {
     const products = await carouselService.getProducts(slug);
     res.json({ products });
   } catch (error) {
-    console.error(`Error fetching carousel products for ${req.params.slug}:`, error);
+    console.error('Error fetching carousel products for slug:', String(req.params.slug).replace(/[\n\r]/g, ''), error);
     res.status(500).json({ message: 'Error fetching carousel products' });
   }
 });

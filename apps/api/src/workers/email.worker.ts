@@ -6,15 +6,22 @@
 import { Worker, Job } from 'bullmq';
 import { Resend } from 'resend';
 import { QUEUE_NAMES, queueConnection } from '../lib/queue';
-import * as fs from 'fs';
-import * as path from 'path';
 
-// Debug file logger for email tracing
-const EMAIL_DEBUG_LOG = path.resolve(__dirname, '../../email-debug.log');
+// Structured logger (console only, no file)
 function debugLog(msg: string) {
-  const line = `[${new Date().toISOString()}] ${msg}\n`;
-  fs.appendFileSync(EMAIL_DEBUG_LOG, line);
-  console.log(msg);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`[EmailWorker] ${msg}`);
+  }
+}
+
+// HTML entity escaping to prevent XSS in email templates
+function escapeHtml(str: string): string {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // Lazy-init Resend to avoid crash when RESEND_API_KEY is not yet loaded
@@ -76,21 +83,21 @@ const wrapWithLogo = (title: string, content: string) => `
 // Email templates
 export const EMAIL_TEMPLATES: Record<string, (context: Record<string, any>) => { subject: string; html: string; text: string }> = {
   'order-confirmation': (ctx) => ({
-    subject: `Potwierdzenie zamówienia #${ctx.orderId}`,
+    subject: `Potwierdzenie zamówienia #${escapeHtml(ctx.orderId)}`,
     html: wrapWithLogo('Dziękujemy za zamówienie!', `
-      <p style="font-size: 16px; color: #333;">Twoje zamówienie <strong>#${ctx.orderId}</strong> zostało przyjęte.</p>
-      <p style="font-size: 16px; color: #555;">Wartość zamówienia: <strong>${ctx.total} PLN</strong></p>
-      <p style="font-size: 16px; color: #555;">Status: <strong>${ctx.status}</strong></p>
+      <p style="font-size: 16px; color: #333;">Twoje zamówienie <strong>#${escapeHtml(ctx.orderId)}</strong> zostało przyjęte.</p>
+      <p style="font-size: 16px; color: #555;">Wartość zamówienia: <strong>${escapeHtml(String(ctx.total))} PLN</strong></p>
+      <p style="font-size: 16px; color: #555;">Status: <strong>${escapeHtml(ctx.status)}</strong></p>
     `),
     text: `Dziękujemy za zamówienie! Zamówienie #${ctx.orderId}, wartość: ${ctx.total} PLN`,
   }),
   
   'order-shipped': (ctx) => ({
-    subject: `Twoje zamówienie #${ctx.orderId} zostało wysłane`,
+    subject: `Twoje zamówienie #${escapeHtml(ctx.orderId)} zostało wysłane`,
     html: wrapWithLogo('🚚 Twoja paczka jest w drodze!', `
-      <p style="font-size: 16px; color: #333;">Zamówienie <strong>#${ctx.orderId}</strong> zostało wysłane.</p>
-      <p style="font-size: 16px; color: #555;">Numer przesyłki: <strong>${ctx.trackingNumber}</strong></p>
-      <p style="font-size: 16px; color: #555;">Przewoźnik: <strong>${ctx.carrier}</strong></p>
+      <p style="font-size: 16px; color: #333;">Zamówienie <strong>#${escapeHtml(ctx.orderId)}</strong> zostało wysłane.</p>
+      <p style="font-size: 16px; color: #555;">Numer przesyłki: <strong>${escapeHtml(ctx.trackingNumber)}</strong></p>
+      <p style="font-size: 16px; color: #555;">Przewoźnik: <strong>${escapeHtml(ctx.carrier)}</strong></p>
       <div style="text-align: center; margin: 25px 0;">
         <a href="${ctx.trackingUrl}" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; text-decoration: none; padding: 12px 30px; border-radius: 8px; font-weight: bold;">Śledź przesyłkę</a>
       </div>
@@ -114,7 +121,7 @@ export const EMAIL_TEMPLATES: Record<string, (context: Record<string, any>) => {
   'email-verification': (ctx) => ({
     subject: 'Potwierdź swój email - WBTrade',
     html: wrapWithLogo('📧 Potwierdź swój email', `
-      <p style="font-size: 18px; color: #333;">Witaj <strong>${ctx.name}</strong>!</p>
+      <p style="font-size: 18px; color: #333;">Witaj <strong>${escapeHtml(ctx.name)}</strong>!</p>
       <p style="font-size: 16px; color: #555;">Kliknij poniższy przycisk, aby potwierdzić swój adres email:</p>
       <div style="text-align: center; margin: 25px 0;">
         <a href="${ctx.verifyUrl}" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; text-decoration: none; padding: 12px 30px; border-radius: 8px; font-weight: bold;">Potwierdź email</a>
@@ -126,10 +133,10 @@ export const EMAIL_TEMPLATES: Record<string, (context: Record<string, any>) => {
   'low-stock-alert': (ctx) => ({
     subject: `Niski stan magazynowy - ${ctx.productName}`,
     html: wrapWithLogo('⚠️ Niski stan magazynowy', `
-      <p style="font-size: 16px; color: #333;"><strong>Produkt:</strong> ${ctx.productName}</p>
-      <p style="font-size: 16px; color: #555;"><strong>SKU:</strong> ${ctx.sku}</p>
-      <p style="font-size: 16px; color: #dc2626;"><strong>Aktualny stan:</strong> ${ctx.currentStock}</p>
-      <p style="font-size: 16px; color: #555;"><strong>Minimum:</strong> ${ctx.minimumStock}</p>
+      <p style="font-size: 16px; color: #333;"><strong>Produkt:</strong> ${escapeHtml(ctx.productName)}</p>
+      <p style="font-size: 16px; color: #555;"><strong>SKU:</strong> ${escapeHtml(ctx.sku)}</p>
+      <p style="font-size: 16px; color: #dc2626;"><strong>Aktualny stan:</strong> ${escapeHtml(String(ctx.currentStock))}</p>
+      <p style="font-size: 16px; color: #555;"><strong>Minimum:</strong> ${escapeHtml(String(ctx.minimumStock))}</p>
     `),
     text: `Niski stan: ${ctx.productName} (${ctx.currentStock}/${ctx.minimumStock})`,
   }),
@@ -150,23 +157,14 @@ async function sendEmail(
   html: string,
   text: string
 ): Promise<void> {
-  debugLog(`[EmailWorker] ========== sendEmail CALLED ==========`);
-  debugLog(`[EmailWorker] To: ${to}`);
-  debugLog(`[EmailWorker] Subject: ${subject}`);
-  debugLog(`[EmailWorker] RESEND_API_KEY present: ${!!process.env.RESEND_API_KEY}`);
-  debugLog(`[EmailWorker] RESEND_API_KEY length: ${(process.env.RESEND_API_KEY || '').length}`);
-  debugLog(`[EmailWorker] FROM_EMAIL: ${FROM_EMAIL}`);
+  debugLog('sendEmail called');
   try {
     // If no API key configured, log only (development mode)
     if (!process.env.RESEND_API_KEY) {
-      debugLog(`[EmailWorker] ❌ No RESEND_API_KEY - logging email instead`);
-      debugLog(`[EmailWorker] To: ${to}`);
-      debugLog(`[EmailWorker] Subject: ${subject}`);
-      debugLog(`[EmailWorker] Text preview: ${text.substring(0, 100)}...`);
+      debugLog('No RESEND_API_KEY configured - skipping email send');
       return;
     }
 
-    debugLog(`[EmailWorker] Calling resend.emails.send()...`);
     const { data, error } = await getResend().emails.send({
       from: FROM_EMAIL,
       to: [to],
@@ -176,13 +174,13 @@ async function sendEmail(
     });
 
     if (error) {
-      debugLog(`[EmailWorker] ❌ Resend error: ${JSON.stringify(error)}`);
+      console.error('[EmailWorker] Resend error:', error.message);
       throw new Error(`Failed to send email: ${error.message}`);
     }
 
-    debugLog(`[EmailWorker] ✅ Email sent successfully to ${to}, ID: ${data?.id}`);
+    debugLog(`Email sent successfully, ID: ${data?.id}`);
   } catch (error: any) {
-    debugLog(`[EmailWorker] ❌ Failed to send email to ${to}: ${error.message}`);
+    console.error('[EmailWorker] Failed to send email:', error.message);
     throw error;
   }
 }
@@ -192,21 +190,17 @@ async function sendEmail(
  * This is the fallback for when background workers are not running
  */
 export async function sendEmailDirect(data: EmailJobData): Promise<void> {
-  debugLog(`[EmailWorker] ========== sendEmailDirect CALLED ==========`);
-  debugLog(`[EmailWorker] Template: ${data.template}, To: ${data.to}`);
+  debugLog(`sendEmailDirect called, template: ${data.template}`);
   const { to, template, context } = data;
   
   const templateFn = EMAIL_TEMPLATES[template];
   if (!templateFn) {
-    debugLog(`[EmailWorker] ❌ Unknown template: ${template}`);
     throw new Error(`Unknown email template: ${template}`);
   }
   
-  debugLog(`[EmailWorker] Template found, generating content...`);
   const { subject, html, text } = templateFn(context);
-  debugLog(`[EmailWorker] Content generated, subject: ${subject}`);
   await sendEmail(to, subject, html, text);
-  debugLog(`[EmailWorker] ========== sendEmailDirect COMPLETE ==========`);
+  debugLog('sendEmailDirect complete');
 }
 
 /**
