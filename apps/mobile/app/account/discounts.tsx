@@ -39,7 +39,7 @@ function sourceLabel(source: string): string {
     case 'NEWSLETTER': return 'Newsletter';
     case 'REFERRAL': return 'Polecenie';
     case 'CAMPAIGN': return 'Kampania';
-    case 'ALL_COLLECTED_BONUS': return '\uD83C\uDF81 Niespodzianka';
+    case 'ALL_COLLECTED_BONUS': return 'Niespodzianka';
     default: return 'Rabat';
   }
 }
@@ -311,7 +311,7 @@ export default function DiscountsScreen() {
     try {
       await couponsApi.claimSurprise();
       setSurpriseClaimed(true);
-      show('\uD83C\uDF89 Kupon-niespodzianka -25% przyznany!', 'success');
+      show('Kupon-niespodzianka -25% przyznany!', 'success');
       fetchCoupons();
     } catch (err: any) {
       if (err?.statusCode === 409) {
@@ -442,21 +442,25 @@ export default function DiscountsScreen() {
           {showSurpriseSection && (
             <View style={styles.surpriseSection}>
               <View style={styles.surpriseGradient}>
-                <View style={styles.surpriseIconRow}>
-                  <Text style={styles.surpriseEmoji}>\uD83C\uDF81</Text>
-                  <View style={styles.surpriseStars}>
-                    <FontAwesome name="star" size={10} color="#FFD700" />
-                    <FontAwesome name="star" size={14} color="#FFD700" />
-                    <FontAwesome name="star" size={10} color="#FFD700" />
-                  </View>
+                {/* Decorative top accent */}
+                <View style={styles.surpriseTopAccent} />
+
+                <View style={styles.surpriseIconCircle}>
+                  <FontAwesome name="gift" size={28} color="#fff" />
+                </View>
+
+                <View style={styles.surpriseStarsRow}>
+                  <FontAwesome name="star" size={10} color="#FFD700" />
+                  <FontAwesome name="star" size={14} color="#FFC107" />
+                  <FontAwesome name="star" size={10} color="#FFD700" />
                 </View>
 
                 <Text style={styles.surpriseTitle}>Kupon-Niespodzianka!</Text>
                 <Text style={styles.surpriseSubtitle}>
-                  Zebrałeś wszystkie dostępne rabaty — gratulacje! Odbierz specjalny bonus.
+                  Zebrałeś wszystkie dostępne rabaty — gratulacje!
                 </Text>
 
-                <View style={styles.surpriseValueRow}>
+                <View style={styles.surpriseValueCard}>
                   <Text style={styles.surpriseValue}>-25%</Text>
                   <Text style={styles.surpriseValueLabel}>na dowolne zakupy</Text>
                 </View>
@@ -469,24 +473,29 @@ export default function DiscountsScreen() {
                     disabled={claimingSurprise}
                   >
                     {claimingSurprise ? (
-                      <ActivityIndicator size="small" color="#fff" />
+                      <ActivityIndicator size="small" color="#1a1a1a" />
                     ) : (
                       <>
-                        <FontAwesome name="gift" size={16} color="#fff" style={{ marginRight: 8 }} />
+                        <FontAwesome name="gift" size={16} color="#1a1a1a" style={{ marginRight: 8 }} />
                         <Text style={styles.surpriseClaimText}>Odbierz niespodziankę</Text>
                       </>
                     )}
                   </TouchableOpacity>
                 ) : (
                   <View style={styles.surpriseClaimedRow}>
-                    <FontAwesome name="check-circle" size={18} color="#4CAF50" />
-                    <Text style={styles.surpriseClaimedText}>Kupon odebrany! Sprawdź w aktywnych kuponach powyżej.</Text>
+                    <FontAwesome name="check-circle" size={20} color="#4CAF50" />
+                    <Text style={styles.surpriseClaimedText}>Kupon odebrany! Sprawdź powyżej.</Text>
                   </View>
                 )}
 
-                <Text style={styles.surpriseNote}>
-                  Ważny 60 dni • Jednorazowy • Nie łączy się z innymi
-                </Text>
+                <View style={styles.surpriseNoteRow}>
+                  <View style={styles.surpriseNoteDot} />
+                  <Text style={styles.surpriseNote}>Ważny 60 dni</Text>
+                  <View style={styles.surpriseNoteDot} />
+                  <Text style={styles.surpriseNote}>Jednorazowy</Text>
+                  <View style={styles.surpriseNoteDot} />
+                  <Text style={styles.surpriseNote}>Nie łączy się</Text>
+                </View>
               </View>
             </View>
           )}
@@ -494,19 +503,42 @@ export default function DiscountsScreen() {
           {/* Progress toward surprise */}
           {!showSurpriseSection && (
             <View style={styles.surpriseProgress}>
-              <View style={styles.surpriseProgressHeader}>
-                <Text style={styles.surpriseProgressEmoji}>\uD83C\uDF81</Text>
+              <View style={styles.progressTopRow}>
+                <View style={styles.progressIconCircle}>
+                  <FontAwesome name="gift" size={18} color="#B8860B" />
+                </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.surpriseProgressTitle}>Kupon-Niespodzianka</Text>
                   <Text style={styles.surpriseProgressDesc}>
-                    Zbierz wszystkie rabaty i odblokuj specjalny bonus -25%!
+                    Zbierz wszystkie rabaty i odblokuj specjalny bonus <Text style={{ fontWeight: '800', color: '#B8860B' }}>-25%</Text>
                   </Text>
                 </View>
+                <View style={styles.progressBadge}>
+                  <FontAwesome name="lock" size={10} color="#B8860B" />
+                  <Text style={styles.progressBadgeText}>{claimedCount}/3</Text>
+                </View>
               </View>
+
               <View style={styles.progressBarWrap}>
                 <View style={[styles.progressBarFill, { width: `${(claimedCount / 3) * 100}%` }]} />
               </View>
-              <Text style={styles.progressText}>{claimedCount}/3 rabatów zebranych</Text>
+
+              <View style={styles.progressStepsRow}>
+                {['Aplikacja', 'Newsletter', 'Powitalny'].map((label, i) => (
+                  <View key={label} style={styles.progressStep}>
+                    <View style={[
+                      styles.progressStepDot,
+                      i < claimedCount && styles.progressStepDotActive,
+                    ]}>
+                      {i < claimedCount && <FontAwesome name="check" size={8} color="#fff" />}
+                    </View>
+                    <Text style={[
+                      styles.progressStepLabel,
+                      i < claimedCount && styles.progressStepLabelActive,
+                    ]}>{label}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
           )}
 
@@ -851,128 +883,208 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.textMuted,
   },
 
-  // ═══ Surprise Section ═══
+  // ═══ Surprise Section (unlocked) ═══
   surpriseSection: {
-    marginTop: 20,
+    marginTop: 24,
     marginBottom: 8,
   },
   surpriseGradient: {
     backgroundColor: colors.card,
-    borderRadius: 20,
-    padding: 24,
-    alignItems: 'center',
+    borderRadius: 24,
+    padding: 28,
+    alignItems: 'center' as const,
     borderWidth: 2,
     borderColor: '#FFD700',
+    overflow: 'hidden' as const,
     ...Platform.select({
       ios: {
-        shadowColor: '#FFD700',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
+        shadowColor: '#DAA520',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.25,
+        shadowRadius: 16,
+      },
+      android: { elevation: 8 },
+    }),
+  },
+  surpriseTopAccent: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 4,
+    backgroundColor: '#FFD700',
+  },
+  surpriseIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#DAA520',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    marginBottom: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#DAA520',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
       },
       android: { elevation: 6 },
     }),
   },
-  surpriseIconRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  surpriseStarsRow: {
+    flexDirection: 'row' as const,
+    gap: 4,
+    alignItems: 'center' as const,
     marginBottom: 12,
   },
-  surpriseEmoji: {
-    fontSize: 36,
-  },
-  surpriseStars: {
-    flexDirection: 'row',
-    gap: 3,
-    alignItems: 'center',
-  },
   surpriseTitle: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#FFD700',
-    textAlign: 'center',
-    marginBottom: 6,
+    fontSize: 22,
+    fontWeight: '900' as const,
+    color: '#DAA520',
+    textAlign: 'center' as const,
+    marginBottom: 4,
+    letterSpacing: 0.5,
   },
   surpriseSubtitle: {
     fontSize: 13,
-    color: colors.textSecondary,
-    textAlign: 'center',
+    color: colors.textMuted,
+    textAlign: 'center' as const,
     lineHeight: 19,
-    marginBottom: 16,
+    marginBottom: 20,
     paddingHorizontal: 8,
   },
-  surpriseValueRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-    marginBottom: 18,
+  surpriseValueCard: {
+    backgroundColor: '#DAA520',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    marginBottom: 20,
+    alignItems: 'center' as const,
   },
   surpriseValue: {
-    fontSize: 38,
-    fontWeight: '900',
-    color: '#FFD700',
+    fontSize: 42,
+    fontWeight: '900' as const,
+    color: '#fff',
+    letterSpacing: 1,
   },
   surpriseValueLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: 'rgba(255,255,255,0.85)',
+    textTransform: 'uppercase' as const,
+    letterSpacing: 1,
   },
   surpriseClaimBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     backgroundColor: '#FFD700',
-    paddingVertical: 14,
+    paddingVertical: 15,
     paddingHorizontal: 32,
     borderRadius: 14,
-    width: '100%',
-    marginBottom: 12,
+    width: '100%' as any,
+    marginBottom: 14,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#DAA520',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+      },
+      android: { elevation: 4 },
+    }),
   },
   surpriseClaimText: {
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '800' as const,
     color: '#1a1a1a',
   },
   surpriseClaimedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     gap: 8,
-    marginBottom: 12,
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 14,
   },
   surpriseClaimedText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '600' as const,
     color: '#4CAF50',
+  },
+  surpriseNoteRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 6,
+  },
+  surpriseNoteDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: colors.textMuted,
   },
   surpriseNote: {
     fontSize: 11,
     color: colors.textMuted,
-    textAlign: 'center',
   },
 
-  // ═══ Surprise Progress ═══
+  // ═══ Surprise Progress (locked) ═══
   surpriseProgress: {
     backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 16,
-    marginTop: 16,
+    borderRadius: 20,
+    padding: 20,
+    marginTop: 20,
     marginBottom: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderStyle: 'dashed' as const,
+    borderWidth: 1.5,
+    borderColor: '#DAA52040',
+    overflow: 'hidden' as const,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: { elevation: 3 },
+    }),
   },
-  surpriseProgressHeader: {
+  progressTopRow: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     gap: 12,
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  surpriseProgressEmoji: {
-    fontSize: 28,
+  progressIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#DAA52018',
+    borderWidth: 1.5,
+    borderColor: '#DAA52040',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  progressBadge: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 4,
+    backgroundColor: '#DAA52018',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#DAA52030',
+  },
+  progressBadgeText: {
+    fontSize: 12,
+    fontWeight: '800' as const,
+    color: '#B8860B',
   },
   surpriseProgressTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700' as const,
     color: colors.text,
     marginBottom: 2,
@@ -983,21 +1095,45 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     lineHeight: 17,
   },
   progressBarWrap: {
-    height: 8,
+    height: 10,
     backgroundColor: colors.backgroundTertiary,
-    borderRadius: 4,
+    borderRadius: 5,
     overflow: 'hidden' as const,
-    marginBottom: 6,
+    marginBottom: 14,
   },
   progressBarFill: {
     height: '100%' as any,
-    backgroundColor: '#FFD700',
-    borderRadius: 4,
+    backgroundColor: '#DAA520',
+    borderRadius: 5,
   },
-  progressText: {
-    fontSize: 11,
+  progressStepsRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-around' as const,
+  },
+  progressStep: {
+    alignItems: 'center' as const,
+    gap: 4,
+  },
+  progressStepDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.backgroundTertiary,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  progressStepDotActive: {
+    backgroundColor: '#DAA520',
+    borderColor: '#DAA520',
+  },
+  progressStepLabel: {
+    fontSize: 10,
     fontWeight: '600' as const,
     color: colors.textMuted,
-    textAlign: 'center' as const,
+  },
+  progressStepLabelActive: {
+    color: '#B8860B',
   },
 });
