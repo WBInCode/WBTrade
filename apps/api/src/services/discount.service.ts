@@ -176,19 +176,35 @@ export class DiscountService {
    * Format: NEWS-XXXXXX (6 random alphanumeric chars)
    * 10% discount, valid for 30 days, single use
    */
-  async generateNewsletterDiscount(email: string): Promise<WelcomeDiscountResult> {
+  async generateNewsletterDiscount(email: string, userId?: string): Promise<WelcomeDiscountResult> {
     const NEWSLETTER_DISCOUNT_PERCENT = 10;
     const NEWSLETTER_DISCOUNT_VALID_DAYS = 30;  // 30 days
+
+    // Try to find userId by email if not provided
+    if (!userId) {
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (user) userId = user.id;
+    }
 
     // Check if this email already has a newsletter discount
     const existingCoupon = await prisma.coupon.findFirst({
       where: {
-        description: { contains: email },
         couponSource: 'NEWSLETTER',
+        OR: [
+          { userId: userId || undefined },
+          { description: { contains: email } },
+        ],
       },
     });
 
     if (existingCoupon) {
+      // If coupon exists but has no userId, assign it now
+      if (userId && !existingCoupon.userId) {
+        await prisma.coupon.update({
+          where: { id: existingCoupon.id },
+          data: { userId },
+        });
+      }
       // Return existing code if not expired and not used
       if (existingCoupon.expiresAt && existingCoupon.expiresAt > new Date() && existingCoupon.usedCount < (existingCoupon.maximumUses || 1)) {
         return {
@@ -234,6 +250,7 @@ export class DiscountService {
         expiresAt,
         isActive: true,
         couponSource: 'NEWSLETTER',
+        userId: userId || undefined,
       },
     });
 

@@ -9,12 +9,22 @@ const router = Router();
 router.get('/my', authGuard, async (req, res) => {
   try {
     const userId = (req as any).user?.userId;
+    const email = (req as any).user?.email || '';
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const coupons = await prisma.coupon.findMany({
-      where: { userId },
+      where: {
+        OR: [
+          { userId },
+          // Also find newsletter coupons by email (may not have userId set)
+          {
+            couponSource: 'NEWSLETTER',
+            description: { contains: email },
+          },
+        ],
+      },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
