@@ -18,14 +18,18 @@ import {
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image as ExpoImage } from 'expo-image';
+import { useRouter } from 'expo-router';
 import { useThemeColors } from '../hooks/useThemeColors';
 import type { ThemeColors } from '../constants/Colors';
+import { productsApi } from '../services/products';
+import type { Product } from '../services/types';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
 // Bot branding
 const WB_LOGO = require('../assets/images/wb-trade-logo.png');
-const BOT_NAME = 'Piotrek';
+const BOT_NAME = 'WuBuś';
 
 // ─── FAQ Knowledge Base (from centrum pomocy + nawigacja po aplikacji) ───
 const FAQ_DATA: { keywords: string[]; question: string; answer: string; category: string }[] = [
@@ -447,18 +451,26 @@ const FAQ_DATA: { keywords: string[]; question: string; answer: string; category
     category: 'Pomoc techniczna',
   },
 
-  // ═══ O BOCIE PIOTREK ═══
+  // ═══ O BOCIE WuBuś ═══
   {
-    keywords: ['piotrek', 'kim jesteś', 'kim jest piotrek', 'bot', 'chatbot', 'asystent', 'co umiesz', 'jak ci na imię', 'twoje imię'],
-    question: 'Kim jest Piotrek?',
+    keywords: ['wubuś', 'wubus', 'kim jesteś', 'kim jest wubuś', 'bot', 'chatbot', 'asystent', 'co umiesz', 'jak ci na imię', 'twoje imię'],
+    question: 'Kim jest WuBuś?',
     answer: `Jestem ${BOT_NAME} — wirtualny asystent sklepu WBTrade! 🤖\n\nMogę pomóc Ci z:\n• 📦 Zamówieniami — składanie, śledzenie, anulowanie\n• 💳 Płatnościami — metody, bezpieczeństwo, statusy\n• 🚚 Dostawą — metody, koszty, śledzenie paczek\n• 🔄 Zwrotami i reklamacjami\n• 🎁 Kuponami i rabatami\n• 👤 Kontem — rejestracja, logowanie, ustawienia\n• 📱 Nawigacją po aplikacji\n\nJeśli nie znam odpowiedzi — przekieruję Cię do naszego zespołu wsparcia! 😊`,
     category: 'O bocie',
   },
 ];
 
 // Quick suggestion chips
+const PRODUCT_SEARCH_KEYWORDS = [
+  'szukam', 'szukasz', 'znajdź', 'znajdz', 'poszukaj', 'pokaż', 'pokaz',
+  'chcę kupić', 'chce kupic', 'interesuje mnie', 'potrzebuję', 'potrzebuje',
+  'szukasz produktu', 'szukam produktu', 'wyszukaj', 'polecasz', 'polecisz',
+  'jaki produkt', 'jakie produkty', 'co polecasz', 'najlepszy', 'najlepsza', 'najlepsze',
+];
+
 const QUICK_QUESTIONS = [
-  'Kim jest Piotrek?',
+  '🔍 Szukasz produktu?',
+  'Kim jest WuBuś?',
   'Jak złożyć zamówienie?',
   'Gdzie moje kupony?',
   'Kupon za newsletter',
@@ -490,6 +502,15 @@ interface MessageAction {
   body?: string;
 }
 
+interface ProductResult {
+  id: string;
+  name: string;
+  price: string | number;
+  rating?: string | number;
+  reviewCount?: number;
+  imageUrl?: string;
+}
+
 interface Message {
   id: string;
   text: string;
@@ -497,6 +518,7 @@ interface Message {
   timestamp: Date;
   actions?: MessageAction[];
   showSuggestions?: boolean;
+  products?: ProductResult[];
 }
 
 function findBestAnswer(query: string): string | null {
@@ -697,11 +719,14 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const flatListRef = useRef<FlatList>(null);
+  const router = useRouter();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [isTyping, setIsTyping] = useState(false);
   const noMatchCount = useRef(0);
   const lastUserQuestion = useRef('');
+  const waitingForProductSearch = useRef(false);
+  const productSearchRetryCount = useRef(0);
 
   const hasConversation = messages.length > 1;
 
@@ -728,6 +753,7 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
             setMessages([{ ...INITIAL_MESSAGE, id: Date.now().toString(), timestamp: new Date() }]);
             setInput('');
             noMatchCount.current = 0;
+            productSearchRetryCount.current = 0;
           },
         },
       ],
@@ -754,6 +780,56 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
     setInput('');
     setIsTyping(true);
     scrollToEnd();
+
+    // Check if we're waiting for product search query
+    if (waitingForProductSearch.current) {
+      waitingForProductSearch.current = false;
+      handleProductSearch(text.trim());
+      return;
+    }
+
+    // Check if user wants to search for a product
+    const lowerText = text.trim().toLowerCase();
+    const isProductSearch = PRODUCT_SEARCH_KEYWORDS.some(kw => lowerText.includes(kw)) ||
+      lowerText === '🔍 szukasz produktu?' || lowerText === 'szukasz produktu?';
+
+    if (isProductSearch) {
+      // Check if this is a direct quick-question tap (no actual product specified)
+      const isQuickQuestionTap = lowerText === '🔍 szukasz produktu?' || 
+        lowerText === 'szukasz produktu?' || lowerText === 'szukasz produktu';
+
+      // Extract what they're looking for (remove trigger keywords)
+      let searchQuery = lowerText;
+      // Sort keywords by length (longest first) to avoid partial removals
+      const sortedKeywords = [...PRODUCT_SEARCH_KEYWORDS].sort((a, b) => b.length - a.length);
+      for (const kw of sortedKeywords) {
+        searchQuery = searchQuery.replace(kw, '').trim();
+      }
+      // Remove emoji, punctuation and whitespace-only leftovers
+      searchQuery = searchQuery.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}?!.,🔍]/gu, '').trim();
+
+      if (!isQuickQuestionTap && searchQuery.length >= 2) {
+        // They already said what they want
+        handleProductSearch(searchQuery);
+        return;
+      } else {
+        // Ask what they're looking for
+        setTimeout(() => {
+          waitingForProductSearch.current = true;
+          productSearchRetryCount.current = 0;
+          const askMsg: Message = {
+            id: (Date.now() + 1).toString(),
+            text: 'Jasne! 🔍 Napisz czego szukasz, a znajdę dla Ciebie 3 najlepiej oceniane produkty tego typu! \n\nNp. "głośnik bluetooth", "frytkownica", "kamera" itp.',
+            isBot: true,
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, askMsg]);
+          setIsTyping(false);
+          scrollToEnd();
+        }, 600);
+        return;
+      }
+    }
 
     // Simulate typing delay
     setTimeout(() => {
@@ -843,6 +919,94 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
     }, 800 + Math.random() * 600);
   }, [scrollToEnd]);
 
+  const handleProductSearch = useCallback(async (query: string) => {
+    setIsTyping(true);
+    scrollToEnd();
+    try {
+      const result = await productsApi.search(query, { limit: 20 });
+      // Sort by rating (highest first) and take top 3
+      const products = (result.products || [])
+        .sort((a: Product, b: Product) => (Number(b.rating) || 0) - (Number(a.rating) || 0))
+        .slice(0, 3);
+
+      if (products.length === 0) {
+        productSearchRetryCount.current += 1;
+
+        if (productSearchRetryCount.current < 2) {
+          // First fail — offer retry
+          waitingForProductSearch.current = true;
+          const retryMsg: Message = {
+            id: (Date.now() + 1).toString(),
+            text: `Niestety, nie znalazłem produktów dla "${query}" 😔\n\nSpróbuj wpisać inną frazę — np. krótsze słowo kluczowe, nazwę kategorii lub markę produktu.`,
+            isBot: true,
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, retryMsg]);
+        } else {
+          // Second fail — give up but keep option in suggestions
+          productSearchRetryCount.current = 0;
+          const noResultMsg: Message = {
+            id: (Date.now() + 1).toString(),
+            text: `Niestety, nie znalazłem też produktów dla "${query}" 😔\n\nSpróbuj przeglądać nasze kategorie w aplikacji lub skorzystaj z wyszukiwarki na stronie głównej!`,
+            isBot: true,
+            timestamp: new Date(),
+            showSuggestions: true,
+          };
+          setMessages(prev => [...prev, noResultMsg]);
+        }
+      } else {
+        productSearchRetryCount.current = 0;
+        const productResults: ProductResult[] = products.map((p: Product) => ({
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          rating: p.rating,
+          reviewCount: p.reviewCount,
+          imageUrl: p.images?.[0]?.url,
+        }));
+
+        const resultMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          text: `Oto ${products.length} najlepiej oceniane produkty dla "${query}" ⭐`,
+          isBot: true,
+          timestamp: new Date(),
+          products: productResults,
+        };
+        setMessages(prev => [...prev, resultMsg]);
+
+        // Follow-up
+        setTimeout(() => {
+          setIsTyping(true);
+          scrollToEnd();
+          setTimeout(() => {
+            const followupMsg: Message = {
+              id: (Date.now() + 2).toString(),
+              text: 'Kliknij w produkt, żeby zobaczyć szczegóły! 😊 Mogę też wyszukać coś innego — wystarczy napisać!',
+              isBot: true,
+              timestamp: new Date(),
+              showSuggestions: true,
+            };
+            setMessages(prev => [...prev, followupMsg]);
+            setIsTyping(false);
+            scrollToEnd();
+          }, 500);
+        }, 800);
+      }
+    } catch {
+      const errorMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        text: 'Ups, coś poszło nie tak przy wyszukiwaniu 😅 Spróbuj ponownie za chwilę!',
+        isBot: true,
+        timestamp: new Date(),
+        showSuggestions: true,
+      };
+      setMessages(prev => [...prev, errorMsg]);
+    } finally {
+      setIsTyping(false);
+      scrollToEnd();
+    }
+  }, [scrollToEnd]);
+
   const handleQuickQuestion = useCallback((q: string) => {
     sendMessage(q);
   }, [sendMessage]);
@@ -881,8 +1045,9 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
     const askedTexts = new Set(
       messages.filter(m => !m.isBot).map(m => m.text.toLowerCase().trim()),
     );
+    // Always keep product search option available
     return QUICK_QUESTIONS.filter(
-      q => !askedTexts.has(q.toLowerCase()),
+      q => q === '🔍 Szukasz produktu?' || !askedTexts.has(q.toLowerCase()),
     ).slice(0, 6);
   }, [messages]);
 
@@ -904,6 +1069,46 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
             <Text style={[styles.messageText, item.isBot ? styles.botText : styles.userText]}>
               {item.text}
             </Text>
+            {item.products && item.products.length > 0 && (
+              <View style={styles.productsContainer}>
+                {item.products.map((product) => (
+                  <TouchableOpacity
+                    key={product.id}
+                    style={styles.productCard}
+                    onPress={() => {
+                      onMinimize();
+                      router.push(`/product/${product.id}`);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    {product.imageUrl ? (
+                      <ExpoImage
+                        source={{ uri: product.imageUrl }}
+                        style={styles.productImage}
+                        contentFit="contain"
+                      />
+                    ) : (
+                      <View style={[styles.productImage, styles.productImagePlaceholder]}>
+                        <FontAwesome name="image" size={20} color={colors.textMuted} />
+                      </View>
+                    )}
+                    <View style={styles.productInfo}>
+                      <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
+                      <Text style={styles.productPrice}>{Number(product.price).toFixed(2)} zł</Text>
+                      {product.rating ? (
+                        <View style={styles.productRating}>
+                          <FontAwesome name="star" size={12} color="#f59e0b" />
+                          <Text style={styles.productRatingText}>
+                            {Number(product.rating).toFixed(1)}{product.reviewCount ? ` (${product.reviewCount})` : ''}
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    <FontAwesome name="chevron-right" size={12} color={colors.textMuted} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
             {item.actions && item.actions.length > 0 && (
               <View style={styles.actionsContainer}>
                 {item.actions.map((action, idx) => (
@@ -1198,6 +1403,55 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: '#fff',
     fontSize: 13,
     fontWeight: '600',
+  },
+  // Product cards
+  productsContainer: {
+    marginTop: 10,
+    gap: 8,
+  },
+  productCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    padding: 8,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+  },
+  productImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 8,
+    backgroundColor: colors.backgroundTertiary,
+  },
+  productImagePlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  productInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  productName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text,
+    lineHeight: 17,
+  },
+  productPrice: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.tint,
+  },
+  productRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  productRatingText: {
+    fontSize: 12,
+    color: colors.textMuted,
   },
   // Quick chips
   quickChips: {
