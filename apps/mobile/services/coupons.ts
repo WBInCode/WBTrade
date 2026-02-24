@@ -42,4 +42,8 @@ export const couponsApi = {
   /** Check newsletter subscription status */
   getNewsletterStatus: (email: string) =>
     api.get<{ success: boolean; subscribed: boolean; verified: boolean }>('/newsletter/status', { email }),
+
+  /** Subscribe to newsletter (auto-verify for logged-in users) */
+  subscribeNewsletter: (email: string) =>
+    api.post<{ success: boolean; message: string; verified?: boolean }>('/newsletter/subscribe', { email, source: 'registration' }),
 };

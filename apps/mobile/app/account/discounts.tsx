@@ -156,6 +156,7 @@ interface EarnableItem {
   claimed: boolean;
   onClaim?: () => void;
   claiming?: boolean;
+  claimLabel?: string;
 }
 
 function EarnableCard({ item }: { item: EarnableItem }) {
@@ -200,15 +201,15 @@ function EarnableCard({ item }: { item: EarnableItem }) {
               <ActivityIndicator size="small" color={colors.textInverse} />
             ) : (
               <>
-                <FontAwesome name="check" size={12} color={colors.textInverse} style={{ marginRight: 6 }} />
-                <Text style={styles.earnClaimText}>Odbierz</Text>
+                <FontAwesome name={item.claimLabel ? 'envelope' : 'check'} size={12} color={colors.textInverse} style={{ marginRight: 6 }} />
+                <Text style={styles.earnClaimText}>{item.claimLabel || 'Odbierz'}</Text>
               </>
             )}
           </TouchableOpacity>
         )}
         {item.claimed && (
           <View style={styles.earnClaimedBadge}>
-            <FontAwesome name="check-circle" size={12} color={colors.success} />
+            <FontAwesome name="check-circle" size={14} color={colors.success} />
             <Text style={styles.earnClaimedText}>Odebrano</Text>
           </View>
         )}
@@ -236,7 +237,9 @@ export default function DiscountsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [claimingApp, setClaimingApp] = useState(false);
   const [appClaimed, setAppClaimed] = useState(false);
+  const [welcomeClaimed, setWelcomeClaimed] = useState(false);
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
+  const [claimingNewsletter, setClaimingNewsletter] = useState(false);
   const [surpriseClaimed, setSurpriseClaimed] = useState(false);
   const [claimingSurprise, setClaimingSurprise] = useState(false);
   const surpriseGlow = useRef(new Animated.Value(0)).current;
@@ -248,6 +251,9 @@ export default function DiscountsScreen() {
       // Check if app download already claimed
       const hasApp = data.coupons.some(c => c.couponSource === 'APP_DOWNLOAD');
       if (hasApp) setAppClaimed(true);
+      // Check if welcome discount exists
+      const hasWelcome = data.coupons.some(c => c.couponSource === 'WELCOME_DISCOUNT');
+      if (hasWelcome) setWelcomeClaimed(true);
       // Check if newsletter coupon already exists
       const hasNewsletter = data.coupons.some(c => c.couponSource === 'NEWSLETTER');
       if (hasNewsletter) setNewsletterSubscribed(true);
@@ -306,6 +312,29 @@ export default function DiscountsScreen() {
     }
   };
 
+  const handleSubscribeNewsletter = async () => {
+    if (!user?.email) {
+      show('Zaloguj się, aby zapisać się do newslettera', 'error');
+      return;
+    }
+    setClaimingNewsletter(true);
+    try {
+      await couponsApi.subscribeNewsletter(user.email);
+      setNewsletterSubscribed(true);
+      show('Zapisano do newslettera! Rabat -10% przyznany!', 'success');
+      fetchCoupons();
+    } catch (err: any) {
+      if (err?.message?.includes('już zapisany') || err?.statusCode === 200) {
+        setNewsletterSubscribed(true);
+        show('Jesteś już zapisany do newslettera', 'info');
+      } else {
+        show('Nie udało się zapisać do newslettera', 'error');
+      }
+    } finally {
+      setClaimingNewsletter(false);
+    }
+  };
+
   const handleClaimSurprise = async () => {
     setClaimingSurprise(true);
     try {
@@ -330,14 +359,22 @@ export default function DiscountsScreen() {
   const activeCoupons = coupons.filter(c => c.status === 'active');
   const inactiveCoupons = coupons.filter(c => c.status !== 'active');
 
-  // Check how many earnable items are claimed
-  const claimedCount = [appClaimed, newsletterSubscribed].filter(Boolean).length;
-  const totalEarnableCount = 5; // app, newsletter, review, referral, birthday
-  const allEarnableClaimed = claimedCount >= 3; // For now: app + newsletter + welcome = enough to unlock surprise
+  // Check how many earnable items are claimed (welcome + app + newsletter = 3 needed for surprise)
+  const claimedCount = [welcomeClaimed, appClaimed, newsletterSubscribed].filter(Boolean).length;
+  const allEarnableClaimed = claimedCount >= 3;
   const showSurpriseSection = allEarnableClaimed || surpriseClaimed;
 
   // ── Earnable coupons list ──
   const earnableItems: EarnableItem[] = [
+    {
+      id: 'welcome',
+      icon: 'handshake-o',
+      title: 'Zniżka powitalna',
+      description: 'Załóż konto w WBTrade i odbierz rabat powitalny',
+      discount: '-5%',
+      unlocked: isAuthenticated,
+      claimed: welcomeClaimed,
+    },
     {
       id: 'app-download',
       icon: 'mobile',
@@ -353,10 +390,13 @@ export default function DiscountsScreen() {
       id: 'newsletter',
       icon: 'envelope',
       title: 'Zapisz się do newslettera',
-      description: 'Bądź na bieżąco z promocjami i otrzymaj kod rabatowy',
+      description: 'Bądź na bieżąco z promocjami i otrzymaj kod rabatowy -10%',
       discount: '-10%',
-      unlocked: newsletterSubscribed,
+      unlocked: isAuthenticated,
       claimed: newsletterSubscribed,
+      onClaim: !newsletterSubscribed ? handleSubscribeNewsletter : undefined,
+      claiming: claimingNewsletter,
+      claimLabel: 'Zapisz się',
     },
     {
       id: 'first-review',
@@ -524,18 +564,22 @@ export default function DiscountsScreen() {
               </View>
 
               <View style={styles.progressStepsRow}>
-                {['Aplikacja', 'Newsletter', 'Powitalny'].map((label, i) => (
-                  <View key={label} style={styles.progressStep}>
+                {[
+                  { label: 'Powitalny', done: welcomeClaimed },
+                  { label: 'Aplikacja', done: appClaimed },
+                  { label: 'Newsletter', done: newsletterSubscribed },
+                ].map((step) => (
+                  <View key={step.label} style={styles.progressStep}>
                     <View style={[
                       styles.progressStepDot,
-                      i < claimedCount && styles.progressStepDotActive,
+                      step.done && styles.progressStepDotActive,
                     ]}>
-                      {i < claimedCount && <FontAwesome name="check" size={8} color="#fff" />}
+                      {step.done && <FontAwesome name="check" size={8} color="#fff" />}
                     </View>
                     <Text style={[
                       styles.progressStepLabel,
-                      i < claimedCount && styles.progressStepLabelActive,
-                    ]}>{label}</Text>
+                      step.done && styles.progressStepLabelActive,
+                    ]}>{step.label}</Text>
                   </View>
                 ))}
               </View>
