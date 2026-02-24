@@ -43,7 +43,11 @@ export const couponsApi = {
   getNewsletterStatus: (email: string) =>
     api.get<{ success: boolean; subscribed: boolean; verified: boolean }>('/newsletter/status', { email }),
 
-  /** Subscribe to newsletter (auto-verify for logged-in users) */
+  /** Subscribe to newsletter (auto-verify for logged-in users, no coupon generation) */
   subscribeNewsletter: (email: string) =>
-    api.post<{ success: boolean; message: string; verified?: boolean }>('/newsletter/subscribe', { email, source: 'registration' }),
+    api.post<{ success: boolean; message: string; verified?: boolean }>('/newsletter/subscribe', { email, source: 'app_discounts' }),
+
+  /** Claim newsletter discount coupon (-10%) after subscribing */
+  claimNewsletterCoupon: () =>
+    api.post<{ discount: WelcomeDiscount }>('/coupons/claim-newsletter'),
 };

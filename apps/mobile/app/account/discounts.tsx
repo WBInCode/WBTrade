@@ -201,7 +201,7 @@ function EarnableCard({ item }: { item: EarnableItem }) {
               <ActivityIndicator size="small" color={colors.textInverse} />
             ) : (
               <>
-                <FontAwesome name={item.claimLabel ? 'envelope' : 'check'} size={12} color={colors.textInverse} style={{ marginRight: 6 }} />
+                <FontAwesome name={item.claimLabel === 'Zapisz się' ? 'envelope' : 'check'} size={12} color={colors.textInverse} style={{ marginRight: 6 }} />
                 <Text style={styles.earnClaimText}>{item.claimLabel || 'Odbierz'}</Text>
               </>
             )}
@@ -239,6 +239,7 @@ export default function DiscountsScreen() {
   const [appClaimed, setAppClaimed] = useState(false);
   const [welcomeClaimed, setWelcomeClaimed] = useState(false);
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
+  const [newsletterCouponClaimed, setNewsletterCouponClaimed] = useState(false);
   const [claimingNewsletter, setClaimingNewsletter] = useState(false);
   const [surpriseClaimed, setSurpriseClaimed] = useState(false);
   const [claimingSurprise, setClaimingSurprise] = useState(false);
@@ -256,7 +257,10 @@ export default function DiscountsScreen() {
       if (hasWelcome) setWelcomeClaimed(true);
       // Check if newsletter coupon already exists
       const hasNewsletter = data.coupons.some(c => c.couponSource === 'NEWSLETTER');
-      if (hasNewsletter) setNewsletterSubscribed(true);
+      if (hasNewsletter) {
+        setNewsletterSubscribed(true);
+        setNewsletterCouponClaimed(true);
+      }
       // Check if surprise bonus already claimed
       const hasSurprise = data.coupons.some(c => c.couponSource === 'ALL_COLLECTED_BONUS');
       if (hasSurprise) setSurpriseClaimed(true);
@@ -321,14 +325,34 @@ export default function DiscountsScreen() {
     try {
       await couponsApi.subscribeNewsletter(user.email);
       setNewsletterSubscribed(true);
-      show('Zapisano do newslettera! Rabat -10% przyznany!', 'success');
-      fetchCoupons();
+      show('Zapisano do newslettera! Teraz możesz odebrać rabat -10%', 'success');
     } catch (err: any) {
       if (err?.message?.includes('już zapisany') || err?.statusCode === 200) {
         setNewsletterSubscribed(true);
         show('Jesteś już zapisany do newslettera', 'info');
       } else {
         show('Nie udało się zapisać do newslettera', 'error');
+      }
+    } finally {
+      setClaimingNewsletter(false);
+    }
+  };
+
+  const handleClaimNewsletterCoupon = async () => {
+    setClaimingNewsletter(true);
+    try {
+      await couponsApi.claimNewsletterCoupon();
+      setNewsletterCouponClaimed(true);
+      show('Rabat -10% za newsletter przyznany!', 'success');
+      fetchCoupons();
+    } catch (err: any) {
+      if (err?.statusCode === 409) {
+        setNewsletterCouponClaimed(true);
+        show('Rabat za newsletter został już odebrany', 'info');
+      } else if (err?.statusCode === 400) {
+        show('Najpierw zapisz się do newslettera', 'error');
+      } else {
+        show('Nie udało się odebrać rabatu', 'error');
       }
     } finally {
       setClaimingNewsletter(false);
@@ -359,8 +383,8 @@ export default function DiscountsScreen() {
   const activeCoupons = coupons.filter(c => c.status === 'active');
   const inactiveCoupons = coupons.filter(c => c.status !== 'active');
 
-  // Check how many earnable items are claimed (welcome + app + newsletter = 3 needed for surprise)
-  const claimedCount = [welcomeClaimed, appClaimed, newsletterSubscribed].filter(Boolean).length;
+  // Check how many earnable items are claimed (welcome + app + newsletter coupon = 3 needed for surprise)
+  const claimedCount = [welcomeClaimed, appClaimed, newsletterCouponClaimed].filter(Boolean).length;
   const allEarnableClaimed = claimedCount >= 3;
   const showSurpriseSection = allEarnableClaimed || surpriseClaimed;
 
@@ -389,14 +413,18 @@ export default function DiscountsScreen() {
     {
       id: 'newsletter',
       icon: 'envelope',
-      title: 'Zapisz się do newslettera',
-      description: 'Bądź na bieżąco z promocjami i otrzymaj kod rabatowy -10%',
+      title: newsletterSubscribed ? 'Odbierz rabat za newsletter' : 'Zapisz się do newslettera',
+      description: newsletterSubscribed
+        ? 'Jesteś zapisany! Odbierz swój kod rabatowy -10%'
+        : 'Bądź na bieżąco z promocjami i otrzymaj kod rabatowy -10%',
       discount: '-10%',
       unlocked: isAuthenticated,
-      claimed: newsletterSubscribed,
-      onClaim: !newsletterSubscribed ? handleSubscribeNewsletter : undefined,
+      claimed: newsletterCouponClaimed,
+      onClaim: !newsletterCouponClaimed
+        ? (newsletterSubscribed ? handleClaimNewsletterCoupon : handleSubscribeNewsletter)
+        : undefined,
       claiming: claimingNewsletter,
-      claimLabel: 'Zapisz się',
+      claimLabel: newsletterSubscribed ? 'Odbierz' : 'Zapisz się',
     },
     {
       id: 'first-review',
@@ -567,7 +595,7 @@ export default function DiscountsScreen() {
                 {[
                   { label: 'Powitalny', done: welcomeClaimed },
                   { label: 'Aplikacja', done: appClaimed },
-                  { label: 'Newsletter', done: newsletterSubscribed },
+                  { label: 'Newsletter', done: newsletterCouponClaimed },
                 ].map((step) => (
                   <View key={step.label} style={styles.progressStep}>
                     <View style={[

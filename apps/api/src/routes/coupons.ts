@@ -81,6 +81,35 @@ router.post('/claim-app-download', authGuard, async (req, res) => {
   }
 });
 
+// POST /api/coupons/claim-newsletter — claim newsletter discount coupon (-10%)
+router.post('/claim-newsletter', authGuard, async (req, res) => {
+  try {
+    const userId = (req as any).user?.userId;
+    const email = (req as any).user?.email || '';
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Verify user is subscribed to newsletter
+    const subscription = await prisma.newsletter_subscriptions.findUnique({
+      where: { email: email.toLowerCase().trim() },
+    });
+
+    if (!subscription || !subscription.is_verified) {
+      return res.status(400).json({ error: 'Najpierw zapisz się do newslettera' });
+    }
+
+    const result = await discountService.generateNewsletterDiscount(email, userId);
+    return res.json({ discount: result });
+  } catch (error: any) {
+    if (error.message?.includes('already') || error.message?.includes('EXISTS')) {
+      return res.status(409).json({ error: 'Rabat za newsletter został już odebrany' });
+    }
+    console.error('[CouponsRoute] Error claiming newsletter discount:', error);
+    return res.status(500).json({ error: 'Nie udało się przyznać rabatu' });
+  }
+});
+
 // POST /api/coupons/claim-surprise — claim surprise bonus for collecting all discounts (-25%)
 router.post('/claim-surprise', authGuard, async (req, res) => {
   try {
