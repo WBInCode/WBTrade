@@ -1,102 +1,99 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
+  StyleSheet,
   View,
   Text,
-  FlatList,
   TouchableOpacity,
-  TextInput,
-  Alert,
+  FlatList,
   ActivityIndicator,
   RefreshControl,
-  StyleSheet,
+  TextInput,
   Modal,
-  KeyboardAvoidingView,
-  Platform,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, Stack, useFocusEffect } from 'expo-router';
+import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import type { ThemeColors } from '../../constants/Colors';
+import { api } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
-import { useToast } from '../../contexts/ToastContext';
-import { shoppingListApi } from '../../services/shopping-lists';
-import type { ShoppingList } from '../../services/types';
 import Button from '../../components/ui/Button';
 
+interface ShoppingList {
+  id: string;
+  name: string;
+  itemCount: number;
+  updatedAt: string;
+}
+
 export default function ShoppingListsScreen() {
-  const { user } = useAuth();
   const router = useRouter();
-  const { show: showToast } = useToast();
+  const { user } = useAuth();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [lists, setLists] = useState<ShoppingList[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
   const [newListName, setNewListName] = useState('');
-  const [newListDescription, setNewListDescription] = useState('');
   const [creating, setCreating] = useState(false);
 
-  const fetchLists = useCallback(async () => {
-    if (!user) return;
+  const loadLists = useCallback(async (refresh = false) => {
     try {
-      const data = await shoppingListApi.getAll();
+      if (refresh) setRefreshing(true);
+      else setLoading(true);
+
+      const data = await api.get<{ lists: ShoppingList[] }>('/shopping-lists');
       setLists(data.lists || []);
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error('Error loading shopping lists:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [user]);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
-      fetchLists();
-    }, [fetchLists])
+      loadLists();
+    }, [])
   );
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchLists();
-  };
+  const handleCreate = async () => {
+    const name = newListName.trim();
+    if (!name) return;
 
-  const handleCreateList = async () => {
-    if (!newListName.trim()) return;
+    setCreating(true);
     try {
-      setCreating(true);
-      await shoppingListApi.create(newListName.trim(), newListDescription.trim() || undefined);
-      showToast('Lista utworzona!', 'success');
-      setShowCreateModal(false);
+      await api.post('/shopping-lists', { name });
+      setModalVisible(false);
       setNewListName('');
-      setNewListDescription('');
-      fetchLists();
-    } catch {
-      showToast('Nie udało się utworzyć listy', 'error');
+      loadLists(true);
+    } catch (err) {
+      Alert.alert('Błąd', 'Nie udało się utworzyć listy');
     } finally {
       setCreating(false);
     }
   };
 
-  const handleDeleteList = (list: ShoppingList) => {
-    Alert.alert(
-      'Usuń listę',
-      `Czy na pewno chcesz usunąć "${list.name}"? Ta operacja jest nieodwracalna.`,
-      [
-        { text: 'Anuluj', style: 'cancel' },
-        {
-          text: 'Usuń',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await shoppingListApi.delete(list.id);
-              showToast('Lista usunięta', 'success');
-              fetchLists();
-            } catch {
-              showToast('Nie udało się usunąć listy', 'error');
-            }
-          },
+  const handleDelete = (id: string, name: string) => {
+    Alert.alert('Usuń listę', `Czy na pewno chcesz usunąć "${name}"?`, [
+      { text: 'Anuluj', style: 'cancel' },
+      {
+        text: 'Usuń',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await api.delete(`/shopping-lists/${id}`);
+            setLists((prev) => prev.filter((l) => l.id !== id));
+          } catch (err) {
+            Alert.alert('Błąd', 'Nie udało się usunąć listy');
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const formatDate = (dateStr: string) => {
@@ -104,395 +101,386 @@ export default function ShoppingListsScreen() {
     return d.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
-  // --- Guest State ---
+  // Not logged in
   if (!user) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Stack.Screen options={{ title: 'Listy zakupowe', headerBackTitle: 'Wróć', headerTintColor: Colors.primary[500] }} />
-        <View style={styles.guestWrap}>
-          <FontAwesome name="list-ul" size={48} color={Colors.secondary[300]} />
-          <Text style={styles.guestTitle}>Listy zakupowe</Text>
-          <Text style={styles.guestSubtext}>Zaloguj się, aby tworzyć listy zakupowe</Text>
-          <Button title="Zaloguj się" onPress={() => router.push('/(auth)/login')} />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // --- Loading State ---
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Stack.Screen options={{ title: 'Listy zakupowe', headerBackTitle: 'Wróć', headerTintColor: Colors.primary[500] }} />
-        <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color={Colors.primary[500]} />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  const renderListCard = ({ item }: { item: ShoppingList }) => {
-    const previewImages = item.items
-      .slice(0, 4)
-      .map((i) => i.product.images?.[0]?.url)
-      .filter(Boolean);
-
-    return (
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => router.push(`/account/shopping-list/${item.id}` as any)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.cardHeader}>
-          <View style={styles.cardTitleRow}>
-            <View style={styles.cardIconWrap}>
-              <FontAwesome name="list-ul" size={16} color={Colors.primary[500]} />
-            </View>
-            <View style={styles.cardTitleInfo}>
-              <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
-              {item.description ? (
-                <Text style={styles.cardDescription} numberOfLines={1}>{item.description}</Text>
-              ) : null}
+      <>
+        <Stack.Screen
+          options={{
+            title: 'Listy zakupowe',
+            headerShown: true,
+            headerBackTitle: 'Konto',
+            headerStyle: { backgroundColor: colors.card },
+            headerTintColor: colors.text,
+          }}
+        />
+        <SafeAreaView style={styles.container} edges={[]}>
+          <View style={styles.guestState}>
+            <FontAwesome name="list-ul" size={48} color={colors.inputBorder} />
+            <Text style={styles.guestTitle}>Zaloguj się</Text>
+            <Text style={styles.guestHint}>
+              Aby korzystać z list zakupowych, musisz się zalogować.
+            </Text>
+            <View style={{ marginTop: 12 }}>
+              <Button
+                title="Zaloguj się"
+                onPress={() => router.push('/login')}
+              />
             </View>
           </View>
-          <TouchableOpacity
-            onPress={() => handleDeleteList(item)}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <FontAwesome name="trash-o" size={18} color={Colors.secondary[400]} />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.cardFooter}>
-          <Text style={styles.cardCount}>
-            {item.itemCount} {item.itemCount === 1 ? 'produkt' : item.itemCount < 5 ? 'produkty' : 'produktów'}
-          </Text>
-          <Text style={styles.cardDate}>
-            {formatDate(item.updatedAt)}
-          </Text>
-        </View>
-
-        <View style={styles.cardArrow}>
-          <FontAwesome name="chevron-right" size={14} color={Colors.secondary[300]} />
-        </View>
-      </TouchableOpacity>
+        </SafeAreaView>
+      </>
     );
-  };
+  }
+
+  const renderItem = ({ item }: { item: ShoppingList }) => (
+    <TouchableOpacity
+      style={styles.listCard}
+      onPress={() => router.push(`/account/shopping-lists/${item.id}`)}
+      activeOpacity={0.7}
+    >
+      <View style={styles.listIcon}>
+        <FontAwesome name="list-ul" size={18} color={colors.tint} />
+      </View>
+      <View style={styles.listInfo}>
+        <Text style={styles.listName} numberOfLines={1}>
+          {item.name}
+        </Text>
+        <Text style={styles.listMeta}>
+          {item.itemCount} {item.itemCount === 1 ? 'produkt' : 'produktów'} · {formatDate(item.updatedAt)}
+        </Text>
+      </View>
+      <TouchableOpacity
+        onPress={() => handleDelete(item.id, item.name)}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        style={styles.deleteListBtn}
+      >
+        <FontAwesome name="trash-o" size={16} color={colors.textMuted} />
+      </TouchableOpacity>
+      <FontAwesome name="chevron-right" size={12} color={colors.inputBorder} />
+    </TouchableOpacity>
+  );
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <Stack.Screen options={{ title: 'Listy zakupowe', headerBackTitle: 'Wróć', headerTintColor: Colors.primary[500] }} />
-
-      {lists.length === 0 ? (
-        <View style={styles.emptyWrap}>
-          <FontAwesome name="list-ul" size={48} color={Colors.secondary[300]} />
-          <Text style={styles.emptyTitle}>Brak list zakupowych</Text>
-          <Text style={styles.emptySubtext}>
-            Twórz listy zakupowe, aby zapisywać interesujące Cię produkty
-          </Text>
-          <TouchableOpacity
-            style={styles.createBtnLarge}
-            onPress={() => setShowCreateModal(true)}
-            activeOpacity={0.8}
-          >
-            <FontAwesome name="plus" size={16} color={Colors.white} />
-            <Text style={styles.createBtnLargeText}>Utwórz pierwszą listę</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <>
-          <FlatList
-            data={lists}
-            renderItem={renderListCard}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.listContent}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                tintColor={Colors.primary[500]}
-              />
-            }
-            ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-          />
-          <TouchableOpacity
-            style={styles.fab}
-            onPress={() => setShowCreateModal(true)}
-            activeOpacity={0.8}
-          >
-            <FontAwesome name="plus" size={22} color={Colors.white} />
-          </TouchableOpacity>
-        </>
-      )}
-
-      {/* Create List Modal */}
-      <Modal
-        visible={showCreateModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowCreateModal(false)}
-      >
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          <TouchableOpacity
-            style={styles.modalBg}
-            onPress={() => setShowCreateModal(false)}
-            activeOpacity={1}
-          />
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Nowa lista zakupowa</Text>
-              <TouchableOpacity onPress={() => setShowCreateModal(false)}>
-                <FontAwesome name="times" size={20} color={Colors.secondary[500]} />
-              </TouchableOpacity>
+    <>
+      <Stack.Screen
+        options={{
+          title: 'Listy zakupowe',
+          headerShown: true,
+          headerBackTitle: 'Konto',
+          headerStyle: { backgroundColor: colors.card },
+          headerTintColor: colors.text,
+        }}
+      />
+      <SafeAreaView style={styles.container} edges={[]}>
+        {loading ? (
+          <View style={styles.centerContent}>
+            <ActivityIndicator size="large" color={colors.tint} />
+          </View>
+        ) : lists.length === 0 ? (
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIcon}>
+              <FontAwesome name="list-ul" size={40} color={colors.inputBorder} />
             </View>
-
-            <TextInput
-              style={styles.input}
-              placeholder="Nazwa listy *"
-              placeholderTextColor={Colors.secondary[400]}
-              value={newListName}
-              onChangeText={setNewListName}
-              autoFocus
-              maxLength={100}
-            />
-
-            <TextInput
-              style={[styles.input, styles.inputMultiline]}
-              placeholder="Opis (opcjonalny)"
-              placeholderTextColor={Colors.secondary[400]}
-              value={newListDescription}
-              onChangeText={setNewListDescription}
-              multiline
-              maxLength={300}
-            />
-
+            <Text style={styles.emptyTitle}>Brak list zakupowych</Text>
+            <Text style={styles.emptyHint}>
+              Utwórz swoją pierwszą listę, aby zapisywać produkty na później.
+            </Text>
             <TouchableOpacity
-              style={[styles.modalCreateBtn, !newListName.trim() && styles.modalCreateBtnDisabled]}
-              onPress={handleCreateList}
-              disabled={!newListName.trim() || creating}
-              activeOpacity={0.8}
+              style={styles.createBtn}
+              onPress={() => setModalVisible(true)}
+              activeOpacity={0.7}
             >
-              {creating ? (
-                <ActivityIndicator size="small" color={Colors.white} />
-              ) : (
-                <Text style={styles.modalCreateBtnText}>Utwórz listę</Text>
-              )}
+              <FontAwesome name="plus" size={14} color={colors.textInverse} />
+              <Text style={styles.createBtnText}>Nowa lista</Text>
             </TouchableOpacity>
           </View>
-        </KeyboardAvoidingView>
-      </Modal>
-    </SafeAreaView>
+        ) : (
+          <>
+            <FlatList
+              data={lists}
+              renderItem={renderItem}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.listContent}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={() => loadLists(true)}
+                  tintColor={colors.tint}
+                  colors={[colors.tint]}
+                />
+              }
+              ListHeaderComponent={
+                <Text style={styles.listHeader}>
+                  Twoje listy ({lists.length})
+                </Text>
+              }
+            />
+            {/* FAB */}
+            <TouchableOpacity
+              style={styles.fab}
+              onPress={() => setModalVisible(true)}
+              activeOpacity={0.8}
+            >
+              <FontAwesome name="plus" size={22} color={colors.textInverse} />
+            </TouchableOpacity>
+          </>
+        )}
+
+        {/* Create modal */}
+        <Modal
+          visible={modalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Nowa lista zakupowa</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={newListName}
+                onChangeText={setNewListName}
+                placeholder="Nazwa listy"
+                placeholderTextColor={colors.placeholder}
+                autoFocus
+                maxLength={50}
+              />
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.modalCancelBtn}
+                  onPress={() => {
+                    setModalVisible(false);
+                    setNewListName('');
+                  }}
+                >
+                  <Text style={styles.modalCancelText}>Anuluj</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalCreateBtn, !newListName.trim() && { opacity: 0.5 }]}
+                  onPress={handleCreate}
+                  disabled={!newListName.trim() || creating}
+                >
+                  {creating ? (
+                    <ActivityIndicator size="small" color={colors.textInverse} />
+                  ) : (
+                    <Text style={styles.modalCreateText}>Utwórz</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      </SafeAreaView>
+    </>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundTertiary,
   },
-  loadingWrap: {
+  centerContent: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  guestWrap: {
+
+  // Guest state
+  guestState: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
-    gap: 12,
+    justifyContent: 'center',
+    padding: 32,
+    backgroundColor: colors.card,
   },
   guestTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
-    color: Colors.secondary[800],
-    marginTop: 8,
-  },
-  guestSubtext: {
-    fontSize: 14,
-    color: Colors.secondary[500],
-    textAlign: 'center',
+    color: colors.text,
+    marginTop: 16,
     marginBottom: 8,
   },
-  emptyWrap: {
+  guestHint: {
+    fontSize: 14,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+
+  // Empty
+  emptyState: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
-    gap: 10,
+    justifyContent: 'center',
+    padding: 32,
+    backgroundColor: colors.card,
+  },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.backgroundSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
   emptyTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.secondary[700],
-    marginTop: 8,
+    color: colors.text,
+    marginBottom: 8,
   },
-  emptySubtext: {
+  emptyHint: {
     fontSize: 14,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 20,
+    marginBottom: 20,
   },
-  createBtnLarge: {
+  createBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    backgroundColor: Colors.primary[500],
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 12,
-    marginTop: 8,
+    gap: 6,
+    backgroundColor: colors.tint,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
   },
-  createBtnLargeText: {
-    fontSize: 15,
+  createBtnText: {
+    color: colors.textInverse,
+    fontSize: 14,
     fontWeight: '600',
-    color: Colors.white,
   },
+
+  // List
   listContent: {
-    padding: 16,
-    paddingBottom: 80,
+    paddingBottom: 100,
   },
-  card: {
-    backgroundColor: Colors.white,
-    borderRadius: 14,
+  listHeader: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
     padding: 16,
-    shadowColor: '#000',
+    paddingBottom: 8,
+  },
+
+  // List card
+  listCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    marginHorizontal: 12,
+    marginBottom: 8,
+    padding: 14,
+    borderRadius: 12,
+    gap: 12,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowRadius: 3,
+    elevation: 1,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  cardTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 12,
-  },
-  cardIconWrap: {
+  listIcon: {
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: Colors.primary[50],
+    backgroundColor: colors.tintLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardTitleInfo: {
+  listInfo: {
     flex: 1,
   },
-  cardTitle: {
-    fontSize: 16,
+  listName: {
+    fontSize: 15,
     fontWeight: '600',
-    color: Colors.secondary[800],
+    color: colors.text,
+    marginBottom: 2,
   },
-  cardDescription: {
-    fontSize: 13,
-    color: Colors.secondary[500],
-    marginTop: 2,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 12,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: Colors.secondary[100],
-  },
-  cardCount: {
-    fontSize: 13,
-    color: Colors.secondary[600],
-    fontWeight: '500',
-  },
-  cardDate: {
+  listMeta: {
     fontSize: 12,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
   },
-  cardArrow: {
-    position: 'absolute',
-    right: 16,
-    top: '50%',
+  deleteListBtn: {
+    padding: 6,
   },
+
+  // FAB
   fab: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 24,
     right: 20,
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
-    elevation: 5,
+    elevation: 4,
   },
 
   // Modal
   modalOverlay: {
     flex: 1,
-    justifyContent: 'flex-end',
-  },
-  modalBg: {
-    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  modalSheet: {
-    backgroundColor: Colors.white,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingBottom: 32,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 20,
-    paddingBottom: 16,
+    justifyContent: 'center',
+  },
+  modalContent: {
+    width: '85%',
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 20,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
+    marginBottom: 16,
   },
-  input: {
+  modalInput: {
+    backgroundColor: colors.backgroundSecondary,
     borderWidth: 1,
-    borderColor: Colors.secondary[200],
+    borderColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: Colors.secondary[800],
-    backgroundColor: Colors.secondary[50],
-    marginBottom: 12,
+    color: colors.text,
+    marginBottom: 16,
   },
-  inputMultiline: {
-    minHeight: 70,
-    textAlignVertical: 'top',
+  modalActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  modalCancelBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: colors.backgroundSecondary,
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textSecondary,
   },
   modalCreateBtn: {
-    backgroundColor: Colors.primary[500],
-    paddingVertical: 14,
-    borderRadius: 12,
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: colors.tint,
     alignItems: 'center',
-    marginTop: 4,
   },
-  modalCreateBtnDisabled: {
-    backgroundColor: Colors.secondary[300],
-  },
-  modalCreateBtnText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.white,
+  modalCreateText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textInverse,
   },
 });

@@ -1734,7 +1734,7 @@ export class ProductsService {
     
     // Shuffle and pick diverse products
     const shuffled = allCandidates.sort(() => Math.random() - 0.5);
-    
+
     // Ensure diversity - don't pick too many from same category
     const picked: any[] = [];
     const categoryCount: Record<string, number> = {};

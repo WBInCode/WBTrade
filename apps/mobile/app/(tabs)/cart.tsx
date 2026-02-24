@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { couponsApi, UserCoupon } from '../../services/coupons';
@@ -22,6 +22,7 @@ import Button from '../../components/ui/Button';
 
 export default function CartScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
   const { cart, itemCount, updateQuantity, removeFromCart, applyCoupon, removeCoupon, refreshCart, loading } = useCart();
   const { isAuthenticated } = useAuth();
   const [couponCode, setCouponCode] = useState('');
@@ -96,6 +97,276 @@ export default function CartScreen() {
     }
   };
 
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.backgroundSecondary,
+    },
+    header: {
+      backgroundColor: colors.card,
+      paddingVertical: 16,
+      paddingHorizontal: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    headerTitle: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    headerSubtitle: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+    emptyContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+    },
+    emptyIcon: {
+      fontSize: 80,
+      marginBottom: 16,
+    },
+    emptyText: {
+      fontSize: 20,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 8,
+    },
+    emptyHint: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginBottom: 24,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      padding: 16,
+      paddingBottom: 24,
+    },
+    warehouseGroup: {
+      marginBottom: 16,
+    },
+    warehouseHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+    },
+    warehouseHeaderLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    warehouseIcon: {
+      fontSize: 22,
+    },
+    warehouseName: {
+      fontSize: 15,
+      fontWeight: '700',
+    },
+    warehouseCount: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginTop: 1,
+    },
+    warehouseBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 12,
+    },
+    warehouseBadgeText: {
+      fontSize: 11,
+      fontWeight: '700',
+    },
+    warehouseItems: {
+      paddingTop: 4,
+    },
+    browseWarehouseBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 12,
+      borderTopWidth: 1,
+    },
+    browseWarehouseText: {
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    couponSection: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      padding: 16,
+      marginTop: 8,
+    },
+    couponLabel: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      marginBottom: 10,
+    },
+    couponInputRow: {
+      flexDirection: 'row',
+      gap: 10,
+      alignItems: 'center',
+    },
+    couponInput: {
+      flex: 1,
+      backgroundColor: colors.backgroundTertiary,
+      borderRadius: 8,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      fontSize: 14,
+      color: colors.text,
+    },
+    couponApplied: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    couponBadge: {
+      backgroundColor: colors.success + '15',
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+    },
+    couponBadgeText: {
+      color: colors.success,
+      fontWeight: '600',
+      fontSize: 14,
+    },
+    couponRemove: {
+      color: colors.destructive,
+      fontWeight: '600',
+      fontSize: 14,
+    },
+    couponErrorText: {
+      color: colors.destructive,
+      fontSize: 13,
+      marginTop: 6,
+    },
+    availableCoupons: {
+      marginTop: 14,
+      paddingTop: 14,
+      borderTopWidth: 1,
+      borderTopColor: colors.backgroundTertiary,
+    },
+    availableCouponsLabel: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.textMuted,
+      marginBottom: 8,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    couponChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors.tint + '08',
+      borderWidth: 1,
+      borderColor: colors.tint + '25',
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      marginBottom: 8,
+    },
+    couponChipLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      flex: 1,
+    },
+    couponChipCode: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.text,
+      letterSpacing: 0.3,
+    },
+    couponChipExpiry: {
+      fontSize: 11,
+      color: colors.textMuted,
+      marginTop: 1,
+    },
+    couponChipRight: {
+      alignItems: 'flex-end',
+      marginLeft: 8,
+    },
+    couponChipValue: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: colors.tint,
+    },
+    couponChipUse: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.tint,
+      marginTop: 2,
+    },
+    summary: {
+      backgroundColor: colors.card,
+      padding: 16,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    summaryRows: {
+      marginBottom: 16,
+    },
+    summaryRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    summaryLabel: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    summaryValue: {
+      fontSize: 14,
+      color: colors.text,
+      fontWeight: '500',
+    },
+    discountLabel: {
+      fontSize: 14,
+      color: colors.success,
+    },
+    discountValue: {
+      fontSize: 14,
+      color: colors.success,
+      fontWeight: '600',
+    },
+    shippingInfo: {
+      fontSize: 12,
+      color: colors.textMuted,
+      fontStyle: 'italic',
+    },
+    totalRow: {
+      marginTop: 8,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      marginBottom: 0,
+    },
+    totalLabel: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    totalValue: {
+      fontSize: 22,
+      fontWeight: '700',
+      color: colors.tint,
+    },
+  }), [colors]);
+
   const handleCheckout = () => {
     if (!isAuthenticated) {
       Alert.alert(
@@ -154,9 +425,9 @@ export default function CartScreen() {
   const getWarehouseInfo = (key: string) => {
     return WAREHOUSE_CONFIG[key] || {
       name: `Magazyn ${key}`,
-      color: '#374151',
-      bgColor: '#F9FAFB',
-      borderColor: '#E5E7EB',
+      color: colors.textSecondary,
+      bgColor: colors.backgroundSecondary,
+      borderColor: colors.border,
       icon: '📦',
       searchKey: key.toLowerCase(),
     };
@@ -192,7 +463,7 @@ export default function CartScreen() {
             <View key={warehouse} style={[
               styles.warehouseGroup,
               showHeader && {
-                backgroundColor: Colors.white,
+                backgroundColor: colors.card,
                 borderRadius: 14,
                 borderWidth: 1.5,
                 borderColor: wInfo.borderColor,
@@ -301,7 +572,7 @@ export default function CartScreen() {
                     disabled={couponLoading}
                   >
                     <View style={styles.couponChipLeft}>
-                      <FontAwesome name="ticket" size={14} color={Colors.primary[600]} style={{ transform: [{ rotate: '-45deg' }] }} />
+                      <FontAwesome name="ticket" size={14} color={colors.tint} style={{ transform: [{ rotate: '-45deg' }] }} />
                       <View>
                         <Text style={styles.couponChipCode}>{c.code}</Text>
                         {remaining !== null && (
@@ -355,273 +626,3 @@ export default function CartScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.secondary[50],
-  },
-  header: {
-    backgroundColor: Colors.white,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.secondary[200],
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: Colors.secondary[900],
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: Colors.secondary[600],
-    marginTop: 2,
-  },
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  emptyIcon: {
-    fontSize: 80,
-    marginBottom: 16,
-  },
-  emptyText: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: Colors.secondary[900],
-    marginBottom: 8,
-  },
-  emptyHint: {
-    fontSize: 14,
-    color: Colors.secondary[600],
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 24,
-  },
-  warehouseGroup: {
-    marginBottom: 16,
-  },
-  warehouseHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  warehouseHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  warehouseIcon: {
-    fontSize: 22,
-  },
-  warehouseName: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  warehouseCount: {
-    fontSize: 12,
-    color: Colors.secondary[500],
-    marginTop: 1,
-  },
-  warehouseBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  warehouseBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  warehouseItems: {
-    paddingTop: 4,
-  },
-  browseWarehouseBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-  },
-  browseWarehouseText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  couponSection: {
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 8,
-  },
-  couponLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.secondary[700],
-    marginBottom: 10,
-  },
-  couponInputRow: {
-    flexDirection: 'row',
-    gap: 10,
-    alignItems: 'center',
-  },
-  couponInput: {
-    flex: 1,
-    backgroundColor: Colors.secondary[100],
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: Colors.secondary[900],
-  },
-  couponApplied: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  couponBadge: {
-    backgroundColor: Colors.success + '15',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  couponBadgeText: {
-    color: Colors.success,
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  couponRemove: {
-    color: Colors.destructive,
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  couponErrorText: {
-    color: Colors.destructive,
-    fontSize: 13,
-    marginTop: 6,
-  },
-  availableCoupons: {
-    marginTop: 14,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: Colors.secondary[100],
-  },
-  availableCouponsLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.secondary[500],
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  couponChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: Colors.primary[600] + '08',
-    borderWidth: 1,
-    borderColor: Colors.primary[600] + '25',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 8,
-  },
-  couponChipLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-  },
-  couponChipCode: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.secondary[800],
-    letterSpacing: 0.3,
-  },
-  couponChipExpiry: {
-    fontSize: 11,
-    color: Colors.secondary[400],
-    marginTop: 1,
-  },
-  couponChipRight: {
-    alignItems: 'flex-end',
-    marginLeft: 8,
-  },
-  couponChipValue: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.primary[600],
-  },
-  couponChipUse: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: Colors.primary[600],
-    marginTop: 2,
-  },
-  summary: {
-    backgroundColor: Colors.white,
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: Colors.secondary[200],
-  },
-  summaryRows: {
-    marginBottom: 16,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  summaryLabel: {
-    fontSize: 14,
-    color: Colors.secondary[600],
-  },
-  summaryValue: {
-    fontSize: 14,
-    color: Colors.secondary[900],
-    fontWeight: '500',
-  },
-  discountLabel: {
-    fontSize: 14,
-    color: Colors.success,
-  },
-  discountValue: {
-    fontSize: 14,
-    color: Colors.success,
-    fontWeight: '600',
-  },
-  shippingInfo: {
-    fontSize: 12,
-    color: Colors.secondary[400],
-    fontStyle: 'italic',
-  },
-  totalRow: {
-    marginTop: 8,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: Colors.secondary[200],
-    marginBottom: 0,
-  },
-  totalLabel: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.secondary[900],
-  },
-  totalValue: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: Colors.primary[600],
-  },
-});

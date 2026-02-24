@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -15,7 +15,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import type { ThemeColors } from '../../constants/Colors';
 
 const TOPICS = [
   'Zamówienie',
@@ -37,21 +38,26 @@ function ContactCard({
   value: string;
   onPress: () => void;
 }) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.cardIcon}>
-        <FontAwesome name={icon as any} size={20} color={Colors.primary[600]} />
+        <FontAwesome name={icon as any} size={20} color={colors.tint} />
       </View>
       <View style={styles.cardContent}>
         <Text style={styles.cardTitle}>{title}</Text>
         <Text style={styles.cardValue}>{value}</Text>
       </View>
-      <FontAwesome name="chevron-right" size={12} color={Colors.secondary[300]} />
+      <FontAwesome name="chevron-right" size={12} color={colors.inputBorder} />
     </TouchableOpacity>
   );
 }
 
 export default function ContactScreen() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [topic, setTopic] = useState('');
   const [message, setMessage] = useState('');
   const [email, setEmail] = useState('');
@@ -89,7 +95,7 @@ export default function ContactScreen() {
           {/* Hero */}
           <View style={styles.hero}>
             <View style={styles.heroIcon}>
-              <FontAwesome name="headphones" size={32} color={Colors.primary[600]} />
+              <FontAwesome name="headphones" size={32} color={colors.tint} />
             </View>
             <Text style={styles.heroTitle}>Jak możemy Ci pomóc?</Text>
             <Text style={styles.heroSubtitle}>
@@ -143,7 +149,7 @@ export default function ContactScreen() {
               <FontAwesome
                 name={showTopics ? 'chevron-up' : 'chevron-down'}
                 size={12}
-                color={Colors.secondary[400]}
+                color={colors.textMuted}
               />
             </TouchableOpacity>
             {showTopics && (
@@ -163,7 +169,7 @@ export default function ContactScreen() {
                       {t}
                     </Text>
                     {topic === t && (
-                      <FontAwesome name="check" size={14} color={Colors.primary[600]} />
+                      <FontAwesome name="check" size={14} color={colors.tint} />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -177,7 +183,7 @@ export default function ContactScreen() {
               value={email}
               onChangeText={setEmail}
               placeholder="jan@example.com"
-              placeholderTextColor={Colors.secondary[300]}
+              placeholderTextColor={colors.inputBorder}
               keyboardType="email-address"
               autoCapitalize="none"
             />
@@ -189,7 +195,7 @@ export default function ContactScreen() {
               value={message}
               onChangeText={setMessage}
               placeholder="Opisz, w czym możemy pomóc..."
-              placeholderTextColor={Colors.secondary[300]}
+              placeholderTextColor={colors.inputBorder}
               multiline
               numberOfLines={5}
               textAlignVertical="top"
@@ -202,10 +208,10 @@ export default function ContactScreen() {
               activeOpacity={0.7}
             >
               {sending ? (
-                <ActivityIndicator color={Colors.white} size="small" />
+                <ActivityIndicator color={colors.textInverse} size="small" />
               ) : (
                 <>
-                  <FontAwesome name="paper-plane" size={16} color={Colors.white} />
+                  <FontAwesome name="paper-plane" size={16} color={colors.textInverse} />
                   <Text style={styles.sendBtnText}>Wyślij wiadomość</Text>
                 </>
               )}
@@ -230,6 +236,9 @@ export default function ContactScreen() {
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}</Text>
@@ -238,10 +247,10 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.secondary[100],
+    backgroundColor: colors.backgroundTertiary,
   },
   scroll: {
     flex: 1,
@@ -252,18 +261,18 @@ const styles = StyleSheet.create({
 
   // ─── Hero ───
   hero: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     alignItems: 'center',
     paddingVertical: 28,
     paddingHorizontal: 24,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.secondary[200],
+    borderBottomColor: colors.border,
   },
   heroIcon: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: Colors.primary[50],
+    backgroundColor: colors.tintLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
@@ -271,12 +280,12 @@ const styles = StyleSheet.create({
   heroTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
     marginBottom: 6,
   },
   heroSubtitle: {
     fontSize: 14,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -290,7 +299,7 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
   },
@@ -298,7 +307,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: Colors.primary[50],
+    backgroundColor: colors.tintLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
@@ -309,7 +318,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 2,
@@ -317,12 +326,12 @@ const styles = StyleSheet.create({
   cardValue: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.secondary[900],
+    color: colors.text,
   },
 
   // ─── Form ───
   formSection: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 12,
     marginHorizontal: 12,
     marginTop: 20,
@@ -331,18 +340,18 @@ const styles = StyleSheet.create({
   formTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
     marginBottom: 4,
   },
   formSubtitle: {
     fontSize: 13,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     marginBottom: 20,
   },
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.secondary[700],
+    color: colors.textSecondary,
     marginBottom: 6,
     marginTop: 14,
   },
@@ -351,26 +360,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: Colors.secondary[200],
+    borderColor: colors.inputBorder,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.inputBackground,
   },
   pickerText: {
     fontSize: 15,
-    color: Colors.secondary[900],
+    color: colors.text,
   },
   pickerPlaceholder: {
-    color: Colors.secondary[300],
+    color: colors.inputBorder,
   },
   topicsList: {
     borderWidth: 1,
-    borderColor: Colors.secondary[200],
+    borderColor: colors.inputBorder,
     borderRadius: 10,
     marginTop: 4,
     overflow: 'hidden',
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
   },
   topicItem: {
     flexDirection: 'row',
@@ -379,28 +388,28 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.secondary[100],
+    borderBottomColor: colors.borderLight,
   },
   topicItemActive: {
-    backgroundColor: Colors.primary[50],
+    backgroundColor: colors.tintLight,
   },
   topicItemText: {
     fontSize: 15,
-    color: Colors.secondary[700],
+    color: colors.textSecondary,
   },
   topicItemTextActive: {
-    color: Colors.primary[700],
+    color: colors.tint,
     fontWeight: '600',
   },
   input: {
     borderWidth: 1,
-    borderColor: Colors.secondary[200],
+    borderColor: colors.inputBorder,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: Colors.secondary[900],
-    backgroundColor: Colors.secondary[50],
+    color: colors.inputText,
+    backgroundColor: colors.inputBackground,
   },
   textArea: {
     minHeight: 120,
@@ -410,7 +419,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.primary[600],
+    backgroundColor: colors.tint,
     borderRadius: 10,
     paddingVertical: 14,
     gap: 8,
@@ -422,7 +431,7 @@ const styles = StyleSheet.create({
   sendBtnText: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.white,
+    color: colors.textInverse,
   },
 
   // ─── Company ───
@@ -433,12 +442,12 @@ const styles = StyleSheet.create({
   companySectionTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
     marginBottom: 10,
     paddingHorizontal: 4,
   },
   companyCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
   },
@@ -447,17 +456,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.secondary[100],
+    borderBottomColor: colors.borderLight,
   },
   infoLabel: {
     fontSize: 13,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     flex: 1,
   },
   infoValue: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.secondary[900],
+    color: colors.text,
     flex: 2,
     textAlign: 'right',
   },

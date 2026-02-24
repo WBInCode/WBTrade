@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,8 @@ import {
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import type { ThemeColors } from '../../constants/Colors';
 import { useCart } from '../../contexts/CartContext';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -329,6 +330,8 @@ function isLikelyHeading(text: string): boolean {
 // Render parsed HTML blocks as React Native components
 function HtmlContent({ html }: { html: string }) {
   const blocks = parseHtmlBlocks(html);
+  const colors = useThemeColors();
+  const htmlStyles = useMemo(() => createHtmlStyles(colors), [colors]);
 
   return (
     <View>
@@ -383,25 +386,25 @@ function HtmlContent({ html }: { html: string }) {
   );
 }
 
-const htmlStyles = StyleSheet.create({
+const createHtmlStyles = (colors: ThemeColors) => StyleSheet.create({
   heading: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.secondary[800],
+    color: colors.text,
     marginBottom: 6,
     marginTop: 20,
     paddingBottom: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.secondary[200],
+    borderBottomColor: colors.border,
   },
   paragraph: {
     fontSize: 14,
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
     lineHeight: 22,
     marginBottom: 12,
   },
   list: {
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 14,
@@ -413,7 +416,7 @@ const htmlStyles = StyleSheet.create({
   },
   bullet: {
     fontSize: 14,
-    color: Colors.primary[500],
+    color: colors.tint,
     marginRight: 10,
     lineHeight: 21,
   },
@@ -421,13 +424,13 @@ const htmlStyles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
     marginRight: 10,
     marginTop: 8,
   },
   listItemText: {
     fontSize: 14,
-    color: Colors.secondary[700],
+    color: colors.textSecondary,
     lineHeight: 21,
     flex: 1,
   },
@@ -435,7 +438,7 @@ const htmlStyles = StyleSheet.create({
     borderRadius: 10,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: Colors.secondary[200],
+    borderColor: colors.border,
     marginBottom: 14,
   },
   tableRow: {
@@ -443,22 +446,22 @@ const htmlStyles = StyleSheet.create({
     paddingVertical: 11,
     paddingHorizontal: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.secondary[200],
+    borderBottomColor: colors.border,
   },
   tableRowEven: {
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundSecondary,
   },
   tableRowLast: {
     borderBottomWidth: 0,
   },
   tableKey: {
     fontSize: 13,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     flex: 1,
   },
   tableValue: {
     fontSize: 13,
-    color: Colors.secondary[800],
+    color: colors.text,
     fontWeight: '500',
     flex: 1,
     textAlign: 'right',
@@ -507,6 +510,8 @@ function WishlistButton({ productId }: { productId: string }) {
   const { user } = useAuth();
   const router = useRouter();
   const isFav = isInWishlist(productId);
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
     <TouchableOpacity
@@ -523,7 +528,7 @@ function WishlistButton({ productId }: { productId: string }) {
       <FontAwesome
         name={isFav ? 'heart' : 'heart-o'}
         size={20}
-        color={isFav ? Colors.destructive : Colors.secondary[500]}
+        color={isFav ? colors.destructive : colors.textMuted}
       />
     </TouchableOpacity>
   );
@@ -532,6 +537,8 @@ function WishlistButton({ productId }: { productId: string }) {
 // --- Image Gallery ---
 function ImageGallery({ images }: { images: { url: string; alt: string | null }[] }) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -546,7 +553,7 @@ function ImageGallery({ images }: { images: { url: string; alt: string | null }[
   if (!images || images.length === 0) {
     return (
       <View style={styles.galleryPlaceholder}>
-        <FontAwesome name="image" size={48} color={Colors.secondary[300]} />
+        <FontAwesome name="image" size={48} color={colors.border} />
         <Text style={styles.galleryPlaceholderText}>Brak zdjęć</Text>
       </View>
     );
@@ -590,6 +597,7 @@ function ImageGallery({ images }: { images: { url: string; alt: string | null }[
 
 // --- Star Rating ---
 function StarRating({ rating, size = 16 }: { rating: number; size?: number }) {
+  const colors = useThemeColors();
   const stars = [];
   for (let i = 1; i <= 5; i++) {
     stars.push(
@@ -597,7 +605,7 @@ function StarRating({ rating, size = 16 }: { rating: number; size?: number }) {
         key={i}
         name={i <= Math.round(rating) ? 'star' : 'star-o'}
         size={size}
-        color={Colors.warning}
+        color={colors.warning}
         style={{ marginRight: 2 }}
       />
     );
@@ -614,6 +622,9 @@ function ProductInfoTabs({
   specifications?: Record<string, string>;
 }) {
   const [activeTab, setActiveTab] = useState<'opis' | 'spec'>('opis');
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const htmlStyles = useMemo(() => createHtmlStyles(colors), [colors]);
 
   const allBlocks = description ? parseHtmlBlocks(description) : [];
   // Skip the first block if it's an ALL-CAPS heading (redundant product title)
@@ -734,6 +745,8 @@ function Accordion({
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
     <View style={styles.accordionContainer}>
@@ -746,7 +759,7 @@ function Accordion({
         <FontAwesome
           name={open ? 'chevron-up' : 'chevron-down'}
           size={14}
-          color={Colors.secondary[500]}
+          color={colors.textMuted}
         />
       </TouchableOpacity>
       {open && <View style={styles.accordionContent}>{children}</View>}
@@ -760,6 +773,8 @@ export default function ProductDetailScreen() {
   const router = useRouter();
   const { addToCart } = useCart();
   const { user } = useAuth();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -958,16 +973,16 @@ export default function ProductDetailScreen() {
       // No variants - check if product has any variant with stock
       if (product?.variants && product.variants.length > 0) {
         const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
-        if (totalStock === 0) return { status: 'out', label: 'Niedostępny', color: Colors.secondary[400] };
-        if (totalStock <= 5) return { status: 'low', label: 'Mało sztuk', color: Colors.warning };
-        return { status: 'in', label: 'Dostępny', color: Colors.success };
+        if (totalStock === 0) return { status: 'out', label: 'Niedostępny', color: colors.textMuted };
+        if (totalStock <= 5) return { status: 'low', label: 'Mało sztuk', color: colors.warning };
+        return { status: 'in', label: 'Dostępny', color: colors.success };
       }
-      return { status: 'in', label: 'Dostępny', color: Colors.success };
+      return { status: 'in', label: 'Dostępny', color: colors.success };
     }
 
-    if (selectedVariant.stock === 0) return { status: 'out', label: 'Niedostępny', color: Colors.secondary[400] };
-    if (selectedVariant.stock <= 5) return { status: 'low', label: 'Mało sztuk', color: Colors.warning };
-    return { status: 'in', label: 'Dostępny', color: Colors.success };
+    if (selectedVariant.stock === 0) return { status: 'out', label: 'Niedostępny', color: colors.textMuted };
+    if (selectedVariant.stock <= 5) return { status: 'low', label: 'Mało sztuk', color: colors.warning };
+    return { status: 'in', label: 'Dostępny', color: colors.success };
   }, [product, selectedVariant]);
 
   // --- Add to cart ---
@@ -1008,7 +1023,7 @@ export default function ProductDetailScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={Colors.primary[500]} />
+        <ActivityIndicator size="large" color={colors.tint} />
         <Text style={styles.loadingText}>Ładowanie produktu...</Text>
       </View>
     );
@@ -1017,7 +1032,7 @@ export default function ProductDetailScreen() {
   if (error || !product) {
     return (
       <View style={styles.centered}>
-        <FontAwesome name="exclamation-triangle" size={48} color={Colors.destructive} />
+        <FontAwesome name="exclamation-triangle" size={48} color={colors.destructive} />
         <Text style={styles.errorText}>{error || 'Nie znaleziono produktu'}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={() => router.back()}>
           <Text style={styles.retryButtonText}>Wróć</Text>
@@ -1092,12 +1107,12 @@ export default function ProductDetailScreen() {
                   {
                     backgroundColor:
                       product.badge === 'super-price'
-                        ? Colors.destructive
+                        ? colors.destructive
                         : product.badge === 'outlet'
-                          ? Colors.warning
+                          ? colors.warning
                           : product.badge === 'bestseller'
-                            ? Colors.primary[500]
-                            : Colors.success,
+                            ? colors.tint
+                            : colors.success,
                   },
                 ]}
               >
@@ -1144,7 +1159,7 @@ export default function ProductDetailScreen() {
               <Text
                 style={[
                   styles.currentPrice,
-                  hasDiscount && { color: Colors.destructive },
+                  hasDiscount && { color: colors.destructive },
                 ]}
               >
                 {Number(price).toFixed(2).replace('.', ',')} zł
@@ -1172,9 +1187,9 @@ export default function ProductDetailScreen() {
 
             {/* Newsletter discount badge — animated */}
             <Animated.View style={[styles.newsletterBadge, { transform: [{ scale: nlScale }], opacity: nlOpacity }]}>
-              <FontAwesome name="ticket" size={13} color={Colors.primary[600]} style={{ transform: [{ rotate: '-45deg' }] }} />
+              <FontAwesome name="ticket" size={13} color={colors.tint} style={{ transform: [{ rotate: '-45deg' }] }} />
               <Text style={styles.newsletterBadgeText}>10% rabatu z newsletterem</Text>
-              <FontAwesome name="chevron-right" size={10} color={Colors.primary[600]} />
+              <FontAwesome name="chevron-right" size={10} color={colors.tint} />
             </Animated.View>
           </View>
 
@@ -1234,10 +1249,10 @@ export default function ProductDetailScreen() {
               activeOpacity={0.8}
             >
               {addingToCart ? (
-                <ActivityIndicator color={Colors.white} size="small" />
+                <ActivityIndicator color={colors.textInverse} size="small" />
               ) : (
                 <>
-                  <FontAwesome name="shopping-cart" size={18} color={Colors.white} />
+                  <FontAwesome name="shopping-cart" size={18} color={colors.textInverse} />
                   <Text style={styles.addToCartText}>
                     {stockInfo.status === 'out' ? 'Niedostępny' : 'Dodaj do koszyka'}
                   </Text>
@@ -1259,14 +1274,14 @@ export default function ProductDetailScreen() {
             }}
             activeOpacity={0.7}
           >
-            <FontAwesome name="list-ul" size={16} color={Colors.primary[500]} />
+            <FontAwesome name="list-ul" size={16} color={colors.tint} />
             <Text style={styles.addToListText}>Dodaj do listy zakupowej</Text>
           </TouchableOpacity>
 
           {/* Store/Warehouse info */}
           {product.storeName && (
             <View style={styles.storeRow}>
-              <FontAwesome name="building-o" size={14} color={Colors.secondary[500]} />
+              <FontAwesome name="building-o" size={14} color={colors.textMuted} />
               <Text style={styles.storeText}>Magazyn: {product.storeName}</Text>
             </View>
           )}
@@ -1346,7 +1361,7 @@ export default function ProductDetailScreen() {
                     </Text>
                     {review.isVerifiedPurchase && (
                       <View style={styles.reviewHCardVerified}>
-                        <FontAwesome name="check-circle" size={11} color={Colors.success} />
+                        <FontAwesome name="check-circle" size={11} color={colors.success} />
                         <Text style={styles.reviewHCardVerifiedText}>Zweryfikowany zakup</Text>
                       </View>
                     )}
@@ -1405,7 +1420,7 @@ export default function ProductDetailScreen() {
                         <FontAwesome
                           name={star <= reviewRating ? 'star' : 'star-o'}
                           size={32}
-                          color={star <= reviewRating ? Colors.warning : Colors.secondary[300]}
+                          color={star <= reviewRating ? colors.warning : colors.border}
                         />
                       </TouchableOpacity>
                     ))}
@@ -1460,7 +1475,7 @@ export default function ProductDetailScreen() {
                       activeOpacity={0.8}
                     >
                       {submittingReview ? (
-                        <ActivityIndicator size="small" color={Colors.white} />
+                        <ActivityIndicator size="small" color={colors.textInverse} />
                       ) : (
                         <Text style={styles.reviewFormSubmitText}>Wyślij opinię</Text>
                       )}
@@ -1499,38 +1514,38 @@ export default function ProductDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
   },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 32,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
   },
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
   errorText: {
     marginTop: 12,
     fontSize: 16,
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   retryButton: {
     marginTop: 16,
     paddingHorizontal: 24,
     paddingVertical: 10,
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
     borderRadius: 8,
   },
   retryButtonText: {
-    color: Colors.white,
+    color: colors.textInverse,
     fontWeight: '600',
   },
 
@@ -1538,19 +1553,19 @@ const styles = StyleSheet.create({
   galleryPlaceholder: {
     width: SCREEN_WIDTH,
     height: SCREEN_WIDTH * 0.8,
-    backgroundColor: Colors.secondary[100],
+    backgroundColor: colors.backgroundTertiary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   galleryPlaceholderText: {
     marginTop: 8,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     fontSize: 14,
   },
   galleryImage: {
     width: SCREEN_WIDTH,
     height: SCREEN_WIDTH * 0.8,
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundSecondary,
   },
   dotsContainer: {
     flexDirection: 'row',
@@ -1565,10 +1580,10 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   dotActive: {
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
   },
   dotInactive: {
-    backgroundColor: Colors.secondary[300],
+    backgroundColor: colors.border,
   },
 
   // Content
@@ -1587,7 +1602,7 @@ const styles = StyleSheet.create({
     borderRadius: 100,
   },
   badgeText: {
-    color: Colors.white,
+    color: colors.textInverse,
     fontSize: 12,
     fontWeight: '700',
   },
@@ -1596,13 +1611,13 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
     lineHeight: 28,
     marginBottom: 4,
   },
   sku: {
     fontSize: 12,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     marginBottom: 8,
   },
 
@@ -1615,7 +1630,7 @@ const styles = StyleSheet.create({
   },
   ratingText: {
     fontSize: 13,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
 
   // Price
@@ -1623,7 +1638,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.secondary[200],
+    borderBottomColor: colors.border,
   },
   priceRow: {
     flexDirection: 'row',
@@ -1633,27 +1648,27 @@ const styles = StyleSheet.create({
   currentPrice: {
     fontSize: 28,
     fontWeight: '800',
-    color: Colors.secondary[900],
+    color: colors.text,
   },
   comparePrice: {
     fontSize: 16,
-    color: Colors.secondary[400],
+    color: colors.priceOld,
     textDecorationLine: 'line-through',
   },
   discountBadge: {
-    backgroundColor: Colors.destructive,
+    backgroundColor: colors.destructive,
     borderRadius: 4,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
   discountBadgeText: {
-    color: Colors.white,
+    color: colors.textInverse,
     fontSize: 12,
     fontWeight: '700',
   },
   omnibusText: {
     fontSize: 11,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     marginTop: 4,
     fontStyle: 'italic',
   },
@@ -1661,9 +1676,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
-    backgroundColor: Colors.primary[50],
+    backgroundColor: colors.tintLight,
     borderWidth: 1,
-    borderColor: Colors.primary[200],
+    borderColor: colors.tintMuted,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -1674,7 +1689,7 @@ const styles = StyleSheet.create({
   newsletterBadgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.primary[600],
+    color: colors.tint,
     letterSpacing: 0.2,
   },
 
@@ -1688,7 +1703,7 @@ const styles = StyleSheet.create({
   variantLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.secondary[700],
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   chipsRow: {
@@ -1701,20 +1716,20 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: Colors.secondary[300],
-    backgroundColor: Colors.white,
+    borderColor: colors.inputBorder,
+    backgroundColor: colors.card,
   },
   chipSelected: {
-    borderColor: Colors.primary[500],
-    backgroundColor: Colors.primary[50],
+    borderColor: colors.tint,
+    backgroundColor: colors.tintLight,
   },
   chipText: {
     fontSize: 14,
-    color: Colors.secondary[700],
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   chipTextSelected: {
-    color: Colors.primary[700],
+    color: colors.tint,
     fontWeight: '600',
   },
 
@@ -1747,16 +1762,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
     paddingVertical: 16,
     borderRadius: 12,
     gap: 10,
   },
   addToCartDisabled: {
-    backgroundColor: Colors.secondary[300],
+    backgroundColor: colors.border,
   },
   addToCartText: {
-    color: Colors.white,
+    color: colors.textInverse,
     fontSize: 16,
     fontWeight: '700',
   },
@@ -1765,14 +1780,14 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.secondary[200],
-    backgroundColor: Colors.white,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
   wishlistBtnActive: {
-    borderColor: Colors.destructive,
-    backgroundColor: '#fef2f2',
+    borderColor: colors.destructive,
+    backgroundColor: colors.destructiveBg,
   },
   addToListBtn: {
     flexDirection: 'row',
@@ -1782,14 +1797,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: Colors.primary[200],
+    borderColor: colors.tintMuted,
     borderRadius: 10,
-    backgroundColor: Colors.primary[50],
+    backgroundColor: colors.tintLight,
   },
   addToListText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.primary[600],
+    color: colors.tint,
   },
 
   // Store
@@ -1800,18 +1815,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: 8,
   },
   storeText: {
     fontSize: 13,
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
   },
 
   // Accordion
   accordionContainer: {
     borderTopWidth: 1,
-    borderTopColor: Colors.secondary[200],
+    borderTopColor: colors.border,
   },
   accordionHeader: {
     flexDirection: 'row',
@@ -1822,7 +1837,7 @@ const styles = StyleSheet.create({
   accordionTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.secondary[800],
+    color: colors.text,
   },
   accordionContent: {
     paddingBottom: 14,
@@ -1832,11 +1847,11 @@ const styles = StyleSheet.create({
   tabsWrap: {
     marginTop: 24,
     marginHorizontal: -16,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundSecondary,
     marginHorizontal: 16,
     borderRadius: 10,
     padding: 3,
@@ -1848,9 +1863,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   tabBtnActive: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     elevation: 1,
-    shadowColor: Colors.black,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 2,
@@ -1858,10 +1873,10 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.secondary[400],
+    color: colors.textMuted,
   },
   tabLabelActive: {
-    color: Colors.secondary[900],
+    color: colors.text,
   },
   tabBody: {
     paddingHorizontal: 16,
@@ -1874,28 +1889,28 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: Colors.secondary[200],
+    borderColor: colors.border,
   },
   specRow: {
     flexDirection: 'row',
     paddingVertical: 13,
     paddingHorizontal: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.secondary[200],
-    backgroundColor: Colors.white,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.card,
   },
   specRowAlt: {
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundSecondary,
   },
   specLabel: {
     fontSize: 13,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     flex: 1,
     lineHeight: 20,
   },
   specVal: {
     fontSize: 14,
-    color: Colors.secondary[900],
+    color: colors.text,
     fontWeight: '500',
     flex: 1.3,
     paddingLeft: 12,
@@ -1907,7 +1922,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: Colors.secondary[200],
+    borderTopColor: colors.border,
   },
   reviewsSectionHeader: {
     flexDirection: 'row',
@@ -1919,16 +1934,16 @@ const styles = StyleSheet.create({
   reviewsSectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
   },
   reviewsSectionRating: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.secondary[800],
+    color: colors.text,
   },
   reviewsSectionCount: {
     fontSize: 13,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
 
   // Horizontal review cards
@@ -1939,29 +1954,29 @@ const styles = StyleSheet.create({
   },
   reviewHCard: {
     width: SCREEN_WIDTH * 0.72,
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: Colors.secondary[100],
+    borderColor: colors.borderLight,
   },
   reviewHCardHeader: {
     marginBottom: 6,
   },
   reviewHCardAuthor: {
     fontSize: 12,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     marginTop: 4,
   },
   reviewHCardTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.secondary[800],
+    color: colors.text,
     marginBottom: 4,
   },
   reviewHCardContent: {
     fontSize: 13,
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
     lineHeight: 19,
   },
   reviewHCardVerified: {
@@ -1972,14 +1987,14 @@ const styles = StyleSheet.create({
   },
   reviewHCardVerifiedText: {
     fontSize: 11,
-    color: Colors.success,
+    color: colors.success,
     fontWeight: '500',
   },
 
   // See all reviews button
   seeAllReviewsBtn: {
     borderWidth: 1,
-    borderColor: Colors.primary[300],
+    borderColor: colors.tint,
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: 'center',
@@ -1988,37 +2003,37 @@ const styles = StyleSheet.create({
   seeAllReviewsText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.primary[600],
+    color: colors.tint,
   },
 
   // "Masz ten produkt?" CTA
   reviewCta: {
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: 12,
     padding: 20,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.secondary[100],
+    borderColor: colors.borderLight,
   },
   reviewCtaTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
     marginBottom: 4,
   },
   reviewCtaSubtitle: {
     fontSize: 13,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     marginBottom: 16,
   },
   addReviewBtn: {
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
     borderRadius: 10,
     paddingHorizontal: 32,
     paddingVertical: 12,
   },
   addReviewBtnText: {
-    color: Colors.white,
+    color: colors.textInverse,
     fontSize: 15,
     fontWeight: '600',
   },
@@ -2031,7 +2046,7 @@ const styles = StyleSheet.create({
   reviewFormLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.secondary[700],
+    color: colors.textSecondary,
     marginBottom: 6,
     marginTop: 12,
   },
@@ -2041,14 +2056,14 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   reviewFormInput: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.inputBackground,
     borderWidth: 1,
-    borderColor: Colors.secondary[200],
+    borderColor: colors.inputBorder,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: Colors.secondary[900],
+    color: colors.inputText,
   },
   reviewFormTextarea: {
     minHeight: 100,
@@ -2056,7 +2071,7 @@ const styles = StyleSheet.create({
   },
   reviewFormCharCount: {
     fontSize: 11,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     textAlign: 'right',
     marginTop: 4,
   },
@@ -2071,24 +2086,24 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.secondary[300],
+    borderColor: colors.inputBorder,
   },
   reviewFormCancelText: {
     fontSize: 14,
     fontWeight: '500',
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
   },
   reviewFormSubmit: {
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
   },
   reviewFormSubmitDisabled: {
-    backgroundColor: Colors.secondary[300],
+    backgroundColor: colors.border,
   },
   reviewFormSubmitText: {
-    color: Colors.white,
+    color: colors.textInverse,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -2097,7 +2112,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
     marginBottom: 16,
   },
   verifiedBadge: {
@@ -2107,18 +2122,18 @@ const styles = StyleSheet.create({
   },
   verifiedText: {
     fontSize: 11,
-    color: Colors.success,
+    color: colors.success,
     fontWeight: '500',
   },
   reviewTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.secondary[800],
+    color: colors.text,
     marginBottom: 4,
   },
   reviewContent: {
     fontSize: 13,
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
     lineHeight: 20,
   },
 
@@ -2127,6 +2142,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: Colors.secondary[200],
+    borderTopColor: colors.border,
   },
 });

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TextInputProps, TouchableOpacity } from 'react-native';
 import { Controller, Control } from 'react-hook-form';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
 
 interface InputProps extends Omit<TextInputProps, 'onChange'> {
   label?: string;
@@ -23,6 +23,7 @@ export default function Input({
   ...rest
 }: InputProps) {
   const [showPassword, setShowPassword] = useState(false);
+  const colors = useThemeColors();
   const isPassword = secureTextEntry !== undefined;
 
   const renderInput = (
@@ -40,7 +41,7 @@ export default function Input({
             style={{
               fontSize: 14,
               fontWeight: '500',
-              color: Colors.secondary[700],
+              color: colors.textSecondary,
               marginBottom: 6,
             }}
           >
@@ -53,18 +54,18 @@ export default function Input({
             onChangeText={onChange}
             onBlur={onBlur}
             secureTextEntry={isPassword && !showPassword}
-            placeholderTextColor={Colors.secondary[400]}
+            placeholderTextColor={colors.placeholder}
             style={[
               {
                 borderWidth: 1,
-                borderColor: displayError ? Colors.destructive : Colors.border,
+                borderColor: displayError ? colors.destructive : colors.inputBorder,
                 borderRadius: 8,
                 paddingVertical: 12,
                 paddingHorizontal: 14,
                 paddingRight: isPassword ? 44 : 14,
                 fontSize: 15,
-                color: Colors.secondary[900],
-                backgroundColor: Colors.white,
+                color: colors.inputText,
+                backgroundColor: colors.inputBackground,
               },
             ]}
             {...rest}
@@ -83,7 +84,7 @@ export default function Input({
               <FontAwesome
                 name={showPassword ? 'eye-slash' : 'eye'}
                 size={18}
-                color={Colors.secondary[400]}
+                color={colors.placeholder}
               />
             </TouchableOpacity>
           )}
@@ -92,7 +93,7 @@ export default function Input({
           <Text
             style={{
               fontSize: 12,
-              color: Colors.destructive,
+              color: colors.destructive,
               marginTop: 4,
             }}
           >

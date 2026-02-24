@@ -1,511 +1,474 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   StyleSheet,
   View,
   Text,
-  TextInput,
   TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
+  TextInput,
   KeyboardAvoidingView,
   Platform,
-  Alert,
+  ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
-import { authApi } from '../../services/auth';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import type { ThemeColors } from '../../constants/Colors';
+import { api } from '../../services/api';
+import { useToast } from '../../contexts/ToastContext';
 
-// ─── Password field ───
+interface PasswordStrength {
+  score: number; // 0-4
+  label: string;
+  color: string;
+}
+
 function PasswordField({
   label,
   value,
   onChangeText,
   placeholder,
   error,
+  inputRef,
+  onSubmit,
+  returnKeyType = 'next',
 }: {
   label: string;
   value: string;
-  onChangeText: (t: string) => void;
-  placeholder?: string;
+  onChangeText: (v: string) => void;
+  placeholder: string;
   error?: string;
+  inputRef?: React.RefObject<TextInput | null>;
+  onSubmit?: () => void;
+  returnKeyType?: 'next' | 'done';
 }) {
   const [visible, setVisible] = useState(false);
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
-    <View style={styles.fieldWrap}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <View style={styles.inputRow}>
-        <View style={styles.inputIcon}>
-          <FontAwesome name="lock" size={16} color={Colors.secondary[400]} />
-        </View>
+    <View style={styles.fieldContainer}>
+      <Text style={styles.label}>{label}</Text>
+      <View style={[styles.inputWrapper, error ? styles.inputError : null]}>
         <TextInput
-          style={[styles.fieldInput, error ? styles.fieldInputError : null]}
+          ref={inputRef as any}
+          style={styles.input}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={Colors.secondary[300]}
+          placeholderTextColor={colors.placeholder}
           secureTextEntry={!visible}
           autoCapitalize="none"
           autoCorrect={false}
+          returnKeyType={returnKeyType}
+          onSubmitEditing={onSubmit}
         />
         <TouchableOpacity
           style={styles.eyeBtn}
           onPress={() => setVisible(!visible)}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <FontAwesome
-            name={visible ? 'eye' : 'eye-slash'}
-            size={16}
-            color={Colors.secondary[400]}
-          />
+          <FontAwesome name={visible ? 'eye-slash' : 'eye'} size={16} color={colors.textMuted} />
         </TouchableOpacity>
       </View>
-      {error ? <Text style={styles.fieldError}>{error}</Text> : null}
+      {error && <Text style={styles.errorText}>{error}</Text>}
+    </View>
+  );
+}
+
+function StrengthItem({ met, label }: { met: boolean; label: string }) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
+  return (
+    <View style={styles.reqItem}>
+      <FontAwesome
+        name={met ? 'check-circle' : 'circle-o'}
+        size={14}
+        color={met ? colors.success : colors.textMuted}
+      />
+      <Text style={[styles.reqLabel, met && styles.reqLabelMet]}>{label}</Text>
     </View>
   );
 }
 
 export default function PasswordScreen() {
   const router = useRouter();
+  const { show: showToast } = useToast();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState(false);
-  const [toastVisible, setToastVisible] = useState(false);
+  const [errors, setErrors] = useState<{ current?: string; new?: string; confirm?: string }>({});
+  const [loading, setLoading] = useState(false);
 
-  // Clear field error on change
-  const updateField = (setter: (v: string) => void, field: string) => (value: string) => {
-    setter(value);
-    if (errors[field]) {
-      setErrors(prev => {
-        const next = { ...prev };
-        delete next[field];
-        return next;
-      });
-    }
+  const newRef = useRef<TextInput>(null);
+  const confirmRef = useRef<TextInput>(null);
+
+  // Password strength
+  const getStrength = (pw: string): PasswordStrength => {
+    let score = 0;
+    if (pw.length >= 8) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+
+    const levels: PasswordStrength[] = [
+      { score: 0, label: 'Za słabe', color: colors.destructive },
+      { score: 1, label: 'Słabe', color: colors.destructive },
+      { score: 2, label: 'Średnie', color: colors.warning },
+      { score: 3, label: 'Dobre', color: colors.tint },
+      { score: 4, label: 'Silne', color: colors.success },
+    ];
+    return levels[score];
   };
 
-  // Password strength indicators
-  const strength = {
-    length: newPassword.length >= 8,
-    upper: /[A-Z]/.test(newPassword),
-    lower: /[a-z]/.test(newPassword),
-    number: /[0-9]/.test(newPassword),
-  };
-  const strengthCount = Object.values(strength).filter(Boolean).length;
+  const strength = getStrength(newPassword);
+
+  const requirements = [
+    { met: newPassword.length >= 8, label: 'Min. 8 znaków' },
+    { met: /[A-Z]/.test(newPassword), label: 'Wielka litera' },
+    { met: /[0-9]/.test(newPassword), label: 'Cyfra' },
+    { met: /[^A-Za-z0-9]/.test(newPassword), label: 'Znak specjalny' },
+  ];
+
+  const passwordsMatch = confirmPassword.length > 0 && newPassword === confirmPassword;
 
   const validate = (): boolean => {
-    const errs: Record<string, string> = {};
-
-    if (!currentPassword) {
-      errs.currentPassword = 'Obecne hasło jest wymagane';
-    }
-    if (!newPassword) {
-      errs.newPassword = 'Nowe hasło jest wymagane';
-    } else if (newPassword.length < 8) {
-      errs.newPassword = 'Hasło musi mieć minimum 8 znaków';
-    }
-    if (!confirmPassword) {
-      errs.confirmPassword = 'Powtórz nowe hasło';
-    } else if (newPassword !== confirmPassword) {
-      errs.confirmPassword = 'Hasła nie są identyczne';
-    }
-    if (currentPassword && newPassword && currentPassword === newPassword) {
-      errs.newPassword = 'Nowe hasło musi być inne niż obecne';
-    }
-
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
+    const newErrors: typeof errors = {};
+    if (!currentPassword) newErrors.current = 'Podaj aktualne hasło';
+    if (!newPassword) newErrors.new = 'Podaj nowe hasło';
+    else if (strength.score < 2) newErrors.new = 'Hasło jest za słabe';
+    if (!confirmPassword) newErrors.confirm = 'Potwierdź nowe hasło';
+    else if (newPassword !== confirmPassword) newErrors.confirm = 'Hasła nie są identyczne';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
     if (!validate()) return;
-
-    setSaving(true);
+    setLoading(true);
     try {
-      await authApi.changePassword(currentPassword, newPassword);
-
-      // Show success toast
-      setToastVisible(true);
-
-      // Clear form
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setErrors({});
-
-      // Hide toast and go back after delay
-      setTimeout(() => {
-        setToastVisible(false);
-        router.back();
-      }, 2000);
+      await api.put('/auth/change-password', {
+        currentPassword,
+        newPassword,
+      });
+      showToast('Twoje hasło zostało pomyślnie zmienione.', 'success');
+      router.back();
     } catch (err: any) {
-      if (err.statusCode === 400 || err.statusCode === 401) {
-        setErrors({ currentPassword: err.message || 'Nieprawidłowe obecne hasło' });
+      const msg = err?.response?.data?.message || err?.message || 'Nie udało się zmienić hasła';
+      if (msg.toLowerCase().includes('current') || msg.toLowerCase().includes('aktualne')) {
+        setErrors({ current: 'Aktualne hasło jest nieprawidłowe' });
       } else {
-        Alert.alert('Błąd', err.message || 'Nie udało się zmienić hasła');
+        setErrors({ new: msg });
       }
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
+  const isValid = currentPassword.length > 0 && strength.score >= 2 && passwordsMatch;
+
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <Stack.Screen options={{ title: 'Zmień hasło', headerShown: true }} />
-
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Icon header */}
-          <View style={styles.headerSection}>
-            <View style={styles.headerIcon}>
-              <FontAwesome name="shield" size={28} color={Colors.primary[500]} />
-            </View>
-            <Text style={styles.headerTitle}>Zmiana hasła</Text>
-            <Text style={styles.headerSubtitle}>
-              Dla bezpieczeństwa wprowadź swoje obecne hasło, a następnie ustaw nowe
-            </Text>
-          </View>
-
-          {/* Form card */}
-          <View style={styles.card}>
-            <PasswordField
-              label="Obecne hasło"
-              value={currentPassword}
-              onChangeText={updateField(setCurrentPassword, 'currentPassword')}
-              placeholder="Wprowadź obecne hasło"
-              error={errors.currentPassword}
-            />
-
-            <View style={styles.divider} />
-
-            <PasswordField
-              label="Nowe hasło"
-              value={newPassword}
-              onChangeText={updateField(setNewPassword, 'newPassword')}
-              placeholder="Minimum 8 znaków"
-              error={errors.newPassword}
-            />
-
-            {/* Password strength */}
-            {newPassword.length > 0 && (
-              <View style={styles.strengthWrap}>
-                <View style={styles.strengthBar}>
-                  {[1, 2, 3, 4].map(i => (
-                    <View
-                      key={i}
-                      style={[
-                        styles.strengthSegment,
-                        i <= strengthCount && {
-                          backgroundColor:
-                            strengthCount <= 1
-                              ? Colors.destructive
-                              : strengthCount <= 2
-                              ? Colors.warning
-                              : strengthCount <= 3
-                              ? '#60a5fa'
-                              : Colors.success,
-                        },
-                      ]}
-                    />
-                  ))}
-                </View>
-                <View style={styles.strengthChecks}>
-                  <StrengthItem ok={strength.length} text="Min. 8 znaków" />
-                  <StrengthItem ok={strength.upper} text="Wielka litera" />
-                  <StrengthItem ok={strength.lower} text="Mała litera" />
-                  <StrengthItem ok={strength.number} text="Cyfra" />
-                </View>
-              </View>
-            )}
-
-            <PasswordField
-              label="Powtórz nowe hasło"
-              value={confirmPassword}
-              onChangeText={updateField(setConfirmPassword, 'confirmPassword')}
-              placeholder="Powtórz nowe hasło"
-              error={errors.confirmPassword}
-            />
-
-            {/* Match indicator */}
-            {confirmPassword.length > 0 && newPassword.length > 0 && (
-              <View style={styles.matchRow}>
-                <FontAwesome
-                  name={newPassword === confirmPassword ? 'check-circle' : 'times-circle'}
-                  size={14}
-                  color={newPassword === confirmPassword ? Colors.success : Colors.destructive}
-                />
-                <Text
-                  style={[
-                    styles.matchText,
-                    {
-                      color:
-                        newPassword === confirmPassword ? Colors.success : Colors.destructive,
-                    },
-                  ]}
-                >
-                  {newPassword === confirmPassword
-                    ? 'Hasła się zgadzają'
-                    : 'Hasła nie są identyczne'}
-                </Text>
-              </View>
-            )}
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-
-      {/* Submit button */}
-      <View style={styles.bottomBar}>
-        <TouchableOpacity
-          style={[
-            styles.submitBtn,
-            (!currentPassword || !newPassword || !confirmPassword || saving) &&
-              styles.submitBtnDisabled,
-          ]}
-          onPress={handleSubmit}
-          disabled={!currentPassword || !newPassword || !confirmPassword || saving}
-          activeOpacity={0.8}
-        >
-          {saving ? (
-            <ActivityIndicator size="small" color={Colors.white} />
-          ) : (
-            <>
-              <FontAwesome name="lock" size={16} color={Colors.white} />
-              <Text style={styles.submitBtnText}>Zmień hasło</Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      {/* Toast */}
-      {toastVisible && (
-        <View style={styles.toast}>
-          <FontAwesome name="check-circle" size={18} color={Colors.success} />
-          <Text style={styles.toastText}>Hasło zostało zmienione</Text>
-        </View>
-      )}
-    </SafeAreaView>
-  );
-}
-
-// ─── Strength check item ───
-function StrengthItem({ ok, text }: { ok: boolean; text: string }) {
-  return (
-    <View style={styles.strengthItem}>
-      <FontAwesome
-        name={ok ? 'check' : 'circle-o'}
-        size={10}
-        color={ok ? Colors.success : Colors.secondary[300]}
+    <>
+      <Stack.Screen
+        options={{
+          title: 'Zmiana hasła',
+          headerShown: true,
+          headerBackTitle: 'Konto',
+          headerStyle: { backgroundColor: colors.card },
+          headerTintColor: colors.text,
+        }}
       />
-      <Text style={[styles.strengthItemText, ok && styles.strengthItemTextOk]}>
-        {text}
-      </Text>
-    </View>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
+      >
+        <SafeAreaView style={styles.container} edges={[]}>
+          <ScrollView
+            style={styles.flex}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* Current password */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Aktualne hasło</Text>
+              <Text style={styles.sectionHint}>
+                Przed zmianą hasła weryfikujemy Twoją tożsamość.
+              </Text>
+              <PasswordField
+                label="Aktualne hasło"
+                value={currentPassword}
+                onChangeText={(v) => {
+                  setCurrentPassword(v);
+                  setErrors((e) => ({ ...e, current: undefined }));
+                }}
+                placeholder="Wpisz aktualne hasło"
+                error={errors.current}
+                onSubmit={() => newRef.current?.focus()}
+              />
+            </View>
+
+            {/* New password */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Nowe hasło</Text>
+              <PasswordField
+                label="Nowe hasło"
+                value={newPassword}
+                onChangeText={(v) => {
+                  setNewPassword(v);
+                  setErrors((e) => ({ ...e, new: undefined }));
+                }}
+                placeholder="Wpisz nowe hasło"
+                error={errors.new}
+                inputRef={newRef}
+                onSubmit={() => confirmRef.current?.focus()}
+              />
+
+              {/* Strength meter */}
+              {newPassword.length > 0 && (
+                <View style={styles.strengthContainer}>
+                  <View style={styles.strengthBar}>
+                    {[0, 1, 2, 3].map((i) => (
+                      <View
+                        key={i}
+                        style={[
+                          styles.strengthSegment,
+                          {
+                            backgroundColor:
+                              i < strength.score ? strength.color : colors.borderLight,
+                          },
+                        ]}
+                      />
+                    ))}
+                  </View>
+                  <Text style={[styles.strengthLabel, { color: strength.color }]}>
+                    {strength.label}
+                  </Text>
+                </View>
+              )}
+
+              {/* Requirements */}
+              <View style={styles.requirements}>
+                {requirements.map((req) => (
+                  <StrengthItem key={req.label} met={req.met} label={req.label} />
+                ))}
+              </View>
+
+              {/* Confirm */}
+              <PasswordField
+                label="Potwierdź nowe hasło"
+                value={confirmPassword}
+                onChangeText={(v) => {
+                  setConfirmPassword(v);
+                  setErrors((e) => ({ ...e, confirm: undefined }));
+                }}
+                placeholder="Wpisz ponownie nowe hasło"
+                error={errors.confirm}
+                inputRef={confirmRef}
+                returnKeyType="done"
+                onSubmit={handleSubmit}
+              />
+
+              {/* Match indicator */}
+              {confirmPassword.length > 0 && (
+                <View style={styles.matchRow}>
+                  <FontAwesome
+                    name={passwordsMatch ? 'check-circle' : 'times-circle'}
+                    size={14}
+                    color={passwordsMatch ? colors.success : colors.destructive}
+                  />
+                  <Text
+                    style={[
+                      styles.matchText,
+                      { color: passwordsMatch ? colors.success : colors.destructive },
+                    ]}
+                  >
+                    {passwordsMatch ? 'Hasła są identyczne' : 'Hasła nie są identyczne'}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </ScrollView>
+
+          {/* Bottom bar */}
+          <View style={styles.bottomBar}>
+            <TouchableOpacity
+              style={[styles.submitBtn, !isValid && styles.submitBtnDisabled]}
+              onPress={handleSubmit}
+              disabled={!isValid || loading}
+              activeOpacity={0.7}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color={colors.textInverse} />
+              ) : (
+                <>
+                  <FontAwesome name="lock" size={16} color={colors.textInverse} />
+                  <Text style={styles.submitBtnText}>Zmień hasło</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </KeyboardAvoidingView>
+    </>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundTertiary,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 100,
+    paddingBottom: 24,
   },
 
-  // ─── Header ───
-  headerSection: {
-    alignItems: 'center',
-    marginBottom: 24,
-    marginTop: 8,
+  // Section
+  section: {
+    backgroundColor: colors.card,
+    marginBottom: 8,
+    padding: 16,
   },
-  headerIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: Colors.primary[50],
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
+  sectionTitle: {
+    fontSize: 16,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
+    marginBottom: 4,
   },
-  headerSubtitle: {
-    fontSize: 14,
-    color: Colors.secondary[400],
-    textAlign: 'center',
-    marginTop: 6,
-    paddingHorizontal: 24,
-    lineHeight: 20,
-  },
-
-  // ─── Card ───
-  card: {
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.border,
-    marginVertical: 16,
-  },
-
-  // ─── Field ───
-  fieldWrap: {
-    marginBottom: 14,
-  },
-  fieldLabel: {
+  sectionHint: {
     fontSize: 13,
-    fontWeight: '500',
-    color: Colors.secondary[700],
+    color: colors.textMuted,
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+
+  // Field
+  fieldContainer: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textSecondary,
     marginBottom: 6,
   },
-  inputRow: {
-    position: 'relative',
+  inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  inputIcon: {
-    position: 'absolute',
-    left: 12,
-    zIndex: 1,
-  },
-  fieldInput: {
-    flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.backgroundSecondary,
     borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 8,
-    paddingLeft: 38,
-    paddingRight: 44,
-    paddingVertical: 10,
-    fontSize: 15,
-    color: Colors.secondary[900],
+    borderColor: colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
   },
-  fieldInputError: {
-    borderColor: Colors.destructive,
+  inputError: {
+    borderColor: colors.destructive,
+  },
+  input: {
+    flex: 1,
+    height: 44,
+    fontSize: 15,
+    color: colors.text,
   },
   eyeBtn: {
-    position: 'absolute',
-    right: 12,
-    zIndex: 1,
+    padding: 4,
   },
-  fieldError: {
+  errorText: {
     fontSize: 12,
-    color: Colors.destructive,
+    color: colors.destructive,
     marginTop: 4,
   },
 
-  // ─── Strength ───
-  strengthWrap: {
-    marginBottom: 16,
+  // Strength
+  strengthContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
   },
   strengthBar: {
+    flex: 1,
     flexDirection: 'row',
-    gap: 4,
-    marginBottom: 8,
+    gap: 3,
+    height: 4,
   },
   strengthSegment: {
     flex: 1,
-    height: 4,
     borderRadius: 2,
-    backgroundColor: Colors.secondary[200],
   },
-  strengthChecks: {
+  strengthLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    width: 60,
+    textAlign: 'right',
+  },
+
+  // Requirements
+  requirements: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+    marginBottom: 16,
   },
-  strengthItem: {
+  reqItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    backgroundColor: colors.backgroundSecondary,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
-  strengthItemText: {
-    fontSize: 11,
-    color: Colors.secondary[400],
+  reqLabel: {
+    fontSize: 12,
+    color: colors.textMuted,
   },
-  strengthItemTextOk: {
-    color: Colors.success,
+  reqLabelMet: {
+    color: colors.success,
   },
 
-  // ─── Match ───
+  // Match
   matchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: -6,
-    marginBottom: 4,
+    marginTop: 4,
   },
   matchText: {
     fontSize: 12,
+    fontWeight: '500',
   },
 
-  // ─── Bottom bar ───
+  // Bottom
   bottomBar: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: Colors.white,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    padding: 16,
+    backgroundColor: colors.card,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.borderLight,
   },
   submitBtn: {
+    backgroundColor: colors.tint,
+    paddingVertical: 14,
+    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.primary[500],
-    paddingVertical: 14,
-    borderRadius: 10,
   },
   submitBtnDisabled: {
-    backgroundColor: Colors.secondary[300],
+    opacity: 0.5,
   },
   submitBtnText: {
+    color: colors.textInverse,
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.white,
-  },
-
-  // ─── Toast ───
-  toast: {
-    position: 'absolute',
-    bottom: 90,
-    left: 24,
-    right: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: Colors.secondary[900],
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 10,
-    elevation: 8,
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-  },
-  toastText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.white,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -13,7 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import type { ThemeColors } from '../../constants/Colors';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -112,6 +113,8 @@ function CategoryCard({
   title: string;
   items: string[];
 }) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [expanded, setExpanded] = useState(false);
 
   const toggle = () => {
@@ -123,20 +126,20 @@ function CategoryCard({
     <View style={styles.catCard}>
       <TouchableOpacity style={styles.catHeader} onPress={toggle} activeOpacity={0.7}>
         <View style={styles.catIconWrap}>
-          <FontAwesome name={icon as any} size={18} color={Colors.primary[600]} />
+          <FontAwesome name={icon as any} size={18} color={colors.tint} />
         </View>
         <Text style={styles.catTitle}>{title}</Text>
         <FontAwesome
           name={expanded ? 'chevron-up' : 'chevron-down'}
           size={12}
-          color={Colors.secondary[400]}
+          color={colors.textMuted}
         />
       </TouchableOpacity>
       {expanded && (
         <View style={styles.catItems}>
           {items.map((item, i) => (
             <View key={i} style={styles.catItem}>
-              <FontAwesome name="circle" size={5} color={Colors.secondary[300]} style={{ marginTop: 7 }} />
+              <FontAwesome name="circle" size={5} color={colors.inputBorder} style={{ marginTop: 7 }} />
               <Text style={styles.catItemText}>{item}</Text>
             </View>
           ))}
@@ -147,6 +150,8 @@ function CategoryCard({
 }
 
 function FAQItem({ q, a }: { q: string; a: string }) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [open, setOpen] = useState(false);
 
   const toggle = () => {
@@ -161,7 +166,7 @@ function FAQItem({ q, a }: { q: string; a: string }) {
         <FontAwesome
           name={open ? 'minus' : 'plus'}
           size={14}
-          color={Colors.primary[600]}
+          color={colors.tint}
         />
       </TouchableOpacity>
       {open && <Text style={styles.faqAnswer}>{a}</Text>}
@@ -170,6 +175,8 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 }
 
 export default function HelpScreen() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
 
   return (
@@ -180,7 +187,7 @@ export default function HelpScreen() {
         {/* Hero */}
         <View style={styles.hero}>
           <View style={styles.heroIcon}>
-            <FontAwesome name="question-circle" size={32} color={Colors.primary[600]} />
+            <FontAwesome name="question-circle" size={32} color={colors.tint} />
           </View>
           <Text style={styles.heroTitle}>Centrum pomocy</Text>
           <Text style={styles.heroSubtitle}>
@@ -210,7 +217,7 @@ export default function HelpScreen() {
 
         {/* CTA contact */}
         <View style={styles.ctaCard}>
-          <FontAwesome name="comments" size={28} color={Colors.primary[600]} />
+          <FontAwesome name="comments" size={28} color={colors.tint} />
           <Text style={styles.ctaTitle}>Nie znalazłeś odpowiedzi?</Text>
           <Text style={styles.ctaSubtitle}>
             Skontaktuj się z nami — odpowiemy najszybciej, jak to możliwe
@@ -220,7 +227,7 @@ export default function HelpScreen() {
             onPress={() => router.push('/account/contact')}
             activeOpacity={0.7}
           >
-            <FontAwesome name="headphones" size={16} color={Colors.white} />
+            <FontAwesome name="headphones" size={16} color={colors.textInverse} />
             <Text style={styles.ctaBtnText}>Skontaktuj się</Text>
           </TouchableOpacity>
         </View>
@@ -229,10 +236,10 @@ export default function HelpScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.secondary[100],
+    backgroundColor: colors.backgroundTertiary,
   },
   scroll: {
     flex: 1,
@@ -243,18 +250,18 @@ const styles = StyleSheet.create({
 
   // ─── Hero ───
   hero: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     alignItems: 'center',
     paddingVertical: 28,
     paddingHorizontal: 24,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.secondary[200],
+    borderBottomColor: colors.border,
   },
   heroIcon: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: Colors.primary[50],
+    backgroundColor: colors.tintLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
@@ -262,12 +269,12 @@ const styles = StyleSheet.create({
   heroTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
     marginBottom: 6,
   },
   heroSubtitle: {
     fontSize: 14,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -280,7 +287,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
     marginBottom: 12,
     paddingHorizontal: 4,
   },
@@ -290,7 +297,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   catCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -303,7 +310,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: Colors.primary[50],
+    backgroundColor: colors.tintLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -312,7 +319,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.secondary[900],
+    color: colors.text,
   },
   catItems: {
     paddingHorizontal: 16,
@@ -326,20 +333,20 @@ const styles = StyleSheet.create({
   },
   catItemText: {
     fontSize: 14,
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
     flex: 1,
     lineHeight: 20,
   },
 
   // ─── FAQ ───
   faqList: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 12,
     overflow: 'hidden',
   },
   faqItem: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.secondary[100],
+    borderBottomColor: colors.borderLight,
   },
   faqHeader: {
     flexDirection: 'row',
@@ -350,13 +357,13 @@ const styles = StyleSheet.create({
   faqQuestion: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.secondary[900],
+    color: colors.text,
     flex: 1,
     marginRight: 12,
   },
   faqAnswer: {
     fontSize: 14,
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
     lineHeight: 21,
     paddingHorizontal: 16,
     paddingBottom: 16,
@@ -365,7 +372,7 @@ const styles = StyleSheet.create({
 
   // ─── CTA ───
   ctaCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 12,
     marginHorizontal: 12,
     marginTop: 24,
@@ -375,13 +382,13 @@ const styles = StyleSheet.create({
   ctaTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
     marginTop: 12,
     marginBottom: 6,
   },
   ctaSubtitle: {
     fontSize: 13,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 16,
@@ -390,7 +397,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.primary[600],
+    backgroundColor: colors.tint,
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 24,
@@ -399,6 +406,6 @@ const styles = StyleSheet.create({
   ctaBtnText: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.white,
+    color: colors.textInverse,
   },
 });

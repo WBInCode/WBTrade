@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -10,7 +10,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import type { ThemeColors } from '../../constants/Colors';
 
 const VALUES = [
   {
@@ -43,6 +44,9 @@ const STATS = [
 ];
 
 export default function AboutScreen() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <Stack.Screen options={{ title: 'O nas', headerBackTitle: 'Wróć' }} />
@@ -51,7 +55,7 @@ export default function AboutScreen() {
         {/* Hero */}
         <View style={styles.hero}>
           <View style={styles.heroIcon}>
-            <FontAwesome name="shopping-cart" size={28} color={Colors.primary[600]} />
+            <FontAwesome name="shopping-cart" size={28} color={colors.tint} />
           </View>
           <Text style={styles.heroTitle}>WBTrade</Text>
           <Text style={styles.heroTagline}>Twój sklep z elektroniką i nie tylko</Text>
@@ -95,7 +99,7 @@ export default function AboutScreen() {
             {VALUES.map((v) => (
               <View key={v.title} style={styles.valueCard}>
                 <View style={styles.valueIconWrap}>
-                  <FontAwesome name={v.icon as any} size={22} color={Colors.primary[600]} />
+                  <FontAwesome name={v.icon as any} size={22} color={colors.tint} />
                 </View>
                 <View style={styles.valueContent}>
                   <Text style={styles.valueTitle}>{v.title}</Text>
@@ -118,18 +122,18 @@ export default function AboutScreen() {
                 style={styles.ctaRow}
                 onPress={() => Linking.openURL('mailto:support@wb-partners.pl')}
               >
-                <FontAwesome name="envelope" size={14} color={Colors.primary[600]} />
+                <FontAwesome name="envelope" size={14} color={colors.tint} />
                 <Text style={styles.ctaRowText}>support@wb-partners.pl</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.ctaRow}
                 onPress={() => Linking.openURL('tel:+48570034367')}
               >
-                <FontAwesome name="phone" size={14} color={Colors.primary[600]} />
+                <FontAwesome name="phone" size={14} color={colors.tint} />
                 <Text style={styles.ctaRowText}>+48 570 034 367</Text>
               </TouchableOpacity>
               <View style={styles.ctaRow}>
-                <FontAwesome name="clock-o" size={14} color={Colors.primary[600]} />
+                <FontAwesome name="clock-o" size={14} color={colors.tint} />
                 <Text style={styles.ctaRowText}>pon.–pt. 9:00–17:00</Text>
               </View>
             </View>
@@ -147,10 +151,10 @@ export default function AboutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.secondary[100],
+    backgroundColor: colors.backgroundTertiary,
   },
   scroll: {
     flex: 1,
@@ -161,18 +165,18 @@ const styles = StyleSheet.create({
 
   // ─── Hero ───
   hero: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     alignItems: 'center',
     paddingVertical: 32,
     paddingHorizontal: 24,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.secondary[200],
+    borderBottomColor: colors.border,
   },
   heroIcon: {
     width: 72,
     height: 72,
     borderRadius: 20,
-    backgroundColor: Colors.primary[50],
+    backgroundColor: colors.tintLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 14,
@@ -180,12 +184,12 @@ const styles = StyleSheet.create({
   heroTitle: {
     fontSize: 26,
     fontWeight: '800',
-    color: Colors.secondary[900],
+    color: colors.text,
     marginBottom: 4,
   },
   heroTagline: {
     fontSize: 15,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
 
   // ─── Stats ───
@@ -197,7 +201,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   statItem: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     flex: 1,
@@ -207,12 +211,12 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: '800',
-    color: Colors.primary[600],
+    color: colors.tint,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     textAlign: 'center',
   },
 
@@ -224,21 +228,21 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
     marginBottom: 12,
     paddingHorizontal: 4,
   },
 
   // ─── Story ───
   storyCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 20,
     gap: 12,
   },
   storyText: {
     fontSize: 14,
-    color: Colors.secondary[700],
+    color: colors.textSecondary,
     lineHeight: 22,
   },
 
@@ -247,7 +251,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   valueCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -256,7 +260,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 14,
-    backgroundColor: Colors.primary[50],
+    backgroundColor: colors.tintLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
@@ -267,12 +271,12 @@ const styles = StyleSheet.create({
   valueTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
     marginBottom: 4,
   },
   valueDesc: {
     fontSize: 13,
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
     lineHeight: 20,
   },
 
@@ -282,7 +286,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   ctaCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 20,
     alignItems: 'center',
@@ -290,12 +294,12 @@ const styles = StyleSheet.create({
   ctaTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
     marginBottom: 4,
   },
   ctaSubtitle: {
     fontSize: 13,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -310,7 +314,7 @@ const styles = StyleSheet.create({
   },
   ctaRowText: {
     fontSize: 14,
-    color: Colors.secondary[700],
+    color: colors.textSecondary,
   },
 
   // ─── Footer ───
@@ -323,14 +327,14 @@ const styles = StyleSheet.create({
   footerCompany: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
   footerAddr: {
     fontSize: 12,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
   },
   footerNip: {
     fontSize: 12,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
   },
 });
