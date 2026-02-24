@@ -622,6 +622,35 @@ model Settings {
   @@map("settings")
 }
 
+model Carousel {
+  id           String       @id @default(cuid())
+  name         String                              // Display name e.g. "Bestsellery"
+  slug         String       @unique                // URL-safe slug e.g. "bestsellers"
+  description  String?                             // Admin description
+  icon         String       @default("star")       // Lucide icon name
+  color        String       @default("from-orange-500 to-red-600") // TailwindCSS gradient
+  mode         CarouselMode @default(AUTOMATIC)    // MANUAL / SEMI_AUTOMATIC / AUTOMATIC
+  productLimit Int          @default(20) @map("product_limit") // Configurable 1-100
+  categoryIds  String[]     @default([]) @map("category_ids") // Multiple categories
+  productIds   String[]     @default([]) @map("product_ids")  // Manually selected products
+  autoSource   String?      @map("auto_source")    // "bestsellers" / "newest" / "top-rated" / "seasonal"
+  isVisible    Boolean      @default(true) @map("is_visible")  // Show on homepage
+  isActive     Boolean      @default(true) @map("is_active")   // Active/disabled
+  sortOrder    Int          @default(0) @map("sort_order")      // Display order
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  @@index([sortOrder])
+  @@index([isActive, isVisible])
+  @@map("carousels")
+}
+
+enum CarouselMode {
+  MANUAL
+  SEMI_AUTOMATIC
+  AUTOMATIC
+}
+
 enum AuthProvider {
   LOCAL
   GOOGLE
@@ -634,6 +663,7 @@ enum CouponSource {
   REFERRAL
   CAMPAIGN
   NEWSLETTER
+  ALL_COLLECTED_BONUS
 }
 
 enum UserRole {
@@ -701,6 +731,7 @@ enum BaselinkerSyncType {
   CATEGORIES
   STOCK
   IMAGES
+  PRICE
 }
 
 enum BaselinkerSyncStatus {
