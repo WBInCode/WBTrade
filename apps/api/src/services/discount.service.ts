@@ -1,5 +1,6 @@
 import { prisma } from '../db';
 import crypto from 'crypto';
+import { CouponSource } from '@prisma/client';
 
 // ============================================
 // DISCOUNT SERVICE
@@ -365,7 +366,7 @@ export class DiscountService {
     }
 
     // Verify user actually has all required discounts
-    const requiredSources = ['WELCOME_DISCOUNT', 'APP_DOWNLOAD', 'NEWSLETTER'];
+    const requiredSources: CouponSource[] = ['WELCOME_DISCOUNT', 'APP_DOWNLOAD', 'NEWSLETTER'];
     const userCoupons = await prisma.coupon.findMany({
       where: {
         userId,
