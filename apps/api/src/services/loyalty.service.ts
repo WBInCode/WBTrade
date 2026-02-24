@@ -401,7 +401,7 @@ export class LoyaltyService {
       perks.push('Priorytetowa obsługa klienta');
     }
     if (currentConfig.monthlyDiscount) {
-      perks.push('Miesięczny kupon rabatowy -10%');
+      perks.push('Miesięczny kupon rabatowy -5%');
     }
 
     return {
@@ -440,7 +440,7 @@ export class LoyaltyService {
       if (l.quarterlyDiscountPercent) perks.push(`Kwartalny bonus -${l.quarterlyDiscountPercent}%`);
       if (l.earlyAccess) perks.push('Wcześniejszy dostęp do wyprzedaży');
       if (l.prioritySupport) perks.push('Priorytetowa obsługa klienta');
-      if (l.monthlyDiscount) perks.push('Miesięczny kupon -10%');
+      if (l.monthlyDiscount) perks.push('Miesięczny kupon -5%');
 
       return {
         level: l.level,
