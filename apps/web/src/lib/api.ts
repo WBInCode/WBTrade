@@ -1285,7 +1285,6 @@ export interface DashboardStats {
   unpaidOrders: number;
   inTransitOrders: number;
   unreadMessages: number;
-  loyaltyPoints: number;
 }
 
 export interface DashboardOrder {

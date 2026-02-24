@@ -36,6 +36,7 @@ model User {
   companyPostalCode          String?            @map("company_postal_code")
   companyStreet              String?            @map("company_street")
   nip                        String?
+  dateOfBirth                DateTime?          @map("date_of_birth")
   addresses                  Address[]
   cart                       Cart?
   orders                     Order[]
@@ -44,6 +45,7 @@ model User {
   auditLogs                  SecurityAuditLog[]
   wishlistItems              WishlistItem[]
   shoppingLists              ShoppingList[]
+  loyalty                    UserLoyalty?
 
   @@map("users")
 }
@@ -635,6 +637,9 @@ enum CouponSource {
   CAMPAIGN
   NEWSLETTER
   ALL_COLLECTED_BONUS
+  LOYALTY_LEVEL_UP
+  LOYALTY_BIRTHDAY
+  LOYALTY_QUARTERLY
 }
 
 enum UserRole {
@@ -727,4 +732,50 @@ enum PriceChangeSource {
   IMPORT
   SCRIPT
   SYSTEM
+}
+
+enum LoyaltyLevel {
+  NOWY_KLIENT
+  BRAZOWY
+  SREBRNY
+  ZLOTY
+  PLATYNOWY
+  DIAMENTOWY
+  VIP
+}
+
+model UserLoyalty {
+  id                    String         @id @default(cuid())
+  userId                String         @unique @map("user_id")
+  level                 LoyaltyLevel   @default(NOWY_KLIENT)
+  totalSpent            Decimal        @default(0) @map("total_spent") @db.Decimal(12, 2)
+  qualifyingOrderCount  Int            @default(0) @map("qualifying_order_count")
+  permanentDiscount     Decimal        @default(0) @map("permanent_discount") @db.Decimal(4, 2)
+  freeShippingThreshold Decimal?       @map("free_shipping_threshold") @db.Decimal(10, 2)
+  lastLevelUpAt         DateTime?      @map("last_level_up_at")
+  lastBirthdayCouponYear Int?          @map("last_birthday_coupon_year")
+  lastQuarterlyCouponAt DateTime?      @map("last_quarterly_coupon_at")
+  createdAt             DateTime       @default(now()) @map("created_at")
+  updatedAt             DateTime       @updatedAt @map("updated_at")
+  user                  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  history               LoyaltyHistory[]
+
+  @@index([level])
+  @@index([totalSpent])
+  @@map("user_loyalty")
+}
+
+model LoyaltyHistory {
+  id            String       @id @default(cuid())
+  userLoyaltyId String       @map("user_loyalty_id")
+  previousLevel LoyaltyLevel @map("previous_level")
+  newLevel      LoyaltyLevel @map("new_level")
+  totalSpentAt  Decimal      @map("total_spent_at") @db.Decimal(12, 2)
+  triggeredBy   String?      @map("triggered_by")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  userLoyalty   UserLoyalty   @relation(fields: [userLoyaltyId], references: [id], onDelete: Cascade)
+
+  @@index([userLoyaltyId])
+  @@index([createdAt])
+  @@map("loyalty_history")
 }

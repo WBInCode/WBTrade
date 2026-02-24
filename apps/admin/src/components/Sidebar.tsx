@@ -16,6 +16,7 @@ import {
   Activity,
   BarChart3,
   Warehouse,
+  Trophy,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -56,6 +57,11 @@ const menuItems = [
     title: 'Kupony',
     href: '/coupons',
     icon: Ticket,
+  },
+  {
+    title: 'Lojalność',
+    href: '/loyalty',
+    icon: Trophy,
   },
   {
     title: 'Newsletter',
