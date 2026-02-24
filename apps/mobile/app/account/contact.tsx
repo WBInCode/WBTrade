@@ -223,7 +223,7 @@ export default function ContactScreen() {
             <Text style={styles.companySectionTitle}>Dane firmy</Text>
             <View style={styles.companyCard}>
               <InfoRow label="Firma" value="WB PARTNERS Sp. z o.o." />
-              <InfoRow label="Adres" value="ul. Juliusza Słowackiego 24/11, 35-060 Rzeszów" />
+              <InfoRow label="Adres" value={"ul. Juliusza Słowackiego 24/11\n35-060 Rzeszów"} />
               <InfoRow label="NIP" value="5170455185" />
               <InfoRow label="REGON" value="540735769" />
               <InfoRow label="KRS" value="0001151642" />
@@ -453,21 +453,22 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   infoRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.borderLight,
+    alignItems: 'flex-start',
   },
   infoLabel: {
     fontSize: 13,
     color: colors.textMuted,
-    flex: 1,
+    width: 55,
+    marginRight: 8,
   },
   infoValue: {
     fontSize: 13,
     fontWeight: '600',
     color: colors.text,
-    flex: 2,
-    textAlign: 'right',
+    flex: 1,
+    flexWrap: 'wrap',
   },
 });
