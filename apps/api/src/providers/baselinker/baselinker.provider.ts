@@ -310,6 +310,35 @@ export class BaselinkerProvider implements IBaselinkerProvider {
   }
 
   /**
+   * Get prices for all products in inventory
+   */
+  async getInventoryProductsPrices(inventoryId: string): Promise<Record<string, Record<string, number>>> {
+    const allPrices: Record<string, Record<string, number>> = {};
+    let page = 1;
+    let hasMore = true;
+
+    while (hasMore) {
+      const response = await this.request<{ products: Record<string, Record<string, number>> }>(
+        'getInventoryProductsPrices',
+        {
+          inventory_id: parseInt(inventoryId, 10),
+          page,
+        }
+      );
+
+      const products = response.products || {};
+      const entries = Object.entries(products);
+      for (const [id, prices] of entries) {
+        allPrices[id] = prices;
+      }
+      hasMore = entries.length === PRODUCTS_PER_PAGE;
+      page++;
+    }
+
+    return allPrices;
+  }
+
+  /**
    * Get stock levels for all products in inventory
    */
   async getInventoryProductsStock(inventoryId: string): Promise<BaselinkerStockEntry[]> {

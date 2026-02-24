@@ -127,36 +127,36 @@ function RootLayoutNav() {
       <AuthProvider>
         <CartProvider>
           <ToastProvider>
-          <WishlistProvider>
-          <AuthRedirectHandler />
-          <GiftNotificationHandler />
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <Stack>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-              <Stack.Screen name="checkout" options={{ headerShown: false }} />
-              <Stack.Screen name="order/[id]" options={{ headerShown: false }} />
-              <Stack.Screen
-                name="product/[id]"
-                options={{
-                  headerShown: true,
-                  title: 'Produkt',
-                  headerBackTitle: 'Wróć',
-                  headerTintColor: Colors.primary[500],
-                }}
-              />
-              <Stack.Screen
-                name="category/[slug]"
-                options={{
-                  headerShown: true,
-                  title: 'Kategoria',
-                  headerBackTitle: 'Wróć',
-                  headerTintColor: Colors.primary[500],
-                }}
-              />
-            </Stack>
-          </ThemeProvider>
-          </WishlistProvider>
+            <WishlistProvider>
+              <AuthRedirectHandler />
+              <GiftNotificationHandler />
+              <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+                <Stack>
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                  <Stack.Screen name="checkout" options={{ headerShown: false }} />
+                  <Stack.Screen name="order/[id]" options={{ headerShown: false }} />
+                  <Stack.Screen
+                    name="product/[id]"
+                    options={{
+                      headerShown: true,
+                      title: 'Produkt',
+                      headerBackTitle: 'Wróć',
+                      headerTintColor: Colors.primary[500],
+                    }}
+                  />
+                  <Stack.Screen
+                    name="category/[slug]"
+                    options={{
+                      headerShown: true,
+                      title: 'Kategoria',
+                      headerBackTitle: 'Wróć',
+                      headerTintColor: Colors.primary[500],
+                    }}
+                  />
+                </Stack>
+              </ThemeProvider>
+            </WishlistProvider>
           </ToastProvider>
         </CartProvider>
       </AuthProvider>

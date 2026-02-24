@@ -14,6 +14,10 @@ overrides:
 importers:
 
   .:
+    dependencies:
+      '@prisma/client':
+        specifier: 5.22.0
+        version: 5.22.0(prisma@5.22.0)
     devDependencies:
       concurrently:
         specifier: ^8.2.2
@@ -98,8 +102,8 @@ importers:
   apps/api:
     dependencies:
       '@prisma/client':
-        specifier: ^5.7.0
-        version: 5.22.0(prisma@5.22.0)
+        specifier: npm:null@*
+        version: null@2.0.0
       bcryptjs:
         specifier: ^2.4.3
         version: 2.4.3
@@ -4941,6 +4945,9 @@ packages:
   npm-run-path@4.0.1:
     resolution: {integrity: sha512-S48WzZW777zhNIrn7gxOlISNAqi9ZC/uQFnRdbeIHhZhCA6UqpkOT8T1G7BvfdgP4Er8gF4sUbaS0i7QvIfCWw==}
     engines: {node: '>=8'}
+
+  null@2.0.0:
+    resolution: {integrity: sha512-CVSXPeB7Af0Sku7w8N8EKkgcwvQ6wGNfs6bly419A/q6dpIwzaHIk+65+La2g80ml21uxVXQo8xReTMI2WEYbA==}
 
   nullthrows@1.1.1:
     resolution: {integrity: sha512-2vPPEi+Z7WqML2jZYddDIfy5Dqb0r2fze2zTxNNknZaFpVHU3mFB3R+DWeJWGVx0ecvttSGlJTI+WG+8Z4cDWw==}
@@ -12005,6 +12012,8 @@ snapshots:
   npm-run-path@4.0.1:
     dependencies:
       path-key: 3.1.1
+
+  null@2.0.0: {}
 
   nullthrows@1.1.1: {}
 
