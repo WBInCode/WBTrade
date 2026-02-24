@@ -65,7 +65,6 @@ export default function CategoryScreen() {
       setError(null);
 
       try {
-        // API returns flat: { products, total, page, limit, totalPages }
         const res = await api.get<any>('/products', {
           category: slug,
           sort,
@@ -79,6 +78,7 @@ export default function CategoryScreen() {
           setProducts((prev) => [...prev, ...(res.products || [])]);
         }
 
+        // API returns flat: { products, total, page, limit, totalPages }
         setTotalPages(res.totalPages ?? res.pagination?.pages ?? 1);
         setTotalProducts(res.total ?? res.pagination?.total ?? 0);
         setPage(pageNum);

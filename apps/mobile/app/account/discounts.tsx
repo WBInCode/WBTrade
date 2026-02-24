@@ -9,16 +9,225 @@ import {
   ActivityIndicator,
   RefreshControl,
   Platform,
+  Modal,
+  Easing,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { Colors } from '../../constants/Colors';
 import type { ThemeColors } from '../../constants/Colors';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { couponsApi, UserCoupon } from '../../services/coupons';
+
+const { width: SCREEN_W } = Dimensions.get('window');
+
+// ═══════════════════════════════════════
+// NewsletterPopup — envelope-themed popup
+// ═══════════════════════════════════════
+function NewsletterPopup({
+  visible,
+  discountPercent,
+  couponCode,
+  onClose,
+}: {
+  visible: boolean;
+  discountPercent: number;
+  couponCode: string;
+  onClose: () => void;
+}) {
+  const { show } = useToast();
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const envelopeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      scaleAnim.setValue(0);
+      envelopeAnim.setValue(0);
+      Animated.sequence([
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 6,
+          tension: 80,
+          useNativeDriver: true,
+        }),
+        Animated.timing(envelopeAnim, {
+          toValue: 1,
+          duration: 600,
+          easing: Easing.out(Easing.back(1.2)),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [visible]);
+
+  const handleCopy = async () => {
+    await Clipboard.setStringAsync(couponCode);
+    show('Kod skopiowany do schowka!', 'success');
+  };
+
+  if (!visible) return null;
+
+  return (
+    <Modal transparent visible={visible} animationType="fade" statusBarTranslucent>
+      <View style={nlStyles.overlay}>
+        <Animated.View style={[nlStyles.popup, { transform: [{ scale: scaleAnim }] }]}>
+          {/* Header with envelope icon */}
+          <View style={nlStyles.iconCircle}>
+            <FontAwesome name="envelope-open" size={32} color={Colors.primary[500]} />
+          </View>
+
+          <Text style={nlStyles.title}>Zapisano do newslettera!</Text>
+          <Text style={nlStyles.subtitle}>
+            Oto Twój kod rabatowy na kolejne zakupy
+          </Text>
+
+          {/* Discount badge */}
+          <Animated.View
+            style={[
+              nlStyles.discountBadge,
+              {
+                transform: [
+                  {
+                    scale: envelopeAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.5, 1],
+                    }),
+                  },
+                ],
+                opacity: envelopeAnim,
+              },
+            ]}
+          >
+            <Text style={nlStyles.discountText}>-{discountPercent}%</Text>
+          </Animated.View>
+
+          {/* Coupon code */}
+          <TouchableOpacity style={nlStyles.codeBox} onPress={handleCopy} activeOpacity={0.7}>
+            <Text style={nlStyles.codeText}>{couponCode}</Text>
+            <FontAwesome name="copy" size={16} color={Colors.primary[500]} />
+          </TouchableOpacity>
+
+          <Text style={nlStyles.hint}>
+            Kod ważny 30 dni. Kliknij, aby skopiować.
+          </Text>
+
+          <Text style={nlStyles.note}>
+            Nie łączy się z rabatem za rejestrację{'\n'}i kuponami promocyjnymi.
+          </Text>
+
+          {/* Close button */}
+          <TouchableOpacity style={nlStyles.closeBtn} onPress={onClose} activeOpacity={0.8}>
+            <Text style={nlStyles.closeBtnText}>Zamknij</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+}
+
+const nlStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  popup: {
+    width: SCREEN_W - 48,
+    maxWidth: 380,
+    backgroundColor: Colors.white,
+    borderRadius: 24,
+    padding: 28,
+    alignItems: 'center',
+  },
+  iconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: Colors.primary[50],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: Colors.secondary[900],
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: Colors.secondary[500],
+    textAlign: 'center',
+    marginBottom: 18,
+  },
+  discountBadge: {
+    backgroundColor: Colors.primary[500],
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 14,
+    marginBottom: 18,
+  },
+  discountText: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: Colors.white,
+  },
+  codeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.secondary[50],
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderWidth: 1.5,
+    borderColor: Colors.secondary[200],
+    borderStyle: 'dashed',
+    width: '100%',
+    marginBottom: 10,
+  },
+  codeText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.secondary[800],
+    letterSpacing: 2,
+  },
+  hint: {
+    fontSize: 12,
+    color: Colors.secondary[400],
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  note: {
+    fontSize: 11,
+    color: Colors.secondary[400],
+    textAlign: 'center',
+    fontStyle: 'italic',
+    lineHeight: 16,
+    marginBottom: 18,
+  },
+  closeBtn: {
+    backgroundColor: Colors.primary[500],
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    width: '100%',
+    alignItems: 'center',
+  },
+  closeBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.white,
+  },
+});
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return '—';
@@ -239,11 +448,13 @@ export default function DiscountsScreen() {
   const [appClaimed, setAppClaimed] = useState(false);
   const [welcomeClaimed, setWelcomeClaimed] = useState(false);
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
-  const [newsletterCouponClaimed, setNewsletterCouponClaimed] = useState(false);
   const [claimingNewsletter, setClaimingNewsletter] = useState(false);
+  const [newsletterClaimed, setNewsletterClaimed] = useState(false);
+  const [showNewsletterPopup, setShowNewsletterPopup] = useState(false);
+  const [newsletterCode, setNewsletterCode] = useState('');
+  const [newsletterPercent, setNewsletterPercent] = useState(10);
   const [surpriseClaimed, setSurpriseClaimed] = useState(false);
   const [claimingSurprise, setClaimingSurprise] = useState(false);
-  const surpriseGlow = useRef(new Animated.Value(0)).current;
 
   const fetchCoupons = useCallback(async () => {
     try {
@@ -255,11 +466,11 @@ export default function DiscountsScreen() {
       // Check if welcome discount exists
       const hasWelcome = data.coupons.some(c => c.couponSource === 'WELCOME_DISCOUNT');
       if (hasWelcome) setWelcomeClaimed(true);
-      // Check if newsletter coupon already exists
+      // Check if newsletter already claimed
       const hasNewsletter = data.coupons.some(c => c.couponSource === 'NEWSLETTER');
       if (hasNewsletter) {
         setNewsletterSubscribed(true);
-        setNewsletterCouponClaimed(true);
+        setNewsletterClaimed(true);
       }
       // Check if surprise bonus already claimed
       const hasSurprise = data.coupons.some(c => c.couponSource === 'ALL_COLLECTED_BONUS');
@@ -293,6 +504,28 @@ export default function DiscountsScreen() {
   const onRefresh = () => {
     setRefreshing(true);
     fetchCoupons();
+  };
+
+  const handleClaimNewsletter = async () => {
+    setClaimingNewsletter(true);
+    try {
+      const data = await couponsApi.claimNewsletter();
+      setNewsletterCode(data.discount.couponCode);
+      setNewsletterPercent(data.discount.discountPercent);
+      setNewsletterClaimed(true);
+      setShowNewsletterPopup(true);
+      fetchCoupons();
+    } catch (err: any) {
+      if (err?.statusCode === 409) {
+        setNewsletterClaimed(true);
+        show('Rabat za newsletter został już przyznany', 'info');
+      } else {
+        console.warn('Failed to claim newsletter discount:', err);
+        show('Nie udało się odebrać rabatu', 'error');
+      }
+    } finally {
+      setClaimingNewsletter(false);
+    }
   };
 
   const handleClaimAppDownload = async () => {
@@ -341,13 +574,13 @@ export default function DiscountsScreen() {
   const handleClaimNewsletterCoupon = async () => {
     setClaimingNewsletter(true);
     try {
-      await couponsApi.claimNewsletterCoupon();
-      setNewsletterCouponClaimed(true);
+      await couponsApi.claimNewsletter();
+      setNewsletterClaimed(true);
       show('Rabat -10% za newsletter przyznany!', 'success');
       fetchCoupons();
     } catch (err: any) {
       if (err?.statusCode === 409) {
-        setNewsletterCouponClaimed(true);
+        setNewsletterClaimed(true);
         show('Rabat za newsletter został już odebrany', 'info');
       } else if (err?.statusCode === 400) {
         show('Najpierw zapisz się do newslettera', 'error');
@@ -384,7 +617,7 @@ export default function DiscountsScreen() {
   const inactiveCoupons = coupons.filter(c => c.status !== 'active');
 
   // Check how many earnable items are claimed (welcome + app + newsletter coupon = 3 needed for surprise)
-  const claimedCount = [welcomeClaimed, appClaimed, newsletterCouponClaimed].filter(Boolean).length;
+  const claimedCount = [welcomeClaimed, appClaimed, newsletterClaimed].filter(Boolean).length;
   const allEarnableClaimed = claimedCount >= 3;
   const showSurpriseSection = allEarnableClaimed || surpriseClaimed;
 
@@ -419,12 +652,9 @@ export default function DiscountsScreen() {
         : 'Bądź na bieżąco z promocjami i otrzymaj kod rabatowy -10%',
       discount: '-10%',
       unlocked: isAuthenticated,
-      claimed: newsletterCouponClaimed,
-      onClaim: !newsletterCouponClaimed
-        ? (newsletterSubscribed ? handleClaimNewsletterCoupon : handleSubscribeNewsletter)
-        : undefined,
+      claimed: newsletterClaimed,
+      onClaim: handleClaimNewsletter,
       claiming: claimingNewsletter,
-      claimLabel: newsletterSubscribed ? 'Odbierz' : 'Zapisz się',
     },
     {
       id: 'first-review',
@@ -595,7 +825,7 @@ export default function DiscountsScreen() {
                 {[
                   { label: 'Powitalny', done: welcomeClaimed },
                   { label: 'Aplikacja', done: appClaimed },
-                  { label: 'Newsletter', done: newsletterCouponClaimed },
+                  { label: 'Newsletter', done: newsletterClaimed },
                 ].map((step) => (
                   <View key={step.label} style={styles.progressStep}>
                     <View style={[
@@ -640,6 +870,12 @@ export default function DiscountsScreen() {
           )}
         </ScrollView>
       )}
+      <NewsletterPopup
+        visible={showNewsletterPopup}
+        discountPercent={newsletterPercent}
+        couponCode={newsletterCode}
+        onClose={() => setShowNewsletterPopup(false)}
+      />
     </SafeAreaView>
   );
 }
