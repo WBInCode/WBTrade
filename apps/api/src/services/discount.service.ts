@@ -189,10 +189,9 @@ export class DiscountService {
     // Check if this email already has a newsletter discount
     const existingCoupon = await prisma.coupon.findFirst({
       where: {
-        couponSource: 'NEWSLETTER',
         OR: [
-          { userId: userId || undefined },
-          { description: { contains: email } },
+          { description: { contains: email }, couponSource: 'NEWSLETTER' },
+          ...(userId ? [{ userId, couponSource: 'NEWSLETTER' as const }] : []),
         ],
       },
     });
@@ -250,7 +249,7 @@ export class DiscountService {
         expiresAt,
         isActive: true,
         couponSource: 'NEWSLETTER',
-        userId: userId || undefined,
+        ...(userId ? { userId } : {}),
       },
     });
 

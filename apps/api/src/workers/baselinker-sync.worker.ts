@@ -18,7 +18,7 @@ interface OrderStatusSyncJobData {
 
 interface StockSyncJobData {
   timestamp: number;
-  type: 'stock';
+  type: 'stock' | 'price';
 }
 
 /**
@@ -35,6 +35,8 @@ export function createBaselinkerSyncWorker(): Worker {
           return await processOrderStatusSync(job);
         case 'sync-stock':
           return await processStockSync(job);
+        case 'sync-price':
+          return await processPriceSync(job);
         default:
           console.warn(`[BaselinkerSyncWorker] Unknown job type: ${job.name}`);
           return { success: false, error: 'Unknown job type' };
@@ -104,6 +106,26 @@ async function processStockSync(job: Job<StockSyncJobData>) {
 }
 
 /**
+ * Process price synchronization from Baselinker
+ */
+async function processPriceSync(job: Job<StockSyncJobData>) {
+  console.log(`[BaselinkerSyncWorker] Starting price sync from Baselinker`);
+  
+  try {
+    const baselinkerService = new BaselinkerService();
+    
+    const result = await baselinkerService.runPriceSyncDirect();
+    
+    console.log(`[BaselinkerSyncWorker] Price sync finished: ${result.itemsProcessed} processed, ${result.itemsChanged} changed, syncLogId: ${result.syncLogId}`);
+    
+    return result;
+  } catch (error) {
+    console.error('[BaselinkerSyncWorker] Price sync failed:', error);
+    throw error;
+  }
+}
+
+/**
  * Schedule recurring order status sync
  * Runs every 15 minutes
  */
@@ -113,7 +135,7 @@ export async function scheduleBaselinkerSync(): Promise<void> {
   // Remove existing repeatable jobs first
   const repeatableJobs = await queue.getRepeatableJobs();
   for (const job of repeatableJobs) {
-    if (job.name === 'sync-order-statuses' || job.name === 'sync-stock') {
+    if (job.name === 'sync-order-statuses' || job.name === 'sync-stock' || job.name === 'sync-price') {
       await queue.removeRepeatableByKey(job.key);
     }
   }
@@ -151,6 +173,23 @@ export async function scheduleBaselinkerSync(): Promise<void> {
   );
   
   console.log('✅ Baselinker stock sync scheduled (daily at 00:00)');
+
+  // Add price sync job - daily at 00:30 (after stock sync)
+  await queue.add(
+    'sync-price',
+    { 
+      timestamp: Date.now(),
+      type: 'price'
+    },
+    {
+      repeat: {
+        pattern: '30 0 * * *', // Daily at 00:30
+      },
+      jobId: 'baselinker-price-sync',
+    }
+  );
+  
+  console.log('✅ Baselinker price sync scheduled (daily at 00:30)');
 }
 
 /**

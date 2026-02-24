@@ -39,7 +39,7 @@ function PasswordField({
   onChangeText: (v: string) => void;
   placeholder: string;
   error?: string;
-  inputRef?: React.RefObject<TextInput>;
+  inputRef?: React.RefObject<TextInput | null>;
   onSubmit?: () => void;
   returnKeyType?: 'next' | 'done';
 }) {

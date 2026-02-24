@@ -47,7 +47,11 @@ export const couponsApi = {
   subscribeNewsletter: (email: string) =>
     api.post<{ success: boolean; message: string; verified?: boolean }>('/newsletter/subscribe', { email, source: 'app_discounts' }),
 
-  /** Claim newsletter discount coupon (-10%) after subscribing */
+  /** Claim newsletter discount (-10%) — subscribes + generates coupon */
+  claimNewsletter: () =>
+    api.post<{ discount: WelcomeDiscount }>('/coupons/claim-newsletter'),
+
+  /** Claim newsletter discount coupon (-10%) after subscribing (alias) */
   claimNewsletterCoupon: () =>
     api.post<{ discount: WelcomeDiscount }>('/coupons/claim-newsletter'),
 };
