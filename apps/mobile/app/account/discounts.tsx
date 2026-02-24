@@ -483,19 +483,6 @@ export default function DiscountsScreen() {
     }
   }, []);
 
-  // Check newsletter subscription status
-  useEffect(() => {
-    if (isAuthenticated && user?.email) {
-      couponsApi.getNewsletterStatus(user.email)
-        .then(result => {
-          if (result.subscribed && result.verified) {
-            setNewsletterSubscribed(true);
-          }
-        })
-        .catch(() => {});
-    }
-  }, [isAuthenticated, user?.email]);
-
   useEffect(() => {
     if (isAuthenticated) fetchCoupons();
     else setLoading(false);
@@ -513,11 +500,15 @@ export default function DiscountsScreen() {
       setNewsletterCode(data.discount.couponCode);
       setNewsletterPercent(data.discount.discountPercent);
       setNewsletterClaimed(true);
+      setNewsletterSubscribed(true);
       setShowNewsletterPopup(true);
       fetchCoupons();
     } catch (err: any) {
       if (err?.statusCode === 409) {
         setNewsletterClaimed(true);
+        setNewsletterSubscribed(true);
+        // Refresh to show existing coupon in the list
+        fetchCoupons();
         show('Rabat za newsletter został już przyznany', 'info');
       } else {
         console.warn('Failed to claim newsletter discount:', err);
@@ -531,14 +522,14 @@ export default function DiscountsScreen() {
   const handleClaimAppDownload = async () => {
     setClaimingApp(true);
     try {
-      await couponsApi.claimAppDownload();
+      const data = await couponsApi.claimAppDownload();
       setAppClaimed(true);
       show('Rabat -5% za aplikację przyznany!', 'success');
-      // Refresh list
       fetchCoupons();
     } catch (err: any) {
       if (err?.statusCode === 409) {
         setAppClaimed(true);
+        fetchCoupons();
         show('Rabat za aplikację został już przyznany', 'info');
       } else {
         console.warn('Failed to claim app download discount:', err);
@@ -546,49 +537,6 @@ export default function DiscountsScreen() {
       }
     } finally {
       setClaimingApp(false);
-    }
-  };
-
-  const handleSubscribeNewsletter = async () => {
-    if (!user?.email) {
-      show('Zaloguj się, aby zapisać się do newslettera', 'error');
-      return;
-    }
-    setClaimingNewsletter(true);
-    try {
-      await couponsApi.subscribeNewsletter(user.email);
-      setNewsletterSubscribed(true);
-      show('Zapisano do newslettera! Teraz możesz odebrać rabat -10%', 'success');
-    } catch (err: any) {
-      if (err?.message?.includes('już zapisany') || err?.statusCode === 200) {
-        setNewsletterSubscribed(true);
-        show('Jesteś już zapisany do newslettera', 'info');
-      } else {
-        show('Nie udało się zapisać do newslettera', 'error');
-      }
-    } finally {
-      setClaimingNewsletter(false);
-    }
-  };
-
-  const handleClaimNewsletterCoupon = async () => {
-    setClaimingNewsletter(true);
-    try {
-      await couponsApi.claimNewsletter();
-      setNewsletterClaimed(true);
-      show('Rabat -10% za newsletter przyznany!', 'success');
-      fetchCoupons();
-    } catch (err: any) {
-      if (err?.statusCode === 409) {
-        setNewsletterClaimed(true);
-        show('Rabat za newsletter został już odebrany', 'info');
-      } else if (err?.statusCode === 400) {
-        show('Najpierw zapisz się do newslettera', 'error');
-      } else {
-        show('Nie udało się odebrać rabatu', 'error');
-      }
-    } finally {
-      setClaimingNewsletter(false);
     }
   };
 
@@ -646,10 +594,8 @@ export default function DiscountsScreen() {
     {
       id: 'newsletter',
       icon: 'envelope',
-      title: newsletterSubscribed ? 'Odbierz rabat za newsletter' : 'Zapisz się do newslettera',
-      description: newsletterSubscribed
-        ? 'Jesteś zapisany! Odbierz swój kod rabatowy -10%'
-        : 'Bądź na bieżąco z promocjami i otrzymaj kod rabatowy -10%',
+      title: 'Zapisz się do newslettera',
+      description: 'Bądź na bieżąco z promocjami i otrzymaj kod rabatowy -10%',
       discount: '-10%',
       unlocked: isAuthenticated,
       claimed: newsletterClaimed,

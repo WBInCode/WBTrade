@@ -65,9 +65,9 @@ router.get('/my', authGuard, async (req, res) => {
 
 // POST /api/coupons/claim-app-download — claim app download discount (-5%)
 router.post('/claim-app-download', authGuard, async (req, res) => {
+  const userId = (req as any).user?.userId;
+  const email = (req as any).user?.email || '';
   try {
-    const userId = (req as any).user?.userId;
-    const email = (req as any).user?.email || '';
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -76,7 +76,18 @@ router.post('/claim-app-download', authGuard, async (req, res) => {
     return res.json({ discount: result });
   } catch (error: any) {
     if (error.message === 'APP_DOWNLOAD_EXISTS') {
-      return res.status(409).json({ error: 'Rabat za pobranie aplikacji został już przyznany' });
+      // Return existing coupon info with 409
+      const existing = await prisma.coupon.findFirst({
+        where: { userId, couponSource: 'APP_DOWNLOAD' },
+      });
+      return res.status(409).json({
+        error: 'Rabat za pobranie aplikacji został już przyznany',
+        discount: existing ? {
+          couponCode: existing.code,
+          discountPercent: Number(existing.value),
+          expiresAt: existing.expiresAt,
+        } : undefined,
+      });
     }
     console.error('[CouponsRoute] Error claiming app download discount:', error);
     return res.status(500).json({ error: 'Nie udało się przyznać rabatu' });
@@ -85,14 +96,13 @@ router.post('/claim-app-download', authGuard, async (req, res) => {
 
 // POST /api/coupons/claim-newsletter — subscribe to newsletter and claim -10% discount
 router.post('/claim-newsletter', authGuard, async (req, res) => {
+  const userId = (req as any).user?.userId;
+  const email = (req as any).user?.email || '';
+  const normalizedEmail = email.toLowerCase().trim();
   try {
-    const userId = (req as any).user?.userId;
-    const email = (req as any).user?.email || '';
     if (!userId || !email) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
-
-    const normalizedEmail = email.toLowerCase().trim();
 
     // 1. Subscribe to newsletter (auto-verify since user is authenticated)
     const existing = await prisma.newsletter_subscriptions.findUnique({
@@ -127,7 +137,23 @@ router.post('/claim-newsletter', authGuard, async (req, res) => {
     return res.json({ discount: result });
   } catch (error: any) {
     if (error.message?.includes('already') || error.message?.includes('EXISTS')) {
-      return res.status(409).json({ error: 'Rabat za newsletter został już odebrany' });
+      // Return existing coupon info with 409
+      const existing = await prisma.coupon.findFirst({
+        where: {
+          OR: [
+            { description: { contains: normalizedEmail }, couponSource: 'NEWSLETTER' },
+            ...(userId ? [{ userId, couponSource: 'NEWSLETTER' as const }] : []),
+          ],
+        },
+      });
+      return res.status(409).json({
+        error: 'Rabat za newsletter został już odebrany',
+        discount: existing ? {
+          couponCode: existing.code,
+          discountPercent: Number(existing.value),
+          expiresAt: existing.expiresAt,
+        } : undefined,
+      });
     }
     console.error('[CouponsRoute] Error claiming newsletter discount:', error);
     return res.status(500).json({ error: 'Nie udało się przyznać rabatu newsletterowego' });
