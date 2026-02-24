@@ -10,10 +10,10 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
-import { api } from '../../services/api';
-import ProductGrid from '../../components/product/ProductGrid';
-import type { Product, Category, ProductsResponse } from '../../services/types';
+import { Colors } from '../../../constants/Colors';
+import { api } from '../../../services/api';
+import ProductGrid from '../../../components/product/ProductGrid';
+import type { Product, Category, ProductsResponse } from '../../../services/types';
 
 type SortOption = 'popularity' | 'price_asc' | 'price_desc' | 'newest' | 'name_asc';
 
