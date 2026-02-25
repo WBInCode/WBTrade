@@ -91,26 +91,66 @@ export function trackSearch(rawQuery: string): void {
 
 /**
  * Get top searched queries
+ * Filters out very short queries (< 3 chars) that are likely just typing fragments.
+ * Merges prefix duplicates: if "zab" and "zabawka" both exist, only keep the longer form.
  */
 export function getTopSearches(
   limit: number = 10,
   since?: Date
 ): { query: string; count: number }[] {
-  const results: { query: string; count: number }[] = [];
+  const raw: { query: string; count: number }[] = [];
 
   for (const [query, entry] of searchMap.entries()) {
+    // Skip very short queries (typing fragments like "za", "ab")
+    if (query.length < 3) continue;
+
     if (since) {
       // Count only searches within the time period
       const sinceISO = since.toISOString();
       const recentCount = entry.searches.filter((t) => t >= sinceISO).length;
       if (recentCount > 0) {
-        results.push({ query, count: recentCount });
+        raw.push({ query, count: recentCount });
       }
     } else {
-      results.push({ query, count: entry.count });
+      raw.push({ query, count: entry.count });
     }
   }
 
+  // Merge prefix duplicates: if "zab" counts 3 and "zabawka" counts 8,
+  // add "zab" counts to "zabawka" (the longer, more meaningful term).
+  raw.sort((a, b) => a.query.length - b.query.length); // short first
+  const merged = new Map<string, number>();
+
+  for (const item of raw) {
+    // Check if this short query is a prefix of an existing longer query
+    let mergedInto: string | null = null;
+    for (const [existing] of merged) {
+      if (existing.startsWith(item.query) && existing !== item.query) {
+        merged.set(existing, (merged.get(existing) || 0) + item.count);
+        mergedInto = existing;
+        break;
+      }
+    }
+
+    if (!mergedInto) {
+      // Check if an existing shorter query is a prefix of this one
+      for (const [existing, existingCount] of merged) {
+        if (item.query.startsWith(existing) && existing !== item.query) {
+          // Move the shorter entry's count to this longer one
+          merged.delete(existing);
+          merged.set(item.query, existingCount + item.count);
+          mergedInto = item.query;
+          break;
+        }
+      }
+    }
+
+    if (!mergedInto) {
+      merged.set(item.query, item.count);
+    }
+  }
+
+  const results = Array.from(merged.entries()).map(([query, count]) => ({ query, count }));
   results.sort((a, b) => b.count - a.count);
   return results.slice(0, limit);
 }
