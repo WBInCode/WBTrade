@@ -25,6 +25,7 @@ export interface CarouselWithProducts {
   productLimit: number;
   categoryIds: string[];
   productIds: string[];
+  pinnedProductIds: string[];
   autoSource: string | null;
   isVisible: boolean;
   isActive: boolean;
@@ -42,6 +43,7 @@ export interface CreateCarouselInput {
   productLimit?: number;
   categoryIds?: string[];
   productIds?: string[];
+  pinnedProductIds?: string[];
   autoSource?: string;
   isVisible?: boolean;
   sortOrder?: number;
@@ -57,6 +59,7 @@ export interface UpdateCarouselInput {
   productLimit?: number;
   categoryIds?: string[];
   productIds?: string[];
+  pinnedProductIds?: string[];
   autoSource?: string;
   isVisible?: boolean;
   isActive?: boolean;
@@ -183,20 +186,55 @@ class CarouselService {
 
     const limit = carousel.productLimit || 20;
     const excludedIds = await this.getExcludedProductIds();
+    const pinnedIds: string[] = (carousel.pinnedProductIds || []).filter(
+      (id: string) => !excludedIds.includes(id)
+    );
 
+    let products: any[];
     switch (carousel.mode) {
       case CarouselMode.MANUAL:
-        return this.getManualProducts(carousel.productIds, excludedIds, limit);
+        products = await this.getManualProducts(carousel.productIds, excludedIds, limit);
+        break;
 
       case CarouselMode.SEMI_AUTOMATIC:
-        return this.getSemiAutoProducts(carousel, excludedIds, limit);
+        products = await this.getSemiAutoProducts(carousel, excludedIds, limit);
+        break;
 
       case CarouselMode.AUTOMATIC:
-        return this.getAutoProducts(carousel, excludedIds, limit);
+        products = await this.getAutoProducts(carousel, excludedIds, limit);
+        break;
 
       default:
-        return [];
+        products = [];
     }
+
+    // For AUTOMATIC mode, ensure pinned products are included even if not in auto-fetch
+    if (carousel.mode === CarouselMode.AUTOMATIC && pinnedIds.length > 0) {
+      const existingIds = new Set(products.map((p: any) => p.id));
+      const missingPinnedIds = pinnedIds.filter(id => !existingIds.has(id));
+      if (missingPinnedIds.length > 0) {
+        const raw = await prisma.product.findMany({
+          where: { id: { in: missingPinnedIds }, status: 'ACTIVE', price: { gt: 0 } },
+          include: PRODUCT_INCLUDE,
+        });
+        const additional = filterProductsWithPackageInfo(transformProducts(raw));
+        products = [...additional, ...products];
+      }
+    }
+
+    // Apply pin ordering — pinned products always appear first, preserving their pin order
+    if (pinnedIds.length > 0 && products.length > 0) {
+      const pinned: any[] = [];
+      const rest: any[] = [];
+      for (const p of products) {
+        if (pinnedIds.includes(p.id)) pinned.push(p);
+        else rest.push(p);
+      }
+      pinned.sort((a: any, b: any) => pinnedIds.indexOf(a.id) - pinnedIds.indexOf(b.id));
+      products = [...pinned, ...rest];
+    }
+
+    return products.slice(0, limit);
   }
 
   // ── Admin API ──────────────────────────────────────────────────────────────
@@ -244,6 +282,7 @@ class CarouselService {
         productLimit: Math.min(Math.max(data.productLimit || 20, 1), 100),
         categoryIds: data.categoryIds || [],
         productIds,
+        pinnedProductIds: data.pinnedProductIds || [],
         autoSource: data.autoSource || null,
         isVisible: data.isVisible ?? true,
         isActive: true,
@@ -272,6 +311,9 @@ class CarouselService {
     if (data.productIds !== undefined) {
       const limit = data.productLimit || (await carouselDb().findUnique({ where: { id }, select: { productLimit: true } }))?.productLimit || 100;
       updateData.productIds = [...new Set(data.productIds)].slice(0, limit);
+    }
+    if (data.pinnedProductIds !== undefined) {
+      updateData.pinnedProductIds = [...new Set(data.pinnedProductIds)];
     }
     if (data.autoSource !== undefined) updateData.autoSource = data.autoSource;
     if (data.isVisible !== undefined) updateData.isVisible = data.isVisible;

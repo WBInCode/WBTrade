@@ -5,7 +5,7 @@ import {
   Search, Plus, X, Trash2, Eye, EyeOff,
   Star, Flame, Gift, Snowflake, Sparkles, ShoppingBag,
   TrendingUp, Clock, ChevronDown, ChevronUp, Edit2, Settings,
-  ArrowUp, ArrowDown, LayoutGrid, Ban,
+  ArrowUp, ArrowDown, LayoutGrid, Ban, Pin, Save,
 } from 'lucide-react';
 import { getAuthToken } from '@/lib/api';
 
@@ -38,6 +38,7 @@ interface Carousel {
   productLimit: number;
   categoryIds: string[];
   productIds: string[];
+  pinnedProductIds: string[];
   autoSource: string | null;
   isVisible: boolean;
   isActive: boolean;
@@ -113,6 +114,7 @@ export default function CarouselsPage() {
   const [showNewModal, setShowNewModal] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Exclusion management
   const [showExclusions, setShowExclusions] = useState(false);
@@ -137,6 +139,13 @@ export default function CarouselsPage() {
 
   const selectedCarousel = carousels.find(c => c.id === selectedId) || null;
 
+  // Switch carousel with unsaved changes warning
+  const selectCarousel = (id: string) => {
+    if (id === selectedId) return;
+    if (hasUnsavedChanges && !confirm('Masz niezapisane zmiany. Kontynuowa\u0107 bez zapisywania?')) return;
+    setSelectedId(id);
+  };
+
   // ── Load carousels + categories on mount ───
   useEffect(() => {
     loadCarousels();
@@ -153,6 +162,7 @@ export default function CarouselsPage() {
 
   // ── Load products when selected carousel changes ───
   useEffect(() => {
+    setHasUnsavedChanges(false);
     setSelectedProducts([]);
     setSearchQuery('');
     setSearchResults([]);
@@ -392,7 +402,7 @@ export default function CarouselsPage() {
     }
   };
 
-  // ── Product management ───
+  // ── Product management (local only — saved via "Zapisz zmiany") ───
   const addProduct = (product: Product) => {
     if (!selectedCarousel) return;
     if (selectedProducts.some(p => p.id === product.id)) return;
@@ -404,8 +414,8 @@ export default function CarouselsPage() {
     setSelectedProducts(newProducts);
     setSearchResults(prev => prev.filter(p => p.id !== product.id));
     const newIds = [...new Set([...selectedCarousel.productIds, product.id])];
-    updateCarousel(selectedCarousel.id, { productIds: newIds });
     setCarousels(prev => prev.map(c => c.id === selectedId ? { ...c, productIds: newIds } : c));
+    setHasUnsavedChanges(true);
   };
 
   const removeProduct = (productId: string) => {
@@ -414,8 +424,9 @@ export default function CarouselsPage() {
     setSelectedProducts(prev => prev.filter(p => p.id !== productId));
     if (selectedCarousel) {
       const newIds = selectedCarousel.productIds.filter(id => id !== productId);
-      updateCarousel(selectedCarousel.id, { productIds: newIds });
-      setCarousels(prev => prev.map(c => c.id === selectedId ? { ...c, productIds: newIds } : c));
+      const newPinned = (selectedCarousel.pinnedProductIds || []).filter(id => id !== productId);
+      setCarousels(prev => prev.map(c => c.id === selectedId ? { ...c, productIds: newIds, pinnedProductIds: newPinned } : c));
+      setHasUnsavedChanges(true);
     }
   };
 
@@ -427,37 +438,48 @@ export default function CarouselsPage() {
     setSelectedProducts(arr);
     if (selectedCarousel) {
       const newIds = arr.map(p => p.id);
-      updateCarousel(selectedCarousel.id, { productIds: newIds });
       setCarousels(prev => prev.map(c => c.id === selectedId ? { ...c, productIds: newIds } : c));
+      setHasUnsavedChanges(true);
     }
   };
 
   const clearProducts = () => {
     setSelectedProducts([]);
     if (selectedCarousel) {
-      updateCarousel(selectedCarousel.id, { productIds: [] });
-      setCarousels(prev => prev.map(c => c.id === selectedId ? { ...c, productIds: [] } : c));
+      setCarousels(prev => prev.map(c => c.id === selectedId ? { ...c, productIds: [], pinnedProductIds: [] } : c));
+      setHasUnsavedChanges(true);
     }
   };
 
-  // ── Settings updates ───
+  const togglePin = (productId: string) => {
+    if (!selectedCarousel) return;
+    const currentPinned = selectedCarousel.pinnedProductIds || [];
+    const isPinned = currentPinned.includes(productId);
+    const newPinned = isPinned
+      ? currentPinned.filter(id => id !== productId)
+      : [...currentPinned, productId];
+    setCarousels(prev => prev.map(c => c.id === selectedId ? { ...c, pinnedProductIds: newPinned } : c));
+    setHasUnsavedChanges(true);
+  };
+
+  // ── Settings updates (local only — saved via "Zapisz zmiany") ───
   const updateMode = (mode: 'MANUAL' | 'SEMI_AUTOMATIC' | 'AUTOMATIC') => {
     if (!selectedCarousel) return;
-    updateCarousel(selectedCarousel.id, { mode });
     setCarousels(prev => prev.map(c => c.id === selectedId ? { ...c, mode } : c));
+    setHasUnsavedChanges(true);
   };
 
   const updateLimit = (limit: number) => {
     if (!selectedCarousel) return;
     const clamped = Math.min(Math.max(limit, 1), 100);
-    updateCarousel(selectedCarousel.id, { productLimit: clamped });
     setCarousels(prev => prev.map(c => c.id === selectedId ? { ...c, productLimit: clamped } : c));
+    setHasUnsavedChanges(true);
   };
 
   const updateAutoSource = (source: string) => {
     if (!selectedCarousel) return;
-    updateCarousel(selectedCarousel.id, { autoSource: source });
     setCarousels(prev => prev.map(c => c.id === selectedId ? { ...c, autoSource: source } : c));
+    setHasUnsavedChanges(true);
   };
 
   const toggleCategory = (categoryId: string) => {
@@ -466,27 +488,55 @@ export default function CarouselsPage() {
     const newIds = current.includes(categoryId)
       ? current.filter(id => id !== categoryId)
       : [...current, categoryId];
-    updateCarousel(selectedCarousel.id, { categoryIds: newIds });
     setCarousels(prev => prev.map(c => c.id === selectedId ? { ...c, categoryIds: newIds } : c));
+    setHasUnsavedChanges(true);
   };
 
   const updateName = (name: string) => {
     if (!selectedCarousel || !name.trim()) return;
-    updateCarousel(selectedCarousel.id, { name: name.trim() });
     setCarousels(prev => prev.map(c => c.id === selectedId ? { ...c, name: name.trim() } : c));
     setEditingName(false);
+    setHasUnsavedChanges(true);
   };
 
   const updateIcon = (icon: string) => {
     if (!selectedCarousel) return;
-    updateCarousel(selectedCarousel.id, { icon });
     setCarousels(prev => prev.map(c => c.id === selectedId ? { ...c, icon } : c));
+    setHasUnsavedChanges(true);
   };
 
   const updateColor = (color: string) => {
     if (!selectedCarousel) return;
-    updateCarousel(selectedCarousel.id, { color });
     setCarousels(prev => prev.map(c => c.id === selectedId ? { ...c, color } : c));
+    setHasUnsavedChanges(true);
+  };
+
+  const saveChanges = async () => {
+    if (!selectedCarousel) return;
+    setSaving(true);
+    try {
+      const success = await updateCarousel(selectedCarousel.id, {
+        name: selectedCarousel.name,
+        mode: selectedCarousel.mode,
+        productLimit: selectedCarousel.productLimit,
+        categoryIds: selectedCarousel.categoryIds,
+        productIds: selectedCarousel.productIds,
+        pinnedProductIds: selectedCarousel.pinnedProductIds,
+        autoSource: selectedCarousel.autoSource,
+        icon: selectedCarousel.icon,
+        color: selectedCarousel.color,
+      });
+      if (success) {
+        setHasUnsavedChanges(false);
+        flash('success', 'Zmiany zostały zapisane!');
+      } else {
+        flash('error', 'Błąd zapisywania zmian');
+      }
+    } catch {
+      flash('error', 'Błąd połączenia');
+    } finally {
+      setSaving(false);
+    }
   };
 
   // ── Exclusion management ───
@@ -620,7 +670,7 @@ export default function CarouselsPage() {
                   }`}
                 >
                   <button
-                    onClick={() => setSelectedId(carousel.id)}
+                    onClick={() => selectCarousel(carousel.id)}
                     className="w-full text-left p-3"
                   >
                     <div className="flex items-center gap-3">
@@ -714,6 +764,32 @@ export default function CarouselsPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Save changes bar */}
+              {hasUnsavedChanges && (
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-amber-400">
+                    <Save className="w-4 h-4" />
+                    <span className="text-sm font-medium">Masz niezapisane zmiany</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => { loadCarousels(); setHasUnsavedChanges(false); }}
+                      className="px-3 py-1.5 text-sm text-slate-400 hover:text-white transition-colors"
+                    >
+                      Anuluj
+                    </button>
+                    <button
+                      onClick={saveChanges}
+                      disabled={saving}
+                      className="px-4 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                    >
+                      <Save className="w-4 h-4" />
+                      {saving ? 'Zapisuj\u0119...' : 'Zapisz zmiany'}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Settings panel */}
               <div className="bg-slate-800 rounded-xl border border-slate-700 p-4">
@@ -938,7 +1014,11 @@ export default function CarouselsPage() {
                     ) : (
                       <div className="space-y-2 max-h-96 overflow-y-auto">
                         {selectedProducts.map((product, index) => (
-                          <div key={`${product.id}-${index}`} className="flex items-center gap-3 p-3 bg-slate-900 rounded-lg border border-slate-700">
+                          <div key={`${product.id}-${index}`} className={`flex items-center gap-3 p-3 rounded-lg border ${
+                            selectedCarousel?.pinnedProductIds?.includes(product.id)
+                              ? 'bg-amber-500/5 border-amber-500/40'
+                              : 'bg-slate-900 border-slate-700'
+                          }`}>
                             <div className="flex flex-col gap-0.5">
                               <button onClick={() => moveProduct(index, 'up')} disabled={index === 0} className="p-0.5 hover:bg-slate-700 rounded disabled:opacity-20">
                                 <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
@@ -959,6 +1039,17 @@ export default function CarouselsPage() {
                               <div className="text-slate-400 text-xs">{product.category?.name} • {Number(product.price).toFixed(2)} zł</div>
                             </div>
                             <div className="text-slate-500 text-sm font-medium">#{index + 1}</div>
+                            <button
+                              onClick={() => togglePin(product.id)}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                selectedCarousel?.pinnedProductIds?.includes(product.id)
+                                  ? 'text-amber-400 bg-amber-400/20'
+                                  : 'text-slate-500 hover:text-amber-400 hover:bg-amber-400/10'
+                              }`}
+                              title={selectedCarousel?.pinnedProductIds?.includes(product.id) ? 'Odepnij produkt' : 'Przypnij na pocz\u0105tek karuzeli'}
+                            >
+                              <Pin className="w-4 h-4" />
+                            </button>
                             <button onClick={() => removeProduct(product.id)} className="p-2 hover:bg-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-colors">
                               <X className="w-5 h-5" />
                             </button>

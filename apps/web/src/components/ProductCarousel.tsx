@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useEffect, useMemo } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import ProductCard from './ProductCard';
 
@@ -38,15 +38,9 @@ export default function ProductCarousel({
   icon,
   compact = false,
 }: ProductCarouselProps) {
-  // Shuffle products on each mount (page refresh) for variety
-  const shuffledProducts = useMemo(() => {
-    const arr = [...products];
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-  }, [products]);
+  // Products are displayed in the order provided by the API
+  // (pinned products first, then admin-defined or auto order)
+  const orderedProducts = products;
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -89,7 +83,7 @@ export default function ProductCarousel({
     }
   };
 
-  if (shuffledProducts.length === 0) {
+  if (orderedProducts.length === 0) {
     return null;
   }
 
@@ -156,7 +150,7 @@ export default function ProductCarousel({
             WebkitOverflowScrolling: 'touch'
           }}
         >
-          {shuffledProducts.map((product, index) => (
+          {orderedProducts.map((product, index) => (
             <div 
               key={`${product.id}-${index}`} 
               className="flex-shrink-0 w-[145px] xs:w-[160px] sm:w-[180px] md:w-[200px] lg:w-[220px] snap-start"

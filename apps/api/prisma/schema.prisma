@@ -635,6 +635,7 @@ model Carousel {
   productLimit Int          @default(20) @map("product_limit") // Configurable 1-100
   categoryIds  String[]     @default([]) @map("category_ids") // Multiple categories
   productIds   String[]     @default([]) @map("product_ids")  // Manually selected products
+  pinnedProductIds String[] @default([]) @map("pinned_product_ids") // Pinned products (always shown first)
   autoSource   String?      @map("auto_source")    // "bestsellers" / "newest" / "top-rated" / "seasonal"
   isVisible    Boolean      @default(true) @map("is_visible")  // Show on homepage
   isActive     Boolean      @default(true) @map("is_active")   // Active/disabled
