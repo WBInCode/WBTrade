@@ -26,11 +26,11 @@ router.get('/', async (req: Request, res: Response) => {
  */
 router.get('/:slug/products', async (req: Request, res: Response) => {
   try {
-    const { slug } = req.params;
+    const slug = String(req.params.slug).replace(/[^a-zA-Z0-9_-]/g, '');
     const products = await carouselService.getProducts(slug);
     res.json({ products });
   } catch (error) {
-    console.error('Error fetching carousel products for slug:', String(req.params.slug).replace(/[\n\r]/g, ''), error);
+    console.error('Error fetching carousel products');
     res.status(500).json({ message: 'Error fetching carousel products' });
   }
 });
