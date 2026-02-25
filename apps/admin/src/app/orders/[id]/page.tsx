@@ -79,6 +79,10 @@ interface Order {
   trackingNumber?: string;
   customerNotes?: string;
   internalNotes?: string;
+  trackingLink?: string;
+  courierCode?: string;
+  deliveryStatus?: string;
+  deliveryStatusUpdatedAt?: string;
   createdAt: string;
   updatedAt: string;
   paczkomatCode?: string;
@@ -132,6 +136,26 @@ const shippingMethods: Record<string, string> = {
   INPOST: 'InPost Paczkomat',
   COURIER: 'Kurier DPD',
   PICKUP: 'Odbiór osobisty',
+};
+
+const deliveryStatusLabels: Record<string, string> = {
+  'created': 'Przesyłka utworzona',
+  'confirmed': 'Potwierdzona',
+  'dispatched_by_sender': 'Nadana przez nadawcę',
+  'collected_from_sender': 'Odebrana od nadawcy',
+  'taken_by_courier': 'Pobrana przez kuriera',
+  'adopted_at_source_branch': 'W oddziale nadawczym',
+  'sent_from_source_branch': 'Wysłana z oddziału',
+  'in_transit': 'W transporcie',
+  'out_for_delivery': 'Wydana do doręczenia',
+  'ready_to_pickup': 'Gotowa do odbioru w paczkomacie',
+  'ready_to_pickup_from_pok': 'Gotowa do odbioru w punkcie',
+  'delivered': 'Dostarczona / Odebrana',
+  'returned_to_sender': 'Zwrócona do nadawcy',
+  'canceled': 'Anulowana',
+  'shipped': 'Wysłana',
+  'unknown': 'Status nieznany',
+  'other': 'W trakcie realizacji',
 };
 
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -641,6 +665,30 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
                 <p className="text-sm text-gray-400">Numer przesyłki:</p>
                 <p className="text-white font-mono">{order.trackingNumber}</p>
+                {order.trackingLink && (
+                  <a 
+                    href={order.trackingLink} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-xs text-orange-400 hover:text-orange-300 mt-1 inline-block"
+                  >
+                    Śledź przesyłkę →
+                  </a>
+                )}
+              </div>
+            )}
+
+            {order.deliveryStatus && (
+              <div className="mt-3 p-3 bg-slate-700/50 rounded-lg border border-slate-600/50">
+                <p className="text-sm text-gray-400">Status dostawy:</p>
+                <p className="text-white text-sm font-medium mt-1">
+                  📦 {deliveryStatusLabels[order.deliveryStatus] || order.deliveryStatus}
+                </p>
+                {order.deliveryStatusUpdatedAt && (
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    Aktualizacja: {new Date(order.deliveryStatusUpdatedAt).toLocaleString('pl-PL')}
+                  </p>
+                )}
               </div>
             )}
           </div>

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import {
   Activity, Search, Shield, AlertTriangle, CheckCircle, XCircle,
-  Clock, User, Globe, ChevronLeft, ChevronRight, Filter, Eye
+  Clock, User, ChevronLeft, ChevronRight, Filter, Eye
 } from 'lucide-react';
 import { getAuthToken } from '@/lib/api';
 
@@ -14,7 +14,6 @@ interface AuditLog {
   action: string;
   userId: string | null;
   email: string | null;
-  ipAddress: string | null;
   userAgent: string | null;
   metadata: Record<string, any> | null;
   severity: string;
@@ -253,7 +252,6 @@ export default function ActivityLogPage() {
                 <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase">Czas</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase">Akcja</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase">Użytkownik</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase">IP</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase">Ważność</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase">Status</th>
                 <th className="text-right px-4 py-3 text-xs font-medium text-slate-400 uppercase"></th>
@@ -262,14 +260,14 @@ export default function ActivityLogPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-slate-400">
+                  <td colSpan={6} className="text-center py-12 text-slate-400">
                     <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500 mb-2"></div>
                     <p>Ładowanie...</p>
                   </td>
                 </tr>
               ) : logs.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-slate-400">
+                  <td colSpan={6} className="text-center py-12 text-slate-400">
                     <Activity className="w-12 h-12 mx-auto mb-3 opacity-30" />
                     <p>Brak logów</p>
                   </td>
@@ -300,13 +298,6 @@ export default function ActivityLogPage() {
                           </div>
                         ) : log.email ? (
                           <p className="text-sm text-slate-300">{log.email}</p>
-                        ) : (
-                          <span className="text-xs text-slate-500">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {log.ipAddress ? (
-                          <span className="text-xs text-slate-400 font-mono">{log.ipAddress}</span>
                         ) : (
                           <span className="text-xs text-slate-500">—</span>
                         )}
@@ -395,10 +386,6 @@ export default function ActivityLogPage() {
                 <div>
                   <p className="text-xs text-slate-500">Email</p>
                   <p className="text-sm text-white">{detailLog.email || detailLog.user?.email || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500">IP</p>
-                  <p className="text-sm text-white font-mono">{detailLog.ipAddress || '—'}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Status</p>

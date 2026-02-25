@@ -8,7 +8,7 @@ import {
   ArrowLeft, User, Mail, Phone, Shield, Calendar,
   Clock, MapPin, Package, ShoppingBag, Lock, Unlock,
   CheckCircle, XCircle, AlertTriangle, Edit2, Save, X,
-  Key, Ban, ChevronRight, Hash, Globe,
+  Key, Ban, ChevronRight, Hash,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -44,7 +44,6 @@ interface UserDetail {
   emailVerified: boolean;
   emailVerifiedAt: string | null;
   lastLoginAt: string | null;
-  lastLoginIp: string | null;
   lockedUntil: string | null;
   failedLoginAttempts: number;
   passwordChangedAt: string | null;
@@ -454,13 +453,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                     <p className="text-white text-sm font-mono">{user.id}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Globe className="w-4 h-4 text-slate-500" />
-                  <div>
-                    <p className="text-xs text-slate-500">Ostatnie IP</p>
-                    <p className="text-white">{user.lastLoginIp || '—'}</p>
-                  </div>
-                </div>
+
               </div>
             )}
           </div>

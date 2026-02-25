@@ -580,6 +580,10 @@ export interface Order {
   tax: number;
   total: number;
   trackingNumber?: string;
+  trackingLink?: string;
+  courierCode?: string;
+  deliveryStatus?: string;
+  deliveryStatusUpdatedAt?: string;
   notes?: string;
   // Invoice preference
   wantInvoice?: boolean;

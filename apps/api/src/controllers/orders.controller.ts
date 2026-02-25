@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { OrdersService } from '../services/orders.service';
 import { OrderStatus } from '@prisma/client';
 import { loyaltyService } from '../services/loyalty.service';
+import { deliveryTrackingService } from '../services/delivery-tracking.service';
 
 const ordersService = new OrdersService();
 
@@ -482,6 +483,33 @@ export async function getOrderTracking(req: Request, res: Response): Promise<voi
     res.status(500).json({ message: error.message || 'Error fetching tracking info' });
   }
 }
+/**
+ * Sync delivery status for a single order (admin)
+ * Triggers immediate fetch from Baselinker
+ * @route POST /api/orders/:id/sync-delivery
+ */
+export async function syncOrderDelivery(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    
+    const result = await deliveryTrackingService.syncSingleOrder(id);
+    
+    if (!result.success) {
+      res.status(400).json({ message: result.error });
+      return;
+    }
+    
+    res.status(200).json({
+      deliveryStatus: result.deliveryStatus,
+      deliveryStatusLabel: deliveryTrackingService.getStatusLabel(result.deliveryStatus || null),
+      trackingNumber: result.trackingNumber,
+    });
+  } catch (error: any) {
+    console.error('Error syncing delivery status:', error);
+    res.status(500).json({ message: error.message || 'Error syncing delivery status' });
+  }
+}
+
 /**
  * Get orders pending cancellation approval (admin)
  * @route GET /api/orders/pending-cancellations

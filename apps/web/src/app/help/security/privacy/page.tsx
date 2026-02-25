@@ -62,7 +62,6 @@ export default function PrivacyPage() {
                   <div className="p-4 bg-secondary-50 dark:bg-secondary-900 rounded-lg">
                     <h4 className="font-medium text-secondary-900 dark:text-white mb-2">🌐 Dane techniczne</h4>
                     <ul className="text-secondary-600 dark:text-secondary-400 text-sm space-y-1">
-                      <li>• Adres IP</li>
                       <li>• Typ przeglądarki i urządzenia</li>
                       <li>• Pliki cookies</li>
                     </ul>

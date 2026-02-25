@@ -49,7 +49,6 @@ interface AuditLogData {
   action: AuditAction;
   userId?: string;
   email?: string;
-  ipAddress?: string;
   userAgent?: string;
   metadata?: Record<string, unknown>;
   severity?: AuditSeverity;
@@ -64,7 +63,6 @@ export async function logAuditEvent(data: AuditLogData): Promise<void> {
     action,
     userId,
     email,
-    ipAddress,
     userAgent,
     metadata,
     severity = AuditSeverity.INFO,
@@ -72,13 +70,12 @@ export async function logAuditEvent(data: AuditLogData): Promise<void> {
   } = data;
 
   try {
-    // Log to database
+    // Log to database (IP address intentionally not stored per privacy policy)
     await prisma.securityAuditLog.create({
       data: {
         action,
         userId,
         email,
-        ipAddress,
         userAgent,
         metadata: metadata ? JSON.stringify(metadata) : null,
         severity,
@@ -95,7 +92,6 @@ export async function logAuditEvent(data: AuditLogData): Promise<void> {
     console[logLevel](`[AUDIT] ${action}`, {
       userId,
       email,
-      ipAddress,
       success,
       severity,
       timestamp: new Date().toISOString(),
@@ -112,14 +108,13 @@ export async function logAuditEvent(data: AuditLogData): Promise<void> {
 export async function logLoginSuccess(
   userId: string,
   email: string,
-  ipAddress?: string,
+  _ipAddress?: string,
   userAgent?: string
 ): Promise<void> {
   await logAuditEvent({
     action: AuditAction.LOGIN_SUCCESS,
     userId,
     email,
-    ipAddress,
     userAgent,
     severity: AuditSeverity.INFO,
     success: true,
@@ -132,14 +127,13 @@ export async function logLoginSuccess(
 export async function logLoginFailed(
   email: string,
   reason: string,
-  ipAddress?: string,
+  _ipAddress?: string,
   userAgent?: string,
   attemptCount?: number
 ): Promise<void> {
   await logAuditEvent({
     action: AuditAction.LOGIN_FAILED,
     email,
-    ipAddress,
     userAgent,
     metadata: { reason, attemptCount },
     severity: attemptCount && attemptCount >= 3 ? AuditSeverity.WARNING : AuditSeverity.INFO,
@@ -154,12 +148,11 @@ export async function logAccountLocked(
   email: string,
   reason: string,
   duration: number,
-  ipAddress?: string
+  _ipAddress?: string
 ): Promise<void> {
   await logAuditEvent({
     action: AuditAction.ACCOUNT_LOCKED,
     email,
-    ipAddress,
     metadata: { reason, durationSeconds: duration },
     severity: AuditSeverity.WARNING,
     success: true,
@@ -172,14 +165,13 @@ export async function logAccountLocked(
 export async function logRegistration(
   userId: string,
   email: string,
-  ipAddress?: string,
+  _ipAddress?: string,
   userAgent?: string
 ): Promise<void> {
   await logAuditEvent({
     action: AuditAction.REGISTER_SUCCESS,
     userId,
     email,
-    ipAddress,
     userAgent,
     severity: AuditSeverity.INFO,
     success: true,
@@ -193,13 +185,12 @@ export async function logPasswordChanged(
   userId: string,
   email: string,
   method: 'change' | 'reset',
-  ipAddress?: string
+  _ipAddress?: string
 ): Promise<void> {
   await logAuditEvent({
     action: AuditAction.PASSWORD_CHANGED,
     userId,
     email,
-    ipAddress,
     metadata: { method },
     severity: AuditSeverity.INFO,
     success: true,
@@ -213,14 +204,13 @@ export async function logSuspiciousActivity(
   description: string,
   email?: string,
   userId?: string,
-  ipAddress?: string,
+  _ipAddress?: string,
   metadata?: Record<string, unknown>
 ): Promise<void> {
   await logAuditEvent({
     action: AuditAction.SUSPICIOUS_ACTIVITY,
     userId,
     email,
-    ipAddress,
     metadata: { description, ...metadata },
     severity: AuditSeverity.CRITICAL,
     success: false,
@@ -235,7 +225,6 @@ export async function getUserAuditLogs(
   limit = 50
 ): Promise<Array<{
   action: string;
-  ipAddress: string | null;
   createdAt: Date;
   success: boolean;
 }>> {
@@ -245,7 +234,6 @@ export async function getUserAuditLogs(
     take: limit,
     select: {
       action: true,
-      ipAddress: true,
       createdAt: true,
       success: true,
     },
@@ -275,52 +263,18 @@ export async function getFailedLoginAttempts(
 /**
  * Check for suspicious login patterns
  */
+/**
+ * Check for suspicious login patterns
+ * Note: IP-based checks removed per privacy policy — IP addresses are not stored.
+ */
 export async function checkSuspiciousLogin(
-  userId: string,
-  ipAddress: string
+  _userId: string,
+  _ipAddress: string
 ): Promise<{
   suspicious: boolean;
   reason?: string;
 }> {
-  // Get recent successful logins
-  const recentLogins = await prisma.securityAuditLog.findMany({
-    where: {
-      userId,
-      action: AuditAction.LOGIN_SUCCESS,
-      createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }, // Last 24 hours
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 10,
-    select: {
-      ipAddress: true,
-      createdAt: true,
-    },
-  });
-
-  // Check if this is a new IP
-  const knownIps = new Set(recentLogins.map((l) => l.ipAddress).filter(Boolean));
-  const isNewIp = !knownIps.has(ipAddress) && knownIps.size > 0;
-
-  // Check for rapid IP changes
-  const uniqueRecentIps = new Set(
-    recentLogins
-      .filter((l) => l.createdAt > new Date(Date.now() - 60 * 60 * 1000)) // Last hour
-      .map((l) => l.ipAddress)
-  );
-
-  if (uniqueRecentIps.size >= 3) {
-    return {
-      suspicious: true,
-      reason: 'Multiple IP addresses used in short time period',
-    };
-  }
-
-  if (isNewIp) {
-    return {
-      suspicious: true,
-      reason: 'Login from new IP address',
-    };
-  }
-
+  // IP-based suspicious login detection disabled per privacy policy.
+  // IP addresses are not stored or compared.
   return { suspicious: false };
 }
