@@ -454,7 +454,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               {order.items.map((item) => {
                 const productSlug = item.variant?.product?.slug;
                 const productImage = item.variant?.product?.images?.[0]?.url;
-                const webUrl = process.env.NEXT_PUBLIC_WEB_URL || 'https://wbtrade.pl';
+                const webUrl = process.env.NEXT_PUBLIC_WEB_URL || 'https://wb-trade.pl';
                 const productLink = productSlug ? `${webUrl}/products/${productSlug}` : null;
 
                 return (
