@@ -33,6 +33,13 @@ import {
 } from '../lib/audit';
 import { validatePassword } from '../lib/validation';
 
+// Structured logger (console only, dev mode only)
+function debugLog(msg: string) {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(msg);
+  }
+}
+
 // ============================================
 // CONFIGURATION - NO FALLBACKS IN PRODUCTION!
 // ============================================
@@ -75,6 +82,7 @@ interface RegisterInput {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  newsletter?: boolean;
   ipAddress?: string;
   userAgent?: string;
 }
@@ -184,7 +192,7 @@ export class SecureAuthService {
    * Register a new user with full security checks
    */
   async register(input: RegisterInput): Promise<RegisterResult> {
-    const { email, password, firstName, lastName, phone, ipAddress, userAgent } = input;
+    const { email, password, firstName, lastName, phone, newsletter, ipAddress, userAgent } = input;
 
     // Validate password
     const passwordValidation = validatePassword(password);
@@ -254,21 +262,33 @@ export class SecureAuthService {
     // Extract first URL from FRONTEND_URL (in case it contains multiple URLs separated by comma)
     const frontendUrl = (process.env.FRONTEND_URL || 'https://www.wb-trade.pl').split(',')[0].trim();
     const verifyUrl = `${frontendUrl}/verify-email?token=${verificationToken}`;
-    await queueEmail({
-      to: normalizedEmail,
-      subject: 'Potwierdź swój email - WBTrade',
-      template: 'email-verification',
-      context: {
-        name: user.email.split('@')[0],
-        verifyUrl,
-      },
-    });
+    try {
+      await queueEmail({
+        to: normalizedEmail,
+        subject: 'Potwierdź swój email - WBTrade',
+        template: 'email-verification',
+        context: {
+          name: user.email.split('@')[0],
+          verifyUrl,
+        },
+      });
+    } catch (emailErr: any) {
+      console.error('[SecureAuthService] Failed to send verification email:', emailErr.message);
+      // Don't block registration if email fails
+    }
 
     // Generate welcome discount code and send email (async, don't block registration)
-    console.log(`[SecureAuthService] Starting welcome discount for ${user.email}...`);
+    debugLog('[SecureAuthService] Starting welcome discount...');
     this.sendWelcomeDiscount(user.id, user.email, user.firstName || '').catch((err) => {
       console.error('[SecureAuthService] Failed to send welcome discount:', err.message);
     });
+
+    // If user opted in for newsletter, auto-subscribe and generate newsletter discount
+    if (newsletter) {
+      this.subscribeToNewsletter(user.id, normalizedEmail, user.firstName || '').catch((err) => {
+        console.error('[SecureAuthService] Failed to subscribe to newsletter:', err.message);
+      });
+    }
 
     return {
       user: this.sanitizeUser(user),
@@ -283,11 +303,11 @@ export class SecureAuthService {
    */
   private async sendWelcomeDiscount(userId: string, email: string, firstName: string): Promise<void> {
     try {
-      console.log(`[SecureAuthService] Generating discount for user ${userId}...`);
+      debugLog('[SecureAuthService] Generating discount...');
       const discount = await discountService.generateWelcomeDiscount(userId, email);
-      console.log(`[SecureAuthService] Discount generated: ${discount.couponCode}`);
+      debugLog('[SecureAuthService] Discount generated');
       
-      console.log(`[SecureAuthService] Sending email to ${email}...`);
+      debugLog('[SecureAuthService] Sending welcome email...');
       const result = await emailService.sendWelcomeDiscountEmail(
         email,
         firstName || email.split('@')[0],
@@ -297,13 +317,66 @@ export class SecureAuthService {
       );
       
       if (result.success) {
-        console.log(`✅ [SecureAuthService] Welcome discount sent to ${email}: ${discount.couponCode}`);
+        debugLog('✅ [SecureAuthService] Welcome discount sent successfully');
       } else {
-        console.error(`❌ [SecureAuthService] Email failed for ${email}: ${result.error}`);
+        console.error('❌ [SecureAuthService] Welcome email failed:', result.error);
       }
     } catch (err: any) {
-      console.error(`[SecureAuthService] Welcome discount error for ${email}:`, err.message);
+      console.error('[SecureAuthService] Welcome discount error:', err.message);
       // Don't throw - registration should succeed even if discount email fails
+    }
+  }
+
+  /**
+   * Subscribe user to newsletter during registration
+   * Creates newsletter_subscriptions record (auto-verified) and generates NEWS-XXXXXX discount code
+   */
+  private async subscribeToNewsletter(userId: string, email: string, firstName: string): Promise<void> {
+    try {
+      debugLog('[SecureAuthService] Subscribing to newsletter...');
+
+      // Check if already subscribed
+      const existing = await prisma.newsletter_subscriptions.findUnique({
+        where: { email },
+      });
+
+      const token = this.generateSecureToken();
+
+      if (existing) {
+        // Re-activate if previously unsubscribed
+        if (existing.unsubscribed_at) {
+          await prisma.newsletter_subscriptions.update({
+            where: { email },
+            data: {
+              is_verified: true,
+              verified_at: new Date(),
+              unsubscribed_at: null,
+              token,
+            },
+          });
+        }
+      } else {
+        // Create new subscription (auto-verified since user just registered)
+        await prisma.newsletter_subscriptions.create({
+          data: {
+            id: uuidv4(),
+            email,
+            token,
+            is_verified: true,
+            verified_at: new Date(),
+          },
+        });
+      }
+
+      // Generate newsletter discount code
+      const discount = await discountService.generateNewsletterDiscount(email, userId);
+      debugLog('✅ [SecureAuthService] Newsletter subscription + discount created');
+
+      // Send newsletter welcome email with discount code
+      await emailService.sendNewsletterWelcomeEmail(email, token);
+    } catch (err: any) {
+      console.error('[SecureAuthService] Newsletter subscription error:', err.message);
+      // Don't throw - registration should succeed even if newsletter subscription fails
     }
   }
 

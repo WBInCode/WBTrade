@@ -13,7 +13,7 @@ export class SecureAuthController {
    */
   async register(req: Request, res: Response): Promise<void> {
     try {
-      const { email, password, firstName, lastName } = req.body;
+      const { email, password, firstName, lastName, newsletter } = req.body;
 
       // Validate required fields
       if (!email || !password) {
@@ -29,6 +29,7 @@ export class SecureAuthController {
         password,
         firstName,
         lastName,
+        newsletter: !!newsletter,
         ipAddress: getClientIp(req),
         userAgent: getUserAgent(req),
       });
@@ -77,7 +78,7 @@ export class SecureAuthController {
         }
       }
 
-      console.error('Registration error:', error);
+      console.error('Registration error');
       res.status(500).json({
         message: 'Rejestracja nie powiodła się',
         code: 'REGISTRATION_ERROR',

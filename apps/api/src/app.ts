@@ -39,6 +39,7 @@ import adminNewsletterRoutes from './routes/admin-newsletter';
 import adminActivityLogRoutes from './routes/admin-activity-log';
 import adminOmnibusRoutes from './routes/admin-omnibus';
 import adminWarehouseRoutes from './routes/admin-warehouse';
+import carouselsRoutes from './routes/carousels';
 import newsletterRoutes from './routes/newsletter';
 import contactRoutes from './routes/contact';
 import feedRoutes from './routes/feed';
@@ -180,6 +181,7 @@ app.use('/api/admin/newsletter', adminNewsletterRoutes); // Admin newsletter man
 app.use('/api/admin/activity-log', adminActivityLogRoutes); // Admin activity log / audit trail
 app.use('/api/admin/omnibus', adminOmnibusRoutes); // Admin Omnibus + top products
 app.use('/api/admin/warehouse', adminWarehouseRoutes); // Admin WMS warehouse management
+app.use('/api/carousels', carouselsRoutes); // Dynamic carousels (public + admin)
 app.use('/api/admin/baselinker', baselinkerRoutes); // Baselinker integration
 app.use('/api/newsletter', newsletterRoutes); // Newsletter subscription
 app.use('/api/contact', contactRoutes); // Contact forms & complaints
