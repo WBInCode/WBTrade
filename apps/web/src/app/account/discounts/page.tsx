@@ -148,6 +148,9 @@ export default function DiscountsPage() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [claimingApp, setClaimingApp] = useState(false);
   const [appClaimed, setAppClaimed] = useState(false);
+  const [claimingNewsletter, setClaimingNewsletter] = useState(false);
+  const [newsletterClaimed, setNewsletterClaimed] = useState(false);
+  const [welcomeClaimed, setWelcomeClaimed] = useState(false);
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
@@ -164,9 +167,15 @@ export default function DiscountsPage() {
       const response = await couponsApi.getMyCoupons();
       const list = response.coupons || [];
       setCoupons(list);
-      // Check if app download coupon was already claimed
+      // Check which coupons were already claimed
+      if (list.some((c: UserCoupon) => c.couponSource === 'WELCOME_DISCOUNT')) {
+        setWelcomeClaimed(true);
+      }
       if (list.some((c: UserCoupon) => c.couponSource === 'APP_DOWNLOAD')) {
         setAppClaimed(true);
+      }
+      if (list.some((c: UserCoupon) => c.couponSource === 'NEWSLETTER')) {
+        setNewsletterClaimed(true);
       }
     } catch (error) {
       console.error('Error fetching coupons:', error);
@@ -197,14 +206,17 @@ export default function DiscountsPage() {
     }
   };
 
-  const filteredCoupons = coupons.filter(c => {
+  // Hide APP_DOWNLOAD coupons from the list (app not yet published)
+  const visibleCoupons = coupons.filter(c => c.couponSource !== 'APP_DOWNLOAD');
+
+  const filteredCoupons = visibleCoupons.filter(c => {
     if (filter === 'all') return true;
     return c.status === filter;
   });
 
-  const activeCoupons = coupons.filter(c => c.status === 'active');
-  const usedCoupons = coupons.filter(c => c.status === 'used');
-  const expiredCoupons = coupons.filter(c => c.status === 'expired');
+  const activeCoupons = visibleCoupons.filter(c => c.status === 'active');
+  const usedCoupons = visibleCoupons.filter(c => c.status === 'used');
+  const expiredCoupons = visibleCoupons.filter(c => c.status === 'expired');
 
   const handleClaimAppDownload = async () => {
     setClaimingApp(true);
@@ -221,7 +233,53 @@ export default function DiscountsPage() {
     }
   };
 
+  const handleClaimNewsletter = async () => {
+    setClaimingNewsletter(true);
+    try {
+      await couponsApi.claimNewsletter();
+      setNewsletterClaimed(true);
+      fetchCoupons();
+    } catch (err: any) {
+      if (err?.response?.status === 409) {
+        setNewsletterClaimed(true);
+        fetchCoupons();
+      }
+    } finally {
+      setClaimingNewsletter(false);
+    }
+  };
+
   const earnableItems = [
+    {
+      id: 'welcome',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+        </svg>
+      ),
+      title: 'Załóż konto',
+      description: 'Kupon powitalny -20% przyznawany automatycznie przy rejestracji',
+      discount: '-20%',
+      unlocked: false,
+      claimed: true,
+    },
+    {
+      id: 'newsletter',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+      ),
+      title: 'Zapisz się do newslettera',
+      description: newsletterClaimed
+        ? 'Kupon za newsletter został już odebrany'
+        : 'Zapisz się do newslettera i odbierz kod rabatowy -10%',
+      discount: '-10%',
+      unlocked: !newsletterClaimed,
+      claimed: newsletterClaimed,
+      onClaim: handleClaimNewsletter,
+      claiming: claimingNewsletter,
+    },
     {
       id: 'app-download',
       icon: (
@@ -232,62 +290,9 @@ export default function DiscountsPage() {
       title: 'Pobierz aplikację',
       description: 'Zainstaluj aplikację WBTrade i odbierz rabat na zakupy',
       discount: '-5%',
-      unlocked: true,
-      claimed: appClaimed,
-      onClaim: handleClaimAppDownload,
-      claiming: claimingApp,
-    },
-    {
-      id: 'newsletter',
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-        </svg>
-      ),
-      title: 'Zapisz się do newslettera',
-      description: 'Bądź na bieżąco z promocjami i otrzymaj kod rabatowy',
-      discount: '-10%',
       unlocked: false,
       claimed: false,
-    },
-    {
-      id: 'first-review',
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-        </svg>
-      ),
-      title: 'Wystaw pierwszą opinię',
-      description: 'Oceń produkt, który kupiłeś i zdobądź dodatkowy rabat',
-      discount: '-5%',
-      unlocked: false,
-      claimed: false,
-    },
-    {
-      id: 'referral',
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      ),
-      title: 'Poleć znajomemu',
-      description: 'Wyślij link polecający — Ty i znajomy dostaniecie rabat',
-      discount: '-10%',
-      unlocked: false,
-      claimed: false,
-    },
-    {
-      id: 'birthday',
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 15.546c-.523 0-1.046.151-1.5.454a2.704 2.704 0 01-3 0 2.704 2.704 0 00-3 0 2.704 2.704 0 01-3 0 2.704 2.704 0 00-3 0 2.704 2.704 0 01-3 0A1.75 1.75 0 003 15.546m18 0v2.704M3 15.546v2.704m0 0h18M12 3v3m-4 1h8a2 2 0 012 2v2H6V9a2 2 0 012-2z" />
-        </svg>
-      ),
-      title: 'Urodzinowy prezent',
-      description: 'Uzupełnij datę urodzenia w profilu i odbierz niespodziankę',
-      discount: '-15%',
-      unlocked: false,
-      claimed: false,
+      comingSoon: true,
     },
   ];
 
@@ -354,10 +359,10 @@ export default function DiscountsPage() {
             )}
 
             {/* Filter tabs */}
-            {coupons.length > 0 && (
+            {visibleCoupons.length > 0 && (
               <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
                 {[
-                  { key: 'all' as const, label: 'Wszystkie', count: coupons.length },
+                  { key: 'all' as const, label: 'Wszystkie', count: visibleCoupons.length },
                   { key: 'active' as const, label: 'Aktywne', count: activeCoupons.length },
                   { key: 'used' as const, label: 'Wykorzystane', count: usedCoupons.length },
                   { key: 'expired' as const, label: 'Wygasłe', count: expiredCoupons.length },
@@ -388,7 +393,7 @@ export default function DiscountsPage() {
                   <CouponCard key={coupon.id} coupon={coupon} onCopy={handleCopy} />
                 ))}
               </div>
-            ) : coupons.length > 0 ? (
+            ) : visibleCoupons.length > 0 ? (
               <div className="text-center py-16 bg-white dark:bg-secondary-800 rounded-xl border border-gray-100 dark:border-secondary-700">
                 <p className="text-gray-500 dark:text-gray-400">
                   Brak kuponów w tej kategorii
@@ -482,6 +487,13 @@ export default function DiscountsPage() {
                               )}
                               Odbierz
                             </button>
+                          ) : (item as any).comingSoon ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-500 dark:text-blue-400">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              Wkrótce
+                            </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 dark:text-gray-500">
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

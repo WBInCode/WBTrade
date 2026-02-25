@@ -304,6 +304,12 @@ export class PaymentReminderService {
    */
   private async cancelUnpaidOrder(orderId: string, orderNumber: string): Promise<void> {
     await prisma.$transaction(async (tx) => {
+      // Get order to check for coupon before cancelling
+      const order = await tx.order.findUnique({
+        where: { id: orderId },
+        select: { couponCode: true, paymentStatus: true },
+      });
+
       // Update order status
       await tx.order.update({
         where: { id: orderId },
@@ -324,9 +330,18 @@ export class PaymentReminderService {
         },
       });
 
-      // Release any inventory reservations (if applicable)
-      // Note: Reservations should already be released by reservation cleanup worker
-      // but we ensure consistency here
+      // Restore coupon if order was PAID (safety net for edge cases / legacy orders)
+      if (order?.couponCode && order.paymentStatus === 'PAID') {
+        try {
+          await tx.coupon.update({
+            where: { code: order.couponCode },
+            data: { usedCount: { decrement: 1 } },
+          });
+          console.log(`[PaymentReminder] Restored coupon ${order.couponCode} for cancelled order ${orderNumber}`);
+        } catch (err) {
+          console.error(`[PaymentReminder] Failed to restore coupon ${order.couponCode}:`, err);
+        }
+      }
     });
 
     console.log(`[PaymentReminder] Order ${orderNumber} cancelled due to non-payment`);

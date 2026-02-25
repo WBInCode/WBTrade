@@ -258,7 +258,7 @@ export class CartController {
       }
 
       const cart = await cartService.getOrCreateCart(userId, sessionId);
-      const updatedCart = await cartService.applyCoupon(cart.id, validation.data.code);
+      const updatedCart = await cartService.applyCoupon(cart.id, validation.data.code, userId);
 
       res.json({
         success: true,

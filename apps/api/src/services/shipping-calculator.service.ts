@@ -744,7 +744,9 @@ export class ShippingCalculatorService {
     if (isPaczkomatAvailable) {
       for (const pkg of standardPackages) {
         if (!pkg.hasFreeShipping) {
-          paczkomatCost += pkg.paczkomatPackageCount * SHIPPING_PRICES.inpost_paczkomat;
+          // Minimum 1 package per warehouse for paczkomat pricing
+          const effectiveCount = Math.max(pkg.paczkomatPackageCount, 1);
+          paczkomatCost += effectiveCount * SHIPPING_PRICES.inpost_paczkomat;
         }
       }
     }
@@ -941,7 +943,9 @@ export class ShippingCalculatorService {
         
         // InPost Paczkomat - price based on how many paczkomat packages are needed
         // If items don't fit in 1 paczkomat package, multiple packages = higher price
-        const paczkomatPrice = isFree ? 0 : paczkomatPackages * SHIPPING_PRICES.inpost_paczkomat;
+        // Minimum 1 package if paczkomat is available (products without explicit tag still need at least 1 package)
+        const effectivePaczkomatPackages = isInPostAvailable ? Math.max(paczkomatPackages, 1) : 0;
+        const paczkomatPrice = isFree ? 0 : effectivePaczkomatPackages * SHIPPING_PRICES.inpost_paczkomat;
         const freeMessage = isFree ? `Darmowa dostawa! (zamówienie powyżej ${FREE_SHIPPING_THRESHOLD} zł)` : undefined;
         
         methods.push({

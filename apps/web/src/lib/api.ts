@@ -1500,6 +1500,9 @@ export const couponsApi = {
 
   claimAppDownload: () =>
     api.post<{ discount: { couponCode: string; discountPercent: number; expiresAt: string } }>('/coupons/claim-app-download'),
+
+  claimNewsletter: () =>
+    api.post<{ discount: { couponCode: string; discountPercent: number; expiresAt: string } }>('/coupons/claim-newsletter'),
 };
 
 // ============================================
