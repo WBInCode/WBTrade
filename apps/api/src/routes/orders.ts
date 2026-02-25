@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createOrder, getOrder, updateOrder, deleteOrder, getAllOrders, getUserOrders, refundOrder, restoreOrder, simulatePayment, checkRefundEligibility, requestRefund, getOrderTracking, getPendingCancellations, approveCancellation, rejectCancellation } from '../controllers/orders.controller';
+import { createOrder, getOrder, updateOrder, deleteOrder, getAllOrders, getUserOrders, refundOrder, restoreOrder, simulatePayment, checkRefundEligibility, requestRefund, getOrderTracking, syncOrderDelivery, getPendingCancellations, approveCancellation, rejectCancellation } from '../controllers/orders.controller';
 import { authGuard, adminOnly } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -18,6 +18,9 @@ router.post('/', authGuard, createOrder);
 
 // Route to get order tracking info from BaseLinker
 router.get('/:id/tracking', getOrderTracking);
+
+// Route to force sync delivery status from Baselinker (admin)
+router.post('/:id/sync-delivery', authGuard, adminOnly, syncOrderDelivery);
 
 // Route to get an order by ID
 router.get('/:id', authGuard, getOrder);
