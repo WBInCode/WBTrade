@@ -94,7 +94,7 @@ router.get('/top-products', async (req: Request, res: Response) => {
     else if (period === '90d') since.setDate(since.getDate() - 90);
     else since.setDate(since.getDate() - 30);
 
-    // Top selling — group by variantId
+    // Top selling — group by variantId (only paid/confirmed orders)
     const topSellingVariants = await prisma.orderItem.groupBy({
       by: ['variantId'],
       _sum: { quantity: true, total: true },
@@ -103,6 +103,7 @@ router.get('/top-products', async (req: Request, res: Response) => {
         order: {
           createdAt: { gte: since },
           status: { notIn: ['CANCELLED', 'REFUNDED'] },
+          paymentStatus: 'PAID',
         },
       },
       orderBy: { _sum: { quantity: 'desc' } },
@@ -167,7 +168,41 @@ router.get('/top-products', async (req: Request, res: Response) => {
 
     // Top searched — use server-side analytics (tracks ALL searches, not just authenticated)
     const { getTopSearches } = require('../services/search-analytics.service');
-    const topSearched = getTopSearches(limitNum, since);
+    const topSearchedRaw: { query: string; count: number }[] = getTopSearches(limitNum, since);
+
+    // Enrich top searches with matching products
+    const topSearched = await Promise.all(
+      topSearchedRaw.map(async (s) => {
+        const matchedProduct = await prisma.product.findFirst({
+          where: {
+            status: 'ACTIVE',
+            OR: [
+              { name: { contains: s.query, mode: 'insensitive' } },
+              { description: { contains: s.query, mode: 'insensitive' } },
+            ],
+          },
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            images: { take: 1, select: { url: true } },
+          },
+          orderBy: { average_rating: 'desc' },
+        });
+        return {
+          query: s.query,
+          count: s.count,
+          product: matchedProduct
+            ? {
+                id: matchedProduct.id,
+                name: matchedProduct.name,
+                price: matchedProduct.price,
+                imageUrl: matchedProduct.images[0]?.url || null,
+              }
+            : null,
+        };
+      })
+    );
 
     res.json({
       topSelling,
