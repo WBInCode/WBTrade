@@ -502,7 +502,7 @@ export default function RegisterPage() {
             </div>
 
             {/* Zgody — 4 checkboxy */}
-            <div className="space-y-3 pt-2">
+            <div className="space-y-1 pt-2">
               {/* Zaznacz wszystko */}
               <div className="flex items-center gap-3 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl">
                 <input
@@ -518,7 +518,7 @@ export default function RegisterPage() {
               </div>
 
               {/* Regulamin — wymagany */}
-              <div className="flex items-start gap-3 p-3 border border-gray-200 dark:border-secondary-600 rounded-xl">
+              <div className="flex items-start gap-3 py-1.5 px-2">
                 <input
                   id="acceptTerms"
                   name="acceptTerms"
@@ -537,7 +537,7 @@ export default function RegisterPage() {
               </div>
 
               {/* Polityka prywatności — wymagana */}
-              <div className="flex items-start gap-3 p-3 border border-gray-200 dark:border-secondary-600 rounded-xl">
+              <div className="flex items-start gap-3 py-1.5 px-2">
                 <input
                   id="acceptPrivacy"
                   name="acceptPrivacy"
@@ -556,7 +556,7 @@ export default function RegisterPage() {
               </div>
 
               {/* Newsletter — opcjonalny */}
-              <div className="flex items-start gap-3 p-3 border border-gray-200 dark:border-secondary-600 rounded-xl bg-gradient-to-r from-white to-orange-50/50 dark:from-secondary-800 dark:to-orange-900/10">
+              <div className="flex items-start gap-3 py-1.5 px-2 bg-gradient-to-r from-white to-orange-50/50 dark:from-secondary-800 dark:to-orange-900/10 rounded-xl">
                 <input
                   id="acceptNewsletter"
                   name="acceptNewsletter"
