@@ -3,7 +3,8 @@
  * 
  * Handles background synchronization tasks:
  * - Order status sync from Baselinker to our shop (every 15 minutes)
- * - Stock/inventory sync from Baselinker (daily at 00:00)
+ * - Stock/inventory sync from Baselinker (every 2 hours)
+ * - Price sync from Baselinker (every 2 hours, offset 30 min after stock)
  */
 
 import { Worker, Job } from 'bullmq';
@@ -157,7 +158,7 @@ export async function scheduleBaselinkerSync(): Promise<void> {
   
   console.log('✅ Baselinker order status sync scheduled (every 15 minutes)');
   
-  // Add stock sync job - daily at midnight
+  // Add stock sync job - every 2 hours
   await queue.add(
     'sync-stock',
     { 
@@ -166,15 +167,15 @@ export async function scheduleBaselinkerSync(): Promise<void> {
     },
     {
       repeat: {
-        pattern: '0 0 * * *', // Daily at 00:00
+        pattern: '0 */2 * * *', // Every 2 hours at :00
       },
       jobId: 'baselinker-stock-sync',
     }
   );
   
-  console.log('✅ Baselinker stock sync scheduled (daily at 00:00)');
+  console.log('✅ Baselinker stock sync scheduled (every 2 hours)');
 
-  // Add price sync job - daily at 00:30 (after stock sync)
+  // Add price sync job - every 2 hours, 30 min after stock sync
   await queue.add(
     'sync-price',
     { 
@@ -183,13 +184,13 @@ export async function scheduleBaselinkerSync(): Promise<void> {
     },
     {
       repeat: {
-        pattern: '30 0 * * *', // Daily at 00:30
+        pattern: '30 */2 * * *', // Every 2 hours at :30
       },
       jobId: 'baselinker-price-sync',
     }
   );
   
-  console.log('✅ Baselinker price sync scheduled (daily at 00:30)');
+  console.log('✅ Baselinker price sync scheduled (every 2 hours)');
 }
 
 /**
