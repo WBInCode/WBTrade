@@ -13,7 +13,9 @@ import {
   getNewProducts,
   getMostWishlisted,
   getTopRated,
-  getSameWarehouseProducts
+  getSameWarehouseProducts,
+  getProductsByIds,
+  getToys
 } from '../controllers/products.controller';
 import { reviewsController } from '../controllers/reviews.controller';
 import { optionalAuth, authGuard, adminOnly } from '../middleware/auth.middleware';
@@ -42,11 +44,17 @@ router.get('/seasonal', getSeasonal);
 // Route to get new products (added in last 14 days)
 router.get('/new-arrivals', getNewProducts);
 
+// Route to get toys carousel products (manual + automatic from toys category)
+router.get('/toys', getToys);
+
 // Route to get the most wishlisted product (Product of the Day)
 router.get('/most-wishlisted', getMostWishlisted);
 
 // Route to get top-rated products
 router.get('/top-rated', getTopRated);
+
+// Route to get multiple products by IDs (batch - avoids N+1 requests)
+router.post('/batch', getProductsByIds);
 
 // Route to get products from the same warehouse (for "Zamów w jednej przesyłce")
 router.get('/same-warehouse/:productId', getSameWarehouseProducts);
