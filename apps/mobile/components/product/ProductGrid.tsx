@@ -2,7 +2,7 @@ import React from 'react';
 import { FlatList, View, Text, ActivityIndicator, RefreshControl } from 'react-native';
 import ProductCard, { CARD_WIDTH, CARD_GAP, CARD_PADDING } from './ProductCard';
 import Spinner from '../ui/Spinner';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
 import type { Product } from '../../services/types';
 
 interface ProductGridProps {
@@ -26,6 +26,8 @@ export default function ProductGrid({
   isFetchingNextPage = false,
   emptyMessage = 'Nie znaleziono produktów',
 }: ProductGridProps) {
+  const colors = useThemeColors();
+
   if (loading && products.length === 0) {
     return <Spinner fullScreen />;
   }
@@ -53,8 +55,8 @@ export default function ProductGrid({
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={Colors.primary[500]}
-            colors={[Colors.primary[500]]}
+            tintColor={colors.tint}
+            colors={[colors.tint]}
           />
         ) : undefined
       }
@@ -63,13 +65,13 @@ export default function ProductGrid({
       ListFooterComponent={
         isFetchingNextPage ? (
           <View style={{ padding: 20, alignItems: 'center' }}>
-            <ActivityIndicator size="small" color={Colors.primary[500]} />
+            <ActivityIndicator size="small" color={colors.tint} />
           </View>
         ) : null
       }
       ListEmptyComponent={
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60 }}>
-          <Text style={{ color: Colors.secondary[400], fontSize: 15 }}>{emptyMessage}</Text>
+          <Text style={{ color: colors.textMuted, fontSize: 15 }}>{emptyMessage}</Text>
         </View>
       }
     />

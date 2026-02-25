@@ -5,11 +5,11 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
+import { StatusBar } from 'react-native';
 import 'react-native-reanimated';
 import '../global.css';
 
-import { useColorScheme } from '@/components/useColorScheme';
-import { Colors } from '../constants/Colors';
+import { AppThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { CartProvider } from '../contexts/CartContext';
 import { WishlistProvider } from '../contexts/WishlistContext';
@@ -59,7 +59,11 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return (
+    <AppThemeProvider>
+      <RootLayoutNav />
+    </AppThemeProvider>
+  );
 }
 
 function AuthRedirectHandler() {
@@ -120,43 +124,48 @@ function GiftNotificationHandler() {
 }
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme();
+  const { colorScheme, colors } = useTheme();
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <CartProvider>
           <ToastProvider>
-          <WishlistProvider>
-          <AuthRedirectHandler />
-          <GiftNotificationHandler />
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <Stack>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-              <Stack.Screen name="checkout" options={{ headerShown: false }} />
-              <Stack.Screen name="order/[id]" options={{ headerShown: false }} />
-              <Stack.Screen
-                name="product/[id]"
-                options={{
-                  headerShown: true,
-                  title: 'Produkt',
-                  headerBackTitle: 'Wróć',
-                  headerTintColor: Colors.primary[500],
-                }}
-              />
-              <Stack.Screen
-                name="category/[slug]"
-                options={{
-                  headerShown: true,
-                  title: 'Kategoria',
-                  headerBackTitle: 'Wróć',
-                  headerTintColor: Colors.primary[500],
-                }}
-              />
-            </Stack>
-          </ThemeProvider>
-          </WishlistProvider>
+            <WishlistProvider>
+              <AuthRedirectHandler />
+              <GiftNotificationHandler />
+              <StatusBar barStyle={colors.statusBar} />
+              <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+                <Stack>
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                  <Stack.Screen name="checkout" options={{ headerShown: false }} />
+                  <Stack.Screen name="order/[id]" options={{ headerShown: false }} />
+                  <Stack.Screen
+                    name="product/[id]"
+                    options={{
+                      headerShown: true,
+                      title: 'Produkt',
+                      headerBackTitle: 'Wróć',
+                      headerTintColor: colors.tint,
+                      headerStyle: { backgroundColor: colors.headerBackground },
+                      headerTitleStyle: { color: colors.headerText },
+                    }}
+                  />
+                  <Stack.Screen
+                    name="category/[slug]"
+                    options={{
+                      headerShown: true,
+                      title: 'Kategoria',
+                      headerBackTitle: 'Wróć',
+                      headerTintColor: colors.tint,
+                      headerStyle: { backgroundColor: colors.headerBackground },
+                      headerTitleStyle: { color: colors.headerText },
+                    }}
+                  />
+                </Stack>
+              </ThemeProvider>
+            </WishlistProvider>
           </ToastProvider>
         </CartProvider>
       </AuthProvider>

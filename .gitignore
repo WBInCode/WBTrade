@@ -1,4 +1,4 @@
-# Dependencies
+﻿# Dependencies
 node_modules/
 .pnp/
 .pnp.js
@@ -91,4 +91,6 @@ apps/*/.env.staging
 !README.md
 
 centrum-pomocy.txt
-regulamin.txttmpclaude-*
+regulamin.txt
+tmpclaude-*
+package-lock.json

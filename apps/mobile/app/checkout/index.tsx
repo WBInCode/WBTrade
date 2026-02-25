@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,8 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import type { ThemeColors } from '../../constants/Colors';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCheckout, type AddressData, type ShippingData } from '../../hooks/useCheckout';
@@ -23,6 +24,8 @@ export default function CheckoutScreen() {
   const { cart, refreshCart } = useCart();
   const { isAuthenticated, user } = useAuth();
   const checkout = useCheckout();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
   const [loadingAddresses, setLoadingAddresses] = useState(false);
@@ -324,28 +327,28 @@ export default function CheckoutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   emptyText: {
     fontSize: 16,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
   progressBar: {
     flexDirection: 'row',
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: colors.border,
   },
   progressStep: {
     flex: 1,
@@ -356,37 +359,37 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: Colors.secondary[200],
+    backgroundColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
   },
   progressDotActive: {
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
   },
   progressDotCompleted: {
-    backgroundColor: Colors.success,
+    backgroundColor: colors.success,
   },
   progressNumber: {
     fontSize: 12,
     fontWeight: '700',
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
   progressNumberActive: {
-    color: Colors.white,
+    color: colors.textInverse,
   },
   progressCheck: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.white,
+    color: colors.textInverse,
   },
   progressLabel: {
     fontSize: 11,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     fontWeight: '500',
   },
   progressLabelActive: {
-    color: Colors.primary[600],
+    color: colors.tint,
     fontWeight: '600',
   },
   progressLine: {
@@ -395,10 +398,10 @@ const styles = StyleSheet.create({
     left: '60%',
     right: '-40%',
     height: 2,
-    backgroundColor: Colors.secondary[200],
+    backgroundColor: colors.border,
     zIndex: -1,
   },
   progressLineActive: {
-    backgroundColor: Colors.success,
+    backgroundColor: colors.success,
   },
 });

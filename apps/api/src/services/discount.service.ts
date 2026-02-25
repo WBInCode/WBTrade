@@ -1,5 +1,6 @@
 import { prisma } from '../db';
 import crypto from 'crypto';
+import { CouponSource } from '@prisma/client';
 
 // ============================================
 // DISCOUNT SERVICE
@@ -180,6 +181,12 @@ export class DiscountService {
     const NEWSLETTER_DISCOUNT_PERCENT = 10;
     const NEWSLETTER_DISCOUNT_VALID_DAYS = 30;  // 30 days
 
+    // Try to find userId by email if not provided
+    if (!userId) {
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (user) userId = user.id;
+    }
+
     // Check if this email already has a newsletter discount
     const existingCoupon = await prisma.coupon.findFirst({
       where: {
@@ -191,6 +198,13 @@ export class DiscountService {
     });
 
     if (existingCoupon) {
+      // If coupon exists but has no userId, assign it now
+      if (userId && !existingCoupon.userId) {
+        await prisma.coupon.update({
+          where: { id: existingCoupon.id },
+          data: { userId },
+        });
+      }
       // Return existing code if not expired and not used
       if (existingCoupon.expiresAt && existingCoupon.expiresAt > new Date() && existingCoupon.usedCount < (existingCoupon.maximumUses || 1)) {
         return {
@@ -319,6 +333,106 @@ export class DiscountService {
     return {
       couponCode: coupon.code,
       discountPercent: APP_DISCOUNT_PERCENT,
+      expiresAt,
+    };
+  }
+
+  /**
+   * Generate surprise bonus discount for collecting ALL earnable discounts
+   * Format: SURPRISE-XXXXXX (6 random alphanumeric chars)
+   * 25% discount, valid for 60 days, single use
+   */
+  async generateSurpriseDiscount(userId: string, userEmail: string): Promise<WelcomeDiscountResult> {
+    const SURPRISE_DISCOUNT_PERCENT = 25;
+    const SURPRISE_DISCOUNT_VALID_DAYS = 60;
+
+    // Check if user already has a surprise discount
+    const existingCoupon = await prisma.coupon.findFirst({
+      where: {
+        userId,
+        couponSource: 'ALL_COLLECTED_BONUS',
+      },
+    });
+
+    if (existingCoupon) {
+      if (existingCoupon.expiresAt && existingCoupon.expiresAt > new Date() && existingCoupon.usedCount < (existingCoupon.maximumUses || 1)) {
+        return {
+          couponCode: existingCoupon.code,
+          discountPercent: Number(existingCoupon.value),
+          expiresAt: existingCoupon.expiresAt,
+        };
+      }
+      throw new Error('SURPRISE_ALREADY_CLAIMED');
+    }
+
+    // Verify user actually has all required discounts
+    const requiredSources: CouponSource[] = ['WELCOME_DISCOUNT', 'APP_DOWNLOAD', 'NEWSLETTER'];
+    const userCoupons = await prisma.coupon.findMany({
+      where: {
+        userId,
+        couponSource: { in: requiredSources },
+      },
+      select: { couponSource: true },
+    });
+
+    // Also check newsletter coupons (not tied to userId but to email)
+    const newsletterCoupon = await prisma.coupon.findFirst({
+      where: {
+        description: { contains: userEmail },
+        couponSource: 'NEWSLETTER',
+      },
+    });
+
+    const collectedSources = new Set(userCoupons.map(c => c.couponSource));
+    if (newsletterCoupon) collectedSources.add('NEWSLETTER');
+
+    const allCollected = requiredSources.every(s => collectedSources.has(s));
+    if (!allCollected) {
+      throw new Error('NOT_ALL_COLLECTED');
+    }
+
+    // Generate unique code
+    let code: string;
+    let attempts = 0;
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    do {
+      const randomPart = Array.from(
+        crypto.randomBytes(6),
+        (byte) => chars[byte % chars.length]
+      ).join('');
+      code = `SURPRISE-${randomPart}`;
+      const existing = await prisma.coupon.findUnique({ where: { code } });
+      if (!existing) break;
+      attempts++;
+    } while (attempts < 10);
+
+    if (attempts >= 10) {
+      throw new Error('Nie udało się wygenerować unikalnego kodu');
+    }
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + SURPRISE_DISCOUNT_VALID_DAYS);
+
+    const coupon = await prisma.coupon.create({
+      data: {
+        code: code!,
+        description: `Specjalny kupon-niespodzianka -${SURPRISE_DISCOUNT_PERCENT}% za zebranie wszystkich rabatów! Dla ${userEmail}`,
+        type: 'PERCENTAGE',
+        value: SURPRISE_DISCOUNT_PERCENT,
+        maximumUses: 1,
+        usedCount: 0,
+        expiresAt,
+        isActive: true,
+        userId,
+        couponSource: 'ALL_COLLECTED_BONUS',
+      },
+    });
+
+    console.log(`🎉 [DiscountService] Generated SURPRISE code ${code} for ${userEmail}, expires ${expiresAt.toISOString()}`);
+
+    return {
+      couponCode: coupon.code,
+      discountPercent: SURPRISE_DISCOUNT_PERCENT,
       expiresAt,
     };
   }

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,8 @@ import {
   Platform,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { Colors } from '../constants/Colors';
+import { useThemeColors } from '../hooks/useThemeColors';
+import type { ThemeColors } from '../constants/Colors';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const CONFETTI_COUNT = 50;
@@ -173,6 +174,7 @@ function Sparkle({ x, y, delay: d, size: s }: { x: number; y: number; delay: num
 
 // ─── Floating particle ring around gift ───
 function FloatingDot({ angle, radius, delay: d }: { angle: number; radius: number; delay: number }) {
+  const colors = useThemeColors();
   const pulse = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -197,7 +199,7 @@ function FloatingDot({ angle, radius, delay: d }: { angle: number; radius: numbe
         width: 6,
         height: 6,
         borderRadius: 3,
-        backgroundColor: Colors.primary[300],
+        backgroundColor: colors.tintMuted,
         left: x - 3,
         top: y - 3,
         opacity: dotOpacity,
@@ -215,6 +217,8 @@ export default function GiftNotification({
 }: GiftNotificationProps) {
   const [phase, setPhase] = useState<'gift' | 'revealed'>('gift');
   const [showConfetti, setShowConfetti] = useState(false);
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   // ── Animation values ──
   const backdropOpacity = useRef(new Animated.Value(0)).current;
@@ -649,7 +653,7 @@ export default function GiftNotification({
             {/* Info */}
             <Animated.View style={{ opacity: infoOpacity }}>
               <View style={styles.infoRow}>
-                <FontAwesome name="info-circle" size={14} color={Colors.secondary[400]} />
+                <FontAwesome name="info-circle" size={14} color={colors.textMuted} />
                 <Text style={styles.infoText}>
                   Kod znajdziesz w{' '}
                   <Text style={styles.infoBold}>Konto → Moje rabaty</Text>
@@ -673,7 +677,7 @@ export default function GiftNotification({
                 activeOpacity={0.85}
               >
                 <View style={styles.claimBtnInner}>
-                  <FontAwesome name="check-circle" size={20} color={Colors.white} style={{ marginRight: 10 }} />
+                  <FontAwesome name="check-circle" size={20} color={colors.textInverse} style={{ marginRight: 10 }} />
                   <Text style={styles.claimButtonText}>Super, odbieram!</Text>
                 </View>
               </TouchableOpacity>
@@ -691,7 +695,7 @@ export default function GiftNotification({
 
 const CARD_WIDTH = Math.min(SCREEN_W - 48, 360);
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -711,14 +715,14 @@ const styles = StyleSheet.create({
     width: 220,
     height: 220,
     borderRadius: 110,
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
   },
   glowRingInner: {
     position: 'absolute',
     width: 160,
     height: 160,
     borderRadius: 80,
-    backgroundColor: Colors.primary[400],
+    backgroundColor: colors.tint,
   },
   dotsContainer: {
     position: 'absolute',
@@ -753,7 +757,7 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     borderWidth: 3,
-    borderColor: Colors.primary[200],
+    borderColor: colors.tintMuted,
     backgroundColor: 'transparent',
     marginRight: -3,
   },
@@ -761,7 +765,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: Colors.primary[200],
+    backgroundColor: colors.tintMuted,
     zIndex: 1,
   },
   bowLoop2: {
@@ -769,14 +773,14 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     borderWidth: 3,
-    borderColor: Colors.primary[200],
+    borderColor: colors.tintMuted,
     backgroundColor: 'transparent',
     marginLeft: -3,
   },
   lidBody: {
     width: 136,
     height: 22,
-    backgroundColor: Colors.primary[600],
+    backgroundColor: colors.tint,
     borderTopLeftRadius: 6,
     borderTopRightRadius: 6,
     alignItems: 'center',
@@ -794,7 +798,7 @@ const styles = StyleSheet.create({
   lidRibbon: {
     width: 18,
     height: '100%' as any,
-    backgroundColor: Colors.primary[300],
+    backgroundColor: colors.tintMuted,
     opacity: 0.6,
   },
 
@@ -802,14 +806,14 @@ const styles = StyleSheet.create({
   boxBody: {
     width: 130,
     height: 86,
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
     borderBottomLeftRadius: 14,
     borderBottomRightRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({
       ios: {
-        shadowColor: Colors.primary[700],
+        shadowColor: colors.tint,
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.5,
         shadowRadius: 16,
@@ -823,12 +827,12 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 18,
-    backgroundColor: Colors.primary[300],
+    backgroundColor: colors.tintMuted,
     opacity: 0.4,
   },
 
   tapText: {
-    color: Colors.white,
+    color: colors.textInverse,
     fontSize: 20,
     fontWeight: '800',
     textShadowColor: 'rgba(0,0,0,0.4)',
@@ -846,7 +850,7 @@ const styles = StyleSheet.create({
   // ── Revealed phase ──
   revealCard: {
     width: CARD_WIDTH,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 28,
     paddingTop: 56,
     paddingHorizontal: 24,
@@ -870,7 +874,7 @@ const styles = StyleSheet.create({
     height: 120,
     borderBottomLeftRadius: CARD_WIDTH,
     borderBottomRightRadius: CARD_WIDTH,
-    backgroundColor: Colors.primary[50],
+    backgroundColor: colors.tintLight,
   },
 
   // Badge
@@ -885,20 +889,20 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: Colors.primary[400],
+    backgroundColor: colors.tint,
   },
   discountBadge: {
     width: 76,
     height: 76,
     borderRadius: 38,
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 4,
-    borderColor: Colors.white,
+    borderColor: colors.card,
     ...Platform.select({
       ios: {
-        shadowColor: Colors.primary[600],
+        shadowColor: colors.tint,
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.5,
         shadowRadius: 12,
@@ -907,7 +911,7 @@ const styles = StyleSheet.create({
     }),
   },
   discountValue: {
-    color: Colors.white,
+    color: colors.textInverse,
     fontSize: 22,
     fontWeight: '900',
     letterSpacing: -0.5,
@@ -916,13 +920,13 @@ const styles = StyleSheet.create({
   revealTitle: {
     fontSize: 26,
     fontWeight: '800',
-    color: Colors.secondary[900],
+    color: colors.text,
     marginBottom: 8,
     textAlign: 'center',
   },
   revealSubtitle: {
     fontSize: 15,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 16,
@@ -932,26 +936,26 @@ const styles = StyleSheet.create({
     width: '85%' as any,
     height: 1,
     borderWidth: 1,
-    borderColor: Colors.secondary[200],
+    borderColor: colors.border,
     borderStyle: 'dashed',
     marginBottom: 16,
   },
 
   codeBox: {
     width: '100%' as any,
-    backgroundColor: Colors.primary[50],
+    backgroundColor: colors.tintLight,
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 20,
     alignItems: 'center',
     marginBottom: 14,
     borderWidth: 1.5,
-    borderColor: Colors.primary[200],
+    borderColor: colors.tintMuted,
     borderStyle: 'dashed',
   },
   codeLabel: {
     fontSize: 11,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     fontWeight: '700',
     letterSpacing: 1.5,
     marginBottom: 6,
@@ -963,7 +967,7 @@ const styles = StyleSheet.create({
   codeText: {
     fontSize: 24,
     fontWeight: '900',
-    color: Colors.primary[600],
+    color: colors.tint,
     letterSpacing: 3,
   },
 
@@ -975,13 +979,13 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 13,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     marginLeft: 8,
     lineHeight: 18,
   },
   infoBold: {
     fontWeight: '700',
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
   },
 
   claimBtnWrap: {
@@ -991,10 +995,10 @@ const styles = StyleSheet.create({
     width: '100%' as any,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
     ...Platform.select({
       ios: {
-        shadowColor: Colors.primary[600],
+        shadowColor: colors.tint,
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.4,
         shadowRadius: 12,
@@ -1009,7 +1013,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   claimButtonText: {
-    color: Colors.white,
+    color: colors.textInverse,
     fontSize: 18,
     fontWeight: '700',
     letterSpacing: 0.3,

@@ -17,6 +17,7 @@ import { Image } from 'expo-image';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../../services/api';
 import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
 import ProductGrid from '../../components/product/ProductGrid';
 import type { Product } from '../../services/types';
 
@@ -138,6 +139,7 @@ export default function SearchScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ warehouse?: string }>();
   const inputRef = useRef<TextInput>(null);
+  const colors = useThemeColors();
 
   // ─── State ─────────────────────────────────────────────────
   const [query, setQuery] = useState('');
@@ -195,7 +197,6 @@ export default function SearchScreen() {
     setTotal(0);
     setSearched(false);
     setQuery('');
-    // Clear the route param
     router.setParams({ warehouse: '' });
   };
 
@@ -221,22 +222,18 @@ export default function SearchScreen() {
     }
   }, [hasMoreToShow]);
 
-  // Reset display count when sort changes
   useEffect(() => { setDisplayCount(20); }, [sort]);
 
-  // View states
   const showIdleState = !searched && query.length < 2;
   const showSuggestions = query.length >= 2 && !searched && (suggestProducts.length > 0 || suggestCategories.length > 0);
 
-  // ─── Load initial data ────────────────────────────────────
   useEffect(() => {
     loadRecentSearches().then(setRecentSearches);
     fetchPopularSearches();
   }, []);
 
-  // ─── Live suggestions while typing ────────────────────────
   useEffect(() => {
-    if (warehouseFilter) return; // Don't live-search when warehouse filter is active
+    if (warehouseFilter) return;
     if (debouncedQuery.length < 2) {
       setSuggestProducts([]);
       setSuggestCategories([]);
@@ -247,7 +244,6 @@ export default function SearchScreen() {
     }
   }, [debouncedQuery]);
 
-  // ─── API calls ────────────────────────────────────────────
   const fetchPopularSearches = async () => {
     try {
       const data = await api.get<{ searches: string[] }>('/search/popular', { limit: 8 });
@@ -265,7 +261,6 @@ export default function SearchScreen() {
     setSuggestProducts([]);
     setSuggestCategories([]);
 
-    // Save to recent
     const updated = await saveRecentSearch(searchQuery);
     setRecentSearches(updated);
     setDisplayCount(20);
@@ -308,7 +303,6 @@ export default function SearchScreen() {
     }
   };
 
-  // ─── Handlers ─────────────────────────────────────────────
   const handleQueryChange = (text: string) => {
     setQuery(text);
     if (text.length < 2) {
@@ -373,21 +367,20 @@ export default function SearchScreen() {
     }
   };
 
-  // ─── Render ───────────────────────────────────────────────
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* ── Search Bar ── */}
-      <View style={styles.searchHeader}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <FontAwesome name="chevron-left" size={16} color={Colors.secondary[600]} />
+      <View style={[styles.searchHeader, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+        <TouchableOpacity onPress={handleBack} style={[styles.backButton, { backgroundColor: colors.backgroundTertiary }]}>
+          <FontAwesome name="chevron-left" size={16} color={colors.icon} />
         </TouchableOpacity>
-        <View style={styles.searchInputContainer}>
-          <FontAwesome name="search" size={15} color={Colors.secondary[400]} />
+        <View style={[styles.searchInputContainer, { backgroundColor: colors.searchBackground }]}>
+          <FontAwesome name="search" size={15} color={colors.searchPlaceholder} />
           <TextInput
             ref={inputRef}
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: colors.searchText }]}
             placeholder="Czego szukasz?"
-            placeholderTextColor={Colors.secondary[400]}
+            placeholderTextColor={colors.searchPlaceholder}
             value={query}
             onChangeText={handleQueryChange}
             onSubmitEditing={handleSubmit}
@@ -397,7 +390,7 @@ export default function SearchScreen() {
           />
           {query.length > 0 && (
             <TouchableOpacity onPress={handleClear} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <FontAwesome name="times-circle" size={17} color={Colors.secondary[400]} />
+              <FontAwesome name="times-circle" size={17} color={colors.textMuted} />
             </TouchableOpacity>
           )}
         </View>
@@ -405,29 +398,29 @@ export default function SearchScreen() {
 
       {/* ── IDLE: Recent + Popular ── */}
       {showIdleState && (
-        <ScrollView style={styles.idleContainer} keyboardShouldPersistTaps="handled">
+        <ScrollView style={[styles.idleContainer, { backgroundColor: colors.card }]} keyboardShouldPersistTaps="handled">
           {recentSearches.length > 0 && (
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Ostatnio wyszukiwane</Text>
+                <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Ostatnio wyszukiwane</Text>
                 <TouchableOpacity onPress={handleClearAllRecent}>
-                  <Text style={styles.clearAllText}>Wyczyść</Text>
+                  <Text style={[styles.clearAllText, { color: colors.tint }]}>Wyczyść</Text>
                 </TouchableOpacity>
               </View>
               {recentSearches.map((term, index) => (
                 <TouchableOpacity
                   key={`recent-${index}`}
-                  style={styles.recentItem}
+                  style={[styles.recentItem, { borderBottomColor: colors.borderLight }]}
                   onPress={() => handleRecentPress(term)}
                 >
-                  <FontAwesome name="clock-o" size={16} color={Colors.secondary[400]} />
-                  <Text style={styles.recentText} numberOfLines={1}>{term}</Text>
+                  <FontAwesome name="clock-o" size={16} color={colors.textMuted} />
+                  <Text style={[styles.recentText, { color: colors.textSecondary }]} numberOfLines={1}>{term}</Text>
                   <TouchableOpacity
                     onPress={() => handleRemoveRecent(term)}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     style={styles.removeButton}
                   >
-                    <FontAwesome name="times" size={14} color={Colors.secondary[400]} />
+                    <FontAwesome name="times" size={14} color={colors.textMuted} />
                   </TouchableOpacity>
                 </TouchableOpacity>
               ))}
@@ -437,17 +430,17 @@ export default function SearchScreen() {
           {popularSearches.length > 0 && (
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Popularne wyszukiwania</Text>
+                <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Popularne wyszukiwania</Text>
               </View>
               <View style={styles.popularChips}>
                 {popularSearches.map((term, index) => (
                   <TouchableOpacity
                     key={`popular-${index}`}
-                    style={styles.popularChip}
+                    style={[styles.popularChip, { backgroundColor: colors.backgroundTertiary }]}
                     onPress={() => handlePopularPress(term)}
                   >
-                    <FontAwesome name="fire" size={12} color={Colors.primary[500]} />
-                    <Text style={styles.popularChipText}>{term}</Text>
+                    <FontAwesome name="fire" size={12} color={colors.tint} />
+                    <Text style={[styles.popularChipText, { color: colors.textSecondary }]}>{term}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -456,8 +449,8 @@ export default function SearchScreen() {
 
           {recentSearches.length === 0 && popularSearches.length === 0 && (
             <View style={styles.emptyIdle}>
-              <FontAwesome name="search" size={40} color={Colors.secondary[200]} />
-              <Text style={styles.emptyIdleText}>Wpisz czego szukasz</Text>
+              <FontAwesome name="search" size={40} color={colors.textMuted} />
+              <Text style={[styles.emptyIdleText, { color: colors.textMuted }]}>Wpisz czego szukasz</Text>
             </View>
           )}
         </ScrollView>
@@ -465,61 +458,58 @@ export default function SearchScreen() {
 
       {/* ── SUGGESTIONS (while typing) ── */}
       {showSuggestions && (
-        <ScrollView style={styles.suggestionsScroll} keyboardShouldPersistTaps="handled">
-          {/* Category suggestions */}
+        <ScrollView style={[styles.suggestionsScroll, { backgroundColor: colors.card }]} keyboardShouldPersistTaps="handled">
           {suggestCategories.map((cat) => (
             <TouchableOpacity
               key={`cat-${cat.id}`}
-              style={styles.suggestionRow}
+              style={[styles.suggestionRow, { borderBottomColor: colors.borderLight }]}
               onPress={() => handleSuggestionCategoryPress(cat)}
             >
-              <View style={styles.suggestionIconWrap}>
-                <FontAwesome name="th-large" size={14} color={Colors.primary[500]} />
+              <View style={[styles.suggestionIconWrap, { backgroundColor: colors.backgroundTertiary }]}>
+                <FontAwesome name="th-large" size={14} color={colors.tint} />
               </View>
               <View style={styles.suggestionContent}>
-                <Text style={styles.suggestionName}>{cat.name}</Text>
-                <Text style={styles.suggestionMeta}>Kategoria</Text>
+                <Text style={[styles.suggestionName, { color: colors.text }]}>{cat.name}</Text>
+                <Text style={[styles.suggestionMeta, { color: colors.textSecondary }]}>Kategoria</Text>
               </View>
-              <FontAwesome name="chevron-right" size={12} color={Colors.secondary[300]} />
+              <FontAwesome name="chevron-right" size={12} color={colors.textMuted} />
             </TouchableOpacity>
           ))}
 
-          {/* "Search for" row */}
-          <TouchableOpacity style={styles.suggestionRow} onPress={handleSubmit}>
-            <View style={styles.suggestionIconWrap}>
-              <FontAwesome name="search" size={14} color={Colors.secondary[500]} />
+          <TouchableOpacity style={[styles.suggestionRow, { borderBottomColor: colors.borderLight }]} onPress={handleSubmit}>
+            <View style={[styles.suggestionIconWrap, { backgroundColor: colors.backgroundTertiary }]}>
+              <FontAwesome name="search" size={14} color={colors.textSecondary} />
             </View>
-            <Text style={styles.suggestionSearchText}>
-              Szukaj: <Text style={styles.suggestionSearchBold}>"{query}"</Text>
+            <Text style={[styles.suggestionSearchText, { color: colors.textSecondary }]}>
+              Szukaj: <Text style={[styles.suggestionSearchBold, { color: colors.text }]}>"{query}"</Text>
             </Text>
           </TouchableOpacity>
 
-          {/* Product suggestions */}
           {suggestProducts.slice(0, 6).map((product) => (
             <TouchableOpacity
               key={`prod-${product.id}`}
-              style={styles.suggestionRow}
+              style={[styles.suggestionRow, { borderBottomColor: colors.borderLight }]}
               onPress={() => handleSuggestionProductPress(product)}
             >
               {product.image ? (
                 <Image
                   source={{ uri: product.image }}
-                  style={styles.suggestionImage}
+                  style={[styles.suggestionImage, { backgroundColor: colors.backgroundTertiary }]}
                   contentFit="cover"
                 />
               ) : (
-                <View style={[styles.suggestionImage, styles.suggestionImagePlaceholder]}>
-                  <FontAwesome name="image" size={14} color={Colors.secondary[300]} />
+                <View style={[styles.suggestionImage, styles.suggestionImagePlaceholder, { backgroundColor: colors.backgroundTertiary }]}>
+                  <FontAwesome name="image" size={14} color={colors.textMuted} />
                 </View>
               )}
               <View style={styles.suggestionContent}>
-                <Text style={styles.suggestionName} numberOfLines={2}>{product.name}</Text>
-                <Text style={styles.suggestionPrice}>{Number(product.price).toFixed(2).replace('.', ',')} zł</Text>
+                <Text style={[styles.suggestionName, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
+                <Text style={[styles.suggestionPrice, { color: colors.text }]}>{Number(product.price).toFixed(2).replace('.', ',')} zł</Text>
                 {product.categoryName && (
-                  <Text style={styles.suggestionMeta}>{product.categoryName}</Text>
+                  <Text style={[styles.suggestionMeta, { color: colors.textSecondary }]}>{product.categoryName}</Text>
                 )}
               </View>
-              <FontAwesome name="chevron-right" size={12} color={Colors.secondary[300]} />
+              <FontAwesome name="chevron-right" size={12} color={colors.textMuted} />
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -528,8 +518,8 @@ export default function SearchScreen() {
       {/* ── LOADING ── */}
       {loading && (
         <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color={Colors.primary[500]} />
-          <Text style={styles.loadingText}>Szukam...</Text>
+          <ActivityIndicator size="large" color={colors.tint} />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Szukam...</Text>
         </View>
       )}
 
@@ -537,33 +527,33 @@ export default function SearchScreen() {
       {searched && !loading && (
         <>
           {products.length > 0 && (
-            <View style={styles.toolbar}>
-              <Text style={styles.resultCount}>
+            <View style={[styles.toolbar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+              <Text style={[styles.resultCount, { color: colors.textSecondary }]}>
                 {sortedProducts.length} wynik{sortedProducts.length === 1 ? '' : sortedProducts.length < 5 ? 'i' : 'ów'} dla "{query}"
               </Text>
               <TouchableOpacity
-                style={styles.sortButton}
+                style={[styles.sortButton, { borderColor: colors.border }]}
                 onPress={() => setShowSort(!showSort)}
               >
-                <FontAwesome name="sort-amount-desc" size={13} color={Colors.secondary[600]} />
-                <Text style={styles.sortButtonText}>
+                <FontAwesome name="sort-amount-desc" size={13} color={colors.icon} />
+                <Text style={[styles.sortButtonText, { color: colors.textSecondary }]}>
                   {SORT_OPTIONS.find((o) => o.value === sort)?.label}
                 </Text>
                 <FontAwesome
                   name={showSort ? 'chevron-up' : 'chevron-down'}
                   size={10}
-                  color={Colors.secondary[500]}
+                  color={colors.textSecondary}
                 />
               </TouchableOpacity>
             </View>
           )}
 
           {showSort && (
-            <View style={styles.sortDropdown}>
+            <View style={[styles.sortDropdown, { backgroundColor: colors.card, borderBottomColor: colors.border, shadowColor: colors.shadow }]}>
               {SORT_OPTIONS.map((option) => (
                 <TouchableOpacity
                   key={option.value}
-                  style={[styles.sortOption, sort === option.value && styles.sortOptionActive]}
+                  style={[styles.sortOption, { borderBottomColor: colors.borderLight }]}
                   onPress={() => {
                     setSort(option.value);
                     setShowSort(false);
@@ -572,13 +562,14 @@ export default function SearchScreen() {
                   <Text
                     style={[
                       styles.sortOptionText,
-                      sort === option.value && styles.sortOptionTextActive,
+                      { color: colors.textSecondary },
+                      sort === option.value && { color: colors.tint, fontWeight: '600' },
                     ]}
                   >
                     {option.label}
                   </Text>
                   {sort === option.value && (
-                    <FontAwesome name="check" size={12} color={Colors.primary[500]} />
+                    <FontAwesome name="check" size={12} color={colors.tint} />
                   )}
                 </TouchableOpacity>
               ))}
@@ -595,9 +586,9 @@ export default function SearchScreen() {
               />
             ) : (
               <View style={styles.centerContent}>
-                <FontAwesome name="search" size={40} color={Colors.secondary[300]} />
-                <Text style={styles.emptyTitle}>Nie znaleziono produktów</Text>
-                <Text style={styles.emptyHint}>Spróbuj użyć innych słów kluczowych</Text>
+                <FontAwesome name="search" size={40} color={colors.textMuted} />
+                <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>Nie znaleziono produktów</Text>
+                <Text style={[styles.emptyHint, { color: colors.textSecondary }]}>Spróbuj użyć innych słów kluczowych</Text>
               </View>
             )}
           </View>
@@ -609,287 +600,109 @@ export default function SearchScreen() {
 
 // ═════════════════════════════════════════════════════════════
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.secondary[50],
-  },
+  container: { flex: 1 },
 
-  // Search bar
   searchHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.white,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.secondary[200],
-    gap: 8,
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 12, paddingVertical: 10,
+    borderBottomWidth: 1, gap: 8,
   },
   backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.secondary[100],
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 36, height: 36, borderRadius: 18,
+    alignItems: 'center', justifyContent: 'center',
   },
   searchInputContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.secondary[100],
-    borderRadius: 24,
-    paddingHorizontal: 14,
-    gap: 8,
-  },
-  warehouseFilterBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: Colors.primary[50],
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: Colors.primary[200],
-  },
-  warehouseFilterInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  warehouseFilterText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Colors.primary[700],
-  },
-  warehouseFilterClear: {
-    padding: 2,
+    flex: 1, flexDirection: 'row', alignItems: 'center',
+    borderRadius: 24, paddingHorizontal: 14, gap: 8,
   },
   searchInput: {
-    flex: 1,
-    paddingVertical: 10,
-    fontSize: 16,
-    color: Colors.secondary[900],
+    flex: 1, paddingVertical: 10, fontSize: 16,
   },
 
-  // Idle state
-  idleContainer: {
-    flex: 1,
-    backgroundColor: Colors.white,
-  },
-  section: {
-    paddingTop: 16,
-  },
+  idleContainer: { flex: 1 },
+  section: { paddingTop: 16 },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 8,
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', paddingHorizontal: 16, paddingBottom: 8,
   },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.secondary[700],
-  },
-  clearAllText: {
-    fontSize: 13,
-    color: Colors.primary[500],
-    fontWeight: '500',
-  },
+  sectionTitle: { fontSize: 14, fontWeight: '700' },
+  clearAllText: { fontSize: 13, fontWeight: '500' },
   recentItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 13,
-    paddingHorizontal: 16,
-    gap: 12,
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: 13, paddingHorizontal: 16, gap: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.secondary[200],
   },
-  recentText: {
-    flex: 1,
-    fontSize: 15,
-    color: Colors.secondary[700],
-  },
-  removeButton: {
-    padding: 4,
-  },
+  recentText: { flex: 1, fontSize: 15 },
+  removeButton: { padding: 4 },
   popularChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 16,
-    gap: 8,
-    paddingBottom: 16,
+    flexDirection: 'row', flexWrap: 'wrap',
+    paddingHorizontal: 16, gap: 8, paddingBottom: 16,
   },
   popularChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: Colors.secondary[100],
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
   },
-  popularChipText: {
-    fontSize: 13,
-    color: Colors.secondary[700],
-  },
-  emptyIdle: {
-    alignItems: 'center',
-    paddingTop: 80,
-    gap: 12,
-  },
-  emptyIdleText: {
-    fontSize: 15,
-    color: Colors.secondary[400],
-  },
+  popularChipText: { fontSize: 13 },
+  emptyIdle: { alignItems: 'center', paddingTop: 80, gap: 12 },
+  emptyIdleText: { fontSize: 15 },
 
-  // Suggestions
-  suggestionsScroll: {
-    flex: 1,
-    backgroundColor: Colors.white,
-  },
+  suggestionsScroll: { flex: 1 },
   suggestionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    gap: 12,
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: 12, paddingHorizontal: 16, gap: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.secondary[200],
   },
   suggestionIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: Colors.secondary[100],
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 36, height: 36, borderRadius: 8,
+    alignItems: 'center', justifyContent: 'center',
   },
-  suggestionImage: {
-    width: 44,
-    height: 44,
-    borderRadius: 6,
-    backgroundColor: Colors.secondary[100],
-  },
-  suggestionImagePlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  suggestionContent: {
-    flex: 1,
-  },
-  suggestionName: {
-    fontSize: 14,
-    color: Colors.secondary[800],
-    lineHeight: 18,
-  },
-  suggestionPrice: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.secondary[900],
-    marginTop: 2,
-  },
-  suggestionMeta: {
-    fontSize: 12,
-    color: Colors.secondary[500],
-    marginTop: 1,
-  },
-  suggestionSearchText: {
-    flex: 1,
-    fontSize: 14,
-    color: Colors.secondary[600],
-  },
-  suggestionSearchBold: {
-    fontWeight: '600',
-    color: Colors.secondary[800],
-  },
+  suggestionImage: { width: 44, height: 44, borderRadius: 6 },
+  suggestionImagePlaceholder: { alignItems: 'center', justifyContent: 'center' },
+  suggestionContent: { flex: 1 },
+  suggestionName: { fontSize: 14, lineHeight: 18 },
+  suggestionPrice: { fontSize: 13, fontWeight: '600', marginTop: 2 },
+  suggestionMeta: { fontSize: 12, marginTop: 1 },
+  suggestionSearchText: { flex: 1, fontSize: 14 },
+  suggestionSearchBold: { fontWeight: '600' },
 
-  // Toolbar
   toolbar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: Colors.white,
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.secondary[200],
   },
-  resultCount: {
-    flex: 1,
-    fontSize: 13,
-    color: Colors.secondary[500],
-  },
+  resultCount: { flex: 1, fontSize: 13 },
   sortButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: Colors.secondary[300],
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 10, paddingVertical: 6,
+    borderRadius: 6, borderWidth: 1,
   },
-  sortButtonText: {
-    fontSize: 13,
-    color: Colors.secondary[700],
-  },
+  sortButtonText: { fontSize: 13 },
   sortDropdown: {
-    backgroundColor: Colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.secondary[200],
-    elevation: 4,
-    shadowColor: '#000',
+    borderBottomWidth: 1, elevation: 4,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.1, shadowRadius: 4,
   },
   sortOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.secondary[100],
   },
-  sortOptionActive: {},
-  sortOptionText: {
-    fontSize: 14,
-    color: Colors.secondary[700],
-  },
-  sortOptionTextActive: {
-    color: Colors.primary[600],
-    fontWeight: '600',
-  },
+  sortOptionText: { fontSize: 14 },
 
-  // Results
-  results: {
-    flex: 1,
-  },
+  results: { flex: 1 },
   centerContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 32,
-    gap: 12,
+    alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 60, paddingHorizontal: 32, gap: 12,
   },
-  loadingText: {
-    fontSize: 14,
-    color: Colors.secondary[500],
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.secondary[700],
-  },
-  emptyHint: {
-    fontSize: 14,
-    color: Colors.secondary[500],
-    textAlign: 'center',
-  },
+  loadingText: { fontSize: 14 },
+  emptyTitle: { fontSize: 18, fontWeight: '600' },
+  emptyHint: { fontSize: 14, textAlign: 'center' },
 
-
+  warehouseFilterBar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1,
+  },
+  warehouseFilterInfo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  warehouseFilterText: { fontSize: 15, fontWeight: '600' },
+  warehouseFilterClear: { padding: 2 },
 });

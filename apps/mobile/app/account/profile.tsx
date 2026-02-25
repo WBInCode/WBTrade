@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -14,7 +14,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import type { ThemeColors } from '../../constants/Colors';
 import { useAuth } from '../../contexts/AuthContext';
 import { authApi } from '../../services/auth';
 
@@ -40,13 +41,16 @@ function Field({
   error?: string;
   icon?: string;
 }) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.fieldWrap}>
       <Text style={styles.fieldLabel}>{label}</Text>
       <View style={styles.inputRow}>
         {icon ? (
           <View style={styles.inputIcon}>
-            <FontAwesome name={icon as any} size={16} color={Colors.secondary[400]} />
+            <FontAwesome name={icon as any} size={16} color={colors.placeholder} />
           </View>
         ) : null}
         <TextInput
@@ -59,7 +63,7 @@ function Field({
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={Colors.secondary[300]}
+          placeholderTextColor={colors.inputBorder}
           editable={!readOnly}
           selectTextOnFocus={!readOnly}
           keyboardType={keyboardType}
@@ -76,9 +80,12 @@ function Field({
 
 // ─── Section header ───
 function SectionHeader({ title, icon }: { title: string; icon: string }) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.sectionHeader}>
-      <FontAwesome name={icon as any} size={16} color={Colors.primary[500]} />
+      <FontAwesome name={icon as any} size={16} color={colors.tint} />
       <Text style={styles.sectionTitle}>{title}</Text>
     </View>
   );
@@ -86,6 +93,8 @@ function SectionHeader({ title, icon }: { title: string; icon: string }) {
 
 export default function ProfileScreen() {
   const { user, refreshProfile } = useAuth();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   // Form state
   const [firstName, setFirstName] = useState('');
@@ -189,7 +198,7 @@ export default function ProfileScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <Stack.Screen options={{ title: 'Edytuj profil', headerShown: true }} />
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.primary[500]} />
+          <ActivityIndicator size="large" color={colors.tint} />
         </View>
       </SafeAreaView>
     );
@@ -332,10 +341,10 @@ export default function ProfileScreen() {
           activeOpacity={0.8}
         >
           {saving ? (
-            <ActivityIndicator size="small" color={Colors.white} />
+            <ActivityIndicator size="small" color={colors.textInverse} />
           ) : (
             <>
-              <FontAwesome name="check" size={16} color={Colors.white} />
+              <FontAwesome name="check" size={16} color={colors.textInverse} />
               <Text style={styles.saveBtnText}>Zapisz zmiany</Text>
             </>
           )}
@@ -345,7 +354,7 @@ export default function ProfileScreen() {
       {/* Toast */}
       {toastVisible && (
         <View style={styles.toast}>
-          <FontAwesome name="check-circle" size={18} color={Colors.success} />
+          <FontAwesome name="check-circle" size={18} color={colors.success} />
           <Text style={styles.toastText}>Profil zaktualizowany</Text>
         </View>
       )}
@@ -353,10 +362,10 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundSecondary,
   },
   center: {
     flex: 1,
@@ -377,7 +386,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
@@ -385,16 +394,16 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 26,
     fontWeight: '700',
-    color: Colors.white,
+    color: colors.textInverse,
   },
   avatarName: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.secondary[900],
+    color: colors.text,
   },
   avatarEmail: {
     fontSize: 14,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     marginTop: 2,
   },
 
@@ -409,17 +418,17 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.secondary[700],
+    color: colors.textSecondary,
   },
 
   // ─── Card ───
   card: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: colors.border,
   },
 
   // ─── Fields ───
@@ -429,7 +438,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 13,
     fontWeight: '500',
-    color: Colors.secondary[700],
+    color: colors.textSecondary,
     marginBottom: 6,
   },
   inputRow: {
@@ -444,34 +453,34 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   fieldInput: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.inputBackground,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
-    color: Colors.secondary[900],
+    color: colors.inputText,
   },
   fieldInputWithIcon: {
     paddingLeft: 38,
   },
   fieldInputReadOnly: {
-    backgroundColor: Colors.secondary[100],
-    color: Colors.secondary[400],
+    backgroundColor: colors.backgroundTertiary,
+    color: colors.textMuted,
   },
   fieldInputError: {
-    borderColor: Colors.destructive,
+    borderColor: colors.destructive,
   },
   fieldHint: {
     fontSize: 11,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     marginTop: 4,
     fontStyle: 'italic',
   },
   fieldError: {
     fontSize: 12,
-    color: Colors.destructive,
+    color: colors.destructive,
     marginTop: 4,
   },
   row: {
@@ -486,26 +495,26 @@ const styles = StyleSheet.create({
   bottomBar: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: colors.border,
   },
   saveBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
     paddingVertical: 14,
     borderRadius: 10,
   },
   saveBtnDisabled: {
-    backgroundColor: Colors.secondary[300],
+    backgroundColor: colors.inputBorder,
   },
   saveBtnText: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.white,
+    color: colors.textInverse,
   },
 
   // ─── Toast ───
@@ -517,12 +526,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: Colors.secondary[900],
+    backgroundColor: colors.text,
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: 10,
     elevation: 8,
-    shadowColor: Colors.black,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -530,6 +539,6 @@ const styles = StyleSheet.create({
   toastText: {
     fontSize: 14,
     fontWeight: '500',
-    color: Colors.white,
+    color: colors.textInverse,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -13,7 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import type { ThemeColors } from '../../constants/Colors';
 import { api } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -41,6 +42,9 @@ interface ReviewsResponse {
 }
 
 function StarRow({ rating, size = 14 }: { rating: number; size?: number }) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.starRow}>
       {[1, 2, 3, 4, 5].map((star) => (
@@ -48,7 +52,7 @@ function StarRow({ rating, size = 14 }: { rating: number; size?: number }) {
           key={star}
           name="star"
           size={size}
-          color={star <= rating ? '#f59e0b' : Colors.secondary[200]}
+          color={star <= rating ? '#f59e0b' : colors.border}
         />
       ))}
     </View>
@@ -58,6 +62,9 @@ function StarRow({ rating, size = 14 }: { rating: number; size?: number }) {
 export default function ReviewsScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [reviews, setReviews] = useState<UserReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -150,13 +157,13 @@ export default function ReviewsScreen() {
             <Image source={{ uri: imageUrl }} style={styles.productImage} contentFit="contain" />
           ) : (
             <View style={[styles.productImage, styles.productImagePlaceholder]}>
-              <FontAwesome name="image" size={16} color={Colors.secondary[300]} />
+              <FontAwesome name="image" size={16} color={colors.inputBorder} />
             </View>
           )}
           <Text style={styles.productName} numberOfLines={2}>
             {item.product.name}
           </Text>
-          <FontAwesome name="chevron-right" size={12} color={Colors.secondary[300]} />
+          <FontAwesome name="chevron-right" size={12} color={colors.inputBorder} />
         </TouchableOpacity>
 
         <View style={styles.reviewContent}>
@@ -167,7 +174,7 @@ export default function ReviewsScreen() {
 
           {item.isVerifiedPurchase && (
             <View style={styles.verifiedBadge}>
-              <FontAwesome name="check-circle" size={11} color={Colors.success} />
+              <FontAwesome name="check-circle" size={11} color={colors.success} />
               <Text style={styles.verifiedText}>Zweryfikowany zakup</Text>
             </View>
           )}
@@ -180,7 +187,7 @@ export default function ReviewsScreen() {
               style={styles.editBtn}
               onPress={() => router.push(`/product/${item.product.id}`)}
             >
-              <FontAwesome name="pencil" size={12} color={Colors.primary[600]} />
+              <FontAwesome name="pencil" size={12} color={colors.tint} />
               <Text style={styles.editBtnText}>Edytuj</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -189,10 +196,10 @@ export default function ReviewsScreen() {
               disabled={deleting === item.id}
             >
               {deleting === item.id ? (
-                <ActivityIndicator size="small" color={Colors.destructive} />
+                <ActivityIndicator size="small" color={colors.destructive} />
               ) : (
                 <>
-                  <FontAwesome name="trash-o" size={12} color={Colors.destructive} />
+                  <FontAwesome name="trash-o" size={12} color={colors.destructive} />
                   <Text style={styles.deleteBtnText}>Usuń</Text>
                 </>
               )}
@@ -210,14 +217,14 @@ export default function ReviewsScreen() {
           title: 'Moje opinie',
           headerShown: true,
           headerBackTitle: 'Konto',
-          headerStyle: { backgroundColor: Colors.white },
-          headerTintColor: Colors.secondary[900],
+          headerStyle: { backgroundColor: colors.card },
+          headerTintColor: colors.text,
         }}
       />
       <SafeAreaView style={styles.container} edges={[]}>
         {loading ? (
           <View style={styles.centerContent}>
-            <ActivityIndicator size="large" color={Colors.primary[500]} />
+            <ActivityIndicator size="large" color={colors.tint} />
           </View>
         ) : reviews.length === 0 ? (
           <View style={styles.emptyState}>
@@ -227,19 +234,19 @@ export default function ReviewsScreen() {
                 <View style={styles.emptyCircleInner}>
                   {/* Star icon in center */}
                   <View style={styles.emptyStarBox}>
-                    <FontAwesome name="star" size={28} color={Colors.primary[500]} />
+                    <FontAwesome name="star" size={28} color={colors.tint} />
                   </View>
                 </View>
               </View>
               {/* Decorative elements around circle */}
               <View style={[styles.emptyDeco, { top: 10, left: 20 }]}>
-                <FontAwesome name="thumbs-up" size={24} color={Colors.secondary[300]} />
+                <FontAwesome name="thumbs-up" size={24} color={colors.inputBorder} />
               </View>
               <View style={[styles.emptyDeco, { top: 15, right: 15 }]}>
-                <FontAwesome name="laptop" size={22} color={Colors.secondary[300]} />
+                <FontAwesome name="laptop" size={22} color={colors.inputBorder} />
               </View>
               <View style={[styles.emptyDeco, { bottom: 20, right: 30 }]}>
-                <FontAwesome name="cog" size={20} color={Colors.secondary[300]} />
+                <FontAwesome name="cog" size={20} color={colors.inputBorder} />
               </View>
               <View style={[styles.emptyDecoX, { top: 5, right: 50 }]}>
                 <Text style={styles.emptyDecoXText}>×</Text>
@@ -273,8 +280,8 @@ export default function ReviewsScreen() {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={handleRefresh}
-                tintColor={Colors.primary[500]}
-                colors={[Colors.primary[500]]}
+                tintColor={colors.tint}
+                colors={[colors.tint]}
               />
             }
             onEndReached={handleLoadMore}
@@ -291,10 +298,10 @@ export default function ReviewsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.secondary[100],
+    backgroundColor: colors.backgroundTertiary,
   },
   centerContent: {
     flex: 1,
@@ -308,7 +315,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 32,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
   },
   emptyIllustration: {
     width: 200,
@@ -323,7 +330,7 @@ const styles = StyleSheet.create({
     height: 140,
     borderRadius: 70,
     borderWidth: 2,
-    borderColor: Colors.secondary[200],
+    borderColor: colors.border,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
@@ -332,7 +339,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundSecondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -340,9 +347,9 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 12,
-    backgroundColor: Colors.primary[500] + '15',
+    backgroundColor: colors.tint + '15',
     borderWidth: 1.5,
-    borderColor: Colors.primary[500] + '40',
+    borderColor: colors.tint + '40',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -354,31 +361,31 @@ const styles = StyleSheet.create({
   },
   emptyDecoXText: {
     fontSize: 16,
-    color: Colors.secondary[300],
+    color: colors.inputBorder,
     fontWeight: '300',
   },
   emptyTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.secondary[800],
+    color: colors.text,
     marginBottom: 8,
     textAlign: 'center',
   },
   emptyHint: {
     fontSize: 14,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 24,
   },
   emptyBtn: {
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
   },
   emptyBtnText: {
-    color: Colors.white,
+    color: colors.textInverse,
     fontSize: 15,
     fontWeight: '600',
   },
@@ -390,19 +397,19 @@ const styles = StyleSheet.create({
   listHeader: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.secondary[800],
+    color: colors.text,
     padding: 16,
     paddingBottom: 8,
   },
 
   // Review card
   reviewCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     marginHorizontal: 12,
     marginBottom: 10,
     borderRadius: 12,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 3,
@@ -412,16 +419,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundSecondary,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.secondary[100],
+    borderBottomColor: colors.borderLight,
     gap: 10,
   },
   productImage: {
     width: 44,
     height: 44,
     borderRadius: 8,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
   },
   productImagePlaceholder: {
     alignItems: 'center',
@@ -431,7 +438,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     fontWeight: '500',
-    color: Colors.secondary[800],
+    color: colors.text,
     lineHeight: 18,
   },
 
@@ -451,7 +458,7 @@ const styles = StyleSheet.create({
   },
   reviewDate: {
     fontSize: 12,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
   },
   verifiedBadge: {
     flexDirection: 'row',
@@ -461,18 +468,18 @@ const styles = StyleSheet.create({
   },
   verifiedText: {
     fontSize: 11,
-    color: Colors.success,
+    color: colors.success,
     fontWeight: '500',
   },
   reviewTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.secondary[900],
+    color: colors.text,
     marginBottom: 4,
   },
   reviewText: {
     fontSize: 14,
-    color: Colors.secondary[700],
+    color: colors.textSecondary,
     lineHeight: 20,
   },
 
@@ -483,7 +490,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.secondary[100],
+    borderTopColor: colors.borderLight,
   },
   editBtn: {
     flexDirection: 'row',
@@ -492,7 +499,7 @@ const styles = StyleSheet.create({
   },
   editBtnText: {
     fontSize: 13,
-    color: Colors.primary[600],
+    color: colors.tint,
     fontWeight: '500',
   },
   deleteBtn: {
@@ -502,7 +509,7 @@ const styles = StyleSheet.create({
   },
   deleteBtnText: {
     fontSize: 13,
-    color: Colors.destructive,
+    color: colors.destructive,
     fontWeight: '500',
   },
 });

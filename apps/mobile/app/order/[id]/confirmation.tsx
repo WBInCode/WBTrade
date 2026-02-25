@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,63 +11,66 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { Colors } from '../../../constants/Colors';
+import { useThemeColors } from '../../../hooks/useThemeColors';
+import type { ThemeColors } from '../../../constants/Colors';
 import { api } from '../../../services/api';
 import type { Order } from '../../../services/types';
 import Button from '../../../components/ui/Button';
 
 type PaymentStatusType = 'PAID' | 'COMPLETED' | 'PENDING' | 'AWAITING_CONFIRMATION' | 'FAILED' | 'CANCELLED' | 'REFUNDED' | string;
 
-const STATUS_CONFIG: Record<string, {
+function getStatusConfig(colors: ThemeColors): Record<string, {
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
   bgColor: string;
   title: string;
   message: string;
-}> = {
-  PAID: {
-    icon: 'checkmark-circle',
-    color: '#16A34A',
-    bgColor: '#F0FDF4',
-    title: 'Płatność zrealizowana!',
-    message: 'Dziękujemy za zamówienie. Otrzymasz potwierdzenie na email.',
-  },
-  COMPLETED: {
-    icon: 'checkmark-circle',
-    color: '#16A34A',
-    bgColor: '#F0FDF4',
-    title: 'Zamówienie opłacone!',
-    message: 'Dziękujemy za zamówienie. Otrzymasz potwierdzenie na email.',
-  },
-  PENDING: {
-    icon: 'time',
-    color: '#CA8A04',
-    bgColor: '#FEFCE8',
-    title: 'Oczekiwanie na płatność...',
-    message: 'Trwa przetwarzanie płatności. Proszę czekać.',
-  },
-  AWAITING_CONFIRMATION: {
-    icon: 'phone-portrait-outline',
-    color: '#2563EB',
-    bgColor: '#EFF6FF',
-    title: 'Potwierdź płatność',
-    message: 'Potwierdź płatność w aplikacji bankowej lub wpisz kod BLIK.',
-  },
-  FAILED: {
-    icon: 'close-circle',
-    color: '#DC2626',
-    bgColor: '#FEF2F2',
-    title: 'Płatność nie powiodła się',
-    message: 'Nie udało się zrealizować płatności. Możesz spróbować ponownie.',
-  },
-  CANCELLED: {
-    icon: 'close-circle',
-    color: '#DC2626',
-    bgColor: '#FEF2F2',
-    title: 'Płatność anulowana',
-    message: 'Płatność została anulowana.',
-  },
-};
+}> {
+  return {
+    PAID: {
+      icon: 'checkmark-circle',
+      color: colors.success,
+      bgColor: colors.successBg,
+      title: 'Płatność zrealizowana!',
+      message: 'Dziękujemy za zamówienie. Otrzymasz potwierdzenie na email.',
+    },
+    COMPLETED: {
+      icon: 'checkmark-circle',
+      color: colors.success,
+      bgColor: colors.successBg,
+      title: 'Zamówienie opłacone!',
+      message: 'Dziękujemy za zamówienie. Otrzymasz potwierdzenie na email.',
+    },
+    PENDING: {
+      icon: 'time',
+      color: colors.warning,
+      bgColor: colors.warningBg,
+      title: 'Oczekiwanie na płatność...',
+      message: 'Trwa przetwarzanie płatności. Proszę czekać.',
+    },
+    AWAITING_CONFIRMATION: {
+      icon: 'phone-portrait-outline',
+      color: colors.tint,
+      bgColor: colors.tintLight,
+      title: 'Potwierdź płatność',
+      message: 'Potwierdź płatność w aplikacji bankowej lub wpisz kod BLIK.',
+    },
+    FAILED: {
+      icon: 'close-circle',
+      color: colors.destructive,
+      bgColor: colors.destructiveBg,
+      title: 'Płatność nie powiodła się',
+      message: 'Nie udało się zrealizować płatności. Możesz spróbować ponownie.',
+    },
+    CANCELLED: {
+      icon: 'close-circle',
+      color: colors.destructive,
+      bgColor: colors.destructiveBg,
+      title: 'Płatność anulowana',
+      message: 'Płatność została anulowana.',
+    },
+  };
+}
 
 export default function OrderConfirmation() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -78,6 +81,8 @@ export default function OrderConfirmation() {
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatusType>('PENDING');
   const pollInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const [retryLoading, setRetryLoading] = useState(false);
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   useEffect(() => {
     if (id) {
@@ -166,7 +171,7 @@ export default function OrderConfirmation() {
   if (loading) {
     return (
       <SafeAreaView style={styles.centered}>
-        <ActivityIndicator size="large" color={Colors.primary[500]} />
+        <ActivityIndicator size="large" color={colors.tint} />
         <Text style={styles.loadingText}>Ładowanie zamówienia...</Text>
       </SafeAreaView>
     );
@@ -175,13 +180,14 @@ export default function OrderConfirmation() {
   if (error || !order) {
     return (
       <SafeAreaView style={styles.centered}>
-        <Ionicons name="alert-circle-outline" size={48} color={Colors.destructive} />
+        <Ionicons name="alert-circle-outline" size={48} color={colors.destructive} />
         <Text style={styles.errorText}>{error || 'Nie znaleziono zamówienia'}</Text>
         <Button title="Wróć do sklepu" onPress={() => router.replace('/(tabs)/' as any)} variant="outline" />
       </SafeAreaView>
     );
   }
 
+  const STATUS_CONFIG = useMemo(() => getStatusConfig(colors), [colors]);
   const statusConfig = STATUS_CONFIG[paymentStatus] || STATUS_CONFIG.PENDING;
 
   return (
@@ -285,7 +291,7 @@ export default function OrderConfirmation() {
         {order.discount > 0 && (
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>Rabat:</Text>
-            <Text style={[styles.priceValue, { color: Colors.success }]}>
+            <Text style={[styles.priceValue, { color: colors.success }]}>
               -{order.discount.toFixed(2).replace('.', ',')} zł
             </Text>
           </View>
@@ -327,24 +333,24 @@ export default function OrderConfirmation() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   content: { paddingBottom: 40 },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
     gap: 12,
   },
   loadingText: {
     fontSize: 14,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
   errorText: {
     fontSize: 14,
-    color: Colors.destructive,
+    color: colors.destructive,
     textAlign: 'center',
     marginVertical: 8,
   },
@@ -353,7 +359,7 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: colors.border,
   },
   statusTitle: {
     fontSize: 20,
@@ -363,13 +369,13 @@ const styles = StyleSheet.create({
   },
   statusMessage: {
     fontSize: 14,
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 6,
     lineHeight: 20,
   },
   section: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     marginTop: 8,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -377,7 +383,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.secondary[800],
+    color: colors.text,
     marginBottom: 10,
   },
   infoRow: {
@@ -387,16 +393,16 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 13,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
   infoValue: {
     fontSize: 13,
     fontWeight: '500',
-    color: Colors.secondary[800],
+    color: colors.text,
   },
   addressText: {
     fontSize: 13,
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
     lineHeight: 19,
   },
   productRow: {
@@ -404,35 +410,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: colors.border,
   },
   productImage: {
     width: 44,
     height: 44,
     borderRadius: 6,
     marginRight: 10,
-    backgroundColor: Colors.secondary[100],
+    backgroundColor: colors.backgroundTertiary,
   },
   productInfo: { flex: 1 },
   productName: {
     fontSize: 13,
     fontWeight: '500',
-    color: Colors.secondary[800],
+    color: colors.text,
   },
   productVariant: {
     fontSize: 12,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     marginTop: 1,
   },
   productPrice: {
     fontSize: 12,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     marginTop: 2,
   },
   productTotal: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.secondary[800],
+    color: colors.text,
     marginLeft: 8,
   },
   priceRow: {
@@ -442,28 +448,28 @@ const styles = StyleSheet.create({
   },
   priceLabel: {
     fontSize: 14,
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
   },
   priceValue: {
     fontSize: 14,
     fontWeight: '500',
-    color: Colors.secondary[800],
+    color: colors.text,
   },
   totalRow: {
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: colors.border,
     paddingTop: 10,
     marginTop: 4,
   },
   totalLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
   },
   totalValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.primary[600],
+    color: colors.tint,
   },
   retrySection: {
     paddingHorizontal: 16,
