@@ -16,7 +16,7 @@ import {
   Activity,
   BarChart3,
   Warehouse,
-  Trophy,
+  // Trophy,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -58,11 +58,7 @@ const menuItems = [
     href: '/coupons',
     icon: Ticket,
   },
-  {
-    title: 'Lojalność',
-    href: '/loyalty',
-    icon: Trophy,
-  },
+  // { title: 'Lojalność', href: '/loyalty', icon: Trophy }, // Ukryte — program lojalnościowy w przygotowaniu
   {
     title: 'Newsletter',
     href: '/newsletter',
@@ -107,7 +103,7 @@ const menuItems = [
 export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const [openMenus, setOpenMenus] = useState<string[]>(['Produkty', 'Zamówienia']);
+  const [openMenus, setOpenMenus] = useState<string[]>([]);
 
   const toggleMenu = (title: string) => {
     setOpenMenus((prev) =>

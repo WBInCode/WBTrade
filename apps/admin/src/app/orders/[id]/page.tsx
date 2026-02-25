@@ -4,7 +4,7 @@ import { useState, useEffect, use } from 'react';
 import { 
   ArrowLeft, Package, Truck, CreditCard, MapPin, User, Calendar,
   Clock, FileText, Printer, CheckCircle, XCircle, AlertCircle,
-  ChevronRight, Edit2, Save, X
+  ChevronRight, Edit2, Save, X, RefreshCcw
 } from 'lucide-react';
 import Link from 'next/link';
 import { getAuthToken } from '@/lib/api';
@@ -166,6 +166,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [newStatus, setNewStatus] = useState('');
   const [statusNote, setStatusNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     loadOrder();
@@ -717,6 +719,49 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-6">
             <h2 className="font-semibold text-white mb-4">Akcje</h2>
             <div className="space-y-2">
+              {/* Manual Baselinker sync */}
+              {order.status !== 'CANCELLED' && order.status !== 'REFUNDED' && (
+                <button
+                  onClick={async () => {
+                    try {
+                      setSyncing(true);
+                      setSyncMessage(null);
+                      const token = getAuthToken();
+                      const res = await fetch(`${API_URL}/orders/${order.id}/sync-delivery`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          ...(token && { Authorization: `Bearer ${token}` }),
+                        },
+                      });
+                      const data = await res.json();
+                      if (res.ok && data.success) {
+                        setSyncMessage({ type: 'success', text: `Zsynchronizowano${data.deliveryStatus ? ` — ${data.deliveryStatus}` : ''}` });
+                        await loadOrder();
+                      } else {
+                        setSyncMessage({ type: 'error', text: data.error || data.message || 'Błąd synchronizacji' });
+                      }
+                    } catch {
+                      setSyncMessage({ type: 'error', text: 'Błąd połączenia z API' });
+                    } finally {
+                      setSyncing(false);
+                      setTimeout(() => setSyncMessage(null), 5000);
+                    }
+                  }}
+                  disabled={syncing}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition-colors disabled:opacity-50"
+                >
+                  <RefreshCcw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+                  {syncing ? 'Synchronizuję...' : 'Synchronizuj z Baselinker'}
+                </button>
+              )}
+              {syncMessage && (
+                <p className={`text-xs px-2 py-1.5 rounded-lg ${
+                  syncMessage.type === 'success' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+                }`}>
+                  {syncMessage.text}
+                </p>
+              )}
               {order.status === 'CANCELLED' || order.status === 'REFUNDED' ? (
                 <button 
                   onClick={handleRestoreOrder}

@@ -82,24 +82,26 @@ export class DashboardService {
       }
     });
 
-    // Przychód dziś
+    // Przychód dziś — tylko opłacone zamówienia (CONFIRMED, PROCESSING, SHIPPED, DELIVERED)
+    const PAID_STATUSES: OrderStatus[] = ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
+
     const revenueTodayResult = await prisma.order.aggregate({
       where: {
         createdAt: { gte: today },
-        status: { notIn: ['CANCELLED', 'REFUNDED'] }
+        status: { in: PAID_STATUSES }
       },
       _sum: { total: true }
     });
     const revenueToday = revenueTodayResult._sum.total?.toNumber() || 0;
 
-    // Przychód wczoraj
+    // Przychód wczoraj — tylko opłacone
     const revenueYesterdayResult = await prisma.order.aggregate({
       where: {
         createdAt: {
           gte: yesterday,
           lt: today
         },
-        status: { notIn: ['CANCELLED', 'REFUNDED'] }
+        status: { in: PAID_STATUSES }
       },
       _sum: { total: true }
     });
@@ -164,11 +166,13 @@ export class DashboardService {
     startDate.setDate(startDate.getDate() - days);
     startDate.setHours(0, 0, 0, 0);
 
-    // Pobierz zamówienia z ostatnich X dni (bez anulowanych/zwróconych)
+    // Pobierz opłacone zamówienia z ostatnich X dni (CONFIRMED, PROCESSING, SHIPPED, DELIVERED)
+    const PAID_STATUSES: OrderStatus[] = ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
+
     const orders = await prisma.order.findMany({
       where: {
         createdAt: { gte: startDate },
-        status: { notIn: ['CANCELLED', 'REFUNDED'] }
+        status: { in: PAID_STATUSES }
       },
       select: {
         createdAt: true,

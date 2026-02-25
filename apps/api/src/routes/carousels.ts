@@ -158,7 +158,7 @@ router.get('/admin/:id', authGuard, adminOnly, async (req: Request, res: Respons
  */
 router.post('/admin', authGuard, adminOnly, async (req: Request, res: Response) => {
   try {
-    const { name, slug, description, icon, color, mode, productLimit, categoryIds, productIds, autoSource, isVisible, sortOrder } = req.body;
+    const { name, slug, description, icon, color, mode, productLimit, categoryIds, productIds, pinnedProductIds, autoSource, isVisible, sortOrder } = req.body;
 
     if (!name) {
       res.status(400).json({ message: 'Name is required' });
@@ -179,6 +179,7 @@ router.post('/admin', authGuard, adminOnly, async (req: Request, res: Response) 
       productLimit,
       categoryIds,
       productIds,
+      pinnedProductIds,
       autoSource,
       isVisible,
       sortOrder,
@@ -201,7 +202,7 @@ router.post('/admin', authGuard, adminOnly, async (req: Request, res: Response) 
  */
 router.put('/admin/:id', authGuard, adminOnly, async (req: Request, res: Response) => {
   try {
-    const { name, slug, description, icon, color, mode, productLimit, categoryIds, productIds, autoSource, isVisible, isActive, sortOrder } = req.body;
+    const { name, slug, description, icon, color, mode, productLimit, categoryIds, productIds, pinnedProductIds, autoSource, isVisible, isActive, sortOrder } = req.body;
 
     if (mode && !['MANUAL', 'SEMI_AUTOMATIC', 'AUTOMATIC'].includes(mode)) {
       res.status(400).json({ message: 'Invalid mode' });
@@ -218,6 +219,7 @@ router.put('/admin/:id', authGuard, adminOnly, async (req: Request, res: Respons
       productLimit,
       categoryIds,
       productIds,
+      pinnedProductIds,
       autoSource,
       isVisible,
       isActive,
