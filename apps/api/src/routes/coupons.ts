@@ -16,6 +16,20 @@ router.get('/my', authGuard, async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
+    // Auto-generate welcome coupon if user doesn't have one yet (handles older accounts)
+    const hasWelcome = await prisma.coupon.findFirst({
+      where: { userId, couponSource: 'WELCOME_DISCOUNT' },
+      select: { id: true },
+    });
+    if (!hasWelcome && email) {
+      try {
+        await discountService.generateWelcomeDiscount(userId, email);
+      } catch (err: any) {
+        // Ignore errors (e.g. code collision) — not critical
+        console.warn('[CouponsRoute] Could not auto-generate welcome coupon:', err.message);
+      }
+    }
+
     const coupons = await prisma.coupon.findMany({
       where: {
         OR: [
