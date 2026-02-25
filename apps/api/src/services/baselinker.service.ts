@@ -1672,99 +1672,183 @@ export class BaselinkerService {
         console.log(`[BaselinkerSync] Syncing prices from inventory: ${inv.name} (${inv.inventory_id}), prefix: "${prefix}"`);
 
         try {
-          // Fetch prices for all products in this inventory
+          // 1. Fetch all BL prices for this inventory (paginated internally by provider)
           const pricesMap = await provider.getInventoryProductsPrices(inv.inventory_id.toString());
           console.log(`[BaselinkerSync] Fetched prices for ${Object.keys(pricesMap).length} products from ${inv.name}`);
 
+          // 2. Build a map: prefixedId -> newPrice (after roundPriceTo99)
+          const blPrices = new Map<string, number>();
           for (const [productIdStr, priceGroups] of Object.entries(pricesMap)) {
-            try {
-              const numericId = productIdStr;
-              const prefixedId = prefix ? `${prefix}${numericId}` : numericId;
+            const prefixedId = prefix ? `${prefix}${productIdStr}` : productIdStr;
 
-              // Extract price — same logic as getProductPrice but from priceGroups
-              let rawPrice = 0;
-              // BL may return {product_id, prices: {...}} or flat {groupId: price}
-              const priceData = (priceGroups as any).prices || priceGroups;
-              const plnPrice = priceData[this.defaultPriceGroupId];
-              if (plnPrice && typeof plnPrice === 'number' && plnPrice > 0) {
-                rawPrice = plnPrice;
-              } else {
-                for (const [, price] of Object.entries(priceData)) {
-                  if (typeof price === 'number' && price > 0) {
-                    rawPrice = price;
-                    break;
-                  }
+            let rawPrice = 0;
+            const priceData = (priceGroups as any).prices || priceGroups;
+            const plnPrice = priceData[this.defaultPriceGroupId];
+            if (plnPrice && typeof plnPrice === 'number' && plnPrice > 0) {
+              rawPrice = plnPrice;
+            } else {
+              for (const [, price] of Object.entries(priceData)) {
+                if (typeof price === 'number' && price > 0) {
+                  rawPrice = price;
+                  break;
                 }
               }
+            }
 
-              const newPrice = this.roundPriceTo99(rawPrice);
-              if (newPrice <= 0) continue;
+            const newPrice = this.roundPriceTo99(rawPrice);
+            if (newPrice > 0) blPrices.set(prefixedId, newPrice);
+          }
 
-              // Find product by baselinkerProductId
-              const product = await prisma.product.findFirst({
-                where: { baselinkerProductId: prefixedId },
-                select: { id: true, price: true, sku: true },
-              });
+          if (blPrices.size === 0) continue;
+          const allBlIds = [...blPrices.keys()];
 
-              if (product) {
-                const currentPrice = Number(product.price);
-                if (Math.abs(currentPrice - newPrice) > 0.01) {
-                  await priceHistoryService.updateProductPrice({
-                    productId: product.id,
-                    newPrice,
-                    source: PriceChangeSource.BASELINKER,
-                    reason: 'Baselinker price sync',
-                  });
-                  changed++;
-                  changedPrices.push({
-                    sku: product.sku || prefixedId,
-                    oldPrice: currentPrice,
-                    newPrice,
-                    inventory: inv.name,
-                  });
-                }
-                processed++;
-              }
+          // 3. Batch fetch ALL matching products in ONE query
+          const allProducts = await prisma.product.findMany({
+            where: { baselinkerProductId: { in: allBlIds } },
+            select: { id: true, baselinkerProductId: true, price: true, sku: true, lowestPrice30Days: true },
+          });
+          console.log(`[BaselinkerSync] DB products matched: ${allProducts.length}`);
 
-              // Also update variant prices
-              const searchConditions = prefix
-                ? [{ baselinkerVariantId: prefixedId }]
-                : [
-                    { baselinkerVariantId: `default-${numericId}` },
-                    { baselinkerVariantId: numericId },
-                  ];
+          // 4. Batch fetch ALL matching variants in ONE query
+          const searchConditions = prefix
+            ? [{ baselinkerVariantId: { in: allBlIds } }]
+            : [
+                { baselinkerVariantId: { in: allBlIds.map(id => `default-${id}`) } },
+                { baselinkerVariantId: { in: allBlIds } },
+              ];
 
-              const variant = await prisma.productVariant.findFirst({
-                where: { OR: searchConditions },
-                select: { id: true, price: true, sku: true },
-              });
+          const allVariants = await prisma.productVariant.findMany({
+            where: { OR: searchConditions },
+            select: { id: true, baselinkerVariantId: true, productId: true, price: true, sku: true, lowestPrice30Days: true },
+          });
+          console.log(`[BaselinkerSync] DB variants matched: ${allVariants.length}`);
 
-              if (variant) {
-                const currentVariantPrice = Number(variant.price);
-                if (Math.abs(currentVariantPrice - newPrice) > 0.01) {
-                  await priceHistoryService.updateVariantPrice({
-                    variantId: variant.id,
-                    newPrice,
-                    source: PriceChangeSource.BASELINKER,
-                    reason: 'Baselinker price sync',
-                  });
-                  if (!product) {
-                    changed++;
-                    changedPrices.push({
-                      sku: variant.sku || prefixedId,
-                      oldPrice: currentVariantPrice,
-                      newPrice,
-                      inventory: inv.name,
-                    });
-                  }
-                }
-              }
-            } catch (error) {
-              errors.push(`Price ${productIdStr}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          // Build variant lookup: blId -> variant
+          const variantByBlId = new Map<string, typeof allVariants[0]>();
+          for (const v of allVariants) {
+            if (v.baselinkerVariantId) {
+              variantByBlId.set(v.baselinkerVariantId, v);
             }
           }
+
+          // 5. Compare in memory — collect changes
+          const prodChanges: { id: string; oldPrice: number; newPrice: number; sku: string }[] = [];
+          const varChanges: { id: string; productId: string; oldPrice: number; newPrice: number; sku: string }[] = [];
+          const productIdsWithChanges = new Set<string>();
+
+          for (const product of allProducts) {
+            if (!product.baselinkerProductId) continue;
+            const np = blPrices.get(product.baselinkerProductId);
+            if (!np) continue;
+            processed++;
+
+            const currentPrice = Number(product.price);
+            if (Math.abs(currentPrice - np) > 0.01) {
+              prodChanges.push({ id: product.id, oldPrice: currentPrice, newPrice: np, sku: product.sku || product.baselinkerProductId });
+              productIdsWithChanges.add(product.id);
+              changed++;
+              changedPrices.push({ sku: product.sku || product.baselinkerProductId, oldPrice: currentPrice, newPrice: np, inventory: inv.name });
+            }
+          }
+
+          for (const variant of allVariants) {
+            if (!variant.baselinkerVariantId) continue;
+            // Map variant BL id to the blPrices key
+            let blId = variant.baselinkerVariantId;
+            if (!prefix && blId.startsWith('default-')) {
+              blId = blId.replace('default-', '');
+            }
+            const np = blPrices.get(blId) || blPrices.get(variant.baselinkerVariantId);
+            if (!np) continue;
+
+            const currentPrice = Number(variant.price);
+            if (Math.abs(currentPrice - np) > 0.01) {
+              varChanges.push({ id: variant.id, productId: variant.productId, oldPrice: currentPrice, newPrice: np, sku: variant.sku || blId });
+              // Count as changed only if product wasn't already counted
+              if (!productIdsWithChanges.has(variant.productId)) {
+                changed++;
+                changedPrices.push({ sku: variant.sku || blId, oldPrice: currentPrice, newPrice: np, inventory: inv.name });
+              }
+            }
+          }
+
+          console.log(`[BaselinkerSync] ${inv.name}: ${prodChanges.length} product price changes, ${varChanges.length} variant price changes`);
+
+          // 6. Batch write — process in chunks of 500
+          const BATCH_SIZE = 500;
+
+          // 6a. Batch INSERT price_history + UPDATE products
+          for (let i = 0; i < prodChanges.length; i += BATCH_SIZE) {
+            const batch = prodChanges.slice(i, i + BATCH_SIZE);
+
+            // Insert price history records
+            await prisma.priceHistory.createMany({
+              data: batch.map(c => ({
+                productId: c.id,
+                variantId: null,
+                oldPrice: c.oldPrice,
+                newPrice: c.newPrice,
+                source: PriceChangeSource.BASELINKER,
+                reason: 'Baselinker price sync',
+              })),
+            });
+
+            // Batch UPDATE product prices + lowestPrice30Days using raw SQL with unnest
+            const ids = batch.map(c => c.id);
+            const prices = batch.map(c => c.newPrice);
+            await prisma.$executeRawUnsafe(`
+              UPDATE products SET 
+                price = u.new_price,
+                lowest_price_30_days = LEAST(COALESCE(lowest_price_30_days, u.new_price), u.new_price),
+                lowest_price_30_days_at = COALESCE(lowest_price_30_days_at, NOW()),
+                updated_at = NOW()
+              FROM (SELECT unnest($1::text[]) as id, unnest($2::numeric[]) as new_price) u
+              WHERE products.id = u.id
+            `, ids, prices);
+
+            if (i + BATCH_SIZE < prodChanges.length) {
+              console.log(`[BaselinkerSync] Products: ${i + BATCH_SIZE}/${prodChanges.length} from ${inv.name}`);
+            }
+          }
+
+          // 6b. Batch INSERT price_history + UPDATE variants
+          for (let i = 0; i < varChanges.length; i += BATCH_SIZE) {
+            const batch = varChanges.slice(i, i + BATCH_SIZE);
+
+            // Insert price history records for variants
+            await prisma.priceHistory.createMany({
+              data: batch.map(c => ({
+                productId: c.productId,
+                variantId: c.id,
+                oldPrice: c.oldPrice,
+                newPrice: c.newPrice,
+                source: PriceChangeSource.BASELINKER,
+                reason: 'Baselinker price sync',
+              })),
+            });
+
+            // Batch UPDATE variant prices + lowestPrice30Days
+            const ids = batch.map(c => c.id);
+            const prices = batch.map(c => c.newPrice);
+            await prisma.$executeRawUnsafe(`
+              UPDATE product_variants SET 
+                price = u.new_price,
+                lowest_price_30_days = LEAST(COALESCE(lowest_price_30_days, u.new_price), u.new_price),
+                lowest_price_30_days_at = COALESCE(lowest_price_30_days_at, NOW()),
+                updated_at = NOW()
+              FROM (SELECT unnest($1::text[]) as id, unnest($2::numeric[]) as new_price) u
+              WHERE product_variants.id = u.id
+            `, ids, prices);
+
+            if (i + BATCH_SIZE < varChanges.length) {
+              console.log(`[BaselinkerSync] Variants: ${i + BATCH_SIZE}/${varChanges.length} from ${inv.name}`);
+            }
+          }
+
+          console.log(`[BaselinkerSync] Completed ${inv.name}: ${prodChanges.length + varChanges.length} price changes applied`);
         } catch (error) {
-          errors.push(`Failed to fetch prices from ${inv.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          errors.push(`Failed to sync prices from ${inv.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          console.error(`[BaselinkerSync] Error syncing prices from ${inv.name}:`, error);
         }
       }
     } catch (error) {
