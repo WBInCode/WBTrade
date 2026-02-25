@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { Image as ExpoImage } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useThemeColors } from '../../hooks/useThemeColors';
@@ -116,6 +117,7 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
 
   const sendMessage = useCallback((text: string) => {
     if (!text.trim()) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -343,6 +345,7 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
   }, [scrollToEnd]);
 
   const handleQuickQuestion = useCallback((q: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     sendMessage(q);
   }, [sendMessage]);
 
