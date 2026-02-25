@@ -38,6 +38,7 @@ model User {
   nip                        String?
   dateOfBirth                DateTime?          @map("date_of_birth")
   addresses                  Address[]
+  loyalty                    UserLoyalty?
   cart                       Cart?
   orders                     Order[]
   reviews                    Review[]
@@ -666,6 +667,9 @@ enum CouponSource {
   CAMPAIGN
   NEWSLETTER
   ALL_COLLECTED_BONUS
+  LOYALTY_LEVEL_UP
+  LOYALTY_BIRTHDAY
+  LOYALTY_QUARTERLY
 }
 
 enum UserRole {
