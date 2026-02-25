@@ -46,7 +46,6 @@ model User {
   auditLogs                  SecurityAuditLog[]
   wishlistItems              WishlistItem[]
   shoppingLists              ShoppingList[]
-  loyalty                    UserLoyalty?
 
   @@map("users")
 }
