@@ -156,7 +156,7 @@ export default function ProductDetailPage() {
         </div>
         <div className="flex items-center gap-3">
           <a
-            href={`http://localhost:3000/products/${product.slug}`}
+            href={`${process.env.NEXT_PUBLIC_WEB_URL || 'https://wbtrade.pl'}/products/${product.slug}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 px-4 py-2 bg-slate-800 border border-slate-700 text-gray-300 rounded-lg hover:bg-slate-700 transition-colors"
