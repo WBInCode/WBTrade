@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
+import { useThemeColors } from '../../../hooks/useThemeColors';
 import { api } from '../../../services/api';
 import ProductGrid from '../../../components/product/ProductGrid';
 import type { Product, Category, ProductsResponse } from '../../../services/types';
@@ -29,6 +30,8 @@ const PAGE_LIMIT = 48;
 
 export default function CategoryScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
+  const colors = useThemeColors();
+  const dynamicStyles = useMemo(() => createDynamicStyles(colors), [colors]);
 
   const [category, setCategory] = useState<Category | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -127,9 +130,9 @@ export default function CategoryScreen() {
     return (
       <>
         <Stack.Screen options={{ title: categoryName }} />
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={Colors.primary[500]} />
-          <Text style={styles.loadingText}>Ładowanie...</Text>
+        <View style={dynamicStyles.centered}>
+          <ActivityIndicator size="large" color={colors.tint} />
+          <Text style={dynamicStyles.loadingText}>Ładowanie...</Text>
         </View>
       </>
     );
@@ -140,11 +143,11 @@ export default function CategoryScreen() {
     return (
       <>
         <Stack.Screen options={{ title: categoryName }} />
-        <View style={styles.centered}>
-          <FontAwesome name="exclamation-triangle" size={40} color={Colors.destructive} />
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={() => fetchProducts(1)}>
-            <Text style={styles.retryBtnText}>Spróbuj ponownie</Text>
+        <View style={dynamicStyles.centered}>
+          <FontAwesome name="exclamation-triangle" size={40} color={colors.destructive} />
+          <Text style={dynamicStyles.errorText}>{error}</Text>
+          <TouchableOpacity style={dynamicStyles.retryBtn} onPress={() => fetchProducts(1)}>
+            <Text style={dynamicStyles.retryBtnText}>Spróbuj ponownie</Text>
           </TouchableOpacity>
         </View>
       </>
@@ -154,52 +157,52 @@ export default function CategoryScreen() {
   return (
     <>
       <Stack.Screen options={{ title: categoryName }} />
-      <View style={styles.container}>
+      <View style={dynamicStyles.container}>
         {/* Sort bar */}
-        <View style={styles.toolbar}>
-          <Text style={styles.resultCount}>
+        <View style={dynamicStyles.toolbar}>
+          <Text style={dynamicStyles.resultCount}>
             {totalProducts} produkt{totalProducts === 1 ? '' : totalProducts < 5 ? 'y' : 'ów'}
           </Text>
           <TouchableOpacity
-            style={styles.sortButton}
+            style={dynamicStyles.sortButton}
             onPress={() => setShowSortMenu(!showSortMenu)}
             activeOpacity={0.7}
           >
-            <FontAwesome name="sort" size={14} color={Colors.secondary[600]} />
-            <Text style={styles.sortButtonText}>
+            <FontAwesome name="sort" size={14} color={colors.textSecondary} />
+            <Text style={dynamicStyles.sortButtonText}>
               {SORT_OPTIONS.find((o) => o.value === sort)?.label}
             </Text>
             <FontAwesome
               name={showSortMenu ? 'chevron-up' : 'chevron-down'}
               size={10}
-              color={Colors.secondary[500]}
+              color={colors.textMuted}
             />
           </TouchableOpacity>
         </View>
 
         {/* Sort dropdown */}
         {showSortMenu && (
-          <View style={styles.sortDropdown}>
+          <View style={dynamicStyles.sortDropdown}>
             {SORT_OPTIONS.map((option) => (
               <TouchableOpacity
                 key={option.value}
                 style={[
-                  styles.sortOption,
-                  sort === option.value && styles.sortOptionActive,
+                  dynamicStyles.sortOption,
+                  sort === option.value && dynamicStyles.sortOptionActive,
                 ]}
                 onPress={() => handleSortChange(option.value)}
                 activeOpacity={0.7}
               >
                 <Text
                   style={[
-                    styles.sortOptionText,
-                    sort === option.value && styles.sortOptionTextActive,
+                    dynamicStyles.sortOptionText,
+                    sort === option.value && dynamicStyles.sortOptionTextActive,
                   ]}
                 >
                   {option.label}
                 </Text>
                 {sort === option.value && (
-                  <FontAwesome name="check" size={12} color={Colors.primary[500]} />
+                  <FontAwesome name="check" size={12} color={colors.tint} />
                 )}
               </TouchableOpacity>
             ))}
@@ -221,103 +224,104 @@ export default function CategoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.secondary[50],
-  },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-    backgroundColor: Colors.white,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: Colors.secondary[500],
-  },
-  errorText: {
-    marginTop: 12,
-    fontSize: 15,
-    color: Colors.secondary[600],
-    textAlign: 'center',
-  },
-  retryBtn: {
-    marginTop: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    backgroundColor: Colors.primary[500],
-    borderRadius: 8,
-  },
-  retryBtnText: {
-    color: Colors.white,
-    fontWeight: '600',
-  },
+const createDynamicStyles = (colors: ReturnType<typeof useThemeColors>) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    centered: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 32,
+      backgroundColor: colors.background,
+    },
+    loadingText: {
+      marginTop: 12,
+      fontSize: 14,
+      color: colors.textMuted,
+    },
+    errorText: {
+      marginTop: 12,
+      fontSize: 15,
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+    retryBtn: {
+      marginTop: 16,
+      paddingHorizontal: 24,
+      paddingVertical: 10,
+      backgroundColor: colors.tint,
+      borderRadius: 8,
+    },
+    retryBtnText: {
+      color: colors.textInverse,
+      fontWeight: '600',
+    },
 
-  // Toolbar
-  toolbar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: Colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.secondary[200],
-  },
-  resultCount: {
-    fontSize: 13,
-    color: Colors.secondary[500],
-  },
-  sortButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: Colors.secondary[300],
-    backgroundColor: Colors.white,
-  },
-  sortButtonText: {
-    fontSize: 13,
-    color: Colors.secondary[700],
-    fontWeight: '500',
-  },
+    // Toolbar
+    toolbar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      backgroundColor: colors.card,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    resultCount: {
+      fontSize: 13,
+      color: colors.textMuted,
+    },
+    sortButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+    },
+    sortButtonText: {
+      fontSize: 13,
+      color: colors.text,
+      fontWeight: '500',
+    },
 
-  // Sort dropdown
-  sortDropdown: {
-    backgroundColor: Colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.secondary[200],
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  sortOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.secondary[100],
-  },
-  sortOptionActive: {
-    borderBottomColor: Colors.primary[100],
-  },
-  sortOptionText: {
-    fontSize: 14,
-    color: Colors.secondary[700],
-  },
-  sortOptionTextActive: {
-    color: Colors.primary[600],
-    fontWeight: '600',
-  },
-});
+    // Sort dropdown
+    sortDropdown: {
+      backgroundColor: colors.card,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      paddingHorizontal: 16,
+      paddingVertical: 4,
+      elevation: 4,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+    },
+    sortOption: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.borderLight,
+    },
+    sortOptionActive: {
+      borderBottomColor: colors.tintMuted,
+    },
+    sortOptionText: {
+      fontSize: 14,
+      color: colors.text,
+    },
+    sortOptionTextActive: {
+      color: colors.tint,
+      fontWeight: '600',
+    },
+  });

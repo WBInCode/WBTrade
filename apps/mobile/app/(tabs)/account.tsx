@@ -79,26 +79,48 @@ export default function AccountScreen() {
         <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Mój profil</Text>
         </View>
-        <View style={[styles.guestContainer, { backgroundColor: colors.background }]}>
-          <View style={styles.guestIconWrap}>
-            <FontAwesome name="user-circle" size={80} color={colors.textMuted} />
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+          {/* Login prompt */}
+          <View style={[styles.guestCard, { backgroundColor: colors.card }]}>
+            <View style={styles.guestIconWrap}>
+              <FontAwesome name="user-circle" size={64} color={colors.textMuted} />
+            </View>
+            <Text style={[styles.guestText, { color: colors.text }]}>Zaloguj się lub utwórz konto</Text>
+            <Text style={[styles.guestHint, { color: colors.textSecondary }]}>
+              Uzyskaj dostęp do swoich zamówień, ulubionych produktów i wiele więcej
+            </Text>
+            <View style={styles.guestButtons}>
+              <Button
+                title="Zaloguj się"
+                onPress={() => router.push('/(auth)/login')}
+              />
+              <Button
+                title="Utwórz konto"
+                variant="outline"
+                onPress={() => router.push('/(auth)/register')}
+              />
+            </View>
           </View>
-          <Text style={[styles.guestText, { color: colors.text }]}>Zaloguj się lub utwórz konto</Text>
-          <Text style={[styles.guestHint, { color: colors.textSecondary }]}>
-            Uzyskaj dostęp do swoich zamówień, ulubionych produktów i wiele więcej
-          </Text>
-          <View style={styles.guestButtons}>
-            <Button
-              title="Zaloguj się"
-              onPress={() => router.push('/(auth)/login')}
-            />
-            <Button
-              title="Utwórz konto"
-              variant="outline"
-              onPress={() => router.push('/(auth)/register')}
-            />
+
+          {/* Ustawienia */}
+          <SectionHeader title="Ustawienia" colors={colors} />
+          <View style={[styles.menuSection, { backgroundColor: colors.card }]}>
+            <MenuItem colors={colors} icon="moon-o" title="Motyw" subtitle={themeLabels[themePreference]} onPress={() => router.push('/account/theme')} />
           </View>
-        </View>
+
+          {/* Pomoc */}
+          <SectionHeader title="Pomoc" colors={colors} />
+          <View style={[styles.menuSection, { backgroundColor: colors.card }]}>
+            <MenuItem colors={colors} icon="headphones" title="Skontaktuj się z nami" onPress={() => router.push('/account/contact')} />
+            <MenuItem colors={colors} icon="question-circle" title="Centrum pomocy" onPress={() => router.push('/account/help')} />
+            <MenuItem colors={colors} icon="info-circle" title="O nas" onPress={() => router.push('/account/about')} />
+            <MenuItem colors={colors} icon="file-text-o" title="Regulamin" onPress={() => router.push('/account/terms')} />
+            <MenuItem colors={colors} icon="shield" title="Polityka prywatności" onPress={() => router.push('/account/privacy')} />
+          </View>
+
+          {/* Version */}
+          <Text style={[styles.versionText, { color: colors.textMuted, marginTop: 24 }]}>Wersja {appVersion}</Text>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -195,11 +217,12 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
   },
-  guestContainer: {
-    flex: 1,
+  guestCard: {
     alignItems: 'center',
-    justifyContent: 'center',
     padding: 32,
+    marginHorizontal: 12,
+    marginTop: 8,
+    borderRadius: 12,
   },
   guestIconWrap: {
     marginBottom: 8,
