@@ -1663,7 +1663,8 @@ export class BaselinkerService {
       };
 
       for (const inv of inventories) {
-        if (inv.name.includes('empik') || inv.name.includes('zwrot')) {
+        if (inv.name.includes('empik') || inv.name.includes('zwrot') || inv.name === 'ikonka' || inv.name === 'Główny') {
+          console.log(`[BaselinkerSync] Skipping price inventory: ${inv.name}`);
           continue;
         }
 
@@ -1682,12 +1683,14 @@ export class BaselinkerService {
 
               // Extract price — same logic as getProductPrice but from priceGroups
               let rawPrice = 0;
-              const plnPrice = priceGroups[this.defaultPriceGroupId];
-              if (plnPrice && plnPrice > 0) {
+              // BL may return {product_id, prices: {...}} or flat {groupId: price}
+              const priceData = (priceGroups as any).prices || priceGroups;
+              const plnPrice = priceData[this.defaultPriceGroupId];
+              if (plnPrice && typeof plnPrice === 'number' && plnPrice > 0) {
                 rawPrice = plnPrice;
               } else {
-                for (const [, price] of Object.entries(priceGroups)) {
-                  if (price > 0) {
+                for (const [, price] of Object.entries(priceData)) {
+                  if (typeof price === 'number' && price > 0) {
                     rawPrice = price;
                     break;
                   }
