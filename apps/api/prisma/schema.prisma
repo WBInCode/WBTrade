@@ -22,7 +22,6 @@ model User {
   emailVerifiedAt            DateTime?          @map("email_verified_at")
   failedLoginAttempts        Int                @default(0) @map("failed_login_attempts")
   lastLoginAt                DateTime?          @map("last_login_at")
-  lastLoginIp                String?            @map("last_login_ip")
   lockedUntil                DateTime?          @map("locked_until")
   passwordChangedAt          DateTime?          @map("password_changed_at")
   email_verification_expires DateTime?
