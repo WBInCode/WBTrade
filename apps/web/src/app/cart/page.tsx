@@ -7,12 +7,13 @@ import Footer from '../../components/Footer';
 import CartPackageView from '../../components/CartPackageView';
 import { useCart } from '../../contexts/CartContext';
 import { productsApi, checkoutApi, Product } from '../../lib/api';
+import CartCouponSection from './components/CartCouponSection';
 import { roundMoney } from '../../lib/currency';
 import { trackViewCart, cartItemToGA4 } from '../../lib/analytics';
 import ProductCard from '../../components/ProductCard';
 
 export default function CartPage() {
-  const { cart, loading, error, updateQuantity, removeFromCart, clearCart, addToCart } = useCart();
+  const { cart, loading, error, updateQuantity, removeFromCart, clearCart, addToCart, applyCoupon, removeCoupon } = useCart();
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [shippingPrices, setShippingPrices] = useState<Record<string, number>>({});
   const [totalShippingCost, setTotalShippingCost] = useState<number>(0);
@@ -142,10 +143,11 @@ export default function CartPage() {
 
   // Calculate totals for selected items
   const totals = useMemo(() => {
-    if (!cart?.items) return { subtotal: 0, shipping: 0, total: 0, selectedCount: 0 };
+    if (!cart?.items) return { subtotal: 0, shipping: 0, discount: 0, total: 0, selectedCount: 0 };
     
     const selectedCartItems = cart.items.filter(item => selectedItems.has(item.id));
     const subtotal = roundMoney(selectedCartItems.reduce((sum, item) => sum + (item.variant.price * item.quantity), 0));
+    const discount = roundMoney(cart.discount || 0);
     
     // Use total shipping cost from API (calculated properly for all packages)
     // Only show shipping when all items are selected, otherwise recalculate would be needed
@@ -157,10 +159,11 @@ export default function CartPage() {
     return {
       subtotal,
       shipping,
-      total: roundMoney(subtotal + shipping),
+      discount,
+      total: roundMoney(subtotal + shipping - discount),
       selectedCount: selectedCartItems.reduce((sum, item) => sum + item.quantity, 0),
     };
-  }, [cart?.items, selectedItems, shippingPrices, totalShippingCost]);
+  }, [cart?.items, cart?.discount, selectedItems, shippingPrices, totalShippingCost]);
 
   if (loading) {
     return (
@@ -278,7 +281,23 @@ export default function CartPage() {
                       Otrzymasz {Object.keys(shippingPrices).length} przesyłki
                     </p>
                   )}
+
+                  {/* Discount line */}
+                  {totals.discount > 0 && (
+                    <div className="flex justify-between items-center gap-2 text-sm sm:text-base">
+                      <span className="text-green-600 dark:text-green-400 shrink-0">Rabat</span>
+                      <span className="font-medium text-green-600 dark:text-green-400 whitespace-nowrap">-{totals.discount.toFixed(2).replace('.', ',')} zł</span>
+                    </div>
+                  )}
                 </div>
+
+                {/* Coupon section */}
+                <CartCouponSection
+                  appliedCoupon={cart?.couponCode || null}
+                  discount={totals.discount}
+                  onApplyCoupon={applyCoupon}
+                  onRemoveCoupon={removeCoupon}
+                />
 
                 {/* Total */}
                 <div className="border-t dark:border-secondary-700 pt-3 sm:pt-4 mb-4 sm:mb-6">
