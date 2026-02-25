@@ -257,7 +257,7 @@ export class CartService {
   /**
    * Apply coupon to cart
    */
-  async applyCoupon(cartId: string, couponCode: string): Promise<CartWithItems> {
+  async applyCoupon(cartId: string, couponCode: string, userId?: string): Promise<CartWithItems> {
     // Normalize coupon code - uppercase and trim whitespace
     const normalizedCode = couponCode.toUpperCase().trim();
     
@@ -281,6 +281,13 @@ export class CartService {
 
     if (coupon.maximumUses && coupon.usedCount >= coupon.maximumUses) {
       throw new Error('Kupon został wykorzystany maksymalną liczbę razy');
+    }
+
+    // Check ownership for personal coupons (WELCOME_DISCOUNT, APP_DOWNLOAD, NEWSLETTER)
+    if ((coupon.couponSource === 'WELCOME_DISCOUNT' || coupon.couponSource === 'APP_DOWNLOAD') && coupon.userId) {
+      if (coupon.userId !== userId) {
+        throw new Error('Ten kod rabatowy należy do innego użytkownika');
+      }
     }
 
     // Check for NEWSLETTER coupon restrictions - cannot be combined with other discount types
@@ -503,7 +510,9 @@ export class CartService {
         where: { code: cart.couponCode },
       });
       
-      if (coupon && coupon.isActive && (!coupon.expiresAt || coupon.expiresAt > new Date())) {
+      if (coupon && coupon.isActive 
+          && (!coupon.expiresAt || coupon.expiresAt > new Date())
+          && (!coupon.maximumUses || coupon.usedCount < coupon.maximumUses)) {
         if (coupon.type === 'PERCENTAGE') {
           // Percentage discount
           discount = roundMoney(subtotal * Number(coupon.value) / 100);

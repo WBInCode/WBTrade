@@ -484,8 +484,25 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
     const selectedPayment = paymentMethods.find(m => m.type === paymentMethod);
     const paymentFee = selectedPayment?.fee || 0;
 
-    // Calculate total with discount from cart + loyalty
-    const couponDiscount = cart.discount || 0;
+    // Re-validate coupon and recalculate discount based on selected items subtotal
+    let couponDiscount = 0;
+    if (cart.couponCode) {
+      const coupon = await prisma.coupon.findUnique({
+        where: { code: cart.couponCode },
+      });
+      if (coupon && coupon.isActive 
+          && (!coupon.expiresAt || coupon.expiresAt > new Date())
+          && (!coupon.maximumUses || coupon.usedCount < coupon.maximumUses)) {
+        if (coupon.type === 'PERCENTAGE') {
+          couponDiscount = Math.round(subtotal * Number(coupon.value) / 100 * 100) / 100;
+        } else if (coupon.type === 'FIXED_AMOUNT') {
+          couponDiscount = Math.min(Number(coupon.value), subtotal);
+        }
+        console.log(`[Checkout] Coupon ${cart.couponCode} re-validated: ${coupon.type} ${coupon.value} -> discount ${couponDiscount} on subtotal ${subtotal}`);
+      } else {
+        console.log(`[Checkout] Coupon ${cart.couponCode} is no longer valid, ignoring discount`);
+      }
+    }
     let loyaltyDiscount = 0;
     let loyaltyFreeShipping = false;
 
@@ -663,9 +680,9 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       paczkomatCode: pickupPointCode,
       paczkomatAddress: pickupPointAddress,
       packageShipping: enrichedPackageShipping,
-      // Discount/coupon from cart
-      couponCode: cart.couponCode || undefined,
-      discount: cart.discount || 0,
+      // Discount/coupon from re-validated checkout calculation
+      couponCode: couponDiscount > 0 ? (cart.couponCode || undefined) : undefined,
+      discount,
       // Invoice preference
       wantInvoice: wantInvoice || false,
       // Business order fields (for FV00 suffix)
@@ -695,6 +712,19 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
     if (paymentMethod === 'cod') {
       // Cash on delivery - no payment redirect needed
       await paymentService.createCODPayment(order.id, total);
+      
+      // Mark coupon as used for COD orders (online payments do this in payment webhook)
+      if (cart.couponCode) {
+        try {
+          await prisma.coupon.update({
+            where: { code: cart.couponCode },
+            data: { usedCount: { increment: 1 } },
+          });
+          console.log(`[Checkout] Coupon ${cart.couponCode} marked as used for COD order ${order.orderNumber}`);
+        } catch (err) {
+          console.error(`[Checkout] Failed to mark coupon ${cart.couponCode} as used:`, err);
+        }
+      }
       
       // Send order confirmation email for COD orders
       // Fetch full order data for email

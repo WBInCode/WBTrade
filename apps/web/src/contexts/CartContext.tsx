@@ -19,7 +19,7 @@ interface CartContextType {
   loading: boolean;
   error: string | null;
   itemCount: number;
-  addToCart: (variantId: string, quantity?: number, productInfo?: AddedProductInfo) => Promise<void>;
+  addToCart: (variantId: string, quantity?: number, productInfo?: AddedProductInfo, skipModal?: boolean) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   removeFromCart: (itemId: string) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -69,7 +69,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     refreshCart();
   }, [refreshCart]);
 
-  const addToCart = useCallback(async (variantId: string, quantity: number = 1, productInfo?: AddedProductInfo) => {
+  const addToCart = useCallback(async (variantId: string, quantity: number = 1, productInfo?: AddedProductInfo, skipModal?: boolean) => {
     try {
       setError(null);
       const updatedCart = await cartApi.addItem(variantId, quantity);
@@ -86,8 +86,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         });
         trackAddToCart(analyticsItem, priceNum * quantity);
         
-        // Show modal
-        showAddToCartModal(productInfo);
+        // Show modal (skip when using Buy Now to avoid flash before redirect)
+        if (!skipModal) {
+          showAddToCartModal(productInfo);
+        }
       }
     } catch (err: any) {
       setError(err.message);
