@@ -19,6 +19,14 @@ interface OrderItem {
   quantity: number;
   unitPrice: number;
   total: number;
+  variant?: {
+    product?: {
+      id: string;
+      slug: string;
+      name: string;
+      images?: { url: string }[];
+    };
+  };
 }
 
 interface StatusHistory {
@@ -148,9 +156,10 @@ const deliveryStatusLabels: Record<string, string> = {
   'sent_from_source_branch': 'Wysłana z oddziału',
   'in_transit': 'W transporcie',
   'out_for_delivery': 'Wydana do doręczenia',
-  'ready_to_pickup': 'Gotowa do odbioru w paczkomacie',
+  'ready_to_pickup': 'Oczekuje w punkcie odbioru',
   'ready_to_pickup_from_pok': 'Gotowa do odbioru w punkcie',
   'delivered': 'Dostarczona / Odebrana',
+  'avizo': 'Awizowana',
   'returned_to_sender': 'Zwrócona do nadawcy',
   'canceled': 'Anulowana',
   'shipped': 'Wysłana',
@@ -442,13 +451,41 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               </h2>
             </div>
             <div className="divide-y divide-slate-700/50">
-              {order.items.map((item) => (
+              {order.items.map((item) => {
+                const productSlug = item.variant?.product?.slug;
+                const productImage = item.variant?.product?.images?.[0]?.url;
+                const webUrl = process.env.NEXT_PUBLIC_WEB_URL || 'http://localhost:3000';
+                const productLink = productSlug ? `${webUrl}/products/${productSlug}` : null;
+
+                return (
                 <div key={item.id} className="px-6 py-4 flex items-center gap-4">
-                  <div className="w-16 h-16 bg-slate-700 rounded-lg flex items-center justify-center">
-                    <Package className="w-8 h-8 text-gray-500" />
-                  </div>
+                  {productLink ? (
+                    <a
+                      href={productLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-16 h-16 bg-slate-700 rounded-lg flex items-center justify-center overflow-hidden hover:ring-2 hover:ring-orange-400 transition-all cursor-pointer flex-shrink-0"
+                      title="Otwórz stronę produktu"
+                    >
+                      {productImage ? (
+                        <img src={productImage} alt={item.productName} className="w-full h-full object-cover" />
+                      ) : (
+                        <Package className="w-8 h-8 text-orange-400" />
+                      )}
+                    </a>
+                  ) : (
+                    <div className="w-16 h-16 bg-slate-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Package className="w-8 h-8 text-gray-500" />
+                    </div>
+                  )}
                   <div className="flex-1">
-                    <p className="font-medium text-white">{item.productName}</p>
+                    {productLink ? (
+                      <a href={productLink} target="_blank" rel="noopener noreferrer" className="font-medium text-white hover:text-orange-400 transition-colors">
+                        {item.productName}
+                      </a>
+                    ) : (
+                      <p className="font-medium text-white">{item.productName}</p>
+                    )}
                     <p className="text-sm text-gray-400">{item.variantName}</p>
                     <p className="text-xs text-gray-500">SKU: {item.sku}</p>
                   </div>
@@ -457,7 +494,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                     <p className="font-medium text-white">{formatPrice(item.total)}</p>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
             <div className="px-6 py-4 bg-slate-800/50 space-y-2">
               <div className="flex justify-between text-gray-400">

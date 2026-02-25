@@ -553,35 +553,53 @@ class CarouselService {
   }
 
   /**
-   * Newest — products created within last N days, sorted by createdAt DESC.
+   * Newest — products sorted by createdAt DESC.
+   * Tries last 14 days first; if not enough, falls back to newest products overall.
    */
   private async autoFetchNewest(
     categoryIds: string[],
     excludeIds: string[],
     limit: number,
   ): Promise<any[]> {
-    const daysBack = 14;
-    const dateThreshold = new Date();
-    dateThreshold.setDate(dateThreshold.getDate() - daysBack);
-
     const allCategoryIds = categoryIds.length > 0
       ? await this.expandCategoryIds(categoryIds)
       : [];
 
-    const products = await prisma.product.findMany({
-      where: {
-        status: 'ACTIVE',
-        price: { gt: 0 },
-        id: { notIn: excludeIds },
-        createdAt: { gte: dateThreshold },
-        ...(allCategoryIds.length > 0 && {
-          categoryId: { in: allCategoryIds },
-        }),
-      },
+    const baseWhere: any = {
+      status: 'ACTIVE',
+      price: { gt: 0 },
+      id: { notIn: excludeIds },
+      ...(allCategoryIds.length > 0 && {
+        categoryId: { in: allCategoryIds },
+      }),
+    };
+
+    // First try: products from last 14 days
+    const daysBack = 14;
+    const dateThreshold = new Date();
+    dateThreshold.setDate(dateThreshold.getDate() - daysBack);
+
+    let products = await prisma.product.findMany({
+      where: { ...baseWhere, createdAt: { gte: dateThreshold } },
       orderBy: { createdAt: 'desc' },
       take: limit,
       include: PRODUCT_INCLUDE,
     });
+
+    // Fallback: if not enough recent products, fetch newest overall (no date filter)
+    if (products.length < limit) {
+      const existingIds = products.map(p => p.id);
+      const fallback = await prisma.product.findMany({
+        where: {
+          ...baseWhere,
+          id: { notIn: [...excludeIds, ...existingIds] },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: limit - products.length,
+        include: PRODUCT_INCLUDE,
+      });
+      products = [...products, ...fallback];
+    }
 
     return transformProducts(products);
   }

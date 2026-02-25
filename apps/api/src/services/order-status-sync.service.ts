@@ -12,6 +12,22 @@ import { createBaselinkerProvider } from '../providers/baselinker';
 import type { BaselinkerOrderResponse } from '../providers/baselinker/baselinker-provider.interface';
 import { OrderStatus } from '@prisma/client';
 
+/**
+ * Safely get Baselinker API token: try decryption first, fall back to env var.
+ */
+function getBaselinkerApiToken(config: { apiTokenEncrypted: string; encryptionIv: string; authTag: string }): string {
+  try {
+    return decryptToken(config.apiTokenEncrypted, config.encryptionIv, config.authTag);
+  } catch {
+    const envToken = process.env.BASELINKER_API_TOKEN;
+    if (envToken) {
+      console.warn('[OrderStatusSync] Decryption failed, using BASELINKER_API_TOKEN env var as fallback');
+      return envToken;
+    }
+    throw new Error('Nie można odszyfrować tokena Baselinker i brak BASELINKER_API_TOKEN w zmiennych środowiskowych');
+  }
+}
+
 // ============================================
 // Baselinker Status ID Mapping
 // ============================================
@@ -125,11 +141,7 @@ export class OrderStatusSyncService {
         return result;
       }
 
-      const apiToken = decryptToken(
-        config.apiTokenEncrypted,
-        config.encryptionIv,
-        config.authTag
-      );
+      const apiToken = getBaselinkerApiToken(config);
 
       const provider = createBaselinkerProvider({
         apiToken,
@@ -319,11 +331,7 @@ export class OrderStatusSyncService {
         return { success: false, error: 'Baselinker not configured' };
       }
 
-      const apiToken = decryptToken(
-        config.apiTokenEncrypted,
-        config.encryptionIv,
-        config.authTag
-      );
+      const apiToken = getBaselinkerApiToken(config);
 
       const provider = createBaselinkerProvider({
         apiToken,
@@ -392,11 +400,7 @@ export class OrderStatusSyncService {
         throw new Error('Baselinker not configured');
       }
 
-      const apiToken = decryptToken(
-        config.apiTokenEncrypted,
-        config.encryptionIv,
-        config.authTag
-      );
+      const apiToken = getBaselinkerApiToken(config);
 
       const response = await fetch('https://api.baselinker.com/connector.php', {
         method: 'POST',
