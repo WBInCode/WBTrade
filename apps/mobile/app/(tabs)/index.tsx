@@ -71,11 +71,6 @@ const HeaderSection = React.memo(function HeaderSection() {
           style={styles.headerLogo}
           contentFit="contain"
         />
-        <View style={styles.headerIcons}>
-          <TouchableOpacity onPress={() => router.push('/(tabs)/search')} style={[styles.headerIconBtn, { backgroundColor: colors.backgroundTertiary }]}>
-            <FontAwesome name="bell-o" size={20} color={colors.icon} />
-          </TouchableOpacity>
-        </View>
       </View>
       <TouchableOpacity style={[styles.searchBar, { backgroundColor: colors.searchBackground }]} onPress={() => router.push('/(tabs)/search')} activeOpacity={0.8}>
         <FontAwesome name="search" size={15} color={colors.searchPlaceholder} />
@@ -553,19 +548,13 @@ const styles = StyleSheet.create({
 
   // Header
   header: {
-    paddingHorizontal: 16, paddingTop: 6, paddingBottom: 12,
+    paddingHorizontal: 2, paddingTop: 10, paddingBottom: 10,
     borderBottomWidth: 1,
   },
   headerTop: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'center', marginBottom: 10,
+    alignItems: 'flex-start', marginBottom: 6,
   },
-  headerLogo: { width: 120, height: 36 },
-  headerIcons: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  headerIconBtn: {
-    position: 'relative', width: 36, height: 36, borderRadius: 18,
-    alignItems: 'center', justifyContent: 'center',
-  },
+  headerLogo: { width: 110, height: 32 },
 
   searchBar: {
     flexDirection: 'row', alignItems: 'center',
