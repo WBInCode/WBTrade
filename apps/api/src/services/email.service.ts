@@ -6,6 +6,23 @@ import { discountService } from './discount.service';
 // Wysyłka emaili przez Resend
 // ============================================
 
+// Structured logger (console only, no file)
+function debugLog(msg: string) {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`[EmailService] ${msg}`);
+  }
+}
+
+// HTML entity escaping to prevent XSS in email templates
+function escapeHtml(str: string): string {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@wb-trade.pl';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://wb-trade.pl';
@@ -40,6 +57,7 @@ export class EmailService {
     discountPercent: number,
     expiresAt: Date
   ): Promise<EmailResult> {
+    debugLog('sendWelcomeDiscountEmail called');
     try {
       const resend = getResend();
       
@@ -58,11 +76,11 @@ export class EmailService {
       });
 
       if (error) {
-        console.error('[EmailService] Resend error:', error);
+        console.error('[EmailService] Resend error:', error.message);
         return { success: false, error: error.message };
       }
 
-      console.log(`✅ [EmailService] Welcome discount email sent to ${to}, messageId: ${data?.id}`);
+      debugLog(`Welcome discount email sent, messageId: ${data?.id}`);
       return { success: true, messageId: data?.id };
     } catch (err: any) {
       console.error('[EmailService] Exception:', err.message);
@@ -100,7 +118,7 @@ export class EmailService {
     <tr>
       <td style="padding: 40px 30px;">
         <p style="font-size: 18px; color: #333; margin-bottom: 20px;">
-          Cześć <strong>${firstName}</strong>!
+          Cześć <strong>${escapeHtml(firstName)}</strong>!
         </p>
         
         <p style="font-size: 16px; color: #555; line-height: 1.6;">
@@ -114,7 +132,7 @@ export class EmailService {
             Twój kod rabatowy
           </p>
           <div style="background-color: #ffffff; border: 2px solid #ea580c; border-radius: 8px; padding: 15px 25px; display: inline-block; margin: 10px 0; cursor: pointer;" title="Kliknij aby zaznaczyć">
-            <p style="font-size: 32px; font-weight: bold; color: #ea580c; margin: 0; letter-spacing: 4px; font-family: 'Courier New', monospace; user-select: all; -webkit-user-select: all; -moz-user-select: all; -ms-user-select: all;">${couponCode}</p>
+            <p style="font-size: 32px; font-weight: bold; color: #ea580c; margin: 0; letter-spacing: 4px; font-family: 'Courier New', monospace; user-select: all; -webkit-user-select: all; -moz-user-select: all; -ms-user-select: all;">${escapeHtml(couponCode)}</p>
           </div>
           <p style="font-size: 12px; color: #888; margin: 5px 0 15px 0;">👆 Kliknij kod aby zaznaczyć, potem Ctrl+C</p>
           <p style="font-size: 24px; font-weight: bold; color: #333; margin: 0;">
@@ -327,6 +345,7 @@ Zespół WB Trade
     to: string,
     unsubscribeToken: string
   ): Promise<EmailResult> {
+    debugLog('sendNewsletterWelcomeEmail called');
     try {
       const resend = getResend();
       
@@ -341,6 +360,7 @@ Zespół WB Trade
           month: 'long', 
           year: 'numeric' 
         });
+        debugLog('Newsletter discount generated');
       } catch (discountErr) {
         console.error('[EmailService] Failed to generate newsletter discount:', discountErr);
         // Continue without discount code
@@ -357,11 +377,11 @@ Zespół WB Trade
       });
 
       if (error) {
-        console.error('[EmailService] Newsletter welcome error:', error);
+        console.error('[EmailService] Newsletter welcome error:', error.message);
         return { success: false, error: error.message };
       }
 
-      console.log(`✅ [EmailService] Newsletter welcome email sent to ${to} with discount ${discountCode}, messageId: ${data?.id} [BUILD: 2026-02-03-v2]`);
+      debugLog(`Newsletter welcome email sent, messageId: ${data?.id}`);
       return { success: true, messageId: data?.id };
     } catch (err: any) {
       console.error('[EmailService] Newsletter welcome exception:', err.message);
@@ -380,7 +400,7 @@ Zespół WB Trade
             <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px dashed #f59e0b; border-radius: 12px; padding: 25px; text-align: center;">
               <p style="margin: 0 0 10px 0; font-size: 14px; color: #92400e; text-transform: uppercase; letter-spacing: 1px;">Twój ekskluzywny kod rabatowy</p>
               <div style="background-color: #ffffff; border: 2px solid #d97706; border-radius: 8px; padding: 12px 20px; display: inline-block; margin: 10px 0; cursor: pointer;" title="Kliknij aby zaznaczyć">
-                <p style="margin: 0; font-size: 32px; font-weight: bold; color: #78350f; letter-spacing: 4px; font-family: 'Courier New', monospace; user-select: all; -webkit-user-select: all; -moz-user-select: all; -ms-user-select: all;">${discountCode}</p>
+                <p style="margin: 0; font-size: 32px; font-weight: bold; color: #78350f; letter-spacing: 4px; font-family: 'Courier New', monospace; user-select: all; -webkit-user-select: all; -moz-user-select: all; -ms-user-select: all;">${escapeHtml(discountCode)}</p>
               </div>
               <p style="margin: 5px 0 15px 0; font-size: 12px; color: #a16207;">👆 Kliknij kod aby zaznaczyć, potem Ctrl+C</p>
               <p style="margin: 0 0 5px 0; font-size: 18px; color: #92400e;"><strong>-10%</strong> na Twoje kolejne zakupy!</p>

@@ -7,6 +7,23 @@ import { Worker, Job } from 'bullmq';
 import { Resend } from 'resend';
 import { QUEUE_NAMES, queueConnection } from '../lib/queue';
 
+// Structured logger (console only, no file)
+function debugLog(msg: string) {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`[EmailWorker] ${msg}`);
+  }
+}
+
+// HTML entity escaping to prevent XSS in email templates
+function escapeHtml(str: string): string {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // Lazy-init Resend to avoid crash when RESEND_API_KEY is not yet loaded
 let resend: Resend | null = null;
 function getResend(): Resend {
@@ -66,21 +83,21 @@ const wrapWithLogo = (title: string, content: string) => `
 // Email templates
 export const EMAIL_TEMPLATES: Record<string, (context: Record<string, any>) => { subject: string; html: string; text: string }> = {
   'order-confirmation': (ctx) => ({
-    subject: `Potwierdzenie zamówienia #${ctx.orderId}`,
+    subject: `Potwierdzenie zamówienia #${escapeHtml(ctx.orderId)}`,
     html: wrapWithLogo('Dziękujemy za zamówienie!', `
-      <p style="font-size: 16px; color: #333;">Twoje zamówienie <strong>#${ctx.orderId}</strong> zostało przyjęte.</p>
-      <p style="font-size: 16px; color: #555;">Wartość zamówienia: <strong>${ctx.total} PLN</strong></p>
-      <p style="font-size: 16px; color: #555;">Status: <strong>${ctx.status}</strong></p>
+      <p style="font-size: 16px; color: #333;">Twoje zamówienie <strong>#${escapeHtml(ctx.orderId)}</strong> zostało przyjęte.</p>
+      <p style="font-size: 16px; color: #555;">Wartość zamówienia: <strong>${escapeHtml(String(ctx.total))} PLN</strong></p>
+      <p style="font-size: 16px; color: #555;">Status: <strong>${escapeHtml(ctx.status)}</strong></p>
     `),
     text: `Dziękujemy za zamówienie! Zamówienie #${ctx.orderId}, wartość: ${ctx.total} PLN`,
   }),
   
   'order-shipped': (ctx) => ({
-    subject: `Twoje zamówienie #${ctx.orderId} zostało wysłane`,
+    subject: `Twoje zamówienie #${escapeHtml(ctx.orderId)} zostało wysłane`,
     html: wrapWithLogo('🚚 Twoja paczka jest w drodze!', `
-      <p style="font-size: 16px; color: #333;">Zamówienie <strong>#${ctx.orderId}</strong> zostało wysłane.</p>
-      <p style="font-size: 16px; color: #555;">Numer przesyłki: <strong>${ctx.trackingNumber}</strong></p>
-      <p style="font-size: 16px; color: #555;">Przewoźnik: <strong>${ctx.carrier}</strong></p>
+      <p style="font-size: 16px; color: #333;">Zamówienie <strong>#${escapeHtml(ctx.orderId)}</strong> zostało wysłane.</p>
+      <p style="font-size: 16px; color: #555;">Numer przesyłki: <strong>${escapeHtml(ctx.trackingNumber)}</strong></p>
+      <p style="font-size: 16px; color: #555;">Przewoźnik: <strong>${escapeHtml(ctx.carrier)}</strong></p>
       <div style="text-align: center; margin: 25px 0;">
         <a href="${ctx.trackingUrl}" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; text-decoration: none; padding: 12px 30px; border-radius: 8px; font-weight: bold;">Śledź przesyłkę</a>
       </div>
@@ -104,7 +121,7 @@ export const EMAIL_TEMPLATES: Record<string, (context: Record<string, any>) => {
   'email-verification': (ctx) => ({
     subject: 'Potwierdź swój email - WBTrade',
     html: wrapWithLogo('📧 Potwierdź swój email', `
-      <p style="font-size: 18px; color: #333;">Witaj <strong>${ctx.name}</strong>!</p>
+      <p style="font-size: 18px; color: #333;">Witaj <strong>${escapeHtml(ctx.name)}</strong>!</p>
       <p style="font-size: 16px; color: #555;">Kliknij poniższy przycisk, aby potwierdzić swój adres email:</p>
       <div style="text-align: center; margin: 25px 0;">
         <a href="${ctx.verifyUrl}" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; text-decoration: none; padding: 12px 30px; border-radius: 8px; font-weight: bold;">Potwierdź email</a>
@@ -116,10 +133,10 @@ export const EMAIL_TEMPLATES: Record<string, (context: Record<string, any>) => {
   'low-stock-alert': (ctx) => ({
     subject: `Niski stan magazynowy - ${ctx.productName}`,
     html: wrapWithLogo('⚠️ Niski stan magazynowy', `
-      <p style="font-size: 16px; color: #333;"><strong>Produkt:</strong> ${ctx.productName}</p>
-      <p style="font-size: 16px; color: #555;"><strong>SKU:</strong> ${ctx.sku}</p>
-      <p style="font-size: 16px; color: #dc2626;"><strong>Aktualny stan:</strong> ${ctx.currentStock}</p>
-      <p style="font-size: 16px; color: #555;"><strong>Minimum:</strong> ${ctx.minimumStock}</p>
+      <p style="font-size: 16px; color: #333;"><strong>Produkt:</strong> ${escapeHtml(ctx.productName)}</p>
+      <p style="font-size: 16px; color: #555;"><strong>SKU:</strong> ${escapeHtml(ctx.sku)}</p>
+      <p style="font-size: 16px; color: #dc2626;"><strong>Aktualny stan:</strong> ${escapeHtml(String(ctx.currentStock))}</p>
+      <p style="font-size: 16px; color: #555;"><strong>Minimum:</strong> ${escapeHtml(String(ctx.minimumStock))}</p>
     `),
     text: `Niski stan: ${ctx.productName} (${ctx.currentStock}/${ctx.minimumStock})`,
   }),
@@ -140,13 +157,11 @@ async function sendEmail(
   html: string,
   text: string
 ): Promise<void> {
+  debugLog('sendEmail called');
   try {
     // If no API key configured, log only (development mode)
     if (!process.env.RESEND_API_KEY) {
-      console.log(`[EmailWorker] No RESEND_API_KEY - logging email instead`);
-      console.log(`[EmailWorker] To: ${to}`);
-      console.log(`[EmailWorker] Subject: ${subject}`);
-      console.log(`[EmailWorker] Text preview: ${text.substring(0, 100)}...`);
+      debugLog('No RESEND_API_KEY configured - skipping email send');
       return;
     }
 
@@ -159,13 +174,13 @@ async function sendEmail(
     });
 
     if (error) {
-      console.error(`[EmailWorker] Resend error:`, error);
+      console.error('[EmailWorker] Resend error:', error.message);
       throw new Error(`Failed to send email: ${error.message}`);
     }
 
-    console.log(`[EmailWorker] Email sent successfully to ${to}`, data);
+    debugLog(`Email sent successfully, ID: ${data?.id}`);
   } catch (error: any) {
-    console.error(`[EmailWorker] Failed to send email to ${to}:`, error);
+    console.error('[EmailWorker] Failed to send email:', error.message);
     throw error;
   }
 }
@@ -175,6 +190,7 @@ async function sendEmail(
  * This is the fallback for when background workers are not running
  */
 export async function sendEmailDirect(data: EmailJobData): Promise<void> {
+  debugLog(`sendEmailDirect called, template: ${data.template}`);
   const { to, template, context } = data;
   
   const templateFn = EMAIL_TEMPLATES[template];
@@ -184,6 +200,7 @@ export async function sendEmailDirect(data: EmailJobData): Promise<void> {
   
   const { subject, html, text } = templateFn(context);
   await sendEmail(to, subject, html, text);
+  debugLog('sendEmailDirect complete');
 }
 
 /**

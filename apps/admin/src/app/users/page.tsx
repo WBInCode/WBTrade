@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiJson } from '@/lib/api';
 import { 
@@ -593,6 +594,13 @@ export default function UsersPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-1">
+                        <Link
+                          href={`/users/${user.id}`}
+                          className="p-2 hover:bg-slate-600 rounded-lg transition-colors"
+                          title="Zobacz profil"
+                        >
+                          <Eye className="w-4 h-4 text-orange-400" />
+                        </Link>
                         <button 
                           onClick={() => openEditModal(user)}
                           className="p-2 hover:bg-slate-600 rounded-lg transition-colors"
