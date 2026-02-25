@@ -63,5 +63,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
   CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 5000) + '/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"
 
 # Uruchomienie aplikacji
-# Używamy db push zamiast migrate deploy - nie wymaga advisory locks
-CMD ["sh", "-c", "echo 'Starting deployment...' && echo 'Syncing database schema...' && npx prisma db push --accept-data-loss --skip-generate && echo 'Starting application...' && node dist/app.js"]
+# Używamy migrate deploy - bezpieczna migracja bez utraty danych
+CMD ["sh", "-c", "echo 'Starting deployment...' && echo 'Running database migrations...' && npx prisma migrate deploy && echo 'Starting application...' && node dist/app.js"]

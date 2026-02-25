@@ -154,7 +154,6 @@ export const usersService = {
         emailVerified: true,
         emailVerifiedAt: true,
         lastLoginAt: true,
-        lastLoginIp: true,
         lockedUntil: true,
         failedLoginAttempts: true,
         passwordChangedAt: true,
