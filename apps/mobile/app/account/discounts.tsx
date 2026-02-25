@@ -41,6 +41,8 @@ function NewsletterPopup({
   onClose: () => void;
 }) {
   const { show } = useToast();
+  const colors = useThemeColors();
+  const nlS = useMemo(() => createNlStyles(colors), [colors]);
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const envelopeAnim = useRef(new Animated.Value(0)).current;
 
@@ -74,22 +76,22 @@ function NewsletterPopup({
 
   return (
     <Modal transparent visible={visible} animationType="fade" statusBarTranslucent>
-      <View style={nlStyles.overlay}>
-        <Animated.View style={[nlStyles.popup, { transform: [{ scale: scaleAnim }] }]}>
+      <View style={nlS.overlay}>
+        <Animated.View style={[nlS.popup, { transform: [{ scale: scaleAnim }] }]}>
           {/* Header with envelope icon */}
-          <View style={nlStyles.iconCircle}>
-            <FontAwesome name="envelope-open" size={32} color={Colors.primary[500]} />
+          <View style={nlS.iconCircle}>
+            <FontAwesome name="envelope-open" size={32} color={colors.tint} />
           </View>
 
-          <Text style={nlStyles.title}>Zapisano do newslettera!</Text>
-          <Text style={nlStyles.subtitle}>
+          <Text style={nlS.title}>Zapisano do newslettera!</Text>
+          <Text style={nlS.subtitle}>
             Oto Twój kod rabatowy na kolejne zakupy
           </Text>
 
           {/* Discount badge */}
           <Animated.View
             style={[
-              nlStyles.discountBadge,
+              nlS.discountBadge,
               {
                 transform: [
                   {
@@ -103,26 +105,26 @@ function NewsletterPopup({
               },
             ]}
           >
-            <Text style={nlStyles.discountText}>-{discountPercent}%</Text>
+            <Text style={nlS.discountText}>-{discountPercent}%</Text>
           </Animated.View>
 
           {/* Coupon code */}
-          <TouchableOpacity style={nlStyles.codeBox} onPress={handleCopy} activeOpacity={0.7}>
-            <Text style={nlStyles.codeText}>{couponCode}</Text>
-            <FontAwesome name="copy" size={16} color={Colors.primary[500]} />
+          <TouchableOpacity style={nlS.codeBox} onPress={handleCopy} activeOpacity={0.7}>
+            <Text style={nlS.codeText}>{couponCode}</Text>
+            <FontAwesome name="copy" size={16} color={colors.tint} />
           </TouchableOpacity>
 
-          <Text style={nlStyles.hint}>
+          <Text style={nlS.hint}>
             Kod ważny 30 dni. Kliknij, aby skopiować.
           </Text>
 
-          <Text style={nlStyles.note}>
+          <Text style={nlS.note}>
             Nie łączy się z rabatem za rejestrację{'\n'}i kuponami promocyjnymi.
           </Text>
 
           {/* Close button */}
-          <TouchableOpacity style={nlStyles.closeBtn} onPress={onClose} activeOpacity={0.8}>
-            <Text style={nlStyles.closeBtnText}>Zamknij</Text>
+          <TouchableOpacity style={nlS.closeBtn} onPress={onClose} activeOpacity={0.8}>
+            <Text style={nlS.closeBtnText}>Zamknij</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -130,104 +132,105 @@ function NewsletterPopup({
   );
 }
 
-const nlStyles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  popup: {
-    width: SCREEN_W - 48,
-    maxWidth: 380,
-    backgroundColor: Colors.white,
-    borderRadius: 24,
-    padding: 28,
-    alignItems: 'center',
-  },
-  iconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: Colors.primary[50],
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: Colors.secondary[900],
-    textAlign: 'center',
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: Colors.secondary[500],
-    textAlign: 'center',
-    marginBottom: 18,
-  },
-  discountBadge: {
-    backgroundColor: Colors.primary[500],
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 14,
-    marginBottom: 18,
-  },
-  discountText: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: Colors.white,
-  },
-  codeBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: Colors.secondary[50],
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-    borderWidth: 1.5,
-    borderColor: Colors.secondary[200],
-    borderStyle: 'dashed',
-    width: '100%',
-    marginBottom: 10,
-  },
-  codeText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.secondary[800],
-    letterSpacing: 2,
-  },
-  hint: {
-    fontSize: 12,
-    color: Colors.secondary[400],
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  note: {
-    fontSize: 11,
-    color: Colors.secondary[400],
-    textAlign: 'center',
-    fontStyle: 'italic',
-    lineHeight: 16,
-    marginBottom: 18,
-  },
-  closeBtn: {
-    backgroundColor: Colors.primary[500],
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    width: '100%',
-    alignItems: 'center',
-  },
-  closeBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.white,
-  },
-});
+const createNlStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: c.overlay,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 24,
+    },
+    popup: {
+      width: SCREEN_W - 48,
+      maxWidth: 380,
+      backgroundColor: c.card,
+      borderRadius: 24,
+      padding: 28,
+      alignItems: 'center',
+    },
+    iconCircle: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      backgroundColor: c.tintLight,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 16,
+    },
+    title: {
+      fontSize: 20,
+      fontWeight: '800',
+      color: c.text,
+      textAlign: 'center',
+      marginBottom: 6,
+    },
+    subtitle: {
+      fontSize: 14,
+      color: c.textMuted,
+      textAlign: 'center',
+      marginBottom: 18,
+    },
+    discountBadge: {
+      backgroundColor: c.tint,
+      paddingHorizontal: 24,
+      paddingVertical: 10,
+      borderRadius: 14,
+      marginBottom: 18,
+    },
+    discountText: {
+      fontSize: 28,
+      fontWeight: '900',
+      color: c.textInverse,
+    },
+    codeBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: c.backgroundSecondary,
+      borderRadius: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 18,
+      borderWidth: 1.5,
+      borderColor: c.border,
+      borderStyle: 'dashed',
+      width: '100%',
+      marginBottom: 10,
+    },
+    codeText: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: c.text,
+      letterSpacing: 2,
+    },
+    hint: {
+      fontSize: 12,
+      color: c.textMuted,
+      textAlign: 'center',
+      marginBottom: 8,
+    },
+    note: {
+      fontSize: 11,
+      color: c.textMuted,
+      textAlign: 'center',
+      fontStyle: 'italic',
+      lineHeight: 16,
+      marginBottom: 18,
+    },
+    closeBtn: {
+      backgroundColor: c.tint,
+      paddingVertical: 12,
+      paddingHorizontal: 32,
+      borderRadius: 12,
+      width: '100%',
+      alignItems: 'center',
+    },
+    closeBtnText: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: c.textInverse,
+    },
+  });
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return '—';
