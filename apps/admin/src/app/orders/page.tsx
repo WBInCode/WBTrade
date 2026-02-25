@@ -107,9 +107,10 @@ const deliveryStatusLabels: Record<string, string> = {
   'sent_from_source_branch': 'Wysłana z oddziału',
   'in_transit': 'W transporcie',
   'out_for_delivery': 'Wydana do doręczenia',
-  'ready_to_pickup': 'Gotowa do odbioru',
+  'ready_to_pickup': 'Oczekuje w punkcie odbioru',
   'ready_to_pickup_from_pok': 'Gotowa w punkcie',
   'delivered': 'Dostarczona / Odebrana',
+  'avizo': 'Awizowana',
   'returned_to_sender': 'Zwrot do nadawcy',
   'canceled': 'Anulowana',
   'shipped': 'Wysłana',
@@ -119,9 +120,11 @@ const deliveryStatusLabels: Record<string, string> = {
 
 const deliveryStatusColors: Record<string, string> = {
   'created': 'text-gray-400',
+  'dispatched_by_sender': 'text-yellow-400',
   'in_transit': 'text-blue-400',
   'out_for_delivery': 'text-cyan-400',
   'ready_to_pickup': 'text-emerald-400',
+  'avizo': 'text-orange-400',
   'delivered': 'text-green-400',
   'returned_to_sender': 'text-red-400',
   'canceled': 'text-red-400',

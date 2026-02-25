@@ -495,11 +495,12 @@ export async function syncOrderDelivery(req: Request, res: Response): Promise<vo
     const result = await deliveryTrackingService.syncSingleOrder(id);
     
     if (!result.success) {
-      res.status(400).json({ message: result.error });
+      res.status(400).json({ success: false, error: result.error, message: result.error });
       return;
     }
     
     res.status(200).json({
+      success: true,
       deliveryStatus: result.deliveryStatus,
       deliveryStatusLabel: deliveryTrackingService.getStatusLabel(result.deliveryStatus || null),
       trackingNumber: result.trackingNumber,

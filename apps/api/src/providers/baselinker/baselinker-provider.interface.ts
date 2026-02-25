@@ -212,9 +212,13 @@ export interface BaselinkerOrderPackage {
   courier_code: string;
   courier_package_nr: string;
   courier_other_name?: string;
-  tracking_status?: number;
+  courier_inner_number?: string;
+  tracking_status?: number | string;  // Baselinker returns as string despite docs saying number
+  tracking_status_date?: string;
+  tracking_url?: string;
   tracking_link?: string;
   is_sent?: boolean;
+  is_return?: boolean;
   weight?: number;
 }
 

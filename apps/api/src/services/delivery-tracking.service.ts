@@ -13,6 +13,24 @@ import { decryptToken } from '../lib/encryption';
 import { createBaselinkerProvider } from '../providers/baselinker';
 import type { BaselinkerOrderPackage } from '../providers/baselinker/baselinker-provider.interface';
 
+/**
+ * Safely get Baselinker API token: try decryption first, fall back to env var.
+ * This handles cases where the encryption key doesn't match the stored token.
+ */
+function getBaselinkerApiToken(config: { apiTokenEncrypted: string; encryptionIv: string; authTag: string }): string {
+  try {
+    return decryptToken(config.apiTokenEncrypted, config.encryptionIv, config.authTag);
+  } catch {
+    // Decryption failed (key mismatch) — fall back to env var
+    const envToken = process.env.BASELINKER_API_TOKEN;
+    if (envToken) {
+      console.warn('[DeliveryTracking] Decryption failed, using BASELINKER_API_TOKEN env var as fallback');
+      return envToken;
+    }
+    throw new Error('Nie można odszyfrować tokena Baselinker i brak BASELINKER_API_TOKEN w zmiennych środowiskowych');
+  }
+}
+
 // ============================================
 // Delivery Status Labels (Polish)
 // ============================================
@@ -49,7 +67,7 @@ export const DELIVERY_STATUS_LABELS: Record<string, string> = {
   'oversized': 'Przesyłka ponadgabarytowa',
   'in_transit': 'W transporcie',
   'out_for_delivery': 'Wydana do doręczenia',
-  'ready_to_pickup': 'Gotowa do odbioru w paczkomacie',
+  'ready_to_pickup': 'Oczekuje w punkcie odbioru',
   'pickup_reminder_sent': 'Wysłano przypomnienie o odbiorze',
   'delivered': 'Dostarczona / Odebrana',
   'pickup_time_expired': 'Czas odbioru minął',
@@ -131,11 +149,7 @@ export class DeliveryTrackingService {
         return result;
       }
 
-      const apiToken = decryptToken(
-        config.apiTokenEncrypted,
-        config.encryptionIv,
-        config.authTag
-      );
+      const apiToken = getBaselinkerApiToken(config);
 
       const provider = createBaselinkerProvider({
         apiToken,
@@ -287,13 +301,18 @@ export class DeliveryTrackingService {
 
   /**
    * Extract delivery status from package data.
-   * Baselinker's tracking_status field contains a numeric code.
+   * Baselinker's tracking_status field contains a numeric code (returned as string from API).
    * We map it to our string-based delivery status.
    */
   private extractDeliveryStatus(pkg: BaselinkerOrderPackage): string | null {
     // If package has a tracking_status from Baselinker
+    // NOTE: Baselinker API returns tracking_status as STRING (e.g. "8"), must convert to number
     if (pkg.tracking_status !== undefined && pkg.tracking_status !== null) {
-      return this.mapTrackingStatus(pkg.tracking_status, pkg.courier_code);
+      const statusCode = Number(pkg.tracking_status);
+      console.log(`[DeliveryTracking] Raw tracking_status=${pkg.tracking_status} (type: ${typeof pkg.tracking_status}), parsed=${statusCode}, courier_code=${pkg.courier_code}, courier_other_name=${(pkg as any).courier_other_name}`);
+      if (!isNaN(statusCode)) {
+        return this.mapTrackingStatus(statusCode, pkg.courier_code, (pkg as any).courier_other_name);
+      }
     }
 
     // Fallback: if package is marked as sent but no detailed status
@@ -307,18 +326,43 @@ export class DeliveryTrackingService {
   /**
    * Map Baselinker tracking_status numeric code to our string status.
    * These codes come from Baselinker's getOrderPackages API.
+   * 
+   * Baselinker tracking_status codes (confirmed from real API data):
+   * -1 = nieznany (unknown)
+   *  0 = nie nadano (not sent)
+   *  1 = nadawca przygotował paczkę (prepared by sender)
+   *  2 = nadano (dispatched)
+   *  3 = w tranzycie (in transit)
+   *  4 = w doręczeniu (out for delivery)
+   *  5 = dostarczona (delivered)
+   *  6 = awizowana (notice left)
+   *  7 = nieodebrana / zwrot (not collected / return)
+   *  8 = oczekuje w punkcie odbioru (waiting at pickup point)
+   *  9 = zwrócona do nadawcy (returned to sender)
+   * 10 = anulowana (cancelled)
    */
-  private mapTrackingStatus(statusCode: number, courierCode?: string): string {
-    // Baselinker tracking status codes:
-    // -1 = unknown, 0 = not sent, 1 = in transit, 2 = delivered, 3 = returned, 4 = other
+  private mapTrackingStatus(statusCode: number, courierCode?: string, courierOtherName?: string): string {
+    // Detect InPost/Paczkomat shipments
+    const code = (courierCode || '').toLowerCase();
+    const otherName = (courierOtherName || '').toLowerCase();
+    const isInPost = code.includes('inpost') || code.includes('paczkomat') || otherName.includes('inpost');
+
+    console.log(`[DeliveryTracking] mapTrackingStatus: code=${statusCode}, courier=${courierCode}, isInPost=${isInPost}`);
+
     switch (statusCode) {
       case -1: return 'unknown';
-      case 0: return 'created';
-      case 1: return 'in_transit';
-      case 2: return 'delivered';
-      case 3: return 'returned_to_sender';
-      case 4: return 'other';
-      default: return 'unknown';
+      case 0: return 'created';                  // Nie nadano
+      case 1: return 'dispatched_by_sender';      // Przygotowano / nadano
+      case 2: return 'in_transit';                // Nadano / w tranzycie
+      case 3: return 'in_transit';                // W tranzycie (szczegółowy)
+      case 4: return 'out_for_delivery';          // W doręczeniu
+      case 5: return 'delivered';                 // Dostarczona
+      case 6: return 'avizo';                     // Awizowana
+      case 7: return 'returned_to_sender';        // Nieodebrana / zwrot
+      case 8: return 'ready_to_pickup';           // Oczekuje w punkcie odbioru
+      case 9: return 'returned_to_sender';        // Zwrócona do nadawcy
+      case 10: return 'canceled';                 // Anulowana
+      default: return 'other';
     }
   }
 
@@ -411,11 +455,7 @@ export class DeliveryTrackingService {
 
       if (!config) return { success: false, error: 'Baselinker not configured' };
 
-      const apiToken = decryptToken(
-        config.apiTokenEncrypted,
-        config.encryptionIv,
-        config.authTag
-      );
+      const apiToken = getBaselinkerApiToken(config);
 
       const provider = createBaselinkerProvider({
         apiToken,
