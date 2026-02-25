@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Dimensions, StyleSheet, ActivityIndicator, Animated } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { View, Text, TouchableOpacity, Dimensions, StyleSheet, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -32,20 +32,7 @@ function ProductCard({ product, width }: ProductCardProps) {
   const isFav = isInWishlist(product.id);
   const cardWidth = width || CARD_WIDTH;
 
-  // Newsletter badge animation
-  const shimmerAnim = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmerAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
-        Animated.timing(shimmerAnim, { toValue: 0, duration: 2000, useNativeDriver: true }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, []);
-  const badgeScale = shimmerAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.03, 1] });
-  const badgeOpacity = shimmerAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.85, 1, 0.85] });
+
 
   const price = Number(
     typeof product.price === 'string' ? parseFloat(product.price) : product.price
@@ -176,13 +163,6 @@ function ProductCard({ product, width }: ProductCardProps) {
               </Text>
             )}
           </View>
-
-          {/* Newsletter discount badge — animated like x-kom */}
-          <Animated.View style={[styles.newsletterBadge, { transform: [{ scale: badgeScale }], opacity: badgeOpacity }]}>
-            <FontAwesome name="ticket" size={10} color={colors.tint} style={{ transform: [{ rotate: '-45deg' }] }} />
-            <Text style={styles.newsletterBadgeText}>10% rabatu z newsletterem</Text>
-            <FontAwesome name="chevron-right" size={8} color={colors.tint} />
-          </Animated.View>
 
           {/* Delivery info */}
           <Text style={[styles.deliveryText, !hasStock && styles.deliveryOutOfStock]}>
@@ -339,26 +319,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   deliveryOutOfStock: {
     color: colors.destructive,
-  },
-  newsletterBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: colors.tintLight,
-    borderWidth: 1,
-    borderColor: colors.tintMuted,
-    borderRadius: 6,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    marginBottom: 4,
-    alignSelf: 'flex-start',
-    borderStyle: 'dashed',
-  },
-  newsletterBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.tint,
-    letterSpacing: 0.1,
   },
   addButton: {
     flexDirection: 'row',

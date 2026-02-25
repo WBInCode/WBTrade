@@ -210,10 +210,9 @@ export class BaselinkerService {
         updatedAt: config.updatedAt,
       };
     } catch (error) {
-      // Token encryption key changed - config is invalid, delete it
-      console.warn('Invalid encryption key for stored config, removing corrupt config');
-      await prisma.baselinkerConfig.deleteMany();
-      await prisma.baselinkerSyncLog.deleteMany();
+      // Token encryption key changed - config is invalid
+      // NIE usuwamy konfiguracji - klucz szyfrowania może zostać naprawiony
+      console.error('Failed to decrypt Baselinker config - check BASELINKER_ENCRYPTION_KEY env var. Config NOT deleted.');
       return null;
     }
   }
@@ -246,9 +245,8 @@ export class BaselinkerService {
       return { token, inventoryId: config.inventoryId };
     } catch (error) {
       // Token encryption key changed - config is invalid
-      console.warn('Invalid encryption key for stored config, removing corrupt config');
-      await prisma.baselinkerConfig.deleteMany();
-      await prisma.baselinkerSyncLog.deleteMany();
+      // NIE usuwamy konfiguracji - klucz szyfrowania może zostać naprawiony
+      console.error('Failed to decrypt Baselinker token - check BASELINKER_ENCRYPTION_KEY env var. Config NOT deleted.');
       return null;
     }
   }
