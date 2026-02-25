@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { secureAuthService } from '../services/auth.service.secure';
-import { getClientIp, getUserAgent } from '../middleware/auth.middleware.secure';
+import { getUserAgent } from '../middleware/auth.middleware.secure';
 
 /**
  * Secure Auth Controller
@@ -30,7 +30,6 @@ export class SecureAuthController {
         firstName,
         lastName,
         newsletter: !!newsletter,
-        ipAddress: getClientIp(req),
         userAgent: getUserAgent(req),
       });
 
@@ -105,7 +104,6 @@ export class SecureAuthController {
       const result = await secureAuthService.login({
         email,
         password,
-        ipAddress: getClientIp(req),
         userAgent: getUserAgent(req),
       });
 
@@ -167,7 +165,6 @@ export class SecureAuthController {
 
       const result = await secureAuthService.refreshToken({
         refreshToken,
-        ipAddress: getClientIp(req),
         userAgent: getUserAgent(req),
       });
 
@@ -224,7 +221,6 @@ export class SecureAuthController {
       await secureAuthService.logout({
         accessToken,
         refreshToken,
-        ipAddress: getClientIp(req),
       });
 
       res.json({
@@ -259,7 +255,6 @@ export class SecureAuthController {
       await secureAuthService.logoutAll({
         userId: req.user.userId,
         currentAccessToken: accessToken || '',
-        ipAddress: getClientIp(req),
       });
 
       res.json({
@@ -331,8 +326,7 @@ export class SecureAuthController {
       }
 
       const token = await secureAuthService.resendVerificationEmail(
-        email,
-        getClientIp(req)
+        email
       );
 
       res.json({
@@ -365,8 +359,7 @@ export class SecureAuthController {
       }
 
       const token = await secureAuthService.requestPasswordReset(
-        email,
-        getClientIp(req)
+        email
       );
 
       res.json({
@@ -401,7 +394,6 @@ export class SecureAuthController {
       await secureAuthService.resetPassword({
         token,
         newPassword: password,
-        ipAddress: getClientIp(req),
       });
 
       res.json({
@@ -462,7 +454,6 @@ export class SecureAuthController {
         userId: req.user.userId,
         currentPassword,
         newPassword,
-        ipAddress: getClientIp(req),
       });
 
       res.json({
@@ -566,7 +557,6 @@ export class SecureAuthController {
         sessions: sessions.map(session => ({
           id: session.id,
           deviceInfo: session.deviceInfo,
-          ipAddress: session.ipAddress,
           createdAt: session.createdAt,
           expiresAt: session.expiresAt,
           isCurrent: session.id === req.user?.sessionId,
@@ -599,8 +589,7 @@ export class SecureAuthController {
 
       await secureAuthService.revokeSession(
         req.user.userId,
-        sessionId,
-        getClientIp(req)
+        sessionId
       );
 
       res.json({

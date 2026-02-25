@@ -178,7 +178,6 @@ interface RefreshResult {
 interface Session {
   id: string;
   deviceInfo: string | null;
-  ipAddress: string | null;
   createdAt: Date;
   expiresAt: Date;
 }
@@ -480,7 +479,6 @@ export class SecureAuthService {
         failedLoginAttempts: 0,
         lockedUntil: null,
         lastLoginAt: new Date(),
-        lastLoginIp: ipAddress || null,
       },
     });
 
@@ -863,11 +861,11 @@ export class SecureAuthService {
       expiresIn: refreshTokenExpiry,
     });
 
-    // Store session in Redis
+    // Store session in Redis (IP address intentionally not stored per privacy policy)
     await storeSession(
       payload.userId,
       payload.sessionId,
-      { ipAddress, userAgent, createdAt: new Date().toISOString() },
+      { userAgent, createdAt: new Date().toISOString() },
       refreshTokenExpiry
     );
 

@@ -238,7 +238,6 @@ class GoogleOAuthService {
         where: { id: user.id },
         data: {
           lastLoginAt: new Date(),
-          lastLoginIp: ipAddress || null,
         },
       });
     }
@@ -302,9 +301,8 @@ class GoogleOAuthService {
       { expiresIn: `${REFRESH_TOKEN_EXPIRY_SECONDS}s` }
     );
 
-    // Store session in Redis
+    // Store session in Redis (IP address intentionally not stored per privacy policy)
     await storeSession(userId, sessionId, {
-      ipAddress: ipAddress || 'unknown',
       userAgent: userAgent || 'unknown',
       createdAt: new Date().toISOString(),
     }, REFRESH_TOKEN_EXPIRY_SECONDS);
