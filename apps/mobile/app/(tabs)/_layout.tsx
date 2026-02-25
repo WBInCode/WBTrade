@@ -131,6 +131,18 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="category/[slug]"
+        options={{
+          href: null,
+          title: 'Kategoria',
+          headerShown: true,
+          headerBackTitle: 'Wróć',
+          headerTintColor: colors.tint,
+          headerStyle: { backgroundColor: colors.headerBackground },
+          headerTitleStyle: { color: colors.headerText },
+        }}
+      />
     </Tabs>
 
       {/* Floating chat bubble */}

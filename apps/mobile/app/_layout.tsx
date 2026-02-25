@@ -152,17 +152,6 @@ function RootLayoutNav() {
                       headerTitleStyle: { color: colors.headerText },
                     }}
                   />
-                  <Stack.Screen
-                    name="category/[slug]"
-                    options={{
-                      headerShown: true,
-                      title: 'Kategoria',
-                      headerBackTitle: 'Wróć',
-                      headerTintColor: colors.tint,
-                      headerStyle: { backgroundColor: colors.headerBackground },
-                      headerTitleStyle: { color: colors.headerText },
-                    }}
-                  />
                 </Stack>
               </ThemeProvider>
             </WishlistProvider>
