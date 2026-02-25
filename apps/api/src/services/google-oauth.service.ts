@@ -238,7 +238,6 @@ class GoogleOAuthService {
         where: { id: user.id },
         data: {
           lastLoginAt: new Date(),
-          lastLoginIp: ipAddress || null,
         },
       });
     }
