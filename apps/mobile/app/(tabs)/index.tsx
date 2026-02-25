@@ -17,7 +17,6 @@ import { Image } from 'expo-image';
 import { api } from '../../services/api';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { getCategoryIcon, ICON_BG_COLORS, ICON_COLORS } from '../../constants/CategoryIcons';
-import { useCart } from '../../contexts/CartContext';
 import ProductCarousel from '../../components/product/ProductCarousel';
 import ProductCard from '../../components/product/ProductCard';
 import type { Product, Category } from '../../services/types';
@@ -63,7 +62,6 @@ type SectionItem =
 
 const HeaderSection = React.memo(function HeaderSection() {
   const router = useRouter();
-  const { itemCount } = useCart();
   const colors = useThemeColors();
   return (
     <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
@@ -76,14 +74,6 @@ const HeaderSection = React.memo(function HeaderSection() {
         <View style={styles.headerIcons}>
           <TouchableOpacity onPress={() => router.push('/(tabs)/search')} style={[styles.headerIconBtn, { backgroundColor: colors.backgroundTertiary }]}>
             <FontAwesome name="bell-o" size={20} color={colors.icon} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push('/(tabs)/cart')} style={[styles.headerIconBtn, { backgroundColor: colors.backgroundTertiary }]}>
-            <FontAwesome name="shopping-cart" size={20} color={colors.icon} />
-            {itemCount > 0 && (
-              <View style={[styles.cartBadge, { backgroundColor: colors.badge, borderColor: colors.card }]}>
-                <Text style={[styles.cartBadgeText, { color: colors.badgeText }]}>{itemCount > 9 ? '9+' : itemCount}</Text>
-              </View>
-            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -576,13 +566,7 @@ const styles = StyleSheet.create({
     position: 'relative', width: 36, height: 36, borderRadius: 18,
     alignItems: 'center', justifyContent: 'center',
   },
-  cartBadge: {
-    position: 'absolute', top: -4, right: -4,
-    borderRadius: 10, minWidth: 18, height: 18,
-    alignItems: 'center', justifyContent: 'center',
-    paddingHorizontal: 4, borderWidth: 2,
-  },
-  cartBadgeText: { fontSize: 10, fontWeight: '700' },
+
   searchBar: {
     flexDirection: 'row', alignItems: 'center',
     borderRadius: 24, paddingHorizontal: 16, paddingVertical: 11, gap: 10,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,66 +8,122 @@ import {
   TextInput,
   Alert,
   RefreshControl,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons, FontAwesome } from '@expo/vector-icons';
-import { useThemeColors } from '../../hooks/useThemeColors';
+import { Colors } from '../../constants/Colors';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { couponsApi, UserCoupon } from '../../services/coupons';
+import { checkoutApi } from '../../services/orders';
 import CartItem from '../../components/cart/CartItem';
 import Button from '../../components/ui/Button';
 
+// Free shipping threshold per warehouse (in PLN) - same as backend
+const FREE_SHIPPING_THRESHOLD = 300;
+
+// Warehouse display names (by city) - matching web version
+const WHOLESALER_CONFIG: Record<string, { name: string; color: string }> = {
+  'HP': { name: 'Magazyn Zielona Góra', color: '#3b82f6' },
+  'Hurtownia Przemysłowa': { name: 'Magazyn Zielona Góra', color: '#3b82f6' },
+  'Ikonka': { name: 'Magazyn Białystok', color: '#a855f7' },
+  'BTP': { name: 'Magazyn Chotów', color: '#22c55e' },
+  'Leker': { name: 'Magazyn Chynów', color: '#ef4444' },
+  'Gastro': { name: 'Magazyn Chotów', color: '#eab308' },
+  'Horeca': { name: 'Magazyn Chotów', color: '#f97316' },
+  'Forcetop': { name: 'Magazyn Chotów', color: '#14b8a6' },
+  'Rzeszów': { name: 'Magazyn Rzeszów', color: '#ec4899' },
+  'Outlet': { name: 'Magazyn Rzeszów', color: '#ec4899' },
+  'default': { name: 'Magazyn Chynów', color: '#6b7280' },
+};
+
+function getWholesalerConfig(wholesaler: string | null | undefined) {
+  if (!wholesaler) return WHOLESALER_CONFIG['default'];
+  return WHOLESALER_CONFIG[wholesaler] || { name: wholesaler, color: '#6b7280' };
+}
+
 export default function CartScreen() {
   const router = useRouter();
-  const colors = useThemeColors();
   const { cart, itemCount, updateQuantity, removeFromCart, applyCoupon, removeCoupon, refreshCart, loading } = useCart();
   const { isAuthenticated } = useAuth();
   const [couponCode, setCouponCode] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const [userCoupons, setUserCoupons] = useState<UserCoupon[]>([]);
-  const [couponsLoading, setCouponsLoading] = useState(false);
-
-  // Fetch user's active coupons
-  const fetchUserCoupons = useCallback(async () => {
-    if (!isAuthenticated) return;
-    setCouponsLoading(true);
-    try {
-      const res = await couponsApi.getMyCoupons();
-      const active = (res.coupons || []).filter(c => c.status === 'active');
-      setUserCoupons(active);
-    } catch {
-      // silently fail
-    } finally {
-      setCouponsLoading(false);
-    }
-  }, [isAuthenticated]);
-
-  useEffect(() => {
-    fetchUserCoupons();
-  }, [fetchUserCoupons]);
-
-  const handleQuickApply = async (code: string) => {
-    setCouponLoading(true);
-    setCouponError('');
-    try {
-      await applyCoupon(code);
-      setCouponCode('');
-    } catch (err: any) {
-      setCouponError(err.message || 'Nieprawidłowy kod kuponu');
-    } finally {
-      setCouponLoading(false);
-    }
-  };
+  const [shippingPrices, setShippingPrices] = useState<Record<string, number>>({});
+  const [totalShippingCost, setTotalShippingCost] = useState<number>(0);
+  const [loadingShipping, setLoadingShipping] = useState(false);
 
   const items = cart?.items || [];
   const subtotal = cart?.subtotal || 0;
   const discount = cart?.discount || 0;
   const total = cart?.total || 0;
+
+  // Fetch shipping prices per package (same logic as web version)
+  useEffect(() => {
+    async function fetchShippingPrices() {
+      if (!cart?.items || cart.items.length === 0) return;
+
+      setLoadingShipping(true);
+      try {
+        const cartItems = cart.items.map(item => ({
+          variantId: item.variant.id,
+          quantity: item.quantity,
+        }));
+
+        const response = await checkoutApi.getShippingPerPackage(cartItems);
+
+        // Build shipping prices per wholesaler - use LOWEST available price
+        const prices: Record<string, number> = {};
+        let lowestTotal = 0;
+        for (const pkg of response.packagesWithOptions) {
+          const wholesaler = pkg.package.wholesaler || 'default';
+          const availableMethods = pkg.shippingMethods.filter((m: any) => m.available);
+          if (availableMethods.length > 0) {
+            const lowestPrice = Math.min(...availableMethods.map((m: any) => m.price));
+            prices[wholesaler] = lowestPrice;
+            lowestTotal += lowestPrice;
+          }
+        }
+        setShippingPrices(prices);
+        setTotalShippingCost(lowestTotal);
+      } catch (err) {
+        console.error('Failed to fetch shipping prices:', err);
+      } finally {
+        setLoadingShipping(false);
+      }
+    }
+
+    fetchShippingPrices();
+  }, [cart?.items]);
+
+  // Group items by warehouse and calculate per-package subtotals
+  const packages = useMemo(() => {
+    if (!items.length) return [];
+
+    const grouped: Record<string, typeof items> = {};
+    for (const item of items) {
+      const wholesaler = item.variant.product.wholesaler || 'default';
+      if (!grouped[wholesaler]) grouped[wholesaler] = [];
+      grouped[wholesaler].push(item);
+    }
+
+    return Object.entries(grouped).map(([wholesaler, packageItems]) => {
+      const config = getWholesalerConfig(wholesaler);
+      const pkgSubtotal = packageItems.reduce(
+        (sum, item) => sum + (Number(item.variant.price) * item.quantity),
+        0
+      );
+
+      return {
+        wholesaler,
+        displayName: config.name,
+        color: config.color,
+        items: packageItems,
+        subtotal: pkgSubtotal,
+        shippingPrice: shippingPrices[wholesaler] || 0,
+      };
+    });
+  }, [items, shippingPrices]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -96,276 +152,6 @@ export default function CartScreen() {
       Alert.alert('Błąd', err.message || 'Nie udało się usunąć kuponu');
     }
   };
-
-  const styles = useMemo(() => StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.backgroundSecondary,
-    },
-    header: {
-      backgroundColor: colors.card,
-      paddingVertical: 16,
-      paddingHorizontal: 16,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-    },
-    headerTitle: {
-      fontSize: 24,
-      fontWeight: '700',
-      color: colors.text,
-    },
-    headerSubtitle: {
-      fontSize: 14,
-      color: colors.textSecondary,
-      marginTop: 2,
-    },
-    emptyContainer: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 24,
-    },
-    emptyIcon: {
-      fontSize: 80,
-      marginBottom: 16,
-    },
-    emptyText: {
-      fontSize: 20,
-      fontWeight: '600',
-      color: colors.text,
-      marginBottom: 8,
-    },
-    emptyHint: {
-      fontSize: 14,
-      color: colors.textSecondary,
-      textAlign: 'center',
-      marginBottom: 24,
-    },
-    scrollView: {
-      flex: 1,
-    },
-    scrollContent: {
-      padding: 16,
-      paddingBottom: 24,
-    },
-    warehouseGroup: {
-      marginBottom: 16,
-    },
-    warehouseHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-      borderBottomWidth: 1,
-    },
-    warehouseHeaderLeft: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 10,
-    },
-    warehouseIcon: {
-      fontSize: 22,
-    },
-    warehouseName: {
-      fontSize: 15,
-      fontWeight: '700',
-    },
-    warehouseCount: {
-      fontSize: 12,
-      color: colors.textMuted,
-      marginTop: 1,
-    },
-    warehouseBadge: {
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-      borderRadius: 12,
-    },
-    warehouseBadgeText: {
-      fontSize: 11,
-      fontWeight: '700',
-    },
-    warehouseItems: {
-      paddingTop: 4,
-    },
-    browseWarehouseBtn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 6,
-      paddingVertical: 12,
-      borderTopWidth: 1,
-    },
-    browseWarehouseText: {
-      fontSize: 13,
-      fontWeight: '600',
-    },
-    couponSection: {
-      backgroundColor: colors.card,
-      borderRadius: 12,
-      padding: 16,
-      marginTop: 8,
-    },
-    couponLabel: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: colors.textSecondary,
-      marginBottom: 10,
-    },
-    couponInputRow: {
-      flexDirection: 'row',
-      gap: 10,
-      alignItems: 'center',
-    },
-    couponInput: {
-      flex: 1,
-      backgroundColor: colors.backgroundTertiary,
-      borderRadius: 8,
-      paddingHorizontal: 14,
-      paddingVertical: 10,
-      fontSize: 14,
-      color: colors.text,
-    },
-    couponApplied: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    couponBadge: {
-      backgroundColor: colors.success + '15',
-      borderRadius: 8,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-    },
-    couponBadgeText: {
-      color: colors.success,
-      fontWeight: '600',
-      fontSize: 14,
-    },
-    couponRemove: {
-      color: colors.destructive,
-      fontWeight: '600',
-      fontSize: 14,
-    },
-    couponErrorText: {
-      color: colors.destructive,
-      fontSize: 13,
-      marginTop: 6,
-    },
-    availableCoupons: {
-      marginTop: 14,
-      paddingTop: 14,
-      borderTopWidth: 1,
-      borderTopColor: colors.backgroundTertiary,
-    },
-    availableCouponsLabel: {
-      fontSize: 12,
-      fontWeight: '600',
-      color: colors.textMuted,
-      marginBottom: 8,
-      textTransform: 'uppercase',
-      letterSpacing: 0.5,
-    },
-    couponChip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      backgroundColor: colors.tint + '08',
-      borderWidth: 1,
-      borderColor: colors.tint + '25',
-      borderRadius: 10,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      marginBottom: 8,
-    },
-    couponChipLeft: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 10,
-      flex: 1,
-    },
-    couponChipCode: {
-      fontSize: 13,
-      fontWeight: '700',
-      color: colors.text,
-      letterSpacing: 0.3,
-    },
-    couponChipExpiry: {
-      fontSize: 11,
-      color: colors.textMuted,
-      marginTop: 1,
-    },
-    couponChipRight: {
-      alignItems: 'flex-end',
-      marginLeft: 8,
-    },
-    couponChipValue: {
-      fontSize: 15,
-      fontWeight: '700',
-      color: colors.tint,
-    },
-    couponChipUse: {
-      fontSize: 11,
-      fontWeight: '600',
-      color: colors.tint,
-      marginTop: 2,
-    },
-    summary: {
-      backgroundColor: colors.card,
-      padding: 16,
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
-    },
-    summaryRows: {
-      marginBottom: 16,
-    },
-    summaryRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 8,
-    },
-    summaryLabel: {
-      fontSize: 14,
-      color: colors.textSecondary,
-    },
-    summaryValue: {
-      fontSize: 14,
-      color: colors.text,
-      fontWeight: '500',
-    },
-    discountLabel: {
-      fontSize: 14,
-      color: colors.success,
-    },
-    discountValue: {
-      fontSize: 14,
-      color: colors.success,
-      fontWeight: '600',
-    },
-    shippingInfo: {
-      fontSize: 12,
-      color: colors.textMuted,
-      fontStyle: 'italic',
-    },
-    totalRow: {
-      marginTop: 8,
-      paddingTop: 12,
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
-      marginBottom: 0,
-    },
-    totalLabel: {
-      fontSize: 18,
-      fontWeight: '700',
-      color: colors.text,
-    },
-    totalValue: {
-      fontSize: 22,
-      fontWeight: '700',
-      color: colors.tint,
-    },
-  }), [colors]);
 
   const handleCheckout = () => {
     if (!isAuthenticated) {
@@ -403,43 +189,7 @@ export default function CartScreen() {
     );
   }
 
-  // Group items by warehouse (like web version)
-  // Merge Outlet into Rzeszów — they are the same warehouse
-  const warehouseGroups = items.reduce<Record<string, typeof items>>((groups, item) => {
-    let warehouse = item.variant.product.wholesaler || 'default';
-    if (warehouse === 'Outlet') warehouse = 'Rzeszów';
-    if (!groups[warehouse]) groups[warehouse] = [];
-    groups[warehouse].push(item);
-    return groups;
-  }, {});
-
-  const WAREHOUSE_CONFIG: Record<string, { name: string; color: string; bgColor: string; borderColor: string; icon: string; searchKey: string }> = {
-    'HP': { name: 'Magazyn Zielona Góra', color: '#1D4ED8', bgColor: '#EFF6FF', borderColor: '#BFDBFE', icon: '🏢', searchKey: 'hp' },
-    'Hurtownia Przemysłowa': { name: 'Magazyn Zielona Góra', color: '#1D4ED8', bgColor: '#EFF6FF', borderColor: '#BFDBFE', icon: '🏢', searchKey: 'hp' },
-    'Ikonka': { name: 'Magazyn Białystok', color: '#7C3AED', bgColor: '#F5F3FF', borderColor: '#DDD6FE', icon: '📦', searchKey: 'ikonka' },
-    'BTP': { name: 'Magazyn Chotów', color: '#047857', bgColor: '#ECFDF5', borderColor: '#A7F3D0', icon: '🌿', searchKey: 'btp' },
-    'Leker': { name: 'Magazyn Chynów', color: '#B91C1C', bgColor: '#FEF2F2', borderColor: '#FECACA', icon: '🏠', searchKey: 'leker' },
-    'Rzeszów': { name: 'Magazyn Rzeszów', color: '#BE185D', bgColor: '#FDF2F8', borderColor: '#FBCFE8', icon: '📍', searchKey: 'outlet' },
-  };
-
-  const getWarehouseInfo = (key: string) => {
-    return WAREHOUSE_CONFIG[key] || {
-      name: `Magazyn ${key}`,
-      color: colors.textSecondary,
-      bgColor: colors.backgroundSecondary,
-      borderColor: colors.border,
-      icon: '📦',
-      searchKey: key.toLowerCase(),
-    };
-  };
-
-  const handleBrowseWarehouse = (warehouse: string) => {
-    const info = getWarehouseInfo(warehouse);
-    router.push({
-      pathname: '/(tabs)/search',
-      params: { warehouse: info.searchKey },
-    });
-  };
+  const totalPackages = packages.length;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -455,63 +205,82 @@ export default function CartScreen() {
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* Cart items grouped by warehouse */}
-        {Object.entries(warehouseGroups).map(([warehouse, warehouseItems], index) => {
-          const wInfo = getWarehouseInfo(warehouse);
-          const showHeader = Object.keys(warehouseGroups).length > 1;
-          return (
-            <View key={warehouse} style={[
-              styles.warehouseGroup,
-              showHeader && {
-                backgroundColor: colors.card,
-                borderRadius: 14,
-                borderWidth: 1.5,
-                borderColor: wInfo.borderColor,
-                overflow: 'hidden',
-                marginBottom: 16,
-              },
-            ]}>
-              {showHeader && (
-                <View style={[styles.warehouseHeader, { backgroundColor: wInfo.bgColor, borderBottomColor: wInfo.borderColor }]}> 
-                  <View style={styles.warehouseHeaderLeft}>
-                    <Text style={styles.warehouseIcon}>{wInfo.icon}</Text>
-                    <View>
-                      <Text style={[styles.warehouseName, { color: wInfo.color }]}>{wInfo.name}</Text>
-                      <Text style={styles.warehouseCount}>
-                        {warehouseItems.length} {warehouseItems.length === 1 ? 'produkt' : warehouseItems.length < 5 ? 'produkty' : 'produktów'}
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={[styles.warehouseBadge, { backgroundColor: wInfo.color + '15' }]}>
-                    <Text style={[styles.warehouseBadgeText, { color: wInfo.color }]}>Paczka {index + 1}</Text>
+        {/* Cart items grouped by warehouse with shipping info */}
+        {packages.map((pkg, pkgIndex) => (
+          <View key={pkg.wholesaler} style={styles.packageContainer}>
+            {/* Package Header */}
+            <View style={styles.packageHeader}>
+              <View style={styles.packageHeaderLeft}>
+                <View style={[styles.warehouseBadge, { backgroundColor: pkg.color }]}>
+                  <Text style={styles.warehouseBadgeText}>📍</Text>
+                </View>
+                <View style={styles.packageHeaderInfo}>
+                  <Text style={styles.packageWarehouseName}>{pkg.displayName}</Text>
+                  <Text style={styles.packageCount}>
+                    Paczka {pkgIndex + 1}/{totalPackages}
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.packageSubtotal}>
+                {pkg.subtotal.toFixed(2).replace('.', ',')} zł
+              </Text>
+            </View>
+
+            {/* Package Items */}
+            {pkg.items.map((item) => (
+              <CartItem
+                key={item.id}
+                item={item}
+                onUpdateQuantity={updateQuantity}
+                onRemove={removeFromCart}
+              />
+            ))}
+
+            {/* Estimated Delivery per Package */}
+            <View style={styles.shippingBar}>
+              <View style={styles.shippingBarTop}>
+                <View style={styles.shippingLabelRow}>
+                  <Text style={styles.shippingIcon}>📦</Text>
+                  <Text style={styles.shippingLabel}>Szacowana dostawa</Text>
+                  <View style={styles.infoCircle}>
+                    <Text style={styles.infoCircleText}>i</Text>
                   </View>
                 </View>
-              )}
-              <View style={showHeader ? styles.warehouseItems : undefined}>
-                {warehouseItems.map((item) => (
-                  <CartItem
-                    key={item.id}
-                    item={item}
-                    onUpdateQuantity={updateQuantity}
-                    onRemove={removeFromCart}
-                  />
-                ))}
+                <View>
+                  {pkg.subtotal >= FREE_SHIPPING_THRESHOLD ? (
+                    <Text style={styles.shippingFree}>GRATIS!</Text>
+                  ) : pkg.shippingPrice > 0 ? (
+                    <Text style={styles.shippingPrice}>
+                      {pkg.shippingPrice.toFixed(2).replace('.', ',')} zł
+                    </Text>
+                  ) : (
+                    <Text style={styles.shippingAtOrder}>obliczana przy zamówieniu</Text>
+                  )}
+                </View>
               </View>
-              {showHeader && (
-                <TouchableOpacity
-                  style={[styles.browseWarehouseBtn, { borderTopColor: wInfo.borderColor }]}
-                  onPress={() => handleBrowseWarehouse(warehouse)}
-                >
-                  <Ionicons name="add-circle-outline" size={18} color={wInfo.color} />
-                  <Text style={[styles.browseWarehouseText, { color: wInfo.color }]}>
-                    Dodaj więcej z tego magazynu
+
+              {/* Free shipping progress bar */}
+              {pkg.subtotal < FREE_SHIPPING_THRESHOLD && (
+                <View style={styles.progressBarContainer}>
+                  <View style={styles.progressBarTrack}>
+                    <View
+                      style={[
+                        styles.progressBarFill,
+                        { width: `${Math.min((pkg.subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100)}%` },
+                      ]}
+                    />
+                  </View>
+                  <Text style={styles.progressBarText}>
+                    <Text style={styles.progressBarAmount}>
+                      {(FREE_SHIPPING_THRESHOLD - pkg.subtotal).toFixed(2).replace('.', ',')} zł
+                    </Text>
+                    {' '}do darmowej dostawy
                   </Text>
-                  <Ionicons name="chevron-forward" size={16} color={wInfo.color} />
-                </TouchableOpacity>
+                </View>
               )}
             </View>
-          );
-        })}
+          </View>
+        ))}
 
         {/* Coupon section */}
         <View style={styles.couponSection}>
@@ -547,50 +316,6 @@ export default function CartScreen() {
           {couponError ? (
             <Text style={styles.couponErrorText}>{couponError}</Text>
           ) : null}
-
-          {/* User's available coupons */}
-          {isAuthenticated && !cart?.couponCode && userCoupons.length > 0 && (
-            <View style={styles.availableCoupons}>
-              <Text style={styles.availableCouponsLabel}>Twoje dostępne kupony:</Text>
-              {userCoupons.map((c) => {
-                const valueLabel =
-                  c.type === 'PERCENTAGE'
-                    ? `-${c.value}%`
-                    : c.type === 'FREE_SHIPPING'
-                      ? 'Darmowa dostawa'
-                      : `-${c.value} zł`;
-                const remaining = c.expiresAt
-                  ? Math.max(0, Math.ceil((new Date(c.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-                  : null;
-
-                return (
-                  <TouchableOpacity
-                    key={c.id}
-                    style={styles.couponChip}
-                    onPress={() => handleQuickApply(c.code)}
-                    activeOpacity={0.7}
-                    disabled={couponLoading}
-                  >
-                    <View style={styles.couponChipLeft}>
-                      <FontAwesome name="ticket" size={14} color={colors.tint} style={{ transform: [{ rotate: '-45deg' }] }} />
-                      <View>
-                        <Text style={styles.couponChipCode}>{c.code}</Text>
-                        {remaining !== null && (
-                          <Text style={styles.couponChipExpiry}>
-                            {remaining > 0 ? `Ważny jeszcze ${remaining} dn.` : 'Ostatni dzień!'}
-                          </Text>
-                        )}
-                      </View>
-                    </View>
-                    <View style={styles.couponChipRight}>
-                      <Text style={styles.couponChipValue}>{valueLabel}</Text>
-                      <Text style={styles.couponChipUse}>Użyj</Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
         </View>
       </ScrollView>
 
@@ -608,12 +333,27 @@ export default function CartScreen() {
             </View>
           )}
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Wysyłka</Text>
-            <Text style={styles.shippingInfo}>obliczona w następnym kroku</Text>
+            <Text style={styles.summaryLabel}>Szacowana dostawa</Text>
+            {loadingShipping ? (
+              <Text style={styles.shippingInfo}>Obliczanie...</Text>
+            ) : totalShippingCost > 0 ? (
+              <Text style={styles.summaryValue}>
+                {totalShippingCost.toFixed(2).replace('.', ',')} zł
+              </Text>
+            ) : (
+              <Text style={styles.shippingInfo}>przy zamówieniu</Text>
+            )}
           </View>
+          {Object.keys(shippingPrices).length > 1 && (
+            <Text style={styles.multiPackageInfo}>
+              Otrzymasz {Object.keys(shippingPrices).length} przesyłki
+            </Text>
+          )}
           <View style={[styles.summaryRow, styles.totalRow]}>
-            <Text style={styles.totalLabel}>Do zapłaty</Text>
-            <Text style={styles.totalValue}>{total.toFixed(2).replace('.', ',')} zł</Text>
+            <Text style={styles.totalLabel}>Razem</Text>
+            <Text style={styles.totalValue}>
+              {(total + totalShippingCost).toFixed(2).replace('.', ',')} zł
+            </Text>
           </View>
         </View>
         <Button
@@ -626,3 +366,307 @@ export default function CartScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.secondary[50],
+  },
+  header: {
+    backgroundColor: Colors.white,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.secondary[200],
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: Colors.secondary[900],
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: Colors.secondary[600],
+    marginTop: 2,
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  emptyIcon: {
+    fontSize: 80,
+    marginBottom: 16,
+  },
+  emptyText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: Colors.secondary[900],
+    marginBottom: 8,
+  },
+  emptyHint: {
+    fontSize: 14,
+    color: Colors.secondary[600],
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 24,
+  },
+
+  // Package container styles
+  packageContainer: {
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  packageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.secondary[50],
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.secondary[200],
+  },
+  packageHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  warehouseBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  warehouseBadgeText: {
+    fontSize: 14,
+    color: Colors.white,
+  },
+  packageHeaderInfo: {
+    flex: 1,
+  },
+  packageWarehouseName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.secondary[900],
+  },
+  packageCount: {
+    fontSize: 11,
+    color: Colors.secondary[500],
+    marginTop: 1,
+  },
+  packageSubtotal: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.secondary[900],
+  },
+
+  // Shipping bar styles (per package)
+  shippingBar: {
+    backgroundColor: '#fff7ed', // orange-50
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#fed7aa', // orange-200
+  },
+  shippingBarTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  shippingLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  shippingIcon: {
+    fontSize: 14,
+  },
+  shippingLabel: {
+    fontSize: 13,
+    color: Colors.secondary[700],
+  },
+  infoCircle: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: Colors.secondary[200],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoCircleText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.secondary[600],
+  },
+  shippingFree: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#16a34a', // green-600
+  },
+  shippingPrice: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#ea580c', // orange-600
+  },
+  shippingAtOrder: {
+    fontSize: 12,
+    color: Colors.secondary[500],
+    fontStyle: 'italic',
+  },
+
+  // Progress bar styles
+  progressBarContainer: {
+    marginTop: 8,
+  },
+  progressBarTrack: {
+    height: 6,
+    backgroundColor: '#fed7aa', // orange-200
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 3,
+    backgroundColor: Colors.primary[500],
+  },
+  progressBarText: {
+    fontSize: 11,
+    color: Colors.secondary[600],
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  progressBarAmount: {
+    fontWeight: '600',
+    color: '#ea580c', // orange-600
+  },
+
+  // Coupon section
+  couponSection: {
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+  },
+  couponLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.secondary[700],
+    marginBottom: 10,
+  },
+  couponInputRow: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+  },
+  couponInput: {
+    flex: 1,
+    backgroundColor: Colors.secondary[100],
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: Colors.secondary[900],
+  },
+  couponApplied: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  couponBadge: {
+    backgroundColor: Colors.success + '15',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  couponBadgeText: {
+    color: Colors.success,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  couponRemove: {
+    color: Colors.destructive,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  couponErrorText: {
+    color: Colors.destructive,
+    fontSize: 13,
+    marginTop: 6,
+  },
+
+  // Summary bar
+  summary: {
+    backgroundColor: Colors.white,
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.secondary[200],
+  },
+  summaryRows: {
+    marginBottom: 16,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  summaryLabel: {
+    fontSize: 14,
+    color: Colors.secondary[600],
+  },
+  summaryValue: {
+    fontSize: 14,
+    color: Colors.secondary[900],
+    fontWeight: '500',
+  },
+  discountLabel: {
+    fontSize: 14,
+    color: Colors.success,
+  },
+  discountValue: {
+    fontSize: 14,
+    color: Colors.success,
+    fontWeight: '600',
+  },
+  shippingInfo: {
+    fontSize: 12,
+    color: Colors.secondary[400],
+    fontStyle: 'italic',
+  },
+  multiPackageInfo: {
+    fontSize: 12,
+    color: Colors.secondary[500],
+    textAlign: 'right',
+    marginBottom: 8,
+    marginTop: -4,
+  },
+  totalRow: {
+    marginTop: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.secondary[200],
+    marginBottom: 0,
+  },
+  totalLabel: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.secondary[900],
+  },
+  totalValue: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: Colors.primary[600],
+  },
+});
