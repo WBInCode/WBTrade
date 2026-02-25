@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
+  Animated,
   StyleSheet,
   View,
   Text,
@@ -9,7 +10,6 @@ import {
   RefreshControl,
   Platform,
   Modal,
-  Animated,
   Easing,
   Dimensions,
 } from 'react-native';
@@ -17,7 +17,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
+import { useThemeColors } from '../../hooks/useThemeColors';
 import { Colors } from '../../constants/Colors';
+import type { ThemeColors } from '../../constants/Colors';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { couponsApi, UserCoupon } from '../../services/coupons';
@@ -246,6 +248,7 @@ function sourceLabel(source: string): string {
     case 'NEWSLETTER': return 'Newsletter';
     case 'REFERRAL': return 'Polecenie';
     case 'CAMPAIGN': return 'Kampania';
+    case 'ALL_COLLECTED_BONUS': return 'Niespodzianka';
     default: return 'Rabat';
   }
 }
@@ -254,6 +257,8 @@ function sourceLabel(source: string): string {
 // CouponCard — active/inactive user coupon
 // ═══════════════════════════════════════
 function CouponCard({ coupon }: { coupon: UserCoupon }) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { show } = useToast();
   const isActive = coupon.status === 'active';
   const remaining = daysLeft(coupon.expiresAt);
@@ -286,13 +291,13 @@ function CouponCard({ coupon }: { coupon: UserCoupon }) {
             </View>
             {coupon.status === 'used' && (
               <View style={styles.usedBadge}>
-                <FontAwesome name="check" size={10} color={Colors.white} />
+                <FontAwesome name="check" size={10} color={colors.textInverse} />
                 <Text style={styles.usedBadgeText}>Wykorzystany</Text>
               </View>
             )}
             {coupon.status === 'expired' && (
               <View style={styles.expiredBadge}>
-                <FontAwesome name="clock-o" size={10} color={Colors.white} />
+                <FontAwesome name="clock-o" size={10} color={colors.textInverse} />
                 <Text style={styles.expiredBadgeText}>Wygasł</Text>
               </View>
             )}
@@ -312,7 +317,7 @@ function CouponCard({ coupon }: { coupon: UserCoupon }) {
             {coupon.code}
           </Text>
           {isActive && (
-            <FontAwesome name="copy" size={16} color={Colors.primary[500]} />
+            <FontAwesome name="copy" size={16} color={colors.tint} />
           )}
         </TouchableOpacity>
 
@@ -320,7 +325,7 @@ function CouponCard({ coupon }: { coupon: UserCoupon }) {
         <View style={styles.infoRow}>
           {coupon.expiresAt && (
             <View style={styles.infoItem}>
-              <FontAwesome name="calendar" size={12} color={Colors.secondary[400]} />
+              <FontAwesome name="calendar" size={12} color={colors.textMuted} />
               <Text style={styles.infoText}>
                 {isActive && remaining !== null
                   ? `Ważny jeszcze ${remaining} ${remaining === 1 ? 'dzień' : 'dni'}`
@@ -330,7 +335,7 @@ function CouponCard({ coupon }: { coupon: UserCoupon }) {
           )}
           {coupon.minimumAmount && (
             <View style={styles.infoItem}>
-              <FontAwesome name="shopping-cart" size={12} color={Colors.secondary[400]} />
+              <FontAwesome name="shopping-cart" size={12} color={colors.textMuted} />
               <Text style={styles.infoText}>Min. {coupon.minimumAmount} zł</Text>
             </View>
           )}
@@ -360,9 +365,12 @@ interface EarnableItem {
   claimed: boolean;
   onClaim?: () => void;
   claiming?: boolean;
+  claimLabel?: string;
 }
 
 function EarnableCard({ item }: { item: EarnableItem }) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const isLocked = !item.unlocked;
 
   return (
@@ -372,7 +380,7 @@ function EarnableCard({ item }: { item: EarnableItem }) {
         <FontAwesome
           name={item.icon as any}
           size={22}
-          color={isLocked ? Colors.secondary[400] : Colors.primary[500]}
+          color={isLocked ? colors.textMuted : colors.tint}
         />
       </View>
 
@@ -399,24 +407,24 @@ function EarnableCard({ item }: { item: EarnableItem }) {
             disabled={item.claiming}
           >
             {item.claiming ? (
-              <ActivityIndicator size="small" color={Colors.white} />
+              <ActivityIndicator size="small" color={colors.textInverse} />
             ) : (
               <>
-                <FontAwesome name="check" size={12} color={Colors.white} style={{ marginRight: 6 }} />
-                <Text style={styles.earnClaimText}>Odbierz</Text>
+                <FontAwesome name={item.claimLabel === 'Zapisz się' ? 'envelope' : 'check'} size={12} color={colors.textInverse} style={{ marginRight: 6 }} />
+                <Text style={styles.earnClaimText}>{item.claimLabel || 'Odbierz'}</Text>
               </>
             )}
           </TouchableOpacity>
         )}
         {item.claimed && (
           <View style={styles.earnClaimedBadge}>
-            <FontAwesome name="check-circle" size={12} color={Colors.success} />
+            <FontAwesome name="check-circle" size={14} color={colors.success} />
             <Text style={styles.earnClaimedText}>Odebrano</Text>
           </View>
         )}
         {isLocked && (
           <View style={styles.earnLockedBadge}>
-            <FontAwesome name="lock" size={11} color={Colors.secondary[400]} />
+            <FontAwesome name="lock" size={11} color={colors.textMuted} />
             <Text style={styles.earnLockedText}>Do odblokowania</Text>
           </View>
         )}
@@ -429,18 +437,24 @@ function EarnableCard({ item }: { item: EarnableItem }) {
 // Main Screen
 // ═══════════════════════════════════════
 export default function DiscountsScreen() {
-  const { isAuthenticated } = useAuth();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { isAuthenticated, user } = useAuth();
   const { show } = useToast();
   const [coupons, setCoupons] = useState<UserCoupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [claimingApp, setClaimingApp] = useState(false);
   const [appClaimed, setAppClaimed] = useState(false);
+  const [welcomeClaimed, setWelcomeClaimed] = useState(false);
+  const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
   const [claimingNewsletter, setClaimingNewsletter] = useState(false);
   const [newsletterClaimed, setNewsletterClaimed] = useState(false);
   const [showNewsletterPopup, setShowNewsletterPopup] = useState(false);
   const [newsletterCode, setNewsletterCode] = useState('');
   const [newsletterPercent, setNewsletterPercent] = useState(10);
+  const [surpriseClaimed, setSurpriseClaimed] = useState(false);
+  const [claimingSurprise, setClaimingSurprise] = useState(false);
 
   const fetchCoupons = useCallback(async () => {
     try {
@@ -449,9 +463,18 @@ export default function DiscountsScreen() {
       // Check if app download already claimed
       const hasApp = data.coupons.some(c => c.couponSource === 'APP_DOWNLOAD');
       if (hasApp) setAppClaimed(true);
+      // Check if welcome discount exists
+      const hasWelcome = data.coupons.some(c => c.couponSource === 'WELCOME_DISCOUNT');
+      if (hasWelcome) setWelcomeClaimed(true);
       // Check if newsletter already claimed
       const hasNewsletter = data.coupons.some(c => c.couponSource === 'NEWSLETTER');
-      if (hasNewsletter) setNewsletterClaimed(true);
+      if (hasNewsletter) {
+        setNewsletterSubscribed(true);
+        setNewsletterClaimed(true);
+      }
+      // Check if surprise bonus already claimed
+      const hasSurprise = data.coupons.some(c => c.couponSource === 'ALL_COLLECTED_BONUS');
+      if (hasSurprise) setSurpriseClaimed(true);
     } catch (err) {
       console.warn('Failed to fetch coupons:', err);
     } finally {
@@ -477,11 +500,15 @@ export default function DiscountsScreen() {
       setNewsletterCode(data.discount.couponCode);
       setNewsletterPercent(data.discount.discountPercent);
       setNewsletterClaimed(true);
+      setNewsletterSubscribed(true);
       setShowNewsletterPopup(true);
       fetchCoupons();
     } catch (err: any) {
       if (err?.statusCode === 409) {
         setNewsletterClaimed(true);
+        setNewsletterSubscribed(true);
+        // Refresh to show existing coupon in the list
+        fetchCoupons();
         show('Rabat za newsletter został już przyznany', 'info');
       } else {
         console.warn('Failed to claim newsletter discount:', err);
@@ -495,14 +522,14 @@ export default function DiscountsScreen() {
   const handleClaimAppDownload = async () => {
     setClaimingApp(true);
     try {
-      await couponsApi.claimAppDownload();
+      const data = await couponsApi.claimAppDownload();
       setAppClaimed(true);
       show('Rabat -5% za aplikację przyznany!', 'success');
-      // Refresh list
       fetchCoupons();
     } catch (err: any) {
       if (err?.statusCode === 409) {
         setAppClaimed(true);
+        fetchCoupons();
         show('Rabat za aplikację został już przyznany', 'info');
       } else {
         console.warn('Failed to claim app download discount:', err);
@@ -513,11 +540,46 @@ export default function DiscountsScreen() {
     }
   };
 
+  const handleClaimSurprise = async () => {
+    setClaimingSurprise(true);
+    try {
+      await couponsApi.claimSurprise();
+      setSurpriseClaimed(true);
+      show('Kupon-niespodzianka -25% przyznany!', 'success');
+      fetchCoupons();
+    } catch (err: any) {
+      if (err?.statusCode === 409) {
+        setSurpriseClaimed(true);
+        show('Kupon-niespodzianka został już odebrany', 'info');
+      } else if (err?.statusCode === 400) {
+        show('Zbierz najpierw wszystkie rabaty', 'error');
+      } else {
+        show('Nie udało się odebrać kuponu', 'error');
+      }
+    } finally {
+      setClaimingSurprise(false);
+    }
+  };
+
   const activeCoupons = coupons.filter(c => c.status === 'active');
   const inactiveCoupons = coupons.filter(c => c.status !== 'active');
 
+  // Check how many earnable items are claimed (welcome + app + newsletter coupon = 3 needed for surprise)
+  const claimedCount = [welcomeClaimed, appClaimed, newsletterClaimed].filter(Boolean).length;
+  const allEarnableClaimed = claimedCount >= 3;
+  const showSurpriseSection = allEarnableClaimed || surpriseClaimed;
+
   // ── Earnable coupons list ──
   const earnableItems: EarnableItem[] = [
+    {
+      id: 'welcome',
+      icon: 'handshake-o',
+      title: 'Zniżka powitalna',
+      description: 'Załóż konto w WBTrade i odbierz rabat powitalny',
+      discount: '-5%',
+      unlocked: isAuthenticated,
+      claimed: welcomeClaimed,
+    },
     {
       id: 'app-download',
       icon: 'mobile',
@@ -533,7 +595,7 @@ export default function DiscountsScreen() {
       id: 'newsletter',
       icon: 'envelope',
       title: 'Zapisz się do newslettera',
-      description: 'Bądź na bieżąco z promocjami i otrzymaj kod rabatowy',
+      description: 'Bądź na bieżąco z promocjami i otrzymaj kod rabatowy -10%',
       discount: '-10%',
       unlocked: isAuthenticated,
       claimed: newsletterClaimed,
@@ -574,13 +636,13 @@ export default function DiscountsScreen() {
       <Stack.Screen
         options={{
           title: 'Moje rabaty',
-          headerTintColor: Colors.primary[500],
+          headerTintColor: colors.tint,
         }}
       />
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.primary[500]} />
+          <ActivityIndicator size="large" color={colors.tint} />
         </View>
       ) : (
         <ScrollView
@@ -590,7 +652,7 @@ export default function DiscountsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor={Colors.primary[500]}
+              tintColor={colors.tint}
             />
           }
         >
@@ -598,7 +660,7 @@ export default function DiscountsScreen() {
           {activeCoupons.length > 0 && (
             <>
               <View style={styles.sectionHeader}>
-                <FontAwesome name="ticket" size={16} color={Colors.primary[500]} />
+                <FontAwesome name="ticket" size={16} color={colors.tint} />
                 <Text style={styles.sectionTitle}>Aktywne ({activeCoupons.length})</Text>
               </View>
               {activeCoupons.map(c => (
@@ -609,7 +671,7 @@ export default function DiscountsScreen() {
 
           {/* ═══ Earnable coupons ═══ */}
           <View style={[styles.sectionHeader, activeCoupons.length > 0 && { marginTop: 28 }]}>
-            <FontAwesome name="trophy" size={16} color={Colors.warning} />
+            <FontAwesome name="trophy" size={16} color={colors.warning} />
             <Text style={styles.sectionTitle}>Rabaty do zdobycia</Text>
           </View>
           <Text style={styles.sectionSubtitle}>
@@ -620,12 +682,120 @@ export default function DiscountsScreen() {
             <EarnableCard key={item.id} item={item} />
           ))}
 
+          {/* ═══ Surprise bonus section ═══ */}
+          {showSurpriseSection && (
+            <View style={styles.surpriseSection}>
+              <View style={styles.surpriseGradient}>
+                {/* Decorative top accent */}
+                <View style={styles.surpriseTopAccent} />
+
+                <View style={styles.surpriseIconCircle}>
+                  <FontAwesome name="gift" size={28} color="#fff" />
+                </View>
+
+                <View style={styles.surpriseStarsRow}>
+                  <FontAwesome name="star" size={10} color="#FFD700" />
+                  <FontAwesome name="star" size={14} color="#FFC107" />
+                  <FontAwesome name="star" size={10} color="#FFD700" />
+                </View>
+
+                <Text style={styles.surpriseTitle}>Kupon-Niespodzianka!</Text>
+                <Text style={styles.surpriseSubtitle}>
+                  Zebrałeś wszystkie dostępne rabaty — gratulacje!
+                </Text>
+
+                <View style={styles.surpriseValueCard}>
+                  <Text style={styles.surpriseValue}>-25%</Text>
+                  <Text style={styles.surpriseValueLabel}>na dowolne zakupy</Text>
+                </View>
+
+                {!surpriseClaimed ? (
+                  <TouchableOpacity
+                    style={styles.surpriseClaimBtn}
+                    onPress={handleClaimSurprise}
+                    activeOpacity={0.8}
+                    disabled={claimingSurprise}
+                  >
+                    {claimingSurprise ? (
+                      <ActivityIndicator size="small" color="#1a1a1a" />
+                    ) : (
+                      <>
+                        <FontAwesome name="gift" size={16} color="#1a1a1a" style={{ marginRight: 8 }} />
+                        <Text style={styles.surpriseClaimText}>Odbierz niespodziankę</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.surpriseClaimedRow}>
+                    <FontAwesome name="check-circle" size={20} color="#4CAF50" />
+                    <Text style={styles.surpriseClaimedText}>Kupon odebrany! Sprawdź powyżej.</Text>
+                  </View>
+                )}
+
+                <View style={styles.surpriseNoteRow}>
+                  <View style={styles.surpriseNoteDot} />
+                  <Text style={styles.surpriseNote}>Ważny 60 dni</Text>
+                  <View style={styles.surpriseNoteDot} />
+                  <Text style={styles.surpriseNote}>Jednorazowy</Text>
+                  <View style={styles.surpriseNoteDot} />
+                  <Text style={styles.surpriseNote}>Nie łączy się</Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Progress toward surprise */}
+          {!showSurpriseSection && (
+            <View style={styles.surpriseProgress}>
+              <View style={styles.progressTopRow}>
+                <View style={styles.progressIconCircle}>
+                  <FontAwesome name="gift" size={18} color="#B8860B" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.surpriseProgressTitle}>Kupon-Niespodzianka</Text>
+                  <Text style={styles.surpriseProgressDesc}>
+                    Zbierz wszystkie rabaty i odblokuj specjalny bonus <Text style={{ fontWeight: '800', color: '#B8860B' }}>-25%</Text>
+                  </Text>
+                </View>
+                <View style={styles.progressBadge}>
+                  <FontAwesome name="lock" size={10} color="#B8860B" />
+                  <Text style={styles.progressBadgeText}>{claimedCount}/3</Text>
+                </View>
+              </View>
+
+              <View style={styles.progressBarWrap}>
+                <View style={[styles.progressBarFill, { width: `${(claimedCount / 3) * 100}%` }]} />
+              </View>
+
+              <View style={styles.progressStepsRow}>
+                {[
+                  { label: 'Powitalny', done: welcomeClaimed },
+                  { label: 'Aplikacja', done: appClaimed },
+                  { label: 'Newsletter', done: newsletterClaimed },
+                ].map((step) => (
+                  <View key={step.label} style={styles.progressStep}>
+                    <View style={[
+                      styles.progressStepDot,
+                      step.done && styles.progressStepDotActive,
+                    ]}>
+                      {step.done && <FontAwesome name="check" size={8} color="#fff" />}
+                    </View>
+                    <Text style={[
+                      styles.progressStepLabel,
+                      step.done && styles.progressStepLabelActive,
+                    ]}>{step.label}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
           {/* ═══ Inactive coupons ═══ */}
           {inactiveCoupons.length > 0 && (
             <>
               <View style={[styles.sectionHeader, { marginTop: 28 }]}>
-                <FontAwesome name="history" size={16} color={Colors.secondary[400]} />
-                <Text style={[styles.sectionTitle, { color: Colors.secondary[500] }]}>
+                <FontAwesome name="history" size={16} color={colors.textMuted} />
+                <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
                   Historia ({inactiveCoupons.length})
                 </Text>
               </View>
@@ -638,7 +808,7 @@ export default function DiscountsScreen() {
           {/* Empty state — only when no coupons at all */}
           {coupons.length === 0 && (
             <View style={styles.emptyMini}>
-              <FontAwesome name="ticket" size={28} color={Colors.secondary[300]} />
+              <FontAwesome name="ticket" size={28} color={colors.inputBorder} />
               <Text style={styles.emptyMiniText}>
                 Jeszcze nie masz kuponów. Wykonaj zadania powyżej, żeby zdobyć rabaty!
               </Text>
@@ -656,10 +826,10 @@ export default function DiscountsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundSecondary,
   },
   center: {
     flex: 1,
@@ -680,11 +850,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
   },
   sectionSubtitle: {
     fontSize: 13,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     marginBottom: 14,
     marginTop: 2,
     lineHeight: 18,
@@ -695,28 +865,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 24,
     paddingHorizontal: 20,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 16,
     marginTop: 8,
     gap: 10,
   },
   emptyMiniText: {
     fontSize: 13,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 19,
   },
 
   // ── Coupon Card ──
   card: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 16,
     marginBottom: 12,
     flexDirection: 'row',
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: colors.shadow,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.06,
         shadowRadius: 8,
@@ -729,10 +899,10 @@ const styles = StyleSheet.create({
   },
   cardAccent: {
     width: 5,
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
   },
   cardAccentInactive: {
-    backgroundColor: Colors.secondary[300],
+    backgroundColor: colors.inputBorder,
   },
   cardContent: {
     flex: 1,
@@ -753,27 +923,27 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   sourceBadge: {
-    backgroundColor: Colors.primary[50],
+    backgroundColor: colors.tintLight,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
   },
   sourceBadgeInactive: {
-    backgroundColor: Colors.secondary[100],
+    backgroundColor: colors.backgroundTertiary,
   },
   sourceText: {
     fontSize: 11,
     fontWeight: '600',
-    color: Colors.primary[600],
+    color: colors.tint,
   },
   sourceTextInactive: {
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
   usedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: Colors.success,
+    backgroundColor: colors.success,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
@@ -781,13 +951,13 @@ const styles = StyleSheet.create({
   usedBadgeText: {
     fontSize: 10,
     fontWeight: '600',
-    color: Colors.white,
+    color: colors.textInverse,
   },
   expiredBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: Colors.secondary[400],
+    backgroundColor: colors.textMuted,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
@@ -795,15 +965,15 @@ const styles = StyleSheet.create({
   expiredBadgeText: {
     fontSize: 10,
     fontWeight: '600',
-    color: Colors.white,
+    color: colors.textInverse,
   },
   valueText: {
     fontSize: 22,
     fontWeight: '900',
-    color: Colors.primary[600],
+    color: colors.tint,
   },
   valueTextInactive: {
-    color: Colors.secondary[400],
+    color: colors.textMuted,
   },
 
   // ── Code ──
@@ -811,27 +981,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: Colors.secondary[200],
+    borderColor: colors.border,
     borderStyle: 'dashed',
   },
   codeRowInactive: {
     borderStyle: 'solid',
-    borderColor: Colors.secondary[200],
+    borderColor: colors.border,
   },
   codeText: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.secondary[800],
+    color: colors.text,
     letterSpacing: 1.5,
   },
   codeTextInactive: {
-    color: Colors.secondary[400],
+    color: colors.textMuted,
   },
 
   // ── Info ──
@@ -848,18 +1018,18 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 12,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
   hintText: {
     fontSize: 11,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     marginTop: 8,
     fontStyle: 'italic',
   },
 
   // ═══ Earnable Card ═══
   earnCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 16,
     marginBottom: 10,
     flexDirection: 'row',
@@ -867,7 +1037,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: colors.shadow,
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.05,
         shadowRadius: 6,
@@ -876,20 +1046,20 @@ const styles = StyleSheet.create({
     }),
   },
   earnCardLocked: {
-    backgroundColor: Colors.secondary[100],
+    backgroundColor: colors.backgroundTertiary,
     opacity: 0.7,
   },
   earnIconWrap: {
     width: 46,
     height: 46,
     borderRadius: 14,
-    backgroundColor: Colors.primary[50],
+    backgroundColor: colors.tintLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
   earnIconWrapLocked: {
-    backgroundColor: Colors.secondary[200],
+    backgroundColor: colors.border,
   },
   earnContent: {
     flex: 1,
@@ -903,36 +1073,36 @@ const styles = StyleSheet.create({
   earnTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
     flex: 1,
   },
   earnTitleLocked: {
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
   earnDiscount: {
     fontSize: 16,
     fontWeight: '900',
-    color: Colors.primary[600],
+    color: colors.tint,
     marginLeft: 8,
   },
   earnDiscountLocked: {
-    color: Colors.secondary[400],
+    color: colors.textMuted,
   },
   earnDesc: {
     fontSize: 12,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     lineHeight: 17,
     marginBottom: 6,
   },
   earnDescLocked: {
-    color: Colors.secondary[400],
+    color: colors.textMuted,
   },
 
   // Claim button
   earnClaimBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
     paddingVertical: 7,
     paddingHorizontal: 14,
     borderRadius: 8,
@@ -942,7 +1112,7 @@ const styles = StyleSheet.create({
   earnClaimText: {
     fontSize: 12,
     fontWeight: '700',
-    color: Colors.white,
+    color: colors.textInverse,
   },
   earnClaimedBadge: {
     flexDirection: 'row',
@@ -953,7 +1123,7 @@ const styles = StyleSheet.create({
   earnClaimedText: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.success,
+    color: colors.success,
   },
   earnLockedBadge: {
     flexDirection: 'row',
@@ -964,6 +1134,260 @@ const styles = StyleSheet.create({
   earnLockedText: {
     fontSize: 11,
     fontWeight: '500',
-    color: Colors.secondary[400],
+    color: colors.textMuted,
+  },
+
+  // ═══ Surprise Section (unlocked) ═══
+  surpriseSection: {
+    marginTop: 24,
+    marginBottom: 8,
+  },
+  surpriseGradient: {
+    backgroundColor: colors.card,
+    borderRadius: 24,
+    padding: 28,
+    alignItems: 'center' as const,
+    borderWidth: 2,
+    borderColor: '#FFD700',
+    overflow: 'hidden' as const,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#DAA520',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.25,
+        shadowRadius: 16,
+      },
+      android: { elevation: 8 },
+    }),
+  },
+  surpriseTopAccent: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 4,
+    backgroundColor: '#FFD700',
+  },
+  surpriseIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#DAA520',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    marginBottom: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#DAA520',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
+      },
+      android: { elevation: 6 },
+    }),
+  },
+  surpriseStarsRow: {
+    flexDirection: 'row' as const,
+    gap: 4,
+    alignItems: 'center' as const,
+    marginBottom: 12,
+  },
+  surpriseTitle: {
+    fontSize: 22,
+    fontWeight: '900' as const,
+    color: '#DAA520',
+    textAlign: 'center' as const,
+    marginBottom: 4,
+    letterSpacing: 0.5,
+  },
+  surpriseSubtitle: {
+    fontSize: 13,
+    color: colors.textMuted,
+    textAlign: 'center' as const,
+    lineHeight: 19,
+    marginBottom: 20,
+    paddingHorizontal: 8,
+  },
+  surpriseValueCard: {
+    backgroundColor: '#DAA520',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    marginBottom: 20,
+    alignItems: 'center' as const,
+  },
+  surpriseValue: {
+    fontSize: 42,
+    fontWeight: '900' as const,
+    color: '#fff',
+    letterSpacing: 1,
+  },
+  surpriseValueLabel: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: 'rgba(255,255,255,0.85)',
+    textTransform: 'uppercase' as const,
+    letterSpacing: 1,
+  },
+  surpriseClaimBtn: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    backgroundColor: '#FFD700',
+    paddingVertical: 15,
+    paddingHorizontal: 32,
+    borderRadius: 14,
+    width: '100%' as any,
+    marginBottom: 14,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#DAA520',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+      },
+      android: { elevation: 4 },
+    }),
+  },
+  surpriseClaimText: {
+    fontSize: 16,
+    fontWeight: '800' as const,
+    color: '#1a1a1a',
+  },
+  surpriseClaimedRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 14,
+  },
+  surpriseClaimedText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#4CAF50',
+  },
+  surpriseNoteRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 6,
+  },
+  surpriseNoteDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: colors.textMuted,
+  },
+  surpriseNote: {
+    fontSize: 11,
+    color: colors.textMuted,
+  },
+
+  // ═══ Surprise Progress (locked) ═══
+  surpriseProgress: {
+    backgroundColor: colors.card,
+    borderRadius: 20,
+    padding: 20,
+    marginTop: 20,
+    marginBottom: 8,
+    borderWidth: 1.5,
+    borderColor: '#DAA52040',
+    overflow: 'hidden' as const,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: { elevation: 3 },
+    }),
+  },
+  progressTopRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 12,
+    marginBottom: 16,
+  },
+  progressIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#DAA52018',
+    borderWidth: 1.5,
+    borderColor: '#DAA52040',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  progressBadge: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 4,
+    backgroundColor: '#DAA52018',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#DAA52030',
+  },
+  progressBadgeText: {
+    fontSize: 12,
+    fontWeight: '800' as const,
+    color: '#B8860B',
+  },
+  surpriseProgressTitle: {
+    fontSize: 15,
+    fontWeight: '700' as const,
+    color: colors.text,
+    marginBottom: 2,
+  },
+  surpriseProgressDesc: {
+    fontSize: 12,
+    color: colors.textMuted,
+    lineHeight: 17,
+  },
+  progressBarWrap: {
+    height: 10,
+    backgroundColor: colors.backgroundTertiary,
+    borderRadius: 5,
+    overflow: 'hidden' as const,
+    marginBottom: 14,
+  },
+  progressBarFill: {
+    height: '100%' as any,
+    backgroundColor: '#DAA520',
+    borderRadius: 5,
+  },
+  progressStepsRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-around' as const,
+  },
+  progressStep: {
+    alignItems: 'center' as const,
+    gap: 4,
+  },
+  progressStepDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.backgroundTertiary,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  progressStepDotActive: {
+    backgroundColor: '#DAA520',
+    borderColor: '#DAA520',
+  },
+  progressStepLabel: {
+    fontSize: 10,
+    fontWeight: '600' as const,
+    color: colors.textMuted,
+  },
+  progressStepLabelActive: {
+    color: '#B8860B',
   },
 });

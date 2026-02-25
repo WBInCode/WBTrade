@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,13 +17,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, Stack, useFocusEffect } from 'expo-router';
 import { Image } from 'expo-image';
 import { FontAwesome } from '@expo/vector-icons';
-import { Colors } from '../../../constants/Colors';
+import { useThemeColors } from '../../../hooks/useThemeColors';
+import type { ThemeColors } from '../../../constants/Colors';
 import { useToast } from '../../../contexts/ToastContext';
 import { useCart } from '../../../contexts/CartContext';
 import { shoppingListApi } from '../../../services/shopping-lists';
 import type { ShoppingList, ShoppingListItem } from '../../../services/types';
 
 export default function ShoppingListDetailScreen() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { show: showToast } = useToast();
@@ -151,9 +154,9 @@ export default function ShoppingListDetailScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <Stack.Screen options={{ title: 'Lista zakupowa', headerBackTitle: 'Wróć', headerTintColor: Colors.primary[500] }} />
+        <Stack.Screen options={{ title: 'Lista zakupowa', headerBackTitle: 'Wróć', headerTintColor: colors.tint }} />
         <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color={Colors.primary[500]} />
+          <ActivityIndicator size="large" color={colors.tint} />
         </View>
       </SafeAreaView>
     );
@@ -162,9 +165,9 @@ export default function ShoppingListDetailScreen() {
   if (!list) {
     return (
       <SafeAreaView style={styles.container}>
-        <Stack.Screen options={{ title: 'Lista zakupowa', headerBackTitle: 'Wróć', headerTintColor: Colors.primary[500] }} />
+        <Stack.Screen options={{ title: 'Lista zakupowa', headerBackTitle: 'Wróć', headerTintColor: colors.tint }} />
         <View style={styles.emptyWrap}>
-          <FontAwesome name="exclamation-circle" size={40} color={Colors.secondary[300]} />
+          <FontAwesome name="exclamation-circle" size={40} color={colors.inputBorder} />
           <Text style={styles.emptyTitle}>Nie znaleziono listy</Text>
         </View>
       </SafeAreaView>
@@ -187,7 +190,7 @@ export default function ShoppingListDetailScreen() {
               <Image source={{ uri: imageUrl }} style={styles.image} contentFit="contain" />
             ) : (
               <View style={styles.imagePlaceholder}>
-                <FontAwesome name="image" size={20} color={Colors.secondary[300]} />
+                <FontAwesome name="image" size={20} color={colors.inputBorder} />
               </View>
             )}
           </View>
@@ -218,14 +221,14 @@ export default function ShoppingListDetailScreen() {
             activeOpacity={0.7}
             disabled={!isActive}
           >
-            <FontAwesome name="shopping-cart" size={14} color={Colors.white} />
+            <FontAwesome name="shopping-cart" size={14} color={colors.textInverse} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.removeBtn}
             onPress={() => handleRemoveItem(item)}
             activeOpacity={0.7}
           >
-            <FontAwesome name="trash-o" size={14} color={Colors.destructive} />
+            <FontAwesome name="trash-o" size={14} color={colors.destructive} />
           </TouchableOpacity>
         </View>
       </View>
@@ -238,14 +241,14 @@ export default function ShoppingListDetailScreen() {
         options={{
           title: list.name,
           headerBackTitle: 'Wróć',
-          headerTintColor: Colors.primary[500],
+          headerTintColor: colors.tint,
           headerRight: () => (
             <View style={styles.headerActions}>
               <TouchableOpacity onPress={handleEditList} style={styles.headerBtn}>
-                <FontAwesome name="pencil" size={18} color={Colors.primary[500]} />
+                <FontAwesome name="pencil" size={18} color={colors.tint} />
               </TouchableOpacity>
               <TouchableOpacity onPress={handleDeleteList} style={styles.headerBtn}>
-                <FontAwesome name="trash-o" size={18} color={Colors.destructive} />
+                <FontAwesome name="trash-o" size={18} color={colors.destructive} />
               </TouchableOpacity>
             </View>
           ),
@@ -260,7 +263,7 @@ export default function ShoppingListDetailScreen() {
 
       {list.items.length === 0 ? (
         <View style={styles.emptyWrap}>
-          <FontAwesome name="shopping-basket" size={48} color={Colors.secondary[300]} />
+          <FontAwesome name="shopping-basket" size={48} color={colors.inputBorder} />
           <Text style={styles.emptyTitle}>Lista jest pusta</Text>
           <Text style={styles.emptySubtext}>
             Dodawaj produkty do tej listy ze strony produktu
@@ -276,7 +279,7 @@ export default function ShoppingListDetailScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor={Colors.primary[500]}
+              tintColor={colors.tint}
             />
           }
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
@@ -310,14 +313,14 @@ export default function ShoppingListDetailScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Edytuj listę</Text>
               <TouchableOpacity onPress={() => setEditModalVisible(false)}>
-                <FontAwesome name="times" size={20} color={Colors.secondary[500]} />
+                <FontAwesome name="times" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
             <TextInput
               style={styles.input}
               placeholder="Nazwa listy *"
-              placeholderTextColor={Colors.secondary[400]}
+              placeholderTextColor={colors.placeholder}
               value={editName}
               onChangeText={setEditName}
               autoFocus
@@ -327,7 +330,7 @@ export default function ShoppingListDetailScreen() {
             <TextInput
               style={[styles.input, styles.inputMultiline]}
               placeholder="Opis (opcjonalny)"
-              placeholderTextColor={Colors.secondary[400]}
+              placeholderTextColor={colors.placeholder}
               value={editDescription}
               onChangeText={setEditDescription}
               multiline
@@ -341,7 +344,7 @@ export default function ShoppingListDetailScreen() {
               activeOpacity={0.8}
             >
               {saving ? (
-                <ActivityIndicator size="small" color={Colors.white} />
+                <ActivityIndicator size="small" color={colors.textInverse} />
               ) : (
                 <Text style={styles.saveBtnText}>Zapisz</Text>
               )}
@@ -353,10 +356,10 @@ export default function ShoppingListDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundSecondary,
   },
   loadingWrap: {
     flex: 1,
@@ -373,12 +376,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.secondary[700],
+    color: colors.textSecondary,
     marginTop: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -390,27 +393,27 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   descriptionBanner: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.secondary[100],
+    borderBottomColor: colors.borderLight,
   },
   descriptionText: {
     fontSize: 13,
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
   },
   listContent: {
     padding: 16,
     paddingBottom: 20,
   },
   itemCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 3,
@@ -429,7 +432,7 @@ const styles = StyleSheet.create({
     height: 70,
     borderRadius: 8,
     overflow: 'hidden',
-    backgroundColor: Colors.secondary[100],
+    backgroundColor: colors.backgroundTertiary,
   },
   image: {
     width: '100%',
@@ -449,12 +452,12 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.secondary[800],
+    color: colors.text,
     lineHeight: 18,
   },
   itemVariant: {
     fontSize: 12,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
   priceRow: {
     flexDirection: 'row',
@@ -465,16 +468,16 @@ const styles = StyleSheet.create({
   itemPrice: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.primary[600],
+    color: colors.tint,
   },
   itemOldPrice: {
     fontSize: 12,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     textDecorationLine: 'line-through',
   },
   itemNote: {
     fontSize: 11,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     marginTop: 2,
   },
   itemActions: {
@@ -486,7 +489,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 8,
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -495,8 +498,8 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.secondary[200],
-    backgroundColor: Colors.white,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -506,7 +509,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 13,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
   },
 
   // Modal
@@ -519,7 +522,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalSheet: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
@@ -535,17 +538,17 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
   },
   input: {
     borderWidth: 1,
-    borderColor: Colors.secondary[200],
+    borderColor: colors.inputBorder,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: Colors.secondary[800],
-    backgroundColor: Colors.secondary[50],
+    color: colors.inputText,
+    backgroundColor: colors.inputBackground,
     marginBottom: 12,
   },
   inputMultiline: {
@@ -553,18 +556,18 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   saveBtn: {
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 4,
   },
   saveBtnDisabled: {
-    backgroundColor: Colors.secondary[300],
+    backgroundColor: colors.inputBorder,
   },
   saveBtnText: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.white,
+    color: colors.textInverse,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -14,7 +14,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Image } from 'expo-image';
-import { Colors } from '../../../constants/Colors';
+import { useThemeColors } from '../../../hooks/useThemeColors';
+import type { ThemeColors } from '../../../constants/Colors';
 import { ordersApi } from '../../../services/orders';
 import type { Order, OrderItem } from '../../../services/types';
 
@@ -29,15 +30,15 @@ interface StatusConfig {
   icon: string;
 }
 
-const STATUS_MAP: Record<StatusKey, StatusConfig> = {
-  PENDING:    { label: 'Nowe',          bg: '#dbeafe', text: '#1e40af', icon: 'clock-o' },
-  CONFIRMED:  { label: 'Potwierdzone',  bg: '#dbeafe', text: '#1e40af', icon: 'check' },
-  PROCESSING: { label: 'W realizacji',  bg: '#fef3c7', text: '#92400e', icon: 'cog' },
-  SHIPPED:    { label: 'Wysłane',       bg: '#ffedd5', text: '#c2410c', icon: 'truck' },
-  DELIVERED:  { label: 'Dostarczone',   bg: '#dcfce7', text: '#166534', icon: 'check-circle' },
-  CANCELLED:  { label: 'Anulowane',     bg: '#fee2e2', text: '#991b1b', icon: 'times-circle' },
-  REFUNDED:   { label: 'Zwrócone',      bg: '#fce7f3', text: '#9d174d', icon: 'undo' },
-};
+const getStatusMap = (colors: ThemeColors): Record<StatusKey, StatusConfig> => ({
+  PENDING:    { label: 'Nowe',          bg: colors.warningBg,          text: colors.warningText,      icon: 'clock-o' },
+  CONFIRMED:  { label: 'Potwierdzone',  bg: colors.tintLight,          text: colors.tint,             icon: 'check' },
+  PROCESSING: { label: 'W realizacji',  bg: colors.tintLight,          text: colors.tint,             icon: 'cog' },
+  SHIPPED:    { label: 'Wysłane',       bg: colors.tintMuted,          text: colors.tint,             icon: 'truck' },
+  DELIVERED:  { label: 'Dostarczone',   bg: colors.successBg,          text: colors.successText,      icon: 'check-circle' },
+  CANCELLED:  { label: 'Anulowane',     bg: colors.destructiveBg,      text: colors.destructiveText,  icon: 'times-circle' },
+  REFUNDED:   { label: 'Zwrócone',      bg: colors.backgroundTertiary, text: colors.textSecondary,    icon: 'undo' },
+});
 
 // Ordered progression for timeline
 const STATUS_TIMELINE: StatusKey[] = [
@@ -48,8 +49,9 @@ const STATUS_TIMELINE: StatusKey[] = [
   'DELIVERED',
 ];
 
-function getStatusConfig(status: string): StatusConfig {
-  return STATUS_MAP[status as StatusKey] ?? { label: status, bg: '#f3f4f6', text: '#374151', icon: 'question' };
+function getStatusConfig(status: string, colors: ThemeColors): StatusConfig {
+  const statusMap = getStatusMap(colors);
+  return statusMap[status as StatusKey] ?? { label: status, bg: colors.backgroundTertiary, text: colors.textSecondary, icon: 'question' };
 }
 
 // ─── Helpers ───
@@ -69,15 +71,15 @@ function formatPrice(value: number): string {
   return `${value.toFixed(2).replace('.', ',')} zł`;
 }
 
-function getPaymentStatusLabel(status?: string): { label: string; color: string } {
+function getPaymentStatusLabel(status: string | undefined, colors: ReturnType<typeof useThemeColors>): { label: string; color: string } {
   switch (status) {
-    case 'PAID': return { label: 'Opłacone', color: Colors.success };
-    case 'PENDING': return { label: 'Oczekuje na płatność', color: '#f59e0b' };
-    case 'FAILED': return { label: 'Płatność nieudana', color: Colors.destructive };
-    case 'REFUNDED': return { label: 'Zwrócone', color: '#9d174d' };
-    case 'PARTIALLY_REFUNDED': return { label: 'Częściowo zwrócone', color: '#9d174d' };
-    case 'CANCELLED': return { label: 'Anulowana', color: Colors.secondary[500] };
-    default: return { label: status ?? '—', color: Colors.secondary[500] };
+    case 'PAID': return { label: 'Opłacone', color: colors.success };
+    case 'PENDING': return { label: 'Oczekuje na płatność', color: colors.warning };
+    case 'FAILED': return { label: 'Płatność nieudana', color: colors.destructive };
+    case 'REFUNDED': return { label: 'Zwrócone', color: colors.destructive };
+    case 'PARTIALLY_REFUNDED': return { label: 'Częściowo zwrócone', color: colors.destructive };
+    case 'CANCELLED': return { label: 'Anulowana', color: colors.textMuted };
+    default: return { label: status ?? '—', color: colors.textMuted };
   }
 }
 
@@ -95,6 +97,9 @@ function getPaymentMethodLabel(method: string): string {
 // ─── Status Timeline ───
 
 function StatusTimeline({ currentStatus }: { currentStatus: string }) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const isCancelled = currentStatus === 'CANCELLED' || currentStatus === 'REFUNDED';
   const currentIndex = STATUS_TIMELINE.indexOf(currentStatus as StatusKey);
 
@@ -105,7 +110,7 @@ function StatusTimeline({ currentStatus }: { currentStatus: string }) {
   return (
     <View style={styles.timeline}>
       {steps.map((status, i) => {
-        const cfg = getStatusConfig(status);
+        const cfg = getStatusConfig(status, colors);
         const isActive = isCancelled
           ? i <= steps.length - 1
           : currentIndex >= i;
@@ -118,7 +123,7 @@ function StatusTimeline({ currentStatus }: { currentStatus: string }) {
               <View
                 style={[
                   styles.timelineLine,
-                  { backgroundColor: isActive ? cfg.text : Colors.secondary[200] },
+                  { backgroundColor: isActive ? cfg.text : colors.border },
                 ]}
               />
             )}
@@ -127,13 +132,13 @@ function StatusTimeline({ currentStatus }: { currentStatus: string }) {
               style={[
                 styles.timelineDot,
                 {
-                  backgroundColor: isActive ? cfg.text : Colors.white,
-                  borderColor: isActive ? cfg.text : Colors.secondary[300],
+                  backgroundColor: isActive ? cfg.text : colors.card,
+                  borderColor: isActive ? cfg.text : colors.inputBorder,
                 },
               ]}
             >
               {isActive && (
-                <FontAwesome name={cfg.icon as any} size={10} color={Colors.white} />
+                <FontAwesome name={cfg.icon as any} size={10} color={colors.textInverse} />
               )}
             </View>
             {/* Label */}
@@ -141,7 +146,7 @@ function StatusTimeline({ currentStatus }: { currentStatus: string }) {
               style={[
                 styles.timelineLabel,
                 {
-                  color: isActive ? cfg.text : Colors.secondary[400],
+                  color: isActive ? cfg.text : colors.textMuted,
                   fontWeight: isActive ? '600' : '400',
                 },
               ]}
@@ -156,8 +161,8 @@ function StatusTimeline({ currentStatus }: { currentStatus: string }) {
                   {
                     backgroundColor:
                       (isCancelled ? i < steps.length - 1 : currentIndex > i)
-                        ? getStatusConfig(steps[i + 1]).text
-                        : Colors.secondary[200],
+                        ? getStatusConfig(steps[i + 1], colors).text
+                        : colors.border,
                   },
                 ]}
               />
@@ -172,6 +177,8 @@ function StatusTimeline({ currentStatus }: { currentStatus: string }) {
 // ─── Item Row ───
 
 function ItemRow({ item }: { item: OrderItem }) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const imageUrl = item.variant?.product?.images?.[0]?.url;
 
   return (
@@ -180,7 +187,7 @@ function ItemRow({ item }: { item: OrderItem }) {
         <Image source={{ uri: imageUrl }} style={styles.itemImage} contentFit="contain" />
       ) : (
         <View style={[styles.itemImage, styles.itemImagePlaceholder]}>
-          <FontAwesome name="image" size={20} color={Colors.secondary[300]} />
+          <FontAwesome name="image" size={20} color={colors.inputBorder} />
         </View>
       )}
       <View style={styles.itemInfo}>
@@ -206,6 +213,8 @@ function ItemRow({ item }: { item: OrderItem }) {
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -327,7 +336,7 @@ export default function OrderDetailScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <Stack.Screen options={{ title: 'Zamówienie' }} />
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.primary[500]} />
+          <ActivityIndicator size="large" color={colors.tint} />
           <Text style={styles.loadingText}>Ładowanie zamówienia…</Text>
         </View>
       </SafeAreaView>
@@ -339,7 +348,7 @@ export default function OrderDetailScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <Stack.Screen options={{ title: 'Zamówienie' }} />
         <View style={styles.center}>
-          <FontAwesome name="exclamation-circle" size={48} color={Colors.destructive} />
+          <FontAwesome name="exclamation-circle" size={48} color={colors.destructive} />
           <Text style={styles.errorText}>{error ?? 'Nie znaleziono zamówienia'}</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={() => router.back()}>
             <Text style={styles.retryBtnText}>Wróć</Text>
@@ -349,9 +358,9 @@ export default function OrderDetailScreen() {
     );
   }
 
-  const statusCfg = getStatusConfig(order.status);
+  const statusCfg = getStatusConfig(order.status, colors);
   const addr = order.shippingAddress;
-  const paymentInfo = getPaymentStatusLabel(order.paymentStatus);
+  const paymentInfo = getPaymentStatusLabel(order.paymentStatus, colors);
   const sentPackages = trackingPackages.filter((p) => p.trackingNumber);
 
   return (
@@ -363,8 +372,8 @@ export default function OrderDetailScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={[Colors.primary[500]]}
-            tintColor={Colors.primary[500]}
+            colors={[colors.tint]}
+            tintColor={colors.tint}
           />
         }
       >
@@ -398,14 +407,14 @@ export default function OrderDetailScreen() {
                 activeOpacity={0.7}
               >
                 <View style={styles.trackingLeft}>
-                  <FontAwesome name="truck" size={16} color={Colors.primary[600]} />
+                  <FontAwesome name="truck" size={16} color={colors.tint} />
                   <View style={{ marginLeft: 10 }}>
                     <Text style={styles.trackingCourier}>{pkg.courierName}</Text>
                     <Text style={styles.trackingNum}>{pkg.trackingNumber}</Text>
                   </View>
                 </View>
                 {pkg.trackingLink && (
-                  <FontAwesome name="external-link" size={14} color={Colors.primary[500]} />
+                  <FontAwesome name="external-link" size={14} color={colors.tint} />
                 )}
               </TouchableOpacity>
             ))}
@@ -432,7 +441,7 @@ export default function OrderDetailScreen() {
           {order.discount > 0 && (
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Rabat</Text>
-              <Text style={[styles.summaryValue, { color: Colors.success }]}>
+              <Text style={[styles.summaryValue, { color: colors.success }]}>
                 -{formatPrice(order.discount)}
               </Text>
             </View>
@@ -454,13 +463,13 @@ export default function OrderDetailScreen() {
           <Text style={styles.sectionTitle}>Płatność i dostawa</Text>
 
           <View style={styles.infoRow}>
-            <FontAwesome name="credit-card" size={14} color={Colors.secondary[400]} />
+            <FontAwesome name="credit-card" size={14} color={colors.textMuted} />
             <Text style={styles.infoLabel}>Metoda płatności</Text>
             <Text style={styles.infoValue}>{getPaymentMethodLabel(order.paymentMethod)}</Text>
           </View>
 
           <View style={styles.infoRow}>
-            <FontAwesome name="money" size={14} color={Colors.secondary[400]} />
+            <FontAwesome name="money" size={14} color={colors.textMuted} />
             <Text style={styles.infoLabel}>Status płatności</Text>
             <Text style={[styles.infoValue, { color: paymentInfo.color }]}>
               {paymentInfo.label}
@@ -468,14 +477,14 @@ export default function OrderDetailScreen() {
           </View>
 
           <View style={styles.infoRow}>
-            <FontAwesome name="truck" size={14} color={Colors.secondary[400]} />
+            <FontAwesome name="truck" size={14} color={colors.textMuted} />
             <Text style={styles.infoLabel}>Metoda wysyłki</Text>
             <Text style={styles.infoValue}>{order.shippingMethod}</Text>
           </View>
 
           {order.paczkomatCode && (
             <View style={styles.infoRow}>
-              <FontAwesome name="map-pin" size={14} color={Colors.secondary[400]} />
+              <FontAwesome name="map-pin" size={14} color={colors.textMuted} />
               <Text style={styles.infoLabel}>Paczkomat</Text>
               <Text style={styles.infoValue}>{order.paczkomatCode}</Text>
             </View>
@@ -516,10 +525,10 @@ export default function OrderDetailScreen() {
               activeOpacity={0.7}
             >
               {refundLoading ? (
-                <ActivityIndicator size="small" color={Colors.white} />
+                <ActivityIndicator size="small" color={colors.textInverse} />
               ) : (
                 <>
-                  <FontAwesome name="undo" size={14} color={Colors.white} />
+                  <FontAwesome name="undo" size={14} color={colors.textInverse} />
                   <Text style={styles.refundBtnText}>Złóż wniosek o zwrot</Text>
                 </>
               )}
@@ -536,10 +545,10 @@ export default function OrderDetailScreen() {
 
 // ─── Styles ───
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundSecondary,
   },
   center: {
     flex: 1,
@@ -552,17 +561,17 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   section: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: colors.border,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
     marginBottom: 12,
   },
   headerRow: {
@@ -573,7 +582,7 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 13,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
   chip: {
     paddingHorizontal: 10,
@@ -631,7 +640,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: colors.border,
   },
   trackingLeft: {
     flexDirection: 'row',
@@ -640,11 +649,11 @@ const styles = StyleSheet.create({
   trackingCourier: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.secondary[700],
+    color: colors.textSecondary,
   },
   trackingNum: {
     fontSize: 12,
-    color: Colors.primary[600],
+    color: colors.tint,
     marginTop: 2,
   },
 
@@ -653,13 +662,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: colors.border,
   },
   itemImage: {
     width: 56,
     height: 56,
     borderRadius: 8,
-    backgroundColor: Colors.secondary[100],
+    backgroundColor: colors.backgroundTertiary,
   },
   itemImagePlaceholder: {
     alignItems: 'center',
@@ -672,11 +681,11 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 14,
     fontWeight: '500',
-    color: Colors.secondary[800],
+    color: colors.text,
   },
   itemVariant: {
     fontSize: 12,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     marginTop: 2,
   },
   itemBottom: {
@@ -687,12 +696,12 @@ const styles = StyleSheet.create({
   },
   itemQty: {
     fontSize: 13,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
   itemPrice: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.secondary[800],
+    color: colors.text,
   },
 
   // Summary
@@ -703,28 +712,28 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 14,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
   summaryValue: {
     fontSize: 14,
-    color: Colors.secondary[700],
+    color: colors.textSecondary,
   },
   totalRow: {
     marginTop: 8,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: colors.border,
     marginBottom: 0,
   },
   totalLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
   },
   totalValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.primary[600],
+    color: colors.tint,
   },
 
   // Payment & shipping info
@@ -736,26 +745,26 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 13,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     flex: 1,
   },
   infoValue: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.secondary[700],
+    color: colors.textSecondary,
   },
 
   // Address
   addrText: {
     fontSize: 14,
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
     lineHeight: 20,
   },
 
   // Refund
   refundHint: {
     fontSize: 13,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     marginBottom: 12,
   },
   refundBtn: {
@@ -763,12 +772,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.destructive,
+    backgroundColor: colors.destructive,
     paddingVertical: 12,
     borderRadius: 8,
   },
   refundBtnText: {
-    color: Colors.white,
+    color: colors.textInverse,
     fontWeight: '600',
     fontSize: 14,
   },
@@ -777,23 +786,23 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
   errorText: {
     marginTop: 12,
     fontSize: 15,
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   retryBtn: {
     marginTop: 16,
     paddingHorizontal: 24,
     paddingVertical: 10,
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
     borderRadius: 8,
   },
   retryBtnText: {
-    color: Colors.white,
+    color: colors.textInverse,
     fontWeight: '600',
     fontSize: 14,
   },

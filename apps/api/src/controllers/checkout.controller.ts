@@ -14,6 +14,7 @@ import { addressesService } from '../services/addresses.service';
 import { emailService } from '../services/email.service';
 import { ShippingProviderId } from '../types/shipping.types';
 import { CreatePaymentRequest, PaymentMethodType, PaymentProviderId } from '../types/payment.types';
+import { loyaltyService } from '../services/loyalty.service';
 
 /**
  * Map frontend payment method names to API payment method types
@@ -483,11 +484,35 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
     const selectedPayment = paymentMethods.find(m => m.type === paymentMethod);
     const paymentFee = selectedPayment?.fee || 0;
 
-    // Calculate total with discount from cart
-    const discount = cart.discount || 0;
+    // Calculate total with discount from cart + loyalty
+    const couponDiscount = cart.discount || 0;
+    let loyaltyDiscount = 0;
+    let loyaltyFreeShipping = false;
+
+    if (userId) {
+      const userLoyalty = await prisma.userLoyalty.findUnique({ where: { userId } });
+      if (userLoyalty) {
+        const permanentDiscountPercent = Number(userLoyalty.permanentDiscount || 0);
+        if (permanentDiscountPercent > 0) {
+          loyaltyDiscount = subtotal * (permanentDiscountPercent / 100);
+        }
+        // Check loyalty free shipping threshold
+        if (userLoyalty.freeShippingThreshold === null && ['DIAMENTOWY', 'VIP'].includes(userLoyalty.level)) {
+          loyaltyFreeShipping = true;
+        } else if (userLoyalty.freeShippingThreshold !== null && subtotal >= Number(userLoyalty.freeShippingThreshold)) {
+          loyaltyFreeShipping = true;
+        }
+      }
+    }
+
+    // Use the HIGHER of coupon vs loyalty discount (don't stack)
+    const discount = Math.max(couponDiscount, loyaltyDiscount);
+    if (loyaltyFreeShipping) {
+      shippingCost = 0;
+    }
     const total = subtotal + shippingCost + paymentFee - discount;
-    
-    console.log(`💰 Order total: subtotal=${subtotal} + shipping=${shippingCost} + fee=${paymentFee} - discount=${discount} = ${total}`);
+
+    console.log(`💰 Order total: subtotal=${subtotal} + shipping=${shippingCost} + fee=${paymentFee} - discount=${discount} (coupon=${couponDiscount}, loyalty=${loyaltyDiscount.toFixed(2)}) = ${total}`);
 
     // For guest checkout, create shipping address from guestAddress data
     let finalShippingAddressId = shippingAddressId;

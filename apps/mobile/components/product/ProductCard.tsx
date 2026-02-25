@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, TouchableOpacity, Dimensions, StyleSheet, ActivityIndicator, Animated } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import type { ThemeColors } from '../../constants/Colors';
 import Badge from '../ui/Badge';
 import { useCart } from '../../contexts/CartContext';
 import { useWishlist } from '../../contexts/WishlistContext';
@@ -25,6 +26,8 @@ function ProductCard({ product, width }: ProductCardProps) {
   const { addToCart } = useCart();
   const { isInWishlist, toggle: toggleWishlist } = useWishlist();
   const { user } = useAuth();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [adding, setAdding] = useState(false);
   const isFav = isInWishlist(product.id);
   const cardWidth = width || CARD_WIDTH;
@@ -91,7 +94,7 @@ function ProductCard({ product, width }: ProductCardProps) {
             />
           ) : (
             <View style={styles.imagePlaceholder}>
-              <FontAwesome name="image" size={24} color={Colors.secondary[300]} />
+              <FontAwesome name="image" size={24} color={colors.border} />
             </View>
           )}
 
@@ -128,7 +131,7 @@ function ProductCard({ product, width }: ProductCardProps) {
             <FontAwesome
               name={isFav ? 'heart' : 'heart-o'}
               size={18}
-              color={isFav ? Colors.destructive : Colors.secondary[400]}
+              color={isFav ? colors.destructive : colors.textMuted}
             />
           </TouchableOpacity>
         </View>
@@ -149,7 +152,7 @@ function ProductCard({ product, width }: ProductCardProps) {
                 color={
                   star <= Math.round(Number(product.rating || 0))
                     ? '#f59e0b'
-                    : Colors.secondary[200]
+                    : colors.border
                 }
               />
             ))}
@@ -162,7 +165,7 @@ function ProductCard({ product, width }: ProductCardProps) {
             <Text
               style={[
                 styles.price,
-                hasDiscount && { color: Colors.destructive },
+                hasDiscount && { color: colors.destructive },
               ]}
             >
               {price.toFixed(2).replace('.', ',')} zł
@@ -176,9 +179,9 @@ function ProductCard({ product, width }: ProductCardProps) {
 
           {/* Newsletter discount badge — animated like x-kom */}
           <Animated.View style={[styles.newsletterBadge, { transform: [{ scale: badgeScale }], opacity: badgeOpacity }]}>
-            <FontAwesome name="ticket" size={10} color={Colors.primary[600]} style={{ transform: [{ rotate: '-45deg' }] }} />
+            <FontAwesome name="ticket" size={10} color={colors.tint} style={{ transform: [{ rotate: '-45deg' }] }} />
             <Text style={styles.newsletterBadgeText}>10% rabatu z newsletterem</Text>
-            <FontAwesome name="chevron-right" size={8} color={Colors.primary[600]} />
+            <FontAwesome name="chevron-right" size={8} color={colors.tint} />
           </Animated.View>
 
           {/* Delivery info */}
@@ -215,10 +218,10 @@ function ProductCard({ product, width }: ProductCardProps) {
         disabled={!hasStock || adding}
       >
         {adding ? (
-          <ActivityIndicator size="small" color={Colors.white} />
+          <ActivityIndicator size="small" color={colors.textInverse} />
         ) : (
           <>
-            <FontAwesome name="shopping-cart" size={13} color={Colors.white} />
+            <FontAwesome name="shopping-cart" size={13} color={colors.textInverse} />
             <Text style={styles.addButtonText}>Do koszyka</Text>
           </>
         )}
@@ -227,12 +230,12 @@ function ProductCard({ product, width }: ProductCardProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   card: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 12,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
@@ -243,7 +246,7 @@ const styles = StyleSheet.create({
   imageContainer: {
     width: '100%',
     aspectRatio: 1,
-    backgroundColor: Colors.secondary[100],
+    backgroundColor: colors.backgroundTertiary,
   },
   image: {
     width: '100%',
@@ -263,13 +266,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: Colors.destructive,
+    backgroundColor: colors.destructive,
     borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
   discountText: {
-    color: Colors.white,
+    color: colors.textInverse,
     fontSize: 11,
     fontWeight: '700',
   },
@@ -283,7 +286,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.9)',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.12,
     shadowRadius: 3,
@@ -292,11 +295,11 @@ const styles = StyleSheet.create({
   info: {
     padding: 10,
     borderTopWidth: 1,
-    borderTopColor: Colors.secondary[100],
+    borderTopColor: colors.borderLight,
   },
   name: {
     fontSize: 13,
-    color: Colors.secondary[800],
+    color: colors.text,
     lineHeight: 18,
     height: 36,
     marginBottom: 2,
@@ -310,7 +313,7 @@ const styles = StyleSheet.create({
   },
   ratingText: {
     fontSize: 10,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     marginLeft: 2,
   },
   priceRow: {
@@ -322,28 +325,28 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
   },
   oldPrice: {
     fontSize: 12,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     textDecorationLine: 'line-through',
   },
   deliveryText: {
     fontSize: 11,
-    color: Colors.primary[600],
+    color: colors.tint,
     fontWeight: '500',
   },
   deliveryOutOfStock: {
-    color: Colors.destructive,
+    color: colors.destructive,
   },
   newsletterBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: Colors.primary[50],
+    backgroundColor: colors.tintLight,
     borderWidth: 1,
-    borderColor: Colors.primary[200],
+    borderColor: colors.tintMuted,
     borderRadius: 6,
     paddingHorizontal: 7,
     paddingVertical: 3,
@@ -354,25 +357,25 @@ const styles = StyleSheet.create({
   newsletterBadgeText: {
     fontSize: 10,
     fontWeight: '600',
-    color: Colors.primary[600],
+    color: colors.tint,
     letterSpacing: 0.1,
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
     paddingVertical: 8,
     gap: 6,
   },
   addButtonDisabled: {
-    backgroundColor: Colors.secondary[300],
+    backgroundColor: colors.border,
   },
   addButtonAdding: {
     opacity: 0.8,
   },
   addButtonText: {
-    color: Colors.white,
+    color: colors.textInverse,
     fontSize: 13,
     fontWeight: '600',
   },

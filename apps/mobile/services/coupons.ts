@@ -35,7 +35,23 @@ export const couponsApi = {
   claimAppDownload: () =>
     api.post<{ discount: WelcomeDiscount }>('/coupons/claim-app-download'),
 
+  /** Claim surprise bonus coupon (-25%) for collecting all discounts */
+  claimSurprise: () =>
+    api.post<{ discount: WelcomeDiscount }>('/coupons/claim-surprise'),
+
+  /** Check newsletter subscription status */
+  getNewsletterStatus: (email: string) =>
+    api.get<{ success: boolean; subscribed: boolean; verified: boolean }>('/newsletter/status', { email }),
+
+  /** Subscribe to newsletter (auto-verify for logged-in users, no coupon generation) */
+  subscribeNewsletter: (email: string) =>
+    api.post<{ success: boolean; message: string; verified?: boolean }>('/newsletter/subscribe', { email, source: 'app_discounts' }),
+
   /** Claim newsletter discount (-10%) — subscribes + generates coupon */
   claimNewsletter: () =>
+    api.post<{ discount: WelcomeDiscount }>('/coupons/claim-newsletter'),
+
+  /** Claim newsletter discount coupon (-10%) after subscribing (alias) */
+  claimNewsletterCoupon: () =>
     api.post<{ discount: WelcomeDiscount }>('/coupons/claim-newsletter'),
 };

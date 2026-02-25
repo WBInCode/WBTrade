@@ -10,7 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { authApi } from '../../services/auth';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
 
 const schema = z.object({
   email: z
@@ -26,6 +26,7 @@ export default function ForgotPasswordScreen() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const colors = useThemeColors();
 
   const { control, handleSubmit } = useForm<ForgotForm>({
     resolver: zodResolver(schema),
@@ -46,7 +47,7 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.white }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.card }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
@@ -60,8 +61,8 @@ export default function ForgotPasswordScreen() {
             onPress={() => router.back()}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 }}
           >
-            <FontAwesome name="arrow-left" size={16} color={Colors.secondary[600]} />
-            <Text style={{ color: Colors.secondary[600], fontSize: 14 }}>Wróć</Text>
+            <FontAwesome name="arrow-left" size={16} color={colors.textSecondary} />
+            <Text style={{ color: colors.textSecondary, fontSize: 14 }}>Wróć</Text>
           </TouchableOpacity>
 
           {/* Header */}
@@ -71,26 +72,26 @@ export default function ForgotPasswordScreen() {
                 width: 64,
                 height: 64,
                 borderRadius: 32,
-                backgroundColor: Colors.primary[50],
+                backgroundColor: colors.tintLight,
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: 16,
               }}
             >
-              <FontAwesome name="envelope" size={28} color={Colors.primary[500]} />
+              <FontAwesome name="envelope" size={28} color={colors.tint} />
             </View>
             <Text
               style={{
                 fontSize: 22,
                 fontWeight: '600',
-                color: Colors.secondary[900],
+                color: colors.text,
                 marginBottom: 8,
               }}
             >
               Resetuj hasło
             </Text>
             <Text
-              style={{ fontSize: 14, color: Colors.secondary[500], textAlign: 'center', lineHeight: 20 }}
+              style={{ fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 20 }}
             >
               Podaj swój adres email, a wyślemy Ci link do zresetowania hasła
             </Text>
@@ -100,9 +101,9 @@ export default function ForgotPasswordScreen() {
             /* Success message */
             <View
               style={{
-                backgroundColor: '#F0FDF4',
+                backgroundColor: colors.successBg,
                 borderWidth: 1,
-                borderColor: '#BBF7D0',
+                borderColor: colors.border,
                 borderRadius: 12,
                 padding: 20,
                 alignItems: 'center',
@@ -114,18 +115,18 @@ export default function ForgotPasswordScreen() {
                   width: 48,
                   height: 48,
                   borderRadius: 24,
-                  backgroundColor: Colors.success,
+                  backgroundColor: colors.success,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                <FontAwesome name="check" size={24} color={Colors.white} />
+                <FontAwesome name="check" size={24} color={colors.textInverse} />
               </View>
               <Text
                 style={{
                   fontSize: 16,
                   fontWeight: '600',
-                  color: Colors.secondary[900],
+                  color: colors.text,
                   textAlign: 'center',
                 }}
               >
@@ -134,7 +135,7 @@ export default function ForgotPasswordScreen() {
               <Text
                 style={{
                   fontSize: 14,
-                  color: Colors.secondary[500],
+                  color: colors.textMuted,
                   textAlign: 'center',
                   lineHeight: 20,
                 }}
@@ -155,9 +156,9 @@ export default function ForgotPasswordScreen() {
               {error && (
                 <View
                   style={{
-                    backgroundColor: '#FEF2F2',
+                    backgroundColor: colors.destructiveBg,
                     borderWidth: 1,
-                    borderColor: '#FECACA',
+                    borderColor: colors.border,
                     borderRadius: 8,
                     padding: 12,
                     marginBottom: 20,
@@ -166,8 +167,8 @@ export default function ForgotPasswordScreen() {
                     gap: 8,
                   }}
                 >
-                  <FontAwesome name="exclamation-circle" size={16} color={Colors.destructive} />
-                  <Text style={{ color: Colors.destructive, fontSize: 14, flex: 1 }}>
+                  <FontAwesome name="exclamation-circle" size={16} color={colors.destructive} />
+                  <Text style={{ color: colors.destructive, fontSize: 14, flex: 1 }}>
                     {error}
                   </Text>
                 </View>

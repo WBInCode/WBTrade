@@ -39,12 +39,6 @@ function StatIcon({ icon }: { icon: string }) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
         </svg>
       );
-    case 'coin':
-      return (
-        <svg className="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z" />
-        </svg>
-      );
     default:
       return null;
   }
@@ -70,7 +64,6 @@ function AccountPageContent() {
     unpaidOrders: 0,
     inTransitOrders: 0,
     unreadMessages: 0,
-    loyaltyPoints: 0,
   });
   const [recentOrders, setRecentOrders] = useState<DashboardOrder[]>([]);
   const [recommendations, setRecommendations] = useState<Product[]>([]);
@@ -97,7 +90,7 @@ function AccountPageContent() {
           dashboardApi.getOverview(),
           productsApi.getBestsellers({ limit: 4 }),
         ]);
-        
+
         setStats(overviewRes.stats);
         setRecentOrders(overviewRes.recentOrders);
         // Store full product data to preserve variants for stock display
@@ -262,15 +255,7 @@ function AccountPageContent() {
                   {dashboardLoading ? '...' : stats.unreadMessages}
                 </span>
               </div>
-              <div className="bg-white dark:bg-secondary-800 rounded-xl p-4 border border-gray-100 dark:border-secondary-700 shadow-sm hidden">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">Punkty lojalnościowe</span>
-                  <StatIcon icon="coin" />
-                </div>
-                <span className="text-3xl font-bold text-gray-900 dark:text-white">
-                  {dashboardLoading ? '...' : stats.loyaltyPoints}
-                </span>
-              </div>
+
             </div>
 
             {/* Recent Orders */}

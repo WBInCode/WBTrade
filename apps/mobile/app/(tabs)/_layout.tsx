@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
 import { View, Text } from 'react-native';
 
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
+import { useThemeColors } from '../../hooks/useThemeColors';
 import { useCart } from '../../contexts/CartContext';
 import { useWishlist } from '../../contexts/WishlistContext';
+import { ChatBubble } from '../../components/ChatBot';
+import ChatBotModal from '../../components/ChatBot';
 
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>['name'];
@@ -17,6 +18,7 @@ function TabBarIcon(props: {
 
 function CartIcon({ color }: { color: string }) {
   const { itemCount } = useCart();
+  const colors = useThemeColors();
 
   return (
     <View>
@@ -27,7 +29,7 @@ function CartIcon({ color }: { color: string }) {
             position: 'absolute',
             top: -6,
             right: -10,
-            backgroundColor: '#ef4444',
+            backgroundColor: colors.badge,
             borderRadius: 10,
             minWidth: 18,
             height: 18,
@@ -36,7 +38,7 @@ function CartIcon({ color }: { color: string }) {
             paddingHorizontal: 4,
           }}
         >
-          <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>
+          <Text style={{ color: colors.badgeText, fontSize: 10, fontWeight: '700' }}>
             {itemCount > 99 ? '99+' : itemCount}
           </Text>
         </View>
@@ -47,6 +49,7 @@ function CartIcon({ color }: { color: string }) {
 
 function WishlistIcon({ color }: { color: string }) {
   const { count } = useWishlist();
+  const colors = useThemeColors();
 
   return (
     <View>
@@ -57,7 +60,7 @@ function WishlistIcon({ color }: { color: string }) {
             position: 'absolute',
             top: -6,
             right: -10,
-            backgroundColor: '#ef4444',
+            backgroundColor: colors.badge,
             borderRadius: 10,
             minWidth: 18,
             height: 18,
@@ -66,7 +69,7 @@ function WishlistIcon({ color }: { color: string }) {
             paddingHorizontal: 4,
           }}
         >
-          <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>
+          <Text style={{ color: colors.badgeText, fontSize: 10, fontWeight: '700' }}>
             {count > 99 ? '99+' : count}
           </Text>
         </View>
@@ -76,14 +79,19 @@ function WishlistIcon({ color }: { color: string }) {
 }
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const colors = useThemeColors();
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatActive, setChatActive] = useState(false); // true when minimized with conversation
 
   return (
-    <Tabs
+    <View style={{ flex: 1 }}>
+      <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: colors.tint,
+        tabBarInactiveTintColor: colors.tabIconDefault,
         tabBarStyle: {
-          borderTopColor: Colors[colorScheme ?? 'light'].border,
+          backgroundColor: colors.tabBarBackground,
+          borderTopColor: colors.tabBarBorder,
         },
         headerShown: false,
       }}
@@ -124,5 +132,28 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+
+      {/* Floating chat bubble */}
+      <View
+        style={{
+          position: 'absolute',
+          bottom: 90,
+          right: 16,
+          zIndex: 100,
+        }}
+      >
+        <ChatBubble
+          onPress={() => { setChatOpen(true); setChatActive(true); }}
+          hasActiveChat={chatActive && !chatOpen}
+        />
+      </View>
+
+      {/* Chat bot modal */}
+      <ChatBotModal
+        visible={chatOpen}
+        onMinimize={() => setChatOpen(false)}
+        onEndChat={() => { setChatOpen(false); setChatActive(false); }}
+      />
+    </View>
   );
 }

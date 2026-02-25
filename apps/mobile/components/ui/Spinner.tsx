@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, ActivityIndicator } from 'react-native';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
 
 interface SpinnerProps {
   size?: 'small' | 'large';
@@ -10,16 +10,19 @@ interface SpinnerProps {
 
 export default function Spinner({
   size = 'large',
-  color = Colors.primary[500],
+  color,
   fullScreen = false,
 }: SpinnerProps) {
+  const colors = useThemeColors();
+  const spinnerColor = color || colors.tint;
+
   if (fullScreen) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size={size} color={color} />
+        <ActivityIndicator size={size} color={spinnerColor} />
       </View>
     );
   }
 
-  return <ActivityIndicator size={size} color={color} />;
+  return <ActivityIndicator size={size} color={spinnerColor} />;
 }

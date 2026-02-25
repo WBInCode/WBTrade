@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -12,7 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import type { ThemeColors } from '../../constants/Colors';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -135,6 +136,8 @@ const SECTIONS: Section[] = [
 ];
 
 function SectionAccordion({ section, index }: { section: Section; index: number }) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [expanded, setExpanded] = useState(index === 0);
 
   const toggle = () => {
@@ -149,7 +152,7 @@ function SectionAccordion({ section, index }: { section: Section; index: number 
         <FontAwesome
           name={expanded ? 'chevron-up' : 'chevron-down'}
           size={12}
-          color={Colors.secondary[400]}
+          color={colors.textMuted}
         />
       </TouchableOpacity>
       {expanded && (
@@ -162,6 +165,9 @@ function SectionAccordion({ section, index }: { section: Section; index: number 
 }
 
 export default function PrivacyScreen() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <Stack.Screen options={{ title: 'Polityka prywatności', headerBackTitle: 'Wróć' }} />
@@ -170,7 +176,7 @@ export default function PrivacyScreen() {
         {/* Header */}
         <View style={styles.hero}>
           <View style={styles.heroIcon}>
-            <FontAwesome name="shield" size={28} color={Colors.primary[600]} />
+            <FontAwesome name="shield" size={28} color={colors.tint} />
           </View>
           <Text style={styles.heroTitle}>Polityka prywatności</Text>
           <Text style={styles.heroDate}>Ostatnia aktualizacja: 18 grudnia 2025</Text>
@@ -178,7 +184,7 @@ export default function PrivacyScreen() {
 
         {/* Intro */}
         <View style={styles.introCard}>
-          <FontAwesome name="lock" size={16} color={Colors.primary[600]} />
+          <FontAwesome name="lock" size={16} color={colors.tint} />
           <Text style={styles.introText}>
             Ochrona Twoich danych osobowych jest dla nas priorytetem. Poniżej znajdziesz
             szczegółowe informacje o tym, jak przetwarzamy i chronimy Twoje dane.
@@ -206,10 +212,10 @@ export default function PrivacyScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.secondary[100],
+    backgroundColor: colors.backgroundTertiary,
   },
   scroll: {
     flex: 1,
@@ -220,18 +226,18 @@ const styles = StyleSheet.create({
 
   // ─── Hero ───
   hero: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     alignItems: 'center',
     paddingVertical: 28,
     paddingHorizontal: 24,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.secondary[200],
+    borderBottomColor: colors.border,
   },
   heroIcon: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: Colors.primary[50],
+    backgroundColor: colors.tintLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
@@ -239,18 +245,18 @@ const styles = StyleSheet.create({
   heroTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: Colors.secondary[900],
+    color: colors.text,
     marginBottom: 6,
   },
   heroDate: {
     fontSize: 13,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
 
   // ─── Intro ───
   introCard: {
     flexDirection: 'row',
-    backgroundColor: Colors.primary[50],
+    backgroundColor: colors.tintLight,
     marginHorizontal: 12,
     marginTop: 16,
     borderRadius: 10,
@@ -260,7 +266,7 @@ const styles = StyleSheet.create({
   },
   introText: {
     fontSize: 13,
-    color: Colors.secondary[700],
+    color: colors.textSecondary,
     lineHeight: 20,
     flex: 1,
   },
@@ -271,11 +277,11 @@ const styles = StyleSheet.create({
     marginTop: 16,
     borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
   },
   accordionItem: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.secondary[100],
+    borderBottomColor: colors.borderLight,
   },
   accordionHeader: {
     flexDirection: 'row',
@@ -286,7 +292,7 @@ const styles = StyleSheet.create({
   accordionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.secondary[900],
+    color: colors.text,
     flex: 1,
     marginRight: 12,
   },
@@ -297,7 +303,7 @@ const styles = StyleSheet.create({
   },
   accordionText: {
     fontSize: 13,
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
     lineHeight: 21,
   },
 
@@ -309,7 +315,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 11,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     textAlign: 'center',
     paddingHorizontal: 12,
   },

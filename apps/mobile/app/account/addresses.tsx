@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -17,7 +17,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import type { ThemeColors } from '../../constants/Colors';
 import { addressesApi } from '../../services/addresses';
 import type { Address, AddressFormData } from '../../services/types';
 
@@ -48,63 +49,68 @@ const AddressCard = React.memo(({
   onEdit: () => void;
   onDelete: () => void;
   onSetDefault: () => void;
-}) => (
-  <View style={styles.card}>
-    <View style={styles.cardHeader}>
-      <View style={styles.cardHeaderLeft}>
-        {address.label ? (
-          <Text style={styles.cardLabel}>{address.label}</Text>
-        ) : null}
-        <View style={styles.badges}>
-          {address.isDefault && (
-            <View style={styles.defaultBadge}>
-              <Text style={styles.defaultBadgeText}>Domyślny</Text>
+}) => {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={styles.cardHeaderLeft}>
+          {address.label ? (
+            <Text style={styles.cardLabel}>{address.label}</Text>
+          ) : null}
+          <View style={styles.badges}>
+            {address.isDefault && (
+              <View style={styles.defaultBadge}>
+                <Text style={styles.defaultBadgeText}>Domyślny</Text>
+              </View>
+            )}
+            <View style={[styles.typeBadge, address.type === 'BILLING' && styles.billingBadge]}>
+              <Text style={[styles.typeBadgeText, address.type === 'BILLING' && styles.billingBadgeText]}>
+                {address.type === 'SHIPPING' ? 'Wysyłka' : 'Faktura'}
+              </Text>
             </View>
-          )}
-          <View style={[styles.typeBadge, address.type === 'BILLING' && styles.billingBadge]}>
-            <Text style={[styles.typeBadgeText, address.type === 'BILLING' && styles.billingBadgeText]}>
-              {address.type === 'SHIPPING' ? 'Wysyłka' : 'Faktura'}
-            </Text>
           </View>
         </View>
       </View>
-    </View>
 
-    <Text style={styles.cardName}>
-      {address.firstName} {address.lastName}
-    </Text>
-    {address.companyName ? (
-      <Text style={styles.cardCompany}>{address.companyName}</Text>
-    ) : null}
-    <Text style={styles.cardLine}>{address.street}</Text>
-    <Text style={styles.cardLine}>
-      {address.postalCode} {address.city}
-    </Text>
-    {address.phone ? (
-      <Text style={styles.cardPhone}>
-        <FontAwesome name="phone" size={12} color={Colors.secondary[400]} />{' '}
-        {address.phone}
+      <Text style={styles.cardName}>
+        {address.firstName} {address.lastName}
       </Text>
-    ) : null}
+      {address.companyName ? (
+        <Text style={styles.cardCompany}>{address.companyName}</Text>
+      ) : null}
+      <Text style={styles.cardLine}>{address.street}</Text>
+      <Text style={styles.cardLine}>
+        {address.postalCode} {address.city}
+      </Text>
+      {address.phone ? (
+        <Text style={styles.cardPhone}>
+          <FontAwesome name="phone" size={12} color={colors.textMuted} />{' '}
+          {address.phone}
+        </Text>
+      ) : null}
 
-    <View style={styles.cardActions}>
-      {!address.isDefault && (
-        <TouchableOpacity style={styles.actionBtn} onPress={onSetDefault}>
-          <FontAwesome name="star-o" size={14} color={Colors.primary[500]} />
-          <Text style={styles.actionBtnText}>Domyślny</Text>
+      <View style={styles.cardActions}>
+        {!address.isDefault && (
+          <TouchableOpacity style={styles.actionBtn} onPress={onSetDefault}>
+            <FontAwesome name="star-o" size={14} color={colors.tint} />
+            <Text style={styles.actionBtnText}>Domyślny</Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity style={styles.actionBtn} onPress={onEdit}>
+          <FontAwesome name="pencil" size={14} color={colors.tint} />
+          <Text style={styles.actionBtnText}>Edytuj</Text>
         </TouchableOpacity>
-      )}
-      <TouchableOpacity style={styles.actionBtn} onPress={onEdit}>
-        <FontAwesome name="pencil" size={14} color={Colors.primary[500]} />
-        <Text style={styles.actionBtnText}>Edytuj</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.actionBtn} onPress={onDelete}>
-        <FontAwesome name="trash-o" size={14} color={Colors.destructive} />
-        <Text style={[styles.actionBtnText, { color: Colors.destructive }]}>Usuń</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.actionBtn} onPress={onDelete}>
+          <FontAwesome name="trash-o" size={14} color={colors.destructive} />
+          <Text style={[styles.actionBtnText, { color: colors.destructive }]}>Usuń</Text>
+        </TouchableOpacity>
+      </View>
     </View>
-  </View>
-));
+  );
+});
 
 // ─── Form Field ───
 function FormField({
@@ -126,6 +132,9 @@ function FormField({
   autoCapitalize?: 'none' | 'sentences' | 'words';
   error?: string;
 }) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.fieldWrap}>
       <Text style={styles.fieldLabel}>
@@ -137,7 +146,7 @@ function FormField({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={Colors.secondary[300]}
+        placeholderTextColor={colors.inputBorder}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize ?? 'words'}
       />
@@ -148,6 +157,9 @@ function FormField({
 
 // ─── Main Screen ───
 export default function AddressesScreen() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -325,7 +337,7 @@ export default function AddressesScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <Stack.Screen options={{ title: 'Moje adresy', headerShown: true }} />
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.primary[500]} />
+          <ActivityIndicator size="large" color={colors.tint} />
         </View>
       </SafeAreaView>
     );
@@ -337,7 +349,7 @@ export default function AddressesScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <Stack.Screen options={{ title: 'Moje adresy', headerShown: true }} />
         <View style={styles.center}>
-          <FontAwesome name="exclamation-circle" size={48} color={Colors.secondary[300]} />
+          <FontAwesome name="exclamation-circle" size={48} color={colors.inputBorder} />
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={fetchAddresses}>
             <Text style={styles.retryBtnText}>Spróbuj ponownie</Text>
@@ -362,13 +374,13 @@ export default function AddressesScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={[Colors.primary[500]]}
-            tintColor={Colors.primary[500]}
+            colors={[colors.tint]}
+            tintColor={colors.tint}
           />
         }
         ListEmptyComponent={
           <View style={styles.center}>
-            <FontAwesome name="map-marker" size={48} color={Colors.secondary[300]} />
+            <FontAwesome name="map-marker" size={48} color={colors.inputBorder} />
             <Text style={styles.emptyTitle}>Brak zapisanych adresów</Text>
             <Text style={styles.emptySubtitle}>
               Dodaj adres, aby przyspieszyć składanie zamówień
@@ -379,7 +391,7 @@ export default function AddressesScreen() {
 
       {/* FAB — Add address */}
       <TouchableOpacity style={styles.fab} onPress={openAddForm} activeOpacity={0.8}>
-        <FontAwesome name="plus" size={22} color={Colors.white} />
+        <FontAwesome name="plus" size={22} color={colors.textInverse} />
       </TouchableOpacity>
 
       {/* ─── Add / Edit Modal ─── */}
@@ -400,7 +412,7 @@ export default function AddressesScreen() {
             </Text>
             <TouchableOpacity onPress={handleSave} disabled={saving}>
               {saving ? (
-                <ActivityIndicator size="small" color={Colors.primary[500]} />
+                <ActivityIndicator size="small" color={colors.tint} />
               ) : (
                 <Text style={styles.modalSave}>Zapisz</Text>
               )}
@@ -424,7 +436,7 @@ export default function AddressesScreen() {
                   <FontAwesome
                     name="truck"
                     size={14}
-                    color={form.type === 'SHIPPING' ? Colors.white : Colors.secondary[500]}
+                    color={form.type === 'SHIPPING' ? colors.textInverse : colors.textMuted}
                   />
                   <Text
                     style={[
@@ -442,7 +454,7 @@ export default function AddressesScreen() {
                   <FontAwesome
                     name="file-text-o"
                     size={14}
-                    color={form.type === 'BILLING' ? Colors.white : Colors.secondary[500]}
+                    color={form.type === 'BILLING' ? colors.textInverse : colors.textMuted}
                   />
                   <Text
                     style={[
@@ -553,7 +565,7 @@ export default function AddressesScreen() {
                 <FontAwesome
                   name={form.isDefault ? 'check-square' : 'square-o'}
                   size={20}
-                  color={form.isDefault ? Colors.primary[500] : Colors.secondary[400]}
+                  color={form.isDefault ? colors.tint : colors.textMuted}
                 />
                 <Text style={styles.defaultToggleText}>Ustaw jako domyślny adres</Text>
               </TouchableOpacity>
@@ -566,10 +578,10 @@ export default function AddressesScreen() {
 }
 
 // ─── Styles ───
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundSecondary,
   },
   center: {
     flex: 1,
@@ -590,18 +602,18 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.secondary[700],
+    color: colors.textSecondary,
     marginTop: 16,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     textAlign: 'center',
     marginTop: 8,
   },
   errorText: {
     fontSize: 14,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     textAlign: 'center',
     marginTop: 12,
   },
@@ -609,23 +621,23 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingHorizontal: 24,
     paddingVertical: 10,
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
     borderRadius: 8,
   },
   retryBtnText: {
-    color: Colors.white,
+    color: colors.textInverse,
     fontSize: 14,
     fontWeight: '600',
   },
 
   // ─── Card ───
   card: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: colors.border,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -640,7 +652,7 @@ const styles = StyleSheet.create({
   cardLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.secondary[500],
+    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -649,7 +661,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   defaultBadge: {
-    backgroundColor: Colors.primary[50],
+    backgroundColor: colors.tintLight,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
@@ -657,44 +669,44 @@ const styles = StyleSheet.create({
   defaultBadgeText: {
     fontSize: 11,
     fontWeight: '600',
-    color: Colors.primary[600],
+    color: colors.tint,
   },
   typeBadge: {
-    backgroundColor: Colors.secondary[100],
+    backgroundColor: colors.backgroundTertiary,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
   },
   billingBadge: {
-    backgroundColor: '#ede9fe',
+    backgroundColor: colors.tintLight,
   },
   typeBadgeText: {
     fontSize: 11,
     fontWeight: '500',
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
   },
   billingBadgeText: {
-    color: '#7c3aed',
+    color: colors.tint,
   },
   cardName: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.secondary[900],
+    color: colors.text,
     marginBottom: 2,
   },
   cardCompany: {
     fontSize: 14,
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
     marginBottom: 2,
   },
   cardLine: {
     fontSize: 14,
-    color: Colors.secondary[600],
+    color: colors.textSecondary,
     lineHeight: 20,
   },
   cardPhone: {
     fontSize: 13,
-    color: Colors.secondary[400],
+    color: colors.textMuted,
     marginTop: 4,
   },
   cardActions: {
@@ -703,7 +715,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: colors.border,
   },
   actionBtn: {
     flexDirection: 'row',
@@ -713,7 +725,7 @@ const styles = StyleSheet.create({
   actionBtnText: {
     fontSize: 13,
     fontWeight: '500',
-    color: Colors.primary[500],
+    color: colors.tint,
   },
 
   // ─── FAB ───
@@ -724,11 +736,11 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: Colors.primary[500],
+    backgroundColor: colors.tint,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 6,
-    shadowColor: Colors.black,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 5,
@@ -737,7 +749,7 @@ const styles = StyleSheet.create({
   // ─── Modal ───
   modalContainer: {
     flex: 1,
-    backgroundColor: Colors.secondary[50],
+    backgroundColor: colors.backgroundSecondary,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -745,23 +757,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: colors.border,
   },
   modalCancel: {
     fontSize: 15,
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
   modalTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: Colors.secondary[900],
+    color: colors.text,
   },
   modalSave: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.primary[500],
+    color: colors.tint,
   },
   formContent: {
     padding: 16,
@@ -783,20 +795,20 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.white,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
   },
   typeBtnActive: {
-    backgroundColor: Colors.primary[500],
-    borderColor: Colors.primary[500],
+    backgroundColor: colors.tint,
+    borderColor: colors.tint,
   },
   typeBtnText: {
     fontSize: 14,
     fontWeight: '500',
-    color: Colors.secondary[500],
+    color: colors.textMuted,
   },
   typeBtnTextActive: {
-    color: Colors.white,
+    color: colors.textInverse,
   },
 
   // ─── Form fields ───
@@ -806,28 +818,28 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 13,
     fontWeight: '500',
-    color: Colors.secondary[700],
+    color: colors.textSecondary,
     marginBottom: 6,
   },
   fieldRequired: {
-    color: Colors.destructive,
+    color: colors.destructive,
   },
   fieldInput: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.inputBackground,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
-    color: Colors.secondary[900],
+    color: colors.inputText,
   },
   fieldInputError: {
-    borderColor: Colors.destructive,
+    borderColor: colors.destructive,
   },
   fieldError: {
     fontSize: 12,
-    color: Colors.destructive,
+    color: colors.destructive,
     marginTop: 4,
   },
   row: {
@@ -848,6 +860,6 @@ const styles = StyleSheet.create({
   },
   defaultToggleText: {
     fontSize: 14,
-    color: Colors.secondary[700],
+    color: colors.textSecondary,
   },
 });

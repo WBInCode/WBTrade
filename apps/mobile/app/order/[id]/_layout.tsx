@@ -1,12 +1,14 @@
 import { Stack } from 'expo-router';
-import { Colors } from '../../../constants/Colors';
+import { useThemeColors } from '../../../hooks/useThemeColors';
 
 export default function OrderLayout() {
+  const colors = useThemeColors();
+
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: Colors.white },
-        headerTintColor: Colors.secondary[900],
+        headerStyle: { backgroundColor: colors.card },
+        headerTintColor: colors.text,
         headerTitleStyle: { fontWeight: '600' },
       }}
     >

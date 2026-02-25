@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import { OrdersService } from '../services/orders.service';
 import { OrderStatus } from '@prisma/client';
+import { loyaltyService } from '../services/loyalty.service';
 
 const ordersService = new OrdersService();
 
@@ -258,12 +259,25 @@ export async function updateOrder(req: Request, res: Response): Promise<void> {
     }
     
     const order = await ordersService.updateStatus(id, validation.data.status, validation.data.note);
-    
+
     if (!order) {
-      res.status(404).json({ message: 'Zam�wienie nie zostalo znalezione' });
+      res.status(404).json({ message: 'Zamówienie nie zostało znalezione' });
       return;
     }
-    
+
+    // Trigger loyalty recalculation when order becomes DELIVERED + PAID
+    if (order.userId && validation.data.status === 'DELIVERED' && order.paymentStatus === 'PAID') {
+      loyaltyService.recalculateUserLevel(order.userId, order.id).catch((err) => {
+        console.error('[Loyalty] Error recalculating after status change:', err);
+      });
+    }
+    // Also recalculate on REFUNDED (level may go down)
+    if (order.userId && (validation.data.status === 'REFUNDED' || validation.data.status === 'CANCELLED')) {
+      loyaltyService.recalculateUserLevel(order.userId, order.id).catch((err) => {
+        console.error('[Loyalty] Error recalculating after refund:', err);
+      });
+    }
+
     res.status(200).json(order);
   } catch (error) {
     console.error('Error updating order:', error);
