@@ -927,6 +927,33 @@ export class ProductsService {
   }
 
   /**
+   * Get multiple products by IDs in a single query (batch fetch)
+   */
+  async getByIds(ids: string[]) {
+    if (!ids || ids.length === 0) return [];
+    
+    // Deduplicate and limit to 100 IDs max
+    const uniqueIds = [...new Set(ids)].slice(0, 100);
+    
+    const products = await prisma.product.findMany({
+      where: { id: { in: uniqueIds } },
+      include: {
+        images: {
+          orderBy: { order: 'asc' },
+        },
+        category: true,
+        variants: {
+          include: {
+            inventory: true,
+          },
+        },
+      },
+    });
+    
+    return products.map(p => transformProduct(p)).filter(Boolean);
+  }
+
+  /**
    * Get a single product by slug
    */
   async getBySlug(slug: string) {
@@ -1762,6 +1789,71 @@ export class ProductsService {
     // Combine: manual products first, then diverse automatic
     // Filter out products with "Paczkomaty i Kurier" but no "produkt w paczce" tag
     return filterProductsWithPackageInfo([...manualProducts, ...transformProducts(picked)]);
+  }
+
+  /**
+   * Get toys carousel products - manual selections from admin + automatic bestsellers from toys category
+   */
+  async getToys(options: { limit?: number } = {}): Promise<any[]> {
+    const { limit = 20 } = options;
+
+    const excludedProductIds = await this.getExcludedProductIds();
+
+    // Check if admin has manually selected toys products
+    let manualProducts: any[] = [];
+    let manualProductIds: string[] = [];
+
+    try {
+      const settings = await prisma.settings.findUnique({
+        where: { key: 'homepage_carousels' },
+      });
+
+      if (settings?.value) {
+        const parsed = typeof settings.value === 'string' ? JSON.parse(settings.value) : settings.value;
+        const carousels = parsed as Record<string, { productIds?: string[]; isAutomatic?: boolean }>;
+        const toysIds = carousels.toys?.productIds;
+        if (toysIds && toysIds.length > 0) {
+          manualProductIds = [...new Set(toysIds)]; // deduplicate
+
+          const products = await prisma.product.findMany({
+            where: {
+              id: { in: manualProductIds },
+              status: 'ACTIVE',
+            },
+            include: {
+              images: { orderBy: { order: 'asc' } },
+              category: true,
+              variants: { include: { inventory: true } },
+            },
+          });
+
+          // Preserve admin-defined order
+          manualProducts = manualProductIds
+            .map(id => products.find(p => p.id === id))
+            .filter(Boolean);
+          manualProducts = transformProducts(manualProducts);
+        }
+      }
+    } catch (error) {
+      console.error('Error reading carousel settings for toys:', error);
+    }
+
+    if (manualProducts.length >= limit) {
+      return manualProducts.slice(0, limit);
+    }
+
+    // Fill remaining slots with bestsellers from toys category
+    const remainingSlots = limit - manualProducts.length;
+    const automaticProducts = await this.getBestsellers({
+      limit: remainingSlots + manualProductIds.length,
+      category: 'zabawki',
+    });
+
+    const filteredAutomatic = automaticProducts
+      .filter((p: any) => !manualProductIds.includes(p.id) && !excludedProductIds.includes(p.id))
+      .slice(0, remainingSlots);
+
+    return filterProductsWithPackageInfo([...manualProducts, ...filteredAutomatic]);
   }
 
   /**

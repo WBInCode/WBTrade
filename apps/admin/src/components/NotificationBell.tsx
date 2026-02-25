@@ -170,6 +170,22 @@ export default function NotificationBell() {
   // Unread count = notifications NOT in readIds
   const unreadCount = notifications.filter((n) => !readIds.has(n.id)).length;
 
+  // Sort: low_stock always at bottom, others by priority then time
+  const typePriority: Record<string, number> = {
+    cancellation: 0,
+    refund: 1,
+    new_order: 2,
+    new_user: 3,
+    review: 4,
+    low_stock: 5,
+  };
+  const sortedNotifications = [...notifications].sort((a, b) => {
+    const aPrio = typePriority[a.type] ?? 3;
+    const bPrio = typePriority[b.type] ?? 3;
+    if (aPrio !== bPrio) return aPrio - bPrio;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Bell Button */}
@@ -276,7 +292,7 @@ export default function NotificationBell() {
                 <p className="text-xs mt-1 opacity-60">Wszystko jest pod kontrolą!</p>
               </div>
             ) : (
-              notifications.map((notif) => {
+              sortedNotifications.map((notif) => {
                 const config = typeConfig[notif.type] || { icon: Bell, color: 'text-slate-400 bg-slate-400/10' };
                 const Icon = config.icon;
                 const isRead = readIds.has(notif.id);

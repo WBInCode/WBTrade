@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Search, Plus, X, GripVertical, Save, Trash2, Eye, Star, Flame, Gift, Snowflake, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import { getAuthToken } from '@/lib/api';
@@ -14,6 +14,12 @@ interface Product {
   category?: { name: string };
 }
 
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 interface CarouselConfig {
   id: string;
   name: string;
@@ -22,6 +28,7 @@ interface CarouselConfig {
   color: string;
   productIds: string[];
   isAutomatic: boolean;
+  categorySlug?: string; // filter automatic products by category
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
@@ -83,26 +90,50 @@ export default function CarouselsPage() {
   const [excludedProducts, setExcludedProducts] = useState<Product[]>([]);
   const [excludedProductIds, setExcludedProductIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showExclusions, setShowExclusions] = useState(false);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  // Refs for AbortController and debounce
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const searchAbortRef = useRef<AbortController | null>(null);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentCarousel = carousels.find(c => c.id === selectedCarousel);
 
-  // Load saved settings on mount
+  // ─── Effect 1: Load settings + categories on mount ───
   useEffect(() => {
     loadSettings();
+    loadCategories();
+    return () => {
+      // Cleanup on unmount
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+      if (searchAbortRef.current) searchAbortRef.current.abort();
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
   }, []);
 
-  // Load products when carousel changes or when carousels data updates
+  // ─── Effect 2: Load products when carousel changes OR settings finish loading ───
   useEffect(() => {
+    // Immediately clear old products and search so user never sees stale data
+    setSelectedProducts([]);
+    setSearchQuery('');
+    setSearchResults([]);
+
     const carousel = carousels.find(c => c.id === selectedCarousel);
     if (carousel && carousel.productIds.length > 0) {
       loadSelectedProducts(carousel.productIds);
-    } else {
-      setSelectedProducts([]);
     }
-  }, [selectedCarousel, carousels]);
+
+    // Load initial product suggestions for new carousel (no search query)
+    // Use a small delay to let selectedProducts clear first
+    const timer = setTimeout(() => searchProducts(''), 100);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCarousel, settingsLoaded]);
 
   const loadSettings = async () => {
     try {
@@ -118,9 +149,13 @@ export default function CarouselsPage() {
         if (data.carousels) {
           setCarousels(prev => prev.map(c => ({
             ...c,
-            productIds: data.carousels[c.id]?.productIds || [],
+            // Always deduplicate IDs on load to prevent stale duplicates
+            productIds: [...new Set(data.carousels[c.id]?.productIds || [])] as string[],
             isAutomatic: data.carousels[c.id]?.isAutomatic ?? c.isAutomatic,
+            categorySlug: data.carousels[c.id]?.categorySlug || c.categorySlug,
           })));
+          // Use real state (not ref) to trigger Effect 2 re-run
+          setSettingsLoaded(true);
         }
         // Load excluded products
         if (data.excludedProductIds && data.excludedProductIds.length > 0) {
@@ -139,68 +174,102 @@ export default function CarouselsPage() {
       return;
     }
     
-    const products: Product[] = [];
-    for (const id of productIds) {
-      try {
-        const token = getAuthToken();
-        const response = await fetch(`${API_URL}/products/${id}`, {
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
-          },
-        });
-        if (response.ok) {
-          const product = await response.json();
-          if (product) products.push(product);
-        }
-      } catch (e) {
-        console.error(`Error fetching excluded product ${id}:`, e);
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/products/batch`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ ids: productIds }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setExcludedProducts(data.products || []);
       }
+    } catch (error) {
+      console.error('Error loading excluded products:', error);
     }
-    setExcludedProducts(products);
   };
 
   const loadSelectedProducts = async (productIds: string[]) => {
     if (productIds.length === 0) {
       setSelectedProducts([]);
+      setLoadingProducts(false);
       return;
     }
 
+    // Cancel any previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    setLoadingProducts(true);
+
     try {
-      // Deduplicate IDs to avoid duplicate key errors
+      // Deduplicate IDs
       const uniqueIds = [...new Set(productIds)];
-      const products: Product[] = [];
+      const token = getAuthToken();
       
-      for (const id of uniqueIds) {
-        try {
-          const token = getAuthToken();
-          const response = await fetch(`${API_URL}/products/${id}`, {
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token && { Authorization: `Bearer ${token}` }),
-            },
-          });
-          if (response.ok) {
-            const product = await response.json();
-            if (product) {
-              products.push(product);
-            }
-          }
-        } catch (e) {
-          console.error(`Error fetching product ${id}:`, e);
+      // Batch fetch
+      const response = await fetch(`${API_URL}/products/batch`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ ids: uniqueIds }),
+        signal: controller.signal,
+      });
+
+      if (controller.signal.aborted) return;
+
+      if (response.ok) {
+        const data = await response.json();
+        // Preserve the order from productIds
+        const productMap = new Map(data.products.map((p: Product) => [p.id, p]));
+        const orderedProducts = uniqueIds
+          .map(id => productMap.get(id))
+          .filter(Boolean) as Product[];
+        
+        if (controller.signal.aborted) return;
+        
+        setSelectedProducts(orderedProducts);
+        
+        // Sync: if some IDs resolved to fewer products (stale/deleted),
+        // update carousels state to match reality
+        if (orderedProducts.length !== uniqueIds.length) {
+          const validIds = orderedProducts.map(p => p.id);
+          setCarousels(prev => prev.map(c =>
+            c.id === selectedCarousel
+              ? { ...c, productIds: validIds }
+              : c
+          ));
         }
       }
-      
-      setSelectedProducts(products);
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.name === 'AbortError') return;
       console.error('Error loading products:', error);
+    } finally {
+      if (!controller.signal.aborted) {
+        setLoadingProducts(false);
+      }
     }
   };
 
   const searchProducts = async (query: string) => {
+    // Cancel previous search
+    if (searchAbortRef.current) {
+      searchAbortRef.current.abort();
+    }
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
+
     setLoading(true);
     try {
-      // Build search params - include sku parameter for direct SKU search
       let url = `${API_URL}/products?limit=30`;
       if (query.length >= 2) {
         url += `&search=${encodeURIComponent(query)}`;
@@ -212,16 +281,17 @@ export default function CarouselsPage() {
           'Content-Type': 'application/json',
           ...(token && { Authorization: `Bearer ${token}` }),
         },
+        signal: controller.signal,
       });
       
+      if (controller.signal.aborted) return;
+
       if (response.ok) {
         const data = await response.json();
         let results = data.products;
         
-        // If searching by query, also do client-side filtering for SKU match
         if (query.length >= 2) {
           const queryLower = query.toLowerCase();
-          // Sort: exact SKU matches first, then partial matches, then name matches
           results = results.sort((a: Product, b: Product) => {
             const aSkuExact = a.sku?.toLowerCase() === queryLower;
             const bSkuExact = b.sku?.toLowerCase() === queryLower;
@@ -236,26 +306,46 @@ export default function CarouselsPage() {
           });
         }
         
-        // Filter out already selected products
+        // Filter out already selected products AND excluded products
         const filtered = results.filter(
-          (p: Product) => !selectedProducts.some(sp => sp.id === p.id)
+          (p: Product) => !selectedProducts.some(sp => sp.id === p.id) && !excludedProductIds.includes(p.id)
         );
         
         setSearchResults(filtered);
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.name === 'AbortError') return;
       console.error('Error searching products:', error);
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) {
+        setLoading(false);
+      }
     }
   };
 
-  // Load initial product suggestions when component mounts
-  useEffect(() => {
-    searchProducts('');
-  }, [selectedProducts]);
+  const loadCategories = async () => {
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/categories`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(Array.isArray(data) ? data : data.categories || []);
+      }
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    }
+  };
 
   const addProduct = (product: Product) => {
+    // BUG FIX: Check if product already exists (prevent duplicates)
+    if (selectedProducts.some(p => p.id === product.id)) {
+      return;
+    }
     // Check if limit reached
     if (selectedProducts.length >= MAX_PRODUCTS_PER_CAROUSEL) {
       setMessage({ type: 'error', text: `Maksymalna liczba produktów w karuzeli to ${MAX_PRODUCTS_PER_CAROUSEL}` });
@@ -267,12 +357,17 @@ export default function CarouselsPage() {
     setSearchResults(prev => prev.filter(p => p.id !== product.id));
     setCarousels(prev => prev.map(c => 
       c.id === selectedCarousel 
-        ? { ...c, productIds: [...c.productIds, product.id], isAutomatic: false }
+        ? { ...c, productIds: [...new Set([...c.productIds, product.id])], isAutomatic: false }
         : c
     ));
   };
 
   const removeProduct = (productId: string) => {
+    // Re-add the removed product back to search results
+    const removedProduct = selectedProducts.find(p => p.id === productId);
+    if (removedProduct) {
+      setSearchResults(prev => [removedProduct, ...prev]);
+    }
     setSelectedProducts(prev => prev.filter(p => p.id !== productId));
     setCarousels(prev => prev.map(c => 
       c.id === selectedCarousel 
@@ -325,7 +420,7 @@ export default function CarouselsPage() {
     try {
       const carouselData = carousels.reduce((acc, c) => ({
         ...acc,
-        [c.id]: { productIds: c.productIds, isAutomatic: c.isAutomatic }
+        [c.id]: { productIds: c.productIds, isAutomatic: c.isAutomatic, categorySlug: c.categorySlug || undefined }
       }), {});
 
       const token = getAuthToken();
@@ -411,10 +506,20 @@ export default function CarouselsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-white">{carousel.name}</div>
                       <div className="text-xs text-slate-400 truncate">
-                        {carousel.productIds.length > 0 
-                          ? `${carousel.productIds.length} produktów (ręcznie)`
-                          : carousel.isAutomatic ? 'Automatycznie' : 'Brak produktów'
-                        }
+                        {(() => {
+                          const isSelected = carousel.id === selectedCarousel;
+                          const uniqueIds = [...new Set(carousel.productIds)].length;
+                          if (isSelected && loadingProducts && uniqueIds > 0) {
+                            return `Ładowanie ${uniqueIds} produktów...`;
+                          }
+                          if (isSelected && selectedProducts.length > 0) {
+                            return `${selectedProducts.length} produktów (ręcznie)`;
+                          }
+                          if (uniqueIds > 0) {
+                            return `${uniqueIds} produktów (ręcznie)`;
+                          }
+                          return carousel.isAutomatic ? 'Automatycznie' : 'Brak produktów';
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -508,6 +613,56 @@ export default function CarouselsPage() {
                 </div>
               </div>
 
+              {/* Category Filter for Automatic Carousels */}
+              {currentCarousel.isAutomatic && (
+                <div className="p-4 border-b border-slate-700 bg-slate-800/50">
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                        Filtruj automatycznie po kategorii
+                      </label>
+                      <select
+                        value={currentCarousel.categorySlug || ''}
+                        onChange={(e) => {
+                          const value = e.target.value || undefined;
+                          setCarousels(prev => prev.map(c =>
+                            c.id === selectedCarousel
+                              ? { ...c, categorySlug: value }
+                              : c
+                          ));
+                        }}
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-orange-500 appearance-none cursor-pointer"
+                      >
+                        <option value="">Wszystkie kategorie (domyślnie)</option>
+                        {categories.map(cat => (
+                          <option key={cat.id} value={cat.slug}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {currentCarousel.categorySlug && (
+                      <button
+                        onClick={() => {
+                          setCarousels(prev => prev.map(c =>
+                            c.id === selectedCarousel
+                              ? { ...c, categorySlug: undefined }
+                              : c
+                          ));
+                        }}
+                        className="mt-6 p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+                        title="Wyczyść filtr kategorii"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1.5">
+                    Gdy ustawisz kategorię, automatyczna karuzela pokaże tylko produkty z wybranej kategorii.
+                  </p>
+                </div>
+              )}
+
               {/* Search */}
               <div className="p-4 border-b border-slate-700">
                 <div className="relative">
@@ -517,8 +672,15 @@ export default function CarouselsPage() {
                     placeholder="Szukaj produktu po nazwie lub SKU..."
                     value={searchQuery}
                     onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      searchProducts(e.target.value);
+                      const value = e.target.value;
+                      setSearchQuery(value);
+                      // Debounce search input
+                      if (searchDebounceRef.current) {
+                        clearTimeout(searchDebounceRef.current);
+                      }
+                      searchDebounceRef.current = setTimeout(() => {
+                        searchProducts(value);
+                      }, 300);
                     }}
                     className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-orange-500"
                   />
@@ -604,7 +766,12 @@ export default function CarouselsPage() {
                   )}
                 </div>
 
-                {selectedProducts.length === 0 ? (
+                {loadingProducts ? (
+                  <div className="text-center py-8">
+                    <div className="inline-block w-8 h-8 border-2 border-slate-600 border-t-orange-500 rounded-full animate-spin mb-3"></div>
+                    <p className="text-slate-400">Ładowanie produktów...</p>
+                  </div>
+                ) : selectedProducts.length === 0 ? (
                   <div className="text-center py-8 text-slate-400">
                     {currentCarousel.isAutomatic ? (
                       <p>Karuzela działa automatycznie. Dodaj produkty, aby nadpisać.</p>

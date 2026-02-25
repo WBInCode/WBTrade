@@ -58,6 +58,9 @@ export interface MeiliProduct {
   status: string;
   createdAt: number;
   hasBaselinkerCategory: boolean; // true if category has baselinkerCategoryId
+  tags: string[];
+  popularityScore: number;
+  inStock: boolean;
 }
 
 export class SearchService {
@@ -337,6 +340,7 @@ export class SearchService {
       include: {
         images: { orderBy: { order: 'asc' }, take: 1 },
         category: true,
+        variants: { include: { inventory: true } },
       },
     });
 
@@ -354,6 +358,9 @@ export class SearchService {
       status: product.status,
       createdAt: product.createdAt.getTime(),
       hasBaselinkerCategory: !!product.category?.baselinkerCategoryId,
+      tags: product.tags || [],
+      popularityScore: product.popularityScore || 0,
+      inStock: product.variants.some(v => v.inventory.some(i => i.quantity > 0)),
     }));
 
     const index = getProductsIndex();
@@ -374,6 +381,7 @@ export class SearchService {
       include: {
         images: { orderBy: { order: 'asc' }, take: 1 },
         category: true,
+        variants: { include: { inventory: true } },
       },
     });
 
@@ -393,6 +401,9 @@ export class SearchService {
       status: product.status,
       createdAt: product.createdAt.getTime(),
       hasBaselinkerCategory: !!product.category?.baselinkerCategoryId,
+      tags: product.tags || [],
+      popularityScore: product.popularityScore || 0,
+      inStock: product.variants.some(v => v.inventory.some(i => i.quantity > 0)),
     };
 
     const index = getProductsIndex();
