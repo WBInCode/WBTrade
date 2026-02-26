@@ -748,7 +748,7 @@ function findBestAnswer(query: string): FaqResult | null {
   for (const group of POLITE_RESPONSES) {
     for (const pattern of group.patterns) {
       if (q === pattern || q.includes(pattern)) {
-        return group.replies[Math.floor(Math.random() * group.replies.length)];
+        return { answer: group.replies[Math.floor(Math.random() * group.replies.length)], score: 100 };
       }
     }
   }
