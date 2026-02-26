@@ -195,8 +195,8 @@ export class DashboardService {
     // Grupuj po dniach
     const dailyData: Record<string, { revenue: number; orders: number; cancelledRevenue: number; cancelledOrders: number }> = {};
 
-    // Inicjalizuj wszystkie dni
-    for (let i = 0; i < days; i++) {
+    // Inicjalizuj wszystkie dni (włącznie z dzisiejszym)
+    for (let i = 0; i <= days; i++) {
       const date = new Date(startDate);
       date.setDate(date.getDate() + i);
       const dateKey = date.toISOString().split('T')[0];
