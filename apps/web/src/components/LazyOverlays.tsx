@@ -11,12 +11,17 @@ const CookieConsent = dynamic(
   () => import('./CookieConsent'),
   { ssr: false }
 );
+const ChatBotWidget = dynamic(
+  () => import('./ChatBot'),
+  { ssr: false }
+);
 
 export default function LazyOverlays() {
   return (
     <>
       <WelcomeDiscountPopup />
       <CookieConsent />
+      <ChatBotWidget />
     </>
   );
 }
