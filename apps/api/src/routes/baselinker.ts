@@ -10,12 +10,79 @@ import { baselinkerController } from '../controllers/baselinker.controller';
 import { authGuard, adminOnly } from '../middleware/auth.middleware';
 import { orderStatusSyncService } from '../services/order-status-sync.service';
 import { paymentReminderService } from '../services/payment-reminder.service';
+import { syncProgress } from '../services/sync-progress';
+import { secureAuthService } from '../services/auth.service.secure';
 import { PrismaClient } from '@prisma/client';
 
 const router = Router();
 const prisma = new PrismaClient();
 
-// Apply auth middleware to all routes
+// ========================================
+// SSE Progress Stream (before auth middleware - uses query param auth)
+// ========================================
+
+/**
+ * GET /api/admin/baselinker/sync/progress/:syncLogId
+ * Server-Sent Events stream for real-time sync progress
+ * Uses query param ?token=... for auth (EventSource can't send headers)
+ */
+router.get('/sync/progress/:syncLogId', async (req, res) => {
+  // Verify token from query param
+  const queryToken = req.query.token as string;
+  if (!queryToken) {
+    return res.status(401).json({ message: 'Token wymagany' });
+  }
+  
+  try {
+    const payload = await secureAuthService.verifyAccessToken(queryToken);
+    if (payload.role !== 'ADMIN') {
+      return res.status(403).json({ message: 'Brak uprawnień' });
+    }
+  } catch {
+    return res.status(401).json({ message: 'Nieprawidłowy token' });
+  }
+  
+  const { syncLogId } = req.params;
+
+  // Set SSE headers
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+
+  // Send existing history first (catch-up)
+  const history = syncProgress.getHistory(syncLogId);
+  for (const event of history) {
+    res.write(`data: ${JSON.stringify(event)}\n\n`);
+  }
+
+  // Subscribe to new events
+  const unsubscribe = syncProgress.subscribe(syncLogId, (event) => {
+    res.write(`data: ${JSON.stringify(event)}\n\n`);
+
+    // Close connection on complete/aborted
+    if (event.type === 'complete' || event.type === 'aborted') {
+      setTimeout(() => {
+        res.end();
+      }, 1000);
+    }
+  });
+
+  // Heartbeat every 15s to keep connection alive
+  const heartbeat = setInterval(() => {
+    res.write(': heartbeat\n\n');
+  }, 15000);
+
+  // Cleanup on disconnect
+  req.on('close', () => {
+    unsubscribe();
+    clearInterval(heartbeat);
+  });
+});
+
+// Apply auth middleware to all remaining routes
 router.use(authGuard);
 router.use(adminOnly);
 
@@ -31,6 +98,44 @@ router.post('/test', baselinkerController.testConnection);
 router.post('/sync', baselinkerController.triggerSync);
 router.get('/status', baselinkerController.getStatus);
 router.delete('/sync/:id', baselinkerController.cancelSync);
+
+// ========================================
+// Abort endpoint
+// ========================================
+
+/**
+ * POST /api/admin/baselinker/sync/:id/abort
+ * Emergency abort a running sync
+ */
+router.post('/sync/:id/abort', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verify sync exists and is running
+    const syncLog = await prisma.baselinkerSyncLog.findUnique({
+      where: { id },
+    });
+
+    if (!syncLog) {
+      return res.status(404).json({ success: false, message: 'Synchronizacja nie znaleziona' });
+    }
+
+    if (syncLog.status !== 'RUNNING') {
+      return res.status(400).json({ success: false, message: 'Synchronizacja nie jest w trakcie' });
+    }
+
+    // Signal abort
+    syncProgress.requestAbort(id);
+
+    res.json({ success: true, message: 'Żądanie przerwania wysłane' });
+  } catch (error) {
+    console.error('Error aborting sync:', error);
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
 
 // Order sync endpoints (Shop → Baselinker)
 // Orders are synced after payment to decrease stock in Baselinker

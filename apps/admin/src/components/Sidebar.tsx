@@ -37,7 +37,6 @@ const menuItems = [
     icon: Package,
     submenu: [
       { title: 'Lista produktów', href: '/products' },
-      { title: 'Aktualizuj produkty', href: '/products/update' },
       { title: 'Kategorie', href: '/categories' },
     ],
   },
@@ -95,6 +94,7 @@ const menuItems = [
     icon: Box,
     submenu: [
       { title: 'Baselinker', href: '/baselinker' },
+      { title: 'Import produktów', href: '/baselinker/import' },
       { title: 'Synchronizacja stanów', href: '/stock-sync' },
     ],
   },
