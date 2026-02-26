@@ -37,7 +37,6 @@ const menuItems = [
     icon: Package,
     submenu: [
       { title: 'Lista produktów', href: '/products' },
-      { title: 'Aktualizuj produkty', href: '/products/update' },
       { title: 'Kategorie', href: '/categories' },
     ],
   },

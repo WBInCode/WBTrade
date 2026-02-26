@@ -23,6 +23,7 @@ export interface SyncProgressEvent {
   percent?: number;
   productName?: string;
   sku?: string;
+  mode?: string;
 }
 
 // ============================================
