@@ -328,8 +328,9 @@ export class BaselinkerProvider implements IBaselinkerProvider {
 
       const products = response.products || {};
       const entries = Object.entries(products);
-      for (const [id, prices] of entries) {
-        allPrices[id] = prices;
+      for (const [id, productData] of entries) {
+        // BL returns {product_id, prices: {groupId: price}} — extract the prices sub-object
+        allPrices[id] = (productData as any).prices || productData;
       }
       hasMore = entries.length === PRODUCTS_PER_PAGE;
       page++;
