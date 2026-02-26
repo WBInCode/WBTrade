@@ -875,7 +875,9 @@ export class BaselinkerService {
    */
   private roundPriceTo99(price: number): number {
     if (price <= 0) return 0;
-    return Math.floor(price) + 0.99;
+    const rounded = Math.floor(price) + 0.99;
+    // Clamp to max Decimal(10,2) to prevent numeric field overflow in PostgreSQL
+    return Math.min(rounded, 99999999.99);
   }
 
   /**
@@ -1504,22 +1506,30 @@ export class BaselinkerService {
           });
           const numericIds = stockEntries.map(entry => entry.product_id.toString());
 
-          // 2. Batch fetch all variants in ONE query
-          const searchConditions = prefix
-            ? [
-                { baselinkerVariantId: { in: prefixedIds } },
-                { product: { baselinkerProductId: { in: prefixedIds } } },
-              ]
-            : [
-                { baselinkerVariantId: { in: numericIds.map(id => `default-${id}`) } },
-                { baselinkerVariantId: { in: numericIds } },
-                { product: { baselinkerProductId: { in: numericIds } } },
-              ];
+          // 2. Batch fetch all variants — chunked to stay under PostgreSQL 32767 bind variable limit
+          const CHUNK_SIZE = 10000;
+          const allVariants: { id: string; sku: string | null; baselinkerVariantId: string | null; product: { baselinkerProductId: string | null } | null }[] = [];
 
-          const allVariants = await prisma.productVariant.findMany({
-            where: { OR: searchConditions },
-            select: { id: true, sku: true, baselinkerVariantId: true, product: { select: { baselinkerProductId: true } } },
-          });
+          const idsToQuery = prefix ? prefixedIds : numericIds;
+          for (let ci = 0; ci < idsToQuery.length; ci += CHUNK_SIZE) {
+            const chunk = idsToQuery.slice(ci, ci + CHUNK_SIZE);
+            const searchConditions = prefix
+              ? [
+                  { baselinkerVariantId: { in: chunk } },
+                  { product: { baselinkerProductId: { in: chunk } } },
+                ]
+              : [
+                  { baselinkerVariantId: { in: chunk.map(id => `default-${id}`) } },
+                  { baselinkerVariantId: { in: chunk } },
+                  { product: { baselinkerProductId: { in: chunk } } },
+                ];
+
+            const chunkVariants = await prisma.productVariant.findMany({
+              where: { OR: searchConditions },
+              select: { id: true, sku: true, baselinkerVariantId: true, product: { select: { baselinkerProductId: true } } },
+            });
+            allVariants.push(...chunkVariants);
+          }
 
           // 3. Build lookup maps for O(1) access
           const variantByBlId = new Map<string, { id: string; sku: string | null }>();
@@ -1535,15 +1545,20 @@ export class BaselinkerService {
             }
           }
 
-          // 4. Batch fetch existing inventory records
+          // 4. Batch fetch existing inventory records (chunked for large datasets)
           const variantIds = allVariants.map(v => v.id);
-          const existingInventories = await prisma.inventory.findMany({
-            where: {
-              variantId: { in: variantIds },
-              locationId: defaultLocation.id,
-            },
-            select: { variantId: true, quantity: true },
-          });
+          const existingInventories: { variantId: string; quantity: number }[] = [];
+          for (let ci = 0; ci < variantIds.length; ci += CHUNK_SIZE) {
+            const chunk = variantIds.slice(ci, ci + CHUNK_SIZE);
+            const chunkInv = await prisma.inventory.findMany({
+              where: {
+                variantId: { in: chunk },
+                locationId: defaultLocation.id,
+              },
+              select: { variantId: true, quantity: true },
+            });
+            existingInventories.push(...chunkInv);
+          }
 
           const inventoryByVariantId = new Map<string, number>();
           for (const inv of existingInventories) {
@@ -1709,18 +1724,25 @@ export class BaselinkerService {
           });
           console.log(`[BaselinkerSync] DB products matched: ${allProducts.length}`);
 
-          // 4. Batch fetch ALL matching variants in ONE query
-          const searchConditions = prefix
-            ? [{ baselinkerVariantId: { in: allBlIds } }]
-            : [
-                { baselinkerVariantId: { in: allBlIds.map(id => `default-${id}`) } },
-                { baselinkerVariantId: { in: allBlIds } },
-              ];
+          // 4. Batch fetch ALL matching variants — chunked to stay under PostgreSQL 32767 bind variable limit
+          const VARIANT_CHUNK_SIZE = 10000;
+          const allVariants: { id: string; baselinkerVariantId: string | null; productId: string; price: any; sku: string | null; lowestPrice30Days: any }[] = [];
 
-          const allVariants = await prisma.productVariant.findMany({
-            where: { OR: searchConditions },
-            select: { id: true, baselinkerVariantId: true, productId: true, price: true, sku: true, lowestPrice30Days: true },
-          });
+          for (let ci = 0; ci < allBlIds.length; ci += VARIANT_CHUNK_SIZE) {
+            const chunk = allBlIds.slice(ci, ci + VARIANT_CHUNK_SIZE);
+            const searchConditions = prefix
+              ? [{ baselinkerVariantId: { in: chunk } }]
+              : [
+                  { baselinkerVariantId: { in: chunk.map(id => `default-${id}`) } },
+                  { baselinkerVariantId: { in: chunk } },
+                ];
+
+            const chunkVariants = await prisma.productVariant.findMany({
+              where: { OR: searchConditions },
+              select: { id: true, baselinkerVariantId: true, productId: true, price: true, sku: true, lowestPrice30Days: true },
+            });
+            allVariants.push(...chunkVariants);
+          }
           console.log(`[BaselinkerSync] DB variants matched: ${allVariants.length}`);
 
           // Build variant lookup: blId -> variant
