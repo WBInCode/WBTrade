@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authGuard, adminOnly } from '../middleware/auth.middleware';
 import { PrismaClient } from '@prisma/client';
+import { getTopSearches } from '../services/search-analytics.service';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -167,8 +168,22 @@ router.get('/top-products', async (req: Request, res: Response) => {
     }));
 
     // Top searched — use server-side analytics (tracks ALL searches, not just authenticated)
-    const { getTopSearches } = require('../services/search-analytics.service');
-    const topSearchedRaw: { query: string; count: number }[] = getTopSearches(limitNum, since);
+    // Top searched — use file-based analytics with database fallback
+    let topSearchedRaw: { query: string; count: number }[] = getTopSearches(limitNum, since);
+
+    // Fallback: if file-based analytics is empty, use database SearchHistory
+    if (topSearchedRaw.length === 0) {
+      const dbSearches = await prisma.$queryRaw<{ query: string; count: bigint }[]>`
+        SELECT query, COUNT(*) as count
+        FROM search_history
+        WHERE created_at >= ${since}
+          AND LENGTH(query) >= 3
+        GROUP BY query
+        ORDER BY count DESC
+        LIMIT ${limitNum}
+      `;
+      topSearchedRaw = dbSearches.map(s => ({ query: s.query, count: Number(s.count) }));
+    }
 
     // Enrich top searches with matching products
     const topSearched = await Promise.all(
