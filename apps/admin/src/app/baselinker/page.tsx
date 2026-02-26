@@ -19,8 +19,10 @@ import {
   FolderTree,
   Image,
   BarChart3,
+  ArrowRight,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import Link from 'next/link';
 
 // ============================================
 // Types
@@ -395,12 +397,22 @@ export default function BaselinkerPage() {
             Synchronizuj produkty, kategorie i stany magazynowe z Baselinker
           </p>
         </div>
-        <button
-          onClick={() => { loadConfig(); loadStatus(); }}
-          className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-        >
-          <RefreshCw className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/baselinker/import"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2 text-sm"
+          >
+            <Package className="w-4 h-4" />
+            Import produktów
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+          <button
+            onClick={() => { loadConfig(); loadStatus(); }}
+            className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <RefreshCw className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* Alerts */}
