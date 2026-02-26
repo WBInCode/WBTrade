@@ -95,6 +95,7 @@ const menuItems = [
     icon: Box,
     submenu: [
       { title: 'Baselinker', href: '/baselinker' },
+      { title: 'Import produktów', href: '/baselinker/import' },
       { title: 'Synchronizacja stanów', href: '/stock-sync' },
     ],
   },
