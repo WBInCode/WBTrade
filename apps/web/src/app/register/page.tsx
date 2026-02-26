@@ -18,6 +18,8 @@ export default function RegisterPage() {
     firstName: '',
     lastName: '',
     acceptTerms: false,
+    acceptPrivacy: false,
+    acceptNewsletter: false,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -59,6 +61,17 @@ export default function RegisterPage() {
     }
   };
 
+  const handleSelectAll = (checked: boolean) => {
+    setFormData((prev) => ({
+      ...prev,
+      acceptTerms: checked,
+      acceptPrivacy: checked,
+      acceptNewsletter: checked,
+    }));
+  };
+
+  const allChecked = formData.acceptTerms && formData.acceptPrivacy && formData.acceptNewsletter;
+
   // Walidacja email - RFC 5322 compliant
   const isValidEmail = (email: string): boolean => {
     const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
@@ -78,7 +91,8 @@ export default function RegisterPage() {
     if (!/[0-9]/.test(formData.password)) return 'Hasło musi zawierać cyfrę';
     if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password)) return 'Hasło musi zawierać znak specjalny';
     if (formData.password !== formData.confirmPassword) return 'Hasła nie są identyczne';
-    if (!formData.acceptTerms) return 'Musisz zaakceptować regulamin i politykę prywatności';
+    if (!formData.acceptTerms) return 'Musisz zaakceptować regulamin';
+    if (!formData.acceptPrivacy) return 'Musisz zaakceptować politykę prywatności';
     return null;
   };
 
@@ -99,6 +113,7 @@ export default function RegisterPage() {
       password: formData.password,
       firstName: formData.firstName,
       lastName: formData.lastName,
+      newsletter: formData.acceptNewsletter,
     });
 
     if (result.success) {
@@ -486,26 +501,77 @@ export default function RegisterPage() {
               )}
             </div>
 
-            {/* Terms */}
-            <div className="flex items-start gap-3 pt-2">
-              <input
-                id="acceptTerms"
-                name="acceptTerms"
-                type="checkbox"
-                checked={formData.acceptTerms}
-                onChange={handleChange}
-                className="mt-0.5 w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500 focus:ring-offset-0"
-              />
-              <label htmlFor="acceptTerms" className="text-sm text-gray-600 leading-snug">
-                Akceptuję{' '}
-                <Link href="/terms" className="text-orange-500 hover:text-orange-600 font-medium">
-                  regulamin
-                </Link>{' '}
-                oraz{' '}
-                <Link href="/privacy" className="text-orange-500 hover:text-orange-600 font-medium">
-                  politykę prywatności
-                </Link>
-              </label>
+            {/* Zgody — 4 checkboxy */}
+            <div className="space-y-1 pt-2">
+              {/* Zaznacz wszystko */}
+              <div className="flex items-center gap-3 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl">
+                <input
+                  id="selectAll"
+                  type="checkbox"
+                  checked={allChecked}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  className="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500 focus:ring-offset-0"
+                />
+                <label htmlFor="selectAll" className="text-sm font-semibold text-gray-800 dark:text-gray-200 select-none cursor-pointer">
+                  Zaznacz wszystko
+                </label>
+              </div>
+
+              {/* Regulamin — wymagany */}
+              <div className="flex items-start gap-3 py-1.5 px-2">
+                <input
+                  id="acceptTerms"
+                  name="acceptTerms"
+                  type="checkbox"
+                  checked={formData.acceptTerms}
+                  onChange={handleChange}
+                  className="mt-0.5 w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500 focus:ring-offset-0"
+                />
+                <label htmlFor="acceptTerms" className="text-sm text-gray-600 dark:text-gray-300 leading-snug select-none cursor-pointer">
+                  Akceptuję{' '}
+                  <Link href="/terms" className="text-orange-500 hover:text-orange-600 font-medium">
+                    regulamin
+                  </Link>
+                  {' '}<span className="text-red-500">*</span>
+                </label>
+              </div>
+
+              {/* Polityka prywatności — wymagana */}
+              <div className="flex items-start gap-3 py-1.5 px-2">
+                <input
+                  id="acceptPrivacy"
+                  name="acceptPrivacy"
+                  type="checkbox"
+                  checked={formData.acceptPrivacy}
+                  onChange={handleChange}
+                  className="mt-0.5 w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500 focus:ring-offset-0"
+                />
+                <label htmlFor="acceptPrivacy" className="text-sm text-gray-600 dark:text-gray-300 leading-snug select-none cursor-pointer">
+                  Akceptuję{' '}
+                  <Link href="/privacy" className="text-orange-500 hover:text-orange-600 font-medium">
+                    politykę prywatności
+                  </Link>
+                  {' '}<span className="text-red-500">*</span>
+                </label>
+              </div>
+
+              {/* Newsletter — opcjonalny */}
+              <div className="flex items-start gap-3 py-1.5 px-2 bg-gradient-to-r from-white to-orange-50/50 dark:from-secondary-800 dark:to-orange-900/10 rounded-xl">
+                <input
+                  id="acceptNewsletter"
+                  name="acceptNewsletter"
+                  type="checkbox"
+                  checked={formData.acceptNewsletter}
+                  onChange={handleChange}
+                  className="mt-0.5 w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500 focus:ring-offset-0"
+                />
+                <label htmlFor="acceptNewsletter" className="text-sm text-gray-600 dark:text-gray-300 leading-snug select-none cursor-pointer">
+                  Chcę otrzymywać newsletter z promocjami i nowościami
+                  <span className="block text-xs text-orange-500 mt-1 font-medium">
+                    🎁 Zapisz się i otrzymaj kod rabatowy -10%!
+                  </span>
+                </label>
+              </div>
             </div>
 
             {/* Submit button */}

@@ -10,6 +10,7 @@
 import { Worker, Job } from 'bullmq';
 import { QUEUE_NAMES, queueConnection, getQueue } from '../lib/queue';
 import { orderStatusSyncService } from '../services/order-status-sync.service';
+import { deliveryTrackingService } from '../services/delivery-tracking.service';
 import { BaselinkerService } from '../services/baselinker.service';
 
 interface OrderStatusSyncJobData {
@@ -34,6 +35,8 @@ export function createBaselinkerSyncWorker(): Worker {
       switch (job.name) {
         case 'sync-order-statuses':
           return await processOrderStatusSync(job);
+        case 'sync-delivery-tracking':
+          return await processDeliveryTracking(job);
         case 'sync-stock':
           return await processStockSync(job);
         case 'sync-price':
@@ -81,6 +84,29 @@ async function processOrderStatusSync(job: Job<OrderStatusSyncJobData>) {
     return result;
   } catch (error) {
     console.error('[BaselinkerSyncWorker] Sync failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Process delivery tracking synchronization
+ * Fetches package/courier status for active orders from Baselinker
+ */
+async function processDeliveryTracking(job: Job) {
+  console.log(`[BaselinkerSyncWorker] Syncing delivery tracking statuses`);
+  
+  try {
+    const result = await deliveryTrackingService.syncDeliveryStatuses();
+    
+    console.log(`[BaselinkerSyncWorker] Delivery tracking sync completed: ${result.updated} updated, ${result.skipped} skipped, ${result.errors.length} errors`);
+    
+    if (result.errors.length > 0) {
+      console.warn('[BaselinkerSyncWorker] Delivery tracking errors:', result.errors.slice(0, 5));
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('[BaselinkerSyncWorker] Delivery tracking sync failed:', error);
     throw error;
   }
 }
@@ -136,7 +162,7 @@ export async function scheduleBaselinkerSync(): Promise<void> {
   // Remove existing repeatable jobs first
   const repeatableJobs = await queue.getRepeatableJobs();
   for (const job of repeatableJobs) {
-    if (job.name === 'sync-order-statuses' || job.name === 'sync-stock' || job.name === 'sync-price') {
+    if (job.name === 'sync-order-statuses' || job.name === 'sync-delivery-tracking' || job.name === 'sync-stock' || job.name === 'sync-price') {
       await queue.removeRepeatableByKey(job.key);
     }
   }
@@ -157,6 +183,22 @@ export async function scheduleBaselinkerSync(): Promise<void> {
   );
   
   console.log('✅ Baselinker order status sync scheduled (every 15 minutes)');
+
+  // Add delivery tracking sync job - every 15 minutes (offset by 5 min from status sync)
+  await queue.add(
+    'sync-delivery-tracking',
+    {
+      timestamp: Date.now(),
+    },
+    {
+      repeat: {
+        pattern: '5/15 * * * *', // Every 15 minutes, offset by 5 min
+      },
+      jobId: 'baselinker-delivery-tracking-sync',
+    }
+  );
+
+  console.log('✅ Baselinker delivery tracking sync scheduled (every 15 minutes, +5 offset)');
   
   // Add stock sync job - every 2 hours
   await queue.add(
