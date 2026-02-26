@@ -14,6 +14,7 @@ import { createBaselinkerProvider, BaselinkerProvider, BaselinkerInventory } fro
 import { meiliClient, PRODUCTS_INDEX } from '../lib/meilisearch';
 import { BaselinkerSyncType, BaselinkerSyncStatus, Prisma, PriceChangeSource } from '@prisma/client';
 import { priceHistoryService } from './price-history.service';
+import { syncProgress } from './sync-progress';
 
 // ============================================
 // Types
@@ -355,6 +356,12 @@ export class BaselinkerService {
     });
 
     console.log(`[BaselinkerSync] Starting ${type} sync (logId: ${syncLog.id})${mode ? ` with mode: ${mode}` : ''}`);
+    
+    syncProgress.sendProgress(syncLog.id, {
+      type: 'phase',
+      message: `Rozpoczynanie synchronizacji ${type}${mode ? ` (${mode})` : ''}...`,
+      phase: 'init',
+    });
 
     // Run sync in background (don't await)
     this.runSync(syncLog.id, type, mode).catch((error) => {
@@ -385,15 +392,22 @@ export class BaselinkerService {
 
       if (type === 'full') {
         // Full sync: categories → products → images → stock
+        syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Synchronizacja kategorii...', phase: 'categories' });
         const catResult = await this.syncCategories(provider, stored.inventoryId);
         itemsProcessed += catResult.processed;
         errors.push(...catResult.errors);
+        
+        if (syncProgress.isAborted(syncLogId)) throw new Error('ABORTED');
 
-        const prodResult = await this.syncProducts(provider, stored.inventoryId, mode);
+        syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Synchronizacja produktów...', phase: 'products' });
+        const prodResult = await this.syncProducts(provider, stored.inventoryId, mode, syncLogId);
         itemsProcessed += prodResult.processed;
         allChangedProducts.push(...prodResult.changedProducts);
         errors.push(...prodResult.errors);
+        
+        if (syncProgress.isAborted(syncLogId)) throw new Error('ABORTED');
 
+        syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Synchronizacja stanów magazynowych...', phase: 'stock' });
         const stockResult = await this.syncStock(provider, stored.inventoryId);
         itemsProcessed += stockResult.processed;
         itemsChanged += stockResult.changed;
@@ -401,27 +415,35 @@ export class BaselinkerService {
         errors.push(...stockResult.errors);
 
         // Reindex Meilisearch
+        syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Reindeksacja wyszukiwarki...', phase: 'reindex' });
         await this.reindexMeilisearch();
       } else if (type === 'categories') {
+        syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Synchronizacja kategorii...', phase: 'categories' });
         const result = await this.syncCategories(provider, stored.inventoryId);
         itemsProcessed = result.processed;
         errors.push(...result.errors);
       } else if (type === 'products') {
-        const result = await this.syncProducts(provider, stored.inventoryId, mode);
+        syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Synchronizacja produktów...', phase: 'products' });
+        const result = await this.syncProducts(provider, stored.inventoryId, mode, syncLogId);
         itemsProcessed = result.processed;
         allChangedProducts = result.changedProducts;
         errors.push(...result.errors);
         
         // Po synchronizacji produktów, synchronizuj też stany magazynowe
         console.log('[BaselinkerSync] Syncing stock after products sync...');
-        const stockResult = await this.syncStock(provider, stored.inventoryId);
-        itemsProcessed += stockResult.processed;
-        itemsChanged += stockResult.changed;
-        allChangedSkus.push(...stockResult.changedSkus);
-        errors.push(...stockResult.errors);
+        if (!syncProgress.isAborted(syncLogId)) {
+          syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Synchronizacja stanów magazynowych...', phase: 'stock' });
+          const stockResult = await this.syncStock(provider, stored.inventoryId);
+          itemsProcessed += stockResult.processed;
+          itemsChanged += stockResult.changed;
+          allChangedSkus.push(...stockResult.changedSkus);
+          errors.push(...stockResult.errors);
+        }
         
+        syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Reindeksacja wyszukiwarki...', phase: 'reindex' });
         await this.reindexMeilisearch();
       } else if (type === 'stock') {
+        syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Synchronizacja stanów magazynowych...', phase: 'stock' });
         const result = await this.syncStock(provider, stored.inventoryId);
         itemsProcessed = result.processed;
         itemsChanged = result.changed;
@@ -457,8 +479,21 @@ export class BaselinkerService {
       await prisma.baselinkerConfig.updateMany({
         data: { lastSyncAt: new Date() },
       });
+      
+      // Send completion event
+      syncProgress.sendProgress(syncLogId, {
+        type: errors.length > 0 ? 'error' : 'complete',
+        message: errors.length > 0 
+          ? `Synchronizacja zakończona z ${errors.length} błędami. Przetworzono: ${itemsProcessed}`
+          : `Synchronizacja zakończona pomyślnie! Przetworzono: ${itemsProcessed}, Zmienionych: ${itemsChanged || allChangedProducts.length}`,
+        current: itemsProcessed,
+        total: itemsProcessed,
+        percent: 100,
+      });
+      syncProgress.cleanup(syncLogId);
     } catch (error) {
-      console.error('Sync error:', error);
+      const isAborted = error instanceof Error && error.message === 'ABORTED';
+      console.error('Sync error:', isAborted ? 'Aborted by user' : error);
 
       // Update sync log as failed
       await prisma.baselinkerSyncLog.update({
@@ -468,10 +503,21 @@ export class BaselinkerService {
           itemsProcessed,
           itemsChanged,
           changedSkus: allChangedSkus.length > 0 ? allChangedSkus : undefined,
-          errors: [error instanceof Error ? error.message : 'Unknown error', ...errors],
+          errors: isAborted 
+            ? ['Przerwane przez administratora', ...errors]
+            : [error instanceof Error ? error.message : 'Unknown error', ...errors],
           completedAt: new Date(),
         },
       });
+      
+      syncProgress.sendProgress(syncLogId, {
+        type: isAborted ? 'aborted' : 'error',
+        message: isAborted 
+          ? `Synchronizacja przerwana. Przetworzono: ${itemsProcessed} produktów przed przerwaniem.`
+          : `Błąd synchronizacji: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        current: itemsProcessed,
+      });
+      syncProgress.cleanup(syncLogId);
     }
   }
 
@@ -987,11 +1033,13 @@ export class BaselinkerService {
   /**
    * Sync products from Baselinker (incremental - only changes)
    * @param mode - 'new-only' (tylko nowe produkty, bez stanów 0), 'update-only' (tylko aktualizacja istniejących), undefined (wszystko)
+   * @param syncLogId - optional sync log ID for progress tracking
    */
   async syncProducts(
     provider: BaselinkerProvider,
     inventoryId: string,
-    mode?: string
+    mode?: string,
+    syncLogId?: string
   ): Promise<{ processed: number; errors: string[]; skipped: number; changedProducts: { sku: string; name: string; changes: string[] }[] }> {
     const errors: string[] = [];
     let processed = 0;
@@ -1000,6 +1048,13 @@ export class BaselinkerService {
 
     try {
       console.log(`[BaselinkerSync] Starting products sync with mode: ${mode || 'all'}...`);
+      
+      if (syncLogId) {
+        syncProgress.sendProgress(syncLogId, {
+          type: 'info',
+          message: `Pobieranie listy produktów z Baselinker (tryb: ${mode || 'all'})...`,
+        });
+      }
       
       // Get all product IDs from Baselinker (lightweight call)
       console.log('[BaselinkerSync] Fetching product list...');
@@ -1113,6 +1168,16 @@ export class BaselinkerService {
 
       console.log(`[BaselinkerSync] ${productsToFetch.length} products to process, ${skipped} skipped (mode: ${mode || 'all'})`);
 
+      if (syncLogId) {
+        syncProgress.sendProgress(syncLogId, {
+          type: 'info',
+          message: `Znaleziono ${productsToFetch.length} produktów do przetworzenia, ${skipped} pominiętych`,
+          current: 0,
+          total: productsToFetch.length,
+          percent: 0,
+        });
+      }
+
       if (productsToFetch.length === 0) {
         console.log('[BaselinkerSync] No products to process, skipping fetch');
         return { processed: 0, errors, skipped, changedProducts };
@@ -1120,14 +1185,46 @@ export class BaselinkerService {
 
       // Fetch detailed data only for changed products
       console.log('[BaselinkerSync] Fetching detailed data for products...');
+      if (syncLogId) {
+        syncProgress.sendProgress(syncLogId, {
+          type: 'info',
+          message: `Pobieranie szczegółów ${productsToFetch.length} produktów z Baselinker...`,
+        });
+      }
       const products = await provider.getInventoryProductsData(inventoryId, productsToFetch);
       console.log(`[BaselinkerSync] Got ${products.length} product details`);
+      
+      if (syncLogId) {
+        syncProgress.sendProgress(syncLogId, {
+          type: 'info',
+          message: `Pobrano ${products.length} produktów. Rozpoczynanie przetwarzania...`,
+          total: products.length,
+        });
+      }
 
       // Process in batches of 10 with extended timeout (60 seconds)
       const batchSize = 10;
       for (let i = 0; i < products.length; i += batchSize) {
+        // Check for abort before each batch
+        if (syncLogId && syncProgress.isAborted(syncLogId)) {
+          throw new Error('ABORTED');
+        }
+        
         const batch = products.slice(i, i + batchSize);
-        console.log(`[BaselinkerSync] Processing products batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(products.length / batchSize)}`);
+        const batchNum = Math.floor(i / batchSize) + 1;
+        const totalBatches = Math.ceil(products.length / batchSize);
+        console.log(`[BaselinkerSync] Processing products batch ${batchNum}/${totalBatches}`);
+        
+        if (syncLogId) {
+          syncProgress.sendProgress(syncLogId, {
+            type: 'progress',
+            message: `Przetwarzanie partii ${batchNum}/${totalBatches}...`,
+            phase: 'products',
+            current: Math.min(i + batchSize, products.length),
+            total: products.length,
+            percent: Math.round(((i + batchSize) / products.length) * 100),
+          });
+        }
 
         await prisma.$transaction(
           async (tx) => {
@@ -1151,6 +1248,25 @@ export class BaselinkerService {
                 console.log(`[BaselinkerSync] Warning: Product ${blProduct.id} has price 0. Raw data:`, {
                   price_brutto: blProduct.price_brutto,
                   price_wholesale_netto: blProduct.price_wholesale_netto,
+                });
+                if (syncLogId) {
+                  syncProgress.sendProgress(syncLogId, {
+                    type: 'warning',
+                    message: `Produkt "${name}" (ID: ${blProduct.id}) ma cenę 0 zł!`,
+                    productName: name,
+                    sku,
+                  });
+                }
+              }
+              
+              // Warn about missing tags
+              const productTagsRaw = (blProduct.tags || []).map((tag: string) => tag.trim()).filter(Boolean);
+              if (productTagsRaw.length === 0 && syncLogId) {
+                syncProgress.sendProgress(syncLogId, {
+                  type: 'warning',
+                  message: `Produkt "${name}" (ID: ${blProduct.id}) nie ma tagów`,
+                  productName: name,
+                  sku,
                 });
               }
               
@@ -1371,8 +1487,26 @@ export class BaselinkerService {
               }
 
               processed++;
+              
+              if (syncLogId) {
+                syncProgress.sendProgress(syncLogId, {
+                  type: 'info',
+                  message: `✓ ${name} (${sku})`,
+                  productName: name,
+                  sku,
+                  current: processed,
+                  total: products.length,
+                });
+              }
             } catch (error) {
-              errors.push(`Product ${blProduct.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+              const errMsg = `Product ${blProduct.id}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+              errors.push(errMsg);
+              if (syncLogId) {
+                syncProgress.sendProgress(syncLogId, {
+                  type: 'error',
+                  message: `✗ Błąd produktu ${blProduct.id}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                });
+              }
             }
           }
         },
@@ -1382,6 +1516,7 @@ export class BaselinkerService {
         });
       }
     } catch (error) {
+      if (error instanceof Error && error.message === 'ABORTED') throw error;
       errors.push(`Failed to fetch products: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
