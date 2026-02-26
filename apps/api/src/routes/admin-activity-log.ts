@@ -25,7 +25,6 @@ router.get('/', async (req: Request, res: Response) => {
       where.OR = [
         { email: { contains: search, mode: 'insensitive' } },
         { action: { contains: search, mode: 'insensitive' } },
-        { ipAddress: { contains: search } },
       ];
     }
     if (severity) where.severity = severity;

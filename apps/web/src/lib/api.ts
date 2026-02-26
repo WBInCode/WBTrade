@@ -580,6 +580,10 @@ export interface Order {
   tax: number;
   total: number;
   trackingNumber?: string;
+  trackingLink?: string;
+  courierCode?: string;
+  deliveryStatus?: string;
+  deliveryStatusUpdatedAt?: string;
   notes?: string;
   // Invoice preference
   wantInvoice?: boolean;
@@ -871,10 +875,31 @@ function getSessionId(): string {
   return sessionId;
 }
 
-// Get user ID if logged in
+// Get user ID if logged in - try localStorage first, fallback to JWT token
 function getUserId(): string | null {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem('user_id');
+  
+  // Try direct user_id first
+  const directId = localStorage.getItem('user_id');
+  if (directId) return directId;
+  
+  // Fallback: extract from JWT token
+  try {
+    const tokensStr = localStorage.getItem('auth_tokens');
+    if (tokensStr) {
+      const tokens = JSON.parse(tokensStr);
+      if (tokens.accessToken) {
+        const payload = JSON.parse(atob(tokens.accessToken.split('.')[1]));
+        if (payload.userId) {
+          // Also save for future use
+          localStorage.setItem('user_id', payload.userId);
+          return payload.userId;
+        }
+      }
+    }
+  } catch {}
+  
+  return null;
 }
 
 // Custom fetch for cart with session/user headers
@@ -1285,7 +1310,6 @@ export interface DashboardStats {
   unpaidOrders: number;
   inTransitOrders: number;
   unreadMessages: number;
-  loyaltyPoints: number;
 }
 
 export interface DashboardOrder {
@@ -1497,6 +1521,9 @@ export const couponsApi = {
 
   claimAppDownload: () =>
     api.post<{ discount: { couponCode: string; discountPercent: number; expiresAt: string } }>('/coupons/claim-app-download'),
+
+  claimNewsletter: () =>
+    api.post<{ discount: { couponCode: string; discountPercent: number; expiresAt: string } }>('/coupons/claim-newsletter'),
 };
 
 // ============================================

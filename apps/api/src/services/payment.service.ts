@@ -375,6 +375,19 @@ export class PaymentService {
       if (result.status === 'succeeded') {
         console.log(`[PaymentService] Payment succeeded, triggering Baselinker status update for order ${order.id}`);
         
+        // Mark coupon as used NOW (only after payment is confirmed)
+        if (order.couponCode) {
+          try {
+            await prisma.coupon.update({
+              where: { code: order.couponCode },
+              data: { usedCount: { increment: 1 } },
+            });
+            console.log(`[PaymentService] Coupon ${order.couponCode} marked as used for order ${order.orderNumber}`);
+          } catch (err) {
+            console.error(`[PaymentService] Failed to mark coupon ${order.couponCode} as used:`, err);
+          }
+        }
+        
         // Update product sales count for popularity tracking
         const orderItems = await prisma.orderItem.findMany({
           where: { orderId: order.id },

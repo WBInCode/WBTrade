@@ -2,101 +2,64 @@
 
 import { useEffect, useState } from 'react';
 import ProductCarousel from './ProductCarousel';
-import { productsApi, Product } from '@/lib/api';
+import { Product } from '@/lib/api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 interface ToysCarouselProps {
-  categorySlug?: string;
   limit?: number;
 }
 
 export default function ToysCarousel({
-  categorySlug = 'zabawki',
   limit = 20,
 }: ToysCarouselProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchProducts = async () => {
       try {
-        let manualProducts: Product[] = [];
-        let manualProductIds: string[] = [];
-        
-        // Check if admin has manually selected toys products (they go first)
-        try {
-          const settingsRes = await fetch(`${API_URL}/admin/settings/carousels`);
-          if (settingsRes.ok) {
-            const settings = await settingsRes.json();
-            if (settings.carousels?.toys?.productIds?.length > 0) {
-              manualProductIds = settings.carousels.toys.productIds;
-              const response = await productsApi.getAll({ limit: 100 });
-              manualProducts = manualProductIds
-                .map((id: string) => response.products.find((p: Product) => p.id === id))
-                .filter(Boolean) as Product[];
-            }
-          }
-        } catch (e) {
-          console.error('Error fetching settings:', e);
-        }
-        
-        // If we have enough manual products, use them
-        if (manualProducts.length >= limit) {
-          setProducts(manualProducts.slice(0, limit));
-          setLoading(false);
-          return;
-        }
-        
-        // Get automatic products to fill remaining slots
-        const remainingSlots = limit - manualProducts.length;
-        let automaticProducts: Product[] = [];
-        
-        // Try to get bestsellers from this category
-        const response = await productsApi.getBestsellers({ 
-          limit: remainingSlots + manualProductIds.length, // Get extra to filter
-          category: categorySlug 
+        // Use dedicated public endpoint that handles manual+automatic merge server-side
+        const response = await fetch(`${API_URL}/products/toys?limit=${limit}`, {
+          signal: controller.signal,
         });
-        
-        // Filter out manual products from automatic results
-        automaticProducts = response.products
-          .filter((p: Product) => !manualProductIds.includes(p.id))
-          .slice(0, remainingSlots);
-        
-        // If not enough bestsellers, fallback to any category products
-        if (automaticProducts.length < remainingSlots) {
-          const fallback = await productsApi.getAll({
-            limit: remainingSlots - automaticProducts.length + manualProductIds.length,
-            category: categorySlug,
-          });
-          const additionalProducts = fallback.products
-            .filter((p: Product) => !manualProductIds.includes(p.id) && !automaticProducts.some(ap => ap.id === p.id))
-            .slice(0, remainingSlots - automaticProducts.length);
-          automaticProducts = [...automaticProducts, ...additionalProducts];
+
+        if (controller.signal.aborted) return;
+
+        if (response.ok) {
+          const data = await response.json();
+          setProducts(data.products || []);
         }
-        
-        // Combine: manual first, then automatic
-        setProducts([...manualProducts, ...automaticProducts]);
-      } catch (error) {
+      } catch (error: any) {
+        if (error?.name === 'AbortError') return;
         console.error('Error fetching toys:', error);
-        // Fallback: get any products
+        // Fallback: try bestsellers with category filter
         try {
-          const fallback = await productsApi.getAll({
-            limit,
-            sort: 'newest',
+          const fallback = await fetch(`${API_URL}/products/bestsellers?category=zabawki&limit=${limit}`, {
+            signal: controller.signal,
           });
-          setProducts(fallback.products || []);
-        } catch (e) {
-          console.error('Fallback also failed:', e);
-          setProducts([]);
+          if (fallback.ok) {
+            const data = await fallback.json();
+            setProducts(data.products || data || []);
+          }
+        } catch (e: any) {
+          if (e?.name !== 'AbortError') {
+            console.error('Fallback also failed:', e);
+            setProducts([]);
+          }
         }
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchProducts();
-  }, [categorySlug, limit]);
+    return () => controller.abort();
+  }, [limit]);
 
   // Don't render if no products
   if (!loading && products.length === 0) {

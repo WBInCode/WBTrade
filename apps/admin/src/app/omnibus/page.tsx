@@ -55,7 +55,16 @@ interface TopData {
     images: { url: string }[];
     _count: { reviews: number };
   }[];
-  topSearched: { query: string; count: number }[];
+  topSearched: {
+    query: string;
+    count: number;
+    product: {
+      id: string;
+      name: string;
+      price: number;
+      imageUrl: string | null;
+    } | null;
+  }[];
 }
 
 export default function OmnibusPage() {
@@ -449,8 +458,26 @@ export default function OmnibusPage() {
                     topData.topSearched.map((s, i) => (
                       <div key={s.query} className="flex items-center gap-3 p-3 hover:bg-slate-800/30">
                         <span className="text-xs font-bold text-slate-500 w-6 text-center">#{i + 1}</span>
-                        <div className="flex-1">
-                          <p className="text-sm text-white">"{s.query}"</p>
+                        {s.product ? (
+                          <div className="w-10 h-10 bg-slate-800 rounded overflow-hidden flex-shrink-0">
+                            {s.product.imageUrl ? (
+                              <img src={s.product.imageUrl} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Package className="w-4 h-4 text-slate-600" />
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="w-10 h-10 bg-slate-800 rounded overflow-hidden flex-shrink-0 flex items-center justify-center">
+                            <Search className="w-4 h-4 text-slate-600" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-white truncate">"{s.query}"</p>
+                          {s.product && (
+                            <p className="text-xs text-slate-400 truncate">→ {s.product.name}</p>
+                          )}
                         </div>
                         <span className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
                           {s.count}x

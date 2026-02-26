@@ -4,7 +4,7 @@ import { useState, useEffect, use } from 'react';
 import { 
   ArrowLeft, Package, Truck, CreditCard, MapPin, User, Calendar,
   Clock, FileText, Printer, CheckCircle, XCircle, AlertCircle,
-  ChevronRight, Edit2, Save, X
+  ChevronRight, Edit2, Save, X, RefreshCcw
 } from 'lucide-react';
 import Link from 'next/link';
 import { getAuthToken } from '@/lib/api';
@@ -19,6 +19,14 @@ interface OrderItem {
   quantity: number;
   unitPrice: number;
   total: number;
+  variant?: {
+    product?: {
+      id: string;
+      slug: string;
+      name: string;
+      images?: { url: string }[];
+    };
+  };
 }
 
 interface StatusHistory {
@@ -79,6 +87,10 @@ interface Order {
   trackingNumber?: string;
   customerNotes?: string;
   internalNotes?: string;
+  trackingLink?: string;
+  courierCode?: string;
+  deliveryStatus?: string;
+  deliveryStatusUpdatedAt?: string;
   createdAt: string;
   updatedAt: string;
   paczkomatCode?: string;
@@ -134,6 +146,27 @@ const shippingMethods: Record<string, string> = {
   PICKUP: 'Odbiór osobisty',
 };
 
+const deliveryStatusLabels: Record<string, string> = {
+  'created': 'Przesyłka utworzona',
+  'confirmed': 'Potwierdzona',
+  'dispatched_by_sender': 'Nadana przez nadawcę',
+  'collected_from_sender': 'Odebrana od nadawcy',
+  'taken_by_courier': 'Pobrana przez kuriera',
+  'adopted_at_source_branch': 'W oddziale nadawczym',
+  'sent_from_source_branch': 'Wysłana z oddziału',
+  'in_transit': 'W transporcie',
+  'out_for_delivery': 'Wydana do doręczenia',
+  'ready_to_pickup': 'Oczekuje w punkcie odbioru',
+  'ready_to_pickup_from_pok': 'Gotowa do odbioru w punkcie',
+  'delivered': 'Dostarczona / Odebrana',
+  'avizo': 'Awizowana',
+  'returned_to_sender': 'Zwrócona do nadawcy',
+  'canceled': 'Anulowana',
+  'shipped': 'Wysłana',
+  'unknown': 'Status nieznany',
+  'other': 'W trakcie realizacji',
+};
+
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [order, setOrder] = useState<Order | null>(null);
@@ -142,6 +175,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [newStatus, setNewStatus] = useState('');
   const [statusNote, setStatusNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     loadOrder();
@@ -416,13 +451,41 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               </h2>
             </div>
             <div className="divide-y divide-slate-700/50">
-              {order.items.map((item) => (
+              {order.items.map((item) => {
+                const productSlug = item.variant?.product?.slug;
+                const productImage = item.variant?.product?.images?.[0]?.url;
+                const webUrl = process.env.NEXT_PUBLIC_WEB_URL || 'https://wb-trade.pl';
+                const productLink = productSlug ? `${webUrl}/products/${productSlug}` : null;
+
+                return (
                 <div key={item.id} className="px-6 py-4 flex items-center gap-4">
-                  <div className="w-16 h-16 bg-slate-700 rounded-lg flex items-center justify-center">
-                    <Package className="w-8 h-8 text-gray-500" />
-                  </div>
+                  {productLink ? (
+                    <a
+                      href={productLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-16 h-16 bg-slate-700 rounded-lg flex items-center justify-center overflow-hidden hover:ring-2 hover:ring-orange-400 transition-all cursor-pointer flex-shrink-0"
+                      title="Otwórz stronę produktu"
+                    >
+                      {productImage ? (
+                        <img src={productImage} alt={item.productName} className="w-full h-full object-cover" />
+                      ) : (
+                        <Package className="w-8 h-8 text-orange-400" />
+                      )}
+                    </a>
+                  ) : (
+                    <div className="w-16 h-16 bg-slate-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Package className="w-8 h-8 text-gray-500" />
+                    </div>
+                  )}
                   <div className="flex-1">
-                    <p className="font-medium text-white">{item.productName}</p>
+                    {productLink ? (
+                      <a href={productLink} target="_blank" rel="noopener noreferrer" className="font-medium text-white hover:text-orange-400 transition-colors">
+                        {item.productName}
+                      </a>
+                    ) : (
+                      <p className="font-medium text-white">{item.productName}</p>
+                    )}
                     <p className="text-sm text-gray-400">{item.variantName}</p>
                     <p className="text-xs text-gray-500">SKU: {item.sku}</p>
                   </div>
@@ -431,7 +494,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                     <p className="font-medium text-white">{formatPrice(item.total)}</p>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
             <div className="px-6 py-4 bg-slate-800/50 space-y-2">
               <div className="flex justify-between text-gray-400">
@@ -641,6 +705,30 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
                 <p className="text-sm text-gray-400">Numer przesyłki:</p>
                 <p className="text-white font-mono">{order.trackingNumber}</p>
+                {order.trackingLink && (
+                  <a 
+                    href={order.trackingLink} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-xs text-orange-400 hover:text-orange-300 mt-1 inline-block"
+                  >
+                    Śledź przesyłkę →
+                  </a>
+                )}
+              </div>
+            )}
+
+            {order.deliveryStatus && (
+              <div className="mt-3 p-3 bg-slate-700/50 rounded-lg border border-slate-600/50">
+                <p className="text-sm text-gray-400">Status dostawy:</p>
+                <p className="text-white text-sm font-medium mt-1">
+                  📦 {deliveryStatusLabels[order.deliveryStatus] || order.deliveryStatus}
+                </p>
+                {order.deliveryStatusUpdatedAt && (
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    Aktualizacja: {new Date(order.deliveryStatusUpdatedAt).toLocaleString('pl-PL')}
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -669,6 +757,49 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-6">
             <h2 className="font-semibold text-white mb-4">Akcje</h2>
             <div className="space-y-2">
+              {/* Manual Baselinker sync */}
+              {order.status !== 'CANCELLED' && order.status !== 'REFUNDED' && (
+                <button
+                  onClick={async () => {
+                    try {
+                      setSyncing(true);
+                      setSyncMessage(null);
+                      const token = getAuthToken();
+                      const res = await fetch(`${API_URL}/orders/${order.id}/sync-delivery`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          ...(token && { Authorization: `Bearer ${token}` }),
+                        },
+                      });
+                      const data = await res.json();
+                      if (res.ok && data.success) {
+                        setSyncMessage({ type: 'success', text: `Zsynchronizowano${data.deliveryStatus ? ` — ${data.deliveryStatus}` : ''}` });
+                        await loadOrder();
+                      } else {
+                        setSyncMessage({ type: 'error', text: data.error || data.message || 'Błąd synchronizacji' });
+                      }
+                    } catch {
+                      setSyncMessage({ type: 'error', text: 'Błąd połączenia z API' });
+                    } finally {
+                      setSyncing(false);
+                      setTimeout(() => setSyncMessage(null), 5000);
+                    }
+                  }}
+                  disabled={syncing}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition-colors disabled:opacity-50"
+                >
+                  <RefreshCcw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+                  {syncing ? 'Synchronizuję...' : 'Synchronizuj z Baselinker'}
+                </button>
+              )}
+              {syncMessage && (
+                <p className={`text-xs px-2 py-1.5 rounded-lg ${
+                  syncMessage.type === 'success' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+                }`}>
+                  {syncMessage.text}
+                </p>
+              )}
               {order.status === 'CANCELLED' || order.status === 'REFUNDED' ? (
                 <button 
                   onClick={handleRestoreOrder}

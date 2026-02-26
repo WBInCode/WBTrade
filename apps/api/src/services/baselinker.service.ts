@@ -162,11 +162,17 @@ export class BaselinkerService {
         },
       });
       
-      const decryptedToken = decryptToken(
-        config.apiTokenEncrypted,
-        config.encryptionIv,
-        config.authTag
-      );
+      let decryptedToken: string;
+      try {
+        decryptedToken = decryptToken(
+          config.apiTokenEncrypted,
+          config.encryptionIv,
+          config.authTag
+        );
+      } catch {
+        decryptedToken = process.env.BASELINKER_API_TOKEN || '';
+        console.warn('decryptToken failed in saveConfig (update), using BASELINKER_API_TOKEN env var fallback');
+      }
 
       return {
         inventoryId: config.inventoryId,
@@ -192,29 +198,33 @@ export class BaselinkerService {
       return null;
     }
 
+    let decryptedToken: string;
     try {
-      // Decrypt token just to mask it
-      const decryptedToken = decryptToken(
+      decryptedToken = decryptToken(
         config.apiTokenEncrypted,
         config.encryptionIv,
         config.authTag
       );
-
-      return {
-        inventoryId: config.inventoryId,
-        tokenMasked: maskToken(decryptedToken),
-        syncEnabled: config.syncEnabled,
-        syncIntervalMinutes: config.syncIntervalMinutes,
-        lastSyncAt: config.lastSyncAt,
-        createdAt: config.createdAt,
-        updatedAt: config.updatedAt,
-      };
-    } catch (error) {
-      // Token encryption key changed - config is invalid
-      // NIE usuwamy konfiguracji - klucz szyfrowania może zostać naprawiony
-      console.error('Failed to decrypt Baselinker config - check BASELINKER_ENCRYPTION_KEY env var. Config NOT deleted.');
-      return null;
+    } catch {
+      const envToken = process.env.BASELINKER_API_TOKEN;
+      if (envToken) {
+        console.warn('decryptToken failed in getConfig, using BASELINKER_API_TOKEN env var fallback');
+        decryptedToken = envToken;
+      } else {
+        console.error('Failed to decrypt Baselinker config and no BASELINKER_API_TOKEN env var available.');
+        return null;
+      }
     }
+
+    return {
+      inventoryId: config.inventoryId,
+      tokenMasked: maskToken(decryptedToken),
+      syncEnabled: config.syncEnabled,
+      syncIntervalMinutes: config.syncIntervalMinutes,
+      lastSyncAt: config.lastSyncAt,
+      createdAt: config.createdAt,
+      updatedAt: config.updatedAt,
+    };
   }
 
   /**
@@ -244,9 +254,12 @@ export class BaselinkerService {
 
       return { token, inventoryId: config.inventoryId };
     } catch (error) {
-      // Token encryption key changed - config is invalid
-      // NIE usuwamy konfiguracji - klucz szyfrowania może zostać naprawiony
-      console.error('Failed to decrypt Baselinker token - check BASELINKER_ENCRYPTION_KEY env var. Config NOT deleted.');
+      const envToken = process.env.BASELINKER_API_TOKEN;
+      if (envToken) {
+        console.warn('decryptToken failed in getDecryptedToken, using BASELINKER_API_TOKEN env var fallback');
+        return { token: envToken, inventoryId: config.inventoryId };
+      }
+      console.error('Failed to decrypt Baselinker token and no BASELINKER_API_TOKEN env var available.');
       return null;
     }
   }

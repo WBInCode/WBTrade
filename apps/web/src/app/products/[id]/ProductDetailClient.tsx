@@ -213,7 +213,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
         quantity: quantity,
         productId: product.id,
         sku: product.sku,
-      });
+      }, true);
       router.push('/cart');
     } catch (err: any) {
       console.error('Failed to buy now:', err);

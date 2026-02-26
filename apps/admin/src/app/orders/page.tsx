@@ -33,6 +33,11 @@ interface Order {
   total: number;
   shippingMethod: string;
   paymentMethod: string;
+  trackingNumber?: string;
+  trackingLink?: string;
+  courierCode?: string;
+  deliveryStatus?: string;
+  deliveryStatusUpdatedAt?: string;
   createdAt: string;
   updatedAt: string;
   user?: {
@@ -90,6 +95,40 @@ const shippingMethods: Record<string, string> = {
   INPOST: 'InPost Paczkomat',
   COURIER: 'Kurier',
   PICKUP: 'Odbiór osobisty',
+};
+
+const deliveryStatusLabels: Record<string, string> = {
+  'created': 'Utworzona',
+  'confirmed': 'Potwierdzona',
+  'dispatched_by_sender': 'Nadana',
+  'collected_from_sender': 'Odebrana od nadawcy',
+  'taken_by_courier': 'U kuriera',
+  'adopted_at_source_branch': 'W oddziale',
+  'sent_from_source_branch': 'Wysłana z oddziału',
+  'in_transit': 'W transporcie',
+  'out_for_delivery': 'Wydana do doręczenia',
+  'ready_to_pickup': 'Oczekuje w punkcie odbioru',
+  'ready_to_pickup_from_pok': 'Gotowa w punkcie',
+  'delivered': 'Dostarczona / Odebrana',
+  'avizo': 'Awizowana',
+  'returned_to_sender': 'Zwrot do nadawcy',
+  'canceled': 'Anulowana',
+  'shipped': 'Wysłana',
+  'unknown': 'Nieznany',
+  'other': 'W realizacji',
+};
+
+const deliveryStatusColors: Record<string, string> = {
+  'created': 'text-gray-400',
+  'dispatched_by_sender': 'text-yellow-400',
+  'in_transit': 'text-blue-400',
+  'out_for_delivery': 'text-cyan-400',
+  'ready_to_pickup': 'text-emerald-400',
+  'avizo': 'text-orange-400',
+  'delivered': 'text-green-400',
+  'returned_to_sender': 'text-red-400',
+  'canceled': 'text-red-400',
+  'shipped': 'text-cyan-400',
 };
 
 export default function OrdersPage() {
@@ -485,9 +524,21 @@ export default function OrdersPage() {
                       )}
                     </td>
                     <td className="px-4 py-4">
-                      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[order.status]}`}>
-                        {statusLabels[order.status] || order.status}
-                      </span>
+                      <div>
+                        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[order.status]}`}>
+                          {statusLabels[order.status] || order.status}
+                        </span>
+                        {order.deliveryStatus && (
+                          <p className={`text-[11px] mt-1 ${deliveryStatusColors[order.deliveryStatus] || 'text-gray-400'}`}>
+                            📦 {deliveryStatusLabels[order.deliveryStatus] || order.deliveryStatus}
+                          </p>
+                        )}
+                        {order.trackingNumber && (
+                          <p className="text-[10px] text-gray-500 mt-0.5 truncate max-w-[120px]" title={order.trackingNumber}>
+                            {order.trackingNumber}
+                          </p>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2">

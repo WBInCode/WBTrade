@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import { OrdersService } from '../services/orders.service';
 import { OrderStatus } from '@prisma/client';
+import { loyaltyService } from '../services/loyalty.service';
+import { deliveryTrackingService } from '../services/delivery-tracking.service';
 
 const ordersService = new OrdersService();
 
@@ -258,12 +260,25 @@ export async function updateOrder(req: Request, res: Response): Promise<void> {
     }
     
     const order = await ordersService.updateStatus(id, validation.data.status, validation.data.note);
-    
+
     if (!order) {
-      res.status(404).json({ message: 'Zam�wienie nie zostalo znalezione' });
+      res.status(404).json({ message: 'Zamówienie nie zostało znalezione' });
       return;
     }
-    
+
+    // Trigger loyalty recalculation when order becomes DELIVERED + PAID
+    if (order.userId && validation.data.status === 'DELIVERED' && order.paymentStatus === 'PAID') {
+      loyaltyService.recalculateUserLevel(order.userId, order.id).catch((err) => {
+        console.error('[Loyalty] Error recalculating after status change:', err);
+      });
+    }
+    // Also recalculate on REFUNDED (level may go down)
+    if (order.userId && (validation.data.status === 'REFUNDED' || validation.data.status === 'CANCELLED')) {
+      loyaltyService.recalculateUserLevel(order.userId, order.id).catch((err) => {
+        console.error('[Loyalty] Error recalculating after refund:', err);
+      });
+    }
+
     res.status(200).json(order);
   } catch (error) {
     console.error('Error updating order:', error);
@@ -468,6 +483,34 @@ export async function getOrderTracking(req: Request, res: Response): Promise<voi
     res.status(500).json({ message: error.message || 'Error fetching tracking info' });
   }
 }
+/**
+ * Sync delivery status for a single order (admin)
+ * Triggers immediate fetch from Baselinker
+ * @route POST /api/orders/:id/sync-delivery
+ */
+export async function syncOrderDelivery(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    
+    const result = await deliveryTrackingService.syncSingleOrder(id);
+    
+    if (!result.success) {
+      res.status(400).json({ success: false, error: result.error, message: result.error });
+      return;
+    }
+    
+    res.status(200).json({
+      success: true,
+      deliveryStatus: result.deliveryStatus,
+      deliveryStatusLabel: deliveryTrackingService.getStatusLabel(result.deliveryStatus || null),
+      trackingNumber: result.trackingNumber,
+    });
+  } catch (error: any) {
+    console.error('Error syncing delivery status:', error);
+    res.status(500).json({ message: error.message || 'Error syncing delivery status' });
+  }
+}
+
 /**
  * Get orders pending cancellation approval (admin)
  * @route GET /api/orders/pending-cancellations

@@ -43,6 +43,7 @@ interface RegisterData {
   password: string;
   firstName: string;
   lastName: string;
+  newsletter?: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -101,6 +102,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
+        if (data.user?.id) {
+          localStorage.setItem('user_id', data.user.id);
+        }
       } else if (response.status === 401) {
         // Token expired, try to refresh
         const refreshed = await refreshToken();
@@ -129,6 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setTokens(null);
     setUser(null);
     localStorage.removeItem('auth_tokens');
+    localStorage.removeItem('user_id');
   };
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
@@ -146,6 +151,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.ok) {
         saveTokens(data.tokens);
         setUser(data.user);
+        if (data.user?.id) {
+          localStorage.setItem('user_id', data.user.id);
+        }
         return { success: true };
       } else {
         return { success: false, error: data.message || 'Logowanie nie powiodło się' };
@@ -170,6 +178,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.ok) {
         saveTokens(data.tokens);
         setUser(data.user);
+        if (data.user?.id) {
+          localStorage.setItem('user_id', data.user.id);
+        }
         return { success: true, verificationToken: data.verificationToken };
       } else {
         return { success: false, error: data.message || 'Rejestracja nie powiodła się' };

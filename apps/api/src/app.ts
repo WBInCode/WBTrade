@@ -39,10 +39,13 @@ import adminNewsletterRoutes from './routes/admin-newsletter';
 import adminActivityLogRoutes from './routes/admin-activity-log';
 import adminOmnibusRoutes from './routes/admin-omnibus';
 import adminWarehouseRoutes from './routes/admin-warehouse';
+import carouselsRoutes from './routes/carousels';
 import newsletterRoutes from './routes/newsletter';
 import contactRoutes from './routes/contact';
 import feedRoutes from './routes/feed';
 import couponsRoutes from './routes/coupons';
+import loyaltyRoutes from './routes/loyalty';
+import adminLoyaltyRoutes from './routes/admin-loyalty';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
 import { initializeMeilisearch } from './lib/meilisearch';
 import { startSearchIndexWorker } from './workers/search-index.worker';
@@ -178,6 +181,7 @@ app.use('/api/admin/newsletter', adminNewsletterRoutes); // Admin newsletter man
 app.use('/api/admin/activity-log', adminActivityLogRoutes); // Admin activity log / audit trail
 app.use('/api/admin/omnibus', adminOmnibusRoutes); // Admin Omnibus + top products
 app.use('/api/admin/warehouse', adminWarehouseRoutes); // Admin WMS warehouse management
+app.use('/api/carousels', carouselsRoutes); // Dynamic carousels (public + admin)
 app.use('/api/admin/baselinker', baselinkerRoutes); // Baselinker integration
 app.use('/api/newsletter', newsletterRoutes); // Newsletter subscription
 app.use('/api/contact', contactRoutes); // Contact forms & complaints
@@ -188,6 +192,8 @@ app.use('/api/upload', uploadRoutes); // File uploads
 app.use('/api/price-history', priceHistoryRoutes); // Omnibus price history
 app.use('/api/feed', feedRoutes); // Google Merchant / Product feeds
 app.use('/api/coupons', couponsRoutes); // User coupons / discounts
+app.use('/api/loyalty', loyaltyRoutes); // User loyalty program
+app.use('/api/admin/loyalty', adminLoyaltyRoutes); // Admin loyalty management
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -300,7 +306,11 @@ app.listen(PORT, async () => {
     // 4. Newsletter campaign scheduler - every minute (no Redis needed)
     const { startNewsletterScheduler } = await import('./workers/newsletter-campaign.worker');
     startNewsletterScheduler();
-    
+
+    // 5. Loyalty cron worker - birthday/quarterly/monthly coupons
+    const { startLoyaltyCronWorker } = await import('./workers/loyalty-cron.worker');
+    startLoyaltyCronWorker();
+
     console.log('✅ All cron jobs started');
   } catch (error) {
     console.error('⚠️  Failed to start cron jobs:', error);

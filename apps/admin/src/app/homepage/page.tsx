@@ -76,6 +76,9 @@ const severityConfig = {
 
 const CHART_COLORS = ['#f97316', '#3b82f6', '#10b981', '#8b5cf6', '#ef4444', '#06b6d4', '#f59e0b', '#ec4899'];
 
+// Pie chart colors mapped to order statuses for better visual consistency
+const PIE_STATUS_COLORS = ['#f59e0b', '#3b82f6', '#8b5cf6', '#06b6d4', '#10b981', '#ef4444', '#f97316', '#64748b'];
+
 // ── Formatters ──
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('pl-PL', {
@@ -381,8 +384,8 @@ export default function HomepagePage() {
               <AreaChart data={salesChart} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
                 <defs>
                   <linearGradient id="gradientRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#f97316" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="gradientCancelled" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#ef4444" stopOpacity={0.15} />
@@ -416,12 +419,12 @@ export default function HomepagePage() {
                 <Area
                   type="monotone"
                   dataKey="revenue"
-                  stroke="#f97316"
+                  stroke="#10b981"
                   strokeWidth={2}
                   fill="url(#gradientRevenue)"
                   name="Przychód"
                   dot={false}
-                  activeDot={{ r: 4, fill: '#f97316' }}
+                  activeDot={{ r: 4, fill: '#10b981' }}
                 />
                 {totalCancelledRevenue > 0 && (
                   <Area
@@ -447,42 +450,67 @@ export default function HomepagePage() {
           <p className="text-xs text-slate-400 mb-4">Ostatnie {recentOrders.length} zamówień</p>
           {pieData.length > 0 ? (
             <>
-              <div className="h-48">
+              <div className="h-52 relative">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
+                    <defs>
+                      {PIE_STATUS_COLORS.map((color, i) => (
+                        <linearGradient key={`pieGrad${i}`} id={`pieGrad${i}`} x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor={color} stopOpacity={1} />
+                          <stop offset="100%" stopColor={color} stopOpacity={0.7} />
+                        </linearGradient>
+                      ))}
+                    </defs>
                     <Pie
                       data={pieData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={45}
-                      outerRadius={75}
-                      paddingAngle={3}
+                      innerRadius={50}
+                      outerRadius={80}
+                      paddingAngle={4}
                       dataKey="value"
+                      cornerRadius={4}
+                      stroke="#1e293b"
+                      strokeWidth={2}
                     >
                       {pieData.map((_, i) => (
-                        <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                        <Cell key={i} fill={`url(#pieGrad${i % PIE_STATUS_COLORS.length})`} />
                       ))}
                     </Pie>
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: '#1e293b',
-                        border: '1px solid #475569',
-                        borderRadius: '8px',
+                        backgroundColor: '#0f172a',
+                        border: '1px solid #334155',
+                        borderRadius: '10px',
                         fontSize: '12px',
+                        boxShadow: '0 10px 25px rgba(0,0,0,0.4)',
+                        padding: '8px 12px',
                       }}
+                      itemStyle={{ color: '#e2e8f0' }}
+                      formatter={(value: number, name: string) => [`${value} zam.`, name]}
                     />
                   </PieChart>
                 </ResponsiveContainer>
+                {/* Center label */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-white">{recentOrders.length}</p>
+                    <p className="text-[10px] text-slate-400 -mt-0.5">zamówień</p>
+                  </div>
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-1.5 mt-2">
+              <div className="space-y-1.5 mt-3">
                 {pieData.map((entry, i) => (
-                  <div key={entry.status} className="flex items-center gap-2">
+                  <div key={entry.status} className="flex items-center gap-2.5 px-2 py-1 rounded-md hover:bg-slate-700/30 transition-colors">
                     <span
-                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
+                      className="w-3 h-3 rounded-sm flex-shrink-0"
+                      style={{ backgroundColor: PIE_STATUS_COLORS[i % PIE_STATUS_COLORS.length] }}
                     />
-                    <span className="text-xs text-slate-400 truncate">{entry.name}</span>
-                    <span className="text-xs text-white font-medium ml-auto">{entry.value}</span>
+                    <span className="text-xs text-slate-300 flex-1">{entry.name}</span>
+                    <span className="text-xs text-white font-semibold">{entry.value}</span>
+                    <span className="text-[10px] text-slate-500">
+                      {((entry.value / recentOrders.length) * 100).toFixed(0)}%
+                    </span>
                   </div>
                 ))}
               </div>
@@ -664,7 +692,7 @@ export default function HomepagePage() {
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
           <div className="text-center p-3 bg-slate-900/50 rounded-lg">
-            <p className="text-2xl font-bold text-orange-400">{formatCurrency(totalRevenue)}</p>
+            <p className="text-2xl font-bold text-green-400">{formatCurrency(totalRevenue)}</p>
             <p className="text-xs text-slate-400 mt-1">Łączny przychód</p>
           </div>
           <div className="text-center p-3 bg-slate-900/50 rounded-lg">

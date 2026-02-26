@@ -35,7 +35,9 @@ model User {
   companyPostalCode          String?            @map("company_postal_code")
   companyStreet              String?            @map("company_street")
   nip                        String?
+  dateOfBirth                DateTime?          @map("date_of_birth")
   addresses                  Address[]
+  loyalty                    UserLoyalty?
   cart                       Cart?
   orders                     Order[]
   reviews                    Review[]
@@ -320,6 +322,10 @@ model Order {
   tax                      Decimal              @default(0) @db.Decimal(10, 2)
   total                    Decimal              @db.Decimal(10, 2)
   trackingNumber           String?              @map("tracking_number")
+  trackingLink             String?              @map("tracking_link")
+  courierCode              String?              @map("courier_code")
+  deliveryStatus           String?              @map("delivery_status")
+  deliveryStatusUpdatedAt  DateTime?            @map("delivery_status_updated_at")
   customerNotes            String?              @map("customer_notes")
   internalNotes            String?              @map("internal_notes")
   createdAt                DateTime             @default(now()) @map("created_at")
@@ -431,7 +437,6 @@ model SecurityAuditLog {
   action    String
   userId    String?  @map("user_id")
   email     String?
-  ipAddress String?  @map("ip_address")
   userAgent String?  @map("user_agent")
   metadata  String?
   severity  String   @default("INFO")
@@ -443,7 +448,6 @@ model SecurityAuditLog {
   @@index([email])
   @@index([action])
   @@index([createdAt])
-  @@index([ipAddress])
   @@map("security_audit_logs")
 }
 
@@ -452,7 +456,6 @@ model RefreshToken {
   token      String    @unique
   userId     String    @map("user_id")
   deviceInfo String?   @map("device_info")
-  ipAddress  String?   @map("ip_address")
   expiresAt  DateTime  @map("expires_at")
   revokedAt  DateTime? @map("revoked_at")
   replacedBy String?   @map("replaced_by")
@@ -621,6 +624,36 @@ model Settings {
   @@map("settings")
 }
 
+model Carousel {
+  id           String       @id @default(cuid())
+  name         String                              // Display name e.g. "Bestsellery"
+  slug         String       @unique                // URL-safe slug e.g. "bestsellers"
+  description  String?                             // Admin description
+  icon         String       @default("star")       // Lucide icon name
+  color        String       @default("from-orange-500 to-red-600") // TailwindCSS gradient
+  mode         CarouselMode @default(AUTOMATIC)    // MANUAL / SEMI_AUTOMATIC / AUTOMATIC
+  productLimit Int          @default(20) @map("product_limit") // Configurable 1-100
+  categoryIds  String[]     @default([]) @map("category_ids") // Multiple categories
+  productIds   String[]     @default([]) @map("product_ids")  // Manually selected products
+  pinnedProductIds String[] @default([]) @map("pinned_product_ids") // Pinned products (always shown first)
+  autoSource   String?      @map("auto_source")    // "bestsellers" / "newest" / "top-rated" / "seasonal"
+  isVisible    Boolean      @default(true) @map("is_visible")  // Show on homepage
+  isActive     Boolean      @default(true) @map("is_active")   // Active/disabled
+  sortOrder    Int          @default(0) @map("sort_order")      // Display order
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  @@index([sortOrder])
+  @@index([isActive, isVisible])
+  @@map("carousels")
+}
+
+enum CarouselMode {
+  MANUAL
+  SEMI_AUTOMATIC
+  AUTOMATIC
+}
+
 enum AuthProvider {
   LOCAL
   GOOGLE
@@ -634,6 +667,9 @@ enum CouponSource {
   CAMPAIGN
   NEWSLETTER
   ALL_COLLECTED_BONUS
+  LOYALTY_LEVEL_UP
+  LOYALTY_BIRTHDAY
+  LOYALTY_QUARTERLY
 }
 
 enum UserRole {
@@ -726,4 +762,50 @@ enum PriceChangeSource {
   IMPORT
   SCRIPT
   SYSTEM
+}
+
+enum LoyaltyLevel {
+  NOWY_KLIENT
+  BRAZOWY
+  SREBRNY
+  ZLOTY
+  PLATYNOWY
+  DIAMENTOWY
+  VIP
+}
+
+model UserLoyalty {
+  id                    String         @id @default(cuid())
+  userId                String         @unique @map("user_id")
+  level                 LoyaltyLevel   @default(NOWY_KLIENT)
+  totalSpent            Decimal        @default(0) @map("total_spent") @db.Decimal(12, 2)
+  qualifyingOrderCount  Int            @default(0) @map("qualifying_order_count")
+  permanentDiscount     Decimal        @default(0) @map("permanent_discount") @db.Decimal(4, 2)
+  freeShippingThreshold Decimal?       @map("free_shipping_threshold") @db.Decimal(10, 2)
+  lastLevelUpAt         DateTime?      @map("last_level_up_at")
+  lastBirthdayCouponYear Int?          @map("last_birthday_coupon_year")
+  lastQuarterlyCouponAt DateTime?      @map("last_quarterly_coupon_at")
+  createdAt             DateTime       @default(now()) @map("created_at")
+  updatedAt             DateTime       @updatedAt @map("updated_at")
+  user                  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  history               LoyaltyHistory[]
+
+  @@index([level])
+  @@index([totalSpent])
+  @@map("user_loyalty")
+}
+
+model LoyaltyHistory {
+  id            String       @id @default(cuid())
+  userLoyaltyId String       @map("user_loyalty_id")
+  previousLevel LoyaltyLevel @map("previous_level")
+  newLevel      LoyaltyLevel @map("new_level")
+  totalSpentAt  Decimal      @map("total_spent_at") @db.Decimal(12, 2)
+  triggeredBy   String?      @map("triggered_by")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  userLoyalty   UserLoyalty   @relation(fields: [userLoyaltyId], references: [id], onDelete: Cascade)
+
+  @@index([userLoyaltyId])
+  @@index([createdAt])
+  @@map("loyalty_history")
 }

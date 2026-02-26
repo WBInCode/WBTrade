@@ -2,7 +2,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import HeroBanner from '../components/HeroBanner';
 import Newsletter from '../components/Newsletter';
-import FeaturedCarousel from '../components/FeaturedCarousel';
+import DynamicCarousel from '../components/DynamicCarousel';
 import BelowFoldCarousels from '../components/BelowFoldCarousels';
 import Link from 'next/link';
 import { serverFetch, REVALIDATE } from '../lib/server-api';
@@ -11,14 +11,27 @@ import { serverFetch, REVALIDATE } from '../lib/server-api';
 export const revalidate = 120;
 
 export default async function HomePage() {
-  // Pre-fetch above-fold data server-side — no client waterfall
+  // Pre-fetch above-fold carousel data server-side — no client waterfall
   let featuredProducts: any[] = [];
+  let featuredCarousel = { slug: 'featured', name: 'Polecane dla Ciebie', description: 'Specjalnie wybrane produkty', icon: 'star', color: 'from-violet-600 to-purple-700', productLimit: 20 };
+
   try {
-    const res = await serverFetch<{ products: any[] }>('/products/featured?limit=20', {
+    // Fetch carousel list to get the first (above-fold) carousel config
+    const carouselsRes = await serverFetch<{ carousels: any[] }>('/carousels', {
+      revalidate: REVALIDATE.PRODUCTS,
+      tags: ['carousels'],
+    });
+    const first = carouselsRes.carousels?.[0];
+    if (first) {
+      featuredCarousel = { slug: first.slug, name: first.name, description: first.description, icon: first.icon, color: first.color, productLimit: first.productLimit };
+    }
+
+    // Fetch products for the first carousel
+    const productsRes = await serverFetch<{ products: any[] }>(`/carousels/${featuredCarousel.slug}/products`, {
       revalidate: REVALIDATE.PRODUCTS,
       tags: ['products', 'featured'],
     });
-    featuredProducts = res.products;
+    featuredProducts = productsRes.products;
   } catch (e) {
     // Fallback to client-side fetch if server fetch fails
   }
@@ -32,7 +45,7 @@ export default async function HomePage() {
         <HeroBanner />
 
         {/* First carousel loads with server-fetched data (above the fold) */}
-        <FeaturedCarousel initialProducts={featuredProducts} />
+        <DynamicCarousel carousel={featuredCarousel} initialProducts={featuredProducts} />
         
         {/* Below-fold carousels use lazy loading */}
         <BelowFoldCarousels />

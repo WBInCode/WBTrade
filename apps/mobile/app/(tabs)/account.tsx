@@ -157,6 +157,7 @@ export default function AccountScreen() {
         <SectionHeader title="Zakupy" colors={colors} />
         <View style={[styles.menuSection, { backgroundColor: colors.card }]}>
           <MenuItem colors={colors} icon="shopping-bag" title="Moje zamówienia" onPress={() => router.push('/account/orders')} />
+          <MenuItem colors={colors} icon="trophy" title="Program lojalnościowy" subtitle="Wkrótce — rozwijamy się dla Ciebie!" onPress={() => router.push('/account/loyalty')} />
           <MenuItem colors={colors} icon="ticket" title="Moje rabaty" onPress={() => router.push('/account/discounts')} />
           <MenuItem colors={colors} icon="heart" title="Ulubione" onPress={() => router.push('/(tabs)/wishlist')} />
           <MenuItem colors={colors} icon="star" title="Moje opinie" onPress={() => router.push('/account/reviews')} />
