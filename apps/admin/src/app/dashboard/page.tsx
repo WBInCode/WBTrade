@@ -19,6 +19,7 @@ import {
   AlertCircle,
   Info,
   Loader2,
+  X,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -189,6 +190,15 @@ export default function DashboardPage() {
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [lowStock, setLowStock] = useState<LowStockProduct[]>([]);
   const [alerts, setAlerts] = useState<DashboardAlert[]>([]);
+  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('dashboard-dismissed-alerts');
+        return saved ? new Set(JSON.parse(saved)) : new Set();
+      } catch { return new Set(); }
+    }
+    return new Set();
+  });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [chartDays, setChartDays] = useState(30);
@@ -284,24 +294,40 @@ export default function DashboardPage() {
       </div>
 
       {/* Alerts */}
-      {alerts.length > 0 && (
+      {alerts.filter(a => !dismissedAlerts.has(a.id)).length > 0 && (
         <div className="space-y-2">
-          {alerts.slice(0, 3).map((alert) => {
+          {alerts.filter(a => !dismissedAlerts.has(a.id)).slice(0, 3).map((alert) => {
             const config = severityConfig[alert.severity];
             const AlertIcon = config.icon;
             return (
-              <Link
+              <div
                 key={alert.id}
-                href={alert.link || '#'}
-                className={`flex items-center gap-3 p-3 rounded-lg border ${config.bg} hover:opacity-90 transition-opacity`}
+                className={`flex items-center gap-3 p-3 rounded-lg border ${config.bg}`}
               >
-                <AlertIcon className={`w-4 h-4 ${config.text} flex-shrink-0`} />
-                <div className="flex-1 min-w-0">
-                  <span className={`text-sm font-medium ${config.text}`}>{alert.title}</span>
-                  <span className="text-xs text-slate-400 ml-2">{alert.description}</span>
-                </div>
-                <ArrowUpRight className="w-4 h-4 text-slate-500 flex-shrink-0" />
-              </Link>
+                <Link
+                  href={alert.link || '#'}
+                  className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-90 transition-opacity"
+                >
+                  <AlertIcon className={`w-4 h-4 ${config.text} flex-shrink-0`} />
+                  <div className="flex-1 min-w-0">
+                    <span className={`text-sm font-medium ${config.text}`}>{alert.title}</span>
+                    <span className="text-xs text-slate-400 ml-2">{alert.description}</span>
+                  </div>
+                  <ArrowUpRight className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                </Link>
+                <button
+                  onClick={() => {
+                    const newDismissed = new Set(dismissedAlerts);
+                    newDismissed.add(alert.id);
+                    setDismissedAlerts(newDismissed);
+                    try { localStorage.setItem('dashboard-dismissed-alerts', JSON.stringify([...newDismissed])); } catch {}
+                  }}
+                  className="p-1 rounded hover:bg-slate-700/50 transition-colors flex-shrink-0"
+                  title="Zamknij powiadomienie"
+                >
+                  <X className="w-4 h-4 text-slate-400 hover:text-white" />
+                </button>
+              </div>
             );
           })}
         </div>

@@ -256,22 +256,23 @@ export class PriceHistoryService {
   ): Promise<LowestPriceResult> {
     const windowStart = new Date(Date.now() - OMNIBUS_WINDOW_MS);
     
-    // Użyj agregacji MIN - efektywne dzięki indeksowi (productId, changedAt)
+    // Pobierz MIN z oldPrice i newPrice - obie ceny obowiązywały w oknie 30 dni
     const result = await tx.priceHistory.aggregate({
       where: {
         productId,
         variantId: null, // Tylko historia produktu, nie wariantów
         changedAt: { gte: windowStart }
       },
-      _min: { newPrice: true },
+      _min: { newPrice: true, oldPrice: true },
       _count: true
     });
     
-    const historyLowest = result._min.newPrice;
+    const lowestNewPrice = result._min.newPrice;
+    const lowestOldPrice = result._min.oldPrice;
     const recordCount = result._count;
     
     // Jeśli brak historii w oknie -> najniższa = aktualna cena
-    if (!historyLowest) {
+    if (!lowestNewPrice && !lowestOldPrice) {
       return {
         lowestPrice: currentPrice,
         lowestPriceAt: new Date(),
@@ -279,18 +280,28 @@ export class PriceHistoryService {
       };
     }
     
+    // Weź minimum z oldPrice, newPrice i aktualnej ceny
+    let historyLowest = lowestNewPrice || lowestOldPrice;
+    if (lowestOldPrice && historyLowest && lowestOldPrice.lessThan(historyLowest)) {
+      historyLowest = lowestOldPrice;
+    }
+    
     // Porównaj z aktualną ceną i weź mniejszą
-    const lowestPrice = historyLowest.lessThan(currentPrice) ? historyLowest : currentPrice;
+    const lowestPrice = (historyLowest && historyLowest.lessThan(currentPrice)) ? historyLowest : currentPrice;
     
     // Znajdź datę najniższej ceny
     let lowestPriceAt = new Date();
-    if (historyLowest.lessThanOrEqualTo(currentPrice)) {
+    if (historyLowest && historyLowest.lessThanOrEqualTo(currentPrice)) {
+      // Szukaj w oldPrice lub newPrice - sprawdź oba
       const lowestRecord = await tx.priceHistory.findFirst({
         where: {
           productId,
           variantId: null,
           changedAt: { gte: windowStart },
-          newPrice: historyLowest
+          OR: [
+            { oldPrice: historyLowest },
+            { newPrice: historyLowest }
+          ]
         },
         orderBy: { changedAt: 'asc' },
         select: { changedAt: true }
@@ -323,14 +334,15 @@ export class PriceHistoryService {
         variantId,
         changedAt: { gte: windowStart }
       },
-      _min: { newPrice: true },
+      _min: { newPrice: true, oldPrice: true },
       _count: true
     });
     
-    const historyLowest = result._min.newPrice;
+    const lowestNewPrice = result._min.newPrice;
+    const lowestOldPrice = result._min.oldPrice;
     const recordCount = result._count;
     
-    if (!historyLowest) {
+    if (!lowestNewPrice && !lowestOldPrice) {
       return {
         lowestPrice: currentPrice,
         lowestPriceAt: new Date(),
@@ -338,15 +350,24 @@ export class PriceHistoryService {
       };
     }
     
-    const lowestPrice = historyLowest.lessThan(currentPrice) ? historyLowest : currentPrice;
+    // Weź minimum z oldPrice, newPrice i aktualnej ceny
+    let historyLowest = lowestNewPrice || lowestOldPrice;
+    if (lowestOldPrice && historyLowest && lowestOldPrice.lessThan(historyLowest)) {
+      historyLowest = lowestOldPrice;
+    }
+    
+    const lowestPrice = (historyLowest && historyLowest.lessThan(currentPrice)) ? historyLowest : currentPrice;
     
     let lowestPriceAt = new Date();
-    if (historyLowest.lessThanOrEqualTo(currentPrice)) {
+    if (historyLowest && historyLowest.lessThanOrEqualTo(currentPrice)) {
       const lowestRecord = await tx.priceHistory.findFirst({
         where: {
           variantId,
           changedAt: { gte: windowStart },
-          newPrice: historyLowest
+          OR: [
+            { oldPrice: historyLowest },
+            { newPrice: historyLowest }
+          ]
         },
         orderBy: { changedAt: 'asc' },
         select: { changedAt: true }

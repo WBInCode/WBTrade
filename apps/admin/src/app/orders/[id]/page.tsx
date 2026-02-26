@@ -96,6 +96,10 @@ interface Order {
   paczkomatCode?: string;
   paczkomatAddress?: string;
   packageShipping?: PackageShippingData[];
+  guestEmail?: string;
+  guestFirstName?: string;
+  guestLastName?: string;
+  guestPhone?: string;
   user?: {
     id: string;
     email: string;
@@ -606,7 +610,20 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 </Link>
               </div>
             ) : (
-              <p className="text-gray-400">Zamówienie jako gość</p>
+              <div className="space-y-3">
+                <p className="text-gray-400 text-sm italic">Zamówienie jako gość</p>
+                {(order.guestFirstName || order.guestLastName) && (
+                  <p className="text-white font-medium">
+                    {order.guestFirstName} {order.guestLastName}
+                  </p>
+                )}
+                {order.guestEmail && (
+                  <p className="text-gray-400 text-sm">{order.guestEmail}</p>
+                )}
+                {order.guestPhone && (
+                  <p className="text-gray-400 text-sm">{order.guestPhone}</p>
+                )}
+              </div>
             )}
           </div>
 
