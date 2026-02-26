@@ -37,6 +37,7 @@ interface ProgressEvent {
   percent?: number;
   productName?: string;
   sku?: string;
+  mode?: string;
 }
 
 interface SyncStats {
@@ -243,6 +244,12 @@ export default function BaselinkerImportPage() {
   // Refs
   const terminalRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
+  const syncStateRef = useRef<SyncState>('idle');
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    syncStateRef.current = syncState;
+  }, [syncState]);
 
   // ============================================
   // Timer
@@ -284,6 +291,11 @@ export default function BaselinkerImportPage() {
         try {
           const event: ProgressEvent = JSON.parse(msg.data);
 
+          // Detect sync mode from init event
+          if (event.mode) {
+            setSyncMode(event.mode as SyncMode);
+          }
+
           setEvents((prev) => {
             const next = [...prev, event];
             // Keep last 2000 events in UI
@@ -322,8 +334,8 @@ export default function BaselinkerImportPage() {
       };
 
       es.onerror = () => {
-        // SSE connection error — don't overwrite terminal state
-        if (syncState === 'running') {
+        // SSE connection error — use ref to avoid stale closure
+        if (syncStateRef.current === 'running') {
           // Try to reconnect after a delay
           setTimeout(() => {
             if (eventSourceRef.current === es) {
@@ -333,7 +345,7 @@ export default function BaselinkerImportPage() {
         }
       };
     },
-    [token, syncState]
+    [token]
   );
 
   // Cleanup on unmount
@@ -342,6 +354,43 @@ export default function BaselinkerImportPage() {
       eventSourceRef.current?.close();
     };
   }, []);
+
+  // ============================================
+  // Check for running sync on page load (reconnect after refresh)
+  // ============================================
+  useEffect(() => {
+    if (!token) return;
+
+    const checkRunningSync = async () => {
+      try {
+        const res = await fetch(`${API_URL}/admin/baselinker/status`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        if (
+          data.currentSync &&
+          data.currentSync.status === 'RUNNING' &&
+          data.currentSync.type === 'PRODUCTS'
+        ) {
+          const logId = data.currentSync.id;
+          setSyncLogId(logId);
+          setSyncState('running');
+          setStats((prev) => ({
+            ...prev,
+            startedAt: new Date(data.currentSync.startedAt),
+            phase: 'init',
+          }));
+          connectSSE(logId);
+        }
+      } catch (err) {
+        console.error('Failed to check running sync:', err);
+      }
+    };
+
+    checkRunningSync();
+  }, [token, connectSSE]);
 
   // ============================================
   // Start sync

@@ -361,6 +361,7 @@ export class BaselinkerService {
       type: 'phase',
       message: `Rozpoczynanie synchronizacji ${type}${mode ? ` (${mode})` : ''}...`,
       phase: 'init',
+      mode: mode || 'fetch-all',
     });
 
     // Run sync in background (don't await)
