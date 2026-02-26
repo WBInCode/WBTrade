@@ -271,18 +271,155 @@ const FAQ_DATA: { keywords: string[]; question: string; answer: string; category
   {
     keywords: ['wubuś', 'wubus', 'kim jesteś', 'kim jest wubuś', 'bot', 'chatbot', 'asystent', 'co umiesz', 'jak ci na imię', 'twoje imię'],
     question: 'Kim jest WuBuś?',
-    answer: `Jestem ${BOT_NAME} — wirtualny asystent sklepu WBTrade! 🤖\n\nMogę pomóc Ci z:\n• 📦 Zamówieniami — składanie, śledzenie, anulowanie\n• 💳 Płatnościami — metody, bezpieczeństwo\n• 🚚 Dostawą — metody, koszty, śledzenie\n• 🔄 Zwrotami i reklamacjami\n• 🎁 Kuponami i rabatami\n• 👤 Kontem — rejestracja, logowanie\n• 🔍 Wyszukiwaniem produktów\n\nJeśli nie znam odpowiedzi — przekieruję Cię do naszego zespołu wsparcia! 😊`,
+    answer: `Jestem ${BOT_NAME} — wirtualny asystent sklepu WBTrade! 🤖\n\nMogę pomóc Ci z:\n• 📦 Zamówieniami — składanie, śledzenie, anulowanie\n• 💳 Płatnościami — metody, bezpieczeństwo, statusy\n• 🚚 Dostawą — metody, koszty, śledzenie paczek\n• 🔄 Zwrotami i reklamacjami\n• 🎁 Kuponami i rabatami\n• 👤 Kontem — rejestracja, logowanie, ustawienia\n• 🔍 Wyszukiwaniem produktów\n\nJeśli nie znam odpowiedzi — przekieruję Cię do naszego zespołu wsparcia! 😊`,
     category: 'O bocie',
+  },
+
+  // ═══ GWARANCJA ═══
+  {
+    keywords: ['gwarancja', 'gwarancyjny', 'serwis gwarancyjny', 'ile gwarancji', 'rękojmia', 'karta gwarancyjna'],
+    question: 'Jak działa gwarancja?',
+    answer: 'Każdy produkt w WBTrade objęty jest **rękojmią** (24 miesiące od daty zakupu) — to Twoje ustawowe prawo niezależne od producenta.\n\nDodatkowo wiele produktów posiada **gwarancję producenta** — czas trwania i warunki znajdziesz na karcie gwarancyjnej dołączonej do produktu lub na stronie producenta.\n\n📋 Jak zgłosić reklamację gwarancyjną?\n1. Przejdź do Konto → Zamówienia → wybierz produkt\n2. Kliknij „Zgłoś reklamację"\n3. Opisz usterkę i dołącz zdjęcia\n\nMożesz też napisać na support@wb-partners.pl z numerem zamówienia.',
+    category: 'Gwarancja',
+  },
+
+  // ═══ WYMIANA PRODUKTU ═══
+  {
+    keywords: ['wymiana', 'wymienić', 'zamienić', 'inny rozmiar', 'inny kolor', 'zamiana', 'wymiana produktu'],
+    question: 'Czy mogę wymienić produkt na inny?',
+    answer: 'Obecnie nie oferujemy bezpośredniej wymiany produktów. Aby otrzymać inny wariant (np. rozmiar, kolor), wykonaj dwa kroki:\n\n1. **Zwróć produkt** — masz na to 14 dni od otrzymania przesyłki. Przejdź do Konto → Zamówienia → „Zwróć produkt"\n2. **Złóż nowe zamówienie** — wybierz właściwy wariant i zamów ponownie\n\n💡 Zwrot pieniędzy nastąpi w ciągu 14 dni od otrzymania przez nas paczki zwrotnej.\n\nJeśli potrzebujesz pomocy — napisz do nas na kontakt@wbtrade.pl!',
+    category: 'Zwroty',
+  },
+
+  // ═══ OUTLET / WYPRZEDAŻ ═══
+  {
+    keywords: ['outlet', 'wyprzedaż', 'promocje', 'okazje', 'tanie', 'black friday', 'sale', 'przecena', 'obniżka', 'produkt dnia'],
+    question: 'Gdzie znajdę promocje i wyprzedaże?',
+    answer: 'Najlepsze okazje znajdziesz w kilku miejscach:\n\n🏷️ **Sekcja Promocje** — na stronie głównej, sekcja z aktualnymi ofertami\n🔥 **Produkt dnia** — codziennie nowa oferta w specjalnej cenie na stronie głównej\n📧 **Newsletter** — zapisz się, aby otrzymywać kody rabatowe i informacje o wyprzedażach\n🛍️ **Outlet** — produkty w obniżonych cenach znajdziesz w kategorii „Outlet"\n\n💡 Zapisz się do newslettera, aby nie przegapić najlepszych ofert i akcji typu Black Friday!',
+    category: 'Promocje',
+  },
+
+  // ═══ BEZPIECZEŃSTWO KONTA ═══
+  {
+    keywords: ['bezpieczeństwo', 'włamanie', 'podejrzane logowanie', 'hakerzy', 'zhakowane', 'ktoś się zalogował', 'bezpieczeństwo konta'],
+    question: 'Jak zadbać o bezpieczeństwo konta?',
+    answer: '🔐 **Zasady bezpiecznego konta:**\n\n1. Używaj **silnego hasła** — min. 8 znaków, duże i małe litery, cyfry, znaki specjalne\n2. **Nie udostępniaj** danych logowania nikomu\n3. Nigdy nie podawaj hasła przez e-mail ani telefon — nasz zespół nigdy o to nie prosi\n4. Regularnie **zmieniaj hasło** (Konto → Ustawienia → Zmień hasło)\n\n⚠️ **Podejrzewasz włamanie?**\n• Natychmiast zmień hasło\n• Sprawdź historię zamówień\n• Napisz do nas: support@wb-partners.pl\n\nZareagujemy w ciągu 24h i pomożemy zabezpieczyć konto!',
+    category: 'Pomoc techniczna',
+  },
+
+  // ═══ GODZINY PRACY OBSŁUGI ═══
+  {
+    keywords: ['godziny pracy', 'kiedy odpowiecie', 'czas odpowiedzi', 'kiedy dzwonić', 'godziny obsługi', 'kontakt godziny'],
+    question: 'Jakie są godziny pracy obsługi klienta?',
+    answer: `🕐 **Godziny pracy zespołu wsparcia:**\n\n📞 **Telefon:** poniedziałek–piątek, 9:00–17:00\n📧 **E-mail:** odpowiadamy w ciągu 24h w dni robocze (kontakt@wbtrade.pl)\n🤖 **${BOT_NAME} (ja!):** dostępny **24/7** — zawsze chętnie pomogę!\n\nW weekendy i święta obsługa mailowa może działać z opóźnieniem — odpowiemy najszybciej jak to możliwe w najbliższy dzień roboczy.\n\n💡 Jeśli sprawa jest pilna, opisz ją jak najdokładniej w mailu — przyspieszy to rozwiązanie!`,
+    category: 'Obsługa klienta',
+  },
+
+  // ═══ WIELOKROTNE ADRESY DOSTAWY ═══
+  {
+    keywords: ['różne adresy', 'kilka adresów', 'inny adres', 'prezent', 'inny adres dostawy', 'dwa adresy'],
+    question: 'Czy mogę wysłać zamówienie na różne adresy?',
+    answer: 'Jedno zamówienie może zostać wysłane tylko na **jeden adres dostawy**.\n\n🎁 Jeśli chcesz wysłać produkty pod różne adresy (np. prezenty), złóż **osobne zamówienia** — każde z innym adresem dostawy.\n\n📋 **Jak dodać nowy adres?**\n1. Podczas składania zamówienia kliknij „Zmień adres"\n2. Wpisz nowy adres lub wybierz z zapisanych\n3. Możesz zapisać wiele adresów w Konto → Adresy\n\n💡 Dodaj adnotację „Prezent — nie dołączać paragonu" w uwagach do zamówienia, jeśli wysyłasz jako upominek!',
+    category: 'Dostawa',
+  },
+
+  // ═══ PŁATNOŚĆ RATALNA ═══
+  {
+    keywords: ['raty', 'ratalna', 'na raty', 'kredyt', 'odroczona płatność', 'płatność odroczona', 'ratalne'],
+    question: 'Czy mogę zapłacić na raty?',
+    answer: 'Tak! Dla zamówień powyżej 300 zł oferujemy opcje płatności ratalnej:\n\n💳 **Raty PayU** — od 3 do 30 rat, decyzja w kilka minut\n🏦 **Odroczona płatność** — kup teraz, zapłać za 30 dni (PayPo / Twisto)\n\n📋 **Jak skorzystać?**\n1. Dodaj produkty do koszyka\n2. Przejdź do płatności\n3. Wybierz „Raty" lub „Zapłać później"\n4. Wypełnij krótki formularz — decyzja online\n\n⚠️ Dostępność rat zależy od weryfikacji kredytowej. Szczegóły warunków znajdziesz na stronie wybranego operatora.',
+    category: 'Płatności',
+  },
+
+  // ═══ STATUS PŁATNOŚCI ═══
+  {
+    keywords: ['status płatności', 'czy zapłacono', 'opłacone', 'nieopłacone'],
+    question: 'Jak sprawdzić status płatności?',
+    answer: 'Status płatności znajdziesz w szczegółach zamówienia (Konto → Moje zamówienia → kliknij zamówienie). Przy płatności zobaczysz status: Opłacone ✅, Oczekuje ⏳, Nieudana ❌ lub Zwrócone 🔄.',
+    category: 'Płatności',
+  },
+
+  // ═══ KIEDY OBCIĄŻENIE ═══
+  {
+    keywords: ['obciążony', 'pobranie', 'kiedy płatność', 'kiedy pobrana', 'za pobraniem'],
+    question: 'Kiedy zostanę obciążony?',
+    answer: 'Obciążenie następuje w momencie potwierdzenia płatności. Przy szybkich przelewach i BLIK — natychmiast. Przy kartach — kwota może być zablokowana od razu, a pobrana po wysyłce. Przy płatności za pobraniem płacisz kurierowi przy odbiorze.',
+    category: 'Płatności',
+  },
+
+  // ═══ ZAPISANE ADRESY ═══
+  {
+    keywords: ['zapisany adres', 'adres dostawy', 'moje adresy', 'zarządzać adresami'],
+    question: 'Jak zarządzać adresami dostawy?',
+    answer: 'Przejdź do Konto → Dane do zamówień. Tam możesz:\n• Dodawać nowe adresy (wysyłkowe i fakturowe)\n• Edytować istniejące adresy\n• Ustawiać adres domyślny\n• Usuwać zbędne adresy\n\nPrzy składaniu zamówienia zapisane adresy pojawią się automatycznie do wyboru.',
+    category: 'Koszyk',
+  },
+
+  // ═══ DOSTĘPNOŚĆ PRODUKTU ═══
+  {
+    keywords: ['niedostępny', 'brak', 'kiedy będzie', 'restock', 'brak w magazynie', 'wyczerpany', 'ponownie dostępny', 'dostępność'],
+    question: 'Produkt jest niedostępny — kiedy wróci?',
+    answer: 'Jeśli produkt jest chwilowo niedostępny, masz kilka opcji:\n\n🔔 **Powiadomienie o dostępności** — na stronie produktu kliknij „Powiadom mnie, gdy będzie dostępny". Wyślemy Ci e-mail, gdy produkt wróci do sprzedaży.\n\n📦 **Sprawdź warianty** — czasem inny kolor lub rozmiar jest dostępny od ręki\n\n⏳ **Czas oczekiwania** — zwykle produkty wracają w ciągu 1–3 tygodni, ale zależy to od producenta\n\n💡 Jeśli zależy Ci na konkretnym produkcie, napisz do nas (kontakt@wbtrade.pl) — sprawdzimy u dostawcy przewidywany termin dostawy!',
+    category: 'Produkty',
+  },
+
+  // ═══ TRYB CIEMNY ═══
+  {
+    keywords: ['tryb ciemny', 'dark mode', 'ciemny motyw', 'jasny motyw', 'zmienić motyw', 'tryb nocny'],
+    question: 'Jak włączyć tryb ciemny?',
+    answer: 'Możesz zmienić motyw strony klikając ikonę 🌙/☀️ w prawym górnym rogu nagłówka. Dostępne opcje to:\n\n☀️ **Jasny** — klasyczny, biały motyw\n🌙 **Ciemny** — ciemne tło, oszczędza oczy wieczorem\n⚙️ **Systemowy** — automatycznie dopasowuje się do ustawień Twojego systemu\n\nWybrane ustawienie jest zapamiętywane w przeglądarce.',
+    category: 'Pomoc techniczna',
   },
 ];
 
 // Quick suggestion chips
 const PRODUCT_SEARCH_KEYWORDS = [
-  'szukam', 'szukasz', 'znajdź', 'znajdz', 'poszukaj', 'pokaż', 'pokaz',
-  'chcę kupić', 'chce kupic', 'interesuje mnie', 'potrzebuję', 'potrzebuje',
-  'szukasz produktu', 'szukam produktu', 'wyszukaj', 'polecasz', 'polecisz',
-  'jaki produkt', 'jakie produkty', 'co polecasz', 'najlepszy', 'najlepsza', 'najlepsze',
+  'szukam', 'szukasz', 'znajdź', 'znajdz', 'znajde', 'znajdę',
+  'poszukaj', 'pokaż', 'pokaz', 'wyszukaj',
+  'chcę kupić', 'chce kupic', 'chciałbym kupić', 'chcialbym kupic',
+  'interesuje mnie', 'potrzebuję', 'potrzebuje',
+  'szukasz produktu', 'szukam produktu',
+  'polecasz', 'polecisz', 'poleć', 'polec',
+  'jaki produkt', 'jakie produkty', 'co polecasz',
+  'czy macie', 'czy masz', 'czy jest', 'czy są', 'czy sa',
+  'czy sprzedajecie', 'sprzedajecie', 'oferujecie',
+  'macie w ofercie', 'jest w ofercie', 'w ofercie',
+  'na stronie', 'w sklepie', 'w waszym sklepie',
+  'gdzie kupię', 'gdzie kupie', 'gdzie znajdę', 'gdzie znajde',
+  'pokaż mi', 'pokaz mi', 'daj mi', 'podaj mi',
+  'są tu', 'sa tu', 'tu są', 'tu sa',
+  'macie', 'może jakieś', 'moze jakies', 'a może', 'a moze',
+  'co z', 'a co z',
 ];
+
+// Extra patterns that strongly indicate product search when combined with a noun
+const PRODUCT_INTENT_PATTERNS = [
+  /(?:czy|powiedz|wubu[sś]).*(?:znajd[ęe]|masz|macie|jest|s[aą]|kupi[ęe]|sprzeda|ofer)/i,
+  /(?:gdzie|jak).*(?:kupi[ćce]|znale[źz][ćce]|dosta[ćce])/i,
+  /(?:szukam|potrzebuj[eę]|interesuj[eą]).*\w{3,}/i,
+  /(?:poka[żz]|wy[sś]wietl|poszukaj).*\w{3,}/i,
+  /(?:czy|powiedz).*(?:na tej stronie|w sklepie|w ofercie)/i,
+  /(?:a\s+)?mo[żz]e\s+(?:jakie[sś]?|co[sś]?)\s+\w{3,}/i,
+  /(?:s[aą]|jest)\s+(?:tu|tutaj)\s+(?:jakie[sś]?)?\s*\w{3,}/i,
+  /(?:macie|masz)\s+\w{3,}/i,
+  /(?:a\s+)?co\s+z\s+\w{3,}/i,
+];
+
+// Words that are clearly FAQ-related, NOT product names
+const FAQ_TOPIC_WORDS = new Set([
+  'zamówienie', 'zamowienie', 'zamówienia', 'zamowienia', 'zamówień', 'zamowien',
+  'dostawa', 'dostawy', 'dostawę', 'dostawe', 'wysyłka', 'wysylka',
+  'zwrot', 'zwrotu', 'zwroty', 'reklamacja', 'reklamacji',
+  'kupon', 'kuponu', 'kupony', 'kuponów', 'kuponow',
+  'płatność', 'platnosc', 'płatności', 'platnosci', 'zapłacić', 'zaplacic',
+  'konto', 'konta', 'rejestracja', 'logowanie', 'hasło', 'haslo',
+  'newsletter', 'rabat', 'rabatu', 'rabaty', 'zniżka', 'znizka',
+  'przesyłka', 'przesylka', 'przesyłki', 'przesylki', 'paczka', 'paczki',
+  'opinia', 'opinii', 'opinie', 'ocena', 'oceny',
+  'motyw', 'ciemny', 'jasny', 'tryb',
+  'pomoc', 'pomocy', 'kontakt', 'support', 'wsparcie',
+  'śledzić', 'sledzic', 'śledzenie', 'sledzenie', 'tracking',
+]);
 
 const QUICK_QUESTIONS = [
   '🔍 Szukasz produktu?',
@@ -297,6 +434,7 @@ const QUICK_QUESTIONS = [
   'Jak dodać opinię?',
   'Dlaczego kilka paczek?',
   'Jak śledzić przesyłkę?',
+  'Tryb ciemny',
   'Kontakt z supportem',
 ];
 
@@ -336,37 +474,261 @@ interface Message {
   products?: ProductResult[];
 }
 
+// ─── Polish normalization ───
+const POLISH_MAP: Record<string, string> = {
+  'ą': 'a', 'ć': 'c', 'ę': 'e', 'ł': 'l', 'ń': 'n',
+  'ó': 'o', 'ś': 's', 'ź': 'z', 'ż': 'z',
+};
+
+function normalizePolish(text: string): string {
+  return text.replace(/[ąćęłńóśźż]/g, (ch) => POLISH_MAP[ch] || ch);
+}
+
+// ─── Levenshtein distance ───
+function levenshtein(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  let prev = new Array<number>(n + 1);
+  let curr = new Array<number>(n + 1);
+  for (let j = 0; j <= n; j++) prev[j] = j;
+  for (let i = 1; i <= m; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+    }
+    [prev, curr] = [curr, prev];
+  }
+  return prev[n];
+}
+
+function isFuzzyMatch(word: string, keyword: string): boolean {
+  if (word.length < 4) return false;
+  const dist = levenshtein(word, keyword);
+  return dist <= 2 && dist < word.length * 0.4;
+}
+
+// ─── Polish stem suffixes (simple stemmer) ───
+const POLISH_SUFFIXES = [
+  'owania', 'owanie', 'owaniu', 'ywanie', 'ywania',
+  'ności', 'nosci', 'acje', 'acji', 'anie', 'aniu', 'enia', 'eniu',
+  'iego', 'owej', 'owym', 'owej',
+  'ach', 'ami', 'iem', 'iem', 'owi', 'owy', 'owa', 'owe',
+  'ów', 'ek', 'om', 'ie', 'ię', 'ią', 'ić',
+  'y', 'i', 'e', 'a', 'u', 'ę',
+];
+
+function stemPolish(word: string): string {
+  const w = normalizePolish(word.toLowerCase());
+  if (w.length <= 4) return w;
+  for (const suffix of POLISH_SUFFIXES) {
+    if (w.endsWith(suffix) && w.length - suffix.length >= 3) {
+      return w.slice(0, w.length - suffix.length);
+    }
+  }
+  return w;
+}
+
+// ─── Prefix matching ───
+function isPrefixMatch(word: string, keyword: string): boolean {
+  if (word.length < 3) return false;
+  const wNorm = normalizePolish(word);
+  const kwNorm = normalizePolish(keyword);
+  return kwNorm.startsWith(wNorm) || wNorm.startsWith(kwNorm);
+}
+
+// ─── Synonym expansion ───
+const SYNONYMS: Record<string, string> = {
+  'zw': 'zwrot', 'zam': 'zamowienie', 'pw': 'powiadomienie',
+  'rek': 'reklamacja', 'dost': 'dostawa', 'info': 'informacja',
+  'koszty': 'koszt', 'zamowienia': 'zamowienie', 'zwroty': 'zwrot',
+  'platnosci': 'platnosc', 'reklamacje': 'reklamacja', 'dostawy': 'dostawa',
+  'kupony': 'kupon', 'produkty': 'produkt',
+  'wysylka': 'dostawa', 'paczka': 'dostawa', 'przesylka': 'dostawa',
+  'kasa': 'platnosc', 'platnosc': 'platnosc', 'zaplata': 'platnosc',
+  'haslo': 'haslo', 'password': 'haslo', 'pass': 'haslo',
+  'mail': 'email', 'mejl': 'email',
+  'cena': 'cena', 'cennik': 'cena', 'ile kosztuje': 'cena',
+  'pomoc': 'kontakt', 'wsparcie': 'kontakt', 'obsluga': 'kontakt',
+  'konto': 'konto', 'profil': 'konto', 'rejestracja': 'konto',
+  'zwracac': 'zwrot', 'zwrocic': 'zwrot', 'oddac': 'zwrot',
+  'zareklamowac': 'reklamacja', 'reklamowac': 'reklamacja',
+  'gwarancyjny': 'gwarancja', 'gwarancyjna': 'gwarancja',
+  'oplacic': 'platnosc', 'zaplacic': 'platnosc',
+  'sledzic': 'sledzenie', 'sledz': 'sledzenie',
+  'anulowac': 'anulowanie', 'odwolac': 'anulowanie',
+  'zareklamować': 'reklamacja',
+};
+
+function expandSynonyms(text: string): string {
+  return text.split(/\s+/).map((w) => {
+    const norm = normalizePolish(w.toLowerCase());
+    return SYNONYMS[norm] ?? w;
+  }).join(' ');
+}
+
+// ─── Polish stop words for product search ───
+const POLISH_STOP_WORDS = new Set([
+  'dla', 'do', 'na', 'w', 'z', 'i', 'o', 'od', 'po', 'za', 'pod', 'nad',
+  'ze', 'się', 'sie', 'to', 'jest', 'jak', 'co', 'czy', 'nie', 'tak',
+  'sa', 'są', 'ma', 'tu', 'my', 'on', 'no', 'bo', 'by', 'że', 'ze', 'a',
+  'ale', 'lub', 'ani', 'mi', 'mnie', 'ten', 'ta', 'te', 'tym', 'tych',
+  'tego', 'tej', 'ci', 'je', 'ich', 'go', 'mu', 'ją', 'ja',
+  'jakiś', 'jakis', 'jakaś', 'jakas', 'jakieś', 'jakies',
+  'bardzo', 'też', 'tez', 'już', 'juz', 'jeszcze', 'tylko',
+  'może', 'moze', 'proszę', 'prosze', 'chcę', 'chce',
+  'potrzebuję', 'potrzebuje', 'szukam', 'chciałbym', 'chcialbym',
+  'chciałabym', 'chcialabym', 'jakiegos', 'dobrego', 'dobra', 'dobre',
+  'fajne', 'fajny', 'fajnego', 'ładny', 'ladny', 'ładnego', 'ladnego',
+  'tani', 'tanie', 'taniego', 'najlepszy', 'najlepsza', 'najlepsze',
+  'stronie', 'strona', 'strone', 'tutaj', 'waszej', 'wasza', 'waszym',
+  'jakąś', 'jakas', 'pewien', 'cos', 'coś', 'jakiekolwiek',
+]);
+
+// ─── Product search query normalizer ───
+function normalizeProductQuery(query: string): string {
+  // Remove stop words
+  const words = query.toLowerCase().split(/\s+/)
+    .filter(w => w.length >= 2 && !POLISH_STOP_WORDS.has(w));
+
+  // Normalize each word to a more search-friendly form
+  return words.map(w => {
+    // Try to get a base/nominative form for common product-related suffixes
+    const n = normalizePolish(w);
+    // Genitive/accusative plural → nominative plural (e.g. zabawek → zabawki)
+    if (n.endsWith('ek') && n.length > 4) return n.slice(0, -2) + 'ki';
+    if (n.endsWith('ow') && n.length > 4) return n.slice(0, -2) + 'y';
+    if (n.endsWith('ów') && n.length > 4) return normalizePolish(n.slice(0, -2)) + 'y';
+    // Genitive singular → nominative (e.g. telefonu → telefon)
+    if (n.endsWith('u') && n.length > 4) return n.slice(0, -1);
+    // Instrumental (e.g. telefonem → telefon)
+    if (n.endsWith('em') && n.length > 5) return n.slice(0, -2);
+    // Locative (e.g. telefonie → telefon)  
+    if (n.endsWith('ie') && n.length > 5) return n.slice(0, -2);
+    // Nominative plural -e → singular -a (frytkownice → frytkownica)
+    if (n.endsWith('ce') && n.length > 4) return n.slice(0, -1) + 'a';
+    if (n.endsWith('ne') && n.length > 4) return n.slice(0, -1) + 'a';
+    if (n.endsWith('ke') && n.length > 4) return n.slice(0, -1) + 'a';
+    // Generic plural -e ending for feminine nouns
+    if (n.endsWith('e') && n.length > 4) return n.slice(0, -1) + 'a';
+    // Adjective endings → base
+    if (n.endsWith('ych') && n.length > 5) return n.slice(0, -3);
+    if (n.endsWith('ego') && n.length > 5) return n.slice(0, -3);
+    if (n.endsWith('owej') && n.length > 6) return n.slice(0, -4);
+    return w;
+  }).join(' ');
+}
+
+// ─── Generate search query variants for retry ───
+function generateSearchVariants(query: string): string[] {
+  const normalized = normalizeProductQuery(query);
+  const words = normalized.split(/\s+/).filter(w => w.length >= 3);
+  const variants: string[] = [normalized];
+
+  // Try individual words (longest first - often the product name)
+  const sortedWords = [...words].sort((a, b) => b.length - a.length);
+  for (const w of sortedWords) {
+    if (w.length >= 4 && !variants.includes(w)) {
+      variants.push(w);
+    }
+  }
+
+  // Try stemmed forms of each word
+  for (const w of sortedWords) {
+    const stemmed = stemPolish(w);
+    if (stemmed.length >= 3 && !variants.includes(stemmed)) {
+      variants.push(stemmed);
+    }
+  }
+
+  // Try original query without normalization but without stop words
+  const cleaned = query.toLowerCase().split(/\s+/)
+    .filter(w => w.length >= 3 && !POLISH_STOP_WORDS.has(w))
+    .join(' ');
+  if (cleaned && !variants.includes(cleaned)) {
+    variants.push(cleaned);
+  }
+
+  return variants;
+}
+
+// ─── Product relevance validation ───
+function isProductRelevant(productName: string, searchQuery: string): boolean {
+  const nameNorm = normalizePolish(productName.toLowerCase());
+  const nameWordsNorm = nameNorm.split(/\s+/).filter(w => w.length >= 2);
+  const queryWords = searchQuery.toLowerCase().split(/\s+/)
+    .filter(w => w.length >= 3 && !POLISH_STOP_WORDS.has(w));
+
+  if (queryWords.length === 0) return false;
+
+  for (const qw of queryWords) {
+    const qwNorm = normalizePolish(qw);
+    const qwStem = stemPolish(qw);
+
+    // Find where in the product name the match occurs
+    const matchIdx = nameWordsNorm.findIndex(nw => {
+      if (nw === qwNorm || nw.startsWith(qwNorm) || qwNorm.startsWith(nw)) return true;
+      if (stemPolish(nw) === qwStem) return true;
+      if (qwNorm.length >= 4 && isFuzzyMatch(qwNorm, nw)) return true;
+      return false;
+    });
+
+    if (matchIdx === -1) continue;
+
+    // Product type is in the first 1-2 words of the name.
+    // If the query matches there → it IS that product type, accept.
+    // If it only matches later → it's a modifier/accessory (e.g. "odkurzacz DO dywanów"), reject.
+    if (matchIdx <= 1) return true;
+  }
+  return false;
+}
+
+function filterRelevantProducts(products: any[], searchQuery: string): any[] {
+  const relevant = products.filter((p: any) => isProductRelevant(p.name || '', searchQuery));
+  return relevant;
+}
+
 // ─── FAQ Matching ───
-function findBestAnswer(query: string): string | null {
+interface FaqResult {
+  answer: string;
+  score: number;
+}
+
+function findBestAnswer(query: string): FaqResult | null {
   const q = query.toLowerCase().trim();
   if (q.length < 2) return null;
 
   const POLITE_RESPONSES: { patterns: string[]; replies: string[] }[] = [
     {
-      patterns: ['dziękuję', 'dziekuje', 'dzięki', 'dzieki', 'dzięks', 'thanks', 'thx', 'wielkie dzięki', 'dziękuje bardzo'],
+      patterns: ['dziękuję', 'dziekuje', 'dzięki', 'dzieki', 'dzięks', 'thanks', 'thx', 'wielkie dzięki', 'super dzięki', 'dziękuje bardzo', 'dziekuje bardzo', 'bardzo dziękuję'],
       replies: [
         'Nie ma za co! 😊 Cieszę się, że mogłem pomóc. Gdybyś miał jeszcze pytania — pisz śmiało!',
         'Proszę bardzo! 🙌 Zawsze chętnie pomogę. Miłych zakupów w WBTrade!',
         'Cała przyjemność po mojej stronie! 😄 Jeśli coś jeszcze — jestem tutaj.',
+        'Nie ma sprawy! ✨ Życzę udanych zakupów!',
       ],
     },
     {
-      patterns: ['miłego dnia', 'do widzenia', 'pa pa', 'papa', 'nara', 'cześć', 'trzymaj się', 'do zobaczenia', 'bye'],
+      patterns: ['miłego dnia', 'milego dnia', 'dobrego dnia', 'miłego wieczoru', 'dobrej nocy', 'dobranoc', 'do widzenia', 'pa pa', 'papa', 'nara', 'cześć', 'hej hej', 'trzymaj się', 'do zobaczenia', 'bye'],
       replies: [
         'Miłego dnia! ☀️ Do zobaczenia w WBTrade!',
         'Nawzajem! 😊 Życzę Ci świetnego dnia i udanych zakupów!',
         'Do zobaczenia! 👋 Gdybyś potrzebował pomocy — zawsze tu jestem!',
+        'Trzymaj się ciepło! 🌟 Wpadaj do nas kiedy chcesz!',
       ],
     },
     {
-      patterns: ['super', 'świetnie', 'extra', 'ekstra', 'bomba', 'git', 'top', 'kozak', 'rewelacja', 'idealnie'],
+      patterns: ['super', 'świetnie', 'extra', 'ekstra', 'bomba', 'git', 'top', 'zajebiste', 'kozak', 'pięknie', 'rewelacja', 'idealnie', 'genialnie', 'wspaniale'],
       replies: [
         'Cieszę się! 🎉 Jeśli potrzebujesz czegoś jeszcze — pytaj!',
         'Super, że mogłem pomóc! 💪 Miłych zakupów!',
+        'To miło słyszeć! 😊 Jestem tu, gdybyś potrzebował pomocy.',
       ],
     },
     {
-      patterns: ['hej', 'hejka', 'siema', 'elo', 'yo', 'witam', 'witaj', 'cześć', 'czesc', 'dzień dobry', 'dzien dobry', 'hello', 'hi'],
+      patterns: ['hej', 'hejka', 'siema', 'elo', 'yo', 'witam', 'witaj', 'cześć', 'czesc', 'dzień dobry', 'dzien dobry', 'dobry wieczór', 'hello', 'hi'],
       replies: [
         `Hej! 👋 Jestem ${BOT_NAME}. W czym mogę Ci dzisiaj pomóc?`,
         `Cześć! 😊 Jestem ${BOT_NAME}, Twój asystent WBTrade. Zadaj mi pytanie!`,
@@ -374,10 +736,11 @@ function findBestAnswer(query: string): string | null {
       ],
     },
     {
-      patterns: ['ok', 'okej', 'okay', 'dobra', 'jasne', 'rozumiem', 'spoko', 'w porządku'],
+      patterns: ['ok', 'okej', 'okay', 'dobra', 'jasne', 'rozumiem', 'zrozumiałem', 'spoko', 'w porządku', 'no dobra'],
       replies: [
         'Jasne! 👍 Gdybyś miał jeszcze pytania — pisz śmiało!',
         'Okej! 😊 Jestem tu, jeśli będziesz potrzebować pomocy.',
+        'Super! Jeśli coś jeszcze — pytaj bez wahania! 💬',
       ],
     },
   ];
@@ -390,37 +753,128 @@ function findBestAnswer(query: string): string | null {
     }
   }
 
+  // Expand synonyms before scoring
+  const qExpanded = expandSynonyms(q);
+  const qNorm = normalizePolish(qExpanded);
+  const qWords = qExpanded.split(/\s+/).filter(w => w.length >= 2);
+  const qWordsNorm = qNorm.split(/\s+/).filter(w => w.length >= 2);
+  const qStems = qWordsNorm.map(w => stemPolish(w));
+
   let bestScore = 0;
+  let secondBestScore = 0;
   let bestAnswer: typeof FAQ_DATA[0] | null = null;
 
   for (const faq of FAQ_DATA) {
     let score = 0;
-    const words = q.split(/\s+/);
+    let matchedKeywords = 0;
 
     for (const keyword of faq.keywords) {
       const kw = keyword.toLowerCase();
-      if (q.includes(kw)) {
+      const kwNorm = normalizePolish(kw);
+      let keywordMatched = false;
+
+      // Exact keyword in query (highest weight)
+      if (qExpanded.includes(kw)) {
         score += kw.length * 3;
+        keywordMatched = true;
+      } else if (qNorm.includes(kwNorm)) {
+        score += kwNorm.length * 2.5;
+        keywordMatched = true;
       }
-      for (const w of words) {
-        if (w.length >= 3 && kw.includes(w)) {
-          score += w.length;
+
+      // Individual words overlap + stemming + prefix matching
+      const kwWords = kw.split(/\s+/);
+      const kwStems = kwWords.map(w => stemPolish(w));
+
+      for (let i = 0; i < qWords.length; i++) {
+        const w = qWords[i];
+        const wN = qWordsNorm[i] ?? normalizePolish(w);
+        const wStem = qStems[i] ?? stemPolish(w);
+
+        if (w.length >= 3) {
+          // Direct substring match
+          if (kw.includes(w)) {
+            score += w.length * 1.2;
+            keywordMatched = true;
+          } else if (kwNorm.includes(wN)) {
+            score += wN.length;
+            keywordMatched = true;
+          }
+          // Stem matching (new!)
+          else if (kwStems.some(ks => ks === wStem)) {
+            score += w.length * 0.9;
+            keywordMatched = true;
+          }
+          // Prefix matching (new!)
+          else if (kwWords.some(kwPart => isPrefixMatch(wN, normalizePolish(kwPart)))) {
+            score += w.length * 0.8;
+            keywordMatched = true;
+          }
+          // Fuzzy matching
+          else if (w.length >= 4) {
+            for (const kwPart of kwWords) {
+              if (isFuzzyMatch(wN, normalizePolish(kwPart))) {
+                score += w.length * 0.7;
+                keywordMatched = true;
+                break;
+              }
+            }
+          }
         }
+      }
+
+      if (keywordMatched) matchedKeywords++;
+    }
+
+    // Bonus for high keyword coverage
+    if (faq.keywords.length > 0 && matchedKeywords / faq.keywords.length > 0.5) {
+      score += 10;
+    }
+    // Extra bonus for very high keyword coverage
+    if (faq.keywords.length > 0 && matchedKeywords / faq.keywords.length > 0.8) {
+      score += 5;
+    }
+
+    // Bonus for question text match
+    if (faq.question.toLowerCase().includes(qExpanded)) {
+      score += 20;
+    } else if (normalizePolish(faq.question.toLowerCase()).includes(qNorm)) {
+      score += 16;
+    }
+    // Partial question text match (stem-based)
+    else {
+      const questionStems = normalizePolish(faq.question.toLowerCase())
+        .split(/\s+/)
+        .filter(w => w.length >= 3)
+        .map(w => stemPolish(w));
+      const stemOverlap = qStems.filter(qs => questionStems.includes(qs)).length;
+      if (stemOverlap >= 2) {
+        score += stemOverlap * 4;
       }
     }
 
-    if (faq.question.toLowerCase().includes(q)) {
-      score += 20;
+    // Category bonus if user mentions category name
+    const catNorm = normalizePolish(faq.category.toLowerCase());
+    if (qNorm.includes(catNorm) && catNorm.length >= 4) {
+      score += 6;
     }
 
     if (score > bestScore) {
+      secondBestScore = bestScore;
       bestScore = score;
       bestAnswer = faq;
+    } else if (score > secondBestScore) {
+      secondBestScore = score;
     }
   }
 
-  if (bestScore >= 6 && bestAnswer) {
-    return bestAnswer.answer;
+  // Confidence threshold with gap analysis
+  // Lower threshold for short queries (single words), higher for longer ones
+  const minThreshold = qWords.length <= 1 ? 5 : 8;
+
+  if (bestScore >= minThreshold && bestAnswer) {
+    // If scores are very close, answer is ambiguous but still return best
+    return { answer: bestAnswer.answer, score: bestScore };
   }
 
   return null;
@@ -438,7 +892,7 @@ function CommentIcon({ className }: { className?: string }) {
 function SendIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="currentColor" viewBox="0 0 512 512" width="16" height="16">
-      <path d="M498.1 5.6c10.1 7 15.4 19.1 13.5 31.2l-64 416c-1.5 9.7-7.4 18.2-16 23s-18.9 5.4-28 1.6L284 427.7l-68.5 74.1c-8.9 9.7-22.9 12.9-35.2 8.1S160 googl492.3 160 480V396.4c0-4 1.5-7.8 4.2-10.7L331.8 202.8c5.8-6.3 5.4-16.1-.9-21.9s-16.1-5.4-21.9 .9l-165 176.3-73.3-33.3C124.1 317.4 35.5 311.2 31.9 297.6c-3.6-13.6 3.4-27.8 16.1-33.3L486.8 .4c10.3-4.4 22.3-1.8 29.6 5.2L498.1 5.6z"/>
+      <path d="M498.1 5.6c10.1 7 15.4 19.1 13.5 31.2l-64 416c-1.5 9.7-7.4 18.2-16 23s-18.9 5.4-28 1.6L284 427.7l-68.5 74.1c-8.9 9.7-22.9 12.9-35.2 8.1S160 492.3 160 480V396.4c0-4 1.5-7.8 4.2-10.7L331.8 202.8c5.8-6.3 5.4-16.1-.9-21.9s-16.1-5.4-21.9 .9l-165 176.3-73.3-33.3c-10.4-4.7-17.2-14.4-17.6-25.3s5.4-21.2 15.3-26.7L486.8 .4c10.3-4.4 22.3-1.8 29.6 5.2z"/>
     </svg>
   );
 }
@@ -462,7 +916,7 @@ function XIcon({ className }: { className?: string }) {
 function StarIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="currentColor" viewBox="0 0 576 512" width="12" height="12">
-      <path d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L searching438.5 329 542.7 225.9c8.6-8.4 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z"/>
+      <path d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.4 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z"/>
     </svg>
   );
 }
@@ -483,10 +937,18 @@ function EnvelopeIcon({ className }: { className?: string }) {
   );
 }
 
-// ─── Initial message ───
+// ─── Initial message with dynamic greeting ───
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour >= 6 && hour < 12) return 'Dzień dobry! ☀️';
+  if (hour >= 12 && hour < 18) return 'Cześć! 👋';
+  if (hour >= 18 && hour < 22) return 'Dobry wieczór! 🌙';
+  return 'Hej, jeszcze nie śpisz? 🦉';
+}
+
 const createInitialMessage = (): Message => ({
   id: '0',
-  text: `Cześć! 👋 Jestem ${BOT_NAME} — Twój wirtualny asystent WBTrade. Zadaj mi pytanie dotyczące zamówień, płatności, dostawy, zwrotów lub konta — chętnie pomogę!`,
+  text: `${getGreeting()} Jestem ${BOT_NAME} — Twój wirtualny asystent WBTrade. Zadaj mi pytanie dotyczące zamówień, płatności, dostawy, zwrotów lub konta — chętnie pomogę!`,
   isBot: true,
   timestamp: new Date(),
 });
@@ -512,6 +974,22 @@ export function ChatBubble({ onClick, hasActiveChat }: { onClick: () => void; ha
   );
 }
 
+// ─── Placeholder rotation ───
+const ROTATING_PLACEHOLDERS = [
+  'Napisz pytanie...',
+  'Zapytaj o zamówienie...',
+  'Szukasz produktu? Napisz!',
+  'Zapytaj o dostawę...',
+  'Masz pytanie o zwrot?',
+  'Wpisz kod kuponu...',
+  'Jak mogę pomóc?',
+];
+
+// ─── Timestamp formatter ───
+function formatTimestamp(date: Date): string {
+  return date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+}
+
 // ─── Chat Modal Component ───
 export default function ChatBotWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -519,6 +997,7 @@ export default function ChatBotWidget() {
   const [messages, setMessages] = useState<Message[]>([createInitialMessage()]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const noMatchCount = useRef(0);
@@ -532,6 +1011,14 @@ export default function ChatBotWidget() {
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
+  }, []);
+
+  // Rotate placeholder every 4s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPlaceholderIdx(prev => (prev + 1) % ROTATING_PLACEHOLDERS.length);
+    }, 4000);
+    return () => clearInterval(interval);
   }, []);
 
   // Focus input when chat opens
@@ -567,14 +1054,53 @@ export default function ChatBotWidget() {
     productSearchRetryCount.current = 0;
   }, [hasConversation]);
 
-  const handleProductSearch = useCallback(async (query: string) => {
+  const handleProductSearch = useCallback(async (rawQuery: string) => {
+    // Strip punctuation, noise words, bot name and normalize at the entry point
+    const query = rawQuery
+      .replace(/[?!.,;:()\[\]{}'"\u2026\u201e\u201d\u201c\u2018\u2019`~@#$%^&*+=<>|\\/]/g, '')
+      .replace(/wubu[sś]/gi, '')
+      .replace(/powiedz\s*(mi)?/gi, '')
+      .replace(/czy/gi, '')
+      .replace(/jakieś|jakies|jakiś|jakis|jakiegos|jakie|jaki|jakąś|jakas/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .split(/\s+/)
+      .filter(w => w.length >= 2 && !POLISH_STOP_WORDS.has(w.toLowerCase()))
+      .join(' ')
+      .trim();
+
+    if (!query) {
+      setIsTyping(false);
+      return;
+    }
+
     setIsTyping(true);
     scrollToEnd();
+
+    // displayQuery = same as cleaned query (already clean)
+    const displayQuery = query;
+
     try {
-      const result = await searchApi.search(query, { limit: 20 } as any);
-      const products = ((result as any).products || [])
-        .sort((a: any, b: any) => (Number(b.rating) || 0) - (Number(a.rating) || 0))
-        .slice(0, 3);
+      // Generate smart search variants from user query
+      const variants = generateSearchVariants(query);
+      let products: any[] = [];
+      let usedQuery = variants[0];
+
+      // Try each variant until we find RELEVANT results
+      for (const variant of variants) {
+        const result = await searchApi.search(variant, { limit: 20 } as any);
+        const allFound = ((result as any).products || []);
+        // Filter only products whose name actually matches the search query
+        const relevant = filterRelevantProducts(allFound, query);
+        const topRelevant = relevant
+          .sort((a: any, b: any) => (Number(b.rating) || 0) - (Number(a.rating) || 0))
+          .slice(0, 3);
+        if (topRelevant.length > 0) {
+          products = topRelevant;
+          usedQuery = variant;
+          break;
+        }
+      }
 
       if (products.length === 0) {
         productSearchRetryCount.current += 1;
@@ -582,7 +1108,7 @@ export default function ChatBotWidget() {
           waitingForProductSearch.current = true;
           const retryMsg: Message = {
             id: (Date.now() + 1).toString(),
-            text: `Niestety, nie znalazłem produktów dla "${query}" 😔\n\nSpróbuj wpisać inną frazę — np. krótsze słowo kluczowe, nazwę kategorii lub markę produktu.`,
+            text: `Niestety, nie mamy w ofercie produktów pasujących do "${displayQuery}" 😔\n\nMożliwe, że tego typu produkty nie są dostępne w naszym sklepie. Spróbuj wpisać inną frazę — np. nazwę kategorii lub markę produktu.`,
             isBot: true,
             timestamp: new Date(),
           };
@@ -591,7 +1117,7 @@ export default function ChatBotWidget() {
           productSearchRetryCount.current = 0;
           const noResultMsg: Message = {
             id: (Date.now() + 1).toString(),
-            text: `Niestety, nie znalazłem też produktów dla "${query}" 😔\n\nSpróbuj skorzystać z wyszukiwarki na górze strony!`,
+            text: `Niestety, tego produktu nie mamy w naszej ofercie 😔\n\nSkorzystaj z wyszukiwarki na górze strony lub przejrzyj nasze kategorie — może znajdziesz coś ciekawego! 🛍️`,
             isBot: true,
             timestamp: new Date(),
             showSuggestions: true,
@@ -611,7 +1137,7 @@ export default function ChatBotWidget() {
 
         const resultMsg: Message = {
           id: (Date.now() + 1).toString(),
-          text: `Oto ${products.length} najlepiej oceniane produkty dla "${query}" ⭐`,
+          text: `Oto ${products.length} najlepiej oceniane produkty dla "${displayQuery}" ⭐`,
           isBot: true,
           timestamp: new Date(),
           products: productResults,
@@ -667,24 +1193,45 @@ export default function ChatBotWidget() {
 
     if (waitingForProductSearch.current) {
       waitingForProductSearch.current = false;
-      handleProductSearch(text.trim());
+      // Normalize the product query from free-text input
+      const cleanedProductQuery = text.trim().toLowerCase()
+        .replace(/[?!.,;:()\[\]{}'"]/g, '')
+        .split(/\s+/)
+        .filter(w => w.length >= 2 && !POLISH_STOP_WORDS.has(w))
+        .join(' ') || text.trim();
+      handleProductSearch(cleanedProductQuery);
       return;
     }
 
     const lowerText = text.trim().toLowerCase();
-    const isProductSearchIntent = PRODUCT_SEARCH_KEYWORDS.some(kw => lowerText.includes(kw)) ||
+    const hasKeywordIntent = PRODUCT_SEARCH_KEYWORDS.some(kw => lowerText.includes(kw));
+    const hasPatternIntent = PRODUCT_INTENT_PATTERNS.some(rx => rx.test(lowerText));
+    const isProductSearchIntent = hasKeywordIntent || hasPatternIntent ||
       lowerText === '🔍 szukasz produktu?' || lowerText === 'szukasz produktu?';
 
     if (isProductSearchIntent) {
       const isQuickQuestionTap = lowerText === '🔍 szukasz produktu?' ||
         lowerText === 'szukasz produktu?' || lowerText === 'szukasz produktu';
 
+      // Strip intent keywords + noise words to extract actual product query
       let searchQuery = lowerText;
       const sortedKeywords = [...PRODUCT_SEARCH_KEYWORDS].sort((a, b) => b.length - a.length);
       for (const kw of sortedKeywords) {
         searchQuery = searchQuery.replace(kw, '').trim();
       }
-      searchQuery = searchQuery.replace(/[?!.,🔍]/g, '').trim();
+      // Strip bot name, filler and punctuation
+      searchQuery = searchQuery
+        .replace(/wubu[sś]/gi, '')
+        .replace(/powiedz\s*(mi)?/gi, '')
+        .replace(/czy/gi, '')
+        .replace(/jakieś|jakies|jakiś|jakis|jakiegos|jakie|jaki|jakąś|jakas/gi, '')
+        .replace(/[?!.,🔍]/g, '')
+        .trim();
+      // Final stop-word pass
+      searchQuery = searchQuery.split(/\s+/)
+        .filter(w => w.length >= 2 && !POLISH_STOP_WORDS.has(w))
+        .join(' ')
+        .trim();
 
       if (!isQuickQuestionTap && searchQuery.length >= 2) {
         handleProductSearch(searchQuery);
@@ -708,14 +1255,28 @@ export default function ChatBotWidget() {
     }
 
     setTimeout(() => {
-      const answer = findBestAnswer(text);
+      const faqResult = findBestAnswer(text);
       let botMsg: Message;
 
-      if (answer) {
+      // Smart fallback: if FAQ score is low and query has product-like words,
+      // try product search instead of showing a weak FAQ answer
+      if (faqResult && faqResult.score < 15) {
+        const potentialProductWords = text.toLowerCase().split(/\s+/)
+          .filter(w => w.length >= 4 && !POLISH_STOP_WORDS.has(w) && !FAQ_TOPIC_WORDS.has(w))
+          .filter(w => !['może', 'moze', 'jakieś', 'jakies', 'jakie', 'tutaj', 'gdzie', 'macie', 'powiedz', 'wubuś', 'wubus'].includes(w));
+        if (potentialProductWords.length > 0) {
+          // Likely a product search, not a FAQ question
+          const productQuery = potentialProductWords.join(' ');
+          handleProductSearch(productQuery);
+          return;
+        }
+      }
+
+      if (faqResult) {
         noMatchCount.current = 0;
         botMsg = {
           id: (Date.now() + 1).toString(),
-          text: answer,
+          text: faqResult.answer,
           isBot: true,
           timestamp: new Date(),
         };
@@ -743,6 +1304,15 @@ export default function ChatBotWidget() {
         }, 1200);
         return;
       } else {
+        // No FAQ match — try product search as last resort if query has product-like words
+        const lastResortWords = text.toLowerCase().split(/\s+/)
+          .filter(w => w.length >= 4 && !POLISH_STOP_WORDS.has(w) && !FAQ_TOPIC_WORDS.has(w))
+          .filter(w => !['może', 'moze', 'jakieś', 'jakies', 'jakie', 'tutaj', 'gdzie', 'macie', 'powiedz', 'wubuś', 'wubus', 'hejka', 'siema', 'witam', 'witaj', 'cześć', 'czesc'].includes(w));
+        if (lastResortWords.length > 0) {
+          handleProductSearch(lastResortWords.join(' '));
+          return;
+        }
+
         noMatchCount.current += 1;
 
         if (noMatchCount.current === 1) {
@@ -884,8 +1454,10 @@ export default function ChatBotWidget() {
                 <div className="w-7 h-7 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center overflow-hidden shrink-0">
                   <Image src={WB_LOGO} alt="" width={18} height={18} className="object-contain" />
                 </div>
-                <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-bl-sm px-4 py-2.5">
-                  <span className="text-sm text-gray-400 dark:text-gray-500 italic">Pisze...</span>
+                <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             )}
@@ -919,7 +1491,7 @@ export default function ChatBotWidget() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Napisz pytanie..."
+              placeholder={ROTATING_PLACEHOLDERS[placeholderIdx]}
               className="flex-1 px-4 py-2.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-400 dark:focus:ring-orange-500 placeholder:text-gray-400 dark:placeholder:text-gray-500"
             />
             <button
@@ -1009,12 +1581,19 @@ function MessageBubble({
                     onClick={() => onAction(action)}
                     className="flex items-center gap-2 w-full px-3.5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold rounded-xl transition-colors"
                   >
-                    <EnvelopeIcon className="w-3.5 h-3.5" />
+                    {action.icon === 'phone' ? (
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 512 512" width="14" height="14"><path d="M164.9 24.6c-7.7-18.6-28-28.5-47.4-23.2l-88 24C12.1 30.2 0 46 0 64C0 311.4 200.6 512 448 512c18 0 33.8-12.1 38.6-29.5l24-88c5.3-19.4-4.6-39.7-23.2-47.4l-96-40c-16.3-6.8-35.2-2.1-46.3 11.6L304.7 368C234.3 334.7 177.3 277.7 144 207.3L193.3 167c13.7-11.2 18.4-30 11.6-46.3l-40-96z"/></svg>
+                    ) : (
+                      <EnvelopeIcon className="w-3.5 h-3.5" />
+                    )}
                     {action.label}
                   </button>
                 ))}
               </div>
             )}
+
+            {/* Timestamp */}
+            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 text-right">{formatTimestamp(message.timestamp)}</p>
           </div>
         </div>
 
@@ -1043,6 +1622,7 @@ function MessageBubble({
     <div className="flex justify-end">
       <div className="max-w-[72%] bg-orange-500 rounded-2xl rounded-br-sm px-3.5 py-2.5">
         <p className="text-sm text-white leading-relaxed">{message.text}</p>
+        <p className="text-[10px] text-orange-200 mt-1 text-right">{formatTimestamp(message.timestamp)}</p>
       </div>
     </div>
   );
