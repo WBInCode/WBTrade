@@ -893,6 +893,12 @@ export class BaselinkerService {
     return Math.min(rounded, 99999999.99);
   }
 
+  /** Clamp any price to fit Decimal(10,2) — max 99999999.99 */
+  private clampPrice(price: number): number {
+    if (!Number.isFinite(price) || price < 0) return 0;
+    return Math.min(price, 99999999.99);
+  }
+
   /**
    * Get product price from Baselinker product data
    * BaseLinker can return prices in different fields:
@@ -1816,13 +1822,13 @@ export class BaselinkerService {
           for (let i = 0; i < prodChanges.length; i += BATCH_SIZE) {
             const batch = prodChanges.slice(i, i + BATCH_SIZE);
 
-            // Insert price history records
+            // Insert price history records (clamp prices to Decimal(10,2) max)
             await prisma.priceHistory.createMany({
               data: batch.map(c => ({
                 productId: c.id,
                 variantId: null,
-                oldPrice: c.oldPrice,
-                newPrice: c.newPrice,
+                oldPrice: this.clampPrice(c.oldPrice),
+                newPrice: this.clampPrice(c.newPrice),
                 source: PriceChangeSource.BASELINKER,
                 reason: 'Baselinker price sync',
               })),
@@ -1850,13 +1856,13 @@ export class BaselinkerService {
           for (let i = 0; i < varChanges.length; i += BATCH_SIZE) {
             const batch = varChanges.slice(i, i + BATCH_SIZE);
 
-            // Insert price history records for variants
+            // Insert price history records for variants (clamp prices to Decimal(10,2) max)
             await prisma.priceHistory.createMany({
               data: batch.map(c => ({
                 productId: c.productId,
                 variantId: c.id,
-                oldPrice: c.oldPrice,
-                newPrice: c.newPrice,
+                oldPrice: this.clampPrice(c.oldPrice),
+                newPrice: this.clampPrice(c.newPrice),
                 source: PriceChangeSource.BASELINKER,
                 reason: 'Baselinker price sync',
               })),
