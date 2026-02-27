@@ -237,6 +237,7 @@ export class DashboardService {
   async getRecentOrders(limit = 10): Promise<RecentOrder[]> {
     const orders = await prisma.order.findMany({
       take: limit,
+      where: { deletedAt: null },
       orderBy: { createdAt: 'desc' },
       include: {
         user: {
