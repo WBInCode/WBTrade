@@ -119,7 +119,7 @@ const darkTheme: ThemeColors = {
   // Text
   text: '#F5F5F5',
   textSecondary: '#B0B0B0',
-  textMuted: '#808080',
+  textMuted: '#9A9A9A',
   textInverse: '#FFFFFF',
 
   // Backgrounds  (Allegro-inspired: warm grays, not pure black)
@@ -133,13 +133,13 @@ const darkTheme: ThemeColors = {
 
   // Borders
   border: '#3A3A3C',
-  borderLight: '#333336',
+  borderLight: '#444446',
   separator: '#3A3A3C',
 
   // Primary / tint
   tint: Colors.primary[400],
-  tintLight: '#3D2508',
-  tintMuted: '#362110',
+  tintLight: '#4A2E10',
+  tintMuted: '#5A3A18',
 
   // Tab bar
   tabIconDefault: '#808080',
@@ -151,7 +151,7 @@ const darkTheme: ThemeColors = {
   inputBackground: '#2C2C2E',
   inputBorder: '#4A4A4C',
   inputText: '#F5F5F5',
-  placeholder: '#808080',
+  placeholder: '#8E8E93',
 
   // Status colors
   destructive: '#f87171',
@@ -170,7 +170,7 @@ const darkTheme: ThemeColors = {
   badge: '#f87171',
   badgeText: Colors.white,
   icon: '#B0B0B0',
-  iconMuted: '#808080',
+  iconMuted: '#9A9A9A',
 
   // Header
   headerBackground: '#1C1C1E',
