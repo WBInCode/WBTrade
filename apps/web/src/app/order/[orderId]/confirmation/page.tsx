@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useParams, useSearchParams } from 'next/navigation';
 import { ordersApi, checkoutApi } from '@/lib/api';
 import { trackPurchase, toGA4Item } from '@/lib/analytics';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface OrderItem {
   id: string;
@@ -51,11 +52,13 @@ function OrderConfirmationPageContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const orderId = params.orderId as string;
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isVerifying, setIsVerifying] = useState(false);
   const purchaseTracked = useRef(false);
   const [error, setError] = useState('');
+  const [guestAccessDenied, setGuestAccessDenied] = useState(false);
 
   // Pobierz parametry z URL PayU
   const payuOrderId = searchParams.get('orderId');
@@ -92,20 +95,33 @@ function OrderConfirmationPageContent() {
 
   useEffect(() => {
     const initialize = async () => {
-      if (orderId) {
-        await fetchOrder();
-        
-        // Jeśli mamy payuOrderId z URL, weryfikuj płatność
-        if (payuOrderId) {
-          await verifyPayment();
+      if (!orderId || authLoading) return;
+
+      // Guest access control: one-time view via sessionStorage token
+      if (!isAuthenticated) {
+        const guestToken = sessionStorage.getItem(`guestOrder_${orderId}`);
+        if (!guestToken) {
+          // No token = guest trying to access someone else's order or revisiting
+          setGuestAccessDenied(true);
+          setIsLoading(false);
+          return;
         }
-        
-        setIsLoading(false);
+        // Consume the token immediately — page viewable only once
+        sessionStorage.removeItem(`guestOrder_${orderId}`);
       }
+
+      await fetchOrder();
+        
+      // Jeśli mamy payuOrderId z URL, weryfikuj płatność
+      if (payuOrderId) {
+        await verifyPayment();
+      }
+        
+      setIsLoading(false);
     };
 
     initialize();
-  }, [orderId, payuOrderId, fetchOrder, verifyPayment]);
+  }, [orderId, payuOrderId, fetchOrder, verifyPayment, isAuthenticated, authLoading]);
 
   // Track purchase event for analytics (only once per order)
   useEffect(() => {
@@ -168,6 +184,31 @@ function OrderConfirmationPageContent() {
           <p className="text-gray-600 dark:text-gray-400">
             {isVerifying ? 'Weryfikuję płatność...' : 'Ładowanie...'}
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (guestAccessDenied) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
+            <svg className="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Zamówienie zostało złożone</h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            Potwierdzenie zamówienia zostało wysłane na Twój adres email.
+            Sprawdź swoją skrzynkę pocztową, aby zobaczyć szczegóły.
+          </p>
+          <Link
+            href="/"
+            className="inline-flex items-center px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-medium"
+          >
+            Kontynuuj zakupy
+          </Link>
         </div>
       </div>
     );

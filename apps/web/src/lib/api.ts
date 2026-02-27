@@ -189,8 +189,9 @@ async function fetchApi<T>(
           return fetchApi<T>(endpoint, config, false);
         }
 
-        // Refresh failed - clear tokens & redirect to login
-        if (typeof window !== 'undefined') {
+        // Refresh failed - only redirect to login if user had a token (was logged in)
+        // Don't redirect guest users who never had a token
+        if (typeof window !== 'undefined' && token) {
           localStorage.removeItem('auth_tokens');
           window.location.href = '/login?expired=true';
         }
