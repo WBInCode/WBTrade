@@ -56,6 +56,7 @@ export default function PricingPage() {
     btp: false,
     hp: false,
   });
+  const [editingCell, setEditingCell] = useState<{ ruleId: string; field: string; value: string } | null>(null);
 
   const fetchRules = useCallback(async () => {
     setLoading(true);
@@ -321,37 +322,45 @@ export default function PricingPage() {
             >
               <div>
                 <input
-                  type="number"
-                  step="0.01"
-                  value={rule.priceFrom}
-                  onChange={e => updateRule(activeWarehouse, rule.id, 'priceFrom', e.target.value)}
+                  type="text"
+                  inputMode="decimal"
+                  value={editingCell?.ruleId === rule.id && editingCell.field === 'priceFrom' ? editingCell.value : rule.priceFrom}
+                  onFocus={() => setEditingCell({ ruleId: rule.id, field: 'priceFrom', value: String(rule.priceFrom) })}
+                  onChange={e => setEditingCell({ ruleId: rule.id, field: 'priceFrom', value: e.target.value })}
+                  onBlur={() => { if (editingCell) { updateRule(activeWarehouse, rule.id, 'priceFrom', editingCell.value); setEditingCell(null); } }}
                   className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 />
               </div>
               <div>
                 <input
-                  type="number"
-                  step="0.01"
-                  value={rule.priceTo}
-                  onChange={e => updateRule(activeWarehouse, rule.id, 'priceTo', e.target.value)}
+                  type="text"
+                  inputMode="decimal"
+                  value={editingCell?.ruleId === rule.id && editingCell.field === 'priceTo' ? editingCell.value : rule.priceTo}
+                  onFocus={() => setEditingCell({ ruleId: rule.id, field: 'priceTo', value: String(rule.priceTo) })}
+                  onChange={e => setEditingCell({ ruleId: rule.id, field: 'priceTo', value: e.target.value })}
+                  onBlur={() => { if (editingCell) { updateRule(activeWarehouse, rule.id, 'priceTo', editingCell.value); setEditingCell(null); } }}
                   className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 />
               </div>
               <div>
                 <input
-                  type="number"
-                  step="0.0001"
-                  value={rule.multiplier}
-                  onChange={e => updateRule(activeWarehouse, rule.id, 'multiplier', e.target.value)}
+                  type="text"
+                  inputMode="decimal"
+                  value={editingCell?.ruleId === rule.id && editingCell.field === 'multiplier' ? editingCell.value : rule.multiplier}
+                  onFocus={() => setEditingCell({ ruleId: rule.id, field: 'multiplier', value: String(rule.multiplier) })}
+                  onChange={e => setEditingCell({ ruleId: rule.id, field: 'multiplier', value: e.target.value })}
+                  onBlur={() => { if (editingCell) { updateRule(activeWarehouse, rule.id, 'multiplier', editingCell.value); setEditingCell(null); } }}
                   className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 />
               </div>
               <div>
                 <input
-                  type="number"
-                  step="0.01"
-                  value={rule.addToPrice}
-                  onChange={e => updateRule(activeWarehouse, rule.id, 'addToPrice', e.target.value)}
+                  type="text"
+                  inputMode="decimal"
+                  value={editingCell?.ruleId === rule.id && editingCell.field === 'addToPrice' ? editingCell.value : rule.addToPrice}
+                  onFocus={() => setEditingCell({ ruleId: rule.id, field: 'addToPrice', value: String(rule.addToPrice) })}
+                  onChange={e => setEditingCell({ ruleId: rule.id, field: 'addToPrice', value: e.target.value })}
+                  onBlur={() => { if (editingCell) { updateRule(activeWarehouse, rule.id, 'addToPrice', editingCell.value); setEditingCell(null); } }}
                   className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 />
               </div>
