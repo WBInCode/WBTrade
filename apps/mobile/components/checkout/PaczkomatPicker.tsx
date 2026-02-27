@@ -56,7 +56,7 @@ export default function PaczkomatPicker({ isOpen, onClose, onPointSelect }: Pacz
 
   // Custom Leaflet-based paczkomat map served by our API (uses public InPost API — no token needed)
   const baseApiUrl = Config.API_URL.replace(/\/api\/?$/, '');
-  const widgetUrl = `${baseApiUrl}/api/inpost-widget`;
+  const widgetUrl = `${baseApiUrl}/api/inpost-widget?v=${Date.now()}`;
 
   const handleMessage = (event: any) => {
     try {
@@ -101,6 +101,9 @@ export default function PaczkomatPicker({ isOpen, onClose, onPointSelect }: Pacz
           allowsInlineMediaPlayback={true}
           mixedContentMode="compatibility"
           geolocationEnabled={true}
+          cacheEnabled={false}
+          cacheMode="LOAD_NO_CACHE"
+          incognito={true}
           startInLoadingState={true}
           renderLoading={() => (
             <View style={[styles.loading, { backgroundColor: colors.background }]}>

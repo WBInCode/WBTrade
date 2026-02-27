@@ -127,7 +127,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>
 <script>
 (function(){
-  const INPOST_API='/api/inpost-points';
+  const INPOST_API='https://api-shipx-pl.easypack24.net/v1/points';
   const map=L.map('map',{zoomControl:false}).setView([52.2297,21.0122],13);
   L.control.zoom({position:'bottomright'}).addTo(map);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
@@ -185,13 +185,13 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
   async function loadPoints(lat,lng){
     showLoading(true);
     try{
-      const url=INPOST_API+'?lat='+lat+'&lng='+lng+'&per_page=100';
+      const url=INPOST_API+'?relative_point='+lat+','+lng+'&type%5B%5D=parcel_locker&type%5B%5D=pop&per_page=100';
       const resp=await fetch(url);
-      if(!resp.ok)throw new Error('API error');
+      if(!resp.ok)throw new Error('API error '+resp.status);
       const data=await resp.json();
       allPoints=data.items||[];
       renderPoints(allPoints);
-    }catch(e){console.error('Failed to load points',e)}
+    }catch(e){console.error('Failed to load points',e);document.getElementById('loading').textContent='Blad ladowania: '+e.message}
     showLoading(false);
   }
 
@@ -270,7 +270,12 @@ app.get('/api/inpost-points', async (req, res) => {
     const lat = req.query.lat || '52.2297';
     const lng = req.query.lng || '21.0122';
     const perPage = req.query.per_page || '100';
-    const url = `https://api-shipx-pl.easypack24.net/v1/points?relative_point=${lat},${lng}&type[]=parcel_locker&type[]=pop&per_page=${perPage}`;
+    const params = new URLSearchParams();
+    params.append('relative_point', `${lat},${lng}`);
+    params.append('type[]', 'parcel_locker');
+    params.append('type[]', 'pop');
+    params.append('per_page', String(perPage));
+    const url = `https://api-shipx-pl.easypack24.net/v1/points?${params.toString()}`;
     const resp = await fetch(url);
     const data = await resp.json();
     res.json(data);
