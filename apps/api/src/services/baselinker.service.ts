@@ -930,6 +930,81 @@ export class BaselinkerService {
   private defaultPriceGroupId = '10034'; // PLN price group
 
   /**
+   * Price rules cache - loaded from Settings table
+   */
+  private priceRulesCache: Record<string, Array<{ priceFrom: number; priceTo: number; multiplier: number; addToPrice: number }>> | null = null;
+  private priceRulesCacheTime = 0;
+  private static PRICE_RULES_CACHE_TTL = 60_000; // 1 minute
+
+  /**
+   * Load price multiplier rules from the Settings table.
+   * Cached for 1 minute to avoid hitting DB on every product.
+   */
+  private async loadPriceRules(): Promise<Record<string, Array<{ priceFrom: number; priceTo: number; multiplier: number; addToPrice: number }>>> {
+    if (this.priceRulesCache && Date.now() - this.priceRulesCacheTime < BaselinkerService.PRICE_RULES_CACHE_TTL) {
+      return this.priceRulesCache;
+    }
+
+    const rules: Record<string, Array<{ priceFrom: number; priceTo: number; multiplier: number; addToPrice: number }>> = {};
+    for (const wh of ['leker', 'btp', 'hp']) {
+      try {
+        const setting = await prisma.settings.findUnique({ where: { key: `price_rules_${wh}` } });
+        if (setting?.value) {
+          const parsed = typeof setting.value === 'string' ? JSON.parse(setting.value) : setting.value;
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            rules[wh] = parsed
+              .map((r: any) => ({
+                priceFrom: parseFloat(r.priceFrom) || 0,
+                priceTo: parseFloat(r.priceTo) || 999999,
+                multiplier: parseFloat(r.multiplier) || 1,
+                addToPrice: parseFloat(r.addToPrice) || 0,
+              }))
+              .sort((a: any, b: any) => a.priceFrom - b.priceFrom);
+          }
+        }
+      } catch (err) {
+        console.warn(`[BaselinkerSync] Could not load price rules for ${wh}:`, err);
+      }
+    }
+
+    this.priceRulesCache = rules;
+    this.priceRulesCacheTime = Date.now();
+    return rules;
+  }
+
+  /**
+   * Apply price multiplier rules to a raw wholesale price.
+   * @param rawPrice - wholesale price from Baselinker
+   * @param warehouse - warehouse key: 'leker', 'btp', or 'hp'
+   * @param priceRules - loaded price rules
+   * @returns price after applying multiplier and addition
+   */
+  private applyPriceMultiplier(
+    rawPrice: number,
+    warehouse: string,
+    priceRules: Record<string, Array<{ priceFrom: number; priceTo: number; multiplier: number; addToPrice: number }>>
+  ): number {
+    if (!rawPrice || rawPrice <= 0 || !priceRules[warehouse]) return rawPrice;
+    for (const rule of priceRules[warehouse]) {
+      if (rawPrice >= rule.priceFrom && rawPrice <= rule.priceTo) {
+        return rawPrice * rule.multiplier + rule.addToPrice;
+      }
+    }
+    return rawPrice;
+  }
+
+  /**
+   * Get warehouse key from inventory name
+   */
+  private getWarehouseKey(inventoryName: string): string | null {
+    const lower = inventoryName.toLowerCase();
+    if (lower === 'leker') return 'leker';
+    if (lower === 'btp') return 'btp';
+    if (lower === 'hp') return 'hp';
+    return null;
+  }
+
+  /**
    * Round price to .99 ending (e.g., 12.34 → 12.99, 50.00 → 50.99)
    * This makes prices more attractive psychologically
    */
@@ -958,10 +1033,10 @@ export class BaselinkerService {
    * 3. First non-zero price from any group
    * 4. price_netto + tax
    * 
-   * All prices are rounded to .99 ending
+   * All prices are passed through price multiplier rules (if available) and rounded to .99 ending
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private getProductPrice(blProduct: any): number {
+  private getProductPrice(blProduct: any, warehouseKey?: string | null, priceRules?: Record<string, Array<{ priceFrom: number; priceTo: number; multiplier: number; addToPrice: number }>>): number {
     let rawPrice = 0;
 
     // First try direct price_brutto
@@ -992,6 +1067,11 @@ export class BaselinkerService {
       rawPrice = parseFloat(blProduct.price_netto) * (1 + taxRate / 100);
     }
     
+    // Apply price multiplier rules if available
+    if (warehouseKey && priceRules) {
+      rawPrice = this.applyPriceMultiplier(rawPrice, warehouseKey, priceRules);
+    }
+
     // Round to .99 ending
     return this.roundPriceTo99(rawPrice);
   }
@@ -1050,6 +1130,13 @@ export class BaselinkerService {
     try {
       console.log(`[BaselinkerSync] Starting products sync with mode: ${mode || 'all'}...`);
       
+      // Load price multiplier rules and determine warehouse from inventory
+      const priceRules = await this.loadPriceRules();
+      const allInventories = await provider.getInventories();
+      const currentInventory = allInventories.find(inv => inv.inventory_id.toString() === inventoryId);
+      const warehouseKey = currentInventory ? this.getWarehouseKey(currentInventory.name) : null;
+      console.log(`[BaselinkerSync] Inventory: ${currentInventory?.name || inventoryId}, warehouse: ${warehouseKey || 'unknown'}, price rules: ${warehouseKey && priceRules[warehouseKey] ? priceRules[warehouseKey].length + ' rules' : 'none'}`);
+
       if (syncLogId) {
         syncProgress.sendProgress(syncLogId, {
           type: 'info',
@@ -1155,7 +1242,7 @@ export class BaselinkerService {
         }
         
         // Quick comparison - if basic fields differ, fetch full data
-        const listPrice = this.getProductPrice(blProduct);
+        const listPrice = this.getProductPrice(blProduct, warehouseKey, priceRules);
         const priceChanged = existing.price && Math.abs(parseFloat(existing.price.toString()) - listPrice) > 0.01;
         const skuChanged = existing.sku !== (blProduct.sku || `BL-${blProduct.id}`);
         const nameChanged = existing.name !== blProduct.name;
@@ -1241,7 +1328,7 @@ export class BaselinkerService {
                 console.log(`[BaselinkerSync] Warning: No name found for product ${blProduct.id}, using fallback`);
               }
               const description = this.getProductDescription(blProduct);
-              const productPrice = this.getProductPrice(blProduct);
+              const productPrice = this.getProductPrice(blProduct, warehouseKey, priceRules);
               const productEan = this.getProductEan(blProduct);
               
               // Debug log for price issues
@@ -1391,9 +1478,12 @@ export class BaselinkerService {
                 for (const blVariant of blProduct.variants) {
                   const variantId = blVariant.variant_id.toString();
                   const variantSku = generateSku(blVariant.variant_id, blVariant.sku);
-                  // Round variant price to .99 ending (use product price if variant has no price)
-                  const rawVariantPrice = blVariant.price_brutto || productPrice;
-                  const variantPrice = this.roundPriceTo99(rawVariantPrice);
+                  // Apply price multiplier rules + round to .99 ending (use product price if variant has no price)
+                  let rawVariantPrice = blVariant.price_brutto ? Number(blVariant.price_brutto) : 0;
+                  if (rawVariantPrice > 0 && warehouseKey && priceRules) {
+                    rawVariantPrice = this.applyPriceMultiplier(rawVariantPrice, warehouseKey, priceRules);
+                  }
+                  const variantPrice = rawVariantPrice > 0 ? this.roundPriceTo99(rawVariantPrice) : productPrice;
                   const variantEan = blVariant.ean ? String(blVariant.ean).trim() : null;
 
                   // Check if variant exists
@@ -1846,7 +1936,11 @@ export class BaselinkerService {
           const pricesMap = await provider.getInventoryProductsPrices(inv.inventory_id.toString());
           console.log(`[BaselinkerSync] Fetched prices for ${Object.keys(pricesMap).length} products from ${inv.name}`);
 
-          // 2. Build a map: prefixedId -> newPrice (after roundPriceTo99)
+          // 2. Build a map: prefixedId -> newPrice (after price multiplier + roundPriceTo99)
+          const priceRules = await this.loadPriceRules();
+          const whKey = this.getWarehouseKey(inv.name);
+          console.log(`[BaselinkerSync] Price rules for ${inv.name} (${whKey}): ${whKey && priceRules[whKey] ? priceRules[whKey].length + ' rules' : 'none'}`);
+
           const blPrices = new Map<string, number>();
           for (const [productIdStr, priceGroups] of Object.entries(pricesMap)) {
             const prefixedId = prefix ? `${prefix}${productIdStr}` : productIdStr;
@@ -1865,7 +1959,9 @@ export class BaselinkerService {
               }
             }
 
-            const newPrice = this.roundPriceTo99(rawPrice);
+            // Apply price multiplier rules, then round to .99
+            const withMarkup = whKey ? this.applyPriceMultiplier(rawPrice, whKey, priceRules) : rawPrice;
+            const newPrice = this.roundPriceTo99(withMarkup);
             if (newPrice > 0) blPrices.set(prefixedId, newPrice);
           }
 

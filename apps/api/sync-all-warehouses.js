@@ -23,8 +23,12 @@ require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
 const { execSync } = require('child_process');
 const path = require('path');
+const { loadPriceRules, applyPriceMultiplier, getWarehouseKey } = require('./lib/price-rules');
 
 const prisma = new PrismaClient();
+
+// Price rules loaded from Settings table
+let priceRules = {};
 
 const BASELINKER_API_URL = 'https://api.baselinker.com/connector.php';
 
@@ -107,13 +111,21 @@ function slugify(text) {
     .slice(0, 200);
 }
 
-function getProductPrice(blProduct) {
+function getProductPrice(blProduct, warehouseKey) {
   const prices = blProduct.prices || {};
   const firstPriceKey = Object.keys(prices)[0];
+  let raw = 0;
   if (firstPriceKey && prices[firstPriceKey]) {
-    return parseFloat(prices[firstPriceKey]) || 0;
+    raw = parseFloat(prices[firstPriceKey]) || 0;
+  } else {
+    raw = parseFloat(blProduct.price_brutto) || 0;
   }
-  return parseFloat(blProduct.price_brutto) || 0;
+  // Apply price multiplier rules if warehouse key is known
+  if (warehouseKey) {
+    raw = applyPriceMultiplier(raw, warehouseKey, priceRules);
+  }
+  // Round to .99
+  return raw <= 0 ? 0 : Math.floor(raw) + 0.99;
 }
 
 function getProductName(blProduct) {
@@ -220,6 +232,7 @@ async function syncProductsFromInventory(apiToken, inventory, existingMap) {
   const inventoryId = inventory.inventory_id;
   const inventoryName = inventory.name;
   const inventoryPrefix = getInventoryPrefix(inventoryName);
+  const whKey = getWarehouseKey(inventoryName);
   
   // Pobierz listę produktów
   const productList = await getAllProductsFromInventory(apiToken, inventoryId, inventoryName);
@@ -285,7 +298,7 @@ async function syncProductsFromInventory(apiToken, inventory, existingMap) {
         const name = getProductName(blProduct) || `Product ${productId}`;
         const sku = blProduct.sku || `BL-${productId}`;
         const slug = slugify(name) + '-' + productId;
-        const price = getProductPrice(blProduct);
+        const price = getProductPrice(blProduct, whKey);
         const description = getProductDescription(blProduct);
         const ean = getProductEan(blProduct);
         const images = Object.values(blProduct.images || {});
@@ -470,6 +483,14 @@ async function main() {
   // Pobierz token API
   const apiToken = getApiToken();
   console.log('✅ Token API OK\n');
+
+  // Załaduj reguły cenowe z bazy
+  priceRules = await loadPriceRules(prisma);
+  for (const wh of ['leker', 'btp', 'hp']) {
+    const count = priceRules[wh] ? priceRules[wh].length : 0;
+    console.log(`  📊 Reguły cenowe ${wh}: ${count} ${count > 0 ? '(aktywne)' : '(brak)'}`);
+  }
+  console.log('');
   
   // Pobierz listę magazynów
   const allInventories = await getAllInventories(apiToken);
