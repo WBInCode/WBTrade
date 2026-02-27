@@ -5,9 +5,10 @@ import { useSearchParams } from 'next/navigation';
 import { 
   ShoppingCart, Search, Filter, Eye, ChevronLeft, ChevronRight, 
   Truck, FileText, Package, Calendar, RefreshCw, Download,
-  MoreVertical, X, Ban, RotateCcw, AlertTriangle
+  MoreVertical, X, Ban, RotateCcw, AlertTriangle, Trash2, Archive
 } from 'lucide-react';
 import Link from 'next/link';
+import ConfirmModal from '@/components/ConfirmModal';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -149,6 +150,11 @@ export default function OrdersPage() {
   const [actionMenuId, setActionMenuId] = useState<string | null>(null);
   const [pendingCancellationsCount, setPendingCancellationsCount] = useState(0);
   const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
+  
+  // Modal state
+  const [cancelModal, setCancelModal] = useState<{ open: boolean; orderId: string; orderNumber: string }>({ open: false, orderId: '', orderNumber: '' });
+  const [deleteModal, setDeleteModal] = useState<{ open: boolean; orderId: string; orderNumber: string }>({ open: false, orderId: '', orderNumber: '' });
+  const [restoreModal, setRestoreModal] = useState<{ open: boolean; orderId: string; orderNumber: string }>({ open: false, orderId: '', orderNumber: '' });
 
   // Load pending cancellations count
   useEffect(() => {
@@ -251,8 +257,6 @@ export default function OrdersPage() {
   };
 
   const handleCancelOrder = async (orderId: string) => {
-    if (!confirm('Czy na pewno chcesz anulować to zamówienie?')) return;
-    
     try {
       const token = getAuthToken();
       await fetch(`${API_URL}/orders/${orderId}`, {
@@ -266,6 +270,43 @@ export default function OrdersPage() {
     } catch (error) {
       console.error('Failed to cancel order:', error);
     }
+    setCancelModal({ open: false, orderId: '', orderNumber: '' });
+    setActionMenuId(null);
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    try {
+      const token = getAuthToken();
+      await fetch(`${API_URL}/orders/${orderId}/soft-delete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      loadOrders();
+    } catch (error) {
+      console.error('Failed to delete order:', error);
+    }
+    setDeleteModal({ open: false, orderId: '', orderNumber: '' });
+    setActionMenuId(null);
+  };
+
+  const handleRestoreOrder = async (orderId: string) => {
+    try {
+      const token = getAuthToken();
+      await fetch(`${API_URL}/orders/${orderId}/restore`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      loadOrders();
+    } catch (error) {
+      console.error('Failed to restore order:', error);
+    }
+    setRestoreModal({ open: false, orderId: '', orderNumber: '' });
     setActionMenuId(null);
   };
 
@@ -601,15 +642,34 @@ export default function OrdersPage() {
                           </Link>
                           <div className="border-t border-slate-700 my-1"></div>
                           {order.status === 'CANCELLED' || order.status === 'REFUNDED' ? (
-                            <button
-                              className="flex items-center gap-2 w-full px-4 py-2.5 text-gray-300 hover:bg-slate-700 hover:text-white transition-colors"
-                            >
-                              <RotateCcw className="w-4 h-4" />
-                              Przywróć
-                            </button>
+                            <>
+                              <button
+                                onClick={() => {
+                                  setRestoreModal({ open: true, orderId: order.id, orderNumber: order.orderNumber });
+                                  setActionMenuId(null);
+                                }}
+                                className="flex items-center gap-2 w-full px-4 py-2.5 text-gray-300 hover:bg-slate-700 hover:text-white transition-colors"
+                              >
+                                <RotateCcw className="w-4 h-4" />
+                                Przywróć
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setDeleteModal({ open: true, orderId: order.id, orderNumber: order.orderNumber });
+                                  setActionMenuId(null);
+                                }}
+                                className="flex items-center gap-2 w-full px-4 py-2.5 text-red-400 hover:bg-red-500/10 transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                Usuń (archiwum)
+                              </button>
+                            </>
                           ) : (
                             <button
-                              onClick={() => handleCancelOrder(order.id)}
+                              onClick={() => {
+                                setCancelModal({ open: true, orderId: order.id, orderNumber: order.orderNumber });
+                                setActionMenuId(null);
+                              }}
                               className="flex items-center gap-2 w-full px-4 py-2.5 text-red-400 hover:bg-red-500/10 transition-colors"
                             >
                               <Ban className="w-4 h-4" />
@@ -684,6 +744,55 @@ export default function OrdersPage() {
           onClick={() => setActionMenuId(null)}
         />
       )}
+
+      {/* Archive link */}
+      <div className="flex justify-center">
+        <Link
+          href="/orders/archive"
+          className="flex items-center gap-2 px-5 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-gray-400 hover:text-white hover:border-slate-600 transition-colors"
+        >
+          <Archive className="w-4 h-4" />
+          Archiwum zamówień
+        </Link>
+      </div>
+
+      {/* Cancel Order Modal */}
+      <ConfirmModal
+        isOpen={cancelModal.open}
+        onClose={() => setCancelModal({ open: false, orderId: '', orderNumber: '' })}
+        onConfirm={() => handleCancelOrder(cancelModal.orderId)}
+        title="Anuluj zamówienie"
+        message={`Czy na pewno chcesz anulować zamówienie ${cancelModal.orderNumber}? Zarezerwowane produkty zostaną zwolnione.`}
+        confirmText="Anuluj zamówienie"
+        cancelText="Nie, wróć"
+        variant="warning"
+      />
+
+      {/* Delete (soft-delete) Order Modal - requires typing order number */}
+      <ConfirmModal
+        isOpen={deleteModal.open}
+        onClose={() => setDeleteModal({ open: false, orderId: '', orderNumber: '' })}
+        onConfirm={() => handleDeleteOrder(deleteModal.orderId)}
+        title="Usuń zamówienie"
+        message={`Zamówienie zostanie przeniesione do archiwum. Po 14 dniach zostanie trwale usunięte.`}
+        confirmText="Usuń zamówienie"
+        cancelText="Nie, wróć"
+        variant="danger"
+        confirmPhrase={deleteModal.orderNumber}
+        confirmPhraseLabel="Wpisz numer zamówienia aby potwierdzić usunięcie:"
+      />
+
+      {/* Restore Order Modal */}
+      <ConfirmModal
+        isOpen={restoreModal.open}
+        onClose={() => setRestoreModal({ open: false, orderId: '', orderNumber: '' })}
+        onConfirm={() => handleRestoreOrder(restoreModal.orderId)}
+        title="Przywróć zamówienie"
+        message={`Czy na pewno chcesz przywrócić zamówienie ${restoreModal.orderNumber}? Produkty zostaną ponownie zarezerwowane.`}
+        confirmText="Przywróć"
+        cancelText="Anuluj"
+        variant="success"
+      />
     </div>
   );
 }
