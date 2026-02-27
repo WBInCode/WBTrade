@@ -1,6 +1,19 @@
 import { prisma } from '../db';
 import { getProductsIndex, PRODUCTS_INDEX, meiliClient } from '../lib/meilisearch';
 
+// Tagi dostawy - produkty MUSZĄ mieć przynajmniej jeden z tych tagów żeby być widoczne
+const DELIVERY_TAGS = [
+  'Paczkomaty i Kurier',
+  'paczkomaty i kurier',
+  'Tylko kurier',
+  'tylko kurier',
+  'do 2 kg',
+  'do 5 kg',
+  'do 10 kg',
+  'do 20 kg',
+  'do 31,5 kg',
+];
+
 // Tags that require "produkt w paczce" tag to be visible
 const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
 const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce|produkty?\s*w\s*paczce/i;
@@ -30,6 +43,12 @@ function shouldProductBeVisible(tags: string[], imageUrl?: string | null): boole
     );
     if (hasBlockedImage) return false;
   }
+
+  // Produkty MUSZĄ mieć przynajmniej jeden tag dostawy
+  const hasDeliveryTag = tags.some((tag: string) =>
+    DELIVERY_TAGS.some(dt => tag.toLowerCase() === dt.toLowerCase())
+  );
+  if (!hasDeliveryTag) return false;
   
   const hasPaczkomatTag = tags.some((tag: string) => 
     PACZKOMAT_TAGS.some(pt => tag.toLowerCase() === pt.toLowerCase())
@@ -71,8 +90,19 @@ export class SearchService {
     try {
       const index = getProductsIndex();
 
-      // Build filter array
+      // Build filter array - te same filtry co w products.service.ts
       const filters: string[] = ['status = "ACTIVE"', 'price > 0'];
+      
+      // Produkty muszą być na stanie
+      filters.push('inStock = true');
+      
+      // Produkty MUSZĄ mieć tag dostawy
+      const deliveryTagsFilter = DELIVERY_TAGS.map(tag => `"${tag}"`).join(', ');
+      filters.push(`tags IN [${deliveryTagsFilter}]`);
+      
+      // Produkty MUSZĄ mieć przypisaną kategorię z Baselinker
+      filters.push('hasBaselinkerCategory = true');
+      
       if (minPrice !== undefined) {
         filters.push(`price >= ${minPrice}`);
       }
@@ -137,6 +167,15 @@ export class SearchService {
     const products = await prisma.product.findMany({
       where: {
         status: 'ACTIVE',
+        price: { gt: 0 },
+        // Musi mieć tag dostawy
+        tags: { hasSome: DELIVERY_TAGS },
+        // Musi mieć kategorię z Baselinker
+        category: { baselinkerCategoryId: { not: null } },
+        // Musi być na stanie
+        variants: { some: { inventory: { some: { quantity: { gt: 0 } } } } },
+        // Nie pokazuj produktów z tagami błędów + warunek paczkomatu
+        NOT: { tags: { hasSome: HIDDEN_TAGS } },
         AND: [
           {
             OR: [
@@ -203,8 +242,18 @@ export class SearchService {
     try {
       const index = getProductsIndex();
 
-      // Build filter
-      const filters: string[] = ['status = "ACTIVE"'];
+      // Build filter - te same filtry co w products.service.ts
+      const filters: string[] = ['status = "ACTIVE"', 'price > 0'];
+      
+      // Produkty muszą być na stanie
+      filters.push('inStock = true');
+      
+      // Produkty MUSZĄ mieć tag dostawy
+      const deliveryTagsFilter = DELIVERY_TAGS.map(tag => `"${tag}"`).join(', ');
+      filters.push(`tags IN [${deliveryTagsFilter}]`);
+      
+      // Produkty MUSZĄ mieć przypisaną kategorię z Baselinker
+      filters.push('hasBaselinkerCategory = true');
       
       // If category slug provided, resolve to all descendant categoryIds and filter
       if (categorySlug) {
@@ -283,6 +332,14 @@ export class SearchService {
         status: 'ACTIVE',
         price: { gt: 0 },
         name: { contains: query, mode: 'insensitive' },
+        // Musi mieć tag dostawy
+        tags: { hasSome: DELIVERY_TAGS },
+        // Musi mieć kategorię z Baselinker
+        category: { baselinkerCategoryId: { not: null } },
+        // Musi być na stanie
+        variants: { some: { inventory: { some: { quantity: { gt: 0 } } } } },
+        // Nie pokazuj produktów z tagami błędów
+        NOT: { tags: { hasSome: HIDDEN_TAGS } },
         ...(categorySlug ? { categoryId: { in: await this.getAllCategoryIds(categorySlug) } } : {}),
       },
       select: {
