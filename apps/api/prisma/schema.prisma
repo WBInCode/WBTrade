@@ -811,3 +811,16 @@ model LoyaltyHistory {
   @@index([createdAt])
   @@map("loyalty_history")
 }
+
+// ---------- WuBuś chatbot – unmatched questions ----------
+model ChatbotUnmatched {
+  id        String   @id @default(cuid())
+  question  String
+  count     Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([count])
+  @@index([createdAt])
+  @@map("chatbot_unmatched")
+}

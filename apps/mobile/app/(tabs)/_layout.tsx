@@ -82,6 +82,7 @@ export default function TabLayout() {
   const colors = useThemeColors();
   const [chatOpen, setChatOpen] = useState(false);
   const [chatActive, setChatActive] = useState(false); // true when minimized with conversation
+  const [unreadCount, setUnreadCount] = useState(0);
 
   return (
     <View style={{ flex: 1 }}>
@@ -155,8 +156,10 @@ export default function TabLayout() {
         }}
       >
         <ChatBubble
-          onPress={() => { setChatOpen(true); setChatActive(true); }}
+          onPress={() => { setChatOpen(true); setChatActive(true); setUnreadCount(0); }}
           hasActiveChat={chatActive && !chatOpen}
+          unreadCount={!chatOpen ? unreadCount : 0}
+          isChatOpen={chatOpen}
         />
       </View>
 
@@ -164,7 +167,8 @@ export default function TabLayout() {
       <ChatBotModal
         visible={chatOpen}
         onMinimize={() => setChatOpen(false)}
-        onEndChat={() => { setChatOpen(false); setChatActive(false); }}
+        onEndChat={() => { setChatOpen(false); setChatActive(false); setUnreadCount(0); }}
+        onBotMessage={() => setUnreadCount(prev => prev + 1)}
       />
     </View>
   );

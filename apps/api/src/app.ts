@@ -46,6 +46,7 @@ import feedRoutes from './routes/feed';
 import couponsRoutes from './routes/coupons';
 import loyaltyRoutes from './routes/loyalty';
 import adminLoyaltyRoutes from './routes/admin-loyalty';
+import chatbotRoutes from './routes/chatbot';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
 import { initializeMeilisearch } from './lib/meilisearch';
 import { startSearchIndexWorker } from './workers/search-index.worker';
@@ -61,6 +62,33 @@ const PORT = process.env.PORT || process.env.APP_PORT || 5000;
 
 // Trust proxy for rate limiting behind reverse proxy (e.g. nginx)
 app.set('trust proxy', 1);
+
+// InPost GeoWidget page — served BEFORE Helmet to avoid CSP blocking external scripts
+app.get('/api/inpost-widget', (req, res) => {
+  const token = req.query.token as string || '';
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.send(`<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <link rel="stylesheet" href="https://geowidget.inpost.pl/inpost-geowidget.css"/>
+  <style>*{margin:0;padding:0;box-sizing:border-box}html,body{width:100%;height:100%;overflow:hidden}inpost-geowidget{display:block;width:100%;height:100%}</style>
+</head>
+<body>
+  <inpost-geowidget id="geowidget" onpoint="onPointSelect" token="${token}" language="pl" config="parcelcollect"></inpost-geowidget>
+  <script src="https://geowidget.inpost.pl/inpost-geowidget.js" defer><\/script>
+  <script>
+    function onPointSelect(point){
+      if(window.ReactNativeWebView){
+        window.ReactNativeWebView.postMessage(JSON.stringify({type:'POINT_SELECTED',point:{name:point.name,address:point.address,address_details:point.address_details}}));
+      }
+    }
+  <\/script>
+</body>
+</html>`);
+});
 
 // Security headers with Helmet
 app.use(helmet({
@@ -194,6 +222,7 @@ app.use('/api/feed', feedRoutes); // Google Merchant / Product feeds
 app.use('/api/coupons', couponsRoutes); // User coupons / discounts
 app.use('/api/loyalty', loyaltyRoutes); // User loyalty program
 app.use('/api/admin/loyalty', adminLoyaltyRoutes); // Admin loyalty management
+app.use('/api/chatbot', chatbotRoutes); // WuBuś chatbot unmatched questions
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
