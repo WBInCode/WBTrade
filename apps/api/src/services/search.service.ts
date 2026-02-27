@@ -72,7 +72,7 @@ export class SearchService {
       const index = getProductsIndex();
 
       // Build filter array
-      const filters: string[] = ['status = "ACTIVE"'];
+      const filters: string[] = ['status = "ACTIVE"', 'price > 0'];
       if (minPrice !== undefined) {
         filters.push(`price >= ${minPrice}`);
       }
@@ -281,6 +281,7 @@ export class SearchService {
     const products = await prisma.product.findMany({
       where: {
         status: 'ACTIVE',
+        price: { gt: 0 },
         name: { contains: query, mode: 'insensitive' },
         ...(categorySlug ? { categoryId: { in: await this.getAllCategoryIds(categorySlug) } } : {}),
       },
@@ -337,6 +338,9 @@ export class SearchService {
    */
   async reindexAllProducts(): Promise<{ indexed: number; taskUid: number }> {
     const products = await prisma.product.findMany({
+      where: {
+        price: { gt: 0 },
+      },
       include: {
         images: { orderBy: { order: 'asc' }, take: 1 },
         category: true,
