@@ -60,8 +60,13 @@ export default function OrdersArchivePage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
+  // Selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
   // Modals
   const [restoreModal, setRestoreModal] = useState<{ open: boolean; orderId: string; orderNumber: string }>({ open: false, orderId: '', orderNumber: '' });
+  const [deleteModal, setDeleteModal] = useState<{ open: boolean; orderId: string; orderNumber: string }>({ open: false, orderId: '', orderNumber: '' });
+  const [bulkDeleteModal, setBulkDeleteModal] = useState(false);
   const [cleanupModal, setCleanupModal] = useState(false);
   const [cleanupResult, setCleanupResult] = useState<{ deleted: number } | null>(null);
 
@@ -144,11 +149,55 @@ export default function OrdersArchivePage() {
       });
       const data = await response.json();
       setCleanupResult({ deleted: data.deleted || 0 });
+      setSelectedIds(new Set());
       loadArchive();
     } catch (error) {
       console.error('Failed to cleanup archive:', error);
     }
     setCleanupModal(false);
+  };
+
+  const handlePermanentDelete = async (ids: string[]) => {
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/orders/admin/archive/delete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ ids }),
+      });
+      const data = await response.json();
+      setCleanupResult({ deleted: data.deleted || 0 });
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        ids.forEach((id) => next.delete(id));
+        return next;
+      });
+      loadArchive();
+    } catch (error) {
+      console.error('Failed to permanently delete orders:', error);
+    }
+    setDeleteModal({ open: false, orderId: '', orderNumber: '' });
+    setBulkDeleteModal(false);
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === orders.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(orders.map((o) => o.id)));
+    }
   };
 
   return (
@@ -173,6 +222,15 @@ export default function OrdersArchivePage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {selectedIds.size > 0 && (
+            <button
+              onClick={() => setBulkDeleteModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600/20 border border-red-500/30 rounded-lg text-red-400 hover:bg-red-600/30 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              Usuń zaznaczone ({selectedIds.size})
+            </button>
+          )}
           <button
             onClick={loadArchive}
             className="flex items-center gap-2 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-gray-300 hover:bg-slate-700 transition-colors"
@@ -221,6 +279,14 @@ export default function OrdersArchivePage() {
           <table className="w-full">
             <thead>
               <tr className="text-left text-xs text-gray-400 uppercase tracking-wider bg-slate-800/80">
+                <th className="px-4 py-4 w-10">
+                  <input
+                    type="checkbox"
+                    checked={orders.length > 0 && selectedIds.size === orders.length}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-orange-500 focus:ring-orange-500 focus:ring-offset-0 cursor-pointer"
+                  />
+                </th>
                 <th className="px-4 py-4">Zamówienie</th>
                 <th className="px-4 py-4">Klient</th>
                 <th className="px-4 py-4">Status</th>
@@ -235,14 +301,14 @@ export default function OrdersArchivePage() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i}>
-                    <td colSpan={8} className="px-4 py-4">
+                    <td colSpan={9} className="px-4 py-4">
                       <div className="h-14 bg-slate-700 rounded animate-pulse" />
                     </td>
                   </tr>
                 ))
               ) : orders.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-16 text-center text-gray-400">
+                  <td colSpan={9} className="px-4 py-16 text-center text-gray-400">
                     <Archive className="w-16 h-16 mx-auto mb-4 opacity-50" />
                     <p className="text-lg font-medium">Archiwum jest puste</p>
                     <p className="text-sm">Usunięte zamówienia pojawią się tutaj</p>
@@ -252,7 +318,15 @@ export default function OrdersArchivePage() {
                 orders.map((order) => {
                   const daysLeft = daysUntilCleanup(order.deletedAt);
                   return (
-                    <tr key={order.id} className="hover:bg-slate-700/30 transition-colors">
+                    <tr key={order.id} className={`hover:bg-slate-700/30 transition-colors ${selectedIds.has(order.id) ? 'bg-orange-500/5' : ''}`}>
+                      <td className="px-4 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(order.id)}
+                          onChange={() => toggleSelect(order.id)}
+                          className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-orange-500 focus:ring-orange-500 focus:ring-offset-0 cursor-pointer"
+                        />
+                      </td>
                       <td className="px-4 py-4">
                         <p className="font-medium text-white">{order.orderNumber}</p>
                         <p className="text-xs text-gray-500">#{order.id.slice(0, 8)}</p>
@@ -298,6 +372,13 @@ export default function OrdersArchivePage() {
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => setDeleteModal({ open: true, orderId: order.id, orderNumber: order.orderNumber })}
+                            title="Usuń trwale"
+                            className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                           <button
                             onClick={() => setRestoreModal({ open: true, orderId: order.id, orderNumber: order.orderNumber })}
                             title="Przywróć z archiwum"
@@ -376,6 +457,34 @@ export default function OrdersArchivePage() {
         confirmText="Przywróć"
         cancelText="Anuluj"
         variant="success"
+      />
+
+      {/* Delete single order permanently */}
+      <ConfirmModal
+        isOpen={deleteModal.open}
+        onClose={() => setDeleteModal({ open: false, orderId: '', orderNumber: '' })}
+        onConfirm={() => handlePermanentDelete([deleteModal.orderId])}
+        title="Trwałe usunięcie zamówienia"
+        message={`Zamówienie ${deleteModal.orderNumber} zostanie trwale usunięte. Tej operacji nie można cofnąć.`}
+        confirmText="Usuń trwale"
+        cancelText="Anuluj"
+        variant="danger"
+        confirmPhrase={deleteModal.orderNumber}
+        confirmPhraseLabel={`Wpisz ${deleteModal.orderNumber} aby potwierdzić:`}
+      />
+
+      {/* Bulk delete selected orders */}
+      <ConfirmModal
+        isOpen={bulkDeleteModal}
+        onClose={() => setBulkDeleteModal(false)}
+        onConfirm={() => handlePermanentDelete(Array.from(selectedIds))}
+        title="Trwałe usunięcie zaznaczonych"
+        message={`${selectedIds.size} zaznaczonych zamówień zostanie trwale usuniętych. Tej operacji nie można cofnąć.`}
+        confirmText={`Usuń ${selectedIds.size} zamówień`}
+        cancelText="Anuluj"
+        variant="danger"
+        confirmPhrase="USUŃ"
+        confirmPhraseLabel="Wpisz USUŃ aby potwierdzić:"
       />
 
       {/* Cleanup archive modal */}

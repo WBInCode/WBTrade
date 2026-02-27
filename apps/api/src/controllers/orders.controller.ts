@@ -663,3 +663,25 @@ export async function cleanupArchive(req: Request, res: Response): Promise<void>
     res.status(500).json({ message: 'Error cleaning up archive' });
   }
 }
+
+/**
+ * Permanently delete specific archived orders
+ * @route POST /api/orders/admin/archive/delete
+ */
+export async function permanentDeleteOrders(req: Request, res: Response): Promise<void> {
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      res.status(400).json({ message: 'Wymagana lista ID zamówień do usunięcia' });
+      return;
+    }
+    const result = await ordersService.permanentDeleteOrders(ids);
+    res.status(200).json({
+      message: `Trwale usunięto ${result.deleted} zamówień`,
+      ...result,
+    });
+  } catch (error: any) {
+    console.error('Error permanently deleting orders:', error);
+    res.status(400).json({ message: error.message || 'Error deleting orders' });
+  }
+}
