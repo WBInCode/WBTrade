@@ -302,49 +302,47 @@ router.get('/locations', async (req: Request, res: Response) => {
 
 router.post('/locations', async (req: Request, res: Response) => {
   try {
-    const { name, code, type, parentId, isActive } = req.body;
+    const { name, code, isActive } = req.body;
     if (!name || !code) {
       return res.status(400).json({ error: 'name i code są wymagane' });
     }
 
     const existing = await prisma.location.findUnique({ where: { code } });
     if (existing) {
-      return res.status(400).json({ error: 'Lokalizacja o tym kodzie już istnieje' });
+      return res.status(400).json({ error: 'Magazyn o tym kodzie już istnieje' });
     }
 
     const location = await prisma.location.create({
       data: {
         name,
         code,
-        type: type || 'WAREHOUSE',
-        parentId: parentId || null,
+        type: 'WAREHOUSE',
+        parentId: null,
         isActive: isActive !== false,
       },
     });
     res.status(201).json(location);
   } catch (error) {
     console.error('Create location error:', error);
-    res.status(500).json({ error: 'Błąd tworzenia lokalizacji' });
+    res.status(500).json({ error: 'Błąd tworzenia magazynu' });
   }
 });
 
 router.put('/locations/:id', async (req: Request, res: Response) => {
   try {
-    const { name, code, type, parentId, isActive } = req.body;
+    const { name, code, isActive } = req.body;
     const location = await prisma.location.update({
       where: { id: req.params.id },
       data: {
         ...(name && { name }),
         ...(code && { code }),
-        ...(type && { type }),
-        ...(parentId !== undefined && { parentId: parentId || null }),
         ...(isActive !== undefined && { isActive }),
       },
     });
     res.json(location);
   } catch (error) {
     console.error('Update location error:', error);
-    res.status(500).json({ error: 'Błąd aktualizacji lokalizacji' });
+    res.status(500).json({ error: 'Błąd aktualizacji magazynu' });
   }
 });
 
@@ -353,13 +351,202 @@ router.delete('/locations/:id', async (req: Request, res: Response) => {
     // Check for inventory
     const invCount = await prisma.inventory.count({ where: { locationId: req.params.id } });
     if (invCount > 0) {
-      return res.status(400).json({ error: 'Nie można usunąć lokalizacji z przypisanym stanem magazynowym' });
+      return res.status(400).json({ error: 'Nie można usunąć magazynu z przypisanym stanem magazynowym' });
     }
     await prisma.location.delete({ where: { id: req.params.id } });
     res.json({ success: true });
   } catch (error) {
     console.error('Delete location error:', error);
     res.status(500).json({ error: 'Błąd usuwania lokalizacji' });
+  }
+});
+
+// ──────────────── SKU PREFIXES (prefiksy SKU) ────────────────
+
+router.get('/sku-prefixes', async (_req: Request, res: Response) => {
+  try {
+    // Get all unique SKU prefixes (part before the first "-")
+    const variants = await prisma.productVariant.findMany({
+      select: { sku: true },
+      where: { sku: { not: '' } },
+    });
+
+    const prefixMap: Record<string, number> = {};
+    for (const v of variants) {
+      if (!v.sku) continue;
+      const dashIdx = v.sku.indexOf('-');
+      if (dashIdx > 0) {
+        const prefix = v.sku.substring(0, dashIdx + 1); // e.g. "HP-", "leker-"
+        prefixMap[prefix] = (prefixMap[prefix] || 0) + 1;
+      }
+    }
+
+    const prefixes = Object.entries(prefixMap)
+      .map(([prefix, count]) => ({ prefix, count }))
+      .sort((a, b) => b.count - a.count);
+
+    res.json(prefixes);
+  } catch (error) {
+    console.error('SKU prefixes error:', error);
+    res.status(500).json({ error: 'Błąd pobierania prefiksów SKU' });
+  }
+});
+
+// ──────────────── BULK TRANSFER PREVIEW ────────────────
+
+router.get('/bulk-transfer/preview', async (req: Request, res: Response) => {
+  try {
+    const skuPrefix = req.query.skuPrefix as string;
+    const fromLocationId = req.query.fromLocationId as string;
+
+    if (!skuPrefix || !fromLocationId) {
+      return res.status(400).json({ error: 'skuPrefix i fromLocationId są wymagane' });
+    }
+
+    // Find all inventory items at the source location whose SKU starts with the given prefix
+    const items = await prisma.inventory.findMany({
+      where: {
+        locationId: fromLocationId,
+        quantity: { gt: 0 },
+        variant: {
+          sku: { startsWith: skuPrefix, mode: 'insensitive' },
+        },
+      },
+      include: {
+        variant: {
+          include: {
+            product: {
+              select: { id: true, name: true, images: { take: 1, select: { url: true } } },
+            },
+          },
+        },
+        location: { select: { id: true, name: true, code: true } },
+      },
+      orderBy: { variant: { sku: 'asc' } },
+    });
+
+    res.json({
+      items: items.map((inv) => ({
+        inventoryId: inv.id,
+        variantId: inv.variantId,
+        sku: inv.variant.sku,
+        variantName: inv.variant.name,
+        productName: inv.variant.product.name,
+        productImage: inv.variant.product.images?.[0]?.url || null,
+        quantity: inv.quantity,
+        reserved: inv.reserved,
+        available: inv.quantity - inv.reserved,
+      })),
+      totalItems: items.length,
+      totalQuantity: items.reduce((sum, i) => sum + i.quantity, 0),
+      totalAvailable: items.reduce((sum, i) => sum + (i.quantity - i.reserved), 0),
+    });
+  } catch (error) {
+    console.error('Bulk transfer preview error:', error);
+    res.status(500).json({ error: 'Błąd podglądu transferu' });
+  }
+});
+
+// ──────────────── BULK TRANSFER EXECUTE ────────────────
+
+router.post('/bulk-transfer', async (req: Request, res: Response) => {
+  try {
+    const { fromLocationId, toLocationId, items, notes } = req.body as {
+      fromLocationId: string;
+      toLocationId: string;
+      items: { variantId: string; quantity: number }[];
+      notes?: string;
+    };
+
+    if (!fromLocationId || !toLocationId || !items?.length) {
+      return res.status(400).json({ error: 'fromLocationId, toLocationId i items są wymagane' });
+    }
+
+    if (fromLocationId === toLocationId) {
+      return res.status(400).json({ error: 'Lokalizacja źródłowa i docelowa muszą być różne' });
+    }
+
+    // Validate both locations exist
+    const [fromLoc, toLoc] = await Promise.all([
+      prisma.location.findUnique({ where: { id: fromLocationId } }),
+      prisma.location.findUnique({ where: { id: toLocationId } }),
+    ]);
+
+    if (!fromLoc) return res.status(400).json({ error: 'Lokalizacja źródłowa nie istnieje' });
+    if (!toLoc) return res.status(400).json({ error: 'Lokalizacja docelowa nie istnieje' });
+
+    const userId = (req as any).user?.id || null;
+    const reference = `BULK-${Date.now()}`;
+
+    const results: { variantId: string; sku: string; quantity: number; status: 'ok' | 'error'; error?: string }[] = [];
+
+    // Process each transfer in one big transaction
+    await prisma.$transaction(async (tx) => {
+      for (const item of items) {
+        try {
+          const sourceInv = await tx.inventory.findUnique({
+            where: { variantId_locationId: { variantId: item.variantId, locationId: fromLocationId } },
+            include: { variant: { select: { sku: true } } },
+          });
+
+          if (!sourceInv) {
+            results.push({ variantId: item.variantId, sku: '?', quantity: item.quantity, status: 'error', error: 'Brak stanu w lokalizacji źródłowej' });
+            continue;
+          }
+
+          const available = sourceInv.quantity - sourceInv.reserved;
+          if (available < item.quantity) {
+            results.push({ variantId: item.variantId, sku: sourceInv.variant.sku, quantity: item.quantity, status: 'error', error: `Dostępne: ${available}, żądane: ${item.quantity}` });
+            continue;
+          }
+
+          // Decrease source
+          await tx.inventory.update({
+            where: { id: sourceInv.id },
+            data: { quantity: { decrement: item.quantity } },
+          });
+
+          // Increase destination (upsert)
+          await tx.inventory.upsert({
+            where: { variantId_locationId: { variantId: item.variantId, locationId: toLocationId } },
+            update: { quantity: { increment: item.quantity } },
+            create: { variantId: item.variantId, locationId: toLocationId, quantity: item.quantity, reserved: 0, minimum: 0 },
+          });
+
+          // Create movement record
+          await tx.stockMovement.create({
+            data: {
+              variantId: item.variantId,
+              type: 'TRANSFER',
+              quantity: item.quantity,
+              fromLocationId,
+              toLocationId,
+              reference,
+              notes: notes || `Bulk transfer (${items.length} pozycji)`,
+              createdBy: userId,
+            },
+          });
+
+          results.push({ variantId: item.variantId, sku: sourceInv.variant.sku, quantity: item.quantity, status: 'ok' });
+        } catch (err) {
+          results.push({ variantId: item.variantId, sku: '?', quantity: item.quantity, status: 'error', error: (err as Error).message });
+        }
+      }
+    });
+
+    const successCount = results.filter((r) => r.status === 'ok').length;
+    const errorCount = results.filter((r) => r.status === 'error').length;
+
+    res.json({
+      reference,
+      totalItems: items.length,
+      success: successCount,
+      errors: errorCount,
+      results,
+    });
+  } catch (error) {
+    console.error('Bulk transfer error:', error);
+    res.status(500).json({ error: 'Błąd masowego transferu' });
   }
 });
 
