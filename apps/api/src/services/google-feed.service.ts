@@ -208,6 +208,7 @@ export async function streamGoogleMerchantFeed(baseUrl: string, res: Response): 
     const products = await prisma.product.findMany({
       where: {
         status: ProductStatus.ACTIVE,
+        price: { gt: 0 },
         NOT: { tags: { hasSome: HIDDEN_TAGS } },
         tags: { hasSome: DELIVERY_TAGS },
         images: { some: {} },
@@ -295,6 +296,7 @@ export async function generateGoogleMerchantFeed(baseUrl: string): Promise<strin
     const products = await prisma.product.findMany({
       where: {
         status: ProductStatus.ACTIVE,
+        price: { gt: 0 },
         NOT: { tags: { hasSome: HIDDEN_TAGS } },
         tags: { hasSome: DELIVERY_TAGS },
         images: { some: {} },
