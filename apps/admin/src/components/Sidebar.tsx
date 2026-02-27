@@ -91,7 +91,8 @@ const menuItems = [
     submenu: [
       { title: 'Stan magazynowy', href: '/warehouse' },
       { title: 'Ruchy magazynowe', href: '/warehouse/movements' },
-      { title: 'Lokalizacje', href: '/warehouse/locations' },
+      { title: 'Masowy transfer', href: '/warehouse/bulk-transfer' },
+      { title: 'Magazyny', href: '/warehouse/locations' },
     ],
   },
   {
