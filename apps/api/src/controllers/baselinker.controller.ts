@@ -151,12 +151,13 @@ export const baselinkerController = {
    */
   async triggerSync(req: Request, res: Response) {
     try {
-      const { type, mode } = req.body; 
+      const { type, mode, inventoryId } = req.body; 
       // type: 'full', 'products', 'categories', 'stock', 'images'
-      // mode: 'new-only' (tylko nowe produkty, bez stanów 0), 'update-only' (tylko aktualizacja istniejących)
+      // mode: 'new-only' (tylko nowe produkty, bez stanów 0), 'update-only' (tylko aktualizacja istniejących), 'full-resync' (pełna resynchronizacja)
+      // inventoryId: optional - override configured inventory (sync specific warehouse)
 
       const validTypes = ['full', 'products', 'categories', 'stock', 'images'];
-      const validModes = ['new-only', 'update-only', 'fetch-all', undefined];
+      const validModes = ['new-only', 'update-only', 'fetch-all', 'full-resync', undefined];
       const syncType = type || 'full';
 
       if (!validTypes.includes(syncType)) {
@@ -167,14 +168,21 @@ export const baselinkerController = {
 
       if (mode && !validModes.includes(mode)) {
         return res.status(400).json({
-          message: `Invalid sync mode. Must be one of: new-only, update-only`,
+          message: `Invalid sync mode. Must be one of: new-only, update-only, full-resync`,
         });
       }
 
-      const result = await baselinkerService.triggerSync(syncType, mode);
+      // Validate inventoryId format if provided
+      if (inventoryId && !/^\d+$/.test(inventoryId)) {
+        return res.status(400).json({
+          message: 'Inventory ID must be a numeric string',
+        });
+      }
+
+      const result = await baselinkerService.triggerSync(syncType, mode, inventoryId);
 
       res.json({
-        message: `Sync ${syncType} started${mode ? ` (${mode})` : ''}`,
+        message: `Sync ${syncType} started${mode ? ` (${mode})` : ''}${inventoryId ? ` (inventory: ${inventoryId})` : ''}`,
         syncLogId: result.syncLogId,
       });
     } catch (error) {
