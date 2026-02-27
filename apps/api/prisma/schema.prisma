@@ -353,6 +353,7 @@ model Order {
   isBusinessOrder          Boolean              @default(false) @map("is_business_order")
   pendingCancellation      Boolean              @default(false) @map("pending_cancellation")
   pendingCancellationAt    DateTime?            @map("pending_cancellation_at")
+  deletedAt                DateTime?            @map("deleted_at")
   items                    OrderItem[]
   statusHistory            OrderStatusHistory[]
   billingAddress           Address?             @relation("BillingAddress", fields: [billingAddressId], references: [id])

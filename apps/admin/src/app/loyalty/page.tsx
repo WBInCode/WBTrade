@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Trophy, RefreshCw, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getAuthToken } from '@/lib/api';
+import { useModal } from '@/components/ModalProvider';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -49,6 +50,7 @@ const LEVEL_COLORS: Record<string, string> = {
 };
 
 export default function AdminLoyaltyPage() {
+  const { confirm } = useModal();
   const [overview, setOverview] = useState<LoyaltyOverview | null>(null);
   const [usersData, setUsersData] = useState<UsersResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,7 +93,7 @@ export default function AdminLoyaltyPage() {
   }, [page, filterLevel]);
 
   async function handleRecalculate() {
-    if (!confirm('Czy na pewno chcesz przeliczyć poziomy wszystkich użytkowników? To może chwilę potrwać.')) return;
+    if (!await confirm('Czy na pewno chcesz przeliczyć poziomy wszystkich użytkowników? To może chwilę potrwać.')) return;
     setRecalculating(true);
     setMessage('');
     try {

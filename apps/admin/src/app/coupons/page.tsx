@@ -7,6 +7,7 @@ import {
   Filter, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { getAuthToken } from '@/lib/api';
+import { useModal } from '@/components/ModalProvider';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -76,6 +77,7 @@ const sourceLabels: Record<string, string> = {
 };
 
 export default function CouponsPage() {
+  const { confirm } = useModal();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [stats, setStats] = useState<CouponStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -228,7 +230,7 @@ export default function CouponsPage() {
   }
 
   async function handleDelete(coupon: Coupon) {
-    if (!confirm(`Czy na pewno chcesz usunąć kupon "${coupon.code}"?`)) return;
+    if (!await confirm(`Czy na pewno chcesz usunąć kupon "${coupon.code}"?`)) return;
     try {
       const response = await apiCall(`/admin/coupons/${coupon.id}`, { method: 'DELETE' });
       if (response.ok) {

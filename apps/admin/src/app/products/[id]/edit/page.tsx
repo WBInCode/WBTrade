@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Package, Trash2, Plus, X, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '../../../../contexts/AuthContext';
+import { useModal } from '@/components/ModalProvider';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -54,6 +55,7 @@ export default function EditProductPage() {
   const params = useParams();
   const router = useRouter();
   const { token } = useAuth();
+  const { confirm, alert } = useModal();
   const productId = params.id as string;
   
   const [loading, setLoading] = useState(true);
@@ -112,7 +114,7 @@ export default function EditProductPage() {
       setVariants(product.variants || []);
     } catch (error) {
       console.error('Failed to load product:', error);
-      alert('Nie znaleziono produktu');
+      await alert('Nie znaleziono produktu');
       router.push('/products');
     } finally {
       setLoading(false);
@@ -182,7 +184,7 @@ export default function EditProductPage() {
 
   const handleSubmit = async () => {
     if (!token) {
-      alert('Brak autoryzacji. Zaloguj się ponownie.');
+      await alert('Brak autoryzacji. Zaloguj się ponownie.');
       return;
     }
     
@@ -229,20 +231,20 @@ export default function EditProductPage() {
         router.push(`/products/${productId}`);
       } else {
         const errorDetails = responseData.errors ? JSON.stringify(responseData.errors) : '';
-        alert(`Blad: ${responseData.message || 'Nie udalo sie zapisac produktu'} ${errorDetails}`);
+        await alert(`Blad: ${responseData.message || 'Nie udalo sie zapisac produktu'} ${errorDetails}`);
       }
     } catch (error) {
       console.error('Failed to update product:', error);
-      alert('Wystapil blad podczas zapisywania produktu');
+      await alert('Wystapil blad podczas zapisywania produktu');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm('Czy na pewno chcesz usunac ten produkt? Ta operacja jest nieodwracalna.')) return;
+    if (!await confirm('Czy na pewno chcesz usunac ten produkt? Ta operacja jest nieodwracalna.')) return;
     if (!token) {
-      alert('Brak autoryzacji. Zaloguj się ponownie.');
+      await alert('Brak autoryzacji. Zaloguj się ponownie.');
       return;
     }
     
@@ -255,7 +257,7 @@ export default function EditProductPage() {
       if (response.ok) {
         router.push('/products');
       } else {
-        alert('Nie udalo sie usunac produktu');
+        await alert('Nie udalo sie usunac produktu');
       }
     } catch (error) {
       console.error('Failed to delete product:', error);
