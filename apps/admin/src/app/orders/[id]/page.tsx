@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { getAuthToken } from '@/lib/api';
+import { useModal } from '@/components/ModalProvider';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -173,6 +174,7 @@ const deliveryStatusLabels: Record<string, string> = {
 
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const { confirm, alert } = useModal();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -247,7 +249,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   };
 
   const handleCancelOrder = async () => {
-    if (!confirm('Czy na pewno chcesz anulować to zamówienie? Ta operacja zwolni zarezerwowany towar.')) return;
+    if (!await confirm('Czy na pewno chcesz anulować to zamówienie? Ta operacja zwolni zarezerwowany towar.')) return;
     
     try {
       const token = getAuthToken();
@@ -283,7 +285,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         await loadOrder();
       } else {
         const error = await response.json();
-        alert(error.message || 'Błąd podczas przetwarzania zwrotu');
+        await alert(error.message || 'Błąd podczas przetwarzania zwrotu');
       }
     } catch (error) {
       console.error('Failed to refund order:', error);
@@ -291,7 +293,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   };
 
   const handleRestoreOrder = async () => {
-    if (!confirm('Czy na pewno chcesz przywrócić to zamówienie? Towar zostanie ponownie zarezerwowany.')) return;
+    if (!await confirm('Czy na pewno chcesz przywrócić to zamówienie? Towar zostanie ponownie zarezerwowany.')) return;
     
     try {
       const token = getAuthToken();
@@ -307,7 +309,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         await loadOrder();
       } else {
         const error = await response.json();
-        alert(error.message || 'Błąd podczas przywracania zamówienia');
+        await alert(error.message || 'Błąd podczas przywracania zamówienia');
       }
     } catch (error) {
       console.error('Failed to restore order:', error);

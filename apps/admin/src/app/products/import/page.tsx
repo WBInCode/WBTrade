@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { getAuthToken } from '@/lib/api';
+import { useModal } from '@/components/ModalProvider';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -31,6 +32,7 @@ interface ImportResult {
 
 export default function ImportProductsPage() {
   const router = useRouter();
+  const { alert } = useModal();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [file, setFile] = useState<File | null>(null);
@@ -60,7 +62,7 @@ export default function ImportProductsPage() {
     }
   }, []);
 
-  const handleFileSelect = (selectedFile: File) => {
+  const handleFileSelect = async (selectedFile: File) => {
     const allowedTypes = [
       'text/csv',
       'application/vnd.ms-excel',
@@ -71,7 +73,7 @@ export default function ImportProductsPage() {
     const isXLSX = selectedFile.name.endsWith('.xlsx') || selectedFile.name.endsWith('.xls');
     
     if (!isCSV && !isXLSX && !allowedTypes.includes(selectedFile.type)) {
-      alert('Wybierz plik CSV lub Excel (xlsx, xls)');
+      await alert('Wybierz plik CSV lub Excel (xlsx, xls)');
       return;
     }
     
@@ -84,7 +86,7 @@ export default function ImportProductsPage() {
     const lines = text.split('\n').filter(line => line.trim());
     
     if (lines.length < 2) {
-      alert('Plik jest pusty lub zawiera tylko naglowki');
+      await alert('Plik jest pusty lub zawiera tylko naglowki');
       return;
     }
     
@@ -176,7 +178,7 @@ export default function ImportProductsPage() {
   const handleImport = async () => {
     const validProducts = parsedData.filter(p => p.isValid);
     if (validProducts.length === 0) {
-      alert('Brak prawidlowych produktow do zaimportowania');
+      await alert('Brak prawidlowych produktow do zaimportowania');
       return;
     }
     

@@ -584,3 +584,82 @@ export async function rejectCancellation(req: Request, res: Response): Promise<v
     res.status(500).json({ message: error.message || 'Error rejecting cancellation' });
   }
 }
+
+/**
+ * Soft-delete an order (move to archive)
+ * @route POST /api/orders/:id/soft-delete
+ */
+export async function softDeleteOrder(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const order = await ordersService.softDelete(id);
+
+    if (!order) {
+      res.status(404).json({ message: 'Zamówienie nie zostało znalezione' });
+      return;
+    }
+
+    res.status(200).json({ message: 'Zamówienie przeniesione do archiwum', order });
+  } catch (error: any) {
+    console.error('Error soft-deleting order:', error);
+    res.status(400).json({ message: error.message || 'Error deleting order' });
+  }
+}
+
+/**
+ * Restore an order from archive
+ * @route POST /api/orders/:id/restore-from-archive
+ */
+export async function restoreFromArchive(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const order = await ordersService.restoreFromArchive(id);
+
+    if (!order) {
+      res.status(404).json({ message: 'Zamówienie nie zostało znalezione' });
+      return;
+    }
+
+    res.status(200).json({ message: 'Zamówienie przywrócone z archiwum', order });
+  } catch (error: any) {
+    console.error('Error restoring from archive:', error);
+    res.status(400).json({ message: error.message || 'Error restoring order' });
+  }
+}
+
+/**
+ * Get all archived orders
+ * @route GET /api/orders/admin/archive
+ */
+export async function getArchivedOrders(req: Request, res: Response): Promise<void> {
+  try {
+    const { page, limit, search } = req.query;
+    const result = await ordersService.getArchived({
+      page: page ? parseInt(page as string) : undefined,
+      limit: limit ? parseInt(limit as string) : undefined,
+      search: search as string | undefined,
+    });
+    res.status(200).json(result);
+  } catch (error: any) {
+    console.error('Error getting archived orders:', error);
+    res.status(500).json({ message: 'Error getting archived orders' });
+  }
+}
+
+/**
+ * Cleanup archive (permanently delete old archived orders)
+ * @route POST /api/orders/admin/archive/cleanup
+ */
+export async function cleanupArchive(req: Request, res: Response): Promise<void> {
+  try {
+    const { manual } = req.body;
+    const result = await ordersService.cleanupArchive(manual === true);
+    res.status(200).json({
+      message: `Usunięto ${result.deleted} zamówień z archiwum`,
+      ...result,
+    });
+  } catch (error: any) {
+    console.error('Error cleaning up archive:', error);
+    res.status(500).json({ message: 'Error cleaning up archive' });
+  }
+}

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '../../contexts/AuthContext';
+import { useModal } from '@/components/ModalProvider';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -35,6 +36,7 @@ interface Category {
 
 export default function ProductsPage() {
   const { token } = useAuth();
+  const { confirm, alert } = useModal();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -180,7 +182,7 @@ export default function ProductsPage() {
 
   const bulkDelete = async () => {
     if (selectedIds.size === 0 || !token) return;
-    if (!confirm(`Czy na pewno chcesz usunac ${selectedIds.size} produktow?`)) return;
+    if (!await confirm(`Czy na pewno chcesz usunac ${selectedIds.size} produktow?`)) return;
     
     try {
       await Promise.all(
@@ -594,8 +596,8 @@ export default function ProductsPage() {
                         <Edit className="w-4 h-4 text-gray-400" />
                       </Link>
                       <button 
-                        onClick={() => {
-                          if (confirm('Czy na pewno chcesz usunac ten produkt?') && token) {
+                        onClick={async () => {
+                          if (await confirm('Czy na pewno chcesz usunac ten produkt?') && token) {
                             fetch(`${API_URL}/products/${product.id}`, { 
                               method: 'DELETE',
                               headers: { 'Authorization': `Bearer ${token}` }

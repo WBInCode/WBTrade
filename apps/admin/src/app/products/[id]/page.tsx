@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { getAuthToken } from '@/lib/api';
+import { useModal } from '@/components/ModalProvider';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -52,6 +53,7 @@ interface Product {
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { confirm, alert } = useModal();
   const productId = params.id as string;
   
   const [product, setProduct] = useState<Product | null>(null);
@@ -77,7 +79,7 @@ export default function ProductDetailPage() {
       setProduct(data);
     } catch (error) {
       console.error('Failed to load product:', error);
-      alert('Nie znaleziono produktu');
+      await alert('Nie znaleziono produktu');
       router.push('/products');
     } finally {
       setLoading(false);
@@ -85,7 +87,7 @@ export default function ProductDetailPage() {
   }
 
   const handleDelete = async () => {
-    if (!confirm('Czy na pewno chcesz usunac ten produkt?')) return;
+    if (!await confirm('Czy na pewno chcesz usunac ten produkt?')) return;
     
     try {
       const token = getAuthToken();

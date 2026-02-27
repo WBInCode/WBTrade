@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createOrder, getOrder, updateOrder, deleteOrder, getAllOrders, getUserOrders, refundOrder, restoreOrder, simulatePayment, checkRefundEligibility, requestRefund, getOrderTracking, syncOrderDelivery, getPendingCancellations, approveCancellation, rejectCancellation } from '../controllers/orders.controller';
+import { createOrder, getOrder, updateOrder, deleteOrder, getAllOrders, getUserOrders, refundOrder, restoreOrder, simulatePayment, checkRefundEligibility, requestRefund, getOrderTracking, syncOrderDelivery, getPendingCancellations, approveCancellation, rejectCancellation, softDeleteOrder, restoreFromArchive, getArchivedOrders, cleanupArchive } from '../controllers/orders.controller';
 import { authGuard, adminOnly, optionalAuth } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -12,6 +12,12 @@ router.get('/admin/all', authGuard, adminOnly, getAllOrders);
 
 // Route to get orders pending cancellation approval (admin)
 router.get('/admin/pending-cancellations', authGuard, adminOnly, getPendingCancellations);
+
+// Route to get archived (soft-deleted) orders (admin)
+router.get('/admin/archive', authGuard, adminOnly, getArchivedOrders);
+
+// Route to cleanup archived orders (admin)
+router.post('/admin/archive/cleanup', authGuard, adminOnly, cleanupArchive);
 
 // Route to create a new order (requires authentication)
 router.post('/', authGuard, createOrder);
@@ -48,6 +54,12 @@ router.post('/:id/reject-cancellation', authGuard, adminOnly, rejectCancellation
 
 // Route to restore a cancelled/refunded order
 router.post('/:id/restore', authGuard, adminOnly, restoreOrder);
+
+// Route to soft-delete (archive) an order
+router.post('/:id/soft-delete', authGuard, adminOnly, softDeleteOrder);
+
+// Route to restore an order from archive
+router.post('/:id/restore-from-archive', authGuard, adminOnly, restoreFromArchive);
 
 // Route to simulate payment (development only)
 router.post('/:id/simulate-payment', simulatePayment);
