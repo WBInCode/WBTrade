@@ -6,6 +6,7 @@ import {
   X, Save, Search, Check, Image as ImageIcon
 } from 'lucide-react';
 import { getAuthToken } from '@/lib/api';
+import { useModal } from '@/components/ModalProvider';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -32,6 +33,7 @@ interface Product {
 }
 
 export default function CategoriesPage() {
+  const { alert } = useModal();
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -174,7 +176,7 @@ export default function CategoriesPage() {
       setShowAssignModal(false);
     } catch (error) {
       console.error('Failed to assign products:', error);
-      alert('Błąd podczas przypisywania produktów');
+      await alert('Błąd podczas przypisywania produktów');
     }
   };
 
