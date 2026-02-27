@@ -8,12 +8,14 @@ import {
 import { getAuthToken } from '@/lib/api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL || 'http://localhost:3000';
 
 type Tab = 'omnibus' | 'top';
 
 interface OmnibusProduct {
   id: string;
   name: string;
+  slug: string;
   price: number;
   compareAtPrice: number | null;
   lowestPrice30d: number | null;
@@ -238,7 +240,13 @@ export default function OmnibusPage() {
                   >
                     <div className="flex items-start gap-4">
                       {/* Image */}
-                      <div className="w-16 h-16 bg-slate-800 rounded-lg overflow-hidden flex-shrink-0">
+                      <a
+                        href={`${WEB_URL}/products/${product.slug || product.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-16 h-16 bg-slate-800 rounded-lg overflow-hidden flex-shrink-0 block hover:ring-2 hover:ring-blue-500 transition-all"
+                        title="Otwórz stronę produktu"
+                      >
                         {product.images[0] ? (
                           <img src={product.images[0].url} alt="" className="w-full h-full object-cover" />
                         ) : (
@@ -246,7 +254,7 @@ export default function OmnibusPage() {
                             <Package className="w-6 h-6 text-slate-600" />
                           </div>
                         )}
-                      </div>
+                      </a>
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">
@@ -386,7 +394,13 @@ export default function OmnibusPage() {
                     topData.topSelling.map((p, i) => (
                       <div key={p.productId} className="flex items-center gap-3 p-3 hover:bg-slate-800/30">
                         <span className="text-xs font-bold text-slate-500 w-6 text-center">#{i + 1}</span>
-                        <div className="w-10 h-10 bg-slate-800 rounded overflow-hidden flex-shrink-0">
+                        <a
+                          href={`${WEB_URL}/products/${p.productId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-10 h-10 bg-slate-800 rounded overflow-hidden flex-shrink-0 block hover:ring-2 hover:ring-blue-500 transition-all"
+                          title="Otwórz stronę produktu"
+                        >
                           {p.imageUrl ? (
                             <img src={p.imageUrl} alt="" className="w-full h-full object-cover" />
                           ) : (
@@ -394,7 +408,7 @@ export default function OmnibusPage() {
                               <Package className="w-4 h-4 text-slate-600" />
                             </div>
                           )}
-                        </div>
+                        </a>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-white truncate">{p.name}</p>
                           <p className="text-xs text-slate-400">
@@ -422,7 +436,13 @@ export default function OmnibusPage() {
                     topData.topRated.map((p, i) => (
                       <div key={p.id} className="flex items-center gap-3 p-3 hover:bg-slate-800/30">
                         <span className="text-xs font-bold text-slate-500 w-6 text-center">#{i + 1}</span>
-                        <div className="w-10 h-10 bg-slate-800 rounded overflow-hidden flex-shrink-0">
+                        <a
+                          href={`${WEB_URL}/products/${p.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-10 h-10 bg-slate-800 rounded overflow-hidden flex-shrink-0 block hover:ring-2 hover:ring-blue-500 transition-all"
+                          title="Otwórz stronę produktu"
+                        >
                           {p.images[0] ? (
                             <img src={p.images[0].url} alt="" className="w-full h-full object-cover" />
                           ) : (
@@ -430,7 +450,7 @@ export default function OmnibusPage() {
                               <Package className="w-4 h-4 text-slate-600" />
                             </div>
                           )}
-                        </div>
+                        </a>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-white truncate">{p.name}</p>
                           <p className="text-xs text-slate-400">
@@ -459,7 +479,13 @@ export default function OmnibusPage() {
                       <div key={s.query} className="flex items-center gap-3 p-3 hover:bg-slate-800/30">
                         <span className="text-xs font-bold text-slate-500 w-6 text-center">#{i + 1}</span>
                         {s.product ? (
-                          <div className="w-10 h-10 bg-slate-800 rounded overflow-hidden flex-shrink-0">
+                          <a
+                            href={`${WEB_URL}/products/${s.product.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-10 h-10 bg-slate-800 rounded overflow-hidden flex-shrink-0 block hover:ring-2 hover:ring-blue-500 transition-all"
+                            title="Otwórz stronę produktu"
+                          >
                             {s.product.imageUrl ? (
                               <img src={s.product.imageUrl} alt="" className="w-full h-full object-cover" />
                             ) : (
@@ -467,7 +493,7 @@ export default function OmnibusPage() {
                                 <Package className="w-4 h-4 text-slate-600" />
                               </div>
                             )}
-                          </div>
+                          </a>
                         ) : (
                           <div className="w-10 h-10 bg-slate-800 rounded overflow-hidden flex-shrink-0 flex items-center justify-center">
                             <Search className="w-4 h-4 text-slate-600" />
