@@ -22,6 +22,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useModal } from '@/components/ModalProvider';
 import Link from 'next/link';
 
 // ============================================
@@ -141,6 +142,7 @@ function SyncTypeIcon({ type }: { type: string }) {
 
 export default function BaselinkerPage() {
   const { token } = useAuth();
+  const { confirm } = useModal();
   
   // State
   const [config, setConfig] = useState<BaselinkerConfig | null>(null);
@@ -313,7 +315,7 @@ export default function BaselinkerPage() {
   };
 
   const handleDeleteConfig = async () => {
-    if (!token || !confirm('Czy na pewno chcesz usunąć integrację Baselinker?')) return;
+    if (!token || !await confirm('Czy na pewno chcesz usunąć integrację Baselinker?')) return;
     
     try {
       await apiRequest(
@@ -652,8 +654,8 @@ export default function BaselinkerPage() {
             
             {/* Opcja inicjalizacji */}
             <button
-              onClick={() => {
-                if (confirm('Czy na pewno chcesz pobrać WSZYSTKIE produkty z Baselinker? To może zająć dużo czasu.')) {
+              onClick={async () => {
+                if (await confirm('Czy na pewno chcesz pobrać WSZYSTKIE produkty z Baselinker? To może zająć dużo czasu.')) {
                   handleTriggerSync('products', 'fetch-all');
                 }
               }}

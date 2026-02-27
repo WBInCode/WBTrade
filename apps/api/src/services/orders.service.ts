@@ -130,7 +130,9 @@ export class OrdersService {
 
     const skip = (page - 1) * limit;
 
-    const where: Prisma.OrderWhereInput = {};
+    const where: Prisma.OrderWhereInput = {
+      deletedAt: null, // Exclude archived/soft-deleted orders
+    };
 
     if (status) {
       where.status = status;
@@ -1170,5 +1172,138 @@ export class OrdersService {
     });
 
     return order;
+  }
+
+  /**
+   * Soft-delete an order (move to archive)
+   * Only cancelled or refunded orders can be soft-deleted
+   */
+  async softDelete(id: string) {
+    const order = await prisma.order.findUnique({ where: { id } });
+    if (!order) return null;
+
+    if (!['CANCELLED', 'REFUNDED'].includes(order.status)) {
+      throw new Error('Tylko anulowane lub zwrócone zamówienia mogą być usunięte');
+    }
+
+    if (order.deletedAt) {
+      throw new Error('Zamówienie jest już w archiwum');
+    }
+
+    const updated = await prisma.order.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+
+    await prisma.orderStatusHistory.create({
+      data: {
+        orderId: id,
+        status: order.status,
+        note: 'Zamówienie przeniesione do archiwum',
+      },
+    });
+
+    return updated;
+  }
+
+  /**
+   * Restore an order from archive (undo soft-delete)
+   */
+  async restoreFromArchive(id: string) {
+    const order = await prisma.order.findUnique({ where: { id } });
+    if (!order) return null;
+
+    if (!order.deletedAt) {
+      throw new Error('Zamówienie nie jest w archiwum');
+    }
+
+    const updated = await prisma.order.update({
+      where: { id },
+      data: { deletedAt: null },
+    });
+
+    await prisma.orderStatusHistory.create({
+      data: {
+        orderId: id,
+        status: order.status,
+        note: 'Zamówienie przywrócone z archiwum',
+      },
+    });
+
+    return updated;
+  }
+
+  /**
+   * Get all archived (soft-deleted) orders
+   */
+  async getArchived(params: { page?: number; limit?: number; search?: string } = {}) {
+    const { page = 1, limit = 20, search } = params;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.OrderWhereInput = {
+      deletedAt: { not: null },
+    };
+
+    if (search) {
+      where.OR = [
+        { orderNumber: { contains: search, mode: 'insensitive' } },
+        { user: { email: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [orders, total] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { deletedAt: 'desc' },
+        include: {
+          items: true,
+          user: { select: { id: true, email: true, firstName: true, lastName: true } },
+        },
+      }),
+      prisma.order.count({ where }),
+    ]);
+
+    return {
+      orders,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  /**
+   * Cleanup archive: permanently delete orders soft-deleted more than 14 days ago
+   * If manual=true, delete all archived orders regardless of age
+   */
+  async cleanupArchive(manual: boolean = false) {
+    const where: Prisma.OrderWhereInput = {
+      deletedAt: manual
+        ? { not: null }
+        : { not: null, lt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) },
+    };
+
+    // Get IDs first for cascading deletes
+    const toDelete = await prisma.order.findMany({
+      where,
+      select: { id: true, orderNumber: true },
+    });
+
+    if (toDelete.length === 0) return { deleted: 0 };
+
+    const ids = toDelete.map((o) => o.id);
+
+    // Delete related records first, then orders
+    await prisma.$transaction(async (tx) => {
+      await tx.orderStatusHistory.deleteMany({ where: { orderId: { in: ids } } });
+      await tx.orderItem.deleteMany({ where: { orderId: { in: ids } } });
+      await tx.order.deleteMany({ where: { id: { in: ids } } });
+    });
+
+    return { deleted: toDelete.length, orders: toDelete.map((o) => o.orderNumber) };
   }
 }

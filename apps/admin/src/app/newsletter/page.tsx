@@ -7,6 +7,7 @@ import {
   AlertTriangle, X, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { getAuthToken } from '@/lib/api';
+import { useModal } from '@/components/ModalProvider';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -61,6 +62,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
 };
 
 export default function NewsletterPage() {
+  const { confirm, alert } = useModal();
   const [tab, setTab] = useState<Tab>('subscribers');
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -174,7 +176,7 @@ export default function NewsletterPage() {
   }
 
   async function deleteSubscriber(id: string) {
-    if (!confirm('Czy na pewno chcesz usunąć tego subskrybenta?')) return;
+    if (!await confirm('Czy na pewno chcesz usunąć tego subskrybenta?')) return;
     try {
       const res = await apiCall(`/admin/newsletter/subscribers/${id}`, { method: 'DELETE' });
       if (res.ok) {
@@ -243,7 +245,7 @@ export default function NewsletterPage() {
   }
 
   async function deleteCampaign(id: string) {
-    if (!confirm('Czy na pewno chcesz usunąć tę kampanię?')) return;
+    if (!await confirm('Czy na pewno chcesz usunąć tę kampanię?')) return;
     try {
       const res = await apiCall(`/admin/newsletter/campaigns/${id}`, { method: 'DELETE' });
       if (res.ok) {
@@ -256,7 +258,7 @@ export default function NewsletterPage() {
   }
 
   async function sendCampaignNow(id: string) {
-    if (!confirm('Czy na pewno chcesz wysłać tę kampanię teraz do wszystkich subskrybentów?')) return;
+    if (!await confirm('Czy na pewno chcesz wysłać tę kampanię teraz do wszystkich subskrybentów?')) return;
     try {
       const res = await apiCall(`/admin/newsletter/campaigns/${id}/send`, { method: 'POST' });
       if (res.ok) {
@@ -264,11 +266,11 @@ export default function NewsletterPage() {
         loadCampaignStats();
       } else {
         const data = await res.json();
-        alert(data.message || 'Błąd wysyłania kampanii');
+        await alert(data.message || 'Błąd wysyłania kampanii');
       }
     } catch (err) {
       console.error(err);
-      alert('Błąd połączenia z serwerem');
+      await alert('Błąd połączenia z serwerem');
     }
   }
 

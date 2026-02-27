@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiJson } from '@/lib/api';
+import { useModal } from '@/components/ModalProvider';
 import { 
   Users, 
   Search, 
@@ -75,6 +76,7 @@ const roleLabels: Record<string, string> = {
 
 export default function UsersPage() {
   const { token } = useAuth();
+  const { alert } = useModal();
   const [users, setUsers] = useState<User[]>([]);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [pagination, setPagination] = useState<Pagination | null>(null);
@@ -248,7 +250,7 @@ export default function UsersPage() {
       loadUsers();
       loadStats();
     } catch (error: any) {
-      alert(error.message || 'Błąd podczas zmiany roli');
+      await alert(error.message || 'Błąd podczas zmiany roli');
     } finally {
       setActionLoading(false);
     }
@@ -262,7 +264,7 @@ export default function UsersPage() {
       loadUsers();
       loadStats();
     } catch (error: any) {
-      alert(error.message || 'Błąd podczas blokowania użytkownika');
+      await alert(error.message || 'Błąd podczas blokowania użytkownika');
     }
   };
 
@@ -274,7 +276,7 @@ export default function UsersPage() {
       loadUsers();
       loadStats();
     } catch (error: any) {
-      alert(error.message || 'Błąd podczas odblokowywania użytkownika');
+      await alert(error.message || 'Błąd podczas odblokowywania użytkownika');
     }
   };
 
@@ -285,7 +287,7 @@ export default function UsersPage() {
       await apiJson.post(`/api/users/${user.id}/unlock`, {}, token);
       loadUsers();
     } catch (error: any) {
-      alert(error.message || 'Błąd podczas odblokowywania konta');
+      await alert(error.message || 'Błąd podczas odblokowywania konta');
     }
   };
 
@@ -300,7 +302,7 @@ export default function UsersPage() {
       setShowResetPasswordModal(false);
       setSelectedUser(null);
       setNewPassword('');
-      alert('Hasło zostało zmienione');
+      await alert('Hasło zostało zmienione');
     } catch (error: any) {
       setFormError(error.message || 'Błąd podczas resetowania hasła');
     } finally {
@@ -320,7 +322,7 @@ export default function UsersPage() {
       loadUsers();
       loadStats();
     } catch (error: any) {
-      alert(error.message || 'Błąd podczas usuwania użytkownika');
+      await alert(error.message || 'Błąd podczas usuwania użytkownika');
     } finally {
       setActionLoading(false);
     }

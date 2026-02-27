@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import '../styles/globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
 import AdminLayout from '@/components/AdminLayout';
+import { ModalProvider } from '@/components/ModalProvider';
 
 const inter = Inter({ subsets: ['latin', 'latin-ext'] });
 
@@ -20,7 +21,9 @@ export default function RootLayout({
     <html lang="pl">
       <body className={`${inter.className} bg-admin-bg text-admin-text antialiased`}>
         <AuthProvider>
-          <AdminLayout>{children}</AdminLayout>
+          <ModalProvider>
+            <AdminLayout>{children}</AdminLayout>
+          </ModalProvider>
         </AuthProvider>
       </body>
     </html>
