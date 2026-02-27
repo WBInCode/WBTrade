@@ -8,6 +8,7 @@ import {
   ArrowUp, ArrowDown, LayoutGrid, Ban, Pin, Save,
 } from 'lucide-react';
 import { getAuthToken } from '@/lib/api';
+import { useModal } from '@/components/ModalProvider';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -101,6 +102,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function CarouselsPage() {
+  const { confirm } = useModal();
   const [carousels, setCarousels] = useState<Carousel[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -140,9 +142,9 @@ export default function CarouselsPage() {
   const selectedCarousel = carousels.find(c => c.id === selectedId) || null;
 
   // Switch carousel with unsaved changes warning
-  const selectCarousel = (id: string) => {
+  const selectCarousel = async (id: string) => {
     if (id === selectedId) return;
-    if (hasUnsavedChanges && !confirm('Masz niezapisane zmiany. Kontynuowa\u0107 bez zapisywania?')) return;
+    if (hasUnsavedChanges && !await confirm('Masz niezapisane zmiany. Kontynuować bez zapisywania?')) return;
     setSelectedId(id);
   };
 
@@ -348,7 +350,7 @@ export default function CarouselsPage() {
   };
 
   const deleteCarousel = async (id: string) => {
-    if (!confirm('Czy na pewno chcesz usunąć tę karuzelę?')) return;
+    if (!await confirm('Czy na pewno chcesz usunąć tę karuzelę?')) return;
     try {
       const res = await fetch(`${API_URL}/carousels/admin/${id}`, {
         method: 'DELETE',

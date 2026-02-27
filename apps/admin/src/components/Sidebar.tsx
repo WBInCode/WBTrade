@@ -51,6 +51,7 @@ const menuItems = [
       { title: 'Opłacone', href: '/orders?status=CONFIRMED' },
       { title: 'W realizacji', href: '/orders?status=PROCESSING' },
       { title: 'Wysłane', href: '/orders?status=SHIPPED' },
+      { title: 'Archiwum', href: '/orders/archive' },
     ],
   },
   {

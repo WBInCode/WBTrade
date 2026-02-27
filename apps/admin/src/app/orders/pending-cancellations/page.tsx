@@ -6,6 +6,7 @@ import {
   Package, Calendar, User, Phone, Mail, Building2
 } from 'lucide-react';
 import Link from 'next/link';
+import { useModal } from '@/components/ModalProvider';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -67,6 +68,7 @@ interface Order {
 }
 
 export default function PendingCancellationsPage() {
+  const { confirm, alert } = useModal();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -109,7 +111,7 @@ export default function PendingCancellationsPage() {
     });
 
   const handleApprove = async (orderId: string) => {
-    if (!confirm('Czy na pewno chcesz zatwierdzić anulowanie tego zamówienia firmowego?')) return;
+    if (!await confirm('Czy na pewno chcesz zatwierdzić anulowanie tego zamówienia firmowego?')) return;
     
     try {
       setProcessingId(orderId);
@@ -130,7 +132,7 @@ export default function PendingCancellationsPage() {
       setOrders(prev => prev.filter(o => o.id !== orderId));
     } catch (error) {
       console.error('Failed to approve cancellation:', error);
-      alert('Nie udało się zatwierdzić anulowania');
+      await alert('Nie udało się zatwierdzić anulowania');
     } finally {
       setProcessingId(null);
     }
@@ -159,7 +161,7 @@ export default function PendingCancellationsPage() {
       setRejectReason('');
     } catch (error) {
       console.error('Failed to reject cancellation:', error);
-      alert('Nie udało się odrzucić prośby');
+      await alert('Nie udało się odrzucić prośby');
     } finally {
       setProcessingId(null);
     }

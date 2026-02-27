@@ -6,6 +6,7 @@ import {
   ToggleLeft, ToggleRight,
 } from 'lucide-react';
 import { getAuthToken } from '@/lib/api';
+import { useModal } from '@/components/ModalProvider';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -20,6 +21,7 @@ interface Location {
 }
 
 export default function LocationsPage() {
+  const { alert } = useModal();
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -66,7 +68,7 @@ export default function LocationsPage() {
         loadLocations();
       } else {
         const err = await res.json();
-        alert(err.error || 'Błąd');
+        await alert(err.error || 'Błąd');
       }
     } catch (err) {
       console.error(err);
@@ -81,7 +83,7 @@ export default function LocationsPage() {
         loadLocations();
       } else {
         const err = await res.json();
-        alert(err.error || 'Błąd');
+        await alert(err.error || 'Błąd');
       }
     } catch (err) {
       console.error(err);
