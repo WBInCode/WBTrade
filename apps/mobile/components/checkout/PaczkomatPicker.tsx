@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
-import Config from '../../constants/Config';
+import { Config } from '../../constants/Config';
 import { useThemeColors } from '../../hooks/useThemeColors';
 
 export interface InPostPoint {
@@ -34,9 +34,6 @@ interface PaczkomatPickerProps {
   onPointSelect: (point: InPostPoint) => void;
 }
 
-const INPOST_TOKEN =
-  'eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJzQlpXVzFNZzVlQnpDYU1XU3JvTlBjRWFveFpXcW9Ua2FuZVB3X291LWxvIn0.eyJleHAiOjIwMzQyNDc0MDQsImlhdCI6MTcxODg4NzQwNCwianRpIjoiMmZhNWI5YTktZjhhNS00ZWI4LTljNjgtZjJkN2JiNmJhZmI3IiwiaXNzIjoiaHR0cHM6Ly9sb2dpbi5pbnBvc3QucGwvYXV0aC9yZWFsbXMvZXh0ZXJuYWwiLCJzdWIiOiJmOjEyNDc1MDUxLTFjMDMtNGU1OS1iYTBjLTJiNDU2OTVlZjUzNTpncGwtbWFwLXdpZGdldC10b2tlbiIsInR5cCI6IkJlYXJlciIsImF6cCI6InNoaXB4LWFwcC13aWRnZXRzIiwiYWxsb3dlZC1vcmlnaW5zIjpbIioiXSwic2NvcGUiOiJvcGVuaWQgYXBpOmFwaXBvaW50cyIsInNpZCI6IjM5ZjI3MjFiLTkyYjUtNGMwNC04YTNjLTYxYWZiZjMzYjE2NyIsImNsaWVudEhvc3QiOiIxNzIuMjYuMTAuMjM1IiwiY2xpZW50QWRkcmVzcyI6IjE3Mi4yNi4xMC4yMzUiLCJjbGllbnRfaWQiOiJzaGlweC1hcHAtd2lkZ2V0cyJ9.nS8CZjQC_6yxKQKvQdh2mJzW-kQqZw6gxEJQjB7YfQ3VLCEbTZCEGlnD6QMXwqOblFf-zCHGV8H9y7nqgXYD_e89SQnJF6GqFy_hJ6YLsQ';
-
 export default function PaczkomatPicker({ isOpen, onClose, onPointSelect }: PaczkomatPickerProps) {
   const colors = useThemeColors();
   const webViewRef = useRef<WebView>(null);
@@ -57,9 +54,9 @@ export default function PaczkomatPicker({ isOpen, onClose, onPointSelect }: Pacz
     }
   }, [isOpen]);
 
-  // The widget is served by our API server so the browser origin is our real domain — no "Brak dostępu" issue
+  // Custom Leaflet-based paczkomat map served by our API (uses public InPost API — no token needed)
   const baseApiUrl = Config.API_URL.replace(/\/api\/?$/, '');
-  const widgetUrl = `${baseApiUrl}/api/inpost-widget?token=${encodeURIComponent(INPOST_TOKEN)}`;
+  const widgetUrl = `${baseApiUrl}/api/inpost-widget`;
 
   const handleMessage = (event: any) => {
     try {
@@ -76,7 +73,7 @@ export default function PaczkomatPicker({ isOpen, onClose, onPointSelect }: Pacz
   return (
     <Modal visible={isOpen} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
       <SafeAreaView style={styles.container}>
-        {/* Header */}
+        {/* Header bar with close button */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <View style={styles.headerIcon}>
@@ -92,7 +89,7 @@ export default function PaczkomatPicker({ isOpen, onClose, onPointSelect }: Pacz
           </TouchableOpacity>
         </View>
 
-        {/* InPost GeoWidget loaded from our API server */}
+        {/* Custom Leaflet map with InPost paczkomats */}
         <WebView
           ref={webViewRef}
           source={{ uri: widgetUrl }}
@@ -107,7 +104,7 @@ export default function PaczkomatPicker({ isOpen, onClose, onPointSelect }: Pacz
           startInLoadingState={true}
           renderLoading={() => (
             <View style={[styles.loading, { backgroundColor: colors.background }]}>
-              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Ładowanie mapy InPost...</Text>
+              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Ładowanie mapy paczkomatów...</Text>
             </View>
           )}
         />
