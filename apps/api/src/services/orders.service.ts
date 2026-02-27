@@ -166,9 +166,10 @@ export class OrdersService {
         },
       }),
       prisma.order.count({ where }),
-      // Always get counts for ALL statuses (unfiltered) for the status cards
+      // Always get counts for ALL statuses (excluding archived) for the status cards
       prisma.order.groupBy({
         by: ['status'],
+        where: { deletedAt: null },
         _count: true,
       }),
     ]);
