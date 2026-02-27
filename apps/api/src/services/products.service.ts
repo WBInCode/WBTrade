@@ -974,6 +974,11 @@ export class ProductsService {
     
     if (!product) return null;
     
+    // Hide products with price 0 or less
+    if (!product.price || Number(product.price) <= 0) {
+      return null;
+    }
+    
     // Check if product should be visible
     // Products with "Paczkomaty i Kurier" tag MUST also have "produkt w paczce" tag
     const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
