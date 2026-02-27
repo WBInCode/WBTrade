@@ -10,11 +10,12 @@ const prisma = new PrismaClient();
  * lowercase, trim, collapse whitespace, strip trailing punctuation.
  */
 function normaliseQuestion(q: string): string {
-  return q
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, ' ')
-    .replace(/[?.!]+$/, '');
+  // Limit input length to prevent abuse, then normalise safely
+  const trimmed = q.slice(0, 500).toLowerCase().trim();
+  // Collapse whitespace: split on any whitespace and rejoin
+  const collapsed = trimmed.split(/\s/).filter(Boolean).join(' ');
+  // Strip trailing punctuation (single char check, no quantifier)
+  return collapsed.replace(/[?.!]$/, '');
 }
 
 // ─── PUBLIC ─────────────────────────────────────────────────────────

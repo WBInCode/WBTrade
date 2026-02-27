@@ -65,7 +65,9 @@ app.set('trust proxy', 1);
 
 // InPost GeoWidget page — served BEFORE Helmet to avoid CSP blocking external scripts
 app.get('/api/inpost-widget', (req, res) => {
-  const token = req.query.token as string || '';
+  // Sanitize token to prevent reflected XSS — only allow JWT-safe characters
+  const rawToken = (req.query.token as string) || '';
+  const token = rawToken.replace(/[^a-zA-Z0-9._\-]/g, '');
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'public, max-age=86400');
   res.send(`<!DOCTYPE html>
