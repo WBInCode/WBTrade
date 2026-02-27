@@ -174,6 +174,7 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
 
 /**
  * Get order by ID
+ * Supports both authenticated users and guest checkout (via order ID)
  */
 export async function getOrder(req: Request, res: Response): Promise<void> {
   try {
@@ -190,7 +191,15 @@ export async function getOrder(req: Request, res: Response): Promise<void> {
     const order = await ordersService.getById(id);
     
     if (!order) {
-      res.status(404).json({ message: 'Zam�wienie nie zostalo znalezione' });
+      res.status(404).json({ message: 'Zamowienie nie zostalo znalezione' });
+      return;
+    }
+
+    // If user is authenticated, verify they own the order (unless admin)
+    // If not authenticated (guest), allow access by order ID (ID is random enough)
+    const userId = req.user?.userId;
+    if (userId && (order as any).userId && (order as any).userId !== userId && req.user?.role !== 'ADMIN') {
+      res.status(403).json({ message: 'Brak dostepu do tego zamowienia' });
       return;
     }
     

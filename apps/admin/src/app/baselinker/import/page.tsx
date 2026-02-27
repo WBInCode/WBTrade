@@ -16,6 +16,7 @@ import {
   ChevronDown,
   Info,
   ArrowLeft,
+  Database,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
@@ -50,7 +51,14 @@ interface SyncStats {
   startedAt: Date | null;
 }
 
-type SyncMode = 'update-only' | 'new-only';
+interface InventoryItem {
+  inventory_id: number;
+  name: string;
+  description?: string;
+  is_default?: boolean;
+}
+
+type SyncMode = 'update-only' | 'new-only' | 'full-resync';
 type SyncState = 'idle' | 'running' | 'completed' | 'error' | 'aborted';
 
 // ============================================
@@ -234,6 +242,11 @@ export default function BaselinkerImportPage() {
     startedAt: null,
   });
 
+  // Inventory state (for full-resync warehouse picker)
+  const [inventories, setInventories] = useState<InventoryItem[]>([]);
+  const [selectedInventoryId, setSelectedInventoryId] = useState<string>('');
+  const [loadingInventories, setLoadingInventories] = useState(false);
+
   // UI state
   const [showAbortDialog, setShowAbortDialog] = useState(false);
   const [aborting, setAborting] = useState(false);
@@ -250,6 +263,43 @@ export default function BaselinkerImportPage() {
   useEffect(() => {
     syncStateRef.current = syncState;
   }, [syncState]);
+
+  // ============================================
+  // Fetch available inventories on mount
+  // ============================================
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchInventories = async () => {
+      setLoadingInventories(true);
+      try {
+        const res = await fetch(`${API_URL}/admin/baselinker/inventories`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          // Filter to only product inventories (skip empik, zwrot, ikonka, Główny)
+          const productInventories = (data.inventories || []).filter(
+            (inv: InventoryItem) =>
+              !inv.name.includes('empik') &&
+              !inv.name.includes('zwrot') &&
+              inv.name !== 'ikonka' &&
+              inv.name !== 'Główny'
+          );
+          setInventories(productInventories);
+          if (productInventories.length > 0) {
+            setSelectedInventoryId(productInventories[0].inventory_id.toString());
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch inventories:', err);
+      } finally {
+        setLoadingInventories(false);
+      }
+    };
+
+    fetchInventories();
+  }, [token]);
 
   // ============================================
   // Timer
@@ -395,7 +445,7 @@ export default function BaselinkerImportPage() {
   // ============================================
   // Start sync
   // ============================================
-  const startSync = async (mode: SyncMode) => {
+  const startSync = async (mode: SyncMode, inventoryId?: string) => {
     if (!token) return;
 
     setSyncMode(mode);
@@ -413,13 +463,18 @@ export default function BaselinkerImportPage() {
     setElapsedTime('0s');
 
     try {
+      const body: Record<string, string> = { type: 'products', mode };
+      if (inventoryId) {
+        body.inventoryId = inventoryId;
+      }
+
       const res = await fetch(`${API_URL}/admin/baselinker/sync`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ type: 'products', mode }),
+        body: JSON.stringify(body),
       });
 
       const data = await res.json();
@@ -561,54 +616,116 @@ export default function BaselinkerImportPage() {
 
       {/* Action Buttons — shown only when idle */}
       {syncState === 'idle' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Update existing */}
-          <button
-            onClick={() => startSync('update-only')}
-            className="group bg-gray-800 hover:bg-gray-750 border border-gray-700 hover:border-blue-500/50 rounded-xl p-6 text-left transition-all duration-200"
-          >
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-blue-500/20 rounded-xl group-hover:bg-blue-500/30 transition-colors">
-                <RefreshCw className="w-7 h-7 text-blue-400" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-white mb-1">
-                  Aktualizuj istniejące produkty
-                </h3>
-                <p className="text-sm text-gray-400 mb-3">
-                  Zaktualizuj nazwy, ceny, opisy i stany magazynowe wcześniej zaimportowanych produktów.
-                </p>
-                <div className="flex items-center gap-2 text-blue-400 text-sm font-medium">
-                  <Play className="w-4 h-4" />
-                  Rozpocznij aktualizację
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Update existing */}
+            <button
+              onClick={() => startSync('update-only')}
+              className="group bg-gray-800 hover:bg-gray-750 border border-gray-700 hover:border-blue-500/50 rounded-xl p-6 text-left transition-all duration-200"
+            >
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-blue-500/20 rounded-xl group-hover:bg-blue-500/30 transition-colors">
+                  <RefreshCw className="w-7 h-7 text-blue-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-white mb-1">
+                    Aktualizuj istniejące produkty
+                  </h3>
+                  <p className="text-sm text-gray-400 mb-3">
+                    Zaktualizuj nazwy, ceny, opisy i stany magazynowe wcześniej zaimportowanych produktów.
+                  </p>
+                  <div className="flex items-center gap-2 text-blue-400 text-sm font-medium">
+                    <Play className="w-4 h-4" />
+                    Rozpocznij aktualizację
+                  </div>
                 </div>
               </div>
-            </div>
-          </button>
+            </button>
 
-          {/* Import new */}
-          <button
-            onClick={() => startSync('new-only')}
-            className="group bg-gray-800 hover:bg-gray-750 border border-gray-700 hover:border-green-500/50 rounded-xl p-6 text-left transition-all duration-200"
-          >
+            {/* Import new */}
+            <button
+              onClick={() => startSync('new-only')}
+              className="group bg-gray-800 hover:bg-gray-750 border border-gray-700 hover:border-green-500/50 rounded-xl p-6 text-left transition-all duration-200"
+            >
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-green-500/20 rounded-xl group-hover:bg-green-500/30 transition-colors">
+                  <Download className="w-7 h-7 text-green-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-white mb-1">
+                    Dodaj nowe produkty
+                  </h3>
+                  <p className="text-sm text-gray-400 mb-3">
+                    Pobierz tylko nowe produkty z Baselinker (bez aktualizacji istniejących, bez stanów 0).
+                  </p>
+                  <div className="flex items-center gap-2 text-green-400 text-sm font-medium">
+                    <Play className="w-4 h-4" />
+                    Rozpocznij import
+                  </div>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          {/* Full sync with warehouse picker */}
+          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-green-500/20 rounded-xl group-hover:bg-green-500/30 transition-colors">
-                <Download className="w-7 h-7 text-green-400" />
+              <div className="p-3 bg-orange-500/20 rounded-xl">
+                <Database className="w-7 h-7 text-orange-400" />
               </div>
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-white mb-1">
-                  Dodaj nowe produkty
+                  Pełna synchronizacja magazynu
                 </h3>
-                <p className="text-sm text-gray-400 mb-3">
-                  Pobierz tylko nowe produkty z Baselinker (bez aktualizacji istniejących, bez stanów 0).
+                <p className="text-sm text-gray-400 mb-4">
+                  Pobierz i zaktualizuj <span className="text-orange-400 font-medium">wszystkie produkty</span> z wybranego magazynu.
+                  Zczyta dane każdego produktu i zaktualizuje nazwy, ceny, opisy, obrazy, stany i warianty.
                 </p>
-                <div className="flex items-center gap-2 text-green-400 text-sm font-medium">
-                  <Play className="w-4 h-4" />
-                  Rozpocznij import
+
+                <div className="flex flex-col sm:flex-row items-start sm:items-end gap-3">
+                  {/* Warehouse selector */}
+                  <div className="flex-1 w-full sm:w-auto">
+                    <label className="block text-xs text-gray-500 mb-1.5">Wybierz magazyn</label>
+                    {loadingInventories ? (
+                      <div className="flex items-center gap-2 text-gray-500 text-sm py-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Ładowanie magazynów...
+                      </div>
+                    ) : inventories.length === 0 ? (
+                      <p className="text-sm text-red-400">Nie znaleziono magazynów. Sprawdź konfigurację Baselinker.</p>
+                    ) : (
+                      <select
+                        value={selectedInventoryId}
+                        onChange={(e) => setSelectedInventoryId(e.target.value)}
+                        className="w-full sm:w-64 bg-gray-900 border border-gray-600 rounded-lg px-3 py-2.5 text-white text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500/30 outline-none transition-colors"
+                      >
+                        {inventories.map((inv) => (
+                          <option key={inv.inventory_id} value={inv.inventory_id.toString()}>
+                            {inv.name} (ID: {inv.inventory_id})
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
+                  {/* Start button */}
+                  <button
+                    onClick={() => startSync('full-resync', selectedInventoryId)}
+                    disabled={!selectedInventoryId || inventories.length === 0}
+                    className="px-5 py-2.5 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap"
+                  >
+                    <Play className="w-4 h-4" />
+                    Rozpocznij pełną synchronizację
+                  </button>
+                </div>
+
+                <div className="mt-3 flex items-start gap-2 text-xs text-yellow-500/80 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  <span>Ta operacja może zająć dłuższy czas w zależności od liczby produktów w magazynie.</span>
                 </div>
               </div>
             </div>
-          </button>
+          </div>
         </div>
       )}
 
@@ -619,11 +736,13 @@ export default function BaselinkerImportPage() {
             <div className="flex items-center gap-3">
               <div
                 className={`p-2 rounded-lg ${
-                  syncMode === 'update-only' ? 'bg-blue-500/20' : 'bg-green-500/20'
+                  syncMode === 'update-only' ? 'bg-blue-500/20' : syncMode === 'full-resync' ? 'bg-orange-500/20' : 'bg-green-500/20'
                 }`}
               >
                 {syncMode === 'update-only' ? (
                   <RefreshCw className="w-5 h-5 text-blue-400" />
+                ) : syncMode === 'full-resync' ? (
+                  <Database className="w-5 h-5 text-orange-400" />
                 ) : (
                   <Download className="w-5 h-5 text-green-400" />
                 )}
@@ -632,6 +751,8 @@ export default function BaselinkerImportPage() {
                 <h3 className="text-white font-medium">
                   {syncMode === 'update-only'
                     ? 'Aktualizacja istniejących produktów'
+                    : syncMode === 'full-resync'
+                    ? 'Pełna synchronizacja magazynu'
                     : 'Import nowych produktów'}
                 </h3>
                 {stats.startedAt && (

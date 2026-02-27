@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { createOrder, getOrder, updateOrder, deleteOrder, getAllOrders, getUserOrders, refundOrder, restoreOrder, simulatePayment, checkRefundEligibility, requestRefund, getOrderTracking, syncOrderDelivery, getPendingCancellations, approveCancellation, rejectCancellation, softDeleteOrder, restoreFromArchive, getArchivedOrders, cleanupArchive, permanentDeleteOrders } from '../controllers/orders.controller';
-import { authGuard, adminOnly } from '../middleware/auth.middleware';
+import { authGuard, adminOnly, optionalAuth } from '../middleware/auth.middleware';
 
 const router = Router();
 
@@ -31,8 +31,8 @@ router.get('/:id/tracking', getOrderTracking);
 // Route to force sync delivery status from Baselinker (admin)
 router.post('/:id/sync-delivery', authGuard, adminOnly, syncOrderDelivery);
 
-// Route to get an order by ID
-router.get('/:id', authGuard, getOrder);
+// Route to get an order by ID (optionalAuth to allow guest checkout confirmation)
+router.get('/:id', optionalAuth, getOrder);
 
 // Route to update an order by ID
 router.put('/:id', authGuard, adminOnly, updateOrder);
