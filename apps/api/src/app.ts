@@ -63,33 +63,221 @@ const PORT = process.env.PORT || process.env.APP_PORT || 5000;
 // Trust proxy for rate limiting behind reverse proxy (e.g. nginx)
 app.set('trust proxy', 1);
 
-// InPost GeoWidget page — served BEFORE Helmet to avoid CSP blocking external scripts
-app.get('/api/inpost-widget', (req, res) => {
-  // Sanitize token to prevent reflected XSS — only allow JWT-safe characters
-  const rawToken = (req.query.token as string) || '';
-  const token = rawToken.replace(/[^a-zA-Z0-9._\-]/g, '');
+// InPost Paczkomat map — custom Leaflet widget using public InPost API (no token needed)
+app.get('/api/inpost-widget', (_req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'public, max-age=86400');
   res.send(`<!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <link rel="stylesheet" href="https://geowidget.inpost.pl/inpost-geowidget.css"/>
-  <style>*{margin:0;padding:0;box-sizing:border-box}html,body{width:100%;height:100%;overflow:hidden}inpost-geowidget{display:block;width:100%;height:100%}</style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+#map{width:100%;height:100%}
+.search-panel{position:absolute;top:0;left:0;right:0;z-index:1000;padding:10px;display:flex;gap:8px;background:rgba(255,255,255,0.95);box-shadow:0 2px 8px rgba(0,0,0,0.15)}
+.search-input{flex:1;padding:10px 14px;border:2px solid #FFCD00;border-radius:8px;font-size:14px;outline:none;background:#fff}
+.search-input:focus{border-color:#1D1D1B}
+.search-input::placeholder{color:#999}
+.locate-btn{width:42px;height:42px;border:none;border-radius:8px;background:#FFCD00;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.locate-btn:active{background:#e6b800}
+.locate-btn svg{width:22px;height:22px;fill:#1D1D1B}
+.filters{position:absolute;top:62px;left:10px;right:10px;z-index:1000;display:flex;gap:6px}
+.filter-btn{padding:6px 14px;border:1.5px solid #ddd;border-radius:20px;background:#fff;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.filter-btn.active{background:#FFCD00;border-color:#FFCD00;color:#1D1D1B}
+.point-card{position:absolute;bottom:0;left:0;right:0;z-index:1000;background:#fff;border-radius:16px 16px 0 0;box-shadow:0 -4px 20px rgba(0,0,0,0.15);padding:20px;transform:translateY(100%);transition:transform 0.3s ease}
+.point-card.visible{transform:translateY(0)}
+.point-card .name{font-size:16px;font-weight:700;color:#1D1D1B;margin-bottom:4px}
+.point-card .address{font-size:13px;color:#666;margin-bottom:4px}
+.point-card .type-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;margin-bottom:12px}
+.point-card .type-badge.locker{background:#FFCD00;color:#1D1D1B}
+.point-card .type-badge.pop{background:#e8e8e8;color:#555}
+.select-btn{width:100%;padding:14px;border:none;border-radius:10px;background:#FFCD00;font-size:15px;font-weight:700;color:#1D1D1B;cursor:pointer}
+.select-btn:active{background:#e6b800}
+.close-card{position:absolute;top:12px;right:16px;width:30px;height:30px;border:none;background:rgba(0,0,0,0.08);border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
+.loading-overlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:999;background:rgba(255,255,255,0.9);padding:16px 24px;border-radius:10px;font-size:13px;color:#666;box-shadow:0 2px 10px rgba(0,0,0,0.1)}
+.marker-cluster{background:rgba(255,205,0,0.6);border-radius:50%;text-align:center;font-weight:700;color:#1D1D1B;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;border:2px solid #FFCD00}
+</style>
 </head>
 <body>
-  <inpost-geowidget id="geowidget" onpoint="onPointSelect" token="${token}" language="pl" config="parcelcollect"></inpost-geowidget>
-  <script src="https://geowidget.inpost.pl/inpost-geowidget.js" defer><\/script>
-  <script>
-    function onPointSelect(point){
-      if(window.ReactNativeWebView){
-        window.ReactNativeWebView.postMessage(JSON.stringify({type:'POINT_SELECTED',point:{name:point.name,address:point.address,address_details:point.address_details}}));
+<div class="search-panel">
+  <input class="search-input" id="search" placeholder="Wpisz adres lub miasto..." autocomplete="off"/>
+  <button class="locate-btn" id="locateBtn" title="Moja lokalizacja">
+    <svg viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0013 3.06V1h-2v2.06A8.994 8.994 0 003.06 11H1v2h2.06A8.994 8.994 0 0011 20.94V23h2v-2.06A8.994 8.994 0 0020.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
+  </button>
+</div>
+<div class="filters">
+  <button class="filter-btn active" data-type="all">Wszystkie</button>
+  <button class="filter-btn" data-type="parcel_locker">Paczkomat&reg;</button>
+  <button class="filter-btn" data-type="pop">PaczkoPunkt</button>
+</div>
+<div id="map"></div>
+<div class="point-card" id="pointCard">
+  <button class="close-card" id="closeCard">&times;</button>
+  <div class="type-badge locker" id="cardBadge">Paczkomat&reg;</div>
+  <div class="name" id="cardName"></div>
+  <div class="address" id="cardAddr1"></div>
+  <div class="address" id="cardAddr2"></div>
+  <button class="select-btn" id="selectBtn">Wybierz ten punkt</button>
+</div>
+<div class="loading-overlay" id="loading">Ładowanie paczkomatów...</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>
+<script>
+(function(){
+  const INPOST_API='/api/inpost-points';
+  const map=L.map('map',{zoomControl:false}).setView([52.2297,21.0122],13);
+  L.control.zoom({position:'bottomright'}).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'&copy; OpenStreetMap | InPost',maxZoom:19
+  }).addTo(map);
+
+  const lockerIcon=L.divIcon({className:'',html:'<div style="width:28px;height:28px;background:#FFCD00;border:2px solid #1D1D1B;border-radius:6px;display:flex;align-items:center;justify-content:center"><svg width=\\'16\\' height=\\'16\\' viewBox=\\'0 0 24 24\\' fill=\\'#1D1D1B\\'><path d=\\'M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z\\'/></svg></div>',iconSize:[28,28],iconAnchor:[14,14]});
+  const popIcon=L.divIcon({className:'',html:'<div style="width:24px;height:24px;background:#fff;border:2px solid #FFCD00;border-radius:50%;display:flex;align-items:center;justify-content:center"><svg width=\\'12\\' height=\\'12\\' viewBox=\\'0 0 24 24\\' fill=\\'#1D1D1B\\'><path d=\\'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z\\'/></svg></div>',iconSize:[24,24],iconAnchor:[12,12]});
+
+  let markers=[];
+  let allPoints=[];
+  let activeFilter='all';
+  let selectedPoint=null;
+  let searchTimeout=null;
+  let userMarker=null;
+
+  const loadingEl=document.getElementById('loading');
+  const cardEl=document.getElementById('pointCard');
+  const searchEl=document.getElementById('search');
+
+  function showLoading(show){loadingEl.style.display=show?'block':'none'}
+  function showCard(show){cardEl.classList.toggle('visible',show)}
+
+  function clearMarkers(){markers.forEach(m=>map.removeLayer(m));markers=[]}
+
+  function renderPoints(points){
+    clearMarkers();
+    const filtered=activeFilter==='all'?points:points.filter(p=>{
+      if(activeFilter==='parcel_locker')return p.type&&p.type.includes('parcel_locker');
+      if(activeFilter==='pop')return p.type&&p.type.includes('pop');
+      return true;
+    });
+    filtered.forEach(p=>{
+      if(!p.location||!p.location.latitude)return;
+      const isLocker=p.type&&p.type.includes('parcel_locker');
+      const m=L.marker([p.location.latitude,p.location.longitude],{icon:isLocker?lockerIcon:popIcon});
+      m.on('click',()=>selectPoint(p));
+      m.addTo(map);
+      markers.push(m);
+    });
+  }
+
+  function selectPoint(p){
+    selectedPoint=p;
+    const isLocker=p.type&&p.type.includes('parcel_locker');
+    document.getElementById('cardBadge').textContent=isLocker?'Paczkomat\\u00AE':'PaczkoPunkt';
+    document.getElementById('cardBadge').className='type-badge '+(isLocker?'locker':'pop');
+    document.getElementById('cardName').textContent=p.name||'';
+    document.getElementById('cardAddr1').textContent=(p.address_details?p.address_details.street+' '+(p.address_details.building_number||''):'')|| (p.address?p.address.line1:'');
+    document.getElementById('cardAddr2').textContent=(p.address_details?p.address_details.post_code+' '+p.address_details.city:'')|| (p.address?p.address.line2:'');
+    showCard(true);
+    map.setView([p.location.latitude,p.location.longitude],16);
+  }
+
+  async function loadPoints(lat,lng){
+    showLoading(true);
+    try{
+      const url=INPOST_API+'?lat='+lat+'&lng='+lng+'&per_page=100';
+      const resp=await fetch(url);
+      if(!resp.ok)throw new Error('API error');
+      const data=await resp.json();
+      allPoints=data.items||[];
+      renderPoints(allPoints);
+    }catch(e){console.error('Failed to load points',e)}
+    showLoading(false);
+  }
+
+  async function searchAddress(query){
+    try{
+      const resp=await fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes=pl&limit=1&q='+encodeURIComponent(query));
+      const results=await resp.json();
+      if(results&&results.length>0){
+        const r=results[0];
+        map.setView([parseFloat(r.lat),parseFloat(r.lon)],14);
+        loadPoints(r.lat,r.lon);
       }
-    }
-  <\/script>
+    }catch(e){console.error('Geocode error',e)}
+  }
+
+  function geolocate(){
+    if(!navigator.geolocation)return;
+    navigator.geolocation.getCurrentPosition(pos=>{
+      const lat=pos.coords.latitude,lng=pos.coords.longitude;
+      map.setView([lat,lng],14);
+      if(userMarker)map.removeLayer(userMarker);
+      userMarker=L.circleMarker([lat,lng],{radius:8,fillColor:'#4285F4',fillOpacity:1,color:'#fff',weight:3}).addTo(map);
+      loadPoints(lat,lng);
+    },err=>console.error('Geolocation error',err),{enableHighAccuracy:true,timeout:10000});
+  }
+
+  // Event listeners
+  document.getElementById('locateBtn').addEventListener('click',geolocate);
+  document.getElementById('closeCard').addEventListener('click',()=>showCard(false));
+  document.getElementById('selectBtn').addEventListener('click',()=>{
+    if(!selectedPoint)return;
+    const p=selectedPoint;
+    const msg={type:'POINT_SELECTED',point:{
+      name:p.name,
+      address:{line1:(p.address_details?p.address_details.street+' '+(p.address_details.building_number||''):p.address?p.address.line1:''),line2:(p.address_details?p.address_details.post_code+' '+p.address_details.city:p.address?p.address.line2:'')},
+      address_details:p.address_details||{city:p.address?p.address.line2:'',street:p.address?p.address.line1:'',building_number:'',post_code:''}
+    }};
+    if(window.ReactNativeWebView)window.ReactNativeWebView.postMessage(JSON.stringify(msg));
+  });
+
+  searchEl.addEventListener('input',()=>{
+    clearTimeout(searchTimeout);
+    const q=searchEl.value.trim();
+    if(q.length>=3)searchTimeout=setTimeout(()=>searchAddress(q),600);
+  });
+
+  document.querySelectorAll('.filter-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      activeFilter=btn.dataset.type;
+      renderPoints(allPoints);
+    });
+  });
+
+  let moveTimeout=null;
+  map.on('moveend',()=>{
+    clearTimeout(moveTimeout);
+    moveTimeout=setTimeout(()=>{
+      const c=map.getCenter();
+      if(map.getZoom()>=11)loadPoints(c.lat,c.lng);
+    },400);
+  });
+
+  // Initial load
+  loadPoints(52.2297,21.0122);
+})();
+<\/script>
 </body>
 </html>`);
+});
+
+// Proxy InPost API to avoid CORS issues in WebView
+app.get('/api/inpost-points', async (req, res) => {
+  try {
+    const lat = req.query.lat || '52.2297';
+    const lng = req.query.lng || '21.0122';
+    const perPage = req.query.per_page || '100';
+    const url = `https://api-shipx-pl.easypack24.net/v1/points?relative_point=${lat},${lng}&type[]=parcel_locker&type[]=pop&per_page=${perPage}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    res.json(data);
+  } catch (err) {
+    console.error('InPost proxy error:', err);
+    res.status(500).json({ error: 'Failed to fetch InPost points' });
+  }
 });
 
 // Security headers with Helmet
