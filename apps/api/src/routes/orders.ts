@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createOrder, getOrder, updateOrder, deleteOrder, getAllOrders, getUserOrders, refundOrder, restoreOrder, simulatePayment, checkRefundEligibility, requestRefund, getOrderTracking, syncOrderDelivery, getPendingCancellations, approveCancellation, rejectCancellation, softDeleteOrder, restoreFromArchive, getArchivedOrders, cleanupArchive } from '../controllers/orders.controller';
+import { createOrder, getOrder, updateOrder, deleteOrder, getAllOrders, getUserOrders, refundOrder, restoreOrder, simulatePayment, checkRefundEligibility, requestRefund, getOrderTracking, syncOrderDelivery, getPendingCancellations, approveCancellation, rejectCancellation, softDeleteOrder, restoreFromArchive, getArchivedOrders, cleanupArchive, permanentDeleteOrders } from '../controllers/orders.controller';
 import { authGuard, adminOnly } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -18,6 +18,9 @@ router.get('/admin/archive', authGuard, adminOnly, getArchivedOrders);
 
 // Route to cleanup archived orders (admin)
 router.post('/admin/archive/cleanup', authGuard, adminOnly, cleanupArchive);
+
+// Route to permanently delete specific archived orders (admin)
+router.post('/admin/archive/delete', authGuard, adminOnly, permanentDeleteOrders);
 
 // Route to create a new order (requires authentication)
 router.post('/', authGuard, createOrder);
