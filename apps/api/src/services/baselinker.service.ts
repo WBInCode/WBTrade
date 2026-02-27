@@ -318,9 +318,10 @@ export class BaselinkerService {
   /**
    * Trigger sync (creates sync log and starts sync)
    * @param type - 'full', 'products', 'categories', 'stock', 'images'
-   * @param mode - 'new-only' (tylko nowe produkty, bez stanów 0), 'update-only' (tylko aktualizacja istniejących)
+   * @param mode - 'new-only' (tylko nowe produkty, bez stanów 0), 'update-only' (tylko aktualizacja istniejących), 'full-resync' (pełna resynchronizacja)
+   * @param inventoryId - optional inventory ID override (sync specific warehouse)
    */
-  async triggerSync(type: string, mode?: string): Promise<SyncTriggerResult> {
+  async triggerSync(type: string, mode?: string, inventoryId?: string): Promise<SyncTriggerResult> {
     // Map string type to enum
     const typeMap: Record<string, BaselinkerSyncType> = {
       full: BaselinkerSyncType.PRODUCTS,
@@ -355,7 +356,7 @@ export class BaselinkerService {
       },
     });
 
-    console.log(`[BaselinkerSync] Starting ${type} sync (logId: ${syncLog.id})${mode ? ` with mode: ${mode}` : ''}`);
+    console.log(`[BaselinkerSync] Starting ${type} sync (logId: ${syncLog.id})${mode ? ` with mode: ${mode}` : ''}${inventoryId ? ` inventoryId: ${inventoryId}` : ''}`);
     
     syncProgress.sendProgress(syncLog.id, {
       type: 'phase',
@@ -365,7 +366,7 @@ export class BaselinkerService {
     });
 
     // Run sync in background (don't await)
-    this.runSync(syncLog.id, type, mode).catch((error) => {
+    this.runSync(syncLog.id, type, mode, inventoryId).catch((error) => {
       console.error('Sync failed:', error);
     });
 
@@ -374,9 +375,10 @@ export class BaselinkerService {
 
   /**
    * Run the actual sync process
-   * @param mode - 'new-only' (tylko nowe produkty, bez stanów 0), 'update-only' (tylko aktualizacja istniejących)
+   * @param mode - 'new-only' (tylko nowe produkty, bez stanów 0), 'update-only' (tylko aktualizacja istniejących), 'full-resync' (pełna resynchronizacja)
+   * @param overrideInventoryId - optional inventory ID override (sync specific warehouse)
    */
-  private async runSync(syncLogId: string, type: string, mode?: string): Promise<void> {
+  private async runSync(syncLogId: string, type: string, mode?: string, overrideInventoryId?: string): Promise<void> {
     let itemsProcessed = 0;
     let itemsChanged = 0;
     let allChangedSkus: { sku: string; oldQty: number; newQty: number; inventory: string }[] = [];
@@ -390,18 +392,19 @@ export class BaselinkerService {
       }
 
       const provider = await this.createProvider();
+      const activeInventoryId = overrideInventoryId || stored.inventoryId;
 
       if (type === 'full') {
         // Full sync: categories → products → images → stock
         syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Synchronizacja kategorii...', phase: 'categories' });
-        const catResult = await this.syncCategories(provider, stored.inventoryId);
+        const catResult = await this.syncCategories(provider, activeInventoryId);
         itemsProcessed += catResult.processed;
         errors.push(...catResult.errors);
         
         if (syncProgress.isAborted(syncLogId)) throw new Error('ABORTED');
 
         syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Synchronizacja produktów...', phase: 'products' });
-        const prodResult = await this.syncProducts(provider, stored.inventoryId, mode, syncLogId);
+        const prodResult = await this.syncProducts(provider, activeInventoryId, mode, syncLogId);
         itemsProcessed += prodResult.processed;
         allChangedProducts.push(...prodResult.changedProducts);
         errors.push(...prodResult.errors);
@@ -409,7 +412,7 @@ export class BaselinkerService {
         if (syncProgress.isAborted(syncLogId)) throw new Error('ABORTED');
 
         syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Synchronizacja stanów magazynowych...', phase: 'stock' });
-        const stockResult = await this.syncStock(provider, stored.inventoryId);
+        const stockResult = await this.syncStock(provider, activeInventoryId);
         itemsProcessed += stockResult.processed;
         itemsChanged += stockResult.changed;
         allChangedSkus.push(...stockResult.changedSkus);
@@ -420,12 +423,12 @@ export class BaselinkerService {
         await this.reindexMeilisearch();
       } else if (type === 'categories') {
         syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Synchronizacja kategorii...', phase: 'categories' });
-        const result = await this.syncCategories(provider, stored.inventoryId);
+        const result = await this.syncCategories(provider, activeInventoryId);
         itemsProcessed = result.processed;
         errors.push(...result.errors);
       } else if (type === 'products') {
         syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Synchronizacja produktów...', phase: 'products' });
-        const result = await this.syncProducts(provider, stored.inventoryId, mode, syncLogId);
+        const result = await this.syncProducts(provider, activeInventoryId, mode, syncLogId);
         itemsProcessed = result.processed;
         allChangedProducts = result.changedProducts;
         errors.push(...result.errors);
@@ -434,7 +437,7 @@ export class BaselinkerService {
         console.log('[BaselinkerSync] Syncing stock after products sync...');
         if (!syncProgress.isAborted(syncLogId)) {
           syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Synchronizacja stanów magazynowych...', phase: 'stock' });
-          const stockResult = await this.syncStock(provider, stored.inventoryId);
+          const stockResult = await this.syncStock(provider, activeInventoryId);
           itemsProcessed += stockResult.processed;
           itemsChanged += stockResult.changed;
           allChangedSkus.push(...stockResult.changedSkus);
@@ -445,17 +448,17 @@ export class BaselinkerService {
         await this.reindexMeilisearch();
       } else if (type === 'stock') {
         syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Synchronizacja stanów magazynowych...', phase: 'stock' });
-        const result = await this.syncStock(provider, stored.inventoryId);
+        const result = await this.syncStock(provider, activeInventoryId);
         itemsProcessed = result.processed;
         itemsChanged = result.changed;
         allChangedSkus = result.changedSkus;
         errors.push(...result.errors);
       } else if (type === 'images') {
-        const result = await this.syncImages(provider, stored.inventoryId);
+        const result = await this.syncImages(provider, activeInventoryId);
         itemsProcessed = result.processed;
         errors.push(...result.errors);
       } else if (type === 'price') {
-        const result = await this.syncPrices(provider, stored.inventoryId);
+        const result = await this.syncPrices(provider, activeInventoryId);
         itemsProcessed = result.processed;
         itemsChanged = result.changed;
         allChangedSkus = result.changedPrices as any;
@@ -1199,6 +1202,12 @@ export class BaselinkerService {
             continue;
           }
           // Pobierz wszystkie nowe produkty, nawet ze stanem 0
+          productsToFetch.push(blProduct.id);
+          continue;
+        }
+        
+        // MODE: full-resync - pobierz WSZYSTKIE produkty (nowe i istniejące)
+        if (mode === 'full-resync') {
           productsToFetch.push(blProduct.id);
           continue;
         }
