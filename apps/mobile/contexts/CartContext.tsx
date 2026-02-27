@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { cartApi } from '../services/cart';
+import { getSessionId } from '../services/api';
 import type { Cart } from '../services/types';
+import { useAuth } from './AuthContext';
 import AddToCartModal, { type AddedProductInfo } from '../components/AddToCartModal';
 
 interface CartContextType {
@@ -23,6 +25,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const prevUserRef = useRef<typeof user | undefined>(undefined);
 
   // Add-to-cart modal state
   const [modalVisible, setModalVisible] = useState(false);
@@ -46,6 +50,33 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     refreshCart();
   }, [refreshCart]);
+
+  // Merge guest cart into user cart after login/register, refresh after logout
+  useEffect(() => {
+    const prevUser = prevUserRef.current;
+    prevUserRef.current = user;
+
+    // Skip initial render (prevUser is undefined)
+    if (prevUser === undefined) return;
+
+    if (!prevUser && user) {
+      // User just logged in or registered — merge guest cart, then refresh
+      (async () => {
+        try {
+          const sessionId = await getSessionId();
+          if (sessionId) {
+            await cartApi.mergeCarts(sessionId);
+          }
+        } catch {
+          // Merge may fail if no guest cart — that's OK
+        }
+        await refreshCart();
+      })();
+    } else if (prevUser && !user) {
+      // User just logged out — refresh to get fresh guest cart
+      refreshCart();
+    }
+  }, [user, refreshCart]);
 
   const addToCart = useCallback(async (variantId: string, quantity: number = 1, productInfo?: AddedProductInfo) => {
     try {
