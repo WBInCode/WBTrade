@@ -1306,4 +1306,33 @@ export class OrdersService {
 
     return { deleted: toDelete.length, orders: toDelete.map((o) => o.orderNumber) };
   }
+
+  /**
+   * Permanently delete specific archived orders by IDs
+   */
+  async permanentDeleteOrders(ids: string[]) {
+    if (!ids || ids.length === 0) {
+      throw new Error('Nie podano zamówień do usunięcia');
+    }
+
+    // Verify all orders exist and are archived
+    const orders = await prisma.order.findMany({
+      where: { id: { in: ids }, deletedAt: { not: null } },
+      select: { id: true, orderNumber: true },
+    });
+
+    if (orders.length === 0) {
+      throw new Error('Nie znaleziono zarchiwizowanych zamówień do usunięcia');
+    }
+
+    const foundIds = orders.map((o) => o.id);
+
+    await prisma.$transaction(async (tx) => {
+      await tx.orderStatusHistory.deleteMany({ where: { orderId: { in: foundIds } } });
+      await tx.orderItem.deleteMany({ where: { orderId: { in: foundIds } } });
+      await tx.order.deleteMany({ where: { id: { in: foundIds } } });
+    });
+
+    return { deleted: orders.length, orders: orders.map((o) => o.orderNumber) };
+  }
 }
