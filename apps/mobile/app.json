@@ -17,7 +17,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "pl.wbtrade.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "Potrzebujemy dostępu do lokalizacji, aby znaleźć najbliższe Paczkomaty InPost."
       }
     },
     "android": {
@@ -26,7 +27,11 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "pl.wbtrade.app"
+      "package": "pl.wbtrade.app",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -36,7 +41,14 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Potrzebujemy dostępu do lokalizacji, aby znaleźć najbliższe Paczkomaty InPost.",
+          "locationWhenInUsePermission": "Potrzebujemy dostępu do lokalizacji, aby znaleźć najbliższe Paczkomaty InPost."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

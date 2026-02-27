@@ -14,46 +14,135 @@ import {
   Alert,
   Image,
   Keyboard,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Image as ExpoImage } from 'expo-image';
 import { useRouter } from 'expo-router';
+import NetInfo from '@react-native-community/netinfo';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import type { ThemeColors } from '../../constants/Colors';
 import { productsApi } from '../../services/products';
 import type { Product } from '../../services/types';
 import type { Message, MessageAction, ProductResult, ChatBotModalProps } from './types';
 import { findBestAnswer } from './matching';
+import { FAQ_DATA } from './faqData';
 import {
   BOT_NAME,
   WB_LOGO,
   PRODUCT_SEARCH_KEYWORDS,
   QUICK_QUESTIONS,
   FOLLOWUP_MESSAGES,
+  RELATED_QUESTIONS,
   INITIAL_MESSAGE,
   createInitialMessage,
+  PROMO_CONFIG,
 } from './constants';
 import TypingIndicator from './TypingIndicator';
+import { saveChatHistory, loadChatHistory, clearChatHistory } from './storage';
+import { Config } from '../../constants/Config';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
-export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBotModalProps) {
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+export default function ChatBotModal({ visible, onMinimize, onEndChat, onBotMessage }: ChatBotModalProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const flatListRef = useRef<FlatList>(null);
   const router = useRouter();
   const [input, setInput] = useState('');
+  const prevMessageCount = useRef(0);
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [isTyping, setIsTyping] = useState(false);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
+  const [showScrollDown, setShowScrollDown] = useState(false);
   const noMatchCount = useRef(0);
   const lastUserQuestion = useRef('');
   const waitingForProductSearch = useRef(false);
   const productSearchRetryCount = useRef(0);
 
   const hasConversation = messages.length > 1;
+  const historyLoaded = useRef(false);
+
+  // Helper: trigger layout animation before adding messages
+  const animatedSetMessages = useCallback((updater: React.SetStateAction<Message[]>) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setMessages(updater);
+  }, []);
+
+  // --- Load chat history from AsyncStorage when modal becomes visible ---
+  useEffect(() => {
+    if (visible && !historyLoaded.current) {
+      historyLoaded.current = true;
+      loadChatHistory().then((saved) => {
+        if (saved && saved.length > 0) {
+          setMessages(saved);
+          setTimeout(() => flatListRef.current?.scrollToEnd({ animated: false }), 200);
+        }
+      });
+    }
+  }, [visible]);
+
+  // --- Send promo message 2s after welcome (only on fresh conversations) ---
+  const promoSent = useRef(false);
+  useEffect(() => {
+    if (!visible || !PROMO_CONFIG.enabled || promoSent.current) return;
+    // Only fire for fresh chats (1 message = just the welcome)
+    if (messages.length !== 1) {
+      promoSent.current = true; // restored history — skip promo
+      return;
+    }
+    const timer = setTimeout(() => {
+      if (promoSent.current) return;
+      promoSent.current = true;
+      setIsTyping(true);
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+      setTimeout(() => {
+        const promoMsg: Message = {
+          id: `promo-${Date.now()}`,
+          text: PROMO_CONFIG.text,
+          isBot: true,
+          timestamp: new Date(),
+          actions: PROMO_CONFIG.actions as any,
+        };
+        animatedSetMessages(prev => [...prev, promoMsg]);
+        setIsTyping(false);
+        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+      }, 800);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [visible, messages.length, animatedSetMessages]);
+
+  // --- Debounced save to AsyncStorage whenever messages change ---
+  useEffect(() => {
+    // Skip saving the initial single-message state before history loads
+    if (!historyLoaded.current) return;
+    const timer = setTimeout(() => {
+      saveChatHistory(messages);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [messages]);
+
+  // --- Notify parent when bot sends message while modal is not visible ---
+  useEffect(() => {
+    const currentCount = messages.filter(m => m.isBot).length;
+    if (!visible && currentCount > prevMessageCount.current && prevMessageCount.current > 0) {
+      const newBotMessages = currentCount - prevMessageCount.current;
+      for (let i = 0; i < newBotMessages; i++) {
+        onBotMessage?.();
+      }
+    }
+    prevMessageCount.current = currentCount;
+  }, [messages, visible, onBotMessage]);
 
   const PLACEHOLDER_TEXTS = useMemo(() => [
     'Napisz pytanie...',
@@ -72,10 +161,12 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
 
   const handleEndChat = useCallback(() => {
     if (!hasConversation) {
+      clearChatHistory();
       onEndChat();
       setMessages([{ ...createInitialMessage(), id: Date.now().toString() }]);
       setInput('');
       noMatchCount.current = 0;
+      promoSent.current = false;
       return;
     }
     Alert.alert(
@@ -87,21 +178,45 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
           text: 'Zakończ',
           style: 'destructive',
           onPress: () => {
+            clearChatHistory();
             onEndChat();
             setMessages([{ ...createInitialMessage(), id: Date.now().toString() }]);
             setInput('');
             noMatchCount.current = 0;
             productSearchRetryCount.current = 0;
+            promoSent.current = false;
           },
         },
       ],
     );
   }, [hasConversation, onEndChat]);
 
+  const handleExportChat = useCallback(() => {
+    const formatted = messages
+      .map((m) => {
+        const t = m.timestamp instanceof Date ? m.timestamp : new Date(m.timestamp);
+        const hh = String(t.getHours()).padStart(2, '0');
+        const mm = String(t.getMinutes()).padStart(2, '0');
+        const sender = m.isBot ? BOT_NAME : 'Ty';
+        return `[${hh}:${mm}] ${sender}: ${m.text}`;
+      })
+      .join('\n');
+
+    const subject = encodeURIComponent('Historia rozmowy z WuBusiem');
+    const body = encodeURIComponent(formatted);
+    Linking.openURL(`mailto:?subject=${subject}&body=${body}`);
+  }, [messages]);
+
   const scrollToEnd = useCallback(() => {
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
     }, 100);
+  }, []);
+
+  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+    const distanceFromBottom = contentSize.height - contentOffset.y - layoutMeasurement.height;
+    setShowScrollDown(distanceFromBottom > 150);
   }, []);
 
   // Scroll to bottom when keyboard opens so input stays visible
@@ -126,7 +241,7 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    animatedSetMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsTyping(true);
     scrollToEnd();
@@ -167,7 +282,7 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
             isBot: true,
             timestamp: new Date(),
           };
-          setMessages(prev => [...prev, askMsg]);
+          animatedSetMessages(prev => [...prev, askMsg]);
           setIsTyping(false);
           scrollToEnd();
         }, 600);
@@ -184,14 +299,16 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
 
       if (answer) {
         noMatchCount.current = 0;
+        const { answer: answerText, category: matchedCategory, actions: matchedActions } = answer;
         botMsg = {
           id: (Date.now() + 1).toString(),
-          text: answer,
+          text: answerText,
           isBot: true,
           timestamp: new Date(),
+          ...(matchedActions && matchedActions.length > 0 ? { actions: matchedActions } : {}),
         };
 
-        setMessages(prev => [...prev, botMsg]);
+        animatedSetMessages(prev => [...prev, botMsg]);
         setIsTyping(false);
         scrollToEnd();
 
@@ -200,14 +317,21 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
           scrollToEnd();
           setTimeout(() => {
             const followup = FOLLOWUP_MESSAGES[Math.floor(Math.random() * FOLLOWUP_MESSAGES.length)];
+            const related = RELATED_QUESTIONS[matchedCategory];
+            // Filter out the question the user just asked
+            const contextual = related
+              ? related.filter(q => q.toLowerCase() !== text.trim().toLowerCase()).slice(0, 3)
+              : undefined;
             const followupMsg: Message = {
               id: (Date.now() + 2).toString(),
               text: followup,
               isBot: true,
               timestamp: new Date(),
-              showSuggestions: true,
+              ...(contextual && contextual.length > 0
+                ? { contextualSuggestions: contextual }
+                : { showSuggestions: true }),
             };
-            setMessages(prev => [...prev, followupMsg]);
+            animatedSetMessages(prev => [...prev, followupMsg]);
             setIsTyping(false);
             scrollToEnd();
           }, 600 + Math.random() * 400);
@@ -216,6 +340,13 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
         return;
       } else {
         noMatchCount.current += 1;
+
+        // Fire-and-forget: log unmatched question to backend (no personal data)
+        fetch(`${Config.API_URL}/chatbot/unmatched`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: text.trim() }),
+        }).catch(() => {});
 
         if (noMatchCount.current === 1) {
           botMsg = {
@@ -254,7 +385,7 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
         }
       }
 
-      setMessages(prev => [...prev, botMsg]);
+      animatedSetMessages(prev => [...prev, botMsg]);
       setIsTyping(false);
       scrollToEnd();
     }, 800 + Math.random() * 600);
@@ -263,6 +394,27 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
   const handleProductSearch = useCallback(async (query: string) => {
     setIsTyping(true);
     scrollToEnd();
+
+    // Check connectivity before making API call
+    try {
+      const netState = await NetInfo.fetch();
+      if (!netState.isConnected) {
+        const offlineMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          text: '📡 Szukanie produktów wymaga połączenia z internetem.\n\nSprawdź swoje połączenie i spróbuj ponownie. W międzyczasie mogę odpowiedzieć na pytania z FAQ — działam offline! 😊',
+          isBot: true,
+          timestamp: new Date(),
+          showSuggestions: true,
+        };
+        animatedSetMessages(prev => [...prev, offlineMsg]);
+        setIsTyping(false);
+        scrollToEnd();
+        return;
+      }
+    } catch {
+      // NetInfo check failed — proceed with search anyway
+    }
+
     try {
       const result = await productsApi.search(query, { limit: 20 });
       const products = (result.products || [])
@@ -280,7 +432,7 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
             isBot: true,
             timestamp: new Date(),
           };
-          setMessages(prev => [...prev, retryMsg]);
+          animatedSetMessages(prev => [...prev, retryMsg]);
         } else {
           productSearchRetryCount.current = 0;
           const noResultMsg: Message = {
@@ -290,7 +442,7 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
             timestamp: new Date(),
             showSuggestions: true,
           };
-          setMessages(prev => [...prev, noResultMsg]);
+          animatedSetMessages(prev => [...prev, noResultMsg]);
         }
       } else {
         productSearchRetryCount.current = 0;
@@ -310,7 +462,7 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
           timestamp: new Date(),
           products: productResults,
         };
-        setMessages(prev => [...prev, resultMsg]);
+        animatedSetMessages(prev => [...prev, resultMsg]);
 
         setTimeout(() => {
           setIsTyping(true);
@@ -323,31 +475,115 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
               timestamp: new Date(),
               showSuggestions: true,
             };
-            setMessages(prev => [...prev, followupMsg]);
+            animatedSetMessages(prev => [...prev, followupMsg]);
             setIsTyping(false);
             scrollToEnd();
           }, 500);
         }, 800);
       }
-    } catch {
+    } catch (err) {
+      const isNetworkError = err instanceof TypeError && (
+        String(err.message).includes('Network request failed') ||
+        String(err.message).includes('Failed to fetch')
+      );
       const errorMsg: Message = {
         id: (Date.now() + 1).toString(),
-        text: 'Ups, coś poszło nie tak przy wyszukiwaniu 😅 Spróbuj ponownie za chwilę!',
+        text: isNetworkError
+          ? '📡 Szukanie produktów wymaga połączenia z internetem.\n\nSprawdź swoje połączenie i spróbuj ponownie. W międzyczasie mogę odpowiedzieć na pytania z FAQ — działam offline! 😊'
+          : 'Ups, coś poszło nie tak przy wyszukiwaniu 😅 Spróbuj ponownie za chwilę!',
         isBot: true,
         timestamp: new Date(),
         showSuggestions: true,
       };
-      setMessages(prev => [...prev, errorMsg]);
+      animatedSetMessages(prev => [...prev, errorMsg]);
     } finally {
       setIsTyping(false);
       scrollToEnd();
     }
   }, [scrollToEnd]);
 
+  const FAQ_CATEGORIES = useMemo(() => [...new Set(FAQ_DATA.map(f => f.category))], []);
+
+  const CATEGORY_EMOJI: Record<string, string> = useMemo(() => ({
+    'Zamówienia': '📦', 'Koszyk': '🛒', 'Płatności': '💳', 'Zwroty': '↩️',
+    'Dostawa': '🚚', 'Kupony i Rabaty': '🎫', 'Nawigacja': '🧭', 'Produkty': '🏷️',
+    'Ulubione': '❤️', 'Listy zakupowe': '📝', 'Opinie': '⭐', 'Konto': '👤',
+    'Ustawienia': '⚙️', 'Newsletter': '📰', 'Kontakt': '📞', 'Pomoc techniczna': '🔧',
+    'O bocie': '🤖', 'Gwarancja': '🛡️', 'Promocje': '🔥', 'Obsługa klienta': '💬',
+  }), []);
+
+  const handleReaction = useCallback((messageId: string, type: 'up' | 'down') => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setMessages(prev => prev.map(m => {
+      if (m.id !== messageId) return m;
+      return { ...m, reaction: m.reaction === type ? null : type };
+    }));
+  }, []);
+
+  const handleCategorySelect = useCallback((category: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      text: category,
+      isBot: false,
+      timestamp: new Date(),
+    };
+    animatedSetMessages(prev => [...prev, userMsg]);
+    setIsTyping(true);
+    scrollToEnd();
+
+    setTimeout(() => {
+      const questions = FAQ_DATA
+        .filter(f => f.category === category)
+        .map(f => f.question);
+      const botMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        text: `📂 **${category}** — oto pytania z tej kategorii. Kliknij, aby poznać odpowiedź:`,
+        isBot: true,
+        timestamp: new Date(),
+        categoryQuestions: questions,
+      };
+      animatedSetMessages(prev => [...prev, botMsg]);
+      setIsTyping(false);
+      scrollToEnd();
+    }, 500);
+  }, [scrollToEnd]);
+
+  const handleBrowseTopics = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      text: '📚 Przeglądaj tematy',
+      isBot: false,
+      timestamp: new Date(),
+    };
+    animatedSetMessages(prev => [...prev, userMsg]);
+    setIsTyping(true);
+    scrollToEnd();
+
+    setTimeout(() => {
+      const botMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        text: 'Wybierz kategorię, która Cię interesuje:',
+
+        isBot: true,
+        timestamp: new Date(),
+        showCategories: true,
+      };
+      animatedSetMessages(prev => [...prev, botMsg]);
+      setIsTyping(false);
+      scrollToEnd();
+    }, 500);
+  }, [scrollToEnd]);
+
   const handleQuickQuestion = useCallback((q: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (q === '📚 Przeglądaj tematy') {
+      handleBrowseTopics();
+      return;
+    }
     sendMessage(q);
-  }, [sendMessage]);
+  }, [sendMessage, handleBrowseTopics]);
 
   const handleAction = useCallback(async (action: MessageAction) => {
     if (action.type === 'email') {
@@ -375,15 +611,20 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
       }
     } else if (action.type === 'link') {
       Linking.openURL(action.payload).catch(() => {});
+    } else if (action.type === 'navigate' && action.route) {
+      onMinimize();
+      setTimeout(() => {
+        router.push(action.route as any);
+      }, 300);
     }
-  }, []);
+  }, [onMinimize, router]);
 
   const getAvailableSuggestions = useCallback(() => {
     const askedTexts = new Set(
       messages.filter(m => !m.isBot).map(m => m.text.toLowerCase().trim()),
     );
     return QUICK_QUESTIONS.filter(
-      q => q === '🔍 Szukasz produktu?' || !askedTexts.has(q.toLowerCase()),
+      q => q === '🔍 Szukasz produktu?' || q === '📚 Przeglądaj tematy' || !askedTexts.has(q.toLowerCase()),
     ).slice(0, 6);
   }, [messages]);
 
@@ -459,18 +700,69 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
                 {item.actions.map((action, idx) => (
                   <TouchableOpacity
                     key={idx}
-                    style={styles.actionButton}
+                    style={action.type === 'navigate' ? styles.navActionButton : styles.actionButton}
                     onPress={() => handleAction(action)}
                     activeOpacity={0.7}
                   >
-                    <FontAwesome name={action.icon} size={14} color="#fff" />
-                    <Text style={styles.actionButtonText}>{action.label}</Text>
+                    <FontAwesome name={action.icon} size={14} color={action.type === 'navigate' ? colors.tint : '#fff'} />
+                    <Text style={action.type === 'navigate' ? styles.navActionButtonText : styles.actionButtonText}>{action.label}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             )}
           </View>
         </View>
+        {item.isBot && item.id !== '0' && !item.showCategories && !item.categoryQuestions && (
+          <View style={styles.reactionRow}>
+            <TouchableOpacity
+              style={[styles.reactionBtn, item.reaction === 'up' && styles.reactionBtnActiveUp]}
+              onPress={() => handleReaction(item.id, 'up')}
+              activeOpacity={0.7}
+            >
+              <FontAwesome name="thumbs-up" size={14} color={item.reaction === 'up' ? colors.tint : colors.textMuted} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.reactionBtn, item.reaction === 'down' && styles.reactionBtnActiveDown]}
+              onPress={() => handleReaction(item.id, 'down')}
+              activeOpacity={0.7}
+            >
+              <FontAwesome name="thumbs-down" size={14} color={item.reaction === 'down' ? colors.destructive : colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+        )}
+        {item.showCategories && (
+          <View style={styles.inlineSuggestions}>
+            <View style={styles.chipsWrap}>
+              {FAQ_CATEGORIES.map((cat) => (
+                <TouchableOpacity key={cat} style={styles.categoryChip} onPress={() => handleCategorySelect(cat)} activeOpacity={0.7}>
+                  <Text style={styles.categoryChipText}>{CATEGORY_EMOJI[cat] || '📁'} {cat}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+        {item.categoryQuestions && item.categoryQuestions.length > 0 && (
+          <View style={styles.inlineSuggestions}>
+            <View style={styles.chipsWrap}>
+              {item.categoryQuestions.map((q) => (
+                <TouchableOpacity key={q} style={styles.chip} onPress={() => handleQuickQuestion(q)} activeOpacity={0.7}>
+                  <Text style={styles.chipText}>{q}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+        {item.contextualSuggestions && item.contextualSuggestions.length > 0 && (
+          <View style={styles.inlineSuggestions}>
+            <View style={styles.chipsWrap}>
+              {item.contextualSuggestions.map((q) => (
+                <TouchableOpacity key={q} style={styles.chip} onPress={() => handleQuickQuestion(q)} activeOpacity={0.7}>
+                  <Text style={styles.chipText}>{q}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
         {item.showSuggestions && availableSuggestions.length > 0 && (
           <View style={styles.inlineSuggestions}>
             <View style={styles.chipsWrap}>
@@ -484,7 +776,7 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
         )}
       </View>
     );
-  }, [styles, colors, handleAction, handleQuickQuestion, getAvailableSuggestions, onMinimize, router]);
+  }, [styles, colors, handleAction, handleQuickQuestion, handleCategorySelect, handleReaction, getAvailableSuggestions, onMinimize, router, FAQ_CATEGORIES, CATEGORY_EMOJI]);
 
   const showInitialChips = messages.length <= 1;
 
@@ -506,6 +798,11 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
             </View>
           </View>
           <View style={styles.headerActions}>
+            {hasConversation && (
+              <TouchableOpacity onPress={handleExportChat} style={styles.headerBtn} activeOpacity={0.7}>
+                <FontAwesome name="share" size={16} color={colors.textSecondary} />
+              </TouchableOpacity>
+            )}
             <TouchableOpacity onPress={onMinimize} style={styles.headerBtn} activeOpacity={0.7}>
               <FontAwesome name="minus" size={16} color={colors.textSecondary} />
             </TouchableOpacity>
@@ -528,6 +825,8 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
             keyExtractor={item => item.id}
             contentContainerStyle={styles.messagesList}
             onContentSizeChange={scrollToEnd}
+            onScroll={handleScroll}
+            scrollEventThrottle={100}
             keyboardDismissMode="interactive"
             keyboardShouldPersistTaps="handled"
             ListFooterComponent={
@@ -557,6 +856,17 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat }: ChatBot
               </>
             }
           />
+
+          {/* Scroll to bottom button */}
+          {showScrollDown && (
+            <TouchableOpacity
+              style={styles.scrollDownBtn}
+              onPress={() => { setShowScrollDown(false); scrollToEnd(); }}
+              activeOpacity={0.7}
+            >
+              <FontAwesome name="chevron-down" size={14} color={colors.text} />
+            </TouchableOpacity>
+          )}
 
           {/* Input */}
           <View style={styles.inputBar}>
@@ -746,6 +1056,22 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
+  navActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.tintLight,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.tintMuted,
+  },
+  navActionButtonText: {
+    color: colors.tint,
+    fontSize: 13,
+    fontWeight: '600',
+  },
   productsContainer: {
     marginTop: 10,
     gap: 8,
@@ -758,7 +1084,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     padding: 8,
     gap: 10,
     borderWidth: 1,
-    borderColor: colors.borderLight,
+    borderColor: colors.border,
   },
   productImage: {
     width: 56,
@@ -826,6 +1152,41 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.tint,
     fontWeight: '500',
   },
+  categoryChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: colors.tint,
+  },
+  categoryChipText: {
+    fontSize: 13,
+    color: colors.tint,
+    fontWeight: '600',
+  },
+  reactionRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 4,
+    paddingLeft: 38,
+  },
+  reactionBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.backgroundTertiary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  reactionBtnActiveUp: {
+    backgroundColor: colors.tintLight,
+  },
+  reactionBtnActiveDown: {
+    backgroundColor: colors.tintLight,
+  },
   inputBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -858,5 +1219,24 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   sendBtnDisabled: {
     backgroundColor: colors.backgroundTertiary,
+  },
+  scrollDownBtn: {
+    position: 'absolute',
+    right: 16,
+    bottom: 70,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
   },
 });
