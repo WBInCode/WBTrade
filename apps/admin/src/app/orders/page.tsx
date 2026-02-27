@@ -155,6 +155,12 @@ export default function OrdersPage() {
   const [cancelModal, setCancelModal] = useState<{ open: boolean; orderId: string; orderNumber: string }>({ open: false, orderId: '', orderNumber: '' });
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; orderId: string; orderNumber: string }>({ open: false, orderId: '', orderNumber: '' });
   const [restoreModal, setRestoreModal] = useState<{ open: boolean; orderId: string; orderNumber: string }>({ open: false, orderId: '', orderNumber: '' });
+  
+  // Bulk action state
+  const [bulkStatusDropdown, setBulkStatusDropdown] = useState(false);
+  const [bulkArchiveModal, setBulkArchiveModal] = useState(false);
+  const [bulkStatusModal, setBulkStatusModal] = useState<{ open: boolean; status: string; label: string }>({ open: false, status: '', label: '' });
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
   // Load pending cancellations count
   useEffect(() => {
@@ -308,6 +314,62 @@ export default function OrdersPage() {
     }
     setRestoreModal({ open: false, orderId: '', orderNumber: '' });
     setActionMenuId(null);
+  };
+
+  // Bulk: change status of selected orders
+  const handleBulkStatusChange = async (newStatus: string) => {
+    setBulkActionLoading(true);
+    try {
+      const token = getAuthToken();
+      await Promise.all(
+        selectedOrders.map((orderId) =>
+          fetch(`${API_URL}/orders/${orderId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { Authorization: `Bearer ${token}` }),
+            },
+            body: JSON.stringify({ status: newStatus }),
+          })
+        )
+      );
+      setSelectedOrders([]);
+      loadOrders();
+    } catch (error) {
+      console.error('Failed to bulk update status:', error);
+    } finally {
+      setBulkActionLoading(false);
+      setBulkStatusModal({ open: false, status: '', label: '' });
+    }
+  };
+
+  // Bulk: archive (soft-delete) selected cancelled/refunded orders
+  const handleBulkArchive = async () => {
+    setBulkActionLoading(true);
+    try {
+      const token = getAuthToken();
+      const archivableOrders = orders.filter(
+        (o) => selectedOrders.includes(o.id) && (o.status === 'CANCELLED' || o.status === 'REFUNDED')
+      );
+      await Promise.all(
+        archivableOrders.map((order) =>
+          fetch(`${API_URL}/orders/${order.id}/soft-delete`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { Authorization: `Bearer ${token}` }),
+            },
+          })
+        )
+      );
+      setSelectedOrders([]);
+      loadOrders();
+    } catch (error) {
+      console.error('Failed to bulk archive:', error);
+    } finally {
+      setBulkActionLoading(false);
+      setBulkArchiveModal(false);
+    }
   };
 
   const clearFilters = () => {
@@ -465,16 +527,56 @@ export default function OrdersPage() {
       {/* Bulk Actions */}
       {selectedOrders.length > 0 && (
         <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4 flex items-center justify-between">
-          <p className="text-orange-400">
+          <p className="text-orange-400 font-medium">
             Zaznaczono {selectedOrders.length} zamówień
           </p>
           <div className="flex items-center gap-2">
-            <button className="px-4 py-2 bg-slate-800 rounded-lg text-white hover:bg-slate-700 transition-colors">
-              Zmień status
-            </button>
-            <button className="px-4 py-2 bg-slate-800 rounded-lg text-white hover:bg-slate-700 transition-colors">
-              Drukuj etykiety
-            </button>
+            {/* Zmień status dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setBulkStatusDropdown(!bulkStatusDropdown)}
+                disabled={bulkActionLoading}
+                className="px-4 py-2 bg-slate-800 rounded-lg text-white hover:bg-slate-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Zmień status
+              </button>
+              {bulkStatusDropdown && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 py-1">
+                  {Object.entries(statusLabels).map(([status, label]) => (
+                    <button
+                      key={status}
+                      onClick={() => {
+                        setBulkStatusDropdown(false);
+                        setBulkStatusModal({ open: true, status, label });
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-slate-700 hover:text-white transition-colors flex items-center gap-2"
+                    >
+                      <span className={`w-2 h-2 rounded-full ${statusColors[status]?.split(' ')[0] || 'bg-gray-500'}`} />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Przenieś do archiwum */}
+            {(() => {
+              const archivableCount = orders.filter(
+                (o) => selectedOrders.includes(o.id) && (o.status === 'CANCELLED' || o.status === 'REFUNDED')
+              ).length;
+              return archivableCount > 0 ? (
+                <button
+                  onClick={() => setBulkArchiveModal(true)}
+                  disabled={bulkActionLoading}
+                  className="px-4 py-2 bg-red-600/20 border border-red-500/30 rounded-lg text-red-400 hover:bg-red-600/30 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  <Archive className="w-4 h-4" />
+                  Do archiwum ({archivableCount})
+                </button>
+              ) : null;
+            })()}
+
             <button 
               onClick={() => setSelectedOrders([])}
               className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
@@ -793,6 +895,40 @@ export default function OrdersPage() {
         cancelText="Anuluj"
         variant="success"
       />
+
+      {/* Bulk Status Change Modal */}
+      <ConfirmModal
+        isOpen={bulkStatusModal.open}
+        onClose={() => setBulkStatusModal({ open: false, status: '', label: '' })}
+        onConfirm={() => handleBulkStatusChange(bulkStatusModal.status)}
+        title="Zmień status zamówień"
+        message={`Czy na pewno chcesz zmienić status ${selectedOrders.length} zaznaczonych zamówień na "${bulkStatusModal.label}"?`}
+        confirmText={`Zmień na ${bulkStatusModal.label}`}
+        cancelText="Anuluj"
+        variant="warning"
+        loading={bulkActionLoading}
+      />
+
+      {/* Bulk Archive Modal */}
+      <ConfirmModal
+        isOpen={bulkArchiveModal}
+        onClose={() => setBulkArchiveModal(false)}
+        onConfirm={handleBulkArchive}
+        title="Przenieś do archiwum"
+        message={`${orders.filter((o) => selectedOrders.includes(o.id) && (o.status === 'CANCELLED' || o.status === 'REFUNDED')).length} anulowanych/zwróconych zamówień zostanie przeniesionych do archiwum. Po 14 dniach zostaną trwale usunięte.`}
+        confirmText="Przenieś do archiwum"
+        cancelText="Anuluj"
+        variant="danger"
+        loading={bulkActionLoading}
+      />
+
+      {/* Click outside to close bulk status dropdown */}
+      {bulkStatusDropdown && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setBulkStatusDropdown(false)}
+        />
+      )}
     </div>
   );
 }
