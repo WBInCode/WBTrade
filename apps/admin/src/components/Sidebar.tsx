@@ -16,6 +16,7 @@ import {
   Activity,
   BarChart3,
   Warehouse,
+  DollarSign,
   // Trophy,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -72,6 +73,11 @@ const menuItems = [
     title: 'Activity Log',
     href: '/activity-log',
     icon: Activity,
+  },
+  {
+    title: 'Cennik',
+    href: '/pricing',
+    icon: DollarSign,
   },
   {
     title: 'Omnibus & Top',
