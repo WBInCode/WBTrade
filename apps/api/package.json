@@ -21,7 +21,7 @@
     "meilisearch:sync": "ts-node prisma/sync-meilisearch.ts"
   },
   "dependencies": {
-    "@prisma/client": "^5.7.0",
+    "@prisma/client": "^5.22.0",
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.66.1",
     "cors": "^2.8.5",
