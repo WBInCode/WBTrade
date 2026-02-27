@@ -414,6 +414,10 @@ function CheckoutPageContent() {
         // Clear localStorage selected items after successful order
         localStorage.removeItem('checkoutSelectedItems');
 
+        // Store one-time guest access token in sessionStorage
+        // This allows viewing the confirmation page exactly once in this tab
+        sessionStorage.setItem(`guestOrder_${checkoutResponse.orderId}`, 'true');
+
         // If payment URL is provided, redirect to payment gateway
         if (checkoutResponse.paymentUrl) {
           window.location.href = checkoutResponse.paymentUrl;
