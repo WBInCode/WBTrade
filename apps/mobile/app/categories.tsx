@@ -323,8 +323,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   categoryIconImage: {
-    width: 28,
-    height: 28,
+    width: 34,
+    height: 34,
   },
   parentInfo: {
     flex: 1,

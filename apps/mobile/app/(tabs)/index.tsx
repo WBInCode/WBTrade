@@ -576,7 +576,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   categoryIconImage: {
-    width: 36, height: 36,
+    width: 44, height: 44,
   },
   categoryCircleLabel: {
     fontSize: 11, textAlign: 'center',
