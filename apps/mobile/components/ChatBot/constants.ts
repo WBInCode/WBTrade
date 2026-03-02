@@ -37,6 +37,29 @@ export const FOLLOWUP_MESSAGES = [
   'Potrzebujesz pomocy z czymś innym? Pytaj śmiało!',
 ];
 
+/**
+ * Hardcoded promo message – update manually when promotions change.
+ * Set `enabled: false` to disable completely.
+ */
+export const PROMO_CONFIG = {
+  enabled: true,
+  text: '🔥 Aktualne promocje w WBTrade!\n\n🎉 Kupon -10% na pierwsze zakupy w aplikacji — odbierz go w zakładce „Kupony"!\n📦 Darmowa dostawa od 199 zł na wszystkie zamówienia.\n📬 Zapisz się do newslettera i zgarnij dodatkowy rabat!',
+  actions: [
+    {
+      label: '🎟️ Moje kupony',
+      icon: 'arrow-right' as const,
+      type: 'navigate' as const,
+      route: '/account/discounts',
+    },
+    {
+      label: '📬 Newsletter',
+      icon: 'arrow-right' as const,
+      type: 'navigate' as const,
+      route: '/account/profile',
+    },
+  ],
+};
+
 function getGreeting(): string {
   const hour = new Date().getHours();
   if (hour >= 6 && hour < 12) return 'Dzień dobry! ☀️';
@@ -51,6 +74,8 @@ export function createInitialMessage(): Message {
     text: `${getGreeting()} Jestem ${BOT_NAME} — Twój wirtualny asystent WBTrade. Zadaj mi pytanie dotyczące zamówień, płatności, dostawy, zwrotów lub konta — chętnie pomogę!`,
     isBot: true,
     timestamp: new Date(),
+    // Show suggestions only if promo is disabled — otherwise promo message will carry them
+    showSuggestions: !PROMO_CONFIG.enabled,
   };
 }
 
@@ -74,26 +99,3 @@ export const RELATED_QUESTIONS: Record<string, string[]> = {
 };
 
 export const INITIAL_MESSAGE: Message = createInitialMessage();
-
-/**
- * Hardcoded promo message – update manually when promotions change.
- * Set `enabled: false` to disable completely.
- */
-export const PROMO_CONFIG = {
-  enabled: true,
-  text: '🔥 Aktualne promocje w WBTrade!\n\n🎉 Kupon -10% na pierwsze zakupy w aplikacji — odbierz go w zakładce „Kupony"!\n📦 Darmowa dostawa od 199 zł na wszystkie zamówienia.\n📬 Zapisz się do newslettera i zgarnij dodatkowy rabat!',
-  actions: [
-    {
-      label: '🎟️ Moje kupony',
-      icon: 'arrow-right' as const,
-      type: 'navigate' as const,
-      route: '/account/discounts',
-    },
-    {
-      label: '📬 Newsletter',
-      icon: 'arrow-right' as const,
-      type: 'navigate' as const,
-      route: '/account/profile',
-    },
-  ],
-};

@@ -27,6 +27,7 @@ interface StatusConfig {
 }
 
 const getStatusMap = (colors: ThemeColors): Record<StatusKey, StatusConfig> => ({
+  OPEN: { label: 'Otwarte', bg: colors.warningBg, text: colors.warningText },
   PENDING: { label: 'Nowe', bg: colors.warningBg, text: colors.warningText },
   CONFIRMED: { label: 'Potwierdzone', bg: colors.tintLight, text: colors.tint },
   PROCESSING: { label: 'W realizacji', bg: colors.tintLight, text: colors.tint },

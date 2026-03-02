@@ -17,6 +17,7 @@ import { Image } from 'expo-image';
 import { useThemeColors } from '../../../hooks/useThemeColors';
 import type { ThemeColors } from '../../../constants/Colors';
 import { ordersApi } from '../../../services/orders';
+import { checkoutApi } from '../../../services/orders';
 import type { Order, OrderItem } from '../../../services/types';
 
 // ─── Status config ───
@@ -31,6 +32,7 @@ interface StatusConfig {
 }
 
 const getStatusMap = (colors: ThemeColors): Record<StatusKey, StatusConfig> => ({
+  OPEN:       { label: 'Otwarte',       bg: colors.warningBg,          text: colors.warningText,      icon: 'hourglass-start' },
   PENDING:    { label: 'Nowe',          bg: colors.warningBg,          text: colors.warningText,      icon: 'clock-o' },
   CONFIRMED:  { label: 'Potwierdzone',  bg: colors.tintLight,          text: colors.tint,             icon: 'check' },
   PROCESSING: { label: 'W realizacji',  bg: colors.tintLight,          text: colors.tint,             icon: 'cog' },
@@ -42,6 +44,7 @@ const getStatusMap = (colors: ThemeColors): Record<StatusKey, StatusConfig> => (
 
 // Ordered progression for timeline
 const STATUS_TIMELINE: StatusKey[] = [
+  'OPEN',
   'PENDING',
   'CONFIRMED',
   'PROCESSING',
@@ -232,6 +235,10 @@ export default function OrderDetailScreen() {
   const [refundDaysLeft, setRefundDaysLeft] = useState(0);
   const [refundLoading, setRefundLoading] = useState(false);
 
+  // Pay / Cancel actions
+  const [payLoading, setPayLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+
   // ── Fetch order + extras ──
 
   const fetchOrder = useCallback(async () => {
@@ -323,6 +330,55 @@ export default function OrderDetailScreen() {
               Alert.alert('Błąd', 'Nie udało się złożyć wniosku o zwrot.');
             } finally {
               setRefundLoading(false);
+            }
+          },
+        },
+      ],
+    );
+  }, [id, fetchOrder]);
+
+  // ── Retry payment ──
+
+  const handleRetryPayment = useCallback(async () => {
+    if (!id) return;
+    setPayLoading(true);
+    try {
+      const res = await checkoutApi.retryPayment(id);
+      const data = res as any;
+      if (data.paymentUrl) {
+        router.push(`/order/${id}/payment?url=${encodeURIComponent(data.paymentUrl)}` as any);
+      } else {
+        Alert.alert('Błąd', 'Nie udało się utworzyć sesji płatności.');
+      }
+    } catch {
+      Alert.alert('Błąd', 'Nie udało się ponowić płatności. Spróbuj ponownie.');
+    } finally {
+      setPayLoading(false);
+    }
+  }, [id, router]);
+
+  // ── Cancel order ──
+
+  const handleCancelOrder = useCallback(() => {
+    Alert.alert(
+      'Anuluj zamówienie',
+      'Czy na pewno chcesz anulować to zamówienie? Tej operacji nie można cofnąć.',
+      [
+        { text: 'Nie', style: 'cancel' },
+        {
+          text: 'Anuluj zamówienie',
+          style: 'destructive',
+          onPress: async () => {
+            if (!id) return;
+            setCancelLoading(true);
+            try {
+              await ordersApi.cancel(id);
+              Alert.alert('Zamówienie anulowane', 'Twoje zamówienie zostało anulowane.');
+              await fetchOrder();
+            } catch {
+              Alert.alert('Błąd', 'Nie udało się anulować zamówienia.');
+            } finally {
+              setCancelLoading(false);
             }
           },
         },
@@ -491,6 +547,47 @@ export default function OrderDetailScreen() {
             </View>
           )}
         </View>
+
+        {/* ── Pay / Cancel actions ── */}
+        {order.status !== 'CANCELLED' && order.status !== 'REFUNDED' && order.status !== 'DELIVERED' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Akcje</Text>
+            {(order.paymentStatus === 'PENDING' || order.paymentStatus === 'FAILED') && order.paymentMethod !== 'cod' && (
+              <TouchableOpacity
+                style={[styles.actionBtn, { backgroundColor: colors.tint }]}
+                onPress={handleRetryPayment}
+                disabled={payLoading}
+                activeOpacity={0.7}
+              >
+                {payLoading ? (
+                  <ActivityIndicator size="small" color={colors.textInverse} />
+                ) : (
+                  <>
+                    <FontAwesome name="credit-card" size={16} color={colors.textInverse} />
+                    <Text style={styles.actionBtnText}>Opłać zamówienie</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+            {(order.status === 'OPEN' || order.status === 'PENDING' || order.status === 'CONFIRMED') && (
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.cancelBtn, { borderColor: colors.destructive }]}
+                onPress={handleCancelOrder}
+                disabled={cancelLoading}
+                activeOpacity={0.7}
+              >
+                {cancelLoading ? (
+                  <ActivityIndicator size="small" color={colors.destructive} />
+                ) : (
+                  <>
+                    <FontAwesome name="times" size={16} color={colors.destructive} />
+                    <Text style={[styles.actionBtnText, { color: colors.destructive }]}>Anuluj zamówienie</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* ── Shipping address ── */}
         {addr && (
@@ -781,6 +878,26 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.textInverse,
     fontWeight: '600',
     fontSize: 14,
+  },
+
+  // Action buttons (Pay / Cancel)
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  cancelBtn: {
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+  },
+  actionBtnText: {
+    color: colors.textInverse,
+    fontWeight: '700',
+    fontSize: 15,
   },
 
   // Loading / error

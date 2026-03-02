@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Tabs } from 'expo-router';
+import { Tabs, useSegments } from 'expo-router';
 import { View, Text } from 'react-native';
 
 import { useThemeColors } from '../../hooks/useThemeColors';
@@ -8,6 +8,9 @@ import { useCart } from '../../contexts/CartContext';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { ChatBubble } from '../../components/ChatBot';
 import ChatBotModal from '../../components/ChatBot';
+
+// Tabs where chatbot bubble should be visible
+const CHATBOT_ALLOWED_TABS = ['index', 'account'];
 
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>['name'];
@@ -80,9 +83,14 @@ function WishlistIcon({ color }: { color: string }) {
 
 export default function TabLayout() {
   const colors = useThemeColors();
+  const segments = useSegments();
   const [chatOpen, setChatOpen] = useState(false);
   const [chatActive, setChatActive] = useState(false); // true when minimized with conversation
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Current tab is the segment after "(tabs)", e.g. ['(tabs)', 'index'] → 'index'
+  const currentTab = segments.length > 1 ? segments[1] : 'index';
+  const showChatBubble = CHATBOT_ALLOWED_TABS.includes(currentTab as string);
 
   return (
     <View style={{ flex: 1 }}>
@@ -138,7 +146,6 @@ export default function TabLayout() {
           href: null,
           title: 'Kategoria',
           headerShown: true,
-          headerBackTitle: 'Wróć',
           headerTintColor: colors.tint,
           headerStyle: { backgroundColor: colors.headerBackground },
           headerTitleStyle: { color: colors.headerText },
@@ -146,22 +153,24 @@ export default function TabLayout() {
       />
     </Tabs>
 
-      {/* Floating chat bubble */}
-      <View
-        style={{
-          position: 'absolute',
-          bottom: 90,
-          right: 16,
-          zIndex: 100,
-        }}
-      >
-        <ChatBubble
-          onPress={() => { setChatOpen(true); setChatActive(true); setUnreadCount(0); }}
-          hasActiveChat={chatActive && !chatOpen}
-          unreadCount={!chatOpen ? unreadCount : 0}
-          isChatOpen={chatOpen}
-        />
-      </View>
+      {/* Floating chat bubble — only on allowed tabs */}
+      {showChatBubble && (
+        <View
+          style={{
+            position: 'absolute',
+            bottom: 90,
+            right: 16,
+            zIndex: 100,
+          }}
+        >
+          <ChatBubble
+            onPress={() => { setChatOpen(true); setChatActive(true); setUnreadCount(0); }}
+            hasActiveChat={chatActive && !chatOpen}
+            unreadCount={!chatOpen ? unreadCount : 0}
+            isChatOpen={chatOpen}
+          />
+        </View>
+      )}
 
       {/* Chat bot modal */}
       <ChatBotModal

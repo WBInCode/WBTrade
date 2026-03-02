@@ -83,6 +83,7 @@ export default function OrderConfirmation() {
   const [retryLoading, setRetryLoading] = useState(false);
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const STATUS_CONFIG = useMemo(() => getStatusConfig(colors), [colors]);
 
   useEffect(() => {
     if (id) {
@@ -187,7 +188,6 @@ export default function OrderConfirmation() {
     );
   }
 
-  const STATUS_CONFIG = useMemo(() => getStatusConfig(colors), [colors]);
   const statusConfig = STATUS_CONFIG[paymentStatus] || STATUS_CONFIG.PENDING;
 
   return (
@@ -273,10 +273,10 @@ export default function OrderConfirmation() {
                 <Text style={styles.productVariant}>{item.variantName}</Text>
               )}
               <Text style={styles.productPrice}>
-                {item.quantity} × {item.unitPrice.toFixed(2).replace('.', ',')} zł
+                {item.quantity} × {Number(item.unitPrice).toFixed(2).replace('.', ',')} zł
               </Text>
             </View>
-            <Text style={styles.productTotal}>{item.total.toFixed(2).replace('.', ',')} zł</Text>
+            <Text style={styles.productTotal}>{Number(item.total).toFixed(2).replace('.', ',')} zł</Text>
           </View>
         ))}
       </View>
@@ -286,23 +286,23 @@ export default function OrderConfirmation() {
         <Text style={styles.sectionTitle}>Podsumowanie</Text>
         <View style={styles.priceRow}>
           <Text style={styles.priceLabel}>Produkty:</Text>
-          <Text style={styles.priceValue}>{order.subtotal.toFixed(2).replace('.', ',')} zł</Text>
+          <Text style={styles.priceValue}>{Number(order.subtotal).toFixed(2).replace('.', ',')} zł</Text>
         </View>
-        {order.discount > 0 && (
+        {Number(order.discount) > 0 && (
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>Rabat:</Text>
             <Text style={[styles.priceValue, { color: colors.success }]}>
-              -{order.discount.toFixed(2).replace('.', ',')} zł
+              -{Number(order.discount).toFixed(2).replace('.', ',')} zł
             </Text>
           </View>
         )}
         <View style={styles.priceRow}>
           <Text style={styles.priceLabel}>Dostawa:</Text>
-          <Text style={styles.priceValue}>{order.shipping.toFixed(2).replace('.', ',')} zł</Text>
+          <Text style={styles.priceValue}>{Number(order.shipping).toFixed(2).replace('.', ',')} zł</Text>
         </View>
         <View style={[styles.priceRow, styles.totalRow]}>
           <Text style={styles.totalLabel}>Razem:</Text>
-          <Text style={styles.totalValue}>{order.total.toFixed(2).replace('.', ',')} zł</Text>
+          <Text style={styles.totalValue}>{Number(order.total).toFixed(2).replace('.', ',')} zł</Text>
         </View>
       </View>
 
