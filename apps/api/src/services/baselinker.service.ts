@@ -103,6 +103,31 @@ function generateSku(productId: number, existingSku?: string): string {
   return `BL-${productId}`;
 }
 
+// BaseLinker CDN account ID (used to proxy blocked wholesaler images)
+const BASELINKER_ACCOUNT_ID = '6007581';
+// Domains whose images are blocked (403) and should be replaced with CDN thumbnails
+const CDN_PROXY_DOMAINS = ['b2b.leker.pl'];
+
+/**
+ * Convert blocked wholesaler image URLs to BaseLinker CDN proxy URLs.
+ * CDN only serves the main (first) image per product at max 400x300.
+ * Returns the original URL if the domain is not blocked.
+ */
+function toBaselinkerCdnUrl(imageUrl: string, baselinkerProductId: string): string | null {
+  try {
+    const url = new URL(imageUrl);
+    if (CDN_PROXY_DOMAINS.some(domain => url.hostname === domain || url.hostname.endsWith('.' + domain))) {
+      // Extract numeric BL product ID (format: "leker-212543771" or just "212543771")
+      const numericId = baselinkerProductId.replace(/^[a-z]+-/i, '');
+      if (!numericId || isNaN(Number(numericId))) return null;
+      return `https://thumbs.cdn.baselinker.com/thumb/db/${BASELINKER_ACCOUNT_ID}/${numericId}/0/400/300.png?s=g&is_new_inventory=1`;
+    }
+    return imageUrl;
+  } catch {
+    return imageUrl;
+  }
+}
+
 // ============================================
 // Service Class
 // ============================================
@@ -1468,15 +1493,21 @@ export class BaselinkerService {
                   where: { productId: product.id },
                 });
 
-                // Create new images
+                // Create new images (convert blocked domains to CDN proxy)
                 const imageEntries = Object.entries(blProduct.images).sort(([a], [b]) => parseInt(a) - parseInt(b));
-                for (let idx = 0; idx < imageEntries.length; idx++) {
-                  const [, url] = imageEntries[idx];
+                const seenCdnUrls = new Set<string>();
+                let imgOrder = 0;
+                for (const [, rawUrl] of imageEntries) {
+                  const url = toBaselinkerCdnUrl(rawUrl as string, baselinkerProductId);
+                  if (!url) continue;
+                  // CDN returns same image for all indices — deduplicate
+                  if (seenCdnUrls.has(url)) continue;
+                  seenCdnUrls.add(url);
                   await tx.productImage.create({
                     data: {
                       productId: product.id,
-                      url: url as string,
-                      order: idx,
+                      url,
+                      order: imgOrder++,
                     },
                   });
                 }
@@ -2249,13 +2280,19 @@ export class BaselinkerService {
             });
 
             const imageEntries = Object.entries(blProduct.images).sort(([a], [b]) => parseInt(a) - parseInt(b));
-            for (let idx = 0; idx < imageEntries.length; idx++) {
-              const [, url] = imageEntries[idx];
+            const seenCdnUrls = new Set<string>();
+            let imgOrder = 0;
+            for (const [, rawUrl] of imageEntries) {
+              const url = toBaselinkerCdnUrl(rawUrl as string, product.baselinkerProductId as string);
+              if (!url) continue;
+              // CDN returns same image for all indices — deduplicate
+              if (seenCdnUrls.has(url)) continue;
+              seenCdnUrls.add(url);
               await prisma.productImage.create({
                 data: {
                   productId: product.id,
-                  url: url as string,
-                  order: idx,
+                  url,
+                  order: imgOrder++,
                 },
               });
             }
