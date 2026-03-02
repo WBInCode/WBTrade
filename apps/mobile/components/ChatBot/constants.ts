@@ -2,7 +2,7 @@ import type { Message } from './types';
 
 export const BOT_NAME = 'WuBuś';
 
-export const WB_LOGO = require('../../assets/images/wb-trade-logo.png');
+export const WB_LOGO = require('../../assets/images/wubus-chat.png');
 
 export const PRODUCT_SEARCH_KEYWORDS = [
   'szukam', 'szukasz', 'znajdź', 'znajdz', 'poszukaj', 'pokaż', 'pokaz',
