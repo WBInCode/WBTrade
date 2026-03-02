@@ -142,9 +142,15 @@ export default function AboutScreen() {
 
         {/* Company footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerCompany}>WB PARTNERS Sp. z o.o.</Text>
-          <Text style={styles.footerAddr}>ul. Juliusza Słowackiego 24/11, 35-060 Rzeszów</Text>
-          <Text style={styles.footerNip}>NIP: 5170455185 · KRS: 0001151642</Text>
+          <View style={styles.footerCard}>
+            <View style={styles.footerIconWrap}>
+              <FontAwesome name="building-o" size={18} color={colors.tint} />
+            </View>
+            <Text style={styles.footerCompany}>WB PARTNERS Sp. z o.o.</Text>
+            <View style={styles.footerDivider} />
+            <Text style={styles.footerAddr}>ul. Juliusza Słowackiego 24/11, 35-060 Rzeszów</Text>
+            <Text style={styles.footerNip}>NIP: 5170455185 · KRS: 0001151642</Text>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -319,22 +325,47 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
 
   // ─── Footer ───
   footer: {
-    alignItems: 'center',
-    paddingVertical: 24,
     paddingHorizontal: 12,
+    paddingTop: 24,
+    paddingBottom: 32,
+  },
+  footerCard: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    alignItems: 'center',
     gap: 4,
   },
+  footerIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.tintLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  footerDivider: {
+    width: 32,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: colors.tintLight,
+    marginVertical: 8,
+  },
   footerCompany: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.textMuted,
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
   },
   footerAddr: {
-    fontSize: 12,
-    color: colors.textMuted,
+    fontSize: 13,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
   footerNip: {
     fontSize: 12,
     color: colors.textMuted,
+    marginTop: 2,
   },
 });
