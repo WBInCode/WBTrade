@@ -16,7 +16,7 @@ import { useRouter, Stack } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { api } from '../services/api';
 import { useThemeColors } from '../hooks/useThemeColors';
-import { getCategoryIcon, ICON_BG_COLORS } from '../constants/CategoryIcons';
+import { getCategoryIcon } from '../constants/CategoryIcons';
 import type { Category } from '../services/types';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -169,7 +169,6 @@ export default function CategoriesScreen() {
             {categories.map((cat, index) => {
               const hasChildren = cat.children && cat.children.length > 0;
               const isExpanded = expandedCats.has(cat.id);
-              const colorIdx = index % ICON_BG_COLORS.length;
 
               return (
                 <View key={cat.id} style={styles.parentSection}>
@@ -186,12 +185,7 @@ export default function CategoriesScreen() {
                     activeOpacity={0.6}
                   >
                     <View style={styles.parentLeft}>
-                      <View
-                        style={[
-                          styles.parentIconCircle,
-                          { backgroundColor: ICON_BG_COLORS[colorIdx] },
-                        ]}
-                      >
+                      <View style={styles.parentIconCircle}>
                         <Image
                           source={getCategoryIcon(cat.slug)}
                           style={styles.categoryIconImage}
@@ -315,16 +309,18 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   parentIconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#e85011',
   },
   categoryIconImage: {
-    width: 34,
-    height: 34,
+    width: 50,
+    height: 50,
   },
   parentInfo: {
     flex: 1,
