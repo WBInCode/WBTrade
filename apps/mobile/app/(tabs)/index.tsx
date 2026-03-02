@@ -16,15 +16,12 @@ import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { api } from '../../services/api';
 import { useThemeColors } from '../../hooks/useThemeColors';
-import { getCategoryIcon, ICON_BG_COLORS, ICON_COLORS } from '../../constants/CategoryIcons';
+import { getCategoryIcon } from '../../constants/CategoryIcons';
 import ProductCarousel from '../../components/product/ProductCarousel';
 import ProductCard from '../../components/product/ProductCard';
 import type { Product, Category } from '../../services/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-// Category colors imported from shared constants (ICON_BG_COLORS, ICON_COLORS)
-// Category icon resolution imported from shared getCategoryIcon()
 
 const PROMO_BANNERS = [
   { id: 'elektronika', title: 'Elektronika', subtitle: 'Odkryj hity technologiczne', icon: 'laptop' as const, bgColor: '#1e3a5f', accentColor: '#60a5fa', icon2: 'chip' as const },
@@ -84,20 +81,12 @@ const HeaderSection = React.memo(function HeaderSection() {
 const CategoriesSection = React.memo(function CategoriesSection({ categories }: { categories: Category[] }) {
   const router = useRouter();
   const colors = useThemeColors();
-  const CATEGORY_COLORS = [
-    colors.tintMuted, colors.tintLight, colors.tintLight, colors.successBg, colors.warningBg,
-    colors.tintLight, colors.warningBg, colors.successBg, colors.destructiveBg, colors.tintLight,
-  ];
-  const CATEGORY_ICON_COLORS = [
-    colors.tint, colors.tint, colors.destructive, colors.success, colors.warning,
-    colors.tint, colors.warning, colors.success, colors.destructive, colors.tint,
-  ];
   return (
     <View style={[styles.categoriesSection, { backgroundColor: colors.card }]}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScrollContent}>
         {categories.map((cat, index) => (
           <TouchableOpacity key={cat.id} style={styles.categoryCircleWrap} onPress={() => router.push(`/category/${cat.slug}`)}>
-            <View style={[styles.categoryCircle, { backgroundColor: ICON_BG_COLORS[index % ICON_BG_COLORS.length] }]}>
+            <View style={styles.categoryCircle}>
               <Image source={getCategoryIcon(cat.slug)} style={styles.categoryIconImage} contentFit="contain" />
             </View>
             <Text style={[styles.categoryCircleLabel, { color: colors.textSecondary }]} numberOfLines={2}>{cat.name}</Text>
@@ -568,19 +557,21 @@ const styles = StyleSheet.create({
   categoriesSection: {
     paddingTop: 16, paddingBottom: 4, marginBottom: 8,
   },
-  categoriesScrollContent: { paddingHorizontal: 12, gap: 4 },
-  categoryCircleWrap: { alignItems: 'center', width: 72 },
+  categoriesScrollContent: { paddingHorizontal: 12, gap: 6 },
+  categoryCircleWrap: { alignItems: 'center', width: 90 },
   categoryCircle: {
-    width: 56, height: 56, borderRadius: 28,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 6,
-    overflow: 'hidden',
+    width: 72, height: 72, borderRadius: 36,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 8,
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#e85011',
   },
   categoryIconImage: {
-    width: 44, height: 44,
+    width: 65, height: 65,
   },
   categoryCircleLabel: {
     fontSize: 11, textAlign: 'center',
-    lineHeight: 14, fontWeight: '500',
+    lineHeight: 14, fontWeight: '600',
   },
   allCategoriesBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
