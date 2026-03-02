@@ -803,7 +803,6 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       // Create payment session with PayU
       // Get first URL from FRONTEND_URL (may be comma-separated)
       const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').split(',')[0].trim();
-      const isMobile = req.headers['x-platform'] === 'mobile';
 
       // Map frontend payment method to API payment method type
       const mappedPaymentMethod = mapPaymentMethod(paymentMethod);
@@ -839,12 +838,10 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
           lastName: customerLastName,
         },
         description: `Zamówienie ${order.orderNumber}`,
-        returnUrl: isMobile
-          ? `wbtrade://order/${order.id}/confirmation`
-          : `${frontendUrl}/order/${order.id}/confirmation`,
-        cancelUrl: isMobile
-          ? `wbtrade://order/${order.id}/payment?cancelled=true`
-          : `${frontendUrl}/checkout?orderId=${order.id}&cancelled=true`,
+        // Always use HTTPS URLs - PayU rejects non-HTTP schemes like wbtrade://
+        // Mobile WebView intercepts the redirect before it completes
+        returnUrl: `${frontendUrl}/order/${order.id}/confirmation`,
+        cancelUrl: `${frontendUrl}/checkout?orderId=${order.id}&cancelled=true`,
         notifyUrl: `${process.env.APP_URL || 'http://localhost:5000'}/api/webhooks/payu`,
         metadata: {
           customerIp: req.ip || req.socket.remoteAddress || '127.0.0.1',
@@ -869,9 +866,9 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
   } catch (error) {
     console.error('❌ Error creating checkout:', error);
     console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack');
+    const errMsg = error instanceof Error ? error.message : String(error);
     res.status(500).json({ 
-      message: 'Failed to create order',
-      error: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
+      message: errMsg || 'Failed to create order',
     });
   }
 }
@@ -1015,7 +1012,6 @@ export async function retryPayment(req: Request, res: Response): Promise<void> {
 
     // Create new payment session with PayU
     const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').split(',')[0].trim();
-    const isMobile = req.headers['x-platform'] === 'mobile';
 
     // Get customer email from order
     const customerEmail = order.guestEmail || userEmail || (req as any).user?.email || '';
@@ -1032,12 +1028,10 @@ export async function retryPayment(req: Request, res: Response): Promise<void> {
         lastName: order.guestLastName || '',
       },
       description: `Zamówienie ${order.orderNumber}`,
-      returnUrl: isMobile
-        ? `wbtrade://order/${order.id}/confirmation`
-        : `${frontendUrl}/order/${order.id}/confirmation`,
-      cancelUrl: isMobile
-        ? `wbtrade://order/${order.id}/payment?retry=true`
-        : `${frontendUrl}/order/${order.id}/payment?retry=true`,
+      // Always use HTTPS URLs - PayU rejects non-HTTP schemes like wbtrade://
+      // Mobile WebView intercepts the redirect before it completes
+      returnUrl: `${frontendUrl}/order/${order.id}/confirmation`,
+      cancelUrl: `${frontendUrl}/order/${order.id}/payment?retry=true`,
       notifyUrl: `${process.env.APP_URL || 'http://localhost:5000'}/api/webhooks/payu`,
       metadata: {
         customerIp: req.ip || req.socket.remoteAddress || '127.0.0.1',
@@ -1057,9 +1051,9 @@ export async function retryPayment(req: Request, res: Response): Promise<void> {
     });
   } catch (error) {
     console.error('❌ Error creating retry payment:', error);
+    const errMsg = error instanceof Error ? error.message : String(error);
     res.status(500).json({ 
-      message: 'Failed to create payment session',
-      error: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
+      message: errMsg || 'Failed to create payment session',
     });
   }
 }

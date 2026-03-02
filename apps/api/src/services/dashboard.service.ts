@@ -63,22 +63,24 @@ export class DashboardService {
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    // Zamówienia dziś (bez anulowanych/zwróconych)
+    // Zamówienia dziś (bez anulowanych/zwróconych, bez archiwalnych)
     const ordersToday = await prisma.order.count({
       where: {
         createdAt: { gte: today },
-        status: { notIn: ['CANCELLED', 'REFUNDED'] }
+        status: { notIn: ['CANCELLED', 'REFUNDED'] },
+        deletedAt: null
       }
     });
 
-    // Zamówienia wczoraj (do porównania, bez anulowanych/zwróconych)
+    // Zamówienia wczoraj (do porównania, bez anulowanych/zwróconych, bez archiwalnych)
     const ordersYesterday = await prisma.order.count({
       where: {
         createdAt: {
           gte: yesterday,
           lt: today
         },
-        status: { notIn: ['CANCELLED', 'REFUNDED'] }
+        status: { notIn: ['CANCELLED', 'REFUNDED'] },
+        deletedAt: null
       }
     });
 
@@ -88,7 +90,8 @@ export class DashboardService {
     const revenueTodayResult = await prisma.order.aggregate({
       where: {
         createdAt: { gte: today },
-        status: { in: PAID_STATUSES }
+        status: { in: PAID_STATUSES },
+        deletedAt: null
       },
       _sum: { total: true }
     });
@@ -101,7 +104,8 @@ export class DashboardService {
           gte: yesterday,
           lt: today
         },
-        status: { in: PAID_STATUSES }
+        status: { in: PAID_STATUSES },
+        deletedAt: null
       },
       _sum: { total: true }
     });
@@ -129,7 +133,8 @@ export class DashboardService {
     // Zamówienia oczekujące
     const pendingOrders = await prisma.order.count({
       where: {
-        status: { in: ['PENDING', 'CONFIRMED', 'PROCESSING'] }
+        status: { in: ['PENDING', 'CONFIRMED', 'PROCESSING'] },
+        deletedAt: null
       }
     });
 
@@ -172,7 +177,8 @@ export class DashboardService {
     const orders = await prisma.order.findMany({
       where: {
         createdAt: { gte: startDate },
-        status: { in: PAID_STATUSES }
+        status: { in: PAID_STATUSES },
+        deletedAt: null
       },
       select: {
         createdAt: true,
@@ -180,11 +186,12 @@ export class DashboardService {
       }
     });
 
-    // Pobierz anulowane/zwrócone osobno
+    // Pobierz anulowane/zwrócone osobno (bez archiwalnych)
     const cancelledOrders = await prisma.order.findMany({
       where: {
         createdAt: { gte: startDate },
-        status: { in: ['CANCELLED', 'REFUNDED'] }
+        status: { in: ['CANCELLED', 'REFUNDED'] },
+        deletedAt: null
       },
       select: {
         createdAt: true,
@@ -321,7 +328,8 @@ export class DashboardService {
     const oldPendingOrders = await prisma.order.count({
       where: {
         status: 'PENDING',
-        createdAt: { lt: oneDayAgo }
+        createdAt: { lt: oneDayAgo },
+        deletedAt: null
       }
     });
 
@@ -378,7 +386,8 @@ export class DashboardService {
     // Zamówienia do wysłania (CONFIRMED lub PROCESSING)
     const ordersToShip = await prisma.order.count({
       where: {
-        status: { in: ['CONFIRMED', 'PROCESSING'] }
+        status: { in: ['CONFIRMED', 'PROCESSING'] },
+        deletedAt: null
       }
     });
 

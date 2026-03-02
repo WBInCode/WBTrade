@@ -18,6 +18,7 @@ export default function PaymentScreen() {
   const { id, url } = useLocalSearchParams<{ id: string; url: string }>();
   const router = useRouter();
   const webViewRef = useRef<WebView>(null);
+  const navigatedAway = useRef(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [canGoBack, setCanGoBack] = useState(false);
@@ -26,43 +27,49 @@ export default function PaymentScreen() {
 
   const paymentUrl = decodeURIComponent(url || '');
 
+  /** Safe navigate — only fires once to prevent call-stack loops */
+  const safeNavigate = (path: string) => {
+    if (navigatedAway.current) return;
+    navigatedAway.current = true;
+    router.replace(path as any);
+  };
+
   const handleNavigationChange = (navState: WebViewNavigation) => {
+    if (navigatedAway.current) return;
     setCanGoBack(navState.canGoBack);
 
     const currentUrl = navState.url;
 
     // Detect return from PayU - redirect to confirmation
-    // PayU returns to our frontend URL with /order/{id}/confirmation
     if (
       currentUrl.includes('/order/') && currentUrl.includes('/confirmation')
     ) {
-      // Payment completed (success or partial), navigate to confirmation
-      router.replace(`/order/${id}/confirmation` as any);
+      safeNavigate(`/order/${id}/confirmation`);
       return;
     }
 
     // Detect cancel from PayU
     if (currentUrl.includes('cancelled=true') || currentUrl.includes('/checkout?orderId=')) {
-      // Payment was cancelled, go to confirmation which shows retry option
-      router.replace(`/order/${id}/confirmation` as any);
+      safeNavigate(`/order/${id}/confirmation`);
       return;
     }
 
     // Detect deep link scheme (if API returns wbtrade:// URL)
     if (currentUrl.startsWith('wbtrade://')) {
       const path = currentUrl.replace('wbtrade://', '');
-      router.replace(`/${path}` as any);
+      safeNavigate(`/${path}`);
       return;
     }
   };
 
   const handleShouldStartLoad = (event: any) => {
+    if (navigatedAway.current) return false;
     const url = event.url;
 
     // Intercept wbtrade:// deep links
     if (url.startsWith('wbtrade://')) {
       const path = url.replace('wbtrade://', '');
-      router.replace(`/${path}` as any);
+      safeNavigate(`/${path}`);
       return false;
     }
 
@@ -76,7 +83,7 @@ export default function PaymentScreen() {
         <Text style={styles.errorText}>Brak adresu URL płatności</Text>
         <Button
           title="Wróć do zamówienia"
-          onPress={() => router.replace(`/order/${id}/confirmation` as any)}
+          onPress={() => safeNavigate(`/order/${id}/confirmation`)}
           variant="outline"
         />
       </SafeAreaView>
@@ -93,7 +100,7 @@ export default function PaymentScreen() {
             if (canGoBack && webViewRef.current) {
               webViewRef.current.goBack();
             } else {
-              router.replace(`/order/${id}/confirmation` as any);
+              safeNavigate(`/order/${id}/confirmation`);
             }
           }}
         >
@@ -102,7 +109,7 @@ export default function PaymentScreen() {
         <Text style={styles.headerTitle}>Płatność PayU</Text>
         <TouchableOpacity
           style={styles.headerButton}
-          onPress={() => router.replace(`/order/${id}/confirmation` as any)}
+          onPress={() => safeNavigate(`/order/${id}/confirmation`)}
         >
           <Ionicons name="close" size={24} color={colors.text} />
         </TouchableOpacity>

@@ -8,6 +8,7 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
@@ -228,14 +229,47 @@ export default function TermsScreen() {
           ))}
         </View>
 
-        {/* Footer */}
+        {/* Contact CTA */}
+        <View style={styles.ctaSection}>
+          <View style={styles.ctaCard}>
+            <Text style={styles.ctaTitle}>Masz pytania?</Text>
+            <Text style={styles.ctaSubtitle}>
+              Skontaktuj się z nami — chętnie pomożemy!
+            </Text>
+            <View style={styles.ctaInfo}>
+              <TouchableOpacity
+                style={styles.ctaRow}
+                onPress={() => Linking.openURL('mailto:support@wb-partners.pl')}
+              >
+                <FontAwesome name="envelope" size={14} color={colors.tint} />
+                <Text style={styles.ctaRowText}>support@wb-partners.pl</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.ctaRow}
+                onPress={() => Linking.openURL('tel:+48570034367')}
+              >
+                <FontAwesome name="phone" size={14} color={colors.tint} />
+                <Text style={styles.ctaRowText}>+48 570 034 367</Text>
+              </TouchableOpacity>
+              <View style={styles.ctaRow}>
+                <FontAwesome name="clock-o" size={14} color={colors.tint} />
+                <Text style={styles.ctaRowText}>pon.–pt. 9:00–17:00</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Company footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            WB PARTNERS Sp. z o.o. · ul. Juliusza Słowackiego 24/11, 35-060 Rzeszów
-          </Text>
-          <Text style={styles.footerText}>
-            NIP: 5170455185 · KRS: 0001151642
-          </Text>
+          <View style={styles.footerCard}>
+            <View style={styles.footerIconWrap}>
+              <FontAwesome name="building-o" size={18} color={colors.tint} />
+            </View>
+            <Text style={styles.footerCompany}>WB PARTNERS Sp. z o.o.</Text>
+            <View style={styles.footerDivider} />
+            <Text style={styles.footerAddr}>ul. Juliusza Słowackiego 24/11, 35-060 Rzeszów</Text>
+            <Text style={styles.footerNip}>NIP: 5170455185 · KRS: 0001151642</Text>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -337,16 +371,85 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     lineHeight: 21,
   },
 
+  // ─── Contact CTA ───
+  ctaSection: {
+    marginHorizontal: 12,
+    marginTop: 24,
+  },
+  ctaCard: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+  },
+  ctaTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  ctaSubtitle: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginBottom: 16,
+  },
+  ctaInfo: {
+    gap: 12,
+    width: '100%',
+  },
+  ctaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  ctaRowText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+
   // ─── Footer ───
   footer: {
+    paddingHorizontal: 12,
+    paddingTop: 24,
+    paddingBottom: 32,
+  },
+  footerCard: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
     alignItems: 'center',
-    paddingVertical: 24,
     gap: 4,
   },
-  footerText: {
-    fontSize: 11,
-    color: colors.textMuted,
+  footerIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.tintLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  footerDivider: {
+    width: 32,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: colors.tintLight,
+    marginVertical: 8,
+  },
+  footerCompany: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  footerAddr: {
+    fontSize: 13,
+    color: colors.textSecondary,
     textAlign: 'center',
-    paddingHorizontal: 12,
+  },
+  footerNip: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 2,
   },
 });

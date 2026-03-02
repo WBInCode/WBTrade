@@ -17,6 +17,7 @@ import {
   BarChart3,
   Warehouse,
   DollarSign,
+  MessageCircleQuestion,
   // Trophy,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -79,6 +80,11 @@ const menuItems = [
     title: 'Cennik',
     href: '/pricing',
     icon: DollarSign,
+  },
+  {
+    title: 'WuBuś — pytania',
+    href: '/chatbot-unmatched',
+    icon: MessageCircleQuestion,
   },
   {
     title: 'Omnibus & Top',
