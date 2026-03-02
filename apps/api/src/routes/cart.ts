@@ -1,7 +1,11 @@
 import { Router } from 'express';
 import { cartController } from '../controllers/cart.controller';
+import { optionalAuth } from '../middleware/auth.middleware';
 
 const router = Router();
+
+// Apply optionalAuth to all cart routes so req.user is populated from JWT
+router.use(optionalAuth);
 
 // Get current cart
 router.get('/', (req, res) => cartController.getCart(req, res));
