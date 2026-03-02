@@ -1,43 +1,40 @@
 /**
  * Category Icons - shared constants for category display
- * Uses MaterialCommunityIcons icon names
+ * Uses custom PNG images from assets/images/categories/
  */
 import { Colors } from './Colors';
+import { ImageSourcePropType } from 'react-native';
 
-// Map category slugs to MaterialCommunityIcons names
-const CATEGORY_ICONS: Record<string, string> = {
-  elektronika: 'laptop',
-  agd: 'washing-machine',
-  'dom-i-ogrod': 'home-roof',
-  sport: 'basketball',
-  moda: 'hanger',
-  dziecko: 'baby-face-outline',
-  zdrowie: 'heart-pulse',
-  motoryzacja: 'car',
-  narzedzia: 'wrench',
-  zabawki: 'gamepad-variant',
-  ksiazki: 'book-open-variant',
-  muzyka: 'music',
-  ogrod: 'flower-tulip-outline',
-  kuchnia: 'silverware-fork-knife',
-  biuro: 'desk',
-  odziez: 'tshirt-crew',
-  obuwie: 'shoe-sneaker',
-  komputery: 'desktop-classic',
-  telefony: 'cellphone',
-  foto: 'camera',
-  tv: 'television',
-  default: 'shape-outline',
+// Category icon images (require returns ImageSourcePropType)
+const CATEGORY_IMAGES: Record<string, ImageSourcePropType> = {
+  elektronika: require('../assets/images/categories/elektronika.png'),
+  dom: require('../assets/images/categories/dom.png'),
+  ogrod: require('../assets/images/categories/ogrodnictwo.png'),
+  'dom-i-ogrod': require('../assets/images/categories/dom.png'),
+  sport: require('../assets/images/categories/sport.png'),
+  moda: require('../assets/images/categories/moda.png'),
+  zdrowie: require('../assets/images/categories/moda.png'),
+  dziecko: require('../assets/images/categories/dziecko.png'),
+  motoryzacja: require('../assets/images/categories/motoryzacja.png'),
+  narzedzia: require('../assets/images/categories/narzedzia.png'),
+  gastronomia: require('../assets/images/categories/gastronomia.png'),
+  ogrodnictwo: require('../assets/images/categories/ogrodnictwo.png'),
+  outlet: require('../assets/images/categories/outlet.png'),
 };
 
+const DEFAULT_ICON = require('../assets/images/categories/outlet.png');
+
 /**
- * Get MaterialCommunityIcons icon name for a category slug
+ * Get category icon image source for a category slug
  */
-export function getCategoryIcon(slug?: string): string {
-  if (!slug) return CATEGORY_ICONS.default;
+export function getCategoryIcon(slug?: string): ImageSourcePropType {
+  if (!slug) return DEFAULT_ICON;
   const normalized = slug.toLowerCase();
-  const key = Object.keys(CATEGORY_ICONS).find((k) => normalized.includes(k));
-  return key ? CATEGORY_ICONS[key] : CATEGORY_ICONS.default;
+  // Direct match first
+  if (CATEGORY_IMAGES[normalized]) return CATEGORY_IMAGES[normalized];
+  // Partial match
+  const key = Object.keys(CATEGORY_IMAGES).find((k) => normalized.includes(k));
+  return key ? CATEGORY_IMAGES[key] : DEFAULT_ICON;
 }
 
 /**

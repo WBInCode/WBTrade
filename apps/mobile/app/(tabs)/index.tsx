@@ -98,7 +98,7 @@ const CategoriesSection = React.memo(function CategoriesSection({ categories }: 
         {categories.map((cat, index) => (
           <TouchableOpacity key={cat.id} style={styles.categoryCircleWrap} onPress={() => router.push(`/category/${cat.slug}`)}>
             <View style={[styles.categoryCircle, { backgroundColor: ICON_BG_COLORS[index % ICON_BG_COLORS.length] }]}>
-              <MaterialCommunityIcons name={getCategoryIcon(cat.slug) as any} size={24} color={ICON_COLORS[index % ICON_COLORS.length]} />
+              <Image source={getCategoryIcon(cat.slug)} style={styles.categoryIconImage} contentFit="contain" />
             </View>
             <Text style={[styles.categoryCircleLabel, { color: colors.textSecondary }]} numberOfLines={2}>{cat.name}</Text>
           </TouchableOpacity>
@@ -573,6 +573,10 @@ const styles = StyleSheet.create({
   categoryCircle: {
     width: 56, height: 56, borderRadius: 28,
     alignItems: 'center', justifyContent: 'center', marginBottom: 6,
+    overflow: 'hidden',
+  },
+  categoryIconImage: {
+    width: 36, height: 36,
   },
   categoryCircleLabel: {
     fontSize: 11, textAlign: 'center',

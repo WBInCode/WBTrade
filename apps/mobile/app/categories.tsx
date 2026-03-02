@@ -9,39 +9,18 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { api } from '../services/api';
 import { useThemeColors } from '../hooks/useThemeColors';
+import { getCategoryIcon, ICON_BG_COLORS } from '../constants/CategoryIcons';
 import type { Category } from '../services/types';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
-// ── Category icons ──
-const CATEGORY_ICONS: Record<string, string> = {
-  elektronika: 'laptop',
-  agd: 'home',
-  'dom-i-ogrod': 'tree',
-  sport: 'futbol-o',
-  moda: 'shopping-bag',
-  dziecko: 'child',
-  zdrowie: 'heartbeat',
-  motoryzacja: 'car',
-  narzedzia: 'wrench',
-  zabawki: 'gamepad',
-  ksiazki: 'book',
-  muzyka: 'music',
-  default: 'th-large',
-};
-
-function getCategoryIcon(slug?: string): string {
-  if (!slug) return CATEGORY_ICONS.default;
-  const key = Object.keys(CATEGORY_ICONS).find((k) => slug.toLowerCase().includes(k));
-  return key ? CATEGORY_ICONS[key] : CATEGORY_ICONS.default;
 }
 
 export default function CategoriesScreen() {
@@ -50,15 +29,6 @@ export default function CategoriesScreen() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
-
-  const ICON_BG_COLORS = [
-    colors.tintMuted, '#e0f2fe', '#fce7f3', '#d1fae5', '#fef3c7',
-    '#ede9fe', '#fde68a', '#ccfbf1', '#fee2e2', '#e0e7ff',
-  ];
-  const ICON_COLORS = [
-    colors.tint, '#0284c7', '#db2777', '#059669', '#d97706',
-    '#7c3aed', '#b45309', '#0d9488', '#dc2626', '#4f46e5',
-  ];
 
   useEffect(() => {
     (async () => {
@@ -199,7 +169,7 @@ export default function CategoriesScreen() {
             {categories.map((cat, index) => {
               const hasChildren = cat.children && cat.children.length > 0;
               const isExpanded = expandedCats.has(cat.id);
-              const colorIdx = index % ICON_COLORS.length;
+              const colorIdx = index % ICON_BG_COLORS.length;
 
               return (
                 <View key={cat.id} style={styles.parentSection}>
@@ -222,10 +192,10 @@ export default function CategoriesScreen() {
                           { backgroundColor: ICON_BG_COLORS[colorIdx] },
                         ]}
                       >
-                        <FontAwesome
-                          name={getCategoryIcon(cat.slug) as any}
-                          size={18}
-                          color={ICON_COLORS[colorIdx]}
+                        <Image
+                          source={getCategoryIcon(cat.slug)}
+                          style={styles.categoryIconImage}
+                          resizeMode="contain"
                         />
                       </View>
                       <View style={styles.parentInfo}>
@@ -350,6 +320,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  categoryIconImage: {
+    width: 28,
+    height: 28,
   },
   parentInfo: {
     flex: 1,
