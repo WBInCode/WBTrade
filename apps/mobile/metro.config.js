@@ -20,10 +20,17 @@ config.resolver.nodeModulesPaths = [
 // 3. Ensure only ONE copy of React / React Native is used (monorepo dedup)
 //    Without this, Metro can load react from both apps/mobile/node_modules
 //    AND root node_modules, causing "useMemo of null" / "Invalid hook call".
+//    Also pin expo-router and @expo/metro-runtime so they always resolve from
+//    their canonical location (fixes "Unable to resolve ../../App" on web).
 config.resolver.extraNodeModules = {
   react: path.resolve(projectRoot, "node_modules/react"),
   "react-native": path.resolve(projectRoot, "node_modules/react-native"),
   "react-dom": path.resolve(projectRoot, "node_modules/react-dom"),
+  "expo-router": path.resolve(projectRoot, "node_modules/expo-router"),
+  "@expo/metro-runtime": path.resolve(
+    monorepoRoot,
+    "node_modules/@expo/metro-runtime"
+  ),
 };
 
 // 4. Block root node_modules/react from being resolved
