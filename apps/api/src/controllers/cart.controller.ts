@@ -49,12 +49,19 @@ const mergeCartsSchema = z.object({
 
 export class CartController {
   /**
+   * Extract userId from JWT (req.user) or fallback to x-user-id header (web app)
+   */
+  private getUserId(req: Request): string | undefined {
+    return req.user?.userId || (req.headers['x-user-id'] as string | undefined);
+  }
+
+  /**
    * Get current cart
    * GET /api/cart
    */
   async getCart(req: Request, res: Response) {
     try {
-      const userId = req.headers['x-user-id'] as string | undefined;
+      const userId = this.getUserId(req);
       const sessionId = req.headers['x-session-id'] as string | undefined;
 
       if (!userId && !sessionId) {
@@ -93,7 +100,7 @@ export class CartController {
    */
   async addItem(req: Request, res: Response) {
     try {
-      const userId = req.headers['x-user-id'] as string | undefined;
+      const userId = this.getUserId(req);
       const sessionId = req.headers['x-session-id'] as string | undefined;
 
       if (userId && !isValidCUID(userId)) {
@@ -141,7 +148,7 @@ export class CartController {
    */
   async updateItem(req: Request, res: Response) {
     try {
-      const userId = req.headers['x-user-id'] as string | undefined;
+      const userId = this.getUserId(req);
       const sessionId = req.headers['x-session-id'] as string | undefined;
       const { itemId } = req.params;
 
@@ -184,7 +191,7 @@ export class CartController {
    */
   async removeItem(req: Request, res: Response) {
     try {
-      const userId = req.headers['x-user-id'] as string | undefined;
+      const userId = this.getUserId(req);
       const sessionId = req.headers['x-session-id'] as string | undefined;
       const { itemId } = req.params;
 
@@ -218,7 +225,7 @@ export class CartController {
    */
   async clearCart(req: Request, res: Response) {
     try {
-      const userId = req.headers['x-user-id'] as string | undefined;
+      const userId = this.getUserId(req);
       const sessionId = req.headers['x-session-id'] as string | undefined;
 
       const cart = await cartService.getOrCreateCart(userId, sessionId);
@@ -244,7 +251,7 @@ export class CartController {
    */
   async applyCoupon(req: Request, res: Response) {
     try {
-      const userId = req.headers['x-user-id'] as string | undefined;
+      const userId = this.getUserId(req);
       const sessionId = req.headers['x-session-id'] as string | undefined;
 
       const validation = applyCouponSchema.safeParse(req.body);
@@ -280,7 +287,7 @@ export class CartController {
    */
   async removeCoupon(req: Request, res: Response) {
     try {
-      const userId = req.headers['x-user-id'] as string | undefined;
+      const userId = this.getUserId(req);
       const sessionId = req.headers['x-session-id'] as string | undefined;
 
       const cart = await cartService.getOrCreateCart(userId, sessionId);
@@ -306,7 +313,7 @@ export class CartController {
    */
   async mergeCarts(req: Request, res: Response) {
     try {
-      const userId = req.headers['x-user-id'] as string;
+      const userId = this.getUserId(req) as string;
 
       if (!userId) {
         return res.status(401).json({
