@@ -947,9 +947,10 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     overflow: 'hidden',
   },
   headerLogo: {
-    width: 28,
-    height: 28,
-    resizeMode: 'contain',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    resizeMode: 'cover',
   },
   headerTitle: {
     fontSize: 16,
@@ -1011,9 +1012,10 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     overflow: 'hidden',
   },
   botAvatarLogo: {
-    width: 20,
-    height: 20,
-    resizeMode: 'contain',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    resizeMode: 'cover',
   },
   botName: {
     fontSize: 11,
