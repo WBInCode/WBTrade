@@ -228,7 +228,7 @@ export interface OrderItem {
 export interface Order {
   id: string;
   orderNumber: string;
-  status: 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
+  status: 'OPEN' | 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
   paymentStatus?: string;
   items: OrderItem[];
   shippingAddress?: OrderAddress;

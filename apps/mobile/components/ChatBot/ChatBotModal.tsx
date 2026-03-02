@@ -113,8 +113,12 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat, onBotMess
           isBot: true,
           timestamp: new Date(),
           actions: PROMO_CONFIG.actions as any,
+          showSuggestions: true,
         };
-        animatedSetMessages(prev => [...prev, promoMsg]);
+        animatedSetMessages(prev => [
+          ...prev.map(m => m.showSuggestions ? { ...m, showSuggestions: false } : m),
+          promoMsg,
+        ]);
         setIsTyping(false);
         setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
       }, 800);
@@ -416,8 +420,17 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat, onBotMess
     }
 
     try {
-      const result = await productsApi.search(query, { limit: 20 });
+      const result = await productsApi.search(query, { limit: 20, status: 'active' });
       const products = (result.products || [])
+        .filter((p: Product) => {
+          // Only show active products with stock
+          if (p.status !== 'active') return false;
+          // Check if any variant has stock > 0
+          if (p.variants && p.variants.length > 0) {
+            return p.variants.some(v => v.stock > 0);
+          }
+          return true; // No variants info — assume available
+        })
         .sort((a: Product, b: Product) => (Number(b.rating) || 0) - (Number(a.rating) || 0))
         .slice(0, 3);
 
@@ -628,8 +641,17 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat, onBotMess
     ).slice(0, 6);
   }, [messages]);
 
+  const lastBotMessageId = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].isBot) return messages[i].id;
+    }
+    return null;
+  }, [messages]);
+
   const renderMessage = useCallback(({ item }: { item: Message }) => {
-    const availableSuggestions = item.showSuggestions ? getAvailableSuggestions() : [];
+    // Only show suggestion chips under the LAST bot message that has the flag
+    const isLastBot = item.id === lastBotMessageId;
+    const availableSuggestions = (item.showSuggestions && isLastBot) ? getAvailableSuggestions() : [];
 
     return (
       <View>
@@ -776,7 +798,7 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat, onBotMess
         )}
       </View>
     );
-  }, [styles, colors, handleAction, handleQuickQuestion, handleCategorySelect, handleReaction, getAvailableSuggestions, onMinimize, router, FAQ_CATEGORIES, CATEGORY_EMOJI]);
+  }, [styles, colors, handleAction, handleQuickQuestion, handleCategorySelect, handleReaction, getAvailableSuggestions, onMinimize, router, FAQ_CATEGORIES, CATEGORY_EMOJI, lastBotMessageId]);
 
   const showInitialChips = messages.length <= 1;
 

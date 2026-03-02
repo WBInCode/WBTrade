@@ -144,8 +144,10 @@ export function useCheckout() {
 
   const fetchSavedAddresses = useCallback(async () => {
     try {
-      const response = await api.get<{ addresses: any[] }>('/addresses');
-      return response.addresses || [];
+      const response = await api.get<any[]>('/addresses');
+      // API returns plain array
+      const addresses = Array.isArray(response) ? response : (response as any)?.addresses || [];
+      return addresses;
     } catch (err: any) {
       console.error('Error fetching addresses:', err);
       return [];

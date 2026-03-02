@@ -164,11 +164,11 @@ export default function CartScreen() {
         [
           { text: 'Anuluj', style: 'cancel' },
           { text: 'Zaloguj się', onPress: () => router.push('/(auth)/login') },
-          { text: 'Kontynuuj jako gość', onPress: () => router.push('/checkout/') },
+          { text: 'Kontynuuj jako gość', onPress: () => router.push('/checkout' as any) },
         ]
       );
     } else {
-      router.push('/checkout/');
+      router.push('/checkout' as any);
     }
   };
 
