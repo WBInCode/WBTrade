@@ -68,7 +68,8 @@ function formatDate(isoDate: string): string {
 }
 
 function formatPrice(value: number): string {
-  return `${value.toFixed(2).replace('.', ',')} zł`;
+  const num = Number(value) || 0;
+  return `${num.toFixed(2).replace('.', ',')} zł`;
 }
 
 function getPaymentStatusLabel(status: string | undefined, colors: ReturnType<typeof useThemeColors>): { label: string; color: string } {
