@@ -27,6 +27,7 @@ interface StatusConfig {
 }
 
 const getStatusMap = (colors: ThemeColors): Record<StatusKey, StatusConfig> => ({
+  OPEN: { label: 'Otwarte', bg: colors.warningBg, text: colors.warningText },
   PENDING: { label: 'Nowe', bg: colors.warningBg, text: colors.warningText },
   CONFIRMED: { label: 'Potwierdzone', bg: colors.tintLight, text: colors.tint },
   PROCESSING: { label: 'W realizacji', bg: colors.tintLight, text: colors.tint },
@@ -49,7 +50,8 @@ function formatDate(isoDate: string): string {
 }
 
 function formatPrice(value: number): string {
-  return `${value.toFixed(2).replace('.', ',')} zł`;
+  const num = Number(value) || 0;
+  return `${num.toFixed(2).replace('.', ',')} zł`;
 }
 
 // --- Order card ---

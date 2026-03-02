@@ -64,7 +64,7 @@ const HeaderSection = React.memo(function HeaderSection() {
   const router = useRouter();
   const colors = useThemeColors();
   return (
-    <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+    <View style={[styles.header, { backgroundColor: colors.card }]}>
       <View style={styles.headerTop}>
         <Image
           source={require('../../assets/images/wb-trade-logo.png')}
@@ -72,6 +72,7 @@ const HeaderSection = React.memo(function HeaderSection() {
           contentFit="contain"
         />
       </View>
+      <View style={[styles.headerDivider, { backgroundColor: colors.border }]} />
       <TouchableOpacity style={[styles.searchBar, { backgroundColor: colors.searchBackground }]} onPress={() => router.push('/(tabs)/search')} activeOpacity={0.8}>
         <FontAwesome name="search" size={15} color={colors.searchPlaceholder} />
         <Text style={[styles.searchPlaceholder, { color: colors.searchPlaceholder }]}>Czego szukasz?</Text>
@@ -548,14 +549,15 @@ const styles = StyleSheet.create({
 
   // Header
   header: {
-    paddingHorizontal: 2, paddingTop: 10, paddingBottom: 10,
-    borderBottomWidth: 1,
+    paddingHorizontal: 12, paddingTop: 10, paddingBottom: 10,
   },
   headerTop: {
-    alignItems: 'flex-start', marginBottom: 6,
+    alignItems: 'center', marginBottom: 10,
   },
   headerLogo: { width: 110, height: 32 },
-
+  headerDivider: {
+    height: 1, marginBottom: 10,
+  },
   searchBar: {
     flexDirection: 'row', alignItems: 'center',
     borderRadius: 24, paddingHorizontal: 16, paddingVertical: 11, gap: 10,

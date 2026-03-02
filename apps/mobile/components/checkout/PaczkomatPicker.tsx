@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   StatusBar,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
+import * as Location from 'expo-location';
+import { Config } from '../../constants/Config';
 import { useThemeColors } from '../../hooks/useThemeColors';
 
 export interface InPostPoint {
@@ -32,50 +34,29 @@ interface PaczkomatPickerProps {
   onPointSelect: (point: InPostPoint) => void;
 }
 
-const INPOST_TOKEN = 'eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJzQlpXVzFNZzVlQnpDYU1XU3JvTlBjRWFveFpXcW9Ua2FuZVB3X291LWxvIn0.eyJleHAiOjIwNDkwMzA2NjksImlhdCI6MTczMzY3MDY2OSwiYXV0aF90aW1lIjoxNzMzNjcwNjY5LCJqdGkiOiJiNmUyYmRiOC1iZjFmLTQxNzktOTk5ZC1kNmFlMWY4MjdjNzMiLCJpc3MiOiJodHRwczovL2xvZ2luLmlucG9zdC5wbC9hdXRoL3JlYWxtcy9leHRlcm5hbCIsInN1YiI6ImY6MTJhZTVjODItZTlhNC00NThmLWFhNTItMWViMDNlYmFjOTRlOmtKS1dWdGJZX3R3eVRiUDlFeXU3MmFiUFhCSjlhNXh3eFBKd05pZGhJTjgiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJzaGlweCIsInNlc3Npb25fc3RhdGUiOiIzMjY3NzllYi0xMmU5LTQwMjgtODJiMy04MGMzNmIzODRjMWIiLCJzY29wZSI6Im9wZW5pZCBhcGk6YXBpcG9pbnRzIiwic2lkIjoiMzI2Nzc5ZWItMTJlOS00MDI4LTgyYjMtODBjMzZiMzg0YzFiIiwiYWxsb3dlZF9yZWZlcnJlcnMiOiIiLCJ1dWlkIjoiNWExOTEzYjQtMjI3NC01Y2VjLThmZjItNTQ3NThlMmYwNDg0In0.XvzpVGInkjHpQX9lsLNRNXPLAMT1rUdvMFJ7sBU1lHNYTPPOuH2qmw0M6d8V3MO6RB3LFaTdZnr77hkwX2EoNpJLmWCsYbkaoWg0qHYaJn_oWBJ5LAqYbMiNc_JYchRWqP-sBpXaRUWBXCCJZtb4v7gDIc2RL8E7EjrwZ8b_0bIelLEGODwi9bIfRm--TmpBlvSqEBt0lBPGsD4DjXxYKiV7Vkdz9KIEA7OYF6a1f0PaV62bHvti_ILKnIRYMpFXcjRF14xLK3UZN3Gj7WcHFHlNz1FLKCuFxJCPRFCFo0J1f6l0zVHTh9_40Gv8cboY9vbvUMRxaVOkD6IhtBVFA';
-
 export default function PaczkomatPicker({ isOpen, onClose, onPointSelect }: PaczkomatPickerProps) {
   const colors = useThemeColors();
   const webViewRef = useRef<WebView>(null);
 
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-      <link rel="stylesheet" href="https://geowidget.inpost.pl/inpost-geowidget.css" />
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { width: 100%; height: 100%; overflow: hidden; }
-        inpost-geowidget { display: block; width: 100%; height: 100%; }
-      </style>
-    </head>
-    <body>
-      <script src="https://geowidget.inpost.pl/inpost-geowidget.js" defer></script>
-      <script>
-        function onPointSelect(point) {
-          window.ReactNativeWebView.postMessage(JSON.stringify({
-            type: 'POINT_SELECTED',
-            point: point
-          }));
+  // Request location permission when the picker opens
+  useEffect(() => {
+    if (isOpen) {
+      (async () => {
+        try {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status !== 'granted') {
+            console.log('Location permission not granted for PaczkomatPicker');
+          }
+        } catch (err) {
+          console.error('Failed to request location permission:', err);
         }
-        
-        document.addEventListener('DOMContentLoaded', function() {
-          var el = document.createElement('inpost-geowidget');
-          el.setAttribute('token', '${INPOST_TOKEN}');
-          el.setAttribute('language', 'pl');
-          el.setAttribute('config', 'parcelCollect');
-          el.setAttribute('onpoint', 'onPointSelect');
-          el.style.width = '100%';
-          el.style.height = '100%';
-          el.style.display = 'block';
-          document.body.appendChild(el);
-        });
-      </script>
-    </body>
-    </html>
-  `;
+      })();
+    }
+  }, [isOpen]);
+
+  // Custom Leaflet-based paczkomat map served by our API (uses public InPost API — no token needed)
+  const baseApiUrl = Config.API_URL.replace(/\/api\/?$/, '');
+  const widgetUrl = `${baseApiUrl}/api/inpost-widget?v=${Date.now()}`;
 
   const handleMessage = (event: any) => {
     try {
@@ -90,14 +71,9 @@ export default function PaczkomatPicker({ isOpen, onClose, onPointSelect }: Pacz
   };
 
   return (
-    <Modal
-      visible={isOpen}
-      animationType="slide"
-      presentationStyle="fullScreen"
-      onRequestClose={onClose}
-    >
+    <Modal visible={isOpen} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
       <SafeAreaView style={styles.container}>
-        {/* Header */}
+        {/* Header bar with close button */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <View style={styles.headerIcon}>
@@ -113,10 +89,10 @@ export default function PaczkomatPicker({ isOpen, onClose, onPointSelect }: Pacz
           </TouchableOpacity>
         </View>
 
-        {/* WebView with InPost GeoWidget */}
+        {/* Custom Leaflet map with InPost paczkomats */}
         <WebView
           ref={webViewRef}
-          source={{ html: htmlContent }}
+          source={{ uri: widgetUrl }}
           style={[styles.webView, { backgroundColor: colors.background }]}
           onMessage={handleMessage}
           javaScriptEnabled={true}
@@ -125,10 +101,13 @@ export default function PaczkomatPicker({ isOpen, onClose, onPointSelect }: Pacz
           allowsInlineMediaPlayback={true}
           mixedContentMode="compatibility"
           geolocationEnabled={true}
+          cacheEnabled={false}
+          cacheMode="LOAD_NO_CACHE"
+          incognito={true}
           startInLoadingState={true}
           renderLoading={() => (
             <View style={[styles.loading, { backgroundColor: colors.background }]}>
-              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Ładowanie mapy...</Text>
+              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Ładowanie mapy paczkomatów...</Text>
             </View>
           )}
         />
@@ -151,11 +130,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     backgroundColor: '#FFCD00',
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerIcon: {
     width: 40,
     height: 40,
@@ -164,18 +139,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerIconText: {
-    fontSize: 20,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#1D1D1B',
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: 'rgba(29,29,27,0.7)',
-  },
+  headerIconText: { fontSize: 20 },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: '#1D1D1B' },
+  headerSubtitle: { fontSize: 12, color: 'rgba(29,29,27,0.7)' },
   closeButton: {
     width: 36,
     height: 36,
@@ -184,14 +150,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  closeText: {
-    fontSize: 18,
-    color: '#1D1D1B',
-    fontWeight: '600',
-  },
-  webView: {
-    flex: 1,
-  },
+  closeText: { fontSize: 18, color: '#1D1D1B', fontWeight: '600' },
+  webView: { flex: 1 },
   loading: {
     position: 'absolute',
     top: 0,
@@ -201,7 +161,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: {
-    fontSize: 14,
-  },
+  loadingText: { fontSize: 14 },
 });

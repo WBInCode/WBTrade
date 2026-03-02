@@ -1,4 +1,4 @@
-import type { FaqEntry } from './types';
+import type { FaqEntry, MessageAction } from './types';
 
 const BOT_NAME = 'WuBuś';
 
@@ -15,6 +15,7 @@ export const FAQ_DATA: FaqEntry[] = [
     question: 'Jak sprawdzić status zamówienia?',
     answer: 'Przejdź do: Konto → Moje zamówienia. Zobaczysz listę wszystkich zamówień z aktualnym statusem (Nowe → Potwierdzone → W realizacji → Wysłane → Dostarczone). Kliknij w zamówienie, aby zobaczyć oś czasu statusów i numer śledzenia przesyłki.',
     category: 'Zamówienia',
+    actions: [{ label: 'Przejdź do zamówień', icon: 'arrow-right', type: 'navigate', payload: '', route: '/account/orders' }],
   },
   {
     keywords: ['anulować', 'anulowanie', 'odwołać', 'rezygnacja', 'zrezygnować'],
@@ -39,6 +40,7 @@ export const FAQ_DATA: FaqEntry[] = [
     question: 'Jakie są etapy realizacji zamówienia?',
     answer: 'Zamówienie przechodzi przez następujące etapy:\n\n1. 📝 Nowe — zamówienie złożone\n2. ✅ Potwierdzone — płatność zweryfikowana\n3. 📦 W realizacji — kompletowane w magazynie\n4. 🚚 Wysłane — przekazane do kuriera\n5. ✔️ Dostarczone — odebrane\n\nCały postęp widzisz na osi czasu w szczegółach zamówienia.',
     category: 'Zamówienia',
+    actions: [{ label: 'Przejdź do zamówień', icon: 'arrow-right', type: 'navigate', payload: '', route: '/account/orders' }],
   },
 
   // ═══ KOSZYK I CHECKOUT ═══
@@ -47,6 +49,7 @@ export const FAQ_DATA: FaqEntry[] = [
     question: 'Jak działa koszyk?',
     answer: 'Koszyk znajdziesz na dolnym pasku nawigacji (ikona 🛒). Produkty są automatycznie grupowane według magazynów jako osobne paczki (Paczka 1, Paczka 2...). Możesz zmieniać ilość produktów, usuwać je, oraz dodawać kupony rabatowe.',
     category: 'Koszyk',
+    actions: [{ label: 'Otwórz koszyk', icon: 'arrow-right', type: 'navigate', payload: '', route: '/(tabs)/cart' }],
   },
   {
     keywords: ['paczka', 'magazyn', 'dlaczego kilka paczek', 'kilka przesyłek', 'grupowanie'],
@@ -163,6 +166,7 @@ export const FAQ_DATA: FaqEntry[] = [
     question: 'Gdzie znajdę swoje kody rabatowe?',
     answer: 'Wszystkie Twoje kupony znajdziesz w: Konto → Moje rabaty.\n\nZobaczysz tam:\n• Aktywne kupony z kodem do skopiowania\n• Wartość rabatu (%, kwota lub darmowa dostawa)\n• Datę ważności i minimalną kwotę zamówienia\n• Historię wykorzystanych kuponów\n\nKupony możesz też szybko zastosować bezpośrednio w koszyku!',
     category: 'Kupony i Rabaty',
+    actions: [{ label: 'Przejdź do kuponów', icon: 'arrow-right', type: 'navigate', payload: '', route: '/account/discounts' }],
   },
   {
     keywords: ['użyć kuponu', 'wpisać kupon', 'zastosować kupon', 'jak użyć kodu', 'pole kuponu'],
@@ -175,6 +179,7 @@ export const FAQ_DATA: FaqEntry[] = [
     question: 'Jak zdobyć kupony rabatowe?',
     answer: 'W WBTrade masz do dyspozycji kilka źródeł kuponów! Przejdź do Konto → Moje rabaty → sekcja „Rabaty do zdobycia":\n\n🎁 Pobierz aplikację → -5% (kliknij „Odbierz")\n📧 Zapisz się do newslettera → -10%\n⭐ Wystaw pierwszą opinię → -5%\n👥 Poleć znajomemu → -10%\n🎂 Urodzinowy prezent → -15%\n\nNiektóre kupony można odebrać od razu jednym kliknięciem!',
     category: 'Kupony i Rabaty',
+    actions: [{ label: 'Przejdź do kuponów', icon: 'arrow-right', type: 'navigate', payload: '', route: '/account/discounts' }],
   },
   {
     keywords: ['kupon powitalny', 'zniżka powitalna', 'pierwsza zniżka', 'rabat na start'],
@@ -253,12 +258,14 @@ export const FAQ_DATA: FaqEntry[] = [
     question: 'Jak dodać produkt do ulubionych?',
     answer: 'Aby dodać produkt do ulubionych, kliknij ikonę ❤️ (serce) na stronie produktu. Wymaga to zalogowania.\n\nWszystkie ulubione produkty znajdziesz w zakładce „Ulubione" (serce na dolnym pasku nawigacji). Stamtąd możesz też szybko dodać produkt do koszyka lub usunąć z ulubionych.',
     category: 'Ulubione',
+    actions: [{ label: 'Przejdź do ulubionych', icon: 'arrow-right', type: 'navigate', payload: '', route: '/(tabs)/wishlist' }],
   },
   {
     keywords: ['lista ulubionych', 'gdzie ulubione', 'moje ulubione'],
     question: 'Gdzie znajdę moje ulubione produkty?',
     answer: 'Twoje ulubione produkty znajdziesz klikając ikonę ❤️ na dolnym pasku nawigacji (zakładka „Ulubione"). Zobaczysz listę wszystkich polubionych produktów z cenami, dostępnością i przyciskiem szybkiego dodawania do koszyka.',
     category: 'Ulubione',
+    actions: [{ label: 'Przejdź do ulubionych', icon: 'arrow-right', type: 'navigate', payload: '', route: '/(tabs)/wishlist' }],
   },
 
   // ═══ LISTY ZAKUPOWE ═══
@@ -307,6 +314,7 @@ export const FAQ_DATA: FaqEntry[] = [
     question: 'Jak zmienić dane osobowe?',
     answer: 'Przejdź do Konto → Edytuj profil. Możesz zmienić:\n• Imię i nazwisko\n• Numer telefonu\n• Dane firmowe (nazwa firmy, NIP, adres firmy)\n\nUwaga: Adres e-mail nie może być zmieniony — jest on stałym identyfikatorem konta.',
     category: 'Konto',
+    actions: [{ label: 'Edytuj profil', icon: 'arrow-right', type: 'navigate', payload: '', route: '/account/profile' }],
   },
   {
     keywords: ['zmienić hasło', 'nowe hasło', 'reset hasła', 'zapomniane hasło', 'nie pamiętam hasła'],
@@ -499,5 +507,53 @@ export const FAQ_DATA: FaqEntry[] = [
     question: 'Produkt jest niedostępny — kiedy wróci?',
     answer: 'Jeśli produkt jest chwilowo niedostępny, masz kilka opcji:\n\n🔔 **Powiadomienie o dostępności** — na stronie produktu kliknij „Powiadom mnie, gdy będzie dostępny". Wyślemy Ci wiadomość push lub e-mail, gdy produkt wróci do sprzedaży.\n\n📦 **Sprawdź warianty** — czasem inny kolor lub rozmiar jest dostępny od ręki\n\n⏳ **Czas oczekiwania** — zwykle produkty wracają w ciągu 1–3 tygodni, ale zależy to od producenta\n\n💡 Jeśli zależy Ci na konkretnym produkcie, napisz do nas (kontakt@wbtrade.pl) — sprawdzimy u dostawcy przewidywany termin dostawy!',
     category: 'Produkty',
+  },
+
+  // ═══ PREZENTY / PAKOWANIE ═══
+  {
+    keywords: ['prezent', 'pakowanie', 'zapakuj', 'opakowanie prezentowe', 'dedykacja', 'na prezent', 'zapakować', 'pakowanie na prezent', 'upominek'],
+    question: 'Czy oferujecie pakowanie na prezent?',
+    answer: '🎁 Obecnie nie oferujemy opcji pakowania prezentowego przy składaniu zamówienia.\n\n**Kilka wskazówek:**\n• Zamów produkt na adres obdarowanej osoby — w uwagach do zamówienia zaznacz „nie dołączać paragonu"\n• Paragon możesz pobrać elektronicznie z zakładki Konto → Zamówienia\n• Jeśli zależy Ci na anonimowej przesyłce, napisz w uwagach — postaramy się usunąć dane nadawcy z etykiety\n\n💡 Pracujemy nad opcją pakowania prezentowego — śledź nasze aktualizacje!',
+    category: 'Dostawa',
+  },
+
+  // ═══ PORÓWNYWANIE PRODUKTÓW ═══
+  {
+    keywords: ['porównać', 'porównanie', 'który lepszy', 'różnica między', 'porównywarka', 'co wybrać', 'lepszy produkt'],
+    question: 'Czy mogę porównać produkty?',
+    answer: '🔍 Aplikacja WBTrade nie posiada jeszcze wbudowanej porównywarki produktów, ale możesz łatwo porównać oferty ręcznie:\n\n1. Dodaj interesujące produkty do **Ulubionych** (❤️) — znajdziesz je potem w jednym miejscu\n2. Porównaj **specyfikacje** na stronach produktów — parametry techniczne są wymienione pod opisem\n3. Sprawdź **opinie** innych klientów — oceny i recenzje pomogą w wyborze\n\n💡 Jeśli nie wiesz, co wybrać — napisz mi! Mogę wyszukać produkty w danej kategorii, a Ty porównasz ceny i oceny ⭐',
+    category: 'Produkty',
+  },
+
+  // ═══ PROGRAMY LOJALNOŚCIOWE ═══
+  {
+    keywords: ['punkty', 'lojalność', 'program lojalnościowy', 'nagrody', 'poziomy', 'punkty lojalnościowe', 'zbieranie punktów'],
+    question: 'Czy macie program lojalnościowy?',
+    answer: '⭐ Program lojalnościowy WBTrade jest w przygotowaniu!\n\n**Co planujemy:**\n• 🪙 Punkty za każde zakupy — wymienialne na rabaty\n• 🎁 Nagrody i kupony za osiągnięcie progów\n• 🏆 Poziomy lojalności z dodatkowymi benefitami\n\n**A tymczasem — korzystaj z dostępnych zniżek:**\n• 📧 Kupon za zapis do newslettera\n• 📱 Kupon -10% za pobranie aplikacji\n• 🎟️ Kody rabatowe z okazji promocji sezonowych\n\n💡 Śledź nas w aplikacji i newsletterze — jako pierwszy dowiesz się o starcie programu!',
+    category: 'Kupony i Rabaty',
+  },
+
+  // ═══ OPINIA BEZ ZAKUPU ═══
+  {
+    keywords: ['opinia bez zakupu', 'nie kupiłem', 'nie kupowałem', 'recenzja bez zamówienia', 'wystawić opinię', 'opinia', 'zostawić opinię'],
+    question: 'Czy mogę zostawić opinię bez zakupu?',
+    answer: '📝 Opinie w WBTrade mogą wystawiać **tylko klienci, którzy zakupili dany produkt**. Dzięki temu nasze recenzje są wiarygodne i pomocne dla innych.\n\n**Jak dodać opinię po zakupie:**\n1. Przejdź do Konto → Zamówienia\n2. Wybierz zrealizowane zamówienie\n3. Kliknij „Dodaj opinię" przy produkcie\n4. Oceń od 1 do 5 gwiazdek i opisz swoje doświadczenie\n\n💡 Po wystawieniu opinii możesz otrzymać dodatkowy kupon rabatowy — szczegóły w zakładce Kupony!',
+    category: 'Opinie',
+  },
+
+  // ═══ DLACZEGO CENA SIĘ ZMIENIŁA ═══
+  {
+    keywords: ['cena się zmieniła', 'inna cena', 'drożej', 'taniej', 'zmiana ceny', 'cena wzrosła', 'cena spadła', 'dynamiczne ceny', 'dlaczego droższa'],
+    question: 'Dlaczego cena produktu się zmieniła?',
+    answer: '💰 Ceny w WBTrade mogą się zmieniać z kilku powodów:\n\n📊 **Ceny rynkowe** — dostosowujemy ceny do aktualnych warunków rynkowych i cen dostawców\n🏷️ **Promocje** — produkt mógł być wcześniej w promocji, która się zakończyła (lub właśnie się zaczęła!)\n📦 **Dostępność** — ograniczona dostępność może wpływać na cenę\n\n🔍 **Cena Omnibus** — przy każdym produkcie widoczna jest najniższa cena z ostatnich 30 dni, dzięki czemu wiesz, czy aktualna oferta jest korzystna.\n\n💡 Dodaj produkt do Ulubionych — otrzymasz powiadomienie, gdy cena spadnie!',
+    category: 'Produkty',
+  },
+
+  // ═══ POLECENIE ZNAJOMEMU ═══
+  {
+    keywords: ['polecenie', 'polecić', 'kod polecający', 'znajomy', 'zaproś znajomego', 'program poleceń', 'referral', 'udostępnij'],
+    question: 'Jak polecić WBTrade znajomemu?',
+    answer: '👥 Cieszymy się, że chcesz polecić WBTrade!\n\nAktualnie pracujemy nad programem poleceń z dedykowanymi kodami rabatowymi. W przyszłości będziesz mógł:\n\n🔗 Wygenerować **unikalny link polecający**\n🎁 Otrzymać **kupon rabatowy**, gdy znajomy złoży pierwsze zamówienie\n👋 Znajomy również otrzyma **zniżkę na start**\n\n**A tymczasem** — możesz udostępnić link do aplikacji WBTrade bezpośrednio z telefonu (przycisk „Udostępnij" w ustawieniach aplikacji).\n\n💡 Śledź newslettera — poinformujemy o starcie programu poleceń!',
+    category: 'Kupony i Rabaty',
   },
 ];

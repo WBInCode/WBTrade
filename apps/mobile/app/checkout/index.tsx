@@ -115,7 +115,7 @@ export default function CheckoutScreen() {
     if (isAuthenticated) {
       // Logged-in: create address first
       try {
-        const addressRes = await api.post<{ address: { id: string } }>('/addresses', {
+        const addressRes = await api.post<{ id: string }>('/addresses', {
           firstName: address.firstName,
           lastName: address.lastName,
           phone: address.phone,
@@ -125,10 +125,10 @@ export default function CheckoutScreen() {
           city: address.city,
           country: address.country || 'PL',
         });
-        checkoutData.shippingAddressId = addressRes.address?.id;
+        checkoutData.shippingAddressId = addressRes.id;
 
         if (address.wantInvoice) {
-          const billingRes = await api.post<{ address: { id: string } }>('/addresses', {
+          const billingRes = await api.post<{ id: string }>('/addresses', {
             firstName: address.billingCompanyName,
             lastName: '',
             phone: address.phone,
@@ -139,7 +139,7 @@ export default function CheckoutScreen() {
             companyName: address.billingCompanyName,
             nip: address.billingNip,
           });
-          checkoutData.billingAddressId = billingRes.address?.id;
+          checkoutData.billingAddressId = billingRes.id;
         }
       } catch (err: any) {
         // If address creation fails, try inline address

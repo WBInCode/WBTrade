@@ -12,6 +12,14 @@ const DELIVERY_TAGS = [
   'do 2 kg', 'do 5 kg', 'do 10 kg', 'do 20 kg', 'do 31,5 kg',
 ];
 
+// Paczkomat tags — products with these MUST also have a "produkt w paczce" tag
+// Otherwise the product page returns 404 (must match products.service.ts)
+const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
+const PACKAGE_TAGS = [
+  'produkt w paczce: 1', 'produkt w paczce: 2', 'produkt w paczce: 3',
+  'produkt w paczce: 4', 'produkt w paczce: 5',
+];
+
 // Google Merchant only accepts JPEG, PNG, GIF — not WebP
 const GOOGLE_ALLOWED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif'];
 
@@ -212,6 +220,12 @@ export async function streamGoogleMerchantFeed(baseUrl: string, res: Response): 
         NOT: { tags: { hasSome: HIDDEN_TAGS } },
         tags: { hasSome: DELIVERY_TAGS },
         images: { some: {} },
+        // Paczkomat filter: if product has paczkomat tag, it MUST also have package tag
+        // Without this, product page returns 404 → Google flags "page unavailable"
+        OR: [
+          { NOT: { tags: { hasSome: PACZKOMAT_TAGS } } },
+          { tags: { hasSome: PACKAGE_TAGS } },
+        ],
       },
       select: {
         sku: true,
@@ -300,6 +314,10 @@ export async function generateGoogleMerchantFeed(baseUrl: string): Promise<strin
         NOT: { tags: { hasSome: HIDDEN_TAGS } },
         tags: { hasSome: DELIVERY_TAGS },
         images: { some: {} },
+        OR: [
+          { NOT: { tags: { hasSome: PACZKOMAT_TAGS } } },
+          { tags: { hasSome: PACKAGE_TAGS } },
+        ],
       },
       select: {
         sku: true,

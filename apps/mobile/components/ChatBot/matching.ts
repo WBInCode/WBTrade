@@ -1,4 +1,5 @@
 import { FAQ_DATA } from './faqData';
+import type { MessageAction } from './types';
 
 const BOT_NAME = 'WuBuś';
 
@@ -136,7 +137,7 @@ const POLITE_RESPONSES: { patterns: string[]; replies: string[] }[] = [
   },
 ];
 
-export function findBestAnswer(query: string): string | null {
+export function findBestAnswer(query: string): { answer: string; category: string; actions?: MessageAction[] } | null {
   const q = query.toLowerCase().trim();
   if (q.length < 2) return null;
 
@@ -144,7 +145,7 @@ export function findBestAnswer(query: string): string | null {
   for (const group of POLITE_RESPONSES) {
     for (const pattern of group.patterns) {
       if (q === pattern || q.includes(pattern)) {
-        return group.replies[Math.floor(Math.random() * group.replies.length)];
+        return { answer: group.replies[Math.floor(Math.random() * group.replies.length)], category: '' };
       }
     }
   }
@@ -226,7 +227,7 @@ export function findBestAnswer(query: string): string | null {
   }
 
   if (bestScore >= 8 && bestAnswer) {
-    return bestAnswer.answer;
+    return { answer: bestAnswer.answer, category: bestAnswer.category, actions: bestAnswer.actions };
   }
 
   return null;
