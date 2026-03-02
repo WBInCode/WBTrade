@@ -919,6 +919,17 @@ async function cartFetch<T>(endpoint: string, options: RequestInit = {}): Promis
   if (sessionId) {
     headers['X-Session-Id'] = sessionId;
   }
+
+  // Include Authorization header if available (needed for coupon ownership checks)
+  try {
+    const tokensStr = localStorage.getItem('auth_tokens');
+    if (tokensStr) {
+      const tokens = JSON.parse(tokensStr);
+      if (tokens.accessToken) {
+        headers['Authorization'] = `Bearer ${tokens.accessToken}`;
+      }
+    }
+  } catch {}
   
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,

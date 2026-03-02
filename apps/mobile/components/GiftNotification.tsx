@@ -601,23 +601,24 @@ export default function GiftNotification({
         {phase === 'revealed' && (
           <Animated.View
             style={[
-              styles.revealCard,
+              styles.revealCardWrapper,
               {
                 transform: [{ scale: revealScale }],
                 opacity: revealOpacity,
               },
             ]}
           >
-            {/* Decorative top arc */}
-            <View style={styles.cardTopArc} />
-
-            {/* Discount badge */}
+            {/* Discount badge - outside overflow:hidden card */}
             <Animated.View style={[styles.badgeOuter, { transform: [{ scale: badgeScale }] }]}>
               <Animated.View style={[styles.badgeGlow, { opacity: badgeGlowOpacity }]} />
               <View style={styles.discountBadge}>
                 <Text style={styles.discountValue}>-{discountPercent}%</Text>
               </View>
             </Animated.View>
+
+            <View style={styles.revealCard}>
+            {/* Decorative top arc */}
+            <View style={styles.cardTopArc} />
 
             {/* Title */}
             <Animated.View style={{ opacity: titleOpacity }}>
@@ -682,6 +683,7 @@ export default function GiftNotification({
                 </View>
               </TouchableOpacity>
             </Animated.View>
+            </View>
           </Animated.View>
         )}
       </Animated.View>
@@ -848,6 +850,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
 
   // ── Revealed phase ──
+  revealCardWrapper: {
+    width: CARD_WIDTH,
+    alignItems: 'center',
+    // No overflow hidden here – badge renders above the card
+  },
   revealCard: {
     width: CARD_WIDTH,
     backgroundColor: colors.card,
@@ -857,6 +864,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingBottom: 24,
     alignItems: 'center',
     overflow: 'hidden',
+    marginTop: -38,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -877,10 +885,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.tintLight,
   },
 
-  // Badge
+  // Badge – positioned above the card (zIndex keeps it on top)
   badgeOuter: {
-    position: 'absolute',
-    top: -32,
+    zIndex: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },

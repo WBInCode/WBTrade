@@ -150,6 +150,7 @@ export async function getPopularSearches(req: Request, res: Response): Promise<v
     dateThreshold.setDate(dateThreshold.getDate() - days);
 
     // Get most common search queries from SearchHistory
+    // Fetch more than needed so we can filter out queries with no visible results
     const popularSearches = await prisma.searchHistory.groupBy({
       by: ['query'],
       where: {
@@ -158,7 +159,7 @@ export async function getPopularSearches(req: Request, res: Response): Promise<v
       },
       _count: { query: true },
       orderBy: { _count: { query: 'desc' } },
-      take: limit,
+      take: limit * 4, // Fetch extra to filter
     });
 
     // If no search history, return default popular searches
@@ -176,8 +177,36 @@ export async function getPopularSearches(req: Request, res: Response): Promise<v
       return;
     }
 
+    // Filter: only keep searches that return at least 1 visible product
+    const validSearches: string[] = [];
+    for (const s of popularSearches) {
+      if (validSearches.length >= limit) break;
+      try {
+        const result = await searchService.search(s.query, undefined, undefined, 1);
+        if (result.products.length > 0) {
+          validSearches.push(s.query);
+        }
+      } catch {
+        // Skip on error
+      }
+    }
+
+    if (validSearches.length === 0) {
+      res.status(200).json({
+        searches: [
+          'Zabawki',
+          'Przytulanka',
+          'Dekoracje',
+          'Kuchnia',
+          'Akcesoria',
+        ],
+        isDefault: true,
+      });
+      return;
+    }
+
     res.status(200).json({
-      searches: popularSearches.map(s => s.query),
+      searches: validSearches,
       isDefault: false,
     });
   } catch (error) {
