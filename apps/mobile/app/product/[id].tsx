@@ -1426,33 +1426,24 @@ export default function ProductDetailScreen() {
             )}
 
             {/* "Zobacz wszystkie opinie" button */}
-            {reviewStats && reviewStats.totalReviews > reviews.length && !showAllReviews && (
+            {reviewStats && reviewStats.totalReviews > 0 && (
               <TouchableOpacity
                 style={styles.seeAllReviewsBtn}
                 activeOpacity={0.7}
-                onPress={async () => {
-                  if (!product || loadingAllReviews) return;
-                  setLoadingAllReviews(true);
-                  try {
-                    const data = await api.get<{ reviews: Review[] }>(
-                      `/products/${product.id}/reviews?limit=100&sort=newest`
-                    );
-                    setReviews(data.reviews || []);
-                    setShowAllReviews(true);
-                  } catch {
-                    showToast('Nie udało się załadować opinii', 'error');
-                  } finally {
-                    setLoadingAllReviews(false);
-                  }
+                onPress={() => {
+                  if (!product) return;
+                  router.push({
+                    pathname: '/product/reviews',
+                    params: {
+                      productId: product.id,
+                      productName: product.name,
+                    },
+                  });
                 }}
               >
-                {loadingAllReviews ? (
-                  <ActivityIndicator size="small" color={colors.tint} />
-                ) : (
-                  <Text style={styles.seeAllReviewsText}>
-                    Zobacz wszystkie opinie ({reviewStats.totalReviews})
-                  </Text>
-                )}
+                <Text style={styles.seeAllReviewsText}>
+                  Zobacz wszystkie opinie ({reviewStats.totalReviews})
+                </Text>
               </TouchableOpacity>
             )}
 
