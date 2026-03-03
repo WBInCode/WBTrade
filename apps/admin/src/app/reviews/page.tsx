@@ -184,10 +184,10 @@ export default function ReviewsPage() {
   };
 
   const deleteReview = async (reviewId: string) => {
-    const ok = await confirm(
-      'Czy na pewno chcesz usunąć tę opinię? Ta operacja jest nieodwracalna.',
-      'Usuń opinię'
-    );
+    const ok = await confirm({
+      message: 'Czy na pewno chcesz usunąć tę opinię? Ta operacja jest nieodwracalna.',
+      title: 'Usuń opinię',
+    });
     if (!ok) return;
 
     try {
@@ -233,10 +233,10 @@ export default function ReviewsPage() {
   };
 
   const removeReply = async (reviewId: string) => {
-    const ok = await confirm(
-      'Czy na pewno chcesz usunąć odpowiedź administratora?',
-      'Usuń odpowiedź'
-    );
+    const ok = await confirm({
+      message: 'Czy na pewno chcesz usunąć odpowiedź administratora?',
+      title: 'Usuń odpowiedź',
+    });
     if (!ok) return;
 
     try {
