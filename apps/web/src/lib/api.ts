@@ -1418,6 +1418,9 @@ export interface Review {
   isApproved: boolean;
   helpfulCount: number;
   notHelpfulCount: number;
+  adminReply: string | null;
+  adminReplyAt: string | null;
+  adminReplyBy: string | null;
   createdAt: string;
   updatedAt: string;
   user: {

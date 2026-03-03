@@ -501,6 +501,9 @@ interface Review {
   content: string;
   isVerifiedPurchase: boolean;
   helpfulCount?: number;
+  adminReply?: string | null;
+  adminReplyAt?: string | null;
+  adminReplyBy?: string | null;
   createdAt: string;
   user?: { firstName: string; lastName: string };
 }
@@ -1394,6 +1397,23 @@ export default function ProductDetailScreen() {
                     <Text style={styles.reviewHCardContent} numberOfLines={4}>
                       {review.content}
                     </Text>
+                    {review.adminReply && (
+                      <View style={{
+                        marginTop: 8,
+                        padding: 10,
+                        backgroundColor: colors.backgroundTertiary,
+                        borderLeftWidth: 3,
+                        borderLeftColor: '#3B82F6',
+                        borderRadius: 6,
+                      }}>
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: '#60A5FA', marginBottom: 3 }}>
+                          Odpowiedź sklepu
+                        </Text>
+                        <Text style={{ fontSize: 12, color: colors.textSecondary }} numberOfLines={3}>
+                          {review.adminReply}
+                        </Text>
+                      </View>
+                    )}
                     {review.isVerifiedPurchase && (
                       <View style={styles.reviewHCardVerified}>
                         <FontAwesome name="check-circle" size={11} color={colors.success} />
