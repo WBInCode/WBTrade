@@ -86,7 +86,7 @@ const CategoriesSection = React.memo(function CategoriesSection({ categories }: 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScrollContent}>
         {categories.map((cat, index) => (
           <TouchableOpacity key={cat.id} style={styles.categoryCircleWrap} onPress={() => router.push(`/category/${cat.slug}`)}>
-            <View style={styles.categoryCircle}>
+            <View style={[styles.categoryCircle, { backgroundColor: colors.card, borderColor: colors.tint }]}>
               <Image source={getCategoryIcon(cat.slug)} style={styles.categoryIconImage} contentFit="contain" />
             </View>
             <Text style={[styles.categoryCircleLabel, { color: colors.textSecondary }]} numberOfLines={2}>{cat.name}</Text>
@@ -567,9 +567,7 @@ const styles = StyleSheet.create({
   categoryCircle: {
     width: 72, height: 72, borderRadius: 36,
     alignItems: 'center', justifyContent: 'center', marginBottom: 8,
-    backgroundColor: '#fff',
     borderWidth: 2,
-    borderColor: '#e85011',
   },
   categoryIconImage: {
     width: 65, height: 65,
