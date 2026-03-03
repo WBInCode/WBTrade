@@ -151,6 +151,9 @@ model Review {
   isApproved         Boolean       @default(true) @map("is_approved")
   helpfulCount       Int           @default(0) @map("helpful_count")
   notHelpfulCount    Int           @default(0) @map("not_helpful_count")
+  adminReply         String?       @map("admin_reply")
+  adminReplyAt       DateTime?     @map("admin_reply_at")
+  adminReplyBy       String?       @map("admin_reply_by")
   createdAt          DateTime      @default(now()) @map("created_at")
   updatedAt          DateTime      @updatedAt @map("updated_at")
   images             ReviewImage[]

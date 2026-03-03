@@ -18,6 +18,7 @@ import {
   Warehouse,
   DollarSign,
   MessageCircleQuestion,
+  Star,
   // Trophy,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -70,6 +71,11 @@ const menuItems = [
     title: 'Użytkownicy',
     href: '/users',
     icon: Users,
+  },
+  {
+    title: 'Opinie',
+    href: '/reviews',
+    icon: Star,
   },
   {
     title: 'Activity Log',
