@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import type { ThemeColors } from '../../constants/Colors';
 import { useCart } from '../../contexts/CartContext';
@@ -79,6 +80,7 @@ export default function OrderSummary({
   error,
 }: OrderSummaryProps) {
   const { cart } = useCart();
+  const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -270,9 +272,9 @@ export default function OrderSummary({
           </View>
           <Text style={styles.termsText}>
             Akceptuję{' '}
-            <Text style={styles.termsLink}>regulamin</Text>
+            <Text style={styles.termsLink} onPress={() => router.push('/account/terms')}>regulamin</Text>
             {' '}oraz{' '}
-            <Text style={styles.termsLink}>politykę prywatności</Text>
+            <Text style={styles.termsLink} onPress={() => router.push('/account/privacy')}>politykę prywatności</Text>
             {' '}sklepu WBTrade *
           </Text>
         </TouchableOpacity>

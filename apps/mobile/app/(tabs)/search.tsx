@@ -523,13 +523,29 @@ export default function SearchScreen() {
         </View>
       )}
 
+      {/* ── WAREHOUSE FILTER BAR ── */}
+      {warehouseFilter && (
+        <View style={[styles.warehouseFilterBar, { backgroundColor: colors.tintLight, borderBottomColor: colors.border }]}>
+          <View style={styles.warehouseFilterInfo}>
+            <FontAwesome name="building-o" size={16} color={colors.tint} />
+            <Text style={[styles.warehouseFilterText, { color: colors.tint }]}>
+              {WAREHOUSE_NAMES[warehouseFilter] || warehouseFilter}
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.warehouseFilterClear} onPress={clearWarehouseFilter}>
+            <FontAwesome name="times-circle" size={20} color={colors.tint} />
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* ── RESULTS ── */}
       {searched && !loading && (
         <>
           {products.length > 0 && (
             <View style={[styles.toolbar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
               <Text style={[styles.resultCount, { color: colors.textSecondary }]}>
-                {sortedProducts.length} wynik{sortedProducts.length === 1 ? '' : sortedProducts.length < 5 ? 'i' : 'ów'} dla "{query}"
+                {sortedProducts.length} wynik{sortedProducts.length === 1 ? '' : sortedProducts.length < 5 ? 'i' : 'ów'}
+                {warehouseFilter ? ` z ${WAREHOUSE_NAMES[warehouseFilter] || warehouseFilter}` : query ? ` dla "${query}"` : ''}
               </Text>
               <TouchableOpacity
                 style={[styles.sortButton, { borderColor: colors.border }]}

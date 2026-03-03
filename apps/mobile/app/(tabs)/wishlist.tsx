@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
+import { pluralizeProducts } from '../../utils/pluralize';
 import {
   StyleSheet,
   View,
@@ -203,8 +204,11 @@ export default function WishlistScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Ulubione</Text>
-        <Text style={styles.headerCount}>{count} {count === 1 ? 'produkt' : count < 5 ? 'produkty' : 'produktów'}</Text>
+        <TouchableOpacity onPress={() => router.back()} style={{ padding: 4, marginRight: 8 }}>
+          <FontAwesome name="chevron-left" size={16} color={colors.text} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { flex: 1 }]}>Ulubione</Text>
+        <Text style={styles.headerCount}>{pluralizeProducts(count)}</Text>
       </View>
 
       <FlatList

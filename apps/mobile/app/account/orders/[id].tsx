@@ -407,9 +407,14 @@ export default function OrderDetailScreen() {
         <View style={styles.center}>
           <FontAwesome name="exclamation-circle" size={48} color={colors.destructive} />
           <Text style={styles.errorText}>{error ?? 'Nie znaleziono zamówienia'}</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={() => router.back()}>
-            <Text style={styles.retryBtnText}>Wróć</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
+            <TouchableOpacity style={[styles.retryBtn, { backgroundColor: colors.tint }]} onPress={() => fetchOrder()}>
+              <Text style={[styles.retryBtnText, { color: '#fff' }]}>Spróbuj ponownie</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.retryBtn} onPress={() => router.back()}>
+              <Text style={styles.retryBtnText}>Wróć</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </SafeAreaView>
     );

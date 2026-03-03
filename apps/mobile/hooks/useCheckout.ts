@@ -17,6 +17,7 @@ export interface AddressData {
   city: string;
   country: string;
   saveAddress: boolean;
+  savedAddressId?: string; // ID of selected saved address (skip creating new)
   // Billing / Invoice
   wantInvoice: boolean;
   billingCompanyName: string;

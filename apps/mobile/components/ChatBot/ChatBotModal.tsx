@@ -702,7 +702,7 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat, onBotMess
                     )}
                     <View style={styles.productInfo}>
                       <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
-                      <Text style={styles.productPrice}>{Number(product.price).toFixed(2)} zł</Text>
+                      <Text style={styles.productPrice}>{Number(product.price).toFixed(2).replace('.', ',')} zł</Text>
                       {product.rating ? (
                         <View style={styles.productRating}>
                           <FontAwesome name="star" size={12} color="#f59e0b" />

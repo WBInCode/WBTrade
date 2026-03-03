@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { pluralizeReviews } from '../../utils/pluralize';
 import {
   View,
   Text,
@@ -787,6 +788,8 @@ export default function ProductDetailScreen() {
 
   const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [showAllReviews, setShowAllReviews] = useState(false);
+  const [loadingAllReviews, setLoadingAllReviews] = useState(false);
 
   // Review form state
   const [canReview, setCanReview] = useState(false);
@@ -821,12 +824,24 @@ export default function ProductDetailScreen() {
   useEffect(() => {
     if (!id) return;
 
+    let cancelled = false;
     setLoading(true);
     setError(null);
+    // Reset stale data from previous product
+    setProduct(null);
+    setReviewStats(null);
+    setReviews([]);
+    setShowAllReviews(false);
+    setWarehouseProducts([]);
+    setCanReview(false);
+    setHasReviewed(false);
+    setSelectedVariant(null);
+    setSelectedAttributes({});
 
     api
       .get<any>(`/products/${id}`)
       .then((data) => {
+        if (cancelled) return;
         // API may return { product: Product } or Product directly
         const prod: Product = data.product || data;
         setProduct(prod);
@@ -837,25 +852,33 @@ export default function ProductDetailScreen() {
           setSelectedAttributes(firstVariant.attributes || {});
         }
       })
-      .catch((err) => setError(err.message || 'Nie udało się pobrać produktu'))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err.message || 'Nie udało się pobrać produktu');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
   }, [id]);
 
   // Fetch reviews + same warehouse (use product.id = CUID, not route param which may be slug)
   useEffect(() => {
     if (!product) return;
     const pid = product.id;
+    let cancelled = false;
 
     // Reviews stats
     api
       .get<ReviewStats>(`/products/${pid}/reviews/stats`)
-      .then(setReviewStats)
+      .then((data) => { if (!cancelled) setReviewStats(data); })
       .catch(() => {});
 
     // Reviews list
     api
       .get<{ reviews: Review[] }>(`/products/${pid}/reviews?limit=5&sort=newest`)
-      .then((data) => setReviews(data.reviews || []))
+      .then((data) => { if (!cancelled) setReviews(data.reviews || []); })
       .catch(() => {});
 
     // Can review check
@@ -863,6 +886,7 @@ export default function ProductDetailScreen() {
       api
         .get<{ canReview: boolean; hasReviewed: boolean }>(`/products/${pid}/reviews/can-review`)
         .then((data) => {
+          if (cancelled) return;
           setCanReview(data.canReview);
           setHasReviewed(data.hasReviewed);
         })
@@ -873,6 +897,7 @@ export default function ProductDetailScreen() {
     api
       .get<{ products: Product[] }>(`/products/same-warehouse/${pid}?limit=10`)
       .then((data) => {
+        if (cancelled) return;
         const prods = data.products || [];
         if (prods.length > 0) {
           setWarehouseSource('warehouse');
@@ -880,6 +905,8 @@ export default function ProductDetailScreen() {
         setWarehouseProducts(prods);
       })
       .catch(() => {});
+
+    return () => { cancelled = true; };
   }, [product?.id]);
 
   // Fallback: if no warehouse products, fetch from same category
@@ -1034,9 +1061,28 @@ export default function ProductDetailScreen() {
       <View style={styles.centered}>
         <FontAwesome name="exclamation-triangle" size={48} color={colors.destructive} />
         <Text style={styles.errorText}>{error || 'Nie znaleziono produktu'}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={() => router.back()}>
-          <Text style={styles.retryButtonText}>Wróć</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
+          <TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.tint }]} onPress={() => {
+            setError(null);
+            setLoading(true);
+            api.get<any>(`/products/${id}`)
+              .then((data) => {
+                const prod: Product = data.product || data;
+                setProduct(prod);
+                if (prod.variants && prod.variants.length > 0) {
+                  setSelectedVariant(prod.variants[0]);
+                  setSelectedAttributes(prod.variants[0].attributes || {});
+                }
+              })
+              .catch((err) => setError(err.message || 'Nie udało się pobrać produktu'))
+              .finally(() => setLoading(false));
+          }}>
+            <Text style={[styles.retryButtonText, { color: '#fff' }]}>Spróbuj ponownie</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.retryButton} onPress={() => router.back()}>
+            <Text style={styles.retryButtonText}>Wróć</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -1142,13 +1188,7 @@ export default function ProductDetailScreen() {
             <View style={styles.ratingSummaryRow}>
               <StarRating rating={reviewStats.averageRating} size={14} />
               <Text style={styles.ratingText}>
-                {reviewStats.averageRating.toFixed(1)} ({reviewStats.totalReviews}{' '}
-                {reviewStats.totalReviews === 1
-                  ? 'opinia'
-                  : reviewStats.totalReviews < 5
-                    ? 'opinie'
-                    : 'opinii'}
-                )
+                {reviewStats.averageRating.toFixed(1)} ({pluralizeReviews(reviewStats.totalReviews)})
               </Text>
             </View>
           )}
@@ -1313,12 +1353,7 @@ export default function ProductDetailScreen() {
                   </Text>
                   <StarRating rating={reviewStats.averageRating} size={14} />
                   <Text style={styles.reviewsSectionCount}>
-                    ({reviewStats.totalReviews}{' '}
-                    {reviewStats.totalReviews === 1
-                      ? 'opinia'
-                      : reviewStats.totalReviews < 5
-                        ? 'opinie'
-                        : 'opinii'})
+                    ({pluralizeReviews(reviewStats.totalReviews)})
                   </Text>
                 </>
               )}
@@ -1371,14 +1406,33 @@ export default function ProductDetailScreen() {
             )}
 
             {/* "Zobacz wszystkie opinie" button */}
-            {reviewStats && reviewStats.totalReviews > 0 && (
+            {reviewStats && reviewStats.totalReviews > reviews.length && !showAllReviews && (
               <TouchableOpacity
                 style={styles.seeAllReviewsBtn}
                 activeOpacity={0.7}
+                onPress={async () => {
+                  if (!product || loadingAllReviews) return;
+                  setLoadingAllReviews(true);
+                  try {
+                    const data = await api.get<{ reviews: Review[] }>(
+                      `/products/${product.id}/reviews?limit=100&sort=newest`
+                    );
+                    setReviews(data.reviews || []);
+                    setShowAllReviews(true);
+                  } catch {
+                    showToast('Nie udało się załadować opinii', 'error');
+                  } finally {
+                    setLoadingAllReviews(false);
+                  }
+                }}
               >
-                <Text style={styles.seeAllReviewsText}>
-                  Zobacz wszystkie opinie ({reviewStats.totalReviews})
-                </Text>
+                {loadingAllReviews ? (
+                  <ActivityIndicator size="small" color={colors.tint} />
+                ) : (
+                  <Text style={styles.seeAllReviewsText}>
+                    Zobacz wszystkie opinie ({reviewStats.totalReviews})
+                  </Text>
+                )}
               </TouchableOpacity>
             )}
 
@@ -1431,6 +1485,7 @@ export default function ProductDetailScreen() {
                   <TextInput
                     style={styles.reviewFormInput}
                     placeholder="Np. Świetny produkt!"
+                    placeholderTextColor={colors.placeholder}
                     value={reviewTitle}
                     onChangeText={setReviewTitle}
                     maxLength={200}
@@ -1441,6 +1496,7 @@ export default function ProductDetailScreen() {
                   <TextInput
                     style={[styles.reviewFormInput, styles.reviewFormTextarea]}
                     placeholder="Opisz swoje wrażenia z używania produktu..."
+                    placeholderTextColor={colors.placeholder}
                     value={reviewContent}
                     onChangeText={setReviewContent}
                     multiline
@@ -1848,13 +1904,18 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginTop: 24,
     marginHorizontal: -16,
     backgroundColor: colors.card,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: colors.background,
     marginHorizontal: 16,
     borderRadius: 10,
     padding: 3,
+    marginTop: 16,
   },
   tabBtn: {
     flex: 1,
@@ -1863,7 +1924,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 8,
   },
   tabBtnActive: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.backgroundTertiary,
     elevation: 1,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
@@ -1876,7 +1937,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.textMuted,
   },
   tabLabelActive: {
-    color: colors.text,
+    color: colors.tint,
   },
   tabBody: {
     paddingHorizontal: 16,
