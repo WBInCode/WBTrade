@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { pluralizeProducts } from '../utils/pluralize';
 import {
   Modal,
   View,
@@ -100,7 +101,7 @@ export default function AddToListModal({ visible, onClose, productId, productNam
           <View style={styles.listItemInfo}>
             <Text style={styles.listItemName} numberOfLines={1}>{item.name}</Text>
             <Text style={styles.listItemCount}>
-              {item.itemCount} {item.itemCount === 1 ? 'produkt' : item.itemCount < 5 ? 'produkty' : 'produktów'}
+              {pluralizeProducts(item.itemCount)}
             </Text>
           </View>
         </View>

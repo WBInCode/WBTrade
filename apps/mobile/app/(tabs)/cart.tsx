@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { pluralizeProducts } from '../../utils/pluralize';
 import {
   StyleSheet,
   View,
@@ -199,7 +200,7 @@ export default function CartScreen() {
       <View style={ds.header}>
         <Text style={ds.headerTitle}>Koszyk</Text>
         <Text style={ds.headerSubtitle}>
-          {itemCount} {itemCount === 1 ? 'produkt' : itemCount < 5 ? 'produkty' : 'produktów'}
+          {pluralizeProducts(itemCount)}
         </Text>
       </View>
 
