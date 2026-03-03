@@ -268,9 +268,7 @@ router.post('/:reviewId/reply', async (req: Request, res: Response) => {
     }
 
     const sanitizedReply = sanitizeText(reply);
-    const adminName = req.user?.firstName
-      ? `${req.user.firstName} ${req.user.lastName || ''}`.trim()
-      : 'Admin';
+    const adminName = req.user?.email || 'Admin';
 
     const review = await prisma.review.update({
       where: { id: reviewId },
