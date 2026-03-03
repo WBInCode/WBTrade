@@ -1328,6 +1328,24 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                             )}
                             <p className="text-gray-700 dark:text-gray-300 mb-4">{review.content}</p>
 
+                            {/* Admin Reply */}
+                            {review.adminReply && (
+                              <div className="mt-3 mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 rounded-r-lg">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+                                  </svg>
+                                  <span className="text-sm font-semibold text-blue-700 dark:text-blue-400">Odpowiedź sklepu</span>
+                                  {review.adminReplyAt && (
+                                    <span className="text-xs text-gray-400">
+                                      {new Date(review.adminReplyAt).toLocaleDateString('pl-PL')}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-sm text-gray-700 dark:text-gray-300">{review.adminReply}</p>
+                              </div>
+                            )}
+
                             {/* Review Images */}
                             {review.images && review.images.length > 0 && (
                               <div className="flex gap-2 mb-4">
