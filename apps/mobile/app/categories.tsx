@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { pluralizeProducts } from '../utils/pluralize';
 import {
   StyleSheet,
   View,
@@ -28,25 +29,31 @@ export default function CategoriesScreen() {
   const colors = useThemeColors();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    (async () => {
+  const loadCategories = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get<{ categories: Category[] }>('/categories');
+      setCategories(res.categories || []);
+    } catch {
       try {
-        const res = await api.get<{ categories: Category[] }>('/categories');
+        const res = await api.get<{ categories: Category[] }>('/categories/main');
         setCategories(res.categories || []);
       } catch {
-        try {
-          const res = await api.get<{ categories: Category[] }>('/categories/main');
-          setCategories(res.categories || []);
-        } catch {
-          setCategories([]);
-        }
-      } finally {
-        setLoading(false);
+        setCategories([]);
+        setError('Nie udało się załadować kategorii');
       }
-    })();
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadCategories();
+  }, [loadCategories]);
 
   const toggleExpand = (catId: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -139,6 +146,17 @@ export default function CategoriesScreen() {
             <ActivityIndicator size="large" color={colors.tint} />
             <Text style={[styles.loadingText, { color: colors.textMuted }]}>Ładowanie kategorii...</Text>
           </View>
+        ) : error ? (
+          <View style={styles.centerContent}>
+            <FontAwesome name="exclamation-triangle" size={48} color={colors.destructive} />
+            <Text style={[styles.emptyText, { color: colors.destructive, marginBottom: 12 }]}>{error}</Text>
+            <TouchableOpacity
+              style={{ backgroundColor: colors.tint, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 8 }}
+              onPress={loadCategories}
+            >
+              <Text style={{ color: '#fff', fontWeight: '600', fontSize: 14 }}>Spróbuj ponownie</Text>
+            </TouchableOpacity>
+          </View>
         ) : categories.length === 0 ? (
           <View style={styles.centerContent}>
             <FontAwesome name="folder-open-o" size={48} color={colors.border} />
@@ -198,7 +216,7 @@ export default function CategoriesScreen() {
                         </Text>
                         {cat.productCount != null && cat.productCount > 0 && (
                           <Text style={[styles.parentCount, { color: colors.textMuted }]}>
-                            {cat.productCount} produkt{cat.productCount === 1 ? '' : cat.productCount < 5 ? 'y' : 'ów'}
+                            {pluralizeProducts(cat.productCount)}
                           </Text>
                         )}
                       </View>

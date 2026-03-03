@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Dimensions, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, useWindowDimensions, StyleSheet, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -11,10 +11,10 @@ import { useWishlist } from '../../contexts/WishlistContext';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Product } from '../../services/types';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_PADDING = 16;
 const CARD_GAP = 10;
-const CARD_WIDTH = (SCREEN_WIDTH - CARD_PADDING * 2 - CARD_GAP) / 2;
+// Keep a static fallback for exports (used by ProductGrid)
+const CARD_WIDTH = 170;
 
 interface ProductCardProps {
   product: Product;
@@ -30,7 +30,9 @@ function ProductCard({ product, width }: ProductCardProps) {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [adding, setAdding] = useState(false);
   const isFav = isInWishlist(product.id);
-  const cardWidth = width || CARD_WIDTH;
+  const { width: screenWidth } = useWindowDimensions();
+  const dynamicCardWidth = (screenWidth - CARD_PADDING * 2 - CARD_GAP) / 2;
+  const cardWidth = width || dynamicCardWidth;
 
 
 
@@ -215,6 +217,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 12,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,

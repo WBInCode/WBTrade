@@ -11,6 +11,7 @@ interface ThemeContextValue {
   themePreference: ThemePreference;
   setThemePreference: (pref: ThemePreference) => void;
   colors: ThemeColors;
+  themeLoaded: boolean;
 }
 
 const STORAGE_KEY = '@theme_preference';
@@ -20,6 +21,7 @@ const ThemeContext = createContext<ThemeContextValue>({
   themePreference: 'auto',
   setThemePreference: () => {},
   colors: themes.light,
+  themeLoaded: false,
 });
 
 export function AppThemeProvider({ children }: { children: React.ReactNode }) {
@@ -50,12 +52,8 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
 
   const colors = themes[colorScheme];
 
-  if (!loaded) {
-    return null;
-  }
-
   return (
-    <ThemeContext.Provider value={{ colorScheme, themePreference, setThemePreference, colors }}>
+    <ThemeContext.Provider value={{ colorScheme, themePreference, setThemePreference, colors, themeLoaded: loaded }}>
       {children}
     </ThemeContext.Provider>
   );

@@ -55,6 +55,21 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.card }}>
+      {/* Back button */}
+      <TouchableOpacity
+        onPress={() => router.back()}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: 16,
+          paddingVertical: 12,
+          gap: 6,
+        }}
+      >
+        <FontAwesome name="chevron-left" size={14} color={colors.tint} />
+        <Text style={{ color: colors.tint, fontSize: 16 }}>Wróć</Text>
+      </TouchableOpacity>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
