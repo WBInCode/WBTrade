@@ -49,12 +49,6 @@ export default function RootLayout() {
     }
   }, [error]);
 
-  useEffect(() => {
-    if (loaded || error) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded, error]);
-
   if (!loaded && !error) {
     return null;
   }
@@ -124,7 +118,17 @@ function GiftNotificationHandler() {
 }
 
 function RootLayoutNav() {
-  const { colorScheme, colors } = useTheme();
+  const { colorScheme, colors, themeLoaded } = useTheme();
+
+  useEffect(() => {
+    if (themeLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [themeLoaded]);
+
+  if (!themeLoaded) {
+    return null;
+  }
 
   return (
     <QueryClientProvider client={queryClient}>

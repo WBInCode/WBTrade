@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
+import { pluralizeProducts } from '../../../utils/pluralize';
 import {
   View,
   Text,
@@ -147,7 +148,7 @@ export default function ShoppingListDetailScreen() {
 
   const formatPrice = (price: number | string) => {
     const n = typeof price === 'string' ? parseFloat(price) : price;
-    return `${n.toFixed(2)} zł`;
+    return `${n.toFixed(2).replace('.', ',')} zł`;
   };
 
   // --- Loading ---
@@ -286,7 +287,7 @@ export default function ShoppingListDetailScreen() {
           ListFooterComponent={
             <View style={styles.footer}>
               <Text style={styles.footerText}>
-                {list.itemCount} {list.itemCount === 1 ? 'produkt' : list.itemCount < 5 ? 'produkty' : 'produktów'}
+                {pluralizeProducts(list.itemCount)}
               </Text>
             </View>
           }
@@ -413,6 +414,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,

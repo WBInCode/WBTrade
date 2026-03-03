@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState, useMemo } from 'react';
+import { pluralizeProducts } from '../../../utils/pluralize';
 import {
   StyleSheet,
   View,
@@ -85,7 +86,7 @@ const OrderCard = React.memo(function OrderCard({
       <View style={styles.cardRow}>
         <FontAwesome name="cube" size={14} color={colors.textMuted} />
         <Text style={styles.cardLabel}>
-          {itemCount} {itemCount === 1 ? 'produkt' : itemCount < 5 ? 'produkty' : 'produktów'}
+          {pluralizeProducts(itemCount)}
         </Text>
       </View>
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { pluralizeProducts } from '../../utils/pluralize';
 import {
   View,
   Text,
@@ -530,8 +531,8 @@ export default function ShippingPerPackage({ postalCode, onSubmit, onBack }: Shi
               {/* Package header */}
               <View style={styles.packageHeader}>
                 <View style={styles.packageHeaderLeft}>
-                  <View style={[styles.packageNumber, { backgroundColor: colors.card }]}>
-                    <Text style={[styles.packageNumberText, { color: wConfig.color }]}>{pkgIndex + 1}</Text>
+                  <View style={[styles.packageNumber, { backgroundColor: wConfig.color }]}>
+                    <Text style={[styles.packageNumberText, { color: '#fff' }]}>{pkgIndex + 1}</Text>
                   </View>
                   <View>
                     <View style={styles.warehouseRow}>
@@ -543,7 +544,7 @@ export default function ShippingPerPackage({ postalCode, onSubmit, onBack }: Shi
                       )}
                     </View>
                     <Text style={styles.itemCountText}>
-                      {pkgInfo.items.reduce((s, i) => s + i.quantity, 0)} {pkgInfo.items.length === 1 ? 'produkt' : 'produktów'}
+                      {pluralizeProducts(pkgInfo.items.reduce((s, i) => s + i.quantity, 0))}
                     </Text>
                   </View>
                 </View>

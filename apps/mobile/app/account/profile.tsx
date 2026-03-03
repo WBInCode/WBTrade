@@ -12,7 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import type { ThemeColors } from '../../constants/Colors';
@@ -92,7 +92,8 @@ function SectionHeader({ title, icon }: { title: string; icon: string }) {
 }
 
 export default function ProfileScreen() {
-  const { user, refreshProfile } = useAuth();
+  const { user, refreshProfile, deleteAccount } = useAuth();
+  const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -110,6 +111,9 @@ export default function ProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showDeleteSection, setShowDeleteSection] = useState(false);
 
   // Populate form from user
   useEffect(() => {
@@ -176,7 +180,8 @@ export default function ProfileScreen() {
 
       // Show toast
       setToastVisible(true);
-      setTimeout(() => setToastVisible(false), 2500);
+      const timer = setTimeout(() => setToastVisible(false), 2500);
+      return () => clearTimeout(timer);
     } catch (err: any) {
       if (err.errors) {
         // Map API validation errors
@@ -328,6 +333,102 @@ export default function ProfileScreen() {
                 />
               </View>
             </View>
+          </View>
+
+          {/* Delete account */}
+          <SectionHeader title="Strefa zagrożenia" icon="exclamation-triangle" />
+
+          <View style={styles.card}>
+            <Text style={styles.deleteWarningText}>
+              Usunięcie konta jest nieodwracalne. Wszystkie Twoje dane, zamówienia i historia zostaną trwale usunięte.
+            </Text>
+
+            {!showDeleteSection ? (
+              <TouchableOpacity
+                style={styles.deleteShowBtn}
+                onPress={() => setShowDeleteSection(true)}
+                activeOpacity={0.7}
+              >
+                <FontAwesome name="trash" size={16} color={colors.destructive} />
+                <Text style={styles.deleteShowBtnText}>Usuń konto</Text>
+              </TouchableOpacity>
+            ) : (
+              <View>
+                <Text style={styles.fieldLabel}>Potwierdź hasłem</Text>
+                <TextInput
+                  style={[
+                    styles.fieldInput,
+                    { marginBottom: 12 },
+                  ]}
+                  value={deletePassword}
+                  onChangeText={setDeletePassword}
+                  placeholder="Wpisz swoje hasło"
+                  placeholderTextColor={colors.inputBorder}
+                  secureTextEntry
+                  autoCapitalize="none"
+                />
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <TouchableOpacity
+                    style={styles.deleteCancelBtn}
+                    onPress={() => {
+                      setShowDeleteSection(false);
+                      setDeletePassword('');
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.deleteCancelBtnText}>Anuluj</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.deleteConfirmBtn,
+                      (!deletePassword.trim() || deleteLoading) && styles.deleteConfirmBtnDisabled,
+                    ]}
+                    onPress={async () => {
+                      if (!deletePassword.trim()) return;
+                      Alert.alert(
+                        'Usunięcie konta',
+                        'Czy na pewno chcesz trwale usunąć swoje konto? Tej operacji nie można cofnąć.',
+                        [
+                          { text: 'Anuluj', style: 'cancel' },
+                          {
+                            text: 'Usuń konto',
+                            style: 'destructive',
+                            onPress: async () => {
+                              setDeleteLoading(true);
+                              try {
+                                const result = await deleteAccount(deletePassword);
+                                if (result.success) {
+                                  Alert.alert('Konto usunięte', 'Twoje konto zostało trwale usunięte.', [
+                                    { text: 'OK', onPress: () => router.replace('/(tabs)') },
+                                  ]);
+                                } else {
+                                  Alert.alert('Błąd', result.error || 'Nie udało się usunąć konta. Sprawdź hasło.');
+                                }
+                              } catch {
+                                Alert.alert('Błąd', 'Nie udało się usunąć konta. Spróbuj ponownie.');
+                              } finally {
+                                setDeleteLoading(false);
+                              }
+                            },
+                          },
+                        ]
+                      );
+                    }}
+                    disabled={!deletePassword.trim() || deleteLoading}
+                    activeOpacity={0.7}
+                  >
+                    {deleteLoading ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <>
+                        <FontAwesome name="trash" size={14} color="#fff" />
+                        <Text style={styles.deleteConfirmBtnText}>Potwierdź usunięcie</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -540,5 +641,60 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: colors.textInverse,
+  },
+
+  // ─── Delete account ───
+  deleteWarningText: {
+    fontSize: 13,
+    color: colors.textMuted,
+    lineHeight: 20,
+    marginBottom: 14,
+  },
+  deleteShowBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.destructive,
+  },
+  deleteShowBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.destructive,
+  },
+  deleteCancelBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  deleteCancelBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  deleteConfirmBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: colors.destructive,
+  },
+  deleteConfirmBtnDisabled: {
+    opacity: 0.5,
+  },
+  deleteConfirmBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
   },
 });

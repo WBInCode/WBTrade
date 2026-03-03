@@ -197,6 +197,6 @@ export const api = {
   patch: <T>(endpoint: string, body?: any) =>
     apiFetch<T>(endpoint, { method: 'PATCH', body }),
 
-  delete: <T>(endpoint: string) =>
-    apiFetch<T>(endpoint, { method: 'DELETE' }),
+  delete: <T>(endpoint: string, body?: any) =>
+    apiFetch<T>(endpoint, { method: 'DELETE', body }),
 };

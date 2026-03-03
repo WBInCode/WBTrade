@@ -152,7 +152,7 @@ export default function PasswordScreen() {
     if (!validate()) return;
     setLoading(true);
     try {
-      await api.put('/auth/change-password', {
+      await api.post('/auth/change-password', {
         currentPassword,
         newPassword,
       });

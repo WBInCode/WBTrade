@@ -27,5 +27,5 @@ export const authApi = {
     api.post('/auth/reset-password', { token, password }),
 
   deleteAccount: (password: string) =>
-    api.delete('/auth/delete-account'),
+    api.delete('/auth/delete-account', { password }),
 };

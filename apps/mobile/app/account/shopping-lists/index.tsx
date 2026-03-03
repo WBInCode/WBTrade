@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
+import { pluralizeProducts } from '../../../utils/pluralize';
 import {
   StyleSheet,
   View,
@@ -147,7 +148,7 @@ export default function ShoppingListsScreen() {
           {item.name}
         </Text>
         <Text style={styles.listMeta}>
-          {item.itemCount} {item.itemCount === 1 ? 'produkt' : 'produktów'} · {formatDate(item.updatedAt)}
+          {pluralizeProducts(item.itemCount)} · {formatDate(item.updatedAt)}
         </Text>
       </View>
       <TouchableOpacity

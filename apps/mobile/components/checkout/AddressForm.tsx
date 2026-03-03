@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -101,6 +101,7 @@ export default function AddressForm({
   const { isAuthenticated, user } = useAuth();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const scrollRef = useRef<ScrollView>(null);
 
   const [form, setForm] = useState<AddressData>({
     ...initialData,
@@ -215,8 +216,13 @@ export default function AddressForm({
     // Set full phone with country code before validation
     const fullPhone = `${selectedCountry.dialCode} ${phoneNumber}`;
     form.phone = fullPhone;
+    // Attach saved address ID so checkout can reuse it
+    form.savedAddressId = selectedAddressId || undefined;
     if (validate()) {
       onSubmit(form);
+    } else {
+      // Scroll to top so user sees error fields
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
     }
   };
 
@@ -252,7 +258,16 @@ export default function AddressForm({
   );
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      {/* Error summary banner */}
+      {Object.keys(errors).length > 0 && (
+        <View style={{ backgroundColor: colors.destructiveBg, borderRadius: 8, padding: 12, marginTop: 8, marginBottom: 12, borderWidth: 1, borderColor: colors.destructive + '30' }}>
+          <Text style={{ color: colors.destructive, fontSize: 14, fontWeight: '600' }}>
+            Uzupełnij zaznaczone pola ({Object.keys(errors).length})
+          </Text>
+        </View>
+      )}
+
       {/* Header */}
       <View style={styles.headerSection}>
         <Text style={styles.headerTitle}>Adres dostawy</Text>

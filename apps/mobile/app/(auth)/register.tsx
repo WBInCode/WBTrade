@@ -238,9 +238,9 @@ export default function RegisterScreen() {
             </View>
             <Text style={{ flex: 1, fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>
               Akceptuję{' '}
-              <Text style={{ color: colors.tint, fontWeight: '500' }}>regulamin</Text>
+              <Text style={{ color: colors.tint, fontWeight: '500' }} onPress={() => router.push('/account/terms')}>regulamin</Text>
               {' '}oraz{' '}
-              <Text style={{ color: colors.tint, fontWeight: '500' }}>
+              <Text style={{ color: colors.tint, fontWeight: '500' }} onPress={() => router.push('/account/privacy')}>
                 politykę prywatności
               </Text>
             </Text>

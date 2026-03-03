@@ -490,11 +490,16 @@ export default function HomeScreen() {
   if (error) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-        <View style={styles.centerContent}>
+        <ScrollView
+          contentContainerStyle={styles.centerContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tint} colors={[colors.tint]} />
+          }
+        >
           <FontAwesome name="exclamation-triangle" size={40} color={colors.textMuted} />
           <Text style={[styles.errorText, { color: colors.destructive }]}>{error}</Text>
           <Text style={[styles.errorHint, { color: colors.textSecondary }]}>Pociągnij w dół aby spróbować ponownie</Text>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }

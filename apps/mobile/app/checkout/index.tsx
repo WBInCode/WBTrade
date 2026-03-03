@@ -5,8 +5,10 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  BackHandler,
+  Platform,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import type { ThemeColors } from '../../constants/Colors';
@@ -21,6 +23,7 @@ import { api } from '../../services/api';
 
 export default function CheckoutScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { cart, refreshCart } = useCart();
   const { isAuthenticated, user } = useAuth();
   const checkout = useCheckout();
@@ -37,6 +40,27 @@ export default function CheckoutScreen() {
       loadSavedAddresses();
     }
   }, [isAuthenticated]);
+
+  // Android hardware back: go to previous step instead of leaving checkout
+  useEffect(() => {
+    const onBackPress = () => {
+      if (checkout.state.step > 0) {
+        checkout.prevStep();
+        return true; // prevent default (leaving checkout)
+      }
+      return false; // allow default (go back to cart)
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [checkout.state.step]);
+
+  // Update navigation header title per step
+  useEffect(() => {
+    const stepTitles = ['Adres dostawy', 'Metoda dostawy', 'Płatność', 'Podsumowanie'];
+    navigation.setOptions({
+      title: stepTitles[checkout.state.step] || 'Zamówienie',
+    });
+  }, [checkout.state.step, navigation]);
 
   const loadSavedAddresses = async () => {
     setLoadingAddresses(true);
@@ -113,19 +137,24 @@ export default function CheckoutScreen() {
     }
 
     if (isAuthenticated) {
-      // Logged-in: create address first
+      // Logged-in: reuse saved address or create new one
       try {
-        const addressRes = await api.post<{ id: string }>('/addresses', {
-          firstName: address.firstName,
-          lastName: address.lastName,
-          phone: address.phone,
-          street: address.street,
-          apartment: address.apartment,
-          postalCode: address.postalCode,
-          city: address.city,
-          country: address.country || 'PL',
-        });
-        checkoutData.shippingAddressId = addressRes.id;
+        if (address.savedAddressId) {
+          // User selected an existing saved address — no need to create a new one
+          checkoutData.shippingAddressId = address.savedAddressId;
+        } else {
+          const addressRes = await api.post<{ id: string }>('/addresses', {
+            firstName: address.firstName,
+            lastName: address.lastName,
+            phone: address.phone,
+            street: address.street,
+            apartment: address.apartment,
+            postalCode: address.postalCode,
+            city: address.city,
+            country: address.country || 'PL',
+          });
+          checkoutData.shippingAddressId = addressRes.id;
+        }
 
         if (address.wantInvoice) {
           const billingRes = await api.post<{ id: string }>('/addresses', {
@@ -241,44 +270,46 @@ export default function CheckoutScreen() {
       {/* Step progress bar */}
       <View style={styles.progressBar}>
         {steps.map((label, index) => (
-          <View key={label} style={styles.progressStep}>
-            <View
-              style={[
-                styles.progressDot,
-                index <= checkout.state.step && styles.progressDotActive,
-                index < checkout.state.step && styles.progressDotCompleted,
-              ]}
-            >
-              {index < checkout.state.step ? (
-                <Text style={styles.progressCheck}>✓</Text>
-              ) : (
-                <Text
-                  style={[
-                    styles.progressNumber,
-                    index <= checkout.state.step && styles.progressNumberActive,
-                  ]}
-                >
-                  {index + 1}
-                </Text>
-              )}
+          <React.Fragment key={label}>
+            <View style={styles.progressStep}>
+              <View
+                style={[
+                  styles.progressDot,
+                  index <= checkout.state.step && styles.progressDotActive,
+                  index < checkout.state.step && styles.progressDotCompleted,
+                ]}
+              >
+                {index < checkout.state.step ? (
+                  <Text style={styles.progressCheck}>✓</Text>
+                ) : (
+                  <Text
+                    style={[
+                      styles.progressNumber,
+                      index <= checkout.state.step && styles.progressNumberActive,
+                    ]}
+                  >
+                    {index + 1}
+                  </Text>
+                )}
+              </View>
+              <Text
+                style={[
+                  styles.progressLabel,
+                  index <= checkout.state.step && styles.progressLabelActive,
+                ]}
+              >
+                {label}
+              </Text>
             </View>
-            <Text
-              style={[
-                styles.progressLabel,
-                index <= checkout.state.step && styles.progressLabelActive,
-              ]}
-            >
-              {label}
-            </Text>
             {index < steps.length - 1 && (
               <View
                 style={[
-                  styles.progressLine,
-                  index < checkout.state.step && styles.progressLineActive,
+                  styles.progressConnector,
+                  index < checkout.state.step && styles.progressConnectorActive,
                 ]}
               />
             )}
-          </View>
+          </React.Fragment>
         ))}
       </View>
 
@@ -344,16 +375,27 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   progressBar: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
     backgroundColor: colors.card,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   progressStep: {
-    flex: 1,
     alignItems: 'center',
-    position: 'relative',
+    width: 60,
+  },
+  progressConnector: {
+    flex: 1,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: colors.borderLight || colors.border,
+    marginTop: 13,
+    marginHorizontal: -4,
+  },
+  progressConnectorActive: {
+    backgroundColor: colors.success,
   },
   progressDot: {
     width: 28,
@@ -391,17 +433,5 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   progressLabelActive: {
     color: colors.tint,
     fontWeight: '600',
-  },
-  progressLine: {
-    position: 'absolute',
-    top: 14,
-    left: '60%',
-    right: '-40%',
-    height: 2,
-    backgroundColor: colors.border,
-    zIndex: -1,
-  },
-  progressLineActive: {
-    backgroundColor: colors.success,
   },
 });
