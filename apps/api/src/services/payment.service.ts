@@ -340,6 +340,35 @@ export class PaymentService {
     });
 
     if (order) {
+      // SECURITY: Verify that the paid amount matches the order total
+      // This prevents accepting payments for manipulated amounts
+      if (result.status === 'succeeded' && result.amount) {
+        const expectedAmount = Number(order.total);
+        const paidAmount = result.amount;
+        const tolerance = 0.01; // 1 grosz tolerance for rounding
+        
+        if (Math.abs(paidAmount - expectedAmount) > tolerance) {
+          console.error(`[SECURITY] Payment amount mismatch for order ${order.id}! Paid: ${paidAmount} PLN, Expected: ${expectedAmount} PLN. Marking as FAILED.`);
+          
+          await prisma.order.update({
+            where: { id: order.id },
+            data: {
+              paymentStatus: 'FAILED' as any,
+            },
+          });
+          
+          await prisma.orderStatusHistory.create({
+            data: {
+              orderId: order.id,
+              status: order.status as any,
+              note: `[SECURITY] Payment amount mismatch: paid ${paidAmount} PLN, expected ${expectedAmount} PLN. Transaction: ${result.transactionId || 'unknown'}`,
+            },
+          });
+          
+          return; // Do NOT mark as PAID
+        }
+      }
+
       const updateData: any = {
         paymentStatus: newPaymentStatus as any,
       };
