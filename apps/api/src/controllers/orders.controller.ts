@@ -574,6 +574,74 @@ export async function getOrderTracking(req: Request, res: Response): Promise<voi
     res.status(500).json({ message: error.message || 'Error fetching tracking info' });
   }
 }
+
+/**
+ * Update tracking number manually (admin)
+ * @route PATCH /api/orders/:id/tracking
+ */
+export async function updateTrackingNumber(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const { trackingNumber } = req.body;
+
+    if (typeof trackingNumber !== 'string') {
+      res.status(400).json({ message: 'Numer przesyłki jest wymagany' });
+      return;
+    }
+
+    const trimmed = trackingNumber.trim();
+
+    // Check order exists
+    const order = await prisma.order.findUnique({ where: { id }, select: { id: true, courierCode: true } });
+    if (!order) {
+      res.status(404).json({ message: 'Zamówienie nie zostało znalezione' });
+      return;
+    }
+
+    // Auto-generate tracking link based on courier code
+    let trackingLink: string | null = null;
+    if (trimmed) {
+      const courier = (order.courierCode || '').toLowerCase();
+      if (courier.includes('inpost') || courier.includes('paczkomat')) {
+        trackingLink = `https://inpost.pl/sledzenie-przesylek?number=${trimmed}`;
+      } else if (courier.includes('dpd')) {
+        trackingLink = `https://tracktrace.dpd.com.pl/parcelDetails?typ=1&p1=${trimmed}`;
+      } else if (courier.includes('dhl')) {
+        trackingLink = `https://www.dhl.com/pl-pl/home/tracking/tracking-parcel.html?submit=1&tracking-id=${trimmed}`;
+      } else if (courier.includes('gls')) {
+        trackingLink = `https://gls-group.eu/PL/pl/sledzenie-paczek?match=${trimmed}`;
+      } else if (courier.includes('ups')) {
+        trackingLink = `https://www.ups.com/track?tracknum=${trimmed}`;
+      } else if (courier.includes('poczt')) {
+        trackingLink = `https://śledzenie.poczta-polska.pl/?numer=${trimmed}`;
+      }
+    }
+
+    const updated = await prisma.order.update({
+      where: { id },
+      data: {
+        trackingNumber: trimmed || null,
+        ...(trackingLink && { trackingLink }),
+      },
+      select: {
+        id: true,
+        trackingNumber: true,
+        trackingLink: true,
+        courierCode: true,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      trackingNumber: updated.trackingNumber,
+      trackingLink: updated.trackingLink,
+    });
+  } catch (error: any) {
+    console.error('Error updating tracking number:', error);
+    res.status(500).json({ message: 'Błąd podczas aktualizacji numeru przesyłki' });
+  }
+}
+
 /**
  * Sync delivery status for a single order (admin)
  * Triggers immediate fetch from Baselinker
