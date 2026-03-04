@@ -82,7 +82,7 @@ router.post('/tickets', async (req: Request, res: Response) => {
       userName: user ? `${user.firstName} ${user.lastName}` : undefined,
       userEmail: user?.email,
       message: sanitize(message),
-    }).catch(() => {});
+    }).catch((err) => console.error('[Support] Failed to send new ticket email to admin:', err.message));
 
     res.status(201).json(ticket);
   } catch (error: any) {
@@ -154,7 +154,7 @@ router.post('/tickets/:id/messages', async (req: Request, res: Response) => {
       userName: user ? `${user.firstName} ${user.lastName}` : undefined,
       userEmail: user?.email,
       message: sanitize(content),
-    }).catch(() => {});
+    }).catch((err) => console.error('[Support] Failed to send customer reply email to admin:', err.message));
 
     res.status(201).json(message);
   } catch (error: any) {

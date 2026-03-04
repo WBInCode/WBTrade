@@ -1553,8 +1553,13 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
         GENERAL: 'Ogólne',
       };
 
+      // Reply-To so admin can reply via email → routed through Resend inbound
+      const inboundDomain = process.env.INBOUND_EMAIL_DOMAIN || 'wb-trade.pl';
+      const replyToAddr = `support+${ticket.ticketNumber}@${inboundDomain}`;
+
       const { data, error } = await resend.emails.send({
-        from: `WBTrade Support <${FROM_EMAIL}>`,
+        from: FROM_EMAIL,
+        replyTo: replyToAddr,
         to: adminEmail,
         subject: `[${ticket.ticketNumber}] Nowa wiadomość: ${ticket.subject}`,
         html: `
@@ -1611,7 +1616,7 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
         : '<p>Aby zobaczyć szczegóły odpowiedzi, zaloguj się do swojego konta.</p>';
 
       const { data: responseData, error } = await resend.emails.send({
-        from: `WBTrade Support <${FROM_EMAIL}>`,
+        from: FROM_EMAIL,
         to: data.to,
         subject: `[${data.ticketNumber}] Odpowiedź na Twoją wiadomość`,
         html: `
@@ -1660,8 +1665,13 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
       const adminEmail = process.env.SUPPORT_EMAIL || 'support@wb-partners.pl';
       const resend = getResend();
 
+      // Reply-To so admin can reply via email → routed through Resend inbound
+      const inboundDomain = process.env.INBOUND_EMAIL_DOMAIN || 'wb-trade.pl';
+      const replyToAddr = `support+${ticket.ticketNumber}@${inboundDomain}`;
+
       const { data, error } = await resend.emails.send({
-        from: `WBTrade Support <${FROM_EMAIL}>`,
+        from: FROM_EMAIL,
+        replyTo: replyToAddr,
         to: adminEmail,
         subject: `[${ticket.ticketNumber}] Nowa odpowiedź klienta: ${ticket.subject}`,
         html: `
