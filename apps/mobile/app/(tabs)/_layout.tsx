@@ -124,41 +124,54 @@ function TabLayoutInner() {
   const [unreadCount, setUnreadCount] = useState(0);
   const scrollCtx = useScrollContext();
 
-  // Animated value: 0 = fully visible, 1 = mostly hidden (tucked to right)
+  // Animated value: 0 = fully visible, 1 = hidden/rotated to corner
   const hideAnim = useRef(new Animated.Value(0)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const isBubbleHidden = useRef(false);
+
+  const hideBubble = useCallback(() => {
+    isBubbleHidden.current = true;
+    Animated.parallel([
+      Animated.timing(hideAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+      Animated.timing(rotateAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+    ]).start();
+  }, [hideAnim, rotateAnim]);
+
+  const showBubble = useCallback(() => {
+    isBubbleHidden.current = false;
+    Animated.parallel([
+      Animated.timing(hideAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+      Animated.timing(rotateAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+    ]).start();
+  }, [hideAnim, rotateAnim]);
 
   useEffect(() => {
     if (!scrollCtx) return;
     const unsub = scrollCtx.onDirectionChange((direction) => {
       if (direction === 'down') {
-        // Hide: slide right, leave ~20px peeking
-        Animated.timing(hideAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }).start();
-      } else {
-        // Show: slide back
-        Animated.timing(hideAnim, {
-          toValue: 0,
-          duration: 250,
-          useNativeDriver: true,
-        }).start();
+        hideBubble();
       }
+      // No auto-show on scroll up — only a tap brings it back
     });
     return unsub;
-  }, [scrollCtx, hideAnim]);
+  }, [scrollCtx, hideBubble]);
 
-  // Translate X: 0 → 50px (hides most of the 56px bubble, keeps ~6px + label visible)
+  // Translate X: 0 → 52px (slides bubble mostly off-screen to the right)
   const bubbleTranslateX = hideAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 50],
+    outputRange: [0, 52],
   });
 
-  // Also reduce opacity slightly when tucked
+  // Rotate: 0 → 90deg so the bubble head peeks from the right edge
+  const bubbleRotate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '90deg'],
+  });
+
+  // Keep slightly visible so user knows it's there
   const bubbleOpacity = hideAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 0.6],
+    outputRange: [1, 0.8],
   });
 
   const currentTab = segments.length > 1 ? segments[1] : 'index';
@@ -233,12 +246,18 @@ function TabLayoutInner() {
             bottom: 90,
             right: 16,
             zIndex: 100,
-            transform: [{ translateX: bubbleTranslateX }],
+            transform: [{ translateX: bubbleTranslateX }, { rotate: bubbleRotate }],
             opacity: bubbleOpacity,
           }}
         >
           <ChatBubble
-            onPress={() => { setChatOpen(true); setChatActive(true); setUnreadCount(0); }}
+            onPress={() => {
+              if (isBubbleHidden.current) {
+                showBubble();
+              } else {
+                setChatOpen(true); setChatActive(true); setUnreadCount(0);
+              }
+            }}
             hasActiveChat={chatActive && !chatOpen}
             unreadCount={!chatOpen ? unreadCount : 0}
             isChatOpen={chatOpen}
