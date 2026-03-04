@@ -1391,28 +1391,23 @@ export default function ChatBotWidget() {
     return () => window.removeEventListener('keydown', handleEsc);
   }, [isOpen, handleMinimize]);
 
-  // Smart-hide chatbot on scroll (sync with mobile behavior)
+  // Smart-hide chatbot on scroll - slides to side and rotates 90deg, only comes back on click
   useEffect(() => {
     let lastY = window.scrollY;
-    let idleTimer: ReturnType<typeof setTimeout> | null = null;
 
     const onScroll = () => {
       const y = window.scrollY;
       const delta = y - lastY;
+      // Hide on scroll down only - no auto-show on scroll up
       if (delta > 3) {
         setBubbleHidden(true);
-      } else if (delta < -3) {
-        setBubbleHidden(false);
       }
       lastY = y;
-      if (idleTimer) clearTimeout(idleTimer);
-      idleTimer = setTimeout(() => setBubbleHidden(false), 1500);
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', onScroll);
-      if (idleTimer) clearTimeout(idleTimer);
     };
   }, []);
 
@@ -1420,13 +1415,24 @@ export default function ChatBotWidget() {
     <>
       {/* Floating Bubble */}
       <div
-        className={`fixed bottom-6 right-6 z-50 transition-all duration-300 ${
-          bubbleHidden && !isOpen ? 'translate-x-[50px] opacity-60' : 'translate-x-0 opacity-100'
+        className={`fixed bottom-6 right-6 z-50 transition-all duration-500 ease-in-out origin-bottom-right ${
+          bubbleHidden && !isOpen
+            ? 'translate-x-[52px] translate-y-[10px] rotate-90 scale-90 opacity-80'
+            : 'translate-x-0 translate-y-0 rotate-0 scale-100 opacity-100'
         }`}
         style={{ zIndex: 9999 }}
       >
         {!isOpen && (
-          <ChatBubble onClick={handleOpen} hasActiveChat={isMinimized && hasConversation} />
+          <ChatBubble
+            onClick={() => {
+              if (bubbleHidden) {
+                setBubbleHidden(false);
+              } else {
+                handleOpen();
+              }
+            }}
+            hasActiveChat={isMinimized && hasConversation}
+          />
         )}
       </div>
 
