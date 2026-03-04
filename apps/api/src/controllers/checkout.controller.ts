@@ -433,14 +433,55 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
     const subtotal = items.reduce((sum: number, item: CartItemData) => sum + item.unitPrice * item.quantity, 0);
     
     // Calculate shipping cost
-    // If packageShipping is provided (per-package shipping selections), sum prices from each package
-    // Otherwise fallback to the old single-method calculation
+    // SECURITY: Never trust client-submitted shipping prices — always recalculate server-side
     let shippingCost = 0;
     
     if (packageShipping && Array.isArray(packageShipping) && packageShipping.length > 0) {
-      // Sum shipping prices from each package - this includes odbior_osobisty_outlet at 0 zł
+      // Recalculate shipping prices server-side using the shipping calculator
+      const cartItemsForShipping = cartItemsToCheckout.map(item => ({
+        variantId: item.variant.id,
+        quantity: item.quantity,
+      }));
+      
+      const serverShippingResult = await shippingCalculatorService.getShippingOptionsPerPackage(cartItemsForShipping);
+      const serverPackages = serverShippingResult.packagesWithOptions;
+      
+      // Match each client-submitted package to server-calculated packages and override prices
+      for (let i = 0; i < packageShipping.length; i++) {
+        const clientPkg = packageShipping[i];
+        // Match by packageId or by index fallback
+        const serverPkg = serverPackages.find(sp => sp.package.id === clientPkg.packageId)
+                       || serverPackages[i];
+        
+        if (serverPkg) {
+          const serverMethod = serverPkg.shippingMethods.find(
+            (m: any) => m.id === clientPkg.method && m.available
+          );
+          
+          if (serverMethod) {
+            // Override client price with server-calculated price
+            const clientPrice = clientPkg.price;
+            clientPkg.price = serverMethod.price;
+            if (clientPrice !== serverMethod.price) {
+              console.warn(`⚠️ SECURITY: Shipping price mismatch for package ${clientPkg.packageId}! Client sent: ${clientPrice}, server calculated: ${serverMethod.price}`);
+            }
+          } else {
+            // Client selected a method that's not available — reject
+            console.error(`❌ Shipping method "${clientPkg.method}" is not available for package ${clientPkg.packageId}`);
+            res.status(400).json({ 
+              message: `Metoda dostawy "${clientPkg.method}" nie jest dostępna dla jednej z paczek` 
+            });
+            return;
+          }
+        } else {
+          console.error(`❌ No matching server package for client package ${clientPkg.packageId}`);
+          res.status(400).json({ message: 'Nieprawidłowa konfiguracja paczek dostawy' });
+          return;
+        }
+      }
+      
       shippingCost = packageShipping.reduce((sum: number, pkg: any) => sum + (pkg.price || 0), 0);
-      console.log(`📦 Shipping cost from packageShipping: ${shippingCost} (${packageShipping.length} packages)`);
+      console.log(`📦 Shipping cost (server-validated): ${shippingCost} (${packageShipping.length} packages)`);
       console.log(`📦 Package details:`, packageShipping.map((p: any) => ({ method: p.method, price: p.price })));
     } else {
       // Fallback: Get shipping rate using the calculator based on product tags
@@ -680,6 +721,8 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       paczkomatCode: pickupPointCode,
       paczkomatAddress: pickupPointAddress,
       packageShipping: enrichedPackageShipping,
+      // Server-calculated shipping cost (authoritative)
+      shippingCost,
       // Discount/coupon from re-validated checkout calculation
       couponCode: couponDiscount > 0 ? (cart.couponCode || undefined) : undefined,
       discount,

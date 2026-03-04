@@ -68,6 +68,8 @@ interface CreateOrderData {
   paczkomatCode?: string;
   paczkomatAddress?: string;
   packageShipping?: PackageShippingItem[];
+  // Server-calculated shipping cost (authoritative, never from client)
+  shippingCost?: number;
   // Discount/coupon fields
   couponCode?: string;
   discount?: number;
@@ -209,9 +211,13 @@ export class OrdersService {
       0
     ));
     
-    // Calculate shipping cost from packageShipping or use 0
+    // Use server-calculated shipping cost (already validated in checkout controller)
+    // SECURITY: Never derive shipping from packageShipping.price — those originate from client
     let shipping = 0;
-    if (data.packageShipping && data.packageShipping.length > 0) {
+    if (data.shippingCost !== undefined) {
+      shipping = roundMoney(data.shippingCost);
+    } else if (data.packageShipping && data.packageShipping.length > 0) {
+      // Fallback for backward compatibility — should only be called with server-validated prices
       shipping = roundMoney(data.packageShipping.reduce((sum, pkg) => sum + (pkg.price || 0), 0));
     }
     
