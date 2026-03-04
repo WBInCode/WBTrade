@@ -1,6 +1,6 @@
 import { prisma } from '../db';
 import { Prisma, PriceChangeSource } from '@prisma/client';
-import { getProductsIndex } from '../lib/meilisearch';
+import { getProductsIndex, isMeilisearchAvailable, markMeilisearchUnavailable, markMeilisearchAvailable } from '../lib/meilisearch';
 import { MeiliProduct } from './search.service';
 import { queueProductIndex, queueProductDelete } from '../lib/queue';
 import { priceHistoryService } from './price-history.service';
@@ -607,6 +607,11 @@ export class ProductsService {
       sessionSeed,
     } = filters;
 
+    // Skip Meilisearch if it's known to be down
+    if (!isMeilisearchAvailable()) {
+      return this.searchWithPrismaFallback(filters);
+    }
+
     try {
       const index = getProductsIndex();
 
@@ -685,6 +690,8 @@ export class ProductsService {
         showMatchesPosition: false,
         attributesToRetrieve: ['id'], // Only need IDs for fetching from Prisma
       });
+
+      markMeilisearchAvailable();
 
       // Get full product data from Prisma for the found IDs
       const productIds = results.hits.map((hit: MeiliProduct) => hit.id);
@@ -769,6 +776,7 @@ export class ProductsService {
       };
     } catch (error) {
       console.error('Meilisearch search error, falling back to Prisma:', error);
+      markMeilisearchUnavailable();
       // Fallback to Prisma search
       return this.searchWithPrismaFallback(filters);
     }
@@ -793,6 +801,8 @@ export class ProductsService {
     const skip = (page - 1) * limit;
 
     const where: Prisma.ProductWhereInput = {
+      // Produkty MUSZĄ być aktywne (default) lub mieć jawnie podany status
+      status: (status as Prisma.EnumProductStatusFilter) || 'ACTIVE',
       // Produkty MUSZĄ mieć cenę > 0
       price: { gt: 0 },
       // Produkty MUSZĄ mieć stan magazynowy > 0
@@ -817,11 +827,6 @@ export class ProductsService {
         PACKAGE_FILTER_WHERE,
       ],
     };
-    
-    // Only filter by status if explicitly provided
-    if (status) {
-      where.status = status as Prisma.EnumProductStatusFilter;
-    }
 
     if (category) {
       const categoryIds = await this.getAllCategoryIds(category);
@@ -831,10 +836,11 @@ export class ProductsService {
     }
 
     if (minPrice || maxPrice) {
-      // Note: Admin view can see products with price 0
-      where.price = {};
-      if (minPrice) where.price.gte = minPrice;
-      if (maxPrice) where.price.lte = maxPrice;
+      where.price = {
+        gt: 0,
+        ...(minPrice ? { gte: minPrice } : {}),
+        ...(maxPrice ? { lte: maxPrice } : {}),
+      };
     }
 
     if (search) {

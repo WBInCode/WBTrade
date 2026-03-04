@@ -1,5 +1,5 @@
 import { prisma } from '../db';
-import { getProductsIndex, PRODUCTS_INDEX, meiliClient } from '../lib/meilisearch';
+import { getProductsIndex, PRODUCTS_INDEX, meiliClient, isMeilisearchAvailable, markMeilisearchUnavailable, markMeilisearchAvailable } from '../lib/meilisearch';
 
 // Tagi dostawy - produkty MUSZĄ mieć przynajmniej jeden z tych tagów żeby być widoczne
 const DELIVERY_TAGS = [
@@ -84,9 +84,14 @@ export interface MeiliProduct {
 
 export class SearchService {
   /**
-   * Search products using Meilisearch
+   * Search products using Meilisearch with Prisma fallback
    */
   async search(query: string, minPrice?: number, maxPrice?: number, limit = 100) {
+    // Skip Meilisearch entirely if it's known to be down
+    if (!isMeilisearchAvailable()) {
+      return this.searchWithPrisma(query, minPrice, maxPrice, limit);
+    }
+
     try {
       const index = getProductsIndex();
 
@@ -126,6 +131,9 @@ export class SearchService {
         ],
       });
 
+      // Mark Meilisearch as available on success
+      markMeilisearchAvailable();
+
       // Get product IDs to fetch tags for filtering
       const productIds = results.hits.map(hit => hit.id);
       const productsWithTags = await prisma.product.findMany({
@@ -155,15 +163,16 @@ export class SearchService {
       };
     } catch (error) {
       console.error('Meilisearch search error, falling back to Prisma:', error);
-      // Fallback to Prisma search
-      return this.searchWithPrisma(query, minPrice, maxPrice);
+      markMeilisearchUnavailable();
+      return this.searchWithPrisma(query, minPrice, maxPrice, limit);
     }
   }
 
   /**
    * Fallback search using Prisma (when Meilisearch is unavailable)
    */
-  private async searchWithPrisma(query: string, minPrice?: number, maxPrice?: number) {
+  private async searchWithPrisma(query: string, minPrice?: number, maxPrice?: number, limit = 100) {
+    try {
     const products = await prisma.product.findMany({
       where: {
         status: 'ACTIVE',
@@ -191,7 +200,7 @@ export class SearchService {
         images: { orderBy: { order: 'asc' }, take: 1 },
         category: true,
       },
-      take: 100, // Fetch more to account for filtering
+      take: Math.min(limit * 2, 200), // Fetch extra to account for filtering
     });
 
     // Filter products based on visibility rules (including image URL check)
@@ -199,11 +208,28 @@ export class SearchService {
       shouldProductBeVisible(p.tags, p.images[0]?.url)
     );
 
+    // Map to consistent response format (same shape as Meilisearch path)
+    const mapped = visibleProducts.slice(0, limit).map(p => ({
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      description: (p as any).description || '',
+      price: Number(p.price),
+      compareAtPrice: p.compareAtPrice ? Number(p.compareAtPrice) : null,
+      category: { name: p.category?.name || '' },
+      images: p.images?.length ? [{ url: p.images[0].url }] : [],
+    }));
+
     return {
-      products: visibleProducts.slice(0, 50),
-      total: visibleProducts.length,
+      products: mapped,
+      total: mapped.length,
       processingTimeMs: 0,
     };
+    } catch (error) {
+      console.error('Prisma search fallback error:', error);
+      // Return empty results instead of throwing
+      return { products: [], total: 0, processingTimeMs: 0 };
+    }
   }
 
   /**
@@ -239,6 +265,11 @@ export class SearchService {
    * Get search suggestions (autocomplete) using Meilisearch
    */
   async suggest(query: string, categorySlug?: string) {
+    // Skip Meilisearch if it's known to be down
+    if (!isMeilisearchAvailable()) {
+      return this.suggestWithPrisma(query, categorySlug);
+    }
+
     try {
       const index = getProductsIndex();
 
@@ -269,6 +300,8 @@ export class SearchService {
         filter: filters.join(' AND '),
         attributesToRetrieve: ['id', 'name', 'slug', 'image', 'price', 'categoryName'],
       });
+
+      markMeilisearchAvailable();
 
       // Get product IDs to fetch tags from database
       const productIds = results.hits.map(hit => hit.id);
@@ -319,6 +352,7 @@ export class SearchService {
       };
     } catch (error) {
       console.error('Meilisearch suggest error, falling back to Prisma:', error);
+      markMeilisearchUnavailable();
       return this.suggestWithPrisma(query, categorySlug);
     }
   }
@@ -327,6 +361,7 @@ export class SearchService {
    * Fallback suggestions using Prisma
    */
   private async suggestWithPrisma(query: string, categorySlug?: string) {
+    try {
     const products = await prisma.product.findMany({
       where: {
         status: 'ACTIVE',
@@ -388,6 +423,10 @@ export class SearchService {
       })),
       processingTimeMs: 0,
     };
+    } catch (error) {
+      console.error('Prisma suggest fallback error:', error);
+      return { products: [], categories: [], processingTimeMs: 0 };
+    }
   }
 
   /**
