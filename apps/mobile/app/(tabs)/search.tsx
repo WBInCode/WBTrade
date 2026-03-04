@@ -278,21 +278,24 @@ export default function SearchScreen() {
     setDisplayCount(20);
 
     try {
-      const response = await api.get<{ products: Product[]; total: number }>('/search', {
-        query: searchQuery,
-        limit: 500,
+      // Use /products?search= (same as web) — reliable Prisma fallback
+      const response = await api.get<{ products: Product[]; total: number }>('/products', {
+        search: searchQuery,
+        limit: 100,
+        sort: sort !== 'relevance' ? sort : 'popularity',
       });
       setRawProducts(response.products || []);
-      setTotal(response.total || 0);
+      setTotal(response.total || response.products?.length || 0);
     } catch (err) {
-      console.error('Search error:', err);
+      console.error('Search error (products):', err);
       try {
-        const fallback = await api.get<{ products: Product[] }>('/products', {
-          search: searchQuery,
-          limit: 500,
+        // Secondary fallback: direct search endpoint
+        const fallback = await api.get<{ products: Product[]; total: number }>('/search', {
+          query: searchQuery,
+          limit: 100,
         });
         setRawProducts(fallback.products || []);
-        setTotal(fallback.products?.length || 0);
+        setTotal(fallback.total || fallback.products?.length || 0);
       } catch {
         setRawProducts([]);
         setTotal(0);
