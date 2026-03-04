@@ -113,6 +113,7 @@ export async function initializeMeilisearch(): Promise<void> {
     if (!process.env.MEILI_HOST && !process.env.MEILISEARCH_HOST) {
       console.warn('⚠️  Meilisearch not configured - search functionality will be limited');
       console.warn('   Set MEILI_HOST environment variable to enable Meilisearch');
+      markMeilisearchUnavailable();
       return;
     }
 
@@ -132,6 +133,7 @@ export async function initializeMeilisearch(): Promise<void> {
     });
 
     if (!healthCheck) {
+      markMeilisearchUnavailable();
       return; // Skip initialization if connection failed
     }
 
