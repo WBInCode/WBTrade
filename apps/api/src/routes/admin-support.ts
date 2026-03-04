@@ -182,7 +182,7 @@ router.post('/tickets/:id/messages', async (req: Request, res: Response) => {
         subject: ticket.subject,
         customerName: ticket.user.firstName || 'Kliencie',
         replyContent: sanitize(content),
-      }).catch(() => {});
+      }).catch((err) => console.error('[AdminSupport] Failed to send reply email to customer:', err.message));
     } else if (ticket.guestEmail) {
       emailService.sendSupportReplyToCustomer({
         to: ticket.guestEmail,
@@ -190,7 +190,7 @@ router.post('/tickets/:id/messages', async (req: Request, res: Response) => {
         subject: ticket.subject,
         customerName: 'Kliencie',
         replyContent: sanitize(content),
-      }).catch(() => {});
+      }).catch((err) => console.error('[AdminSupport] Failed to send reply email to guest:', err.message));
     }
 
     res.status(201).json(message);
