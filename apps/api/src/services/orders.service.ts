@@ -204,9 +204,23 @@ export class OrdersService {
     
     console.log(`[Orders] Creating order: isBusinessOrder=${isBusinessOrder}, NIP=${data.billingNip || 'none'}, orderNumber=${orderNumber}`);
     
-    // Calculate totals (using roundMoney to avoid floating-point precision issues)
+    // SECURITY: Look up real prices from DB for all items to prevent price manipulation
+    const itemsWithRealPrices = await Promise.all(
+      data.items.map(async (item) => {
+        const variant = await prisma.productVariant.findUnique({
+          where: { id: item.variantId },
+        });
+        const realPrice = variant ? Number(variant.price) : item.unitPrice;
+        if (variant && Math.abs(realPrice - item.unitPrice) > 0.01) {
+          console.warn(`[SECURITY] Price mismatch for variant ${item.variantId}: client sent ${item.unitPrice}, DB price is ${realPrice}`);
+        }
+        return { ...item, unitPrice: realPrice };
+      })
+    );
+    
+    // Calculate totals using REAL prices from DB (not client-provided)
     // Note: Product prices are already gross (including VAT) in Poland
-    const subtotal = roundMoney(data.items.reduce(
+    const subtotal = roundMoney(itemsWithRealPrices.reduce(
       (sum, item) => sum + item.unitPrice * item.quantity,
       0
     ));
@@ -265,7 +279,7 @@ export class OrdersService {
           guestPhone: data.guestPhone,
           items: {
             create: await Promise.all(
-              data.items.map(async (item) => {
+              itemsWithRealPrices.map(async (item) => {
                 const variant = await tx.productVariant.findUnique({
                   where: { id: item.variantId },
                   include: { product: true },
@@ -277,7 +291,7 @@ export class OrdersService {
                   variantName: variant?.name || 'Default',
                   sku: variant?.sku || '',
                   quantity: item.quantity,
-                  unitPrice: item.unitPrice,
+                  unitPrice: item.unitPrice, // Already validated real price from DB
                   total: item.unitPrice * item.quantity,
                 };
               })
