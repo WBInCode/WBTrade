@@ -210,7 +210,7 @@ export async function getAdminTickets(params: {
   const limit = Math.min(50, Math.max(1, params.limit || 20));
   const skip = (page - 1) * limit;
 
-  const where: any = {};
+  const where: any = { isArchived: false };
   if (params.status) where.status = params.status;
   if (params.category) where.category = params.category;
   if (params.userId) where.userId = params.userId;
@@ -328,15 +328,16 @@ export async function getAdminStats() {
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  const [open, inProgress, closedToday, total, unreadMessages] = await Promise.all([
-    prisma.supportTicket.count({ where: { status: 'OPEN' } }),
-    prisma.supportTicket.count({ where: { status: 'IN_PROGRESS' } }),
-    prisma.supportTicket.count({ where: { status: 'CLOSED', closedAt: { gte: todayStart } } }),
-    prisma.supportTicket.count(),
-    prisma.supportMessage.count({ where: { senderRole: 'CUSTOMER', isRead: false } }),
+  const [open, inProgress, closedToday, total, unreadMessages, archived] = await Promise.all([
+    prisma.supportTicket.count({ where: { status: 'OPEN', isArchived: false } }),
+    prisma.supportTicket.count({ where: { status: 'IN_PROGRESS', isArchived: false } }),
+    prisma.supportTicket.count({ where: { status: 'CLOSED', isArchived: false, closedAt: { gte: todayStart } } }),
+    prisma.supportTicket.count({ where: { isArchived: false } }),
+    prisma.supportMessage.count({ where: { senderRole: 'CUSTOMER', isRead: false, ticket: { isArchived: false } } }),
+    prisma.supportTicket.count({ where: { isArchived: true } }),
   ]);
 
-  return { open, inProgress, closedToday, total, unreadMessages };
+  return { open, inProgress, closedToday, total, unreadMessages, archived };
 }
 
 // ─── Admin: Get Unread Count ───
@@ -361,4 +362,120 @@ export async function getTicketsByOrder(orderId: string) {
       lastMessageAt: true,
     },
   });
+}
+
+// ─── Admin: Archive Tickets ───
+export async function archiveTickets(ticketIds: string[]) {
+  const result = await prisma.supportTicket.updateMany({
+    where: { id: { in: ticketIds } },
+    data: { isArchived: true, archivedAt: new Date() },
+  });
+  return result.count;
+}
+
+// ─── Admin: Restore Tickets from Archive ───
+export async function restoreTickets(ticketIds: string[]) {
+  const result = await prisma.supportTicket.updateMany({
+    where: { id: { in: ticketIds } },
+    data: { isArchived: false, archivedAt: null },
+  });
+  return result.count;
+}
+
+// ─── Admin: Get Archived Tickets ───
+export async function getArchivedTickets(params: {
+  page?: number;
+  limit?: number;
+  status?: TicketStatus;
+  category?: TicketCategory;
+  search?: string;
+}) {
+  const page = Math.max(1, params.page || 1);
+  const limit = Math.min(50, Math.max(1, params.limit || 20));
+  const skip = (page - 1) * limit;
+
+  const where: any = { isArchived: true };
+  if (params.status) where.status = params.status;
+  if (params.category) where.category = params.category;
+  if (params.search) {
+    where.OR = [
+      { ticketNumber: { contains: params.search, mode: 'insensitive' } },
+      { subject: { contains: params.search, mode: 'insensitive' } },
+      { user: { email: { contains: params.search, mode: 'insensitive' } } },
+      { user: { firstName: { contains: params.search, mode: 'insensitive' } } },
+      { user: { lastName: { contains: params.search, mode: 'insensitive' } } },
+      { guestEmail: { contains: params.search, mode: 'insensitive' } },
+    ];
+  }
+
+  const [tickets, total] = await Promise.all([
+    prisma.supportTicket.findMany({
+      where,
+      orderBy: { archivedAt: 'desc' },
+      skip,
+      take: limit,
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true, email: true } },
+        order: { select: { id: true, orderNumber: true } },
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { content: true, senderRole: true, createdAt: true },
+        },
+        _count: {
+          select: {
+            messages: { where: { isRead: false, senderRole: 'CUSTOMER' } },
+          },
+        },
+      },
+    }),
+    prisma.supportTicket.count({ where }),
+  ]);
+
+  return {
+    tickets: tickets.map((t: any) => ({
+      ...t,
+      unreadCount: t._count.messages,
+      lastMessage: t.messages[0] || null,
+      messages: undefined,
+      _count: undefined,
+    })),
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
+}
+
+// ─── Admin: Bulk Update Status ───
+export async function bulkUpdateStatus(ticketIds: string[], status: TicketStatus, adminId: string) {
+  const data: any = { status };
+  if (status === 'CLOSED') {
+    data.closedAt = new Date();
+    data.closedBy = adminId;
+  } else {
+    data.closedAt = null;
+    data.closedBy = null;
+  }
+
+  const result = await prisma.supportTicket.updateMany({
+    where: { id: { in: ticketIds } },
+    data,
+  });
+
+  return result.count;
+}
+
+// ─── Admin: Auto-archive old closed tickets ───
+export async function autoArchiveOldTickets(daysOld: number = 30) {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - daysOld);
+
+  const result = await prisma.supportTicket.updateMany({
+    where: {
+      status: 'CLOSED',
+      isArchived: false,
+      closedAt: { lte: cutoff },
+    },
+    data: { isArchived: true, archivedAt: new Date() },
+  });
+
+  return result.count;
 }

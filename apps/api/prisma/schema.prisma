@@ -841,6 +841,8 @@ model SupportTicket {
   category       TicketCategory @default(GENERAL)
   status         TicketStatus   @default(OPEN)
   priority       TicketPriority @default(NORMAL)
+  isArchived     Boolean        @default(false) @map("is_archived")
+  archivedAt     DateTime?      @map("archived_at")
   lastMessageAt  DateTime       @default(now()) @map("last_message_at")
   closedAt       DateTime?      @map("closed_at")
   closedBy       String?        @map("closed_by")
@@ -857,6 +859,7 @@ model SupportTicket {
   @@index([ticketNumber])
   @@index([lastMessageAt])
   @@index([createdAt])
+  @@index([isArchived])
   @@map("support_tickets")
 }
 
