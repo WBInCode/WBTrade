@@ -1553,8 +1553,13 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
         GENERAL: 'Ogólne',
       };
 
+      // Reply-To with ticket number so admin can reply via email
+      const inboundDomain = process.env.INBOUND_EMAIL_DOMAIN || 'reply.wb-trade.pl';
+      const replyToAddr = `support+${ticket.ticketNumber}@${inboundDomain}`;
+
       const { data, error } = await resend.emails.send({
-        from: `WBTrade Support <${FROM_EMAIL}>`,
+        from: FROM_EMAIL,
+        replyTo: replyToAddr,
         to: adminEmail,
         subject: `[${ticket.ticketNumber}] Nowa wiadomość: ${ticket.subject}`,
         html: `
@@ -1610,8 +1615,13 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
            </div>`
         : '<p>Aby zobaczyć szczegóły odpowiedzi, zaloguj się do swojego konta.</p>';
 
+      // Reply-To with ticket number so customer can reply via email
+      const inboundDomain = process.env.INBOUND_EMAIL_DOMAIN || 'reply.wb-trade.pl';
+      const replyToAddr = `support+${data.ticketNumber}@${inboundDomain}`;
+
       const { data: responseData, error } = await resend.emails.send({
-        from: `WBTrade Support <${FROM_EMAIL}>`,
+        from: FROM_EMAIL,
+        replyTo: replyToAddr,
         to: data.to,
         subject: `[${data.ticketNumber}] Odpowiedź na Twoją wiadomość`,
         html: `
@@ -1660,8 +1670,13 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
       const adminEmail = process.env.SUPPORT_EMAIL || 'support@wb-partners.pl';
       const resend = getResend();
 
+      // Reply-To with ticket number so admin can reply via email
+      const inboundDomain = process.env.INBOUND_EMAIL_DOMAIN || 'reply.wb-trade.pl';
+      const replyToAddr = `support+${ticket.ticketNumber}@${inboundDomain}`;
+
       const { data, error } = await resend.emails.send({
-        from: `WBTrade Support <${FROM_EMAIL}>`,
+        from: FROM_EMAIL,
+        replyTo: replyToAddr,
         to: adminEmail,
         subject: `[${ticket.ticketNumber}] Nowa odpowiedź klienta: ${ticket.subject}`,
         html: `
