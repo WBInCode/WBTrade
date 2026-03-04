@@ -80,10 +80,14 @@ export default function MessageDetailPage() {
     const messageCount = ticket?.messages?.length || 0;
     if (messageCount === 0) return;
 
+    const container = messagesContainerRef.current;
+
     // Only scroll on first load or when new messages arrive
     if (isInitialLoadRef.current) {
-      // First load: instant scroll to bottom
-      messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
+      // First load: instant scroll to bottom of chat container only
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
       isInitialLoadRef.current = false;
       prevMessageCountRef.current = messageCount;
       return;
@@ -91,14 +95,11 @@ export default function MessageDetailPage() {
 
     if (messageCount > prevMessageCountRef.current) {
       // New message arrived — scroll only if user is near bottom
-      const container = messagesContainerRef.current;
       if (container) {
         const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
         if (distanceFromBottom < 150) {
-          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+          container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
         }
-      } else {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }
     }
     prevMessageCountRef.current = messageCount;
