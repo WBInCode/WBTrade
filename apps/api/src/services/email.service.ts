@@ -1529,6 +1529,118 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
       return { success: false, error: err.message };
     }
   }
+
+  // ─── Support Messaging Notifications ───
+
+  async sendSupportNewTicketToAdmin(ticket: {
+    ticketNumber: string;
+    subject: string;
+    category: string;
+    userName?: string;
+    userEmail?: string;
+    message: string;
+  }): Promise<EmailResult> {
+    try {
+      const adminEmail = process.env.SUPPORT_EMAIL || 'support@wb-partners.pl';
+      const resend = getResend();
+
+      const categoryLabels: Record<string, string> = {
+        ORDER: 'Zamówienie',
+        DELIVERY: 'Dostawa',
+        COMPLAINT: 'Reklamacja',
+        PAYMENT: 'Płatność',
+        ACCOUNT: 'Konto',
+        GENERAL: 'Ogólne',
+      };
+
+      const { data, error } = await resend.emails.send({
+        from: `WBTrade Support <${FROM_EMAIL}>`,
+        to: adminEmail,
+        subject: `[${ticket.ticketNumber}] Nowa wiadomość: ${ticket.subject}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: #f97316; padding: 20px; border-radius: 8px 8px 0 0;">
+              <h2 style="color: white; margin: 0;">📩 Nowa wiadomość od klienta</h2>
+            </div>
+            <div style="padding: 20px; background: #1e293b; color: #e2e8f0; border-radius: 0 0 8px 8px;">
+              <p><strong>Ticket:</strong> ${ticket.ticketNumber}</p>
+              <p><strong>Od:</strong> ${ticket.userName || 'Nieznany'} (${ticket.userEmail || 'brak emaila'})</p>
+              <p><strong>Kategoria:</strong> ${categoryLabels[ticket.category] || ticket.category}</p>
+              <p><strong>Temat:</strong> ${escapeHtml(ticket.subject)}</p>
+              <hr style="border-color: #475569;" />
+              <p>${escapeHtml(ticket.message).replace(/\\n/g, '<br>')}</p>
+              <hr style="border-color: #475569;" />
+              <p style="text-align: center;">
+                <a href="${SITE_URL.replace('wb-trade.pl', 'admin.wb-trade.pl')}/messages" 
+                   style="background: #f97316; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                  Odpowiedz w panelu
+                </a>
+              </p>
+            </div>
+          </div>
+        `,
+      });
+
+      if (error) {
+        console.error('[EmailService] Support ticket notification error:', error);
+        return { success: false, error: error.message };
+      }
+
+      console.log(`✅ [EmailService] Support ticket notification sent for ${ticket.ticketNumber}`);
+      return { success: true, messageId: data?.id };
+    } catch (err: any) {
+      console.error('[EmailService] Support notification exception:', err.message);
+      return { success: false, error: err.message };
+    }
+  }
+
+  async sendSupportReplyToCustomer(data: {
+    to: string;
+    ticketNumber: string;
+    subject: string;
+    customerName: string;
+  }): Promise<EmailResult> {
+    try {
+      const resend = getResend();
+
+      const { data: responseData, error } = await resend.emails.send({
+        from: `WBTrade Support <${FROM_EMAIL}>`,
+        to: data.to,
+        subject: `[${data.ticketNumber}] Odpowiedź na Twoją wiadomość`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: #f97316; padding: 20px; border-radius: 8px 8px 0 0;">
+              <h2 style="color: white; margin: 0;">💬 Masz nową odpowiedź</h2>
+            </div>
+            <div style="padding: 20px; background: #1e293b; color: #e2e8f0; border-radius: 0 0 8px 8px;">
+              <p>Cześć ${escapeHtml(data.customerName)}!</p>
+              <p>Otrzymaliśmy odpowiedź na Twoją wiadomość <strong>${data.ticketNumber}</strong>.</p>
+              <p><strong>Temat:</strong> ${escapeHtml(data.subject)}</p>
+              <hr style="border-color: #475569;" />
+              <p>Aby zobaczyć szczegóły odpowiedzi, zaloguj się do swojego konta.</p>
+              <p style="text-align: center;">
+                <a href="${SITE_URL}/account/messages" 
+                   style="background: #f97316; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                  Zobacz wiadomości
+                </a>
+              </p>
+            </div>
+          </div>
+        `,
+      });
+
+      if (error) {
+        console.error('[EmailService] Support reply notification error:', error);
+        return { success: false, error: error.message };
+      }
+
+      console.log(`✅ [EmailService] Support reply notification sent to ${data.to}`);
+      return { success: true, messageId: responseData?.id };
+    } catch (err: any) {
+      console.error('[EmailService] Support reply exception:', err.message);
+      return { success: false, error: err.message };
+    }
+  }
 }
 
 export const emailService = new EmailService();
