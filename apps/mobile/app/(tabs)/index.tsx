@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Dimensions,
   ScrollView,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -17,6 +18,7 @@ import { Image } from 'expo-image';
 import { api } from '../../services/api';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { getCategoryIcon } from '../../constants/CategoryIcons';
+import { useScrollContext } from '../../contexts/ScrollContext';
 import ProductCarousel from '../../components/product/ProductCarousel';
 import ProductCard from '../../components/product/ProductCard';
 import type { Product, Category } from '../../services/types';
@@ -284,10 +286,83 @@ const DiscoverRow = React.memo(function DiscoverRow({ products }: { products: Pr
 });
 
 // ═══════════════════════════════════════════════════════
+// Skeleton shimmer loading state
+// ═══════════════════════════════════════════════════════
+function SkeletonBlock({ width, height, style }: { width: number | string; height: number; style?: any }) {
+  const shimmer = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmer, { toValue: 1, duration: 1000, useNativeDriver: true }),
+        Animated.timing(shimmer, { toValue: 0, duration: 1000, useNativeDriver: true }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [shimmer]);
+
+  const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0.7] });
+  return <Animated.View style={[{ width: width as any, height, borderRadius: 8, backgroundColor: '#888', opacity }, style]} />;
+}
+
+const HomeSkeleton = React.memo(function HomeSkeleton({ colors }: { colors: any }) {
+  return (
+    <View style={{ flex: 1, padding: 16 }}>
+      {/* Logo placeholder */}
+      <View style={{ alignItems: 'center', marginBottom: 12 }}>
+        <SkeletonBlock width={100} height={40} />
+      </View>
+      {/* Search bar */}
+      <SkeletonBlock width="100%" height={44} style={{ borderRadius: 22, marginBottom: 16 }} />
+      {/* Categories */}
+      <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
+        {[1,2,3,4,5].map(i => (
+          <View key={i} style={{ alignItems: 'center', gap: 6 }}>
+            <SkeletonBlock width={64} height={64} style={{ borderRadius: 32 }} />
+            <SkeletonBlock width={50} height={10} />
+          </View>
+        ))}
+      </View>
+      {/* Section title */}
+      <SkeletonBlock width={150} height={18} style={{ marginBottom: 12 }} />
+      {/* Product cards row */}
+      <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+        {[1,2].map(i => (
+          <View key={i} style={{ flex: 1, backgroundColor: colors.card, borderRadius: 12, overflow: 'hidden' }}>
+            <SkeletonBlock width="100%" height={160} style={{ borderRadius: 0 }} />
+            <View style={{ padding: 10, gap: 6 }}>
+              <SkeletonBlock width="90%" height={14} />
+              <SkeletonBlock width="60%" height={12} />
+              <SkeletonBlock width="40%" height={16} />
+              <SkeletonBlock width="100%" height={36} style={{ borderRadius: 8, marginTop: 4 }} />
+            </View>
+          </View>
+        ))}
+      </View>
+      {/* Another section */}
+      <SkeletonBlock width={120} height={18} style={{ marginBottom: 12 }} />
+      <View style={{ flexDirection: 'row', gap: 10 }}>
+        {[1,2].map(i => (
+          <View key={i} style={{ flex: 1, backgroundColor: colors.card, borderRadius: 12, overflow: 'hidden' }}>
+            <SkeletonBlock width="100%" height={160} style={{ borderRadius: 0 }} />
+            <View style={{ padding: 10, gap: 6 }}>
+              <SkeletonBlock width="80%" height={14} />
+              <SkeletonBlock width="50%" height={12} />
+              <SkeletonBlock width="45%" height={16} />
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+});
+
+// ═══════════════════════════════════════════════════════
 // Main HomeScreen — uses FlatList for virtualization
 // ═══════════════════════════════════════════════════════
 export default function HomeScreen() {
   const colors = useThemeColors();
+  const scrollCtx = useScrollContext();
   const [data, setData] = useState<HomeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -480,9 +555,7 @@ export default function HomeScreen() {
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-        <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color={colors.tint} />
-        </View>
+        <HomeSkeleton colors={colors} />
       </SafeAreaView>
     );
   }
@@ -520,6 +593,8 @@ export default function HomeScreen() {
             colors={[colors.tint]}
           />
         }
+        onScroll={scrollCtx?.handleScroll}
+        scrollEventThrottle={16}
         onEndReached={loadMoreDiscover}
         onEndReachedThreshold={0.5}
         initialNumToRender={4}
@@ -548,7 +623,7 @@ const styles = StyleSheet.create({
   headerTop: {
     alignItems: 'center', marginBottom: 10,
   },
-  headerLogo: { width: 110, height: 32 },
+  headerLogo: { width: 143, height: 42 },
   headerDivider: {
     height: 1, marginBottom: 10,
   },
@@ -570,7 +645,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   categoryIconImage: {
-    width: 65, height: 65,
+    width: 54, height: 54,
   },
   categoryCircleLabel: {
     fontSize: 11, textAlign: 'center',
