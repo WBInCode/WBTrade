@@ -68,6 +68,26 @@ router.get('/tickets/by-order/:orderId', async (req: Request, res: Response) => 
   }
 });
 
+// ─── GET /api/admin/support/tickets/archived ───
+router.get('/tickets/archived', async (req: Request, res: Response) => {
+  try {
+    const { page, limit, status, category, search } = req.query;
+
+    const result = await supportService.getArchivedTickets({
+      page: page ? parseInt(page as string) : 1,
+      limit: limit ? parseInt(limit as string) : 20,
+      status: status as any,
+      category: category as any,
+      search: search as string,
+    });
+
+    res.json(result);
+  } catch (error: any) {
+    console.error('[AdminSupport] Error fetching archived tickets:', error);
+    res.status(500).json({ error: 'Nie udało się pobrać zarchiwizowanych ticketów' });
+  }
+});
+
 // ─── GET /api/admin/support/tickets/:id ───
 router.get('/tickets/:id', async (req: Request, res: Response) => {
   try {
@@ -230,6 +250,74 @@ router.patch('/tickets/:id/status', async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('[AdminSupport] Error updating status:', error);
     res.status(500).json({ error: 'Nie udało się zmienić statusu' });
+  }
+});
+
+// ─── POST /api/admin/support/tickets/bulk-status ───
+router.post('/tickets/bulk-status', async (req: Request, res: Response) => {
+  try {
+    const adminId = (req as any).user.userId;
+    const { ticketIds, status } = req.body;
+
+    if (!ticketIds || !Array.isArray(ticketIds) || ticketIds.length === 0) {
+      return res.status(400).json({ error: 'Wymagana jest lista ticketów' });
+    }
+
+    if (!['OPEN', 'IN_PROGRESS', 'CLOSED'].includes(status)) {
+      return res.status(400).json({ error: 'Nieprawidłowy status' });
+    }
+
+    const count = await supportService.bulkUpdateStatus(ticketIds, status, adminId);
+    res.json({ message: `Zmieniono status ${count} zgłoszeń`, count });
+  } catch (error: any) {
+    console.error('[AdminSupport] Error bulk updating status:', error);
+    res.status(500).json({ error: 'Nie udało się zmienić statusów' });
+  }
+});
+
+// ─── POST /api/admin/support/tickets/archive ───
+router.post('/tickets/archive', async (req: Request, res: Response) => {
+  try {
+    const { ticketIds } = req.body;
+
+    if (!ticketIds || !Array.isArray(ticketIds) || ticketIds.length === 0) {
+      return res.status(400).json({ error: 'Wymagana jest lista ticketów' });
+    }
+
+    const count = await supportService.archiveTickets(ticketIds);
+    res.json({ message: `Zarchiwizowano ${count} zgłoszeń`, count });
+  } catch (error: any) {
+    console.error('[AdminSupport] Error archiving tickets:', error);
+    res.status(500).json({ error: 'Nie udało się zarchiwizować zgłoszeń' });
+  }
+});
+
+// ─── POST /api/admin/support/tickets/restore ───
+router.post('/tickets/restore', async (req: Request, res: Response) => {
+  try {
+    const { ticketIds } = req.body;
+
+    if (!ticketIds || !Array.isArray(ticketIds) || ticketIds.length === 0) {
+      return res.status(400).json({ error: 'Wymagana jest lista ticketów' });
+    }
+
+    const count = await supportService.restoreTickets(ticketIds);
+    res.json({ message: `Przywrócono ${count} zgłoszeń`, count });
+  } catch (error: any) {
+    console.error('[AdminSupport] Error restoring tickets:', error);
+    res.status(500).json({ error: 'Nie udało się przywrócić zgłoszeń' });
+  }
+});
+
+// ─── POST /api/admin/support/tickets/auto-archive ───
+router.post('/tickets/auto-archive', async (req: Request, res: Response) => {
+  try {
+    const { daysOld } = req.body;
+    const count = await supportService.autoArchiveOldTickets(daysOld || 30);
+    res.json({ message: `Automatycznie zarchiwizowano ${count} zgłoszeń`, count });
+  } catch (error: any) {
+    console.error('[AdminSupport] Error auto-archiving:', error);
+    res.status(500).json({ error: 'Błąd automatycznej archiwizacji' });
   }
 });
 
