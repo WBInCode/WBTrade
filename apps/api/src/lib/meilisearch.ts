@@ -232,3 +232,39 @@ export async function initializeMeilisearch(): Promise<void> {
 export function getProductsIndex(): Index {
   return meiliClient.index(PRODUCTS_INDEX);
 }
+
+// ─── Meilisearch availability cache ─────────────────────────
+// Tracks whether Meilisearch is reachable. When it fails, we skip it
+// for RETRY_INTERVAL_MS to avoid wasting time on every request.
+let _meiliAvailable = true;
+let _meiliLastFailure = 0;
+const RETRY_INTERVAL_MS = 60_000; // retry every 60 seconds
+
+/**
+ * Check if Meilisearch is likely available.
+ * Returns false if it recently failed, to avoid connection timeouts.
+ */
+export function isMeilisearchAvailable(): boolean {
+  if (_meiliAvailable) return true;
+  // Retry after RETRY_INTERVAL_MS
+  if (Date.now() - _meiliLastFailure > RETRY_INTERVAL_MS) {
+    _meiliAvailable = true;
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Mark Meilisearch as unavailable (called on connection errors).
+ */
+export function markMeilisearchUnavailable(): void {
+  _meiliAvailable = false;
+  _meiliLastFailure = Date.now();
+}
+
+/**
+ * Mark Meilisearch as available (called on successful operations).
+ */
+export function markMeilisearchAvailable(): void {
+  _meiliAvailable = true;
+}
