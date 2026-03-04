@@ -2,15 +2,15 @@ import { Router, Request, Response } from 'express';
 import { authGuard, adminOnly } from '../middleware/auth.middleware';
 import * as supportService from '../services/support.service';
 import { emailService } from '../services/email.service';
-import DOMPurify from 'isomorphic-dompurify';
 
 const router = Router();
 
 // All admin support routes require admin auth
 router.use(authGuard, adminOnly);
 
+// Simple HTML sanitization — strip all tags (no external deps for Docker Alpine compatibility)
 function sanitize(text: string): string {
-  return DOMPurify.sanitize(text.trim(), { ALLOWED_TAGS: [] });
+  return text.trim().replace(/<[^>]*>/g, '');
 }
 
 // ─── GET /api/admin/support/stats ───
