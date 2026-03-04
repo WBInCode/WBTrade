@@ -4,7 +4,7 @@ import { useState, useEffect, use } from 'react';
 import { 
   ArrowLeft, Package, Truck, CreditCard, MapPin, User, Calendar,
   Clock, FileText, Printer, CheckCircle, XCircle, AlertCircle,
-  ChevronRight, Edit2, Save, X, RefreshCcw
+  ChevronRight, Edit2, Save, X, RefreshCcw, MessageSquare
 } from 'lucide-react';
 import Link from 'next/link';
 import { getAuthToken } from '@/lib/api';
@@ -609,6 +609,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   className="inline-flex items-center gap-1 text-orange-400 text-sm hover:text-orange-300"
                 >
                   Zobacz profil <ChevronRight className="w-4 h-4" />
+                </Link>
+                <Link
+                  href={`/messages/new?orderId=${order.id}&orderNumber=${order.orderNumber}&userId=${order.user.id}`}
+                  className="inline-flex items-center gap-2 mt-2 px-3 py-2 bg-orange-500/10 border border-orange-500/30 rounded-lg text-orange-400 text-sm hover:bg-orange-500/20 transition-colors w-full justify-center"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  Napisz do klienta
                 </Link>
               </div>
             ) : (

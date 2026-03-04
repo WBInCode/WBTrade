@@ -7,7 +7,7 @@ import { searchApi } from '../lib/api';
 
 // Bot branding
 const BOT_NAME = 'WuBuś';
-const WB_LOGO = '/images/wb-trade-bez-tla.png';
+const WB_LOGO = '/images/wubus-chatbot.png';
 
 // ─── FAQ Knowledge Base ───
 const FAQ_DATA: { keywords: string[]; question: string; answer: string; category: string }[] = [
