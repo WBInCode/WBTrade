@@ -959,10 +959,11 @@ export function ChatBubble({ onClick, hasActiveChat }: { onClick: () => void; ha
     <div className="flex flex-col items-center">
       <button
         onClick={onClick}
-        className="relative w-14 h-14 rounded-full bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 animate-pulse-gentle focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+        className="relative w-14 h-14 rounded-full bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 animate-pulse-gentle focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900 overflow-hidden"
         aria-label="Otwórz czat z WuBuś"
       >
-        <CommentIcon className="w-6 h-6" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/images/wubus-chatbot.png" alt="WuBuś" className="w-10 h-10 rounded-full object-cover" />
         {hasActiveChat && (
           <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full" />
         )}
@@ -997,6 +998,7 @@ export default function ChatBotWidget() {
   const [messages, setMessages] = useState<Message[]>([createInitialMessage()]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [bubbleHidden, setBubbleHidden] = useState(false);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -1389,10 +1391,40 @@ export default function ChatBotWidget() {
     return () => window.removeEventListener('keydown', handleEsc);
   }, [isOpen, handleMinimize]);
 
+  // Smart-hide chatbot on scroll (sync with mobile behavior)
+  useEffect(() => {
+    let lastY = window.scrollY;
+    let idleTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const onScroll = () => {
+      const y = window.scrollY;
+      const delta = y - lastY;
+      if (delta > 3) {
+        setBubbleHidden(true);
+      } else if (delta < -3) {
+        setBubbleHidden(false);
+      }
+      lastY = y;
+      if (idleTimer) clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => setBubbleHidden(false), 1500);
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (idleTimer) clearTimeout(idleTimer);
+    };
+  }, []);
+
   return (
     <>
       {/* Floating Bubble */}
-      <div className="fixed bottom-6 right-6 z-50" style={{ zIndex: 9999 }}>
+      <div
+        className={`fixed bottom-6 right-6 z-50 transition-all duration-300 ${
+          bubbleHidden && !isOpen ? 'translate-x-[50px] opacity-60' : 'translate-x-0 opacity-100'
+        }`}
+        style={{ zIndex: 9999 }}
+      >
         {!isOpen && (
           <ChatBubble onClick={handleOpen} hasActiveChat={isMinimized && hasConversation} />
         )}

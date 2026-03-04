@@ -1,7 +1,4 @@
-'use client';
-
 import Script from 'next/script';
-import { useEffect } from 'react';
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
 
@@ -52,15 +49,4 @@ export function GoogleTagManagerNoScript() {
       />
     </noscript>
   );
-}
-
-/**
- * Initialize dataLayer if not exists
- */
-export function useGTMInit() {
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.dataLayer = window.dataLayer || [];
-    }
-  }, []);
 }

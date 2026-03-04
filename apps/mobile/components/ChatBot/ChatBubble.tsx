@@ -5,10 +5,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
+  Image,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { WB_LOGO } from './constants';
+
+const WUBUS_HEAD = require('../../assets/images/wubus-head.png');
 
 interface ChatBubbleProps {
   onPress: () => void;
@@ -166,7 +169,7 @@ export function ChatBubble({ onPress, hasActiveChat, unreadCount = 0, isChatOpen
             activeOpacity={0.8}
             style={[bubbleStyles.container, { backgroundColor: colors.tint, shadowColor: colors.shadow }]}
           >
-            <FontAwesome name="comments" size={24} color="#fff" />
+            <Image source={WUBUS_HEAD} style={bubbleStyles.mascotImage} />
             {unreadCount > 0 ? (
               <View style={bubbleStyles.badge}>
                 <Text style={bubbleStyles.badgeText}>
@@ -212,6 +215,13 @@ const bubbleStyles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+    overflow: 'hidden',
+  },
+  mascotImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    resizeMode: 'contain',
   },
   tooltip: {
     position: 'absolute',

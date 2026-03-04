@@ -1,10 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   View,
   Text,
   TouchableOpacity,
   Alert,
+  Animated,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -22,6 +23,20 @@ export default function CartItem({ item, onUpdateQuantity, onRemove }: CartItemP
   const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+
+  // Quantity bounce animation
+  const qtyScale = useRef(new Animated.Value(1)).current;
+  const prevQty = useRef(item.quantity);
+  useEffect(() => {
+    if (item.quantity !== prevQty.current) {
+      Animated.sequence([
+        Animated.spring(qtyScale, { toValue: 1.3, useNativeDriver: true, speed: 50 }),
+        Animated.spring(qtyScale, { toValue: 1, useNativeDriver: true, speed: 30 }),
+      ]).start();
+    }
+    prevQty.current = item.quantity;
+  }, [item.quantity, qtyScale]);
+
   const { variant } = item;
   const product = variant.product;
   const imageUrl = product.images?.[0]?.url;
@@ -120,7 +135,9 @@ export default function CartItem({ item, onUpdateQuantity, onRemove }: CartItemP
           <TouchableOpacity style={styles.qtyButton} onPress={handleDecrease}>
             <Text style={styles.qtyButtonText}>−</Text>
           </TouchableOpacity>
-          <Text style={styles.qtyValue}>{item.quantity}</Text>
+          <Animated.View style={{ transform: [{ scale: qtyScale }] }}>
+            <Text style={styles.qtyValue}>{item.quantity}</Text>
+          </Animated.View>
           <TouchableOpacity
             style={[styles.qtyButton, item.quantity >= availableStock && styles.qtyButtonDisabled]}
             onPress={handleIncrease}
