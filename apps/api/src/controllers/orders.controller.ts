@@ -4,6 +4,8 @@ import { OrdersService } from '../services/orders.service';
 import { OrderStatus } from '@prisma/client';
 import { loyaltyService } from '../services/loyalty.service';
 import { deliveryTrackingService } from '../services/delivery-tracking.service';
+import { emailService } from '../services/email.service';
+import { prisma } from '../db';
 
 const ordersService = new OrdersService();
 
@@ -268,6 +270,13 @@ export async function updateOrder(req: Request, res: Response): Promise<void> {
       return;
     }
     
+    // Get current status before update (for email notification)
+    const currentOrder = await prisma.order.findUnique({
+      where: { id },
+      select: { status: true },
+    });
+    const previousStatus = currentOrder?.status || 'UNKNOWN';
+
     const order = await ordersService.updateStatus(id, validation.data.status, validation.data.note);
 
     if (!order) {
@@ -286,6 +295,38 @@ export async function updateOrder(req: Request, res: Response): Promise<void> {
       loyaltyService.recalculateUserLevel(order.userId, order.id).catch((err) => {
         console.error('[Loyalty] Error recalculating after refund:', err);
       });
+    }
+
+    // Send email notification to admin for meaningful status changes (skip OPEN/PENDING to avoid spam)
+    const notifiableStatuses = ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'COMPLETED', 'CANCELLED', 'REFUNDED'];
+    if (notifiableStatuses.includes(validation.data.status)) {
+      // Get customer info (user or guest)
+      let customerName = 'Gość';
+      let customerEmail = order.guestEmail || '';
+      if (order.userId) {
+        const user = await prisma.user.findUnique({
+          where: { id: order.userId },
+          select: { firstName: true, lastName: true, email: true },
+        });
+        if (user) {
+          customerName = `${user.firstName} ${user.lastName}`;
+          customerEmail = user.email;
+        }
+      } else if ((order as any).guestFirstName) {
+        customerName = `${(order as any).guestFirstName} ${(order as any).guestLastName || ''}`;
+      }
+
+      emailService.sendOrderStatusChangeToAdmin({
+        orderNumber: order.orderNumber,
+        status: validation.data.status,
+        previousStatus,
+        total: order.total,
+        customerName,
+        customerEmail,
+        itemCount: order.items?.length,
+        paymentMethod: (order as any).paymentMethod,
+        note: validation.data.note,
+      }).catch((err) => console.error('[Orders] Failed to send status change email:', err.message));
     }
 
     res.status(200).json(order);
