@@ -40,11 +40,11 @@ router.put('/:id', authGuard, adminOnly, updateOrder);
 // Route to delete an order by ID
 router.delete('/:id', authGuard, adminOnly, deleteOrder);
 
-// Route to check refund eligibility (customer - no auth required, works with order ID/number)
-router.get('/:id/refund-eligibility', checkRefundEligibility);
+// Route to check refund eligibility (customer - requires auth or guest email verification)
+router.get('/:id/refund-eligibility', optionalAuth, checkRefundEligibility);
 
-// Route to request refund (customer - no auth required, validates 14-day period)
-router.post('/:id/request-refund', requestRefund);
+// Route to request refund (customer - requires auth or guest email verification, validates 14-day period)
+router.post('/:id/request-refund', optionalAuth, requestRefund);
 
 // Route to refund an order (admin)
 router.post('/:id/refund', authGuard, adminOnly, refundOrder);
