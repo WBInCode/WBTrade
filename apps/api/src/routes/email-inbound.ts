@@ -7,21 +7,32 @@ import crypto from 'crypto';
 const router = Router();
 
 // ─── Resend Inbound Email Webhook ───
-// Receives emails sent to support+{TICKET_NUMBER}@reply.wb-trade.pl
+// Receives emails sent to support+{TICKET_NUMBER}@wb-trade.pl
 // Adds admin reply as a message in the corresponding support ticket
 
-// Simple HTML stripper (remove tags, decode entities)
+// Safe HTML-to-text converter:
+// 1. Convert block/br tags to newlines BEFORE stripping
+// 2. Strip all HTML tags iteratively (prevents incomplete multi-char sanitization)
+// 3. Decode entities with &amp; LAST to avoid double-unescaping
 function stripHtml(html: string): string {
-  return html
+  let text = html
     .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/p>/gi, '\n\n')
-    .replace(/<[^>]*>/g, '')
-    .replace(/&amp;/g, '&')
+    .replace(/<\/p>/gi, '\n\n');
+
+  // Iteratively strip tags until none remain (CodeQL: incomplete multi-char sanitization fix)
+  let prev = '';
+  while (prev !== text) {
+    prev = text;
+    text = text.replace(/<[^>]*>/g, '');
+  }
+
+  return text
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
@@ -119,7 +130,7 @@ async function processInboundEmail(data: {
   const toAddress = Array.isArray(to) ? to[0] : to;
 
   // Extract ticket number from To address
-  // Pattern: support+SUP-20260304-001@reply.wb-trade.pl
+  // Pattern: support+SUP-20260304-001@wb-trade.pl
   const ticketMatch = toAddress.match(/support\+([A-Z]+-\d+-\d+)@/i);
   if (!ticketMatch) {
     console.log('[EmailInbound] No ticket number found in To address:', toAddress);
@@ -157,8 +168,8 @@ async function processInboundEmail(data: {
     replyContent = replyContent.substring(0, 5000) + '...';
   }
 
-  // Extract sender email from "Name <email>" format
-  const senderEmailMatch = from.match(/<([^>]+)>/);
+  // Extract sender email from "Name <email>" format (ReDoS-safe regex)
+  const senderEmailMatch = from.match(/<([^<>]+)>/);
   const senderEmail = senderEmailMatch ? senderEmailMatch[1] : from;
 
   // Determine if sender is admin or customer
