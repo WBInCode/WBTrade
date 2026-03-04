@@ -1711,6 +1711,111 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
       return { success: false, error: err.message };
     }
   }
+
+  // ─── Order Status Change Notification to Admin ───
+
+  async sendOrderStatusChangeToAdmin(order: {
+    orderNumber: string;
+    status: string;
+    previousStatus: string;
+    total: number;
+    customerName?: string;
+    customerEmail?: string;
+    itemCount?: number;
+    paymentMethod?: string;
+    note?: string;
+  }): Promise<EmailResult> {
+    try {
+      const adminEmail = process.env.SUPPORT_EMAIL || 'support@wb-partners.pl';
+      const resend = getResend();
+
+      const statusLabels: Record<string, string> = {
+        OPEN: 'Otwarte',
+        PENDING: 'Oczekujące',
+        CONFIRMED: 'Potwierdzone',
+        PROCESSING: 'W realizacji',
+        SHIPPED: 'Wysłane',
+        DELIVERED: 'Dostarczone',
+        COMPLETED: 'Zakończone',
+        CANCELLED: 'Anulowane',
+        REFUNDED: 'Zwrócone',
+      };
+
+      const statusColors: Record<string, string> = {
+        CONFIRMED: '#22c55e',
+        PROCESSING: '#3b82f6',
+        SHIPPED: '#8b5cf6',
+        DELIVERED: '#22c55e',
+        COMPLETED: '#059669',
+        CANCELLED: '#ef4444',
+        REFUNDED: '#f59e0b',
+      };
+
+      const statusIcons: Record<string, string> = {
+        CONFIRMED: '✅',
+        PROCESSING: '⚙️',
+        SHIPPED: '🚚',
+        DELIVERED: '📦',
+        COMPLETED: '🏁',
+        CANCELLED: '❌',
+        REFUNDED: '💸',
+      };
+
+      const statusLabel = statusLabels[order.status] || order.status;
+      const prevStatusLabel = statusLabels[order.previousStatus] || order.previousStatus;
+      const color = statusColors[order.status] || '#6b7280';
+      const icon = statusIcons[order.status] || '📋';
+
+      const formattedTotal = new Intl.NumberFormat('pl-PL', {
+        style: 'currency',
+        currency: 'PLN',
+      }).format(order.total / 100);
+
+      const noteSection = order.note
+        ? `<p style="margin-top: 12px;"><strong>Notatka:</strong> ${escapeHtml(order.note)}</p>`
+        : '';
+
+      const { data, error } = await resend.emails.send({
+        from: FROM_EMAIL,
+        to: adminEmail,
+        subject: `${icon} [${order.orderNumber}] Status: ${statusLabel}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: ${color}; padding: 20px; border-radius: 8px 8px 0 0;">
+              <h2 style="color: white; margin: 0;">${icon} Zmiana statusu zamówienia</h2>
+            </div>
+            <div style="padding: 20px; background: #1e293b; color: #e2e8f0; border-radius: 0 0 8px 8px;">
+              <p><strong>Zamówienie:</strong> ${escapeHtml(order.orderNumber)}</p>
+              <p><strong>Status:</strong> <span style="color: ${color}; font-weight: bold;">${escapeHtml(prevStatusLabel)} → ${escapeHtml(statusLabel)}</span></p>
+              <p><strong>Klient:</strong> ${escapeHtml(order.customerName || 'Nieznany')} (${escapeHtml(order.customerEmail || 'brak emaila')})</p>
+              <p><strong>Kwota:</strong> ${formattedTotal}</p>
+              ${order.itemCount ? `<p><strong>Produkty:</strong> ${order.itemCount} szt.</p>` : ''}
+              ${order.paymentMethod ? `<p><strong>Płatność:</strong> ${escapeHtml(order.paymentMethod)}</p>` : ''}
+              ${noteSection}
+              <hr style="border-color: #475569;" />
+              <p style="text-align: center;">
+                <a href="${SITE_URL.replace('wb-trade.pl', 'admin.wb-trade.pl')}/orders" 
+                   style="background: ${color}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                  Zobacz zamówienie
+                </a>
+              </p>
+            </div>
+          </div>
+        `,
+      });
+
+      if (error) {
+        console.error('[EmailService] Order status notification error:', error);
+        return { success: false, error: error.message };
+      }
+
+      console.log(`✅ [EmailService] Order status notification sent for ${order.orderNumber} → ${order.status}`);
+      return { success: true, messageId: data?.id };
+    } catch (err: any) {
+      console.error('[EmailService] Order status notification exception:', err.message);
+      return { success: false, error: err.message };
+    }
+  }
 }
 
 export const emailService = new EmailService();
