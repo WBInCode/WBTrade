@@ -11,59 +11,80 @@ CREATE TYPE "TicketPriority" AS ENUM ('LOW', 'NORMAL', 'HIGH');
 CREATE TYPE "MessageSender" AS ENUM ('CUSTOMER', 'ADMIN', 'SYSTEM');
 
 -- CreateTable
-CREATE TABLE "SupportTicket" (
+CREATE TABLE "support_tickets" (
     "id" TEXT NOT NULL,
-    "ticketNumber" TEXT NOT NULL,
-    "userId" TEXT,
-    "guestEmail" TEXT,
-    "orderId" TEXT,
+    "ticket_number" TEXT NOT NULL,
+    "user_id" TEXT,
+    "guest_email" TEXT,
+    "order_id" TEXT,
     "subject" TEXT NOT NULL,
     "category" "TicketCategory" NOT NULL DEFAULT 'GENERAL',
     "status" "TicketStatus" NOT NULL DEFAULT 'OPEN',
     "priority" "TicketPriority" NOT NULL DEFAULT 'NORMAL',
-    "lastMessageAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "closedAt" TIMESTAMP(3),
-    "closedBy" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "last_message_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "closed_at" TIMESTAMP(3),
+    "closed_by" TEXT,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "SupportTicket_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "support_tickets_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "SupportMessage" (
+CREATE TABLE "support_messages" (
     "id" TEXT NOT NULL,
-    "ticketId" TEXT NOT NULL,
-    "senderId" TEXT,
-    "senderRole" "MessageSender" NOT NULL,
+    "ticket_id" TEXT NOT NULL,
+    "sender_id" TEXT,
+    "sender_role" "MessageSender" NOT NULL DEFAULT 'CUSTOMER',
     "content" TEXT NOT NULL,
-    "isRead" BOOLEAN NOT NULL DEFAULT false,
-    "readAt" TIMESTAMP(3),
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "is_read" BOOLEAN NOT NULL DEFAULT false,
+    "read_at" TIMESTAMP(3),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "SupportMessage_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "support_messages_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "SupportTicket_ticketNumber_key" ON "SupportTicket"("ticketNumber");
+CREATE UNIQUE INDEX "support_tickets_ticket_number_key" ON "support_tickets"("ticket_number");
 
 -- CreateIndex
-CREATE INDEX "SupportTicket_userId_idx" ON "SupportTicket"("userId");
+CREATE INDEX "support_tickets_user_id_idx" ON "support_tickets"("user_id");
 
 -- CreateIndex
-CREATE INDEX "SupportTicket_orderId_idx" ON "SupportTicket"("orderId");
+CREATE INDEX "support_tickets_order_id_idx" ON "support_tickets"("order_id");
 
 -- CreateIndex
-CREATE INDEX "SupportTicket_status_idx" ON "SupportTicket"("status");
+CREATE INDEX "support_tickets_status_idx" ON "support_tickets"("status");
 
 -- CreateIndex
-CREATE INDEX "SupportMessage_ticketId_idx" ON "SupportMessage"("ticketId");
+CREATE INDEX "support_tickets_category_idx" ON "support_tickets"("category");
+
+-- CreateIndex
+CREATE INDEX "support_tickets_ticket_number_idx" ON "support_tickets"("ticket_number");
+
+-- CreateIndex
+CREATE INDEX "support_tickets_last_message_at_idx" ON "support_tickets"("last_message_at");
+
+-- CreateIndex
+CREATE INDEX "support_tickets_created_at_idx" ON "support_tickets"("created_at");
+
+-- CreateIndex
+CREATE INDEX "support_messages_ticket_id_idx" ON "support_messages"("ticket_id");
+
+-- CreateIndex
+CREATE INDEX "support_messages_sender_id_idx" ON "support_messages"("sender_id");
+
+-- CreateIndex
+CREATE INDEX "support_messages_is_read_idx" ON "support_messages"("is_read");
+
+-- CreateIndex
+CREATE INDEX "support_messages_created_at_idx" ON "support_messages"("created_at");
 
 -- AddForeignKey
-ALTER TABLE "SupportTicket" ADD CONSTRAINT "SupportTicket_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "support_tickets" ADD CONSTRAINT "support_tickets_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "SupportTicket" ADD CONSTRAINT "SupportTicket_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "support_tickets" ADD CONSTRAINT "support_tickets_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "orders"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "SupportMessage" ADD CONSTRAINT "SupportMessage_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "SupportTicket"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "support_messages" ADD CONSTRAINT "support_messages_ticket_id_fkey" FOREIGN KEY ("ticket_id") REFERENCES "support_tickets"("id") ON DELETE CASCADE ON UPDATE CASCADE;
