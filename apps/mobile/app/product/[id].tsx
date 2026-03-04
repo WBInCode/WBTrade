@@ -15,6 +15,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  LayoutAnimation,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
@@ -751,22 +752,84 @@ function Accordion({
   const [open, setOpen] = useState(defaultOpen);
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const rotateAnim = useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
+
+  const toggleOpen = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setOpen(!open);
+    Animated.timing(rotateAnim, {
+      toValue: open ? 0 : 1,
+      duration: 250,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const chevronRotate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg'],
+  });
 
   return (
     <View style={styles.accordionContainer}>
       <TouchableOpacity
         style={styles.accordionHeader}
-        onPress={() => setOpen(!open)}
+        onPress={toggleOpen}
         activeOpacity={0.7}
       >
         <Text style={styles.accordionTitle}>{title}</Text>
-        <FontAwesome
-          name={open ? 'chevron-up' : 'chevron-down'}
-          size={14}
-          color={colors.textMuted}
-        />
+        <Animated.View style={{ transform: [{ rotate: chevronRotate }] }}>
+          <FontAwesome
+            name="chevron-down"
+            size={14}
+            color={colors.textMuted}
+          />
+        </Animated.View>
       </TouchableOpacity>
       {open && <View style={styles.accordionContent}>{children}</View>}
+    </View>
+  );
+}
+
+// --- Skeleton shimmer block ---
+function SkeletonPulse({ width, height, style }: { width: number | string; height: number; style?: any }) {
+  const shimmer = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmer, { toValue: 1, duration: 1000, useNativeDriver: true }),
+        Animated.timing(shimmer, { toValue: 0, duration: 1000, useNativeDriver: true }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [shimmer]);
+  const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0.7] });
+  return <Animated.View style={[{ width: width as any, height, borderRadius: 8, backgroundColor: '#888', opacity }, style]} />;
+}
+
+function ProductSkeleton() {
+  return (
+    <View style={{ gap: 16 }}>
+      <SkeletonPulse width="100%" height={300} style={{ borderRadius: 12 }} />
+      <View style={{ gap: 8 }}>
+        <SkeletonPulse width="85%" height={20} />
+        <SkeletonPulse width="60%" height={16} />
+      </View>
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <SkeletonPulse width={80} height={28} />
+        <SkeletonPulse width={60} height={28} />
+      </View>
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <SkeletonPulse width={100} height={14} />
+        <SkeletonPulse width={80} height={14} />
+      </View>
+      <SkeletonPulse width="100%" height={48} style={{ borderRadius: 12 }} />
+      <SkeletonPulse width="100%" height={48} style={{ borderRadius: 12 }} />
+      <View style={{ gap: 8, marginTop: 8 }}>
+        <SkeletonPulse width="100%" height={14} />
+        <SkeletonPulse width="90%" height={14} />
+        <SkeletonPulse width="75%" height={14} />
+      </View>
     </View>
   );
 }
@@ -1053,8 +1116,10 @@ export default function ProductDetailScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.tint} />
-        <Text style={styles.loadingText}>Ładowanie produktu...</Text>
+        <View style={{ width: '100%', padding: 16 }}>
+          {/* Image skeleton */}
+          <ProductSkeleton />
+        </View>
       </View>
     );
   }
@@ -1426,33 +1491,24 @@ export default function ProductDetailScreen() {
             )}
 
             {/* "Zobacz wszystkie opinie" button */}
-            {reviewStats && reviewStats.totalReviews > reviews.length && !showAllReviews && (
+            {reviewStats && reviewStats.totalReviews > 0 && (
               <TouchableOpacity
                 style={styles.seeAllReviewsBtn}
                 activeOpacity={0.7}
-                onPress={async () => {
-                  if (!product || loadingAllReviews) return;
-                  setLoadingAllReviews(true);
-                  try {
-                    const data = await api.get<{ reviews: Review[] }>(
-                      `/products/${product.id}/reviews?limit=100&sort=newest`
-                    );
-                    setReviews(data.reviews || []);
-                    setShowAllReviews(true);
-                  } catch {
-                    showToast('Nie udało się załadować opinii', 'error');
-                  } finally {
-                    setLoadingAllReviews(false);
-                  }
+                onPress={() => {
+                  if (!product) return;
+                  router.push({
+                    pathname: '/product/reviews',
+                    params: {
+                      productId: product.id,
+                      productName: product.name,
+                    },
+                  });
                 }}
               >
-                {loadingAllReviews ? (
-                  <ActivityIndicator size="small" color={colors.tint} />
-                ) : (
-                  <Text style={styles.seeAllReviewsText}>
-                    Zobacz wszystkie opinie ({reviewStats.totalReviews})
-                  </Text>
-                )}
+                <Text style={styles.seeAllReviewsText}>
+                  Zobacz wszystkie opinie ({reviewStats.totalReviews})
+                </Text>
               </TouchableOpacity>
             )}
 

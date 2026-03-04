@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, useWindowDimensions, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { View, Text, TouchableOpacity, useWindowDimensions, StyleSheet, ActivityIndicator, Animated } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -29,11 +29,34 @@ function ProductCard({ product, width }: ProductCardProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [adding, setAdding] = useState(false);
+  const [addSuccess, setAddSuccess] = useState(false);
   const isFav = isInWishlist(product.id);
   const { width: screenWidth } = useWindowDimensions();
   const dynamicCardWidth = (screenWidth - CARD_PADDING * 2 - CARD_GAP) / 2;
   const cardWidth = width || dynamicCardWidth;
 
+  // Heart animation
+  const heartScale = useRef(new Animated.Value(1)).current;
+  const prevFav = useRef(isFav);
+  useEffect(() => {
+    if (isFav !== prevFav.current) {
+      Animated.sequence([
+        Animated.spring(heartScale, { toValue: 0.5, useNativeDriver: true, speed: 50 }),
+        Animated.spring(heartScale, { toValue: 1.3, useNativeDriver: true, speed: 30 }),
+        Animated.spring(heartScale, { toValue: 1, useNativeDriver: true, speed: 20 }),
+      ]).start();
+    }
+    prevFav.current = isFav;
+  }, [isFav, heartScale]);
+
+  // Add-to-cart button scale
+  const cartBtnScale = useRef(new Animated.Value(1)).current;
+  const onCartPressIn = () => {
+    Animated.spring(cartBtnScale, { toValue: 0.93, useNativeDriver: true, speed: 50 }).start();
+  };
+  const onCartPressOut = () => {
+    Animated.spring(cartBtnScale, { toValue: 1, useNativeDriver: true, speed: 30 }).start();
+  };
 
 
   const price = Number(
@@ -64,8 +87,18 @@ function ProductCard({ product, width }: ProductCardProps) {
     ? product.variants.some((v) => v.stock > 0)
     : true;
 
+  // Entrance animation
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(14)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 350, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 350, useNativeDriver: true }),
+    ]).start();
+  }, [fadeAnim, slideAnim]);
+
   return (
-    <View style={[styles.card, { width: cardWidth }]}>
+    <Animated.View style={[styles.card, { width: cardWidth, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
       {/* Clickable area */}
       <TouchableOpacity
         style={styles.clickable}
@@ -117,11 +150,13 @@ function ProductCard({ product, width }: ProductCardProps) {
             activeOpacity={0.7}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <FontAwesome
-              name={isFav ? 'heart' : 'heart-o'}
-              size={18}
-              color={isFav ? colors.destructive : colors.textMuted}
-            />
+            <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+              <FontAwesome
+                name={isFav ? 'heart' : 'heart-o'}
+                size={18}
+                color={isFav ? colors.destructive : colors.textMuted}
+              />
+            </Animated.View>
           </TouchableOpacity>
         </View>
 
@@ -174,8 +209,11 @@ function ProductCard({ product, width }: ProductCardProps) {
       </TouchableOpacity>
 
       {/* Add to cart button */}
+      <Animated.View style={{ transform: [{ scale: cartBtnScale }] }}>
       <TouchableOpacity
-        style={[styles.addButton, !hasStock && styles.addButtonDisabled, adding && styles.addButtonAdding]}
+        style={[styles.addButton, !hasStock && styles.addButtonDisabled, adding && styles.addButtonAdding, addSuccess && { backgroundColor: '#22c55e' }]}
+        onPressIn={onCartPressIn}
+        onPressOut={onCartPressOut}
         onPress={async () => {
           if (!hasStock || adding) return;
           const variantId = product.variants?.[0]?.id;
@@ -193,6 +231,8 @@ function ProductCard({ product, width }: ProductCardProps) {
               quantity: 1,
               warehouse: product.wholesaler || undefined,
             });
+            setAddSuccess(true);
+            setTimeout(() => setAddSuccess(false), 1000);
           } catch {}
           setAdding(false);
         }}
@@ -201,6 +241,11 @@ function ProductCard({ product, width }: ProductCardProps) {
       >
         {adding ? (
           <ActivityIndicator size="small" color={colors.textInverse} />
+        ) : addSuccess ? (
+          <>
+            <FontAwesome name="check" size={13} color={colors.textInverse} />
+            <Text style={styles.addButtonText}>Dodano!</Text>
+          </>
         ) : (
           <>
             <FontAwesome name="shopping-cart" size={13} color={colors.textInverse} />
@@ -208,7 +253,8 @@ function ProductCard({ product, width }: ProductCardProps) {
           </>
         )}
       </TouchableOpacity>
-    </View>
+      </Animated.View>
+    </Animated.View>
   );
 }
 

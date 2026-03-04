@@ -156,6 +156,17 @@ function RootLayoutNav() {
                       headerTitleStyle: { color: colors.headerText },
                     }}
                   />
+                  <Stack.Screen
+                    name="product/reviews"
+                    options={{
+                      headerShown: true,
+                      title: 'Opinie',
+                      headerBackTitle: 'Wróć',
+                      headerTintColor: colors.tint,
+                      headerStyle: { backgroundColor: colors.headerBackground },
+                      headerTitleStyle: { color: colors.headerText },
+                    }}
+                  />
                 </Stack>
               </ThemeProvider>
             </WishlistProvider>

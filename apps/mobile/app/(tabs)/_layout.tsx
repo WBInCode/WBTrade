@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs, useSegments } from 'expo-router';
-import { View, Text } from 'react-native';
+import { View, Text, Animated } from 'react-native';
 
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useCart } from '../../contexts/CartContext';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { ChatBubble } from '../../components/ChatBot';
 import ChatBotModal from '../../components/ChatBot';
+import { ScrollProvider, useScrollContext } from '../../contexts/ScrollContext';
 
 // Tabs where chatbot bubble should be visible
 const CHATBOT_ALLOWED_TABS = ['index', 'account'];
@@ -22,12 +23,24 @@ function TabBarIcon(props: {
 function CartIcon({ color }: { color: string }) {
   const { itemCount } = useCart();
   const colors = useThemeColors();
+  const badgeScale = useRef(new Animated.Value(1)).current;
+  const prevCount = useRef(itemCount);
+
+  useEffect(() => {
+    if (itemCount !== prevCount.current && itemCount > 0) {
+      Animated.sequence([
+        Animated.spring(badgeScale, { toValue: 1.4, useNativeDriver: true, speed: 50 }),
+        Animated.spring(badgeScale, { toValue: 1, useNativeDriver: true, speed: 30 }),
+      ]).start();
+    }
+    prevCount.current = itemCount;
+  }, [itemCount, badgeScale]);
 
   return (
     <View>
       <FontAwesome name="shopping-cart" size={24} color={color} style={{ marginBottom: -3 }} />
       {itemCount > 0 && (
-        <View
+        <Animated.View
           style={{
             position: 'absolute',
             top: -6,
@@ -39,12 +52,13 @@ function CartIcon({ color }: { color: string }) {
             alignItems: 'center',
             justifyContent: 'center',
             paddingHorizontal: 4,
+            transform: [{ scale: badgeScale }],
           }}
         >
           <Text style={{ color: colors.badgeText, fontSize: 10, fontWeight: '700' }}>
             {itemCount > 99 ? '99+' : itemCount}
           </Text>
-        </View>
+        </Animated.View>
       )}
     </View>
   );
@@ -53,12 +67,24 @@ function CartIcon({ color }: { color: string }) {
 function WishlistIcon({ color }: { color: string }) {
   const { count } = useWishlist();
   const colors = useThemeColors();
+  const badgeScale = useRef(new Animated.Value(1)).current;
+  const prevCount = useRef(count);
+
+  useEffect(() => {
+    if (count !== prevCount.current && count > 0) {
+      Animated.sequence([
+        Animated.spring(badgeScale, { toValue: 1.4, useNativeDriver: true, speed: 50 }),
+        Animated.spring(badgeScale, { toValue: 1, useNativeDriver: true, speed: 30 }),
+      ]).start();
+    }
+    prevCount.current = count;
+  }, [count, badgeScale]);
 
   return (
     <View>
       <FontAwesome name="heart" size={22} color={color} style={{ marginBottom: -3 }} />
       {count > 0 && (
-        <View
+        <Animated.View
           style={{
             position: 'absolute',
             top: -6,
@@ -70,25 +96,71 @@ function WishlistIcon({ color }: { color: string }) {
             alignItems: 'center',
             justifyContent: 'center',
             paddingHorizontal: 4,
+            transform: [{ scale: badgeScale }],
           }}
         >
           <Text style={{ color: colors.badgeText, fontSize: 10, fontWeight: '700' }}>
             {count > 99 ? '99+' : count}
           </Text>
-        </View>
+        </Animated.View>
       )}
     </View>
   );
 }
 
 export default function TabLayout() {
+  return (
+    <ScrollProvider>
+      <TabLayoutInner />
+    </ScrollProvider>
+  );
+}
+
+function TabLayoutInner() {
   const colors = useThemeColors();
   const segments = useSegments();
   const [chatOpen, setChatOpen] = useState(false);
-  const [chatActive, setChatActive] = useState(false); // true when minimized with conversation
+  const [chatActive, setChatActive] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const scrollCtx = useScrollContext();
 
-  // Current tab is the segment after "(tabs)", e.g. ['(tabs)', 'index'] → 'index'
+  // Animated value: 0 = fully visible, 1 = mostly hidden (tucked to right)
+  const hideAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!scrollCtx) return;
+    const unsub = scrollCtx.onDirectionChange((direction) => {
+      if (direction === 'down') {
+        // Hide: slide right, leave ~20px peeking
+        Animated.timing(hideAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      } else {
+        // Show: slide back
+        Animated.timing(hideAnim, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }).start();
+      }
+    });
+    return unsub;
+  }, [scrollCtx, hideAnim]);
+
+  // Translate X: 0 → 50px (hides most of the 56px bubble, keeps ~6px + label visible)
+  const bubbleTranslateX = hideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 50],
+  });
+
+  // Also reduce opacity slightly when tucked
+  const bubbleOpacity = hideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0.6],
+  });
+
   const currentTab = segments.length > 1 ? segments[1] : 'index';
   const showChatBubble = CHATBOT_ALLOWED_TABS.includes(currentTab as string);
 
@@ -155,12 +227,14 @@ export default function TabLayout() {
 
       {/* Floating chat bubble — only on allowed tabs */}
       {showChatBubble && (
-        <View
+        <Animated.View
           style={{
             position: 'absolute',
             bottom: 90,
             right: 16,
             zIndex: 100,
+            transform: [{ translateX: bubbleTranslateX }],
+            opacity: bubbleOpacity,
           }}
         >
           <ChatBubble
@@ -169,7 +243,7 @@ export default function TabLayout() {
             unreadCount={!chatOpen ? unreadCount : 0}
             isChatOpen={chatOpen}
           />
-        </View>
+        </Animated.View>
       )}
 
       {/* Chat bot modal */}

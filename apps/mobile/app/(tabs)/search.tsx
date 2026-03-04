@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   ScrollView,
   Keyboard,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
@@ -140,6 +141,17 @@ export default function SearchScreen() {
   const params = useLocalSearchParams<{ warehouse?: string }>();
   const inputRef = useRef<TextInput>(null);
   const colors = useThemeColors();
+
+  // Results fade animation
+  const resultsFadeAnim = useRef(new Animated.Value(0)).current;
+
+  // Trigger fade-in when results appear
+  useEffect(() => {
+    if (searched && !loading) {
+      resultsFadeAnim.setValue(0);
+      Animated.timing(resultsFadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }).start();
+    }
+  }, [searched, loading, resultsFadeAnim]);
 
   // ─── State ─────────────────────────────────────────────────
   const [query, setQuery] = useState('');
@@ -540,7 +552,7 @@ export default function SearchScreen() {
 
       {/* ── RESULTS ── */}
       {searched && !loading && (
-        <>
+        <Animated.View style={{ flex: 1, opacity: resultsFadeAnim }}>
           {products.length > 0 && (
             <View style={[styles.toolbar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
               <Text style={[styles.resultCount, { color: colors.textSecondary }]}>
@@ -608,7 +620,7 @@ export default function SearchScreen() {
               </View>
             )}
           </View>
-        </>
+        </Animated.View>
       )}
     </SafeAreaView>
   );
