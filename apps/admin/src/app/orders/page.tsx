@@ -48,6 +48,9 @@ interface Order {
     lastName: string;
     email: string;
   };
+  guestEmail?: string;
+  guestFirstName?: string;
+  guestLastName?: string;
   shippingAddress?: {
     street: string;
     city: string;
@@ -680,7 +683,14 @@ export default function OrdersPage() {
                           <p className="text-xs text-gray-400">{order.user.email}</p>
                         </div>
                       ) : (
-                        <span className="text-gray-500">Gość</span>
+                        <div>
+                          <p className="text-gray-300">
+                            Gość{order.guestFirstName || order.guestLastName ? ` — ${order.guestFirstName || ''} ${order.guestLastName || ''}`.trim() : ''}
+                          </p>
+                          {order.guestEmail && (
+                            <p className="text-xs text-gray-400">{order.guestEmail}</p>
+                          )}
+                        </div>
                       )}
                     </td>
                     <td className="px-4 py-4">

@@ -129,6 +129,14 @@ export default function MessageDetailPage() {
     loadTicket();
   }, [loadTicket]);
 
+  // ─── Auto-polling every 5s for live chat ───
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadTicket();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [loadTicket]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [ticket?.messages]);

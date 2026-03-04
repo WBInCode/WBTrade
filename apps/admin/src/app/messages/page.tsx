@@ -162,6 +162,15 @@ export default function MessagesPage() {
     loadTickets();
   }, [loadTickets]);
 
+  // ─── Auto-polling every 15s for live updates ───
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadStats();
+      loadTickets();
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [loadStats, loadTickets]);
+
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('pl-PL', {
