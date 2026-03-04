@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { adminDashboardController } from '../controllers/admin-dashboard.controller';
-import { authGuard } from '../middleware/auth.middleware';
+import { authGuard, adminOnly } from '../middleware/auth.middleware';
 
 const router = Router();
 
-// Wszystkie endpointy wymagaja zalogowania
-router.use(authGuard);
+// Wszystkie endpointy wymagaja zalogowania jako admin
+router.use(authGuard, adminOnly);
 
 // GET /api/admin/dashboard - wszystkie dane naraz
 router.get('/', adminDashboardController.getSummary);
