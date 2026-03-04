@@ -394,7 +394,7 @@ async function syncCategoryToDb(
   }
   
   // Sprawdź czy istnieje
-  let existingCategory = null;
+  let existingCategory: any = null;
   if (node.baselinkerCategoryId) {
     existingCategory = await prisma.category.findUnique({
       where: { baselinkerCategoryId: node.baselinkerCategoryId },

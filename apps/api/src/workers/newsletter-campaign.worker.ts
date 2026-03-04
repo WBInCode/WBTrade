@@ -202,7 +202,7 @@ export async function processScheduledCampaigns(): Promise<{ processed: number; 
 
   console.log(`[NewsletterWorker] Found ${dueCampaigns.length} scheduled campaign(s) due for sending`);
 
-  const results = [];
+  const results: any[] = [];
   for (const campaign of dueCampaigns) {
     try {
       const result = await sendCampaign(campaign.id);
