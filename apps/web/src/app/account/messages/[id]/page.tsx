@@ -64,6 +64,15 @@ export default function MessageDetailPage() {
     loadTicket();
   }, [loadTicket]);
 
+  // ─── Auto-polling every 8s for live chat ───
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const interval = setInterval(() => {
+      loadTicket();
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, loadTicket]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [ticket?.messages]);
