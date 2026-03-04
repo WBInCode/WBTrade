@@ -142,18 +142,7 @@ export default function SearchScreen() {
   const inputRef = useRef<TextInput>(null);
   const colors = useThemeColors();
 
-  // Results fade animation
-  const resultsFadeAnim = useRef(new Animated.Value(0)).current;
-
-  // Trigger fade-in when results appear
-  useEffect(() => {
-    if (searched && !loading) {
-      resultsFadeAnim.setValue(0);
-      Animated.timing(resultsFadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }).start();
-    }
-  }, [searched, loading, resultsFadeAnim]);
-
-  // ─── State ─────────────────────────────────────────────────
+  // ─── State (must be declared before useEffects that reference them) ───
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounce(query, 300);
 
@@ -165,6 +154,17 @@ export default function SearchScreen() {
   const [sort, setSort] = useState<SortOption>('relevance');
   const [showSort, setShowSort] = useState(false);
   const [warehouseFilter, setWarehouseFilter] = useState<string | null>(null);
+
+  // Results fade animation
+  const resultsFadeAnim = useRef(new Animated.Value(0)).current;
+
+  // Trigger fade-in when results appear
+  useEffect(() => {
+    if (searched && !loading) {
+      resultsFadeAnim.setValue(0);
+      Animated.timing(resultsFadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }).start();
+    }
+  }, [searched, loading]);
 
   // Warehouse filter names
   const WAREHOUSE_NAMES: Record<string, string> = {
