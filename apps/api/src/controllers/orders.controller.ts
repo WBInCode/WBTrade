@@ -320,7 +320,7 @@ export async function updateOrder(req: Request, res: Response): Promise<void> {
         orderNumber: order.orderNumber,
         status: validation.data.status,
         previousStatus,
-        total: order.total,
+        total: Number(order.total),
         customerName,
         customerEmail,
         itemCount: order.items?.length,
