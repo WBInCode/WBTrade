@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { reportsController } from '../controllers/reports.controller';
-import { authGuard } from '../middleware/auth.middleware';
+import { authGuard, adminOnly } from '../middleware/auth.middleware';
 
 const router = Router();
 
-// Wszystkie endpointy wymagają zalogowania
-router.use(authGuard);
+// Wszystkie endpointy wymagają zalogowania jako admin
+router.use(authGuard, adminOnly);
 
 // GET /api/reports/sales - raport sprzedaży
 router.get('/sales', reportsController.getSalesReport);
