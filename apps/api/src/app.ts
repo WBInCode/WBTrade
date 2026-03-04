@@ -50,6 +50,7 @@ import adminLoyaltyRoutes from './routes/admin-loyalty';
 import chatbotRoutes from './routes/chatbot';
 import supportRoutes from './routes/support';
 import adminSupportRoutes from './routes/admin-support';
+import emailInboundRoutes from './routes/email-inbound';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
 import { initializeMeilisearch } from './lib/meilisearch';
 import { startSearchIndexWorker } from './workers/search-index.worker';
@@ -398,6 +399,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reviews', reviewsRoutes);
 // Direct webhook endpoints for payment providers
 app.post('/api/webhooks/payu', payuWebhook);
+app.use('/api/webhooks/email-inbound', emailInboundRoutes); // Resend inbound email webhook
 app.use('/api/webhooks', checkoutRoutes); // Other webhook routes
 app.use('/api/admin/dashboard', adminDashboardRoutes); // Admin dashboard
 app.use('/api/admin/settings', adminSettingsRoutes); // Admin settings (carousels, etc.)
