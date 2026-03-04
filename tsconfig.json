@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "es5",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -16,9 +20,19 @@
     "incremental": true,
     "baseUrl": "apps/web/src",
     "paths": {
-      "@/*": ["*"]
+      "@/*": [
+        "*"
+      ]
     }
   },
-  "include": ["apps/web/src", "apps/api/src", "apps/api/scripts"],
-  "exclude": ["node_modules", "**/*.spec.ts"]
+  "include": [
+    "apps/web/src",
+    "apps/api/src",
+    "apps/api/scripts"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts"
+  ],
+  "extends": "expo/tsconfig.base"
 }
