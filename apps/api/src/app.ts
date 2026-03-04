@@ -48,6 +48,8 @@ import couponsRoutes from './routes/coupons';
 import loyaltyRoutes from './routes/loyalty';
 import adminLoyaltyRoutes from './routes/admin-loyalty';
 import chatbotRoutes from './routes/chatbot';
+import supportRoutes from './routes/support';
+import adminSupportRoutes from './routes/admin-support';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
 import { initializeMeilisearch } from './lib/meilisearch';
 import { startSearchIndexWorker } from './workers/search-index.worker';
@@ -420,6 +422,8 @@ app.use('/api/coupons', couponsRoutes); // User coupons / discounts
 app.use('/api/loyalty', loyaltyRoutes); // User loyalty program
 app.use('/api/admin/loyalty', adminLoyaltyRoutes); // Admin loyalty management
 app.use('/api/chatbot', chatbotRoutes); // WuBuś chatbot unmatched questions
+app.use('/api/support', supportRoutes); // Customer support messaging
+app.use('/api/admin/support', adminSupportRoutes); // Admin support management
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));

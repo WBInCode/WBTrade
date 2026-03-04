@@ -1607,4 +1607,71 @@ export const shoppingListApi = {
     api.delete<void>(`/shopping-lists/${listId}/items/${itemId}`),
 };
 
+// ─── Support / Messages API ───
+export interface SupportTicket {
+  id: string;
+  ticketNumber: string;
+  subject: string;
+  category: string;
+  status: string;
+  priority: string;
+  lastMessageAt: string;
+  createdAt: string;
+  unreadCount: number;
+  lastMessage?: {
+    content: string;
+    senderRole: string;
+    createdAt: string;
+  } | null;
+  order?: {
+    id: string;
+    orderNumber: string;
+  } | null;
+}
+
+export interface SupportMessage {
+  id: string;
+  senderId: string | null;
+  senderRole: 'CUSTOMER' | 'ADMIN' | 'SYSTEM';
+  content: string;
+  isRead: boolean;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface SupportTicketDetail extends SupportTicket {
+  messages: SupportMessage[];
+  user?: { id: string; firstName: string; lastName: string; email: string } | null;
+  guestEmail?: string | null;
+  closedAt: string | null;
+  closedBy: string | null;
+}
+
+export interface SupportTicketsResponse {
+  tickets: SupportTicket[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export const supportApi = {
+  getTickets: (params?: { page?: number; status?: string; category?: string }) =>
+    api.get<SupportTicketsResponse>('/support/tickets', { params: params as any }),
+
+  getUnreadCount: () =>
+    api.get<{ count: number }>('/support/unread-count'),
+
+  createTicket: (data: { subject: string; category: string; message: string; orderId?: string }) =>
+    api.post<SupportTicketDetail>('/support/tickets', data),
+
+  getTicketDetail: (id: string) =>
+    api.get<SupportTicketDetail>(`/support/tickets/${id}`),
+
+  sendMessage: (ticketId: string, content: string) =>
+    api.post<SupportMessage>(`/support/tickets/${ticketId}/messages`, { content }),
+};
+
 export default api;
