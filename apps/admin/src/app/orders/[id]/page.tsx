@@ -97,6 +97,9 @@ interface Order {
   paczkomatCode?: string;
   paczkomatAddress?: string;
   packageShipping?: PackageShippingData[];
+  refundNumber?: string;
+  refundReason?: string;
+  refundRequestedAt?: string;
   guestEmail?: string;
   guestFirstName?: string;
   guestLastName?: string;
@@ -183,6 +186,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [showTrackingModal, setShowTrackingModal] = useState(false);
+  const [newTrackingNumber, setNewTrackingNumber] = useState('');
+  const [trackingSaving, setTrackingSaving] = useState(false);
 
   useEffect(() => {
     loadOrder();
@@ -727,9 +733,18 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               </>
             )}
             
-            {order.trackingNumber && (
+            {order.trackingNumber ? (
               <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
-                <p className="text-sm text-gray-400">Numer przesyłki:</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-400">Numer przesyłki:</p>
+                  <button
+                    onClick={() => { setNewTrackingNumber(order.trackingNumber || ''); setShowTrackingModal(true); }}
+                    className="p-1 text-gray-500 hover:text-orange-400 transition-colors"
+                    title="Edytuj numer przesyłki"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
                 <p className="text-white font-mono">{order.trackingNumber}</p>
                 {order.trackingLink && (
                   <a 
@@ -742,6 +757,14 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   </a>
                 )}
               </div>
+            ) : (
+              <button
+                onClick={() => { setNewTrackingNumber(''); setShowTrackingModal(true); }}
+                className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-700/50 rounded-lg text-gray-400 hover:text-white hover:bg-slate-700 transition-colors text-sm"
+              >
+                <Truck className="w-4 h-4" />
+                Dodaj numer przesyłki
+              </button>
             )}
 
             {order.deliveryStatus && (
@@ -758,6 +781,34 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             )}
           </div>
+
+          {/* Refund Info */}
+          {order.status === 'REFUNDED' && order.refundNumber && (
+            <div className="bg-slate-800/50 rounded-xl border border-orange-500/30 p-6">
+              <h2 className="font-semibold text-white mb-4 flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-orange-400" />
+                Informacje o zwrocie
+              </h2>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-gray-400">Numer zwrotu</p>
+                  <p className="text-xl font-bold text-orange-400 font-mono mt-1">{order.refundNumber}</p>
+                </div>
+                {order.refundReason && (
+                  <div>
+                    <p className="text-sm text-gray-400">Powód zwrotu</p>
+                    <p className="text-white text-sm mt-1">{order.refundReason}</p>
+                  </div>
+                )}
+                {order.refundRequestedAt && (
+                  <div>
+                    <p className="text-sm text-gray-400">Data zgłoszenia zwrotu</p>
+                    <p className="text-white text-sm mt-1">{formatDate(order.refundRequestedAt)}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Payment */}
           <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-6">
@@ -906,6 +957,104 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 className="flex items-center gap-2 px-4 py-2 bg-orange-500 rounded-lg text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {saving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Zapisywanie...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Zapisz
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tracking Number Edit Modal */}
+      {showTrackingModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
+              <h3 className="text-lg font-semibold text-white">
+                {order.trackingNumber ? 'Zmień numer przesyłki' : 'Dodaj numer przesyłki'}
+              </h3>
+              <button 
+                onClick={() => setShowTrackingModal(false)}
+                className="p-1 hover:bg-slate-700 rounded"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              {order.trackingNumber && (
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Obecny numer:</p>
+                  <p className="text-white font-mono bg-slate-700/50 px-3 py-2 rounded-lg">{order.trackingNumber}</p>
+                </div>
+              )}
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">
+                  {order.trackingNumber ? 'Nowy numer przesyłki' : 'Numer przesyłki'}
+                </label>
+                <input
+                  type="text"
+                  value={newTrackingNumber}
+                  onChange={(e) => setNewTrackingNumber(e.target.value)}
+                  placeholder="np. 6280012345678901234"
+                  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Link do śledzenia zostanie wygenerowany automatycznie na podstawie kuriera.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-700">
+              <button
+                onClick={() => setShowTrackingModal(false)}
+                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+              >
+                Anuluj
+              </button>
+              <button
+                onClick={async () => {
+                  const trimmed = newTrackingNumber.trim();
+                  if (order.trackingNumber && trimmed !== order.trackingNumber) {
+                    const confirmed = await confirm(
+                      `Czy na pewno chcesz zmienić numer przesyłki z "${order.trackingNumber}" na "${trimmed || '(pusty)'}"?`
+                    );
+                    if (!confirmed) return;
+                  }
+                  try {
+                    setTrackingSaving(true);
+                    const token = getAuthToken();
+                    const res = await fetch(`${API_URL}/orders/${id}/tracking`, {
+                      method: 'PATCH',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        ...(token && { Authorization: `Bearer ${token}` }),
+                      },
+                      body: JSON.stringify({ trackingNumber: trimmed }),
+                    });
+                    if (res.ok) {
+                      await loadOrder();
+                      setShowTrackingModal(false);
+                    } else {
+                      const err = await res.json();
+                      await alert(err.message || 'Błąd podczas aktualizacji');
+                    }
+                  } catch {
+                    await alert('Błąd połączenia z API');
+                  } finally {
+                    setTrackingSaving(false);
+                  }
+                }}
+                disabled={trackingSaving}
+                className="flex items-center gap-2 px-4 py-2 bg-orange-500 rounded-lg text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {trackingSaving ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     Zapisywanie...

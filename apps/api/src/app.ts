@@ -484,12 +484,68 @@ app.listen(PORT, async () => {
     await scheduleReservationCleanup();
     console.log('✅ Reservation cleanup scheduled (every 5 minutes)');
     
-    // 2. Baselinker order status sync - every 15 minutes
-    //    Stock sync - every hour
-    const { createBaselinkerSyncWorker, scheduleBaselinkerSync } = await import('./workers/baselinker-sync.worker');
-    createBaselinkerSyncWorker();
-    await scheduleBaselinkerSync();
-    console.log('✅ Baselinker sync scheduled (orders: 15min, stock: daily 00:00)');
+    // 2. Baselinker order status sync + delivery tracking
+    //    Try BullMQ (requires Redis) → fallback to setInterval if Redis unavailable
+    let bullmqSyncStarted = false;
+    try {
+      const { createBaselinkerSyncWorker, scheduleBaselinkerSync } = await import('./workers/baselinker-sync.worker');
+      createBaselinkerSyncWorker();
+      await scheduleBaselinkerSync();
+      bullmqSyncStarted = true;
+      console.log('✅ Baselinker sync scheduled via BullMQ (orders: 15min, delivery: 15min, stock: 2h)');
+    } catch (redisErr) {
+      console.warn('⚠️  BullMQ/Redis unavailable — falling back to setInterval for delivery sync:', (redisErr as Error).message);
+    }
+
+    // Fallback: setInterval-based sync when Redis/BullMQ is not available
+    if (!bullmqSyncStarted) {
+      const { orderStatusSyncService } = await import('./services/order-status-sync.service');
+      const { deliveryTrackingService } = await import('./services/delivery-tracking.service');
+
+      // Sync order statuses every 30 minutes
+      setInterval(async () => {
+        try {
+          console.log('[Fallback] Running order status sync...');
+          const result = await orderStatusSyncService.syncOrderStatuses(6);
+          console.log(`[Fallback] Order status sync: ${result.synced} synced, ${result.skipped} skipped, ${result.errors.length} errors`);
+        } catch (e) {
+          console.error('[Fallback] Order status sync error:', e);
+        }
+      }, 30 * 60 * 1000); // 30 minutes
+
+      // Sync delivery tracking every 30 minutes (offset 10 min from order status sync)
+      setTimeout(() => {
+        setInterval(async () => {
+          try {
+            console.log('[Fallback] Running delivery tracking sync...');
+            const result = await deliveryTrackingService.syncDeliveryStatuses();
+            console.log(`[Fallback] Delivery tracking sync: ${result.updated} updated, ${result.skipped} skipped, ${result.errors.length} errors`);
+          } catch (e) {
+            console.error('[Fallback] Delivery tracking sync error:', e);
+          }
+        }, 30 * 60 * 1000); // 30 minutes
+      }, 10 * 60 * 1000); // offset by 10 min
+
+      // Run initial sync after 2 minutes (to let server fully start)
+      setTimeout(async () => {
+        try {
+          console.log('[Fallback] Running initial order status sync...');
+          const result = await orderStatusSyncService.syncOrderStatuses(24);
+          console.log(`[Fallback] Initial order status sync: ${result.synced} synced, ${result.skipped} skipped`);
+        } catch (e) {
+          console.error('[Fallback] Initial order status sync error:', e);
+        }
+        try {
+          console.log('[Fallback] Running initial delivery tracking sync...');
+          const result = await deliveryTrackingService.syncDeliveryStatuses();
+          console.log(`[Fallback] Initial delivery tracking sync: ${result.updated} updated, ${result.skipped} skipped`);
+        } catch (e) {
+          console.error('[Fallback] Initial delivery tracking sync error:', e);
+        }
+      }, 2 * 60 * 1000); // 2 min after start
+
+      console.log('✅ Baselinker sync scheduled via setInterval fallback (every 30 min)');
+    }
 
     // Clean up any RUNNING syncs left over from before this restart
     const { prisma: prismaClient } = await import('./db');

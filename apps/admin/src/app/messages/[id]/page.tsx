@@ -101,6 +101,9 @@ export default function MessageDetailPage() {
   const [sending, setSending] = useState(false);
   const [statusChanging, setStatusChanging] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const prevMessageCountRef = useRef<number>(0);
+  const isInitialLoadRef = useRef<boolean>(true);
 
   const loadTicket = useCallback(async () => {
     try {
@@ -138,7 +141,30 @@ export default function MessageDetailPage() {
   }, [loadTicket]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const messageCount = ticket?.messages?.length || 0;
+    if (messageCount === 0) return;
+
+    // Only scroll on first load or when new messages arrive
+    if (isInitialLoadRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
+      isInitialLoadRef.current = false;
+      prevMessageCountRef.current = messageCount;
+      return;
+    }
+
+    if (messageCount > prevMessageCountRef.current) {
+      // New message — scroll only if user is near bottom of container
+      const container = messagesContainerRef.current;
+      if (container) {
+        const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+        if (distanceFromBottom < 150) {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
+      } else {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+    prevMessageCountRef.current = messageCount;
   }, [ticket?.messages]);
 
   const handleSendReply = async () => {
@@ -317,7 +343,7 @@ export default function MessageDetailPage() {
         <div className="lg:col-span-2 space-y-4">
           <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
             {/* Messages */}
-            <div className="p-6 space-y-6 max-h-[600px] overflow-y-auto">
+            <div ref={messagesContainerRef} className="p-6 space-y-6 max-h-[600px] overflow-y-auto">
               {messagesByDay.map((group, gi) => (
                 <div key={gi}>
                   {/* Day separator */}
