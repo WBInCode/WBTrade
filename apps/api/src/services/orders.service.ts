@@ -665,7 +665,7 @@ export class OrdersService {
       return { eligible: false, reason: 'Zamówienie nie zostało znalezione' };
     }
 
-    // No user check - anyone with order ID/number can request refund
+    // Ownership is verified in the controller (authGuard / guest email check)
 
     // Only DELIVERED or SHIPPED orders can be refunded
     if (!['DELIVERED', 'SHIPPED'].includes(order.status)) {

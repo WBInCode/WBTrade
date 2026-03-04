@@ -341,8 +341,29 @@ export async function deleteOrder(req: Request, res: Response): Promise<void> {
 export async function checkRefundEligibility(req: Request, res: Response): Promise<void> {
   try {
     const { id } = req.params;
-    // userId is optional - guests can also check refund eligibility
-    const userId = (req as any).user?.id;
+    const userId = req.user?.userId;
+    const { email } = req.query;
+    
+    // SECURITY: Verify the requester owns the order
+    const order = await ordersService.getById(id);
+    if (!order) {
+      res.status(404).json({ message: 'Zamówienie nie zostało znalezione' });
+      return;
+    }
+    
+    // If user is logged in, they must own the order
+    if (userId && order.userId && order.userId !== userId) {
+      res.status(403).json({ message: 'Brak dostępu do tego zamówienia' });
+      return;
+    }
+    
+    // If not logged in (guest), require matching email
+    if (!userId) {
+      if (!email || order.guestEmail !== email) {
+        res.status(403).json({ message: 'Podaj poprawny email powiązany z zamówieniem' });
+        return;
+      }
+    }
     
     const eligibility = await ordersService.checkRefundEligibility(id);
     
@@ -359,9 +380,29 @@ export async function checkRefundEligibility(req: Request, res: Response): Promi
 export async function requestRefund(req: Request, res: Response): Promise<void> {
   try {
     const { id } = req.params;
-    const { reason } = req.body;
-    // userId is optional - guests can also request refund
-    const userId = (req as any).user?.id;
+    const { reason, email } = req.body;
+    const userId = req.user?.userId;
+
+    // SECURITY: Verify the requester owns the order
+    const order = await ordersService.getById(id);
+    if (!order) {
+      res.status(404).json({ message: 'Zamówienie nie zostało znalezione' });
+      return;
+    }
+    
+    // If user is logged in, they must own the order
+    if (userId && order.userId && order.userId !== userId) {
+      res.status(403).json({ message: 'Brak dostępu do tego zamówienia' });
+      return;
+    }
+    
+    // If not logged in (guest), require matching email
+    if (!userId) {
+      if (!email || order.guestEmail !== email) {
+        res.status(403).json({ message: 'Podaj poprawny email powiązany z zamówieniem' });
+        return;
+      }
+    }
 
     const result = await ordersService.requestRefund(id, reason?.trim() || '');
     
