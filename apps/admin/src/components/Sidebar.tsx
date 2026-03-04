@@ -18,6 +18,7 @@ import {
   Warehouse,
   DollarSign,
   MessageCircleQuestion,
+  MessageSquare,
   Star,
   // Trophy,
 } from 'lucide-react';
@@ -62,6 +63,11 @@ const menuItems = [
     icon: Ticket,
   },
   // { title: 'Lojalność', href: '/loyalty', icon: Trophy }, // Ukryte — program lojalnościowy w przygotowaniu
+  {
+    title: 'Wiadomości',
+    href: '/messages',
+    icon: MessageSquare,
+  },
   {
     title: 'Newsletter',
     href: '/newsletter',

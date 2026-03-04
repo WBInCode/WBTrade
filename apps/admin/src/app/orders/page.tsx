@@ -5,7 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import { 
   ShoppingCart, Search, Filter, Eye, ChevronLeft, ChevronRight, 
   Truck, FileText, Package, Calendar, RefreshCw, Download,
-  MoreVertical, X, Ban, RotateCcw, AlertTriangle, Trash2, Archive
+  MoreVertical, X, Ban, RotateCcw, AlertTriangle, Trash2, Archive,
+  MessageSquare
 } from 'lucide-react';
 import Link from 'next/link';
 import ConfirmModal from '@/components/ConfirmModal';
@@ -161,6 +162,12 @@ export default function OrdersPage() {
   const [bulkArchiveModal, setBulkArchiveModal] = useState(false);
   const [bulkStatusModal, setBulkStatusModal] = useState<{ open: boolean; status: string; label: string }>({ open: false, status: '', label: '' });
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
+
+  // Bulk message state
+  const [bulkMessageModal, setBulkMessageModal] = useState(false);
+  const [bulkMessageSubject, setBulkMessageSubject] = useState('');
+  const [bulkMessageContent, setBulkMessageContent] = useState('');
+  const [bulkMessageSending, setBulkMessageSending] = useState(false);
 
   // Load pending cancellations count
   useEffect(() => {
@@ -560,6 +567,16 @@ export default function OrdersPage() {
               )}
             </div>
 
+            {/* Wyślij wiadomość */}
+            <button
+              onClick={() => setBulkMessageModal(true)}
+              disabled={bulkActionLoading}
+              className="px-4 py-2 bg-blue-600/20 border border-blue-500/30 rounded-lg text-blue-400 hover:bg-blue-600/30 transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              <MessageSquare className="w-4 h-4" />
+              Wyślij wiadomość
+            </button>
+
             {/* Przenieś do archiwum */}
             {(() => {
               const archivableCount = orders.filter(
@@ -921,6 +938,94 @@ export default function OrdersPage() {
         variant="danger"
         loading={bulkActionLoading}
       />
+
+      {/* Bulk Message Modal */}
+      {bulkMessageModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/60" onClick={() => setBulkMessageModal(false)} />
+          <div className="relative bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg p-6 z-10">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-orange-400" />
+                Wyślij wiadomość do {selectedOrders.length} klientów
+              </h3>
+              <button onClick={() => setBulkMessageModal(false)} className="text-gray-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Temat</label>
+                <input
+                  type="text"
+                  value={bulkMessageSubject}
+                  onChange={(e) => setBulkMessageSubject(e.target.value)}
+                  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  placeholder="Temat wiadomości..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Treść wiadomości</label>
+                <textarea
+                  value={bulkMessageContent}
+                  onChange={(e) => setBulkMessageContent(e.target.value)}
+                  rows={5}
+                  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+                  placeholder="Treść wiadomości do klientów..."
+                />
+              </div>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setBulkMessageModal(false)}
+                  className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                >
+                  Anuluj
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!bulkMessageSubject.trim() || !bulkMessageContent.trim()) return;
+                    try {
+                      setBulkMessageSending(true);
+                      const token = getAuthToken();
+                      const response = await fetch(`${API_URL}/admin/support/tickets/bulk-create`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          ...(token && { Authorization: `Bearer ${token}` }),
+                        },
+                        body: JSON.stringify({
+                          orderIds: selectedOrders,
+                          subject: bulkMessageSubject,
+                          message: bulkMessageContent,
+                        }),
+                      });
+                      if (response.ok) {
+                        const results = await response.json();
+                        const success = results.filter((r: any) => r.success).length;
+                        alert(`Wysłano wiadomość do ${success} z ${results.length} klientów`);
+                        setBulkMessageModal(false);
+                        setBulkMessageSubject('');
+                        setBulkMessageContent('');
+                        setSelectedOrders([]);
+                      }
+                    } catch (error) {
+                      console.error('Bulk message error:', error);
+                      alert('Wystąpił błąd podczas wysyłania wiadomości');
+                    } finally {
+                      setBulkMessageSending(false);
+                    }
+                  }}
+                  disabled={!bulkMessageSubject.trim() || !bulkMessageContent.trim() || bulkMessageSending}
+                  className="px-6 py-2 bg-orange-500 rounded-lg text-white font-medium hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  {bulkMessageSending ? 'Wysyłanie...' : 'Wyślij'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Click outside to close bulk status dropdown */}
       {bulkStatusDropdown && (

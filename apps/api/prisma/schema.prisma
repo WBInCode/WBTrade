@@ -46,6 +46,7 @@ model User {
   auditLogs                  SecurityAuditLog[]
   wishlistItems              WishlistItem[]
   shoppingLists              ShoppingList[]
+  supportTickets             SupportTicket[]
 
   @@map("users")
 }
@@ -359,6 +360,7 @@ model Order {
   deletedAt                DateTime?            @map("deleted_at")
   items                    OrderItem[]
   statusHistory            OrderStatusHistory[]
+  supportTickets           SupportTicket[]
   billingAddress           Address?             @relation("BillingAddress", fields: [billingAddressId], references: [id])
   shippingAddress          Address?             @relation("ShippingAddress", fields: [shippingAddressId], references: [id])
   user                     User?                @relation(fields: [userId], references: [id])
@@ -826,4 +828,79 @@ model ChatbotUnmatched {
   @@index([count])
   @@index([createdAt])
   @@map("chatbot_unmatched")
+}
+
+// ---------- Support Messaging System ----------
+model SupportTicket {
+  id             String         @id @default(cuid())
+  ticketNumber   String         @unique @map("ticket_number")
+  userId         String?        @map("user_id")
+  guestEmail     String?        @map("guest_email")
+  orderId        String?        @map("order_id")
+  subject        String
+  category       TicketCategory @default(GENERAL)
+  status         TicketStatus   @default(OPEN)
+  priority       TicketPriority @default(NORMAL)
+  lastMessageAt  DateTime       @default(now()) @map("last_message_at")
+  closedAt       DateTime?      @map("closed_at")
+  closedBy       String?        @map("closed_by")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  messages       SupportMessage[]
+  user           User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order          Order?         @relation(fields: [orderId], references: [id])
+
+  @@index([userId])
+  @@index([orderId])
+  @@index([status])
+  @@index([category])
+  @@index([ticketNumber])
+  @@index([lastMessageAt])
+  @@index([createdAt])
+  @@map("support_tickets")
+}
+
+model SupportMessage {
+  id         String        @id @default(cuid())
+  ticketId   String        @map("ticket_id")
+  senderId   String?       @map("sender_id")
+  senderRole MessageSender @default(CUSTOMER) @map("sender_role")
+  content    String
+  isRead     Boolean       @default(false) @map("is_read")
+  readAt     DateTime?     @map("read_at")
+  createdAt  DateTime      @default(now()) @map("created_at")
+  ticket     SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@index([senderId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("support_messages")
+}
+
+enum TicketCategory {
+  ORDER
+  DELIVERY
+  COMPLAINT
+  PAYMENT
+  ACCOUNT
+  GENERAL
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  NORMAL
+  HIGH
+}
+
+enum MessageSender {
+  CUSTOMER
+  ADMIN
+  SYSTEM
 }
