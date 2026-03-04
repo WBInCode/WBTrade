@@ -22,8 +22,8 @@ router.post('/admin/archive/cleanup', authGuard, adminOnly, cleanupArchive);
 // Route to permanently delete specific archived orders (admin)
 router.post('/admin/archive/delete', authGuard, adminOnly, permanentDeleteOrders);
 
-// Route to create a new order (requires authentication)
-router.post('/', authGuard, createOrder);
+// Route to create a new order (admin only - normal orders go through /api/checkout)
+router.post('/', authGuard, adminOnly, createOrder);
 
 // Route to get order tracking info from BaseLinker
 router.get('/:id/tracking', getOrderTracking);
@@ -64,7 +64,7 @@ router.post('/:id/soft-delete', authGuard, adminOnly, softDeleteOrder);
 // Route to restore an order from archive
 router.post('/:id/restore-from-archive', authGuard, adminOnly, restoreFromArchive);
 
-// Route to simulate payment (development only)
-router.post('/:id/simulate-payment', simulatePayment);
+// Route to simulate payment (development only, admin required)
+router.post('/:id/simulate-payment', authGuard, adminOnly, simulatePayment);
 
 export default router;
