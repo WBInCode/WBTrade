@@ -3,6 +3,14 @@ import { z } from 'zod';
 import { SearchService } from '../services/search.service';
 import { prisma } from '../db';
 
+// Delivery tags — must match the list in products.service.ts / search.service.ts
+const DELIVERY_TAGS = [
+  'Paczkomaty i Kurier', 'paczkomaty i kurier',
+  'Tylko kurier', 'tylko kurier',
+  'do 2 kg', 'do 5 kg', 'do 10 kg', 'do 20 kg', 'do 31,5 kg',
+];
+const HIDDEN_TAGS = ['błąd zdjęcia', 'błąd zdjęcia '];
+
 const searchService = new SearchService();
 
 // ============================================
@@ -178,12 +186,23 @@ export async function getPopularSearches(req: Request, res: Response): Promise<v
     }
 
     // Filter: only keep searches that return at least 1 visible product
+    // Use direct Prisma count (no Meilisearch) to avoid connection errors on Render
     const validSearches: string[] = [];
     for (const s of popularSearches) {
       if (validSearches.length >= limit) break;
       try {
-        const result = await searchService.search(s.query, undefined, undefined, 1);
-        if (result.products.length > 0) {
+        const count = await prisma.product.count({
+          where: {
+            status: 'ACTIVE',
+            price: { gt: 0 },
+            name: { contains: s.query, mode: 'insensitive' },
+            tags: { hasSome: DELIVERY_TAGS },
+            NOT: { tags: { hasSome: HIDDEN_TAGS } },
+            category: { baselinkerCategoryId: { not: null } },
+            variants: { some: { inventory: { some: { quantity: { gt: 0 } } } } },
+          },
+        });
+        if (count > 0) {
           validSearches.push(s.query);
         }
       } catch {
