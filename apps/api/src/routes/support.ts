@@ -146,6 +146,16 @@ router.post('/tickets/:id/messages', async (req: Request, res: Response) => {
       content: sanitize(content),
     });
 
+    // Notify admin by email about customer reply (fire-and-forget)
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { firstName: true, lastName: true, email: true } });
+    emailService.sendSupportCustomerReplyToAdmin({
+      ticketNumber: ticket.ticketNumber,
+      subject: ticket.subject,
+      userName: user ? `${user.firstName} ${user.lastName}` : undefined,
+      userEmail: user?.email,
+      message: sanitize(content),
+    }).catch(() => {});
+
     res.status(201).json(message);
   } catch (error: any) {
     console.error('[Support] Error adding message:', error);

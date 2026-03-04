@@ -146,6 +146,9 @@ export class OrdersService {
         { user: { email: { contains: search, mode: 'insensitive' } } },
         { user: { firstName: { contains: search, mode: 'insensitive' } } },
         { user: { lastName: { contains: search, mode: 'insensitive' } } },
+        { guestEmail: { contains: search, mode: 'insensitive' } },
+        { guestFirstName: { contains: search, mode: 'insensitive' } },
+        { guestLastName: { contains: search, mode: 'insensitive' } },
       ];
     }
 

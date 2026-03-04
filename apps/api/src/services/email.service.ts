@@ -1599,9 +1599,16 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
     ticketNumber: string;
     subject: string;
     customerName: string;
+    replyContent?: string;
   }): Promise<EmailResult> {
     try {
       const resend = getResend();
+
+      const replySection = data.replyContent
+        ? `<div style="background: #334155; border-left: 4px solid #f97316; padding: 12px 16px; border-radius: 0 6px 6px 0; margin: 12px 0;">
+             <p style="margin: 0; white-space: pre-wrap;">${escapeHtml(data.replyContent)}</p>
+           </div>`
+        : '<p>Aby zobaczyć szczegóły odpowiedzi, zaloguj się do swojego konta.</p>';
 
       const { data: responseData, error } = await resend.emails.send({
         from: `WBTrade Support <${FROM_EMAIL}>`,
@@ -1617,8 +1624,8 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
               <p>Otrzymaliśmy odpowiedź na Twoją wiadomość <strong>${data.ticketNumber}</strong>.</p>
               <p><strong>Temat:</strong> ${escapeHtml(data.subject)}</p>
               <hr style="border-color: #475569;" />
-              <p>Aby zobaczyć szczegóły odpowiedzi, zaloguj się do swojego konta.</p>
-              <p style="text-align: center;">
+              ${replySection}
+              <p style="text-align: center; margin-top: 16px;">
                 <a href="${SITE_URL}/account/messages" 
                    style="background: #f97316; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
                   Zobacz wiadomości
@@ -1638,6 +1645,59 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
       return { success: true, messageId: responseData?.id };
     } catch (err: any) {
       console.error('[EmailService] Support reply exception:', err.message);
+      return { success: false, error: err.message };
+    }
+  }
+
+  async sendSupportCustomerReplyToAdmin(ticket: {
+    ticketNumber: string;
+    subject: string;
+    userName?: string;
+    userEmail?: string;
+    message: string;
+  }): Promise<EmailResult> {
+    try {
+      const adminEmail = process.env.SUPPORT_EMAIL || 'support@wb-partners.pl';
+      const resend = getResend();
+
+      const { data, error } = await resend.emails.send({
+        from: `WBTrade Support <${FROM_EMAIL}>`,
+        to: adminEmail,
+        subject: `[${ticket.ticketNumber}] Nowa odpowiedź klienta: ${ticket.subject}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: #3b82f6; padding: 20px; border-radius: 8px 8px 0 0;">
+              <h2 style="color: white; margin: 0;">🔔 Klient odpowiedział na ticket</h2>
+            </div>
+            <div style="padding: 20px; background: #1e293b; color: #e2e8f0; border-radius: 0 0 8px 8px;">
+              <p><strong>Ticket:</strong> ${ticket.ticketNumber}</p>
+              <p><strong>Od:</strong> ${ticket.userName || 'Nieznany'} (${ticket.userEmail || 'brak emaila'})</p>
+              <p><strong>Temat:</strong> ${escapeHtml(ticket.subject)}</p>
+              <hr style="border-color: #475569;" />
+              <div style="background: #334155; border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 0 6px 6px 0;">
+                <p style="margin: 0; white-space: pre-wrap;">${escapeHtml(ticket.message).replace(/\n/g, '<br>')}</p>
+              </div>
+              <hr style="border-color: #475569;" />
+              <p style="text-align: center;">
+                <a href="${SITE_URL.replace('wb-trade.pl', 'admin.wb-trade.pl')}/messages" 
+                   style="background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                  Odpowiedz w panelu
+                </a>
+              </p>
+            </div>
+          </div>
+        `,
+      });
+
+      if (error) {
+        console.error('[EmailService] Customer reply notification error:', error);
+        return { success: false, error: error.message };
+      }
+
+      console.log(`✅ [EmailService] Customer reply notification sent for ${ticket.ticketNumber}`);
+      return { success: true, messageId: data?.id };
+    } catch (err: any) {
+      console.error('[EmailService] Customer reply notification exception:', err.message);
       return { success: false, error: err.message };
     }
   }

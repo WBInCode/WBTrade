@@ -181,6 +181,7 @@ router.post('/tickets/:id/messages', async (req: Request, res: Response) => {
         ticketNumber: ticket.ticketNumber,
         subject: ticket.subject,
         customerName: ticket.user.firstName || 'Kliencie',
+        replyContent: sanitize(content),
       }).catch(() => {});
     } else if (ticket.guestEmail) {
       emailService.sendSupportReplyToCustomer({
@@ -188,6 +189,7 @@ router.post('/tickets/:id/messages', async (req: Request, res: Response) => {
         ticketNumber: ticket.ticketNumber,
         subject: ticket.subject,
         customerName: 'Kliencie',
+        replyContent: sanitize(content),
       }).catch(() => {});
     }
 
