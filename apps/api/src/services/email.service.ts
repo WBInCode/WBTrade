@@ -24,7 +24,7 @@ function escapeHtml(str: string): string {
 }
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
-const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@wb-trade.pl';
+const FROM_EMAIL = process.env.FROM_EMAIL || 'WBTrade <noreply@wb-trade.pl>';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://wb-trade.pl';
 
 // Initialize Resend (lazily to avoid errors if API key missing)
@@ -32,10 +32,11 @@ let resendInstance: Resend | null = null;
 
 function getResend(): Resend {
   if (!resendInstance) {
-    if (!RESEND_API_KEY) {
+    const apiKey = process.env.RESEND_API_KEY || '';
+    if (!apiKey) {
       throw new Error('RESEND_API_KEY not configured');
     }
-    resendInstance = new Resend(RESEND_API_KEY);
+    resendInstance = new Resend(apiKey);
   }
   return resendInstance;
 }
@@ -1548,6 +1549,7 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
         ORDER: 'Zamówienie',
         DELIVERY: 'Dostawa',
         COMPLAINT: 'Reklamacja',
+        RETURN: 'Zwrot',
         PAYMENT: 'Płatność',
         ACCOUNT: 'Konto',
         GENERAL: 'Ogólne',
@@ -1813,6 +1815,82 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
       return { success: true, messageId: data?.id };
     } catch (err: any) {
       console.error('[EmailService] Order status notification exception:', err.message);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * Send return/complaint confirmation email to customer/guest
+   */
+  async sendReturnConfirmationEmail(data: {
+    to: string;
+    customerName: string;
+    returnNumber: string;
+    type: 'RETURN' | 'COMPLAINT';
+    orderNumber: string;
+    reason: string;
+    returnAddress: {
+      name: string;
+      street: string;
+      city: string;
+      postalCode: string;
+    };
+  }): Promise<EmailResult> {
+    try {
+      const resend = getResend();
+      const typeLabel = data.type === 'RETURN' ? 'zwrotu' : 'reklamacji';
+      const typeLabelUpper = data.type === 'RETURN' ? 'Zwrot' : 'Reklamacja';
+
+      const { data: responseData, error } = await resend.emails.send({
+        from: FROM_EMAIL,
+        to: data.to,
+        subject: `[${data.returnNumber}] Potwierdzenie zgłoszenia ${typeLabel}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: ${data.type === 'RETURN' ? '#f97316' : '#dc2626'}; padding: 20px; border-radius: 8px 8px 0 0;">
+              <h2 style="color: white; margin: 0;">📋 Potwierdzenie zgłoszenia ${typeLabel}</h2>
+            </div>
+            <div style="padding: 20px; background: #1e293b; color: #e2e8f0; border-radius: 0 0 8px 8px;">
+              <p>Cześć ${escapeHtml(data.customerName)}!</p>
+              <p>Twoje zgłoszenie ${typeLabel} zostało przyjęte.</p>
+              
+              <div style="background: #dc2626; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+                <p style="margin: 0 0 8px; color: #fecaca; font-size: 14px;">Twój numer ${typeLabel}:</p>
+                <p style="margin: 0; color: white; font-size: 28px; font-weight: bold; letter-spacing: 2px;">${data.returnNumber}</p>
+              </div>
+              
+              <div style="background: #7f1d1d; border: 2px solid #dc2626; border-radius: 8px; padding: 16px; margin: 16px 0;">
+                <p style="margin: 0; color: #fca5a5; font-weight: bold;">⚠️ WAŻNE: Umieść numer ${data.returnNumber} NA PACZCE lub WEWNĄTRZ paczki!</p>
+                <p style="margin: 8px 0 0; color: #fecaca; font-size: 14px;">Bez tego numeru nie będziemy mogli zidentyfikować Twojego ${typeLabel === 'zwrotu' ? 'zwrotu' : 'zgłoszenia'}.</p>
+              </div>
+
+              <p><strong>Zamówienie:</strong> ${escapeHtml(data.orderNumber)}</p>
+              <p><strong>Typ:</strong> ${typeLabelUpper}</p>
+              <p><strong>Powód:</strong> ${escapeHtml(data.reason)}</p>
+
+              <hr style="border-color: #475569;" />
+              
+              <p style="font-weight: bold;">Adres do wysyłki:</p>
+              <p style="margin: 4px 0;">${escapeHtml(data.returnAddress.name)}</p>
+              <p style="margin: 4px 0;">${escapeHtml(data.returnAddress.street)}</p>
+              <p style="margin: 4px 0;">${escapeHtml(data.returnAddress.postalCode)} ${escapeHtml(data.returnAddress.city)}</p>
+              
+              <hr style="border-color: #475569;" />
+              <p style="font-size: 13px; color: #94a3b8;">Wiadomość wysłana automatycznie ze sklepu wb-trade.pl</p>
+            </div>
+          </div>
+        `,
+      });
+
+      if (error) {
+        console.error('[EmailService] Return confirmation email error:', error);
+        return { success: false, error: error.message };
+      }
+
+      console.log(`✅ [EmailService] Return confirmation sent to ${data.to}, number: ${data.returnNumber}`);
+      return { success: true, messageId: responseData?.id };
+    } catch (err: any) {
+      console.error('[EmailService] Return confirmation exception:', err.message);
       return { success: false, error: err.message };
     }
   }

@@ -24,6 +24,7 @@ import {
   Headphones,
   Settings,
   Percent,
+  RotateCcw,
   // Trophy,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -70,6 +71,7 @@ const navSections: NavSection[] = [
           { title: 'Opłacone', href: '/orders?status=CONFIRMED' },
           { title: 'W realizacji', href: '/orders?status=PROCESSING' },
           { title: 'Wysłane', href: '/orders?status=SHIPPED' },
+          { title: 'Anulowane', href: '/orders/pending-cancellations' },
           { title: 'Archiwum', href: '/orders/archive' },
         ],
       },
@@ -120,6 +122,11 @@ const navSections: NavSection[] = [
           { title: 'Wszystkie zgłoszenia', href: '/messages' },
           { title: 'Archiwum', href: '/messages/archive' },
         ],
+      },
+      {
+        title: 'Zwroty i reklamacje',
+        href: '/returns',
+        icon: RotateCcw,
       },
       {
         title: 'WuBuś — pytania',

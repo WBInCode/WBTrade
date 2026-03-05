@@ -422,6 +422,47 @@ export class DashboardService {
       });
     }
 
+    // Otwarte zwroty i reklamacje
+    const openReturnsComplaints = await prisma.supportTicket.count({
+      where: {
+        category: { in: ['RETURN', 'COMPLAINT'] },
+        status: 'OPEN',
+        isArchived: false,
+      }
+    });
+
+    if (openReturnsComplaints > 0) {
+      alerts.push({
+        id: 'open-returns',
+        type: 'return',
+        severity: 'warning',
+        title: `${openReturnsComplaints} otwartych zwrotów/reklamacji`,
+        description: 'Wymagają rozpatrzenia przez obsługę klienta',
+        link: '/returns',
+        createdAt: new Date()
+      });
+    }
+
+    // Zamówienia oczekujące na zatwierdzenie anulowania
+    const pendingCancellations = await prisma.order.count({
+      where: {
+        pendingCancellation: true,
+        deletedAt: null,
+      }
+    });
+
+    if (pendingCancellations > 0) {
+      alerts.push({
+        id: 'pending-cancellations',
+        type: 'order',
+        severity: 'error',
+        title: `${pendingCancellations} zamówień czeka na zatwierdzenie anulowania`,
+        description: 'Klienci poprosili o anulowanie tych zamówień',
+        link: '/orders/pending-cancellations',
+        createdAt: new Date()
+      });
+    }
+
     return alerts.sort((a, b) => {
       const severityOrder = { error: 0, warning: 1, info: 2 };
       return severityOrder[a.severity] - severityOrder[b.severity];
