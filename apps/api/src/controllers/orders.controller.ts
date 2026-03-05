@@ -197,12 +197,28 @@ export async function getOrder(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    // If user is authenticated, verify they own the order (unless admin)
-    // If not authenticated (guest), allow access by order ID (ID is random enough)
+    // Ownership verification
     const userId = req.user?.userId;
-    if (userId && (order as any).userId && (order as any).userId !== userId && req.user?.role !== 'ADMIN') {
-      res.status(403).json({ message: 'Brak dostepu do tego zamowienia' });
-      return;
+    const isAdmin = req.user?.role === 'ADMIN';
+
+    if (isAdmin) {
+      // Admin can access any order
+    } else if (userId) {
+      // Logged-in user must own the order
+      // If order has no userId (guest order), logged-in user cannot access it either
+      if (!(order as any).userId || (order as any).userId !== userId) {
+        res.status(403).json({ message: 'Brak dostepu do tego zamowienia' });
+        return;
+      }
+    } else {
+      // Anonymous (guest) — require matching email in query param
+      const guestEmail = (req.query.email as string)?.toLowerCase().trim();
+      const orderGuestEmail = (order as any).guestEmail?.toLowerCase().trim();
+
+      if (!guestEmail || !orderGuestEmail || guestEmail !== orderGuestEmail) {
+        res.status(401).json({ message: 'Wymagane logowanie lub weryfikacja emailem' });
+        return;
+      }
     }
     
     res.status(200).json(order);
