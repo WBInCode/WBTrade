@@ -639,8 +639,8 @@ export const ordersApi = {
   getAll: (page?: number, limit?: number, status?: string, search?: string) =>
     api.get<OrdersListResponse>('/orders', { page, limit, status: status || undefined, search: search || undefined }),
     
-  getById: (id: string) =>
-    api.get<Order>(`/orders/${id}`),
+  getById: (id: string, email?: string) =>
+    api.get<Order>(`/orders/${id}`, email ? { email } : undefined),
     
   cancel: (id: string) =>
     api.delete<{ message: string; pendingApproval?: boolean; order?: Order }>(`/orders/${id}`),
