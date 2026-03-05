@@ -1879,7 +1879,9 @@ export class BaselinkerService {
           }
 
           // 6. Execute upserts in batches using transaction
-          const BATCH_SIZE = 500;
+          // Batch size reduced from 500 to 300 to minimize inventory lock duration
+          // and prevent checkout transaction timeouts (P2028)
+          const BATCH_SIZE = 300;
           for (let i = 0; i < upsertOps.length; i += BATCH_SIZE) {
             const batch = upsertOps.slice(i, i + BATCH_SIZE);
             
@@ -1905,6 +1907,11 @@ export class BaselinkerService {
                 })
               )
             );
+
+            // Brief pause between batches to allow checkout transactions to acquire locks
+            if (i + BATCH_SIZE < upsertOps.length) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
 
             // Track changes
             for (const op of batch) {
@@ -2087,8 +2094,8 @@ export class BaselinkerService {
 
           console.log(`[BaselinkerSync] ${inv.name}: ${prodChanges.length} product price changes, ${varChanges.length} variant price changes`);
 
-          // 6. Batch write — process in chunks of 500
-          const BATCH_SIZE = 500;
+          // 6. Batch write — process in chunks of 300 (reduced from 500 to minimize lock contention)
+          const BATCH_SIZE = 300;
 
           // 6a. Batch INSERT price_history + UPDATE products
           for (let i = 0; i < prodChanges.length; i += BATCH_SIZE) {
