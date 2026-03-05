@@ -958,17 +958,18 @@ const createInitialMessage = (): Message => ({
 export function ChatBubble({ onClick, hasActiveChat }: { onClick: () => void; hasActiveChat?: boolean }) {
   return (
     <div className="flex flex-col items-center">
-      <button
-        onClick={onClick}
-        className="relative w-14 h-14 rounded-full bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 animate-pulse-gentle focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900 overflow-hidden"
-        aria-label="Otwórz czat z WuBuś"
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/images/wubus-chatbot.png" alt="WuBuś" className="w-10 h-10 rounded-full object-cover" />
-        {hasActiveChat && (
-          <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full" />
-        )}
-      </button>
+      <div className="relative">
+        <button
+          onClick={onClick}
+          className="relative w-14 h-14 rounded-full bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 animate-pulse-gentle focus:outline-none overflow-hidden ring-2 ring-white/70 dark:ring-white/25"
+          aria-label="Otwórz czat z WuBuś"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/wubus-chatbot.png" alt="WuBuś" className="w-full h-full object-cover" />
+        </button>
+        {/* Online status dot — always visible, outside the clipped button */}
+        <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full shadow-sm" />
+      </div>
       <span className="mt-1 px-2 py-0.5 text-[10px] font-bold text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
         Zapytaj
       </span>
