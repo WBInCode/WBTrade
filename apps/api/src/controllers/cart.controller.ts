@@ -49,10 +49,10 @@ const mergeCartsSchema = z.object({
 
 export class CartController {
   /**
-   * Extract userId from JWT (req.user) or fallback to x-user-id header (web app)
+   * Extract userId from JWT (req.user) only — never trust client headers
    */
   private getUserId(req: Request): string | undefined {
-    return req.user?.userId || (req.headers['x-user-id'] as string | undefined);
+    return req.user?.userId;
   }
 
   /**
