@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import {
   Ticket, Plus, Search, Edit2, Trash2, ToggleLeft, ToggleRight,
   Calendar, Hash, Percent, DollarSign, Truck, Copy, Check, X,
-  Filter, ChevronLeft, ChevronRight
+  Filter, ChevronLeft, ChevronRight, CheckSquare, Square, Archive,
 } from 'lucide-react';
 import { getAuthToken } from '@/lib/api';
 import { useModal } from '@/components/ModalProvider';
@@ -96,9 +96,77 @@ export default function CouponsPage() {
   const [error, setError] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // ─── Selection & Bulk ───
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === coupons.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(coupons.map(c => c.id)));
+    }
+  };
+
+  const handleBulkToggle = async (isActive: boolean) => {
+    if (selectedIds.size === 0) return;
+    setBulkLoading(true);
+    try {
+      const response = await apiCall('/admin/coupons/bulk-toggle', {
+        method: 'POST',
+        body: JSON.stringify({ ids: Array.from(selectedIds), isActive }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        showToast(data.message || `${isActive ? 'Aktywowano' : 'Dezaktywowano'} ${selectedIds.size} kuponów`);
+        setSelectedIds(new Set());
+        loadCoupons(); loadStats();
+      } else {
+        showToast('Błąd masowej operacji', 'error');
+      }
+    } catch { showToast('Błąd masowej operacji', 'error'); }
+    finally { setBulkLoading(false); }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`Czy na pewno chcesz usunąć ${selectedIds.size} kuponów?`)) return;
+    setBulkLoading(true);
+    try {
+      const response = await apiCall('/admin/coupons/bulk-delete', {
+        method: 'POST',
+        body: JSON.stringify({ ids: Array.from(selectedIds) }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        showToast(data.message || `Usunięto ${selectedIds.size} kuponów`);
+        setSelectedIds(new Set());
+        loadCoupons(); loadStats();
+      } else {
+        showToast('Błąd masowego usuwania', 'error');
+      }
+    } catch { showToast('Błąd masowego usuwania', 'error'); }
+    finally { setBulkLoading(false); }
+  };
+
   useEffect(() => {
     loadCoupons();
     loadStats();
+    setSelectedIds(new Set());
   }, [page, search, statusFilter, typeFilter]);
 
   async function apiCall(endpoint: string, options?: RequestInit) {
@@ -282,6 +350,21 @@ export default function CouponsPage() {
 
   return (
     <div className="p-6">
+      {/* Toast notification */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg border transition-all duration-300 ${
+          toast.type === 'success'
+            ? 'bg-green-500/20 border-green-500/30 text-green-400'
+            : 'bg-red-500/20 border-red-500/30 text-red-400'
+        }`}>
+          <div className="flex items-center gap-2">
+            {toast.type === 'success' ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
+            <span className="text-sm font-medium">{toast.message}</span>
+            <button onClick={() => setToast(null)} className="ml-2 hover:opacity-70"><X className="w-3 h-3" /></button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -352,12 +435,47 @@ export default function CouponsPage() {
         </select>
       </div>
 
+      {/* Bulk Actions Bar */}
+      <div className={`overflow-hidden transition-all duration-300 mb-6 ${selectedIds.size > 0 ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl px-4 py-3 flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-3">
+            <CheckSquare className="w-5 h-5 text-orange-400" />
+            <span className="text-sm text-orange-300 font-medium">
+              Zaznaczono: {selectedIds.size} {selectedIds.size === 1 ? 'kupon' : selectedIds.size < 5 ? 'kupony' : 'kuponów'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={() => handleBulkToggle(true)} disabled={bulkLoading}
+              className="px-3 py-1.5 bg-green-600/50 hover:bg-green-600 text-green-300 rounded-lg text-xs font-medium transition-all duration-200 disabled:opacity-50 flex items-center gap-1.5">
+              <ToggleRight className="w-3.5 h-3.5" /> Aktywuj
+            </button>
+            <button onClick={() => handleBulkToggle(false)} disabled={bulkLoading}
+              className="px-3 py-1.5 bg-gray-600/50 hover:bg-gray-600 text-gray-300 rounded-lg text-xs font-medium transition-all duration-200 disabled:opacity-50 flex items-center gap-1.5">
+              <ToggleLeft className="w-3.5 h-3.5" /> Dezaktywuj
+            </button>
+            <div className="w-px h-6 bg-slate-700 mx-1" />
+            <button onClick={handleBulkDelete} disabled={bulkLoading}
+              className="px-3 py-1.5 bg-red-600/50 hover:bg-red-600 text-red-300 rounded-lg text-xs font-medium transition-all duration-200 disabled:opacity-50 flex items-center gap-1.5">
+              <Trash2 className="w-3.5 h-3.5" /> Usuń zaznaczone
+            </button>
+            <button onClick={() => setSelectedIds(new Set())} className="p-1.5 text-gray-400 hover:text-white transition-colors"><X className="w-4 h-4" /></button>
+          </div>
+        </div>
+      </div>
+
       {/* Coupons Table */}
       <div className="bg-admin-card border border-admin-border rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-admin-border">
+                <th className="px-4 py-3 w-10">
+                  <button onClick={toggleSelectAll} className="text-slate-400 hover:text-white transition-colors">
+                    {selectedIds.size === coupons.length && coupons.length > 0
+                      ? <CheckSquare className="w-4 h-4 text-orange-400" />
+                      : <Square className="w-4 h-4" />}
+                  </button>
+                </th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase">Kod</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase">Typ</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase">Wartość</th>
@@ -372,14 +490,14 @@ export default function CouponsPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-12 text-slate-400">
+                  <td colSpan={10} className="text-center py-12 text-slate-400">
                     <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500 mb-2"></div>
                     <p>Ładowanie...</p>
                   </td>
                 </tr>
               ) : coupons.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-12 text-slate-400">
+                  <td colSpan={10} className="text-center py-12 text-slate-400">
                     <Ticket className="w-12 h-12 mx-auto mb-3 opacity-30" />
                     <p>Brak kuponów</p>
                     <button onClick={openCreateModal} className="mt-2 text-orange-400 hover:text-orange-300">
@@ -393,7 +511,12 @@ export default function CouponsPage() {
                   const typeInfo = typeLabels[coupon.type];
                   const TypeIcon = typeInfo.icon;
                   return (
-                    <tr key={coupon.id} className="border-b border-admin-border hover:bg-slate-800/30 transition-colors">
+                    <tr key={coupon.id} className={`border-b border-admin-border hover:bg-slate-800/30 transition-colors ${selectedIds.has(coupon.id) ? 'bg-orange-500/10' : ''}`}>
+                      <td className="px-4 py-3 w-10">
+                        <button onClick={() => toggleSelect(coupon.id)} className="text-slate-400 hover:text-orange-400 transition-colors">
+                          {selectedIds.has(coupon.id) ? <CheckSquare className="w-4 h-4 text-orange-400" /> : <Square className="w-4 h-4" />}
+                        </button>
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <code className="font-mono font-bold text-white bg-slate-700/50 px-2 py-0.5 rounded text-sm">

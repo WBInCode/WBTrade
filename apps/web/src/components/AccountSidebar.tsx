@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 // Sidebar navigation items — single source of truth for all account pages
@@ -106,6 +107,30 @@ interface AccountSidebarProps {
 }
 
 export default function AccountSidebar({ activeId, userName, userEmail }: AccountSidebarProps) {
+  const [unreadMessages, setUnreadMessages] = useState(0);
+
+  useEffect(() => {
+    async function fetchUnread() {
+      try {
+        const stored = localStorage.getItem('auth_tokens');
+        if (!stored) return;
+        const token = JSON.parse(stored).accessToken;
+        if (!token) return;
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const res = await fetch(`${apiUrl}/support/unread-count`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUnreadMessages(data.count || 0);
+        }
+      } catch { /* ignore */ }
+    }
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <aside className="hidden lg:block w-64 shrink-0">
       <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-100 dark:border-secondary-700 shadow-sm overflow-hidden sticky top-24">
@@ -127,7 +152,13 @@ export default function AccountSidebar({ activeId, userName, userEmail }: Accoun
               }`}
             >
               <SidebarIcon icon={item.icon} />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.id === 'messages' && unreadMessages > 0 && (
+                <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
+                </span>
+              )}
             </Link>
           ))}
         </nav>

@@ -24,6 +24,17 @@ router.get('/stats', async (_req: Request, res: Response) => {
   }
 });
 
+// ─── GET /api/admin/support/return-stats ───
+router.get('/return-stats', async (_req: Request, res: Response) => {
+  try {
+    const stats = await supportService.getReturnStats();
+    res.json(stats);
+  } catch (error: any) {
+    console.error('[AdminSupport] Error fetching return stats:', error);
+    res.status(500).json({ error: 'Błąd serwera' });
+  }
+});
+
 // ─── GET /api/admin/support/unread-count ───
 router.get('/unread-count', async (_req: Request, res: Response) => {
   try {

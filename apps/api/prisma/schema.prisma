@@ -848,9 +848,13 @@ model SupportTicket {
   lastMessageAt  DateTime       @default(now()) @map("last_message_at")
   closedAt       DateTime?      @map("closed_at")
   closedBy       String?        @map("closed_by")
+  returnNumber   String?        @unique @map("return_number")
+  guestName      String?        @map("guest_name")
+  guestPhone     String?        @map("guest_phone")
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
   messages       SupportMessage[]
+
   user           User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
   order          Order?         @relation(fields: [orderId], references: [id])
 
@@ -887,6 +891,7 @@ enum TicketCategory {
   ORDER
   DELIVERY
   COMPLAINT
+  RETURN
   PAYMENT
   ACCOUNT
   GENERAL
