@@ -1860,7 +1860,8 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
               </div>
               
               <div style="background: #7f1d1d; border: 2px solid #dc2626; border-radius: 8px; padding: 16px; margin: 16px 0;">
-                <p style="margin: 0; color: #fca5a5; font-weight: bold;">⚠️ WAŻNE: Umieść numer ${data.returnNumber} NA PACZCE lub WEWNĄTRZ paczki!</p>
+                <p style="margin: 0; color: #fca5a5; font-weight: bold;">⚠️ WAŻNE: Umieść numer ${data.returnNumber} NA PACZCE (na zewnątrz)!</p>
+                <p style="margin: 4px 0 0; color: #fecaca; font-size: 13px;">Numer musi być widoczny na opakowaniu — nie umieszczaj go wewnątrz paczki.</p>
                 <p style="margin: 8px 0 0; color: #fecaca; font-size: 14px;">Bez tego numeru nie będziemy mogli zidentyfikować Twojego ${typeLabel === 'zwrotu' ? 'zwrotu' : 'zgłoszenia'}.</p>
               </div>
 

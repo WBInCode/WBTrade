@@ -5,7 +5,9 @@ import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import ProductListCard from '../../../components/ProductListCard';
 import Breadcrumb from '../../../components/Breadcrumb';
-import { Product, productsApi } from '../../../lib/api';
+import { Product } from '../../../lib/api';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 export default function BestsellersPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -14,8 +16,12 @@ export default function BestsellersPage() {
   useEffect(() => {
     async function fetchBestsellers() {
       try {
-        const response = await productsApi.getBestsellers({ limit: 20, days: 90 });
-        setProducts(response.products);
+        // Fetch from admin-configured carousel (same source as homepage)
+        const res = await fetch(`${API_URL}/carousels/bestsellery/products`);
+        if (res.ok) {
+          const data = await res.json();
+          setProducts(data.products || []);
+        }
       } catch (error) {
         console.error('Failed to fetch bestsellers:', error);
       } finally {
@@ -27,7 +33,7 @@ export default function BestsellersPage() {
 
   const breadcrumbItems = [
     { label: 'Strona główna', href: '/' },
-    { label: 'Bestsellery', href: '/products/bestsellers' },
+    { label: 'Bestsellery' },
   ];
 
   return (
@@ -36,15 +42,15 @@ export default function BestsellersPage() {
       <main className="flex-grow">
         <div className="container-custom py-6">
           <Breadcrumb items={breadcrumbItems} />
-          
+
           {/* Header */}
-          <div className="bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl p-8 mb-8 text-white">
-            <div className="flex items-center gap-4">
-              <span className="text-5xl">🔥</span>
+          <div className="bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl p-6 sm:p-8 mb-6 text-white">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <span className="text-4xl sm:text-5xl">🔥</span>
               <div>
-                <h1 className="text-3xl font-bold">Bestsellery</h1>
-                <p className="text-white/80 mt-1">
-                  Najchętniej kupowane produkty z ostatnich 90 dni
+                <h1 className="text-2xl sm:text-3xl font-bold">Bestsellery</h1>
+                <p className="text-white/80 mt-1 text-sm sm:text-base">
+                  Najchętniej kupowane produkty
                 </p>
               </div>
             </div>
@@ -52,21 +58,21 @@ export default function BestsellersPage() {
 
           {/* Products Grid */}
           {loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {[...Array(20)].map((_, i) => (
-                <div key={i} className="bg-white dark:bg-secondary-800 rounded-lg h-[320px] animate-pulse" />
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-4">
+              {[...Array(15)].map((_, i) => (
+                <div key={i} className="bg-white dark:bg-secondary-800 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-secondary-700 h-[280px] sm:h-[320px] animate-pulse" />
               ))}
             </div>
           ) : products.length > 0 ? (
             <>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Znaleziono {products.length} produktów
+              <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
+                {products.length} {products.length === 1 ? 'produkt' : products.length < 5 ? 'produkty' : 'produktów'}
               </p>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-4">
                 {products.map((product, index) => (
                   <div key={product.id} className="relative">
                     {index < 3 && (
-                      <div className="absolute -top-2 -left-2 z-10 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                      <div className="absolute -top-1.5 -left-1.5 z-10 bg-orange-500 text-white text-[10px] sm:text-xs font-bold w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center shadow-md">
                         #{index + 1}
                       </div>
                     )}
@@ -76,9 +82,10 @@ export default function BestsellersPage() {
               </div>
             </>
           ) : (
-            <div className="text-center py-16">
-              <p className="text-gray-500 text-lg">Brak danych o sprzedaży</p>
-              <p className="text-gray-400 mt-2">Bestsellery pojawią się po pierwszych zamówieniach</p>
+            <div className="text-center py-16 bg-white dark:bg-secondary-800 rounded-2xl border border-gray-200 dark:border-secondary-700">
+              <span className="text-5xl mb-4 block">🔥</span>
+              <p className="text-gray-500 dark:text-gray-400 text-lg">Brak bestsellerów</p>
+              <p className="text-gray-400 dark:text-gray-500 mt-2 text-sm">Bestsellery pojawią się wkrótce</p>
             </div>
           )}
         </div>

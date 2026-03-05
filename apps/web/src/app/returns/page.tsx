@@ -684,9 +684,12 @@ export default function ReturnsPage() {
                     <div>
                       <p className="font-bold text-red-700 dark:text-red-400 text-lg mb-1">WAŻNE!</p>
                       <p className="text-red-700 dark:text-red-400 font-semibold">
-                        Umieść numer <span className="font-mono font-bold">{result.returnNumber}</span> NA PACZCE lub WEWNĄTRZ paczki.
+                        Umieść numer <span className="font-mono font-bold">{result.returnNumber}</span> NA PACZCE (na zewnątrz).
                       </p>
                       <p className="text-red-600 dark:text-red-500 text-sm mt-1">
+                        Numer musi być widoczny na opakowaniu — nie umieszczaj go wewnątrz paczki.
+                      </p>
+                      <p className="text-red-600 dark:text-red-500 text-sm mt-0.5">
                         Bez tego numeru nie będziemy mogli zidentyfikować Twojego zgłoszenia.
                       </p>
                     </div>
