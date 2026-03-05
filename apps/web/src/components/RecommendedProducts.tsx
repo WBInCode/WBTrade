@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import ProductCard from './ProductCard';
 import ProductCardSkeleton from './ProductCardSkeleton';
-import { productsApi, Product } from '../lib/api';
+import { productsApi, carouselsApi, Product } from '../lib/api';
 
 interface RecommendedProductsProps {
   initialProducts: Product[];
@@ -37,12 +37,9 @@ export default function RecommendedProducts({ initialProducts }: RecommendedProd
             return;
 
           case 'bestsellers':
-            // Bestsellers - based on actual sales data from last 90 days
-            const bestsellersResponse = await productsApi.getBestsellers({
-              limit: 12,
-              days: 90,
-            });
-            fetchedProducts = bestsellersResponse.products;
+            // Bestsellers from admin-configured carousel
+            const bestsellersResponse = await carouselsApi.getProducts('bestsellery');
+            fetchedProducts = (bestsellersResponse.products || []).slice(0, 12);
             break;
 
           case 'discounted':

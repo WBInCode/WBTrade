@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import ProductCard from '../../components/ProductCard';
-import { Product, dashboardApi, checkoutApi, productsApi, DashboardStats, DashboardOrder } from '../../lib/api';
+import { Product, dashboardApi, checkoutApi, carouselsApi, DashboardStats, DashboardOrder } from '../../lib/api';
 import { getStatusLabel, getStatusColor } from '../../lib/order-status';
 import { useAuth } from '../../contexts/AuthContext';
 import AccountSidebar, { sidebarItems, SidebarIcon } from '../../components/AccountSidebar';
@@ -85,16 +85,16 @@ function AccountPageContent() {
       try {
         setDashboardLoading(true);
         
-        // Fetch dashboard overview and bestsellers in parallel
+        // Fetch dashboard overview and bestsellers (from admin carousel) in parallel
         const [overviewRes, bestsellersRes] = await Promise.all([
           dashboardApi.getOverview(),
-          productsApi.getBestsellers({ limit: 4 }),
+          carouselsApi.getProducts('bestsellery'),
         ]);
 
         setStats(overviewRes.stats);
         setRecentOrders(overviewRes.recentOrders);
-        // Store full product data to preserve variants for stock display
-        setRecommendations(bestsellersRes.products);
+        // Store full product data from admin-configured carousel
+        setRecommendations((bestsellersRes.products || []).slice(0, 4));
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
