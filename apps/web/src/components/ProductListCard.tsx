@@ -69,6 +69,7 @@ export default memo(function ProductListCard({ product, showWishlist = true, vie
   const deliveryInfo = product.deliveryInfo || 'Wysyłka w ciągu 24 - 72h';
   const warehouseLocation = getWarehouseLocation(product);
   const isOutOfStock = !product.variants?.[0] || product.variants[0].stock <= 0;
+  const isOutletProduct = warehouseLocation === WAREHOUSE_LOCATIONS['outlet'];
 
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { addToCart } = useCart();
@@ -215,6 +216,9 @@ export default memo(function ProductListCard({ product, showWishlist = true, vie
 
             {/* Delivery Info */}
             <div className="flex flex-col gap-0.5 mt-auto">
+              {isOutletProduct && (
+                <span className="text-[10px] text-amber-600 dark:text-amber-400 leading-snug mb-0.5">Outlet — produkt może posiadać uszkodzone opakowanie. Pełna gwarancja.</span>
+              )}
               {isOutOfStock ? (
                 <span className="text-xs text-red-600 dark:text-red-400 font-medium">Produkt chwilowo niedostępny</span>
               ) : (
@@ -385,6 +389,9 @@ export default memo(function ProductListCard({ product, showWishlist = true, vie
 
           {/* Delivery Info */}
           <div className="flex flex-col gap-0.5 mb-1 sm:mb-2 mt-auto">
+            {isOutletProduct && (
+              <span className="text-[9px] sm:text-[10px] text-amber-600 dark:text-amber-400 leading-snug mb-0.5">Outlet — może posiadać uszkodzone opakowanie. Pełna gwarancja.</span>
+            )}
             {isOutOfStock ? (
               <span className="text-[10px] sm:text-xs text-red-600 dark:text-red-400 font-medium">Produkt chwilowo niedostępny</span>
             ) : (
