@@ -92,6 +92,66 @@ router.get('/stats', async (req: Request, res: Response) => {
 });
 
 /**
+ * POST /api/admin/coupons/bulk-toggle
+ * Bulk toggle active status for multiple coupons
+ */
+router.post('/bulk-toggle', async (req: Request, res: Response) => {
+  try {
+    const { ids, isActive } = req.body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      res.status(400).json({ message: 'Lista kuponów jest wymagana' });
+      return;
+    }
+
+    if (typeof isActive !== 'boolean') {
+      res.status(400).json({ message: 'Pole isActive jest wymagane (true/false)' });
+      return;
+    }
+
+    const result = await prisma.coupon.updateMany({
+      where: { id: { in: ids } },
+      data: { isActive },
+    });
+
+    res.json({
+      message: `${isActive ? 'Aktywowano' : 'Dezaktywowano'} ${result.count} kuponów`,
+      count: result.count,
+    });
+  } catch (error) {
+    console.error('Error bulk toggling coupons:', error);
+    res.status(500).json({ message: 'Błąd podczas masowej zmiany statusu kuponów' });
+  }
+});
+
+/**
+ * POST /api/admin/coupons/bulk-delete
+ * Bulk delete multiple coupons
+ */
+router.post('/bulk-delete', async (req: Request, res: Response) => {
+  try {
+    const { ids } = req.body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      res.status(400).json({ message: 'Lista kuponów jest wymagana' });
+      return;
+    }
+
+    const result = await prisma.coupon.deleteMany({
+      where: { id: { in: ids } },
+    });
+
+    res.json({
+      message: `Usunięto ${result.count} kuponów`,
+      count: result.count,
+    });
+  } catch (error) {
+    console.error('Error bulk deleting coupons:', error);
+    res.status(500).json({ message: 'Błąd podczas masowego usuwania kuponów' });
+  }
+});
+
+/**
  * GET /api/admin/coupons/:id
  * Get single coupon
  */

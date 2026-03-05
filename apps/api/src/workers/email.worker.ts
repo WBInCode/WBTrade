@@ -32,7 +32,7 @@ function getResend(): Resend {
   }
   return resend;
 }
-const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@wb-trade.pl';
+const FROM_EMAIL = process.env.FROM_EMAIL || 'WBTrade <noreply@wb-trade.pl>';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://wb-trade.pl';
 
 export interface EmailJobData {

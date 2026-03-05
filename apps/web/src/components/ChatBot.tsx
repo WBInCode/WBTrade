@@ -1021,7 +1021,6 @@ export default function ChatBotWidget() {
 
   // Hide chatbot on disallowed pages (login, register, etc.)
   const isAllowedPage = shouldShowChatBot(pathname);
-  if (!isAllowedPage && !isOpen) return null;
 
   const hasConversation = messages.length > 1;
   const showInitialChips = messages.length <= 1;
@@ -1440,6 +1439,9 @@ export default function ChatBotWidget() {
       window.removeEventListener('scroll', onScroll);
     };
   }, []);
+
+  // Hide chatbot on disallowed pages (must be after all hooks)
+  if (!isAllowedPage && !isOpen) return null;
 
   return (
     <>

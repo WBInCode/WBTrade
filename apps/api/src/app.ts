@@ -2,9 +2,10 @@
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Load environment variables from root .env first
+// Load environment variables from apps/.env (shared config)
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+// Also try root .env and local .env as fallback
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
-// Also try local .env as fallback
 dotenv.config();
 
 import express from 'express';

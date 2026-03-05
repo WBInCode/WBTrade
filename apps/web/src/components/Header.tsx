@@ -22,6 +22,7 @@ function HeaderContent() {
   const { itemCount } = useCart();
   const { user, isAuthenticated, logout } = useAuth();
   const { itemCount: wishlistCount } = useWishlist();
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
@@ -34,6 +35,33 @@ function HeaderContent() {
   // Get current category from URL
   const currentCategorySlug = searchParams.get('category');
   const isOnProductsPage = pathname === '/products';
+
+  // Fetch unread messages count for authenticated users
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setUnreadMessages(0);
+      return;
+    }
+    async function fetchUnread() {
+      try {
+        const stored = localStorage.getItem('auth_tokens');
+        if (!stored) return;
+        const token = JSON.parse(stored).accessToken;
+        if (!token) return;
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const res = await fetch(`${apiUrl}/support/unread-count`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUnreadMessages(data.count || 0);
+        }
+      } catch { /* ignore */ }
+    }
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 60000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
   
   // Fetch main categories
   useEffect(() => {
@@ -324,8 +352,13 @@ function HeaderContent() {
                       onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                       className="flex flex-col items-center p-1.5 sm:p-2 text-secondary-700 dark:text-secondary-300 hover:text-primary-500 transition-colors group"
                     >
-                      <div className="w-6 h-6 sm:w-7 sm:h-7 bg-primary-500 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-bold group-hover:scale-110 transition-transform shadow-sm">
-                        {user?.firstName?.[0]}{user?.lastName?.[0]}
+                      <div className="relative">
+                        <div className="w-6 h-6 sm:w-7 sm:h-7 bg-primary-500 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-bold group-hover:scale-110 transition-transform shadow-sm">
+                          {user?.firstName?.[0]}{user?.lastName?.[0]}
+                        </div>
+                        {unreadMessages > 0 && (
+                          <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-secondary-900 animate-pulse" />
+                        )}
                       </div>
                       <span className="text-xs font-medium mt-1 hidden sm:block">{user?.firstName}</span>
                     </button>

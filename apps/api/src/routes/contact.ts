@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { emailService } from '../services/email.service';
 import { PrismaClient } from '@prisma/client';
+import { optionalAuth } from '../middleware/auth.middleware';
+import * as supportService from '../services/support.service';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -68,6 +70,105 @@ async function checkComplaintEligibility(orderNumber: string): Promise<{
 
   return { eligible: true };
 }
+
+/**
+ * GET /api/contact/return-eligibility/:orderNumber
+ * Sprawdza czy można złożyć zwrot dla danego zamówienia (14 dni od dostawy)
+ * Nie wymaga autentykacji — sam numer zamówienia jest dowodem
+ */
+router.get('/return-eligibility/:orderNumber', async (req: Request, res: Response) => {
+  try {
+    let { orderNumber } = req.params;
+
+    if (!orderNumber?.trim()) {
+      return res.status(400).json({ eligible: false, reason: 'Podaj numer zamówienia' });
+    }
+
+    orderNumber = orderNumber.trim();
+    if (orderNumber.startsWith('#')) orderNumber = orderNumber.slice(1);
+
+    // Sanitize
+    const allowedChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-';
+    let sanitized = '';
+    for (const char of orderNumber) {
+      if (allowedChars.includes(char)) sanitized += char;
+    }
+    if (!sanitized || sanitized.length < 3) {
+      return res.json({ eligible: false, reason: 'Nieprawidłowy format numeru zamówienia' });
+    }
+
+    // Find order by orderNumber or ID
+    let order = await prisma.order.findUnique({
+      where: { orderNumber: sanitized },
+      include: {
+        statusHistory: {
+          where: { status: 'DELIVERED' },
+          orderBy: { createdAt: 'desc' as const },
+          take: 1,
+        },
+      },
+    });
+    if (!order) {
+      order = await prisma.order.findUnique({
+        where: { id: sanitized },
+        include: {
+          statusHistory: {
+            where: { status: 'DELIVERED' },
+            orderBy: { createdAt: 'desc' as const },
+            take: 1,
+          },
+        },
+      });
+    }
+
+    if (!order) {
+      return res.json({ eligible: false, reason: 'Zamówienie nie zostało znalezione' });
+    }
+
+    if (!['DELIVERED', 'SHIPPED'].includes(order.status)) {
+      return res.json({ eligible: false, reason: 'Zamówienie nie może zostać zwrócone w obecnym statusie' });
+    }
+
+    if (order.status === 'REFUNDED') {
+      return res.json({ eligible: false, reason: 'Zamówienie zostało już zwrócone' });
+    }
+
+    // 14-day return window check
+    const deliveredEntry = order.statusHistory[0];
+    let deliveredAt: Date;
+    if (deliveredEntry?.createdAt) {
+      deliveredAt = deliveredEntry.createdAt;
+    } else if (order.status === 'DELIVERED') {
+      deliveredAt = order.updatedAt;
+    } else {
+      // SHIPPED — allow (they'll return after receiving)
+      return res.json({ eligible: true });
+    }
+
+    const refundPeriodStart = new Date(deliveredAt);
+    refundPeriodStart.setHours(0, 0, 0, 0);
+    refundPeriodStart.setDate(refundPeriodStart.getDate() + 1);
+
+    const refundDeadline = new Date(refundPeriodStart);
+    refundDeadline.setDate(refundDeadline.getDate() + 14);
+
+    const now = new Date();
+    const msRemaining = refundDeadline.getTime() - now.getTime();
+    const daysRemaining = Math.ceil(msRemaining / (1000 * 60 * 60 * 24));
+
+    if (daysRemaining <= 0) {
+      return res.json({
+        eligible: false,
+        reason: 'Upłynął 14-dniowy termin na zwrot towaru',
+      });
+    }
+
+    return res.json({ eligible: true, daysRemaining });
+  } catch (error) {
+    console.error('[Contact] Return eligibility check error:', error);
+    return res.status(500).json({ eligible: false, reason: 'Wystąpił błąd podczas sprawdzania zamówienia' });
+  }
+});
 
 /**
  * GET /api/contact/complaint-eligibility/:orderNumber
@@ -220,6 +321,198 @@ router.post('/general', async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       message: 'Wystąpił błąd serwera',
+    });
+  }
+});
+
+// ============================================
+// RETURN / COMPLAINT REQUEST (Unified)
+// POST /api/contact/return-request
+// Uses optionalAuth: logged-in users get userId attached,
+// guests submit with guestEmail/guestName/guestPhone
+// ============================================
+
+const RETURN_ADDRESS = {
+  name: 'WB Partners',
+  contactPerson: 'Daniel Budyka',
+  street: 'ul. Juliusza Słowackiego 24/11',
+  city: 'Rzeszów',
+  postalCode: '35-060',
+  country: 'Polska',
+  phone: '570 028 761',
+  email: 'support@wb-partners.pl',
+};
+
+interface ReturnRequestBody {
+  type: 'RETURN' | 'COMPLAINT';
+  orderNumber: string;
+  reason: string;
+  // Guest fields (required when not logged in)
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+}
+
+router.post('/return-request', optionalAuth, async (req: Request, res: Response) => {
+  try {
+    const { type, orderNumber: rawOrderNumber, reason, firstName, lastName, email, phone }: ReturnRequestBody = req.body;
+    const user = (req as any).user;
+    const isLoggedIn = !!user?.userId;
+
+    // --- Validation ---
+    if (!type || !['RETURN', 'COMPLAINT'].includes(type)) {
+      return res.status(400).json({ success: false, message: 'Wybierz typ zgłoszenia (Zwrot lub Reklamacja)' });
+    }
+
+    if (!rawOrderNumber?.trim()) {
+      return res.status(400).json({ success: false, message: 'Podaj numer zamówienia' });
+    }
+
+    if (!reason?.trim()) {
+      return res.status(400).json({ success: false, message: 'Podaj powód zgłoszenia' });
+    }
+
+    // Guest must provide contact info
+    if (!isLoggedIn) {
+      if (!firstName?.trim() || !lastName?.trim()) {
+        return res.status(400).json({ success: false, message: 'Podaj imię i nazwisko' });
+      }
+      if (!email?.trim()) {
+        return res.status(400).json({ success: false, message: 'Podaj adres email' });
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ success: false, message: 'Podaj prawidłowy adres email' });
+      }
+    }
+
+    // --- Clean order number ---
+    let orderNumber = rawOrderNumber.trim();
+    if (orderNumber.startsWith('#')) {
+      orderNumber = orderNumber.slice(1);
+    }
+
+    // --- Verify order exists & is eligible ---
+    const allowedChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-';
+    let sanitizedOrderNumber = '';
+    for (const char of orderNumber) {
+      if (allowedChars.includes(char)) {
+        sanitizedOrderNumber += char;
+      }
+    }
+
+    if (!sanitizedOrderNumber || sanitizedOrderNumber.length < 3) {
+      return res.status(400).json({ success: false, message: 'Nieprawidłowy format numeru zamówienia' });
+    }
+
+    let order = await prisma.order.findUnique({
+      where: { orderNumber: sanitizedOrderNumber },
+      select: { id: true, status: true, orderNumber: true, userId: true, guestEmail: true },
+    });
+
+    if (!order) {
+      order = await prisma.order.findUnique({
+        where: { id: sanitizedOrderNumber },
+        select: { id: true, status: true, orderNumber: true, userId: true, guestEmail: true },
+      });
+    }
+
+    if (!order) {
+      return res.status(400).json({ success: false, message: 'Zamówienie nie zostało znalezione' });
+    }
+
+    if (!['DELIVERED', 'SHIPPED'].includes(order.status)) {
+      return res.status(400).json({
+        success: false,
+        message: type === 'RETURN'
+          ? 'Zwrot można zgłosić tylko dla zamówień dostarczonych lub w trakcie dostawy'
+          : 'Reklamację można zgłosić tylko dla zamówień dostarczonych lub w trakcie dostawy',
+      });
+    }
+
+    if (order.status === 'REFUNDED') {
+      return res.status(400).json({ success: false, message: 'Zamówienie zostało już zwrócone' });
+    }
+
+    // --- Generate return number ---
+    const returnNumber = await supportService.generateReturnNumber(type);
+
+    // --- Resolve customer identity ---
+    let customerName: string;
+    let customerEmail: string;
+    let customerPhone: string | undefined;
+    let userId: string | undefined;
+
+    if (isLoggedIn) {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: user.userId },
+        select: { firstName: true, lastName: true, email: true, phone: true },
+      });
+      customerName = dbUser ? `${dbUser.firstName} ${dbUser.lastName}` : `${firstName || ''} ${lastName || ''}`.trim();
+      customerEmail = dbUser?.email || email || '';
+      customerPhone = phone || dbUser?.phone || undefined;
+      userId = user.userId;
+    } else {
+      customerName = `${firstName!.trim()} ${lastName!.trim()}`;
+      customerEmail = email!.trim();
+      customerPhone = phone?.trim() || undefined;
+    }
+
+    // --- Create support ticket ---
+    const subjectPrefix = type === 'RETURN' ? 'Zwrot' : 'Reklamacja';
+    const ticket = await supportService.createTicket({
+      userId,
+      guestEmail: isLoggedIn ? undefined : customerEmail,
+      guestName: isLoggedIn ? undefined : customerName,
+      guestPhone: isLoggedIn ? undefined : customerPhone,
+      orderId: order.id,
+      subject: `${subjectPrefix} - zamówienie ${order.orderNumber}`,
+      category: type,
+      message: reason.trim(),
+      senderRole: 'CUSTOMER',
+      returnNumber,
+    });
+
+    // --- Send email to admin (fire-and-forget) ---
+    emailService.sendSupportNewTicketToAdmin({
+      ticketNumber: ticket.ticketNumber,
+      subject: `${subjectPrefix} - zamówienie ${order.orderNumber}`,
+      category: type,
+      userName: customerName,
+      userEmail: customerEmail,
+      message: reason.trim(),
+    }).catch((err) => console.error('[Contact] Failed to send return notification to admin:', err.message));
+
+    // --- Send confirmation email to customer (fire-and-forget) ---
+    emailService.sendReturnConfirmationEmail({
+      to: customerEmail,
+      customerName,
+      returnNumber,
+      type,
+      orderNumber: order.orderNumber,
+      reason: reason.trim(),
+      returnAddress: {
+        name: RETURN_ADDRESS.name,
+        street: RETURN_ADDRESS.street,
+        city: RETURN_ADDRESS.city,
+        postalCode: RETURN_ADDRESS.postalCode,
+      },
+    }).catch((err) => console.error('[Contact] Failed to send return confirmation to customer:', err.message));
+
+    console.log(`✅ [Contact] ${subjectPrefix} request from ${customerEmail}, order: ${order.orderNumber}, number: ${returnNumber}`);
+
+    return res.status(201).json({
+      success: true,
+      returnNumber,
+      ticketNumber: ticket.ticketNumber,
+      returnAddress: RETURN_ADDRESS,
+    });
+  } catch (error) {
+    console.error('[Contact] Return request error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Wystąpił błąd serwera. Spróbuj ponownie później.',
     });
   }
 });

@@ -34,6 +34,7 @@ interface Message {
 interface TicketDetail {
   id: string;
   ticketNumber: string;
+  returnNumber?: string | null;
   subject: string;
   category: string;
   status: string;
@@ -49,6 +50,8 @@ interface TicketDetail {
     email: string;
   } | null;
   guestEmail?: string | null;
+  guestName?: string | null;
+  guestPhone?: string | null;
   order?: {
     id: string;
     orderNumber: string;
@@ -72,6 +75,7 @@ const categoryLabels: Record<string, string> = {
   ORDER: 'Zamówienie',
   DELIVERY: 'Dostawa',
   COMPLAINT: 'Reklamacja',
+  RETURN: 'Zwrot',
   PAYMENT: 'Płatność',
   ACCOUNT: 'Konto',
   GENERAL: 'Ogólne',
@@ -302,6 +306,15 @@ export default function MessageDetailPage() {
             <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium border ${statusColors[ticket.status] || ''}`}>
               {statusLabels[ticket.status] || ticket.status}
             </span>
+            {ticket.returnNumber && (
+              <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-bold font-mono tracking-wide ${
+                ticket.category === 'RETURN'
+                  ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                  : 'bg-red-500/20 text-red-400 border border-red-500/30'
+              }`}>
+                {ticket.returnNumber}
+              </span>
+            )}
           </div>
           <p className="text-gray-400 text-sm mt-1">{ticket.subject}</p>
         </div>
