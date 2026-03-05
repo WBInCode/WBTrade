@@ -334,7 +334,7 @@ function AccountPageContent() {
                       {/* Price and Actions - row on mobile */}
                       <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 sm:gap-0 mt-2 sm:mt-0">
                         <span className="font-semibold text-gray-900 dark:text-white">
-                          {order.total.toFixed(2).replace('.', ',')} {order.currency}
+                          {Number(order.total).toFixed(2).replace('.', ',')} {order.currency}
                         </span>
                       </div>
 
