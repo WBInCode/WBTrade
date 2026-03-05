@@ -6,7 +6,7 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import CartPackageView from '../../components/CartPackageView';
 import { useCart } from '../../contexts/CartContext';
-import { productsApi, checkoutApi, Product } from '../../lib/api';
+import { productsApi, checkoutApi, carouselsApi, Product } from '../../lib/api';
 import CartCouponSection from './components/CartCouponSection';
 import { roundMoney } from '../../lib/currency';
 import { trackViewCart, cartItemToGA4 } from '../../lib/analytics';
@@ -28,12 +28,12 @@ export default function CartPage() {
     }
   }, [cart?.items]);
 
-  // Fetch bestsellers
+  // Fetch bestsellers from admin-configured carousel
   useEffect(() => {
     async function fetchBestsellers() {
       try {
-        const response = await productsApi.getBestsellers({ limit: 15 });
-        setBestsellers(response.products || []);
+        const response = await carouselsApi.getProducts('bestsellery');
+        setBestsellers((response.products || []).slice(0, 15));
       } catch (err) {
         console.error('Failed to fetch bestsellers:', err);
       }

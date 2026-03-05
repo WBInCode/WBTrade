@@ -7,7 +7,7 @@ import Image from 'next/image';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import Breadcrumb from '../../../components/Breadcrumb';
-import { productsApi, reviewsApi, Product, Review, ReviewStats, CanReviewResult } from '../../../lib/api';
+import { productsApi, carouselsApi, reviewsApi, Product, Review, ReviewStats, CanReviewResult } from '../../../lib/api';
 import ProductCard from '../../../components/ProductCard';
 import { useCart } from '../../../contexts/CartContext';
 import { useWishlist } from '../../../contexts/WishlistContext';
@@ -238,16 +238,13 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     trackViewItem(item, price);
   }, [product]);
 
-  // Fetch bestsellers for recommendations
+  // Fetch bestsellers for recommendations (from admin-configured carousel)
   useEffect(() => {
     async function fetchBestsellers() {
       try {
-        // Fetch bestsellers instead of category products
-        const response = await productsApi.getBestsellers({
-          limit: 10,
-        });
+        const response = await carouselsApi.getProducts('bestsellery');
         // Filter out current product and take up to 5
-        const filtered = response.products
+        const filtered = (response.products || [])
           .filter((p) => p.id !== product.id)
           .slice(0, 5);
         setRelatedProducts(filtered);
