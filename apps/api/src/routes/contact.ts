@@ -381,7 +381,8 @@ router.post('/return-request', optionalAuth, async (req: Request, res: Response)
       if (!email?.trim()) {
         return res.status(400).json({ success: false, message: 'Podaj adres email' });
       }
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      // Atomic-safe email regex (no polynomial backtracking)
+      const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
       if (!emailRegex.test(email)) {
         return res.status(400).json({ success: false, message: 'Podaj prawidłowy adres email' });
       }
