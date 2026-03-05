@@ -496,6 +496,9 @@ export class PaymentService {
           .catch((err) => {
             console.error(`[PaymentService] Baselinker sync error for order ${order.id}:`, err);
           });
+        // NOTE: Fakturownia receipts are created automatically by Baselinker's
+        // built-in Fakturownia integration (confirmed: oid=BL order ID, from_api=true).
+        // Do NOT call createFakturowniaReceipt here — it would create duplicates.
       }
     } else {
       console.error(`Order ${result.orderId} not found for payment update`);
