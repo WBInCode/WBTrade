@@ -3,9 +3,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import {
-  MessageSquare, Search, ChevronLeft, ChevronRight,
+  RotateCcw, Search, ChevronLeft, ChevronRight,
   Inbox, Clock, CheckCircle, AlertCircle, RefreshCw, Eye,
   Archive, MoreHorizontal, X, CheckSquare, Square,
+  FileWarning, Package,
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
@@ -24,6 +25,7 @@ function getAuthToken(): string | null {
 interface Ticket {
   id: string;
   ticketNumber: string;
+  returnNumber?: string | null;
   subject: string;
   category: string;
   status: string;
@@ -31,6 +33,8 @@ interface Ticket {
   lastMessageAt: string;
   createdAt: string;
   unreadCount: number;
+  guestName?: string | null;
+  guestPhone?: string | null;
   lastMessage?: {
     content: string;
     senderRole: string;
@@ -71,33 +75,17 @@ const statusLabels: Record<string, string> = {
 };
 
 const categoryLabels: Record<string, string> = {
-  ORDER: 'Zamówienie',
-  DELIVERY: 'Dostawa',
-  COMPLAINT: 'Reklamacja',
   RETURN: 'Zwrot',
-  PAYMENT: 'Płatność',
-  ACCOUNT: 'Konto',
-  GENERAL: 'Ogólne',
+  COMPLAINT: 'Reklamacja',
 };
 
 const categoryColors: Record<string, string> = {
-  ORDER: 'bg-blue-500/20 text-blue-400',
-  DELIVERY: 'bg-cyan-500/20 text-cyan-400',
+  RETURN: 'bg-orange-500/20 text-orange-400',
   COMPLAINT: 'bg-red-500/20 text-red-400',
-  PAYMENT: 'bg-purple-500/20 text-purple-400',
-  ACCOUNT: 'bg-orange-500/20 text-orange-400',
-  GENERAL: 'bg-slate-500/20 text-slate-400',
 };
 
-const priorityLabels: Record<string, string> = {
-  LOW: 'Niski',
-  NORMAL: 'Normalny',
-  HIGH: 'Wysoki',
-};
-
-export default function MessagesPage() {
+export default function ReturnsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
@@ -105,6 +93,16 @@ export default function MessagesPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+
+  // Stats
+  const [returnStats, setReturnStats] = useState<{
+    totalReturns: number;
+    totalComplaints: number;
+    openReturns: number;
+    openComplaints: number;
+    inProgressCount: number;
+    closedToday: number;
+  } | null>(null);
 
   // Selection & actions
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -121,7 +119,7 @@ export default function MessagesPage() {
   const loadStats = useCallback(async () => {
     try {
       const token = getAuthToken();
-      const response = await fetch(`${API_URL}/admin/support/stats`, {
+      const response = await fetch(`${API_URL}/admin/support/return-stats`, {
         headers: {
           'Content-Type': 'application/json',
           ...(token && { Authorization: `Bearer ${token}` }),
@@ -129,10 +127,10 @@ export default function MessagesPage() {
       });
       if (response.ok) {
         const data = await response.json();
-        setStats(data);
+        setReturnStats(data);
       }
     } catch (error) {
-      console.error('Failed to load stats:', error);
+      console.error('Failed to load return stats:', error);
     }
   }, []);
 
@@ -140,11 +138,15 @@ export default function MessagesPage() {
     try {
       setLoading(true);
       const token = getAuthToken();
+
+      // Build category filter — if user picked one specific, use that; else both
+      const catParam = categoryFilter || 'RETURN,COMPLAINT';
+
       const params = new URLSearchParams({
         page: page.toString(),
         limit: '20',
         ...(statusFilter && { status: statusFilter }),
-        ...(categoryFilter && { category: categoryFilter }),
+        category: catParam,
         ...(searchTerm && { search: searchTerm }),
       });
 
@@ -175,7 +177,7 @@ export default function MessagesPage() {
     const interval = setInterval(() => {
       loadStats();
       loadTickets();
-    }, 15000);
+    }, 30000);
     return () => clearInterval(interval);
   }, [loadStats, loadTickets]);
 
@@ -205,6 +207,7 @@ export default function MessagesPage() {
     if (ticket.user) {
       return `${ticket.user.firstName} ${ticket.user.lastName}`;
     }
+    if (ticket.guestName) return ticket.guestName;
     return ticket.guestEmail || 'Gość';
   };
 
@@ -318,24 +321,14 @@ export default function MessagesPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2.5 bg-orange-500/10 rounded-xl">
-            <MessageSquare className="w-6 h-6 text-orange-500" />
+            <RotateCcw className="w-6 h-6 text-orange-500" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Tickety</h1>
-            <p className="text-sm text-gray-400">Zarządzanie zgłoszeniami klientów</p>
+            <h1 className="text-2xl font-bold text-white">Zwroty i reklamacje</h1>
+            <p className="text-sm text-gray-400">Zarządzanie zwrotami i reklamacjami klientów</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Link
-            href="/messages/archive"
-            className="flex items-center gap-2 px-4 py-2 bg-slate-700/50 hover:bg-slate-700 border border-slate-600/50 rounded-lg text-gray-300 hover:text-white transition-all duration-200 text-sm"
-          >
-            <Archive className="w-4 h-4" />
-            Archiwum
-            {stats?.archived ? (
-              <span className="ml-1 px-1.5 py-0.5 bg-slate-600 rounded text-xs">{stats.archived}</span>
-            ) : null}
-          </Link>
           <button
             onClick={() => { loadTickets(); loadStats(); }}
             className="p-2.5 bg-slate-800 rounded-lg text-gray-400 hover:text-white hover:bg-slate-700 transition-all duration-200"
@@ -347,42 +340,54 @@ export default function MessagesPage() {
       </div>
 
       {/* Stats */}
-      {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4 hover:border-green-500/30 transition-all duration-300 group cursor-pointer" onClick={() => { setStatusFilter('OPEN'); setPage(1); }}>
+      {returnStats && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4 hover:border-orange-500/30 transition-all duration-300 group cursor-pointer"
+            onClick={() => { setCategoryFilter('RETURN'); setStatusFilter('OPEN'); setPage(1); }}>
             <div className="flex items-center gap-2 mb-2">
-              <Inbox className="w-4 h-4 text-green-400 group-hover:scale-110 transition-transform duration-200" />
-              <span className="text-xs text-gray-400 uppercase">Otwarte</span>
+              <RotateCcw className="w-4 h-4 text-orange-400 group-hover:scale-110 transition-transform duration-200" />
+              <span className="text-xs text-gray-400 uppercase">Otwarte zwroty</span>
             </div>
-            <p className="text-2xl font-bold text-white">{stats.open}</p>
+            <p className="text-2xl font-bold text-white">{returnStats.openReturns}</p>
           </div>
-          <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4 hover:border-yellow-500/30 transition-all duration-300 group cursor-pointer" onClick={() => { setStatusFilter('IN_PROGRESS'); setPage(1); }}>
+          <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4 hover:border-red-500/30 transition-all duration-300 group cursor-pointer"
+            onClick={() => { setCategoryFilter('COMPLAINT'); setStatusFilter('OPEN'); setPage(1); }}>
+            <div className="flex items-center gap-2 mb-2">
+              <FileWarning className="w-4 h-4 text-red-400 group-hover:scale-110 transition-transform duration-200" />
+              <span className="text-xs text-gray-400 uppercase">Otwarte reklamacje</span>
+            </div>
+            <p className="text-2xl font-bold text-white">{returnStats.openComplaints}</p>
+          </div>
+          <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4 hover:border-yellow-500/30 transition-all duration-300 group cursor-pointer"
+            onClick={() => { setCategoryFilter(''); setStatusFilter('IN_PROGRESS'); setPage(1); }}>
             <div className="flex items-center gap-2 mb-2">
               <Clock className="w-4 h-4 text-yellow-400 group-hover:scale-110 transition-transform duration-200" />
               <span className="text-xs text-gray-400 uppercase">W trakcie</span>
             </div>
-            <p className="text-2xl font-bold text-white">{stats.inProgress}</p>
+            <p className="text-2xl font-bold text-white">{returnStats.inProgressCount}</p>
           </div>
           <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4 hover:border-emerald-500/30 transition-all duration-300 group">
             <div className="flex items-center gap-2 mb-2">
               <CheckCircle className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform duration-200" />
               <span className="text-xs text-gray-400 uppercase">Zamknięte dziś</span>
             </div>
-            <p className="text-2xl font-bold text-white">{stats.closedToday}</p>
+            <p className="text-2xl font-bold text-white">{returnStats.closedToday}</p>
           </div>
-          <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4 hover:border-blue-500/30 transition-all duration-300 group cursor-pointer" onClick={() => { setStatusFilter(''); setPage(1); }}>
+          <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4 hover:border-orange-500/30 transition-all duration-300 group cursor-pointer"
+            onClick={() => { setCategoryFilter('RETURN'); setStatusFilter(''); setPage(1); }}>
             <div className="flex items-center gap-2 mb-2">
-              <MessageSquare className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform duration-200" />
-              <span className="text-xs text-gray-400 uppercase">Łącznie</span>
+              <Package className="w-4 h-4 text-orange-400 group-hover:scale-110 transition-transform duration-200" />
+              <span className="text-xs text-gray-400 uppercase">Wszystkie zwroty</span>
             </div>
-            <p className="text-2xl font-bold text-white">{stats.total}</p>
+            <p className="text-2xl font-bold text-white">{returnStats.totalReturns}</p>
           </div>
-          <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4 hover:border-red-500/30 transition-all duration-300 group">
+          <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4 hover:border-red-500/30 transition-all duration-300 group cursor-pointer"
+            onClick={() => { setCategoryFilter('COMPLAINT'); setStatusFilter(''); setPage(1); }}>
             <div className="flex items-center gap-2 mb-2">
               <AlertCircle className="w-4 h-4 text-red-400 group-hover:scale-110 transition-transform duration-200" />
-              <span className="text-xs text-gray-400 uppercase">Nieprzeczytane</span>
+              <span className="text-xs text-gray-400 uppercase">Wszystkie reklamacje</span>
             </div>
-            <p className="text-2xl font-bold text-white">{stats.unreadMessages}</p>
+            <p className="text-2xl font-bold text-white">{returnStats.totalComplaints}</p>
           </div>
         </div>
       )}
@@ -420,7 +425,7 @@ export default function MessagesPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Szukaj po numerze, temacie, kliencie..."
+              placeholder="Szukaj po numerze zwrotu, temacie, kliencie..."
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
               className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-shadow duration-200"
@@ -435,14 +440,9 @@ export default function MessagesPage() {
           </select>
           <select value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
             className="px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition-shadow duration-200">
-            <option value="">Wszystkie kategorie</option>
-            <option value="ORDER">Zamówienie</option>
-            <option value="DELIVERY">Dostawa</option>
-            <option value="COMPLAINT">Reklamacja</option>
-            <option value="RETURN">Zwrot</option>
-            <option value="PAYMENT">Płatność</option>
-            <option value="ACCOUNT">Konto</option>
-            <option value="GENERAL">Ogólne</option>
+            <option value="">Zwroty i reklamacje</option>
+            <option value="RETURN">Tylko zwroty</option>
+            <option value="COMPLAINT">Tylko reklamacje</option>
           </select>
         </div>
       </div>
@@ -460,13 +460,13 @@ export default function MessagesPage() {
                       : <Square className="w-4 h-4" />}
                   </button>
                 </th>
-                <th className="px-4 py-4">Numer</th>
+                <th className="px-4 py-4">Nr zwrotu / rek.</th>
+                <th className="px-4 py-4">Ticket</th>
                 <th className="px-4 py-4">Klient</th>
                 <th className="px-4 py-4">Temat</th>
-                <th className="px-4 py-4">Kategoria</th>
+                <th className="px-4 py-4">Typ</th>
                 <th className="px-4 py-4">Status</th>
                 <th className="px-4 py-4">Zamówienie</th>
-                <th className="px-4 py-4">Ostatnia wiadomość</th>
                 <th className="px-4 py-4">Data</th>
                 <th className="px-4 py-4 w-20">Akcje</th>
               </tr>
@@ -483,9 +483,9 @@ export default function MessagesPage() {
               ) : tickets.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="px-4 py-12 text-center text-gray-400">
-                    <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                    <RotateCcw className="w-12 h-12 mx-auto mb-4 opacity-30" />
                     <p className="text-lg font-medium">Brak zgłoszeń</p>
-                    <p className="text-sm mt-1">Nie znaleziono zgłoszeń spełniających kryteria</p>
+                    <p className="text-sm mt-1">Nie znaleziono zwrotów ani reklamacji spełniających kryteria</p>
                   </td>
                 </tr>
               ) : (
@@ -498,6 +498,21 @@ export default function MessagesPage() {
                       <button onClick={() => toggleSelect(ticket.id)} className="text-gray-400 hover:text-orange-400 transition-colors">
                         {selectedIds.has(ticket.id) ? <CheckSquare className="w-4 h-4 text-orange-400" /> : <Square className="w-4 h-4" />}
                       </button>
+                    </td>
+                    <td className="px-4 py-4">
+                      {ticket.returnNumber ? (
+                        <Link href={`/messages/${ticket.id}`} className="group/rn">
+                          <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-bold font-mono tracking-wide ${
+                            ticket.category === 'RETURN'
+                              ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                              : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                          } group-hover/rn:brightness-125 transition-all`}>
+                            {ticket.returnNumber}
+                          </span>
+                        </Link>
+                      ) : (
+                        <span className="text-gray-500 text-sm">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-4">
                       <Link href={`/messages/${ticket.id}`} className="flex items-center gap-2 group/num">
@@ -536,7 +551,6 @@ export default function MessagesPage() {
                         </Link>
                       ) : <span className="text-gray-500 text-sm">—</span>}
                     </td>
-                    <td className="px-4 py-4 text-gray-400 text-xs whitespace-nowrap">{formatDate(ticket.lastMessageAt)}</td>
                     <td className="px-4 py-4 text-gray-400 text-xs whitespace-nowrap">{formatDate(ticket.createdAt)}</td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-1 relative">
