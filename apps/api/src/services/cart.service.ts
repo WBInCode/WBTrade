@@ -305,7 +305,7 @@ export class CartService {
     if (cartWithItems?.items.length) {
       const productIds = cartWithItems.items.map(i => i.variant.productId);
       const nonStackable = await saleCampaignService.getProductsInNonStackableCampaigns(productIds);
-      if (nonStackable.size > 0) {
+      if (nonStackable.length > 0) {
         throw new Error('Koszyk zawiera produkty w promocji, która nie łączy się z kuponami rabatowymi');
       }
     }
@@ -530,7 +530,7 @@ export class CartService {
         // Check non-stackable campaigns — skip discount if any item is in one
         const productIds = items.map(i => i.variant.product.id);
         const nonStackable = await saleCampaignService.getProductsInNonStackableCampaigns(productIds);
-        const allBlocked = nonStackable.size > 0 && productIds.every(id => nonStackable.has(id));
+        const allBlocked = nonStackable.length > 0 && productIds.every(id => nonStackable.includes(id));
 
         if (!allBlocked) {
           if (coupon.type === 'PERCENTAGE') {
