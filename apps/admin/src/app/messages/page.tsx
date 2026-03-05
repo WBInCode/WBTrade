@@ -320,7 +320,7 @@ export default function MessagesPage() {
             <MessageSquare className="w-6 h-6 text-orange-500" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Wiadomości</h1>
+            <h1 className="text-2xl font-bold text-white">Tickety</h1>
             <p className="text-sm text-gray-400">Zarządzanie zgłoszeniami klientów</p>
           </div>
         </div>
@@ -498,22 +498,24 @@ export default function MessagesPage() {
                       </button>
                     </td>
                     <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
+                      <Link href={`/messages/${ticket.id}`} className="flex items-center gap-2 group/num">
                         {ticket.unreadCount > 0 && <span className="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0 animate-pulse" />}
-                        <span className="text-white font-mono text-sm">{ticket.ticketNumber}</span>
-                      </div>
+                        <span className="text-white font-mono text-sm group-hover/num:text-orange-400 transition-colors">{ticket.ticketNumber}</span>
+                      </Link>
                     </td>
                     <td className="px-4 py-4">
                       <p className="text-white text-sm font-medium">{getCustomerName(ticket)}</p>
                       <p className="text-gray-400 text-xs">{getCustomerEmail(ticket)}</p>
                     </td>
                     <td className="px-4 py-4">
-                      <p className="text-white text-sm max-w-xs truncate">{ticket.subject}</p>
-                      {ticket.lastMessage && (
-                        <p className="text-gray-500 text-xs mt-1 max-w-xs truncate">
-                          {ticket.lastMessage.senderRole === 'ADMIN' ? 'Ty: ' : ''}{ticket.lastMessage.content}
-                        </p>
-                      )}
+                      <Link href={`/messages/${ticket.id}`} className="block group/link">
+                        <p className="text-white text-sm max-w-xs truncate font-medium group-hover/link:text-orange-400 transition-colors cursor-pointer">{ticket.subject}</p>
+                        {ticket.lastMessage && (
+                          <p className="text-gray-500 text-xs mt-1 max-w-xs truncate">
+                            {ticket.lastMessage.senderRole === 'ADMIN' ? 'Ty: ' : ''}{ticket.lastMessage.content}
+                          </p>
+                        )}
+                      </Link>
                     </td>
                     <td className="px-4 py-4">
                       <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${categoryColors[ticket.category] || 'bg-slate-500/20 text-slate-400'}`}>
