@@ -428,6 +428,14 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     ? Math.round((1 - Number(effectivePrice) / Number(product.compareAtPrice)) * 100)
     : 0;
 
+  // Check if product is from outlet warehouse
+  const isOutletProduct = (() => {
+    const sku = product.sku?.toUpperCase() || '';
+    const blId = (product as any).baselinkerProductId?.toLowerCase() || '';
+    const tags = (product as any).tags || [];
+    return sku.startsWith('OUTLET-') || blId.startsWith('outlet-') || tags.some((t: string) => t.toLowerCase() === 'rzeszów');
+  })();
+
   // Use real category if available
   const categoryName = product.category?.name ? cleanCategoryName(product.category.name) : 'Produkty';
   const categorySlug = product.category?.slug || '';
@@ -557,9 +565,28 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
               </div>
 
               {/* Lowest Price Info - Omnibus Directive */}
-              <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mb-3 sm:mb-4">
-                Najniższa cena w ostatnich 30 dniach: {Number(product.lowestPrice30Days || effectivePrice).toFixed(2).replace('.', ',')} zł
-              </p>
+              {hasDiscount && (
+                <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mb-3 sm:mb-4">
+                  Najniższa cena w ostatnich 30 dniach: {Number(product.lowestPrice30Days || product.compareAtPrice || effectivePrice).toFixed(2).replace('.', ',')} zł
+                </p>
+              )}
+
+              {/* Outlet Product Notice */}
+              {isOutletProduct && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 mb-3 sm:mb-4">
+                  <div className="flex items-start gap-2">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <p className="text-xs sm:text-sm font-semibold text-amber-800 dark:text-amber-300 mb-0.5">Produkt outletowy</p>
+                      <p className="text-[11px] sm:text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
+                        Produkt może posiadać uszkodzone opakowanie. Objęty pełną gwarancją, identyczną jak przy zakupie nowego produktu.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Variants */}
               {product.variants?.length ? (
