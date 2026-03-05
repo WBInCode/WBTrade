@@ -10,6 +10,10 @@ export const prisma = global.prisma || new PrismaClient({
   log: process.env.NODE_ENV === 'development' 
     ? ['warn', 'error'] 
     : ['error'],
+  transactionOptions: {
+    maxWait: 10000,  // 10s to acquire connection from pool
+    timeout: 15000,  // 15s global transaction timeout (overridden per-transaction where needed)
+  },
 });
 
 if (process.env.NODE_ENV !== 'production') {
