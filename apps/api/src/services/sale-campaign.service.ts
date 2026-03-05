@@ -459,12 +459,38 @@ export class SaleCampaignService {
             },
           });
 
-          // Update product: compareAtPrice = old price, price = new sale price
+          // OMNIBUS: Calculate lowest price from last 30 days BEFORE this promotion
+          const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+          const priceHistoryResult = await tx.priceHistory.aggregate({
+            where: {
+              productId: product.id,
+              variantId: null,
+              changedAt: { gte: thirtyDaysAgo }
+            },
+            _min: { newPrice: true, oldPrice: true }
+          });
+          
+          // Get lowest from history or use current price
+          let lowestFromHistory = priceHistoryResult._min.newPrice || priceHistoryResult._min.oldPrice;
+          if (priceHistoryResult._min.oldPrice && lowestFromHistory) {
+            if (priceHistoryResult._min.oldPrice.lessThan(lowestFromHistory)) {
+              lowestFromHistory = priceHistoryResult._min.oldPrice;
+            }
+          }
+          
+          // Lowest is minimum of: historical lowest OR current price (before discount)
+          const lowestPrice30Days = lowestFromHistory && lowestFromHistory.lessThan(product.price)
+            ? lowestFromHistory
+            : product.price;
+
+          // Update product: compareAtPrice = old price, price = new sale price, lowestPrice30Days = Omnibus price
           await tx.product.update({
             where: { id: product.id },
             data: {
               compareAtPrice: product.price,
               price: new Decimal(newPrice.toString()),
+              lowestPrice30Days: lowestPrice30Days,
+              lowestPrice30DaysAt: new Date(),
             },
           });
 
@@ -504,11 +530,33 @@ export class SaleCampaignService {
               },
             });
 
+            // OMNIBUS: Calculate lowest price from last 30 days for variant
+            const variantHistoryResult = await tx.priceHistory.aggregate({
+              where: {
+                variantId: variant.id,
+                changedAt: { gte: thirtyDaysAgo }
+              },
+              _min: { newPrice: true, oldPrice: true }
+            });
+            
+            let variantLowestFromHistory = variantHistoryResult._min.newPrice || variantHistoryResult._min.oldPrice;
+            if (variantHistoryResult._min.oldPrice && variantLowestFromHistory) {
+              if (variantHistoryResult._min.oldPrice.lessThan(variantLowestFromHistory)) {
+                variantLowestFromHistory = variantHistoryResult._min.oldPrice;
+              }
+            }
+            
+            const variantLowestPrice30Days = variantLowestFromHistory && variantLowestFromHistory.lessThan(variant.price)
+              ? variantLowestFromHistory
+              : variant.price;
+
             await tx.productVariant.update({
               where: { id: variant.id },
               data: {
                 compareAtPrice: variant.price,
                 price: new Decimal(variantNewPrice.toString()),
+                lowestPrice30Days: variantLowestPrice30Days,
+                lowestPrice30DaysAt: new Date(),
               },
             });
 

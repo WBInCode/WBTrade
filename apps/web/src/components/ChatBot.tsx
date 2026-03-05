@@ -1019,7 +1019,7 @@ export default function ChatBotWidget() {
   const waitingForProductSearch = useRef(false);
   const productSearchRetryCount = useRef(0);
 
-  // Hide chatbot on disallowed pages (login, register, etc.)
+  // Check if chatbot should be visible on this page
   const isAllowedPage = shouldShowChatBot(pathname);
 
   const hasConversation = messages.length > 1;
@@ -1440,7 +1440,7 @@ export default function ChatBotWidget() {
     };
   }, []);
 
-  // Hide chatbot on disallowed pages (must be after all hooks)
+  // Hide chatbot on disallowed pages (must be after all hooks!)
   if (!isAllowedPage && !isOpen) return null;
 
   return (
