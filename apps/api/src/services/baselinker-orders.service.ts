@@ -579,6 +579,153 @@ export class BaselinkerOrdersService {
       return { success: false, orderId, error: errorMessage };
     }
   }
+
+  /**
+   * Create a receipt/invoice in Fakturownia after payment is confirmed.
+   *
+   * Logic:
+   *  - Products are sent at their actual sale price (promotion already baked in)
+   *  - Coupon discount is passed as a proper `discount` + `show_discount` field
+   *    (NOT as a negative product — legally correct "RABAT" on the receipt)
+   */
+  async createFakturowniaReceipt(orderId: string): Promise<{ success: boolean; receiptId?: number; receiptUrl?: string; error?: string }> {
+    const apiToken = process.env.FAKTUROWNIA_API_TOKEN;
+    const domain = process.env.FAKTUROWNIA_DOMAIN || 'wb-partners';
+    if (!apiToken) {
+      console.warn('[Fakturownia] FAKTUROWNIA_API_TOKEN not set, skipping receipt creation');
+      return { success: false, error: 'FAKTUROWNIA_API_TOKEN not configured' };
+    }
+
+    try {
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: {
+          items: true,
+          shippingAddress: true,
+          billingAddress: true,
+          user: { select: { email: true, firstName: true, lastName: true, phone: true } },
+        },
+      });
+
+      if (!order) return { success: false, error: 'Order not found' };
+
+      const buyerName = order.billingAddress
+        ? `${order.billingAddress.firstName} ${order.billingAddress.lastName}`
+        : order.user
+        ? `${order.user.firstName} ${order.user.lastName}`
+        : `${order.guestFirstName || ''} ${order.guestLastName || ''}`.trim();
+
+      const buyerEmail = order.user?.email || order.guestEmail || '';
+      const buyerPhone = order.shippingAddress?.phone || order.user?.phone || order.guestPhone || '';
+
+      const addr = order.billingAddress || order.shippingAddress;
+
+      // Build positions — each product at its actual (potentially sale) price
+      const positions = order.items.map((item) => ({
+        name: item.variantName && item.variantName !== 'Default'
+          ? `${item.productName} (${item.variantName})`
+          : item.productName,
+        quantity: item.quantity,
+        quantity_unit: 'szt',
+        price_gross: Number(item.unitPrice),
+        tax: '23',
+        product_id: null, // No Fakturownia product catalog link needed
+      }));
+
+      // Add shipping as a separate position if > 0
+      const shippingCost = Number(order.shipping || 0);
+      if (shippingCost > 0) {
+        positions.push({
+          name: `TRANSPORT: ${this.mapShippingMethod(order.shippingMethod)}`,
+          quantity: 1,
+          quantity_unit: 'szt',
+          price_gross: shippingCost,
+          tax: '23',
+          product_id: null,
+        });
+      }
+
+      // Coupon discount: use Fakturownia's `discount` field (percent_total kind)
+      // Calculate what percentage of (subtotal + shipping) the coupon covers
+      const orderDiscount = Number(order.discount || 0);
+      let discountPercent = '0';
+      const base = Number(order.subtotal) + shippingCost;
+      if (orderDiscount > 0 && base > 0) {
+        discountPercent = ((orderDiscount / base) * 100).toFixed(4);
+      }
+
+      const showDiscount = orderDiscount > 0;
+
+      const receiptPayload = {
+        api_token: apiToken,
+        invoice: {
+          kind: 'receipt', // paragon
+          number: null, // auto-number
+          sell_date: new Date(order.createdAt).toISOString().slice(0, 10),
+          issue_date: new Date(order.createdAt).toISOString().slice(0, 10),
+          payment_type: this.mapPaymentMethodFakturownia(order.paymentMethod),
+          payment_to_kind: 'off', // no payment deadline shown on receipt
+          currency: 'PLN',
+          lang: 'pl',
+          oid: order.orderNumber, // links to Baselinker order
+          buyer_name: buyerName || 'Klient',
+          buyer_email: buyerEmail,
+          buyer_phone: buyerPhone,
+          buyer_first_name: (addr?.firstName || order.guestFirstName || ''),
+          buyer_last_name: (addr?.lastName || order.guestLastName || ''),
+          buyer_street: addr?.street || '',
+          buyer_post_code: addr?.postalCode || '',
+          buyer_city: addr?.city || '',
+          buyer_country: addr?.country || 'PL',
+          buyer_tax_no: order.isBusinessOrder ? (order.billingNip || '') : '',
+          // Coupon = proper legal RABAT field, NOT a negative product
+          discount: showDiscount ? discountPercent : '0',
+          discount_kind: 'percent_total',
+          show_discount: showDiscount,
+          paid: true,
+          paid_date: new Date(order.createdAt).toISOString().slice(0, 10),
+          status: 'paid',
+          description: order.couponCode ? `Kupon rabatowy: ${order.couponCode}` : '',
+          from_api: true,
+          internal_note: buyerEmail,
+          positions,
+        },
+      };
+
+      const response = await fetch(`https://${domain}.fakturownia.pl/invoices.json`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(receiptPayload),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error(`[Fakturownia] Receipt creation failed for order ${order.orderNumber}: ${response.status} ${errText}`);
+        return { success: false, error: `HTTP ${response.status}: ${errText}` };
+      }
+
+      const receipt = await response.json();
+      console.log(`[Fakturownia] Receipt created for order ${order.orderNumber}: ID ${receipt.id}, URL ${receipt.view_url}`);
+
+      return { success: true, receiptId: receipt.id, receiptUrl: receipt.view_url };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[Fakturownia] Error creating receipt:', error);
+      return { success: false, error: msg };
+    }
+  }
+
+  private mapPaymentMethodFakturownia(method: string): string {
+    const map: Record<string, string> = {
+      'payu': 'Płatność z góry',
+      'przelewy24': 'Płatność z góry',
+      'blik': 'BLIK',
+      'card': 'Karta płatnicza',
+      'transfer': 'Przelew bankowy',
+      'cod': 'Płatność przy odbiorze',
+    };
+    return map[method?.toLowerCase()] || 'Płatność z góry';
+  }
 }
 
 // Export singleton instance

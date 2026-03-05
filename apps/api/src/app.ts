@@ -34,6 +34,7 @@ import uploadRoutes from './routes/upload';
 import priceHistoryRoutes from './routes/price-history';
 import adminSettingsRoutes from './routes/admin-settings';
 import adminCouponsRoutes from './routes/admin-coupons';
+import adminSaleCampaignsRoutes from './routes/admin-sale-campaigns';
 import adminNotificationsRoutes from './routes/admin-notifications';
 import adminNewsletterRoutes from './routes/admin-newsletter';
 import adminActivityLogRoutes from './routes/admin-activity-log';
@@ -404,6 +405,7 @@ app.use('/api/webhooks', checkoutRoutes); // Other webhook routes
 app.use('/api/admin/dashboard', adminDashboardRoutes); // Admin dashboard
 app.use('/api/admin/settings', adminSettingsRoutes); // Admin settings (carousels, etc.)
 app.use('/api/admin/coupons', adminCouponsRoutes); // Admin coupons management
+app.use('/api/admin/sale-campaigns', adminSaleCampaignsRoutes); // Sale campaigns (przeceny)
 app.use('/api/admin/notifications', adminNotificationsRoutes); // Admin notifications
 app.use('/api/admin/newsletter', adminNewsletterRoutes); // Admin newsletter management
 app.use('/api/admin/activity-log', adminActivityLogRoutes); // Admin activity log / audit trail

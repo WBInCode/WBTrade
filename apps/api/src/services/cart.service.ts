@@ -1,5 +1,6 @@
 import { prisma } from '../db';
 import { roundMoney } from '../lib/currency';
+import { saleCampaignService } from './sale-campaign.service';
 
 export interface CartWithItems {
   id: string;
@@ -296,6 +297,19 @@ export class CartService {
       console.log(`[CartService] Newsletter coupon ${normalizedCode} applied - note: cannot combine with registration/promo codes`);
     }
 
+    // Check if any cart products are in a non-stackable sale campaign
+    const cartWithItems = await prisma.cart.findUnique({
+      where: { id: cartId },
+      include: { items: { select: { variant: { select: { productId: true } } } } },
+    });
+    if (cartWithItems?.items.length) {
+      const productIds = cartWithItems.items.map(i => i.variant.productId);
+      const nonStackable = await saleCampaignService.getProductsInNonStackableCampaigns(productIds);
+      if (nonStackable.size > 0) {
+        throw new Error('Koszyk zawiera produkty w promocji, która nie łączy się z kuponami rabatowymi');
+      }
+    }
+
     await prisma.cart.update({
       where: { id: cartId },
       data: { couponCode: normalizedCode },
@@ -513,12 +527,19 @@ export class CartService {
       if (coupon && coupon.isActive 
           && (!coupon.expiresAt || coupon.expiresAt > new Date())
           && (!coupon.maximumUses || coupon.usedCount < coupon.maximumUses)) {
-        if (coupon.type === 'PERCENTAGE') {
-          // Percentage discount
-          discount = roundMoney(subtotal * Number(coupon.value) / 100);
-        } else if (coupon.type === 'FIXED_AMOUNT') {
-          // Fixed amount discount
-          discount = roundMoney(Math.min(Number(coupon.value), subtotal));
+        // Check non-stackable campaigns — skip discount if any item is in one
+        const productIds = items.map(i => i.variant.product.id);
+        const nonStackable = await saleCampaignService.getProductsInNonStackableCampaigns(productIds);
+        const allBlocked = nonStackable.size > 0 && productIds.every(id => nonStackable.has(id));
+
+        if (!allBlocked) {
+          if (coupon.type === 'PERCENTAGE') {
+            // Percentage discount
+            discount = roundMoney(subtotal * Number(coupon.value) / 100);
+          } else if (coupon.type === 'FIXED_AMOUNT') {
+            // Fixed amount discount
+            discount = roundMoney(Math.min(Number(coupon.value), subtotal));
+          }
         }
       }
     }
