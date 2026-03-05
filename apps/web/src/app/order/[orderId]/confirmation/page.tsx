@@ -65,14 +65,18 @@ function OrderConfirmationPageContent() {
 
   const fetchOrder = useCallback(async () => {
     try {
-      const data = await ordersApi.getById(orderId);
+      // For guest orders, pass email for server-side ownership verification
+      const guestEmail = !isAuthenticated
+        ? sessionStorage.getItem(`guestOrderEmail_${orderId}`) || undefined
+        : undefined;
+      const data = await ordersApi.getById(orderId, guestEmail);
       setOrder(data as Order);
       return data;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Nie znaleziono zamówienia');
       return null;
     }
-  }, [orderId]);
+  }, [orderId, isAuthenticated]);
 
   // Weryfikuj płatność PayU jeśli mamy orderId z URL
   const verifyPayment = useCallback(async () => {
