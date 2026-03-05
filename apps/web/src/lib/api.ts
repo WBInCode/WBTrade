@@ -1659,7 +1659,7 @@ export interface SupportTicketsResponse {
 
 export const supportApi = {
   getTickets: (params?: { page?: number; status?: string; category?: string }) =>
-    api.get<SupportTicketsResponse>('/support/tickets', { params: params as any }),
+    api.get<SupportTicketsResponse>('/support/tickets', params as any),
 
   getUnreadCount: () =>
     api.get<{ count: number }>('/support/unread-count'),
