@@ -7,7 +7,7 @@
  * Użycie: npx tsx src/scripts/sync-categories-step1.ts [--dry-run]
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Category } from '@prisma/client';
 import 'dotenv/config';
 
 const prisma = new PrismaClient();
@@ -192,7 +192,7 @@ async function syncCategoryToDb(
   }
   
   // Szukaj istniejącej kategorii
-  let existingCategory = null;
+  let existingCategory: Category | null = null;
   if (node.baselinkerCategoryId) {
     existingCategory = await prisma.category.findUnique({
       where: { baselinkerCategoryId: node.baselinkerCategoryId },
