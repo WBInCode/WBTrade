@@ -167,7 +167,7 @@ function NewTicketForm() {
                         <option value="">Brak wybranego zamówienia</option>
                         {orders.map((order) => (
                           <option key={order.id} value={order.id}>
-                            {order.orderNumber} — {new Date(order.createdAt).toLocaleDateString('pl-PL')} — {order.total.toFixed(2)} zł
+                            {order.orderNumber} — {new Date(order.createdAt).toLocaleDateString('pl-PL')} — {Number(order.total).toFixed(2)} zł
                           </option>
                         ))}
                       </select>
