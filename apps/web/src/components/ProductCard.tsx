@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect, memo } from 'react';
+import { useState, memo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Product } from '../lib/api';
 import { useWishlist } from '../contexts/WishlistContext';
 import { useCart } from '../contexts/CartContext';
@@ -62,26 +63,9 @@ export interface ProductCardProps {
 
 export default memo(function ProductCard({ product, showDelivery = false, showWishlist = true, showAddToCart = true }: ProductCardProps) {
   const [imgError, setImgError] = useState(false);
-  const imgRef = useRef<HTMLImageElement>(null);
   const productImage = product.images?.[0]?.url;
-  const mainImage = imgError || !productImage ? PLACEHOLDER_IMAGE : productImage;
-
-  // Attach error handler via useEffect ONLY (not via onError JSX prop)
-  // to avoid state changes during hydration which cause mismatch
-  useEffect(() => {
-    const img = imgRef.current;
-    if (!img) return;
-
-    const onError = () => setImgError(true);
-    img.addEventListener('error', onError);
-
-    // Image may have already failed before listener was attached
-    if (img.complete && img.naturalWidth === 0 && productImage) {
-      setImgError(true);
-    }
-
-    return () => img.removeEventListener('error', onError);
-  }, [productImage]);
+  const showPlaceholder = imgError || !productImage;
+  const mainImage = showPlaceholder ? PLACEHOLDER_IMAGE : productImage;
   const hasDiscount = product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price);
   const discountPercent = hasDiscount 
     ? Math.round((1 - Number(product.price) / Number(product.compareAtPrice)) * 100)
@@ -160,15 +144,24 @@ export default memo(function ProductCard({ product, showDelivery = false, showWi
       <Link href={`/products/${product.id}`} className="flex flex-col flex-grow">
         {/* Image */}
         <div className="relative aspect-square m-2 sm:m-3 rounded-xl sm:rounded-2xl overflow-hidden bg-gray-50 dark:bg-secondary-700">
-          {/* Always use <img> to avoid hydration mismatch between <img> and next/image <Image> */}
-          {/* onError is handled via useEffect to prevent state changes during hydration */}
-          <img
-            ref={imgRef}
-            src={mainImage}
-            alt={product.name}
-            loading="lazy"
-            className="absolute inset-0 w-full h-full rounded-lg object-contain group-hover:scale-105 transition-transform duration-300"
-          />
+          {/* Use next/image to proxy external images through the Next.js server,  */}
+          {/* avoiding supplier CDN rate-limiting and aggressive no-cache headers. */}
+          {showPlaceholder ? (
+            <img
+              src={PLACEHOLDER_IMAGE}
+              alt={product.name}
+              className="absolute inset-0 w-full h-full rounded-lg object-contain"
+            />
+          ) : (
+            <Image
+              src={productImage}
+              alt={product.name}
+              fill
+              sizes="(max-width: 640px) 145px, (max-width: 768px) 180px, 220px"
+              className="rounded-lg object-contain group-hover:scale-105 transition-transform duration-300"
+              onError={() => setImgError(true)}
+            />
+          )}
           {/* Discount Badge */}
           {hasDiscount && (
             <div className="absolute top-1.5 left-1.5 sm:top-2.5 sm:left-2.5">
