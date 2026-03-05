@@ -107,7 +107,7 @@ const navSections: NavSection[] = [
     label: 'Obsługa klienta',
     items: [
       {
-        title: 'Wiadomości',
+        title: 'Tickety',
         href: '/messages',
         icon: MessageSquare,
         submenu: [
