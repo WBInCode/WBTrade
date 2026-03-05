@@ -1657,6 +1657,22 @@ export interface SupportTicketsResponse {
   };
 }
 
+// ============================================
+// CAROUSELS API
+// ============================================
+
+export const carouselsApi = {
+  // Get products for a carousel by slug (admin-configured, same as homepage) — cached 2 min
+  getProducts: (slug: string) => {
+    const cacheKey = `carousel-products:${slug}`;
+    return getCachedOrFetch(
+      cacheKey,
+      () => api.get<{ products: Product[] }>(`/carousels/${slug}/products`),
+      2 * 60 * 1000
+    );
+  },
+};
+
 export const supportApi = {
   getTickets: (params?: { page?: number; status?: string; category?: string }) =>
     api.get<SupportTicketsResponse>('/support/tickets', params as any),
