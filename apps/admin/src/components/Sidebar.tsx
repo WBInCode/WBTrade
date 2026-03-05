@@ -23,6 +23,7 @@ import {
   Archive,
   Headphones,
   Settings,
+  Percent,
   // Trophy,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -76,6 +77,11 @@ const navSections: NavSection[] = [
         title: 'Kupony',
         href: '/coupons',
         icon: Ticket,
+      },
+      {
+        title: 'Przeceny',
+        href: '/sale-campaigns',
+        icon: Percent,
       },
     ],
   },
