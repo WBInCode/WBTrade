@@ -55,7 +55,7 @@ const statusLabels: Record<string, string> = {
   DELIVERED: 'Dostarczone',
   CANCELLED: 'Anulowane',
   REFUNDED: 'Zwrócone',
-  OPEN: 'Otwarte',
+  OPEN: 'Nieopłacone',
 };
 
 const statusColors: Record<string, string> = {
