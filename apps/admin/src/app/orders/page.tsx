@@ -79,7 +79,7 @@ const statusColors: Record<string, string> = {
 };
 
 const statusLabels: Record<string, string> = {
-  OPEN: 'Otwarte',
+  OPEN: 'Nieopłacone',
   PENDING: 'Oczekujące',
   CONFIRMED: 'Opłacone',
   PROCESSING: 'W realizacji',

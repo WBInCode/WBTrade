@@ -25,7 +25,7 @@ const pages: SearchResult[] = [
   { id: 'p-products', type: 'page', title: 'Lista produktów', subtitle: 'Produkty', href: '/products', icon: Package },
   { id: 'p-categories', type: 'page', title: 'Kategorie', subtitle: 'Produkty', href: '/categories', icon: Package },
   { id: 'p-orders', type: 'page', title: 'Wszystkie zamówienia', subtitle: 'Zamówienia', href: '/orders', icon: ShoppingCart },
-  { id: 'p-orders-open', type: 'page', title: 'Zamówienia otwarte', subtitle: 'Zamówienia', href: '/orders?status=OPEN', icon: ShoppingCart },
+  { id: 'p-orders-open', type: 'page', title: 'Zamówienia nieopłacone', subtitle: 'Zamówienia', href: '/orders?status=OPEN', icon: ShoppingCart },
   { id: 'p-orders-confirmed', type: 'page', title: 'Zamówienia opłacone', subtitle: 'Zamówienia', href: '/orders?status=CONFIRMED', icon: ShoppingCart },
   { id: 'p-orders-processing', type: 'page', title: 'Zamówienia w realizacji', subtitle: 'Zamówienia', href: '/orders?status=PROCESSING', icon: ShoppingCart },
   { id: 'p-orders-shipped', type: 'page', title: 'Zamówienia wysłane', subtitle: 'Zamówienia', href: '/orders?status=SHIPPED', icon: ShoppingCart },

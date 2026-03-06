@@ -890,7 +890,7 @@ export default function ReturnsPage() {
                     {type === 'RETURN' ? 'Zwrot przyjęty!' : 'Reklamacja przyjęta!'}
                   </h3>
                   <p className="text-secondary-600 dark:text-secondary-400 mb-6">
-                    Zapisz poniższe informacje — będą potrzebne do wysyłki.
+                    Zapisz poniższe informacje - będą potrzebne do wysyłki.
                   </p>
                 </div>
 
@@ -916,7 +916,7 @@ export default function ReturnsPage() {
                         Umieść numer <span className="font-mono font-bold">{result.returnNumber}</span> NA PACZCE (na zewnątrz).
                       </p>
                       <p className="text-red-600 dark:text-red-500 text-sm mt-1">
-                        Numer musi być widoczny na opakowaniu — nie umieszczaj go wewnątrz paczki.
+                        Numer musi być widoczny na opakowaniu - nie umieszczaj go wewnątrz paczki.
                       </p>
                       <p className="text-red-600 dark:text-red-500 text-sm mt-0.5">
                         Bez tego numeru nie będziemy mogli zidentyfikować Twojego zgłoszenia.
@@ -930,7 +930,6 @@ export default function ReturnsPage() {
                   <p className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-3">Adres do wysyłki:</p>
                   <div className="text-secondary-900 dark:text-white">
                     <p className="font-semibold text-lg">{result.returnAddress.name}</p>
-                    <p>{result.returnAddress.contactPerson}</p>
                     <p>{result.returnAddress.street}</p>
                     <p>{result.returnAddress.postalCode} {result.returnAddress.city}</p>
                     <div className="mt-3 pt-3 border-t border-secondary-200 dark:border-secondary-600 text-sm text-secondary-600 dark:text-secondary-400">

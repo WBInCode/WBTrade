@@ -67,7 +67,7 @@ const navSections: NavSection[] = [
         icon: ShoppingCart,
         submenu: [
           { title: 'Wszystkie', href: '/orders' },
-          { title: 'Otwarte', href: '/orders?status=OPEN' },
+          { title: 'Nieopłacone', href: '/orders?status=OPEN' },
           { title: 'Opłacone', href: '/orders?status=CONFIRMED' },
           { title: 'W realizacji', href: '/orders?status=PROCESSING' },
           { title: 'Wysłane', href: '/orders?status=SHIPPED' },
