@@ -3,6 +3,7 @@ import { emailService } from '../services/email.service';
 import { PrismaClient } from '@prisma/client';
 import { optionalAuth } from '../middleware/auth.middleware';
 import * as supportService from '../services/support.service';
+import { returnService } from '../services/return.service';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -203,6 +204,72 @@ router.get('/complaint-eligibility/:orderNumber', async (req: Request, res: Resp
 });
 
 /**
+ * GET /api/contact/order-items/:orderNumber
+ * Returns the items of an order for the return form item selection step
+ */
+router.get('/order-items/:orderNumber', async (req: Request, res: Response) => {
+  try {
+    let { orderNumber } = req.params;
+    if (!orderNumber?.trim()) {
+      return res.status(400).json({ success: false, message: 'Podaj numer zamówienia' });
+    }
+    orderNumber = orderNumber.trim();
+    if (orderNumber.startsWith('#')) {
+      orderNumber = orderNumber.slice(1);
+    }
+
+    let order = await prisma.order.findUnique({
+      where: { orderNumber },
+      select: {
+        id: true,
+        orderNumber: true,
+        items: {
+          select: {
+            id: true,
+            productName: true,
+            variantName: true,
+            sku: true,
+            quantity: true,
+            unitPrice: true,
+            total: true,
+            variant: {
+              select: {
+                id: true,
+                product: {
+                  select: { id: true, name: true, images: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Zamówienie nie zostało znalezione' });
+    }
+
+    return res.json({
+      success: true,
+      orderNumber: order.orderNumber,
+      items: order.items.map((item: any) => ({
+        id: item.id,
+        productName: item.productName,
+        variantName: item.variantName,
+        sku: item.sku,
+        quantity: item.quantity,
+        unitPrice: Number(item.unitPrice),
+        total: Number(item.total),
+        image: item.variant?.product?.images?.[0] || null,
+      })),
+    });
+  } catch (error) {
+    console.error('[Contact] Order items error:', error);
+    return res.status(500).json({ success: false, message: 'Błąd serwera' });
+  }
+});
+
+/**
  * POST /api/contact/complaint
  * Wysyła zgłoszenie reklamacyjne na email support@wb-partners.pl
  * Wymaga numeru zamówienia i sprawdza czy zamówienie zostało dostarczone
@@ -347,6 +414,11 @@ interface ReturnRequestBody {
   type: 'RETURN' | 'COMPLAINT';
   orderNumber: string;
   reason: string;
+  items?: {
+    orderItemId: string;
+    quantity: number;
+    reason?: string;
+  }[];
   // Guest fields (required when not logged in)
   firstName?: string;
   lastName?: string;
@@ -356,7 +428,7 @@ interface ReturnRequestBody {
 
 router.post('/return-request', optionalAuth, async (req: Request, res: Response) => {
   try {
-    const { type, orderNumber: rawOrderNumber, reason, firstName, lastName, email, phone }: ReturnRequestBody = req.body;
+    const { type, orderNumber: rawOrderNumber, reason, items, firstName, lastName, email, phone }: ReturnRequestBody = req.body;
     const user = (req as any).user;
     const isLoggedIn = !!user?.userId;
 
@@ -409,13 +481,19 @@ router.post('/return-request', optionalAuth, async (req: Request, res: Response)
 
     let order = await prisma.order.findUnique({
       where: { orderNumber: sanitizedOrderNumber },
-      select: { id: true, status: true, orderNumber: true, userId: true, guestEmail: true },
+      select: {
+        id: true, status: true, orderNumber: true, userId: true, guestEmail: true,
+        items: { select: { id: true, quantity: true } },
+      },
     });
 
     if (!order) {
       order = await prisma.order.findUnique({
         where: { id: sanitizedOrderNumber },
-        select: { id: true, status: true, orderNumber: true, userId: true, guestEmail: true },
+        select: {
+          id: true, status: true, orderNumber: true, userId: true, guestEmail: true,
+          items: { select: { id: true, quantity: true } },
+        },
       });
     }
 
@@ -436,8 +514,29 @@ router.post('/return-request', optionalAuth, async (req: Request, res: Response)
       return res.status(400).json({ success: false, message: 'Zamówienie zostało już zwrócone' });
     }
 
-    // --- Generate return number ---
-    const returnNumber = await supportService.generateReturnNumber(type);
+    // --- Validate return items ---
+    let returnItems: { orderItemId: string; quantity: number; reason?: string }[];
+
+    if (items && Array.isArray(items) && items.length > 0) {
+      // Validate each item belongs to the order and quantity is valid
+      const orderItemIds = order.items.map((i: any) => i.id);
+      for (const item of items) {
+        if (!orderItemIds.includes(item.orderItemId)) {
+          return res.status(400).json({ success: false, message: 'Jeden z produktów nie należy do tego zamówienia' });
+        }
+        const orderItem = order.items.find((i: any) => i.id === item.orderItemId);
+        if (!orderItem || item.quantity < 1 || item.quantity > orderItem.quantity) {
+          return res.status(400).json({ success: false, message: 'Nieprawidłowa ilość produktu do zwrotu' });
+        }
+      }
+      returnItems = items;
+    } else {
+      // If no items specified, return all items from the order
+      returnItems = order.items.map((i: any) => ({
+        orderItemId: i.id,
+        quantity: i.quantity,
+      }));
+    }
 
     // --- Resolve customer identity ---
     let customerName: string;
@@ -460,24 +559,23 @@ router.post('/return-request', optionalAuth, async (req: Request, res: Response)
       customerPhone = phone?.trim() || undefined;
     }
 
-    // --- Create support ticket ---
-    const subjectPrefix = type === 'RETURN' ? 'Zwrot' : 'Reklamacja';
-    const ticket = await supportService.createTicket({
+    // --- Create return request (with ticket + items) ---
+    const returnRequest = await returnService.createReturn({
+      orderId: order.id,
+      type,
+      reason: reason.trim(),
+      items: returnItems,
       userId,
       guestEmail: isLoggedIn ? undefined : customerEmail,
       guestName: isLoggedIn ? undefined : customerName,
       guestPhone: isLoggedIn ? undefined : customerPhone,
-      orderId: order.id,
-      subject: `${subjectPrefix} - zamówienie ${order.orderNumber}`,
-      category: type,
-      message: reason.trim(),
-      senderRole: 'CUSTOMER',
-      returnNumber,
     });
+
+    const subjectPrefix = type === 'RETURN' ? 'Zwrot' : 'Reklamacja';
 
     // --- Send email to admin (fire-and-forget) ---
     emailService.sendSupportNewTicketToAdmin({
-      ticketNumber: ticket.ticketNumber,
+      ticketNumber: returnRequest.ticket?.ticketNumber || '',
       subject: `${subjectPrefix} - zamówienie ${order.orderNumber}`,
       category: type,
       userName: customerName,
@@ -489,7 +587,7 @@ router.post('/return-request', optionalAuth, async (req: Request, res: Response)
     emailService.sendReturnConfirmationEmail({
       to: customerEmail,
       customerName,
-      returnNumber,
+      returnNumber: returnRequest.returnNumber,
       type,
       orderNumber: order.orderNumber,
       reason: reason.trim(),
@@ -501,12 +599,12 @@ router.post('/return-request', optionalAuth, async (req: Request, res: Response)
       },
     }).catch((err) => console.error('[Contact] Failed to send return confirmation to customer:', err.message));
 
-    console.log(`✅ [Contact] ${subjectPrefix} request from ${customerEmail}, order: ${order.orderNumber}, number: ${returnNumber}`);
+    console.log(`✅ [Contact] ${subjectPrefix} request from ${customerEmail}, order: ${order.orderNumber}, number: ${returnRequest.returnNumber}`);
 
     return res.status(201).json({
       success: true,
-      returnNumber,
-      ticketNumber: ticket.ticketNumber,
+      returnNumber: returnRequest.returnNumber,
+      ticketNumber: returnRequest.ticket?.ticketNumber || '',
       returnAddress: RETURN_ADDRESS,
     });
   } catch (error) {

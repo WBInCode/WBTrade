@@ -1130,6 +1130,46 @@ export class OrdersService {
   /**
    * Get orders pending cancellation approval (for admin panel)
    */
+  /**
+   * Request cancellation (customer action)
+   * Always creates a pending cancellation request for admin approval.
+   * Works for any order status except CANCELLED.
+   */
+  async requestCancellation(id: string, reason?: string): Promise<{ order: any; pendingApproval: boolean } | null> {
+    const order = await prisma.order.findUnique({
+      where: { id },
+    });
+
+    if (!order) return null;
+
+    if (order.status === 'CANCELLED') {
+      throw new Error('Zamówienie jest już anulowane.');
+    }
+
+    if (order.pendingCancellation) {
+      throw new Error('Prośba o anulowanie tego zamówienia została już złożona i oczekuje na rozpatrzenie.');
+    }
+
+    const updatedOrder = await prisma.order.update({
+      where: { id },
+      data: {
+        pendingCancellation: true,
+        pendingCancellationAt: new Date(),
+        cancellationReason: reason || null,
+      },
+    });
+
+    await prisma.orderStatusHistory.create({
+      data: {
+        orderId: id,
+        status: order.status,
+        note: `Klient złożył prośbę o anulowanie zamówienia${reason ? `: ${reason}` : ''} - oczekuje na zatwierdzenie administratora`,
+      },
+    });
+
+    return { order: updatedOrder, pendingApproval: true };
+  }
+
   async getPendingCancellations() {
     return prisma.order.findMany({
       where: {
@@ -1163,11 +1203,77 @@ export class OrdersService {
   }
 
   /**
-   * Approve cancellation of a business order (admin action)
+   * Approve cancellation (admin action)
+   * Cancels the order regardless of current status (unless already cancelled)
    */
   async approveCancellation(id: string) {
-    // Use forceCancel=true to bypass business order check
-    return this.cancel(id, true);
+    const result = await prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id },
+        include: { items: true },
+      });
+
+      if (!order) return null;
+
+      if (order.status === 'CANCELLED') {
+        throw new Error('Zamówienie jest już anulowane.');
+      }
+
+      // Release reserved inventory
+      for (const item of order.items) {
+        if (item.variantId) {
+          await tx.inventory.updateMany({
+            where: { variantId: item.variantId },
+            data: {
+              reserved: { decrement: item.quantity },
+            },
+          });
+        }
+      }
+
+      // Update order status
+      const cancelledOrder = await tx.order.update({
+        where: { id },
+        data: {
+          status: 'CANCELLED',
+          paymentStatus: order.paymentStatus === 'PAID' ? order.paymentStatus : 'CANCELLED',
+          pendingCancellation: false,
+          pendingCancellationAt: null,
+        },
+      });
+
+      // Add to status history
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: id,
+          status: 'CANCELLED',
+          note: 'Administrator zatwierdził anulowanie zamówienia',
+        },
+      });
+
+      return { order: cancelledOrder, pendingApproval: false };
+    });
+
+    if (!result) return null;
+
+    // Sync cancellation to Baselinker
+    if (result.order.baselinkerOrderId) {
+      setTimeout(() => {
+        baselinkerOrdersService.markOrderAsRefunded(result.order.id, 'Zamówienie anulowane - zatwierdzone przez admina')
+          .then((syncResult) => {
+            if (syncResult.success) {
+              console.log(`[OrdersService] Order ${result.order.orderNumber} cancellation synced to Baselinker`);
+            } else {
+              console.error(`[OrdersService] Failed to sync cancellation to Baselinker:`, syncResult.error);
+            }
+          })
+          .catch((err) => {
+            console.error(`[OrdersService] Baselinker cancellation sync error:`, err);
+          });
+      }, 100);
+    }
+
+    return result;
   }
 
   /**

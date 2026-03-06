@@ -52,6 +52,7 @@ import adminLoyaltyRoutes from './routes/admin-loyalty';
 import chatbotRoutes from './routes/chatbot';
 import supportRoutes from './routes/support';
 import adminSupportRoutes from './routes/admin-support';
+import adminReturnsRoutes from './routes/admin-returns';
 import emailInboundRoutes from './routes/email-inbound';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
 import { initializeMeilisearch } from './lib/meilisearch';
@@ -429,6 +430,7 @@ app.use('/api/admin/loyalty', adminLoyaltyRoutes); // Admin loyalty management
 app.use('/api/chatbot', chatbotRoutes); // WuBuś chatbot unmatched questions
 app.use('/api/support', supportRoutes); // Customer support messaging
 app.use('/api/admin/support', adminSupportRoutes); // Admin support management
+app.use('/api/admin/returns', adminReturnsRoutes); // Admin returns management
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
