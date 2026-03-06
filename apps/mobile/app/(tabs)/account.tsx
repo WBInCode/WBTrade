@@ -67,9 +67,19 @@ function SectionHeader({ title, colors }: { title: string; colors: ReturnType<ty
 
 export default function AccountScreen() {
   const router = useRouter();
-  const { user, logout, isLoading } = useAuth();
+  const { user, logout, loginWithGoogle, isLoading } = useAuth();
   const colors = useThemeColors();
   const { themePreference } = useTheme();
+  const [googleLoading, setGoogleLoading] = React.useState(false);
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    try {
+      await loginWithGoogle();
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const appVersion = Constants.expoConfig?.version || '1.0.0';
 
@@ -113,6 +123,35 @@ export default function AccountScreen() {
                 variant="outline"
                 onPress={() => router.push('/(auth)/register')}
               />
+              {/* Google login */}
+              <TouchableOpacity
+                onPress={handleGoogleLogin}
+                disabled={googleLoading}
+                activeOpacity={0.75}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 10,
+                  borderWidth: 1.5,
+                  borderColor: colors.border,
+                  borderRadius: 12,
+                  paddingVertical: 14,
+                  backgroundColor: colors.background,
+                  opacity: googleLoading ? 0.6 : 1,
+                }}
+              >
+                {googleLoading ? (
+                  <ActivityIndicator size="small" color={colors.textSecondary} />
+                ) : (
+                  <>
+                    <FontAwesome name="google" size={18} color="#4285F4" />
+                    <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>
+                      Kontynuuj przez Google
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
             </View>
           </View>
 

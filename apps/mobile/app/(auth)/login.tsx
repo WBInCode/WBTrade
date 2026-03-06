@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -26,9 +26,10 @@ type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const colors = useThemeColors();
 
   const { control, handleSubmit } = useForm<LoginForm>({
@@ -50,6 +51,21 @@ export default function LoginScreen() {
       setError('Błąd sieci. Spróbuj ponownie.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setError(null);
+    setGoogleLoading(true);
+    try {
+      const result = await loginWithGoogle();
+      if (result.success) {
+        router.replace('/(tabs)');
+      } else {
+        setError(result.error || 'Logowanie Google nie powiodło się');
+      }
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -165,6 +181,43 @@ export default function LoginScreen() {
             fullWidth
             size="lg"
           />
+
+          {/* Divider */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 20 }}>
+            <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+            <Text style={{ marginHorizontal: 12, color: colors.textMuted, fontSize: 13 }}>lub</Text>
+            <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+          </View>
+
+          {/* Google login */}
+          <TouchableOpacity
+            onPress={handleGoogleLogin}
+            disabled={googleLoading || loading}
+            activeOpacity={0.75}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              borderWidth: 1.5,
+              borderColor: colors.border,
+              borderRadius: 12,
+              paddingVertical: 14,
+              backgroundColor: colors.card,
+              opacity: googleLoading || loading ? 0.6 : 1,
+            }}
+          >
+            {googleLoading ? (
+              <ActivityIndicator size="small" color={colors.textSecondary} />
+            ) : (
+              <>
+                <FontAwesome name="google" size={18} color="#4285F4" />
+                <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>
+                  Kontynuuj przez Google
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
 
           {/* Register link */}
           <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 24 }}>
