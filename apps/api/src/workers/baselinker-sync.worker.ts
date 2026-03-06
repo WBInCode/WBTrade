@@ -168,7 +168,15 @@ async function processPriceXmlSync(job: Job<PriceXmlSyncJobData>) {
       console.log(`[BaselinkerSyncWorker] BTP XML sync done: ${JSON.stringify(btpResult)}`);
     }
 
-    return { success: true, leker: lekerResult, btp: btpResult };
+    let hpResult: any = null;
+    if (warehouse === 'hp' || warehouse === 'all') {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { syncHpXmlPrices } = require(path.join(scriptsDir, 'sync-hp-xml-prices.js'));
+      hpResult = await syncHpXmlPrices();
+      console.log(`[BaselinkerSyncWorker] HP XML sync done: ${JSON.stringify(hpResult)}`);
+    }
+
+    return { success: true, leker: lekerResult, btp: btpResult, hp: hpResult };
   } catch (error) {
     console.error('[BaselinkerSyncWorker] XML price sync failed:', error);
     throw error;
@@ -255,7 +263,7 @@ export async function scheduleBaselinkerSync(): Promise<void> {
     }
   );
 
-  console.log('✅ XML price sync scheduled (Leker + BTP, daily at 06:00)');
+  console.log('✅ XML price sync scheduled (Leker + BTP + HP, daily at 06:00)');
 }
 
 /**
@@ -282,7 +290,7 @@ export async function triggerImmediateStockSync(): Promise<string> {
 /**
  * Trigger immediate XML price sync (manual button in admin panel)
  */
-export async function triggerImmediatePriceXmlSync(warehouse: 'leker' | 'btp' | 'all' = 'all'): Promise<string> {
+export async function triggerImmediatePriceXmlSync(warehouse: 'leker' | 'btp' | 'hp' | 'all' = 'all'): Promise<string> {
   const queue = getQueue(QUEUE_NAMES.BASELINKER_SYNC);
 
   const job = await queue.add(
