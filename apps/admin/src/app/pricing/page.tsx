@@ -21,11 +21,12 @@ interface SyncStatus {
   xmlUrl: string;
 }
 
-const XML_SYNC_WAREHOUSES: Warehouse[] = ['leker', 'btp'];
+const XML_SYNC_WAREHOUSES: Warehouse[] = ['leker', 'btp', 'hp'];
 
 const WAREHOUSES: { key: Warehouse; label: string; description: string }[] = [
   { key: 'leker', label: 'Leker', description: 'Magazyn Chynów' },
   { key: 'btp', label: 'BTP', description: 'Magazyn Chotów' },
+  { key: 'hp', label: 'HP', description: 'Hurtownia Przemysłowa' },
   { key: 'hp', label: 'HP', description: 'Magazyn Zielona Góra' },
 ];
 
