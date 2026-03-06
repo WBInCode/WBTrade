@@ -1408,40 +1408,46 @@ export default function ChatBotWidget() {
     return () => window.removeEventListener('keydown', handleEsc);
   }, [isOpen, handleMinimize]);
 
-  // Smart-hide chatbot on scroll - hide after 1.5s continuous scrolling down,
+  // Smart-hide chatbot on scroll - hide after 0.6s continuous scrolling down,
   // only restore by clicking the hidden bubble (no auto-restore on scroll up)
   useEffect(() => {
-    let lastY = window.scrollY;
     let scrollDownTimer: ReturnType<typeof setTimeout> | null = null;
-    let isScrollingDown = false;
+    let lastScrollY = window.scrollY;
+    let scrollingDown = false;
+
+    const clearTimer = () => {
+      if (scrollDownTimer) {
+        clearTimeout(scrollDownTimer);
+        scrollDownTimer = null;
+      }
+      scrollingDown = false;
+    };
 
     const onScroll = () => {
       const y = window.scrollY;
-      const delta = y - lastY;
-      lastY = y;
+      const delta = y - lastScrollY;
+      lastScrollY = y;
 
-      if (delta > 2) {
+      if (delta > 0) {
         // Scrolling down — start timer if not already running
-        if (!isScrollingDown) {
-          isScrollingDown = true;
+        if (!scrollingDown) {
+          scrollingDown = true;
           scrollDownTimer = setTimeout(() => {
             setBubbleHidden(true);
-          }, 1500);
+            scrollingDown = false;
+          }, 600);
         }
-      } else {
-        // Stopped or scrolling up — cancel the timer
-        isScrollingDown = false;
-        if (scrollDownTimer) {
-          clearTimeout(scrollDownTimer);
-          scrollDownTimer = null;
-        }
+      } else if (delta < 0) {
+        // Scrolling up — cancel any pending hide
+        clearTimer();
       }
     };
 
+    // Also handle touch-based scrolling on mobile
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', onScroll);
-      if (scrollDownTimer) clearTimeout(scrollDownTimer);
+      clearTimer();
     };
   }, []);
 
