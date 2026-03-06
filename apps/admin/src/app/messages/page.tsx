@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   MessageSquare, Search, ChevronLeft, ChevronRight,
@@ -110,7 +110,7 @@ export default function MessagesPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [actionLoading, setActionLoading] = useState(false);
   const [quickActionId, setQuickActionId] = useState<string | null>(null);
-  const quickMenuRef = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -178,17 +178,6 @@ export default function MessagesPage() {
     }, 15000);
     return () => clearInterval(interval);
   }, [loadStats, loadTickets]);
-
-  // Close quick action menu on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (quickMenuRef.current && !quickMenuRef.current.contains(e.target as Node)) {
-        setQuickActionId(null);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -544,45 +533,17 @@ export default function MessagesPage() {
                           className="p-2 text-gray-400 hover:text-orange-400 transition-all duration-200 hover:bg-slate-700/50 rounded-lg">
                           <Eye className="w-4 h-4" />
                         </Link>
-                        <button onClick={() => setQuickActionId(quickActionId === ticket.id ? null : ticket.id)}
+                        <button onClick={(e) => {
+                          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                          const menuH = 240;
+                          const spaceBelow = window.innerHeight - rect.bottom;
+                          const top = spaceBelow < menuH ? rect.top - menuH : rect.bottom + 4;
+                          setMenuPos({ top, left: rect.right - 200 });
+                          setQuickActionId(quickActionId === ticket.id ? null : ticket.id);
+                        }}
                           className="p-2 text-gray-400 hover:text-white transition-all duration-200 hover:bg-slate-700/50 rounded-lg">
                           <MoreHorizontal className="w-4 h-4" />
                         </button>
-
-                        {/* Quick Action Menu */}
-                        {quickActionId === ticket.id && (
-                          <div ref={quickMenuRef}
-                            className="absolute right-0 top-full mt-1 w-48 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-30 py-1">
-                            <Link href={`/messages/${ticket.id}`}
-                              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-slate-700/50 hover:text-white transition-colors">
-                              <Eye className="w-4 h-4" /> Otwórz
-                            </Link>
-                            <div className="border-t border-slate-700 my-1" />
-                            {ticket.status !== 'OPEN' && (
-                              <button onClick={() => handleQuickStatus(ticket.id, 'OPEN')}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-green-400 hover:bg-green-500/10 transition-colors">
-                                <Inbox className="w-4 h-4" /> Oznacz jako otwarte
-                              </button>
-                            )}
-                            {ticket.status !== 'IN_PROGRESS' && (
-                              <button onClick={() => handleQuickStatus(ticket.id, 'IN_PROGRESS')}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-yellow-400 hover:bg-yellow-500/10 transition-colors">
-                                <Clock className="w-4 h-4" /> W trakcie
-                              </button>
-                            )}
-                            {ticket.status !== 'CLOSED' && (
-                              <button onClick={() => handleQuickStatus(ticket.id, 'CLOSED')}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:bg-slate-700/50 transition-colors">
-                                <CheckCircle className="w-4 h-4" /> Zamknij
-                              </button>
-                            )}
-                            <div className="border-t border-slate-700 my-1" />
-                            <button onClick={() => handleQuickArchive(ticket.id)}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-orange-400 hover:bg-orange-500/10 transition-colors">
-                              <Archive className="w-4 h-4" /> Archiwizuj
-                            </button>
-                          </div>
-                        )}
                       </div>
                     </td>
                   </tr>
@@ -592,6 +553,49 @@ export default function MessagesPage() {
           </table>
         </div>
       </div>
+
+      {/* Quick Action Menu - Fixed position overlay */}
+      {quickActionId && (() => {
+        const ticket = tickets.find(t => t.id === quickActionId);
+        if (!ticket) return null;
+        return (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setQuickActionId(null)} />
+            <div
+              style={{ top: menuPos.top, left: menuPos.left }}
+              className="fixed w-52 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 py-1 animate-in fade-in zoom-in-95 duration-150">
+              <Link href={`/messages/${ticket.id}`} onClick={() => setQuickActionId(null)}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-slate-700/50 hover:text-white transition-colors">
+                <Eye className="w-4 h-4" /> Otwórz
+              </Link>
+              <div className="border-t border-slate-700 my-1" />
+              {ticket.status !== 'OPEN' && (
+                <button onClick={() => handleQuickStatus(ticket.id, 'OPEN')}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-green-400 hover:bg-green-500/10 transition-colors">
+                  <Inbox className="w-4 h-4" /> Oznacz jako otwarte
+                </button>
+              )}
+              {ticket.status !== 'IN_PROGRESS' && (
+                <button onClick={() => handleQuickStatus(ticket.id, 'IN_PROGRESS')}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-yellow-400 hover:bg-yellow-500/10 transition-colors">
+                  <Clock className="w-4 h-4" /> W trakcie
+                </button>
+              )}
+              {ticket.status !== 'CLOSED' && (
+                <button onClick={() => handleQuickStatus(ticket.id, 'CLOSED')}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:bg-slate-700/50 transition-colors">
+                  <CheckCircle className="w-4 h-4" /> Zamknij
+                </button>
+              )}
+              <div className="border-t border-slate-700 my-1" />
+              <button onClick={() => handleQuickArchive(ticket.id)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-orange-400 hover:bg-orange-500/10 transition-colors">
+                <Archive className="w-4 h-4" /> Archiwizuj
+              </button>
+            </div>
+          </>
+        );
+      })()}
 
       {/* Pagination */}
       {totalPages > 1 && (
