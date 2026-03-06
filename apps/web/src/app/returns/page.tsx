@@ -6,7 +6,21 @@ import Footer from '../../components/Footer';
 import { useAuth } from '../../contexts/AuthContext';
 
 type RequestType = 'RETURN' | 'COMPLAINT';
-type Step = 'category' | 'order' | 'form' | 'success';
+type Step = 'category' | 'order' | 'items' | 'form' | 'success';
+
+interface OrderItem {
+  id: string;
+  productName: string;
+  variantName: string;
+  quantity: number;
+  unitPrice: number;
+  image?: string | null;
+}
+
+interface SelectedItem {
+  orderItemId: string;
+  quantity: number;
+}
 
 interface ReturnResult {
   returnNumber: string;
@@ -35,6 +49,11 @@ export default function ReturnsPage() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+
+  // Item selection state
+  const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+  const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
+  const [itemsLoading, setItemsLoading] = useState(false);
 
   // UI state
   const [loading, setLoading] = useState(false);
@@ -118,7 +137,29 @@ export default function ReturnsPage() {
       const data = await response.json();
 
       if (data.eligible) {
-        setStep('form');
+        // Fetch order items for selection
+        setItemsLoading(true);
+        try {
+          const itemsHeaders: Record<string, string> = {};
+          const itemsToken = getToken();
+          if (itemsToken) itemsHeaders['Authorization'] = `Bearer ${itemsToken}`;
+          const itemsRes = await fetch(`${apiUrl}/contact/order-items/${encodeURIComponent(orderNumber.trim())}`, { headers: itemsHeaders });
+          const itemsData = await itemsRes.json();
+          if (itemsData.items && itemsData.items.length > 0) {
+            setOrderItems(itemsData.items);
+            // Pre-select all items with full quantities
+            setSelectedItems(itemsData.items.map((item: OrderItem) => ({ orderItemId: item.id, quantity: item.quantity })));
+            setStep('items');
+          } else {
+            // No items found, go directly to form
+            setStep('form');
+          }
+        } catch {
+          // If items fetch fails, go to form anyway (backwards compatible)
+          setStep('form');
+        } finally {
+          setItemsLoading(false);
+        }
       } else {
         setError(data.reason || 'Zamówienie nie kwalifikuje się do zgłoszenia');
       }
@@ -169,6 +210,7 @@ export default function ReturnsPage() {
           lastName: lastName.trim(),
           email: email.trim(),
           phone: phone.trim(),
+          ...(selectedItems.length > 0 && { items: selectedItems }),
         }),
       });
 
@@ -198,6 +240,8 @@ export default function ReturnsPage() {
     setResult(null);
     setCanClose(false);
     setCloseTimer(10);
+    setOrderItems([]);
+    setSelectedItems([]);
     if (!isAuthenticated) {
       setFirstName('');
       setLastName('');
@@ -230,6 +274,16 @@ export default function ReturnsPage() {
     },
     {
       step: 3,
+      title: 'Wybierz produkty',
+      description: 'Zaznacz produkty, które chcesz zwrócić lub zareklamować.',
+      icon: (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+        </svg>
+      ),
+    },
+    {
+      step: 4,
       title: 'Wypełnij formularz',
       description: 'Opisz powód zgłoszenia i podaj swoje dane kontaktowe.',
       icon: (
@@ -239,7 +293,7 @@ export default function ReturnsPage() {
       ),
     },
     {
-      step: 4,
+      step: 5,
       title: 'Otrzymaj numer zgłoszenia',
       description: 'Zapisz unikalny numer i umieść go w paczce zwrotnej.',
       icon: (
@@ -277,8 +331,27 @@ export default function ReturnsPage() {
     },
   ];
 
+  // Item selection helpers
+  const toggleItem = (itemId: string) => {
+    setSelectedItems(prev => {
+      const existing = prev.find(s => s.orderItemId === itemId);
+      if (existing) {
+        return prev.filter(s => s.orderItemId !== itemId);
+      } else {
+        const item = orderItems.find(i => i.id === itemId);
+        return [...prev, { orderItemId: itemId, quantity: item?.quantity || 1 }];
+      }
+    });
+  };
+
+  const updateItemQty = (itemId: string, qty: number) => {
+    setSelectedItems(prev => prev.map(s =>
+      s.orderItemId === itemId ? { ...s, quantity: Math.max(1, qty) } : s
+    ));
+  };
+
   // Step indicator helper
-  const stepIndex = step === 'category' ? 0 : step === 'order' ? 1 : step === 'form' ? 2 : 3;
+  const stepIndex = step === 'category' ? 0 : step === 'order' ? 1 : step === 'items' ? 2 : step === 'form' ? 3 : 4;
 
   return (
     <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
@@ -350,7 +423,7 @@ export default function ReturnsPage() {
             Proces zgłoszenia zwrotu lub reklamacji jest prosty i zajmuje tylko kilka minut.
           </p>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
             {processSteps.map((item, index) => (
               <div key={index} className="relative">
                 <div className={`bg-secondary-50 dark:bg-secondary-900 rounded-2xl p-6 h-full transition-all ${
@@ -495,6 +568,162 @@ export default function ReturnsPage() {
               </>
             )}
 
+            {/* ===== STEP: Item Selection ===== */}
+            {step === 'items' && (
+              <>
+                <h2 className="text-2xl lg:text-3xl font-bold text-secondary-900 dark:text-white mb-4 text-center">
+                  Wybierz produkty do {type === 'RETURN' ? 'zwrotu' : 'reklamacji'}
+                </h2>
+                <p className="text-secondary-600 dark:text-secondary-400 text-center mb-8">
+                  Zaznacz produkty, które chcesz {type === 'RETURN' ? 'zwrócić' : 'zareklamować'}, i podaj ilość.
+                </p>
+
+                <div className="bg-white dark:bg-secondary-800 rounded-2xl shadow-lg p-8">
+                  {/* Verified order badge */}
+                  <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div>
+                        <p className="font-medium text-green-800 dark:text-green-400">Zamówienie zweryfikowane</p>
+                        <p className="text-sm text-green-600 dark:text-green-500">Numer: {orderNumber}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 mb-6">
+                    {orderItems.map((item) => {
+                      const isSelected = selectedItems.some(s => s.orderItemId === item.id);
+                      const selectedQty = selectedItems.find(s => s.orderItemId === item.id)?.quantity || 0;
+
+                      return (
+                        <div key={item.id}
+                          className={`flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer ${
+                            isSelected
+                              ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 dark:border-primary-600'
+                              : 'border-secondary-200 dark:border-secondary-700 hover:border-secondary-300 dark:hover:border-secondary-600'
+                          }`}
+                          onClick={() => toggleItem(item.id)}
+                        >
+                          {/* Checkbox */}
+                          <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                            isSelected
+                              ? 'border-primary-600 bg-primary-600'
+                              : 'border-secondary-300 dark:border-secondary-600'
+                          }`}>
+                            {isSelected && (
+                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+
+                          {/* Product image */}
+                          <div className="w-14 h-14 bg-secondary-100 dark:bg-secondary-700 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            {item.image ? (
+                              <img src={item.image} alt="" className="w-14 h-14 object-cover rounded-xl" />
+                            ) : (
+                              <svg className="w-6 h-6 text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                              </svg>
+                            )}
+                          </div>
+
+                          {/* Product info */}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-secondary-900 dark:text-white text-sm truncate">{item.productName}</p>
+                            {item.variantName && (
+                              <p className="text-xs text-secondary-500 dark:text-secondary-400">{item.variantName}</p>
+                            )}
+                            <p className="text-xs text-secondary-400 mt-1">
+                              {Number(item.unitPrice).toFixed(2)} zł × {item.quantity} szt.
+                            </p>
+                          </div>
+
+                          {/* Quantity selector */}
+                          {isSelected && (
+                            <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                              <span className="text-xs text-secondary-500 dark:text-secondary-400">Ilość:</span>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); updateItemQty(item.id, selectedQty - 1); }}
+                                disabled={selectedQty <= 1}
+                                className="w-8 h-8 rounded-lg border border-secondary-300 dark:border-secondary-600 flex items-center justify-center text-secondary-600 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 disabled:opacity-50 transition-colors"
+                              >
+                                -
+                              </button>
+                              <span className="w-8 text-center font-medium text-secondary-900 dark:text-white">{selectedQty}</span>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); updateItemQty(item.id, selectedQty + 1); }}
+                                disabled={selectedQty >= item.quantity}
+                                className="w-8 h-8 rounded-lg border border-secondary-300 dark:border-secondary-600 flex items-center justify-center text-secondary-600 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 disabled:opacity-50 transition-colors"
+                              >
+                                +
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Price */}
+                          <div className="text-right flex-shrink-0">
+                            <p className="font-semibold text-secondary-900 dark:text-white text-sm">
+                              {(Number(item.unitPrice) * (isSelected ? selectedQty : item.quantity)).toFixed(2)} zł
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Selected items summary */}
+                  {selectedItems.length > 0 && (
+                    <div className="mb-6 p-4 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-xl">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-primary-800 dark:text-primary-400">
+                          Wybrano {selectedItems.length} {selectedItems.length === 1 ? 'produkt' : selectedItems.length < 5 ? 'produkty' : 'produktów'}
+                        </p>
+                        <p className="text-sm font-bold text-primary-800 dark:text-primary-400">
+                          {selectedItems.reduce((sum, s) => {
+                            const item = orderItems.find(i => i.id === s.orderItemId);
+                            return sum + (item ? Number(item.unitPrice) * s.quantity : 0);
+                          }, 0).toFixed(2)} zł
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {error && (
+                    <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+                      <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                    </div>
+                  )}
+
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => { setStep('order'); setError(null); }}
+                      className="flex-1 px-6 py-4 border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-300 font-semibold rounded-xl hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors"
+                    >
+                      Wróć
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (selectedItems.length === 0) {
+                          setError('Wybierz przynajmniej jeden produkt');
+                          return;
+                        }
+                        setError(null);
+                        setStep('form');
+                      }}
+                      className={`flex-1 px-6 py-4 text-white font-semibold rounded-xl transition-colors ${
+                        type === 'COMPLAINT' ? 'bg-red-600 hover:bg-red-700' : 'bg-primary-600 hover:bg-primary-700'
+                      } ${selectedItems.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      Dalej
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+
             {/* ===== STEP: Form ===== */}
             {step === 'form' && (
               <>
@@ -613,7 +842,7 @@ export default function ReturnsPage() {
                     <div className="flex gap-4 pt-2">
                       <button
                         type="button"
-                        onClick={() => { setStep('order'); setError(null); }}
+                        onClick={() => { setStep(orderItems.length > 0 ? 'items' : 'order'); setError(null); }}
                         className="flex-1 px-6 py-4 border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-300 font-semibold rounded-xl hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors"
                       >
                         Wróć

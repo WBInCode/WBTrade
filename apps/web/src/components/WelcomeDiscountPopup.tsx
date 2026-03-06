@@ -88,7 +88,7 @@ export function WelcomeDiscountPopup() {
               Specjalnie dla Ciebie!
             </h2>
             <p className="text-orange-100">
-              Mamy dla Ciebie wyjątkową ofertę powitalną
+              Przygotowaliśmy wyjątkową ofertę powitalną
             </p>
           </div>
 

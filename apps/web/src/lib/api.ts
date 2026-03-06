@@ -594,6 +594,7 @@ export interface Order {
   billingCompanyName?: string;
   pendingCancellation?: boolean;
   pendingCancellationAt?: string;
+  cancellationReason?: string;
   // Refund fields
   refundNumber?: string;
   refundReason?: string;
@@ -642,8 +643,8 @@ export const ordersApi = {
   getById: (id: string, email?: string) =>
     api.get<Order>(`/orders/${id}`, email ? { email } : undefined),
     
-  cancel: (id: string) =>
-    api.delete<{ message: string; pendingApproval?: boolean; order?: Order }>(`/orders/${id}`),
+  cancel: (id: string, reason?: string) =>
+    api.post<{ message: string; pendingApproval?: boolean; order?: Order }>(`/orders/${id}/request-cancellation`, { reason }),
 
   // Get tracking info for an order from BaseLinker
   getTracking: (id: string) =>

@@ -115,6 +115,10 @@ interface Order {
   billingAddress?: Address;
   items: OrderItem[];
   statusHistory: StatusHistory[];
+  pendingCancellation?: boolean;
+  pendingCancellationAt?: string;
+  cancellationReason?: string;
+  isBusinessOrder?: boolean;
 }
 
 const statusColors: Record<string, string> = {
@@ -189,6 +193,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [showTrackingModal, setShowTrackingModal] = useState(false);
   const [newTrackingNumber, setNewTrackingNumber] = useState('');
   const [trackingSaving, setTrackingSaving] = useState(false);
+  const [cancellationProcessing, setCancellationProcessing] = useState(false);
 
   useEffect(() => {
     loadOrder();
@@ -259,8 +264,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     
     try {
       const token = getAuthToken();
-      await fetch(`${API_URL}/orders/${id}`, {
-        method: 'DELETE',
+      await fetch(`${API_URL}/orders/${id}/approve-cancellation`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token && { Authorization: `Bearer ${token}` }),
@@ -269,6 +274,60 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       await loadOrder();
     } catch (error) {
       console.error('Failed to cancel order:', error);
+    }
+  };
+
+  const handleApproveCancellation = async () => {
+    if (!await confirm('Czy na pewno chcesz zatwierdzić anulowanie tego zamówienia?')) return;
+    
+    try {
+      setCancellationProcessing(true);
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/orders/${id}/approve-cancellation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      if (response.ok) {
+        await loadOrder();
+      } else {
+        const data = await response.json();
+        await alert(data.message || 'Błąd podczas zatwierdzania anulowania');
+      }
+    } catch (error) {
+      console.error('Failed to approve cancellation:', error);
+    } finally {
+      setCancellationProcessing(false);
+    }
+  };
+
+  const handleRejectCancellation = async () => {
+    const reason = prompt('Podaj powód odrzucenia prośby o anulowanie (opcjonalnie):');
+    if (reason === null) return;
+    
+    try {
+      setCancellationProcessing(true);
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/orders/${id}/reject-cancellation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ reason }),
+      });
+      if (response.ok) {
+        await loadOrder();
+      } else {
+        const data = await response.json();
+        await alert(data.message || 'Błąd podczas odrzucania prośby');
+      }
+    } catch (error) {
+      console.error('Failed to reject cancellation:', error);
+    } finally {
+      setCancellationProcessing(false);
     }
   };
 
@@ -415,6 +474,42 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           </button>
         </div>
       </div>
+
+      {/* Pending Cancellation Alert */}
+      {order.pendingCancellation && order.status !== 'CANCELLED' && (
+        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-lg bg-yellow-500/20">
+              <AlertCircle className="w-5 h-5 text-yellow-400" />
+            </div>
+            <div className="flex-1">
+              <p className="text-yellow-400 font-medium">Klient złożył prośbę o anulowanie tego zamówienia</p>
+              {order.cancellationReason && (
+                <p className="text-gray-400 text-sm mt-1">Powód: <span className="text-gray-300">{order.cancellationReason}</span></p>
+              )}
+              {order.pendingCancellationAt && (
+                <p className="text-gray-500 text-xs mt-1">Złożono: {formatDate(order.pendingCancellationAt)}</p>
+              )}
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={handleApproveCancellation}
+                  disabled={cancellationProcessing}
+                  className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+                >
+                  {cancellationProcessing ? 'Przetwarzanie...' : 'Zatwierdź anulowanie'}
+                </button>
+                <button
+                  onClick={handleRejectCancellation}
+                  disabled={cancellationProcessing}
+                  className="px-4 py-2 bg-slate-700 text-gray-300 rounded-lg text-sm font-medium hover:bg-slate-600 transition-colors disabled:opacity-50"
+                >
+                  Odrzuć prośbę
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Status Progress */}
       {order.status !== 'CANCELLED' && order.status !== 'REFUNDED' && (

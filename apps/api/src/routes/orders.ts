@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createOrder, getOrder, updateOrder, deleteOrder, getAllOrders, getUserOrders, refundOrder, restoreOrder, simulatePayment, checkRefundEligibility, requestRefund, getOrderTracking, syncOrderDelivery, updateTrackingNumber, getPendingCancellations, approveCancellation, rejectCancellation, softDeleteOrder, restoreFromArchive, getArchivedOrders, cleanupArchive, permanentDeleteOrders } from '../controllers/orders.controller';
+import { createOrder, getOrder, updateOrder, deleteOrder, getAllOrders, getUserOrders, refundOrder, restoreOrder, simulatePayment, checkRefundEligibility, requestRefund, getOrderTracking, syncOrderDelivery, updateTrackingNumber, getPendingCancellations, approveCancellation, rejectCancellation, requestCancellation, softDeleteOrder, restoreFromArchive, getArchivedOrders, cleanupArchive, permanentDeleteOrders } from '../controllers/orders.controller';
 import { authGuard, adminOnly, optionalAuth } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -48,6 +48,9 @@ router.get('/:id/refund-eligibility', optionalAuth, checkRefundEligibility);
 
 // Route to request refund (customer - requires auth or guest email verification, validates 14-day period)
 router.post('/:id/request-refund', optionalAuth, requestRefund);
+
+// Route to request cancellation (customer - creates pending cancellation for admin approval)
+router.post('/:id/request-cancellation', authGuard, requestCancellation);
 
 // Route to refund an order (admin)
 router.post('/:id/refund', authGuard, adminOnly, refundOrder);
