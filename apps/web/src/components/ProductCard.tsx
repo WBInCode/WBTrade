@@ -233,7 +233,7 @@ export default memo(function ProductCard({ product, showDelivery = false, showWi
                 Produkt chwilowo niedostępny
               </p>
             ) : (
-              <p className="text-[10px] sm:text-xs text-primary-600 dark:text-primary-400">
+              <p className="text-[10px] sm:text-xs text-green-600 dark:text-green-400">
                 Wysyłka w ciągu 24 - 72h
               </p>
             )}
