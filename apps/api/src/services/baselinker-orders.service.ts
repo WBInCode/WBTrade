@@ -350,7 +350,7 @@ export class BaselinkerOrdersService {
       paid: order.paymentStatus === 'PAID',
       user_comments: order.customerNotes || '',
       admin_comments: `WBTrade Order: ${order.orderNumber}`,
-      email: order.user?.email || order.guestEmail || '',
+      email: order.guestEmail || order.user?.email || '',
       phone: order.shippingAddress?.phone || order.user?.phone || order.guestPhone || '',
       delivery_method: deliveryMethod,
       delivery_price: Number(order.shipping),

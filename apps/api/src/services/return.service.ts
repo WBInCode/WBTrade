@@ -58,6 +58,7 @@ export interface GetReturnsParams {
   page?: number;
   limit?: number;
   status?: ReturnStatus;
+  statuses?: ReturnStatus[];
   type?: 'RETURN' | 'COMPLAINT';
   search?: string;
   dateFrom?: Date;
@@ -212,6 +213,8 @@ export async function getReturns(params: GetReturnsParams) {
 
   if (params.status) {
     where.status = params.status;
+  } else if (params.statuses && params.statuses.length > 0) {
+    where.status = { in: params.statuses };
   }
 
   if (params.type) {

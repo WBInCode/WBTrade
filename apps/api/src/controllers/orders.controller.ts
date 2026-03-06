@@ -326,7 +326,8 @@ export async function updateOrder(req: Request, res: Response): Promise<void> {
         });
         if (user) {
           customerName = `${user.firstName} ${user.lastName}`;
-          customerEmail = user.email;
+          // Prefer form-entered email (guestEmail) over account email
+          customerEmail = order.guestEmail || user.email;
         }
       } else if ((order as any).guestFirstName) {
         customerName = `${(order as any).guestFirstName} ${(order as any).guestLastName || ''}`;
