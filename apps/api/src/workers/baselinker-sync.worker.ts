@@ -134,7 +134,7 @@ async function processStockSync(job: Job<StockSyncJobData>) {
 
 interface PriceXmlSyncJobData {
   timestamp: number;
-  warehouse?: 'leker' | 'btp' | 'all';
+  warehouse?: 'leker' | 'btp' | 'hp' | 'all';
 }
 
 /**
