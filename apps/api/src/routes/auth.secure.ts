@@ -225,10 +225,8 @@ router.get('/google/callback', async (req, res) => {
 
     const result = await googleOAuthService.authenticateWithGoogle(code, ipAddress, userAgent);
 
-    // Redirect to frontend with tokens in URL params (will be stored by frontend)
     const redirectPath = (state as string) || '/account';
-    const frontendUrl = getFrontendUrl();
-    
+
     // Encode tokens for URL
     const params = new URLSearchParams({
       accessToken: result.tokens.accessToken,
@@ -237,7 +235,17 @@ router.get('/google/callback', async (req, res) => {
       isNewUser: result.isNewUser.toString(),
     });
 
-    res.redirect(`${frontendUrl}/auth/callback?${params.toString()}&redirect=${encodeURIComponent(redirectPath)}`);
+    // Detect mobile deep-link: non-http scheme (e.g. wbtrade://)
+    const isMobileDeepLink = /^[a-z][a-z0-9+\-.]*:\/\//i.test(redirectPath) && !redirectPath.startsWith('http');
+
+    if (isMobileDeepLink) {
+      // Mobile app — redirect directly to the app's custom scheme
+      res.redirect(`${redirectPath}?${params.toString()}`);
+    } else {
+      // Web flow
+      const frontendUrl = getFrontendUrl();
+      res.redirect(`${frontendUrl}/auth/callback?${params.toString()}&redirect=${encodeURIComponent(redirectPath)}`);
+    }
   } catch (error: any) {
     console.error('[GoogleOAuth] Callback error:', error);
     res.redirect(`${getFrontendUrl()}/login?error=oauth_failed`);
