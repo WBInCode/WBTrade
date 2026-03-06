@@ -731,8 +731,9 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       // Business order fields (for FV00 suffix)
       billingNip,
       billingCompanyName,
-      // Guest checkout fields
-      guestEmail: isGuestCheckout ? guestEmail : undefined,
+      // Guest checkout fields — always save the email entered in the form
+      // Even for logged-in users, they may enter a different contact email
+      guestEmail: guestEmail || undefined,
       guestFirstName: isGuestCheckout ? guestFirstName : undefined,
       guestLastName: isGuestCheckout ? guestLastName : undefined,
       guestPhone: isGuestCheckout ? guestPhone : undefined,
@@ -793,8 +794,8 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       });
       
       if (orderForEmail) {
-        const customerEmail = orderForEmail.user?.email || orderForEmail.guestEmail;
-        const customerName = orderForEmail.user?.firstName || orderForEmail.guestFirstName || 'Kliencie';
+        const customerEmail = orderForEmail.guestEmail || orderForEmail.user?.email;
+        const customerName = orderForEmail.guestFirstName || orderForEmail.user?.firstName || 'Kliencie';
         
         if (customerEmail && orderForEmail.shippingAddress) {
           emailService.sendOrderConfirmationEmail(
@@ -851,8 +852,8 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       const mappedPaymentMethod = mapPaymentMethod(paymentMethod);
       console.log(`💳 Payment method mapping: ${paymentMethod} → ${mappedPaymentMethod}`);
       
-      // Get customer email - from user if logged in, otherwise from guest data
-      const customerEmail = req.user?.email || guestEmail || '';
+      // Get customer email - prefer form-entered email over account email
+      const customerEmail = guestEmail || req.user?.email || '';
       
       // For logged in users, fetch firstName/lastName from database
       let customerFirstName = guestFirstName || '';

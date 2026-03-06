@@ -42,7 +42,8 @@ router.get('/', async (req: Request, res: Response) => {
     const result = await returnService.getReturns({
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
-      status: status as ReturnStatus | undefined,
+      status: status ? (status as string).includes(',') ? undefined : (status as ReturnStatus) : undefined,
+      statuses: status && (status as string).includes(',') ? (status as string).split(',') as ReturnStatus[] : undefined,
       type: type as 'RETURN' | 'COMPLAINT' | undefined,
       search: search as string | undefined,
       dateFrom: dateFrom ? new Date(dateFrom as string) : undefined,
