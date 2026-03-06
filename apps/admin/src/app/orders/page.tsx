@@ -745,11 +745,9 @@ export default function OrdersPage() {
                         onClick={(e) => {
                           const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                           const menuW = 208;
-                          const menuH = 250;
-                          const spaceBelow = window.innerHeight - rect.bottom;
-                          const top = spaceBelow < menuH ? rect.top - menuH : rect.bottom + 4;
-                          const left = Math.min(rect.right - menuW, window.innerWidth - menuW - 8);
-                          setActionMenuPos({ top, left: Math.max(8, left) });
+                          const top = rect.bottom + 4;
+                          const left = Math.max(8, Math.min(rect.right - menuW, window.innerWidth - menuW - 8));
+                          setActionMenuPos({ top, left });
                           setActionMenuId(actionMenuId === order.id ? null : order.id);
                         }}
                         className="p-2 hover:bg-slate-600 rounded-lg transition-colors"

@@ -209,12 +209,10 @@ export default function ReturnsPage() {
 
   const openQuickMenu = (e: React.MouseEvent, id: string) => {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const menuWidth = 224;
-    const menuHeight = 280;
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const top = spaceBelow < menuHeight ? rect.top - menuHeight : rect.bottom + 4;
-    const left = Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 8);
-    setMenuPos({ top, left: Math.max(8, left) });
+    const menuW = 224; // w-56
+    const top = rect.bottom + 4;
+    const left = Math.max(8, Math.min(rect.right - menuW, window.innerWidth - menuW - 8));
+    setMenuPos({ top, left });
     setQuickActionId(quickActionId === id ? null : id);
   };
 
