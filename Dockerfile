@@ -48,6 +48,12 @@ COPY --from=base /app/apps/api/package.json ./apps/api/package.json
 COPY --from=base /app/apps/api/prisma ./apps/api/prisma
 COPY --from=base /app/packages ./packages
 
+# Kopiowanie skryptów JS synchronizacji cen (wywoływane przez workera BullMQ)
+COPY --from=base /app/apps/api/sync-leker-xml-prices.js ./apps/api/sync-leker-xml-prices.js
+COPY --from=base /app/apps/api/sync-btp-xml-prices.js ./apps/api/sync-btp-xml-prices.js
+COPY --from=base /app/apps/api/sync-hp-xml-prices.js ./apps/api/sync-hp-xml-prices.js
+COPY --from=base /app/apps/api/lib ./apps/api/lib
+
 # Zmiana katalogu na API
 WORKDIR /app/apps/api
 
