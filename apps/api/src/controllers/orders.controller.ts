@@ -687,6 +687,47 @@ export async function syncOrderDelivery(req: Request, res: Response): Promise<vo
 }
 
 /**
+ * Request cancellation (customer action)
+ * Creates a pending cancellation request for admin approval
+ * @route POST /api/orders/:id/request-cancellation
+ */
+export async function requestCancellation(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const userId = req.user?.userId;
+
+    // Verify ownership
+    const order = await ordersService.getById(id);
+    if (!order) {
+      res.status(404).json({ message: 'Zamówienie nie zostało znalezione' });
+      return;
+    }
+
+    if (order.userId && order.userId !== userId) {
+      res.status(403).json({ message: 'Brak uprawnień do tego zamówienia' });
+      return;
+    }
+
+    const result = await ordersService.requestCancellation(id, reason);
+
+    if (!result) {
+      res.status(404).json({ message: 'Zamówienie nie zostało znalezione' });
+      return;
+    }
+
+    res.status(200).json({
+      message: 'Prośba o anulowanie zamówienia została przesłana do weryfikacji.',
+      pendingApproval: true,
+      order: result.order,
+    });
+  } catch (error: any) {
+    console.error('Error requesting cancellation:', error);
+    res.status(400).json({ message: error.message || 'Błąd podczas składania prośby o anulowanie' });
+  }
+}
+
+/**
  * Get orders pending cancellation approval (admin)
  * @route GET /api/orders/pending-cancellations
  */

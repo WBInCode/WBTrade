@@ -3,6 +3,7 @@ import crypto from 'crypto';
 
 // Singleton Redis instance
 let redisClient: Redis | null = null;
+let redisDisabled = false; // Flag to permanently disable Redis after connection failures
 
 /**
  * Check if Redis is available
@@ -16,12 +17,14 @@ export function isRedisAvailable(): boolean {
  * Returns null if Redis is unavailable (e.g., limit exceeded)
  */
 export function getRedisClient(): Redis | null {
+  if (redisDisabled) return null;
+  
   if (!redisClient) {
     const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
     
     try {
       redisClient = new Redis(redisUrl, {
-        maxRetriesPerRequest: 3, // Reduced retries
+        maxRetriesPerRequest: 1, // Fail fast - don't hang requests
         retryStrategy(times) {
           if (times > 3) {
             console.error('❌ Redis: Max retry attempts reached - continuing without Redis');
@@ -38,9 +41,22 @@ export function getRedisClient(): Redis | null {
 
       redisClient.on('error', (err) => {
         console.error('❌ Redis error:', err.message);
-        if (err.message.includes('max requests limit')) {
-          console.error('⚠️  Redis limit exceeded - app will run without caching');
-          redisClient = null; // Disable Redis
+        if (
+          err.message.includes('max requests limit') ||
+          err.message.includes('ECONNRESET') ||
+          err.message.includes('ECONNREFUSED') ||
+          err.message.includes('ETIMEDOUT') ||
+          err.message.includes('EHOSTUNREACH') ||
+          err.message.includes('Connection is closed') ||
+          err.message.includes('MaxRetriesPerRequestError')
+        ) {
+          console.error('⚠️  Redis connection failed - app will run without Redis');
+          const oldClient = redisClient;
+          redisClient = null;
+          redisDisabled = true; // Permanently disable Redis for this session
+          if (oldClient) {
+            oldClient.disconnect(); // Force disconnect - rejects all pending commands
+          }
         }
         if (!process.env.REDIS_URL) {
           console.error('⚠️  REDIS_URL environment variable is not set!');
@@ -175,14 +191,19 @@ export async function recordFailedLogin(identifier: string): Promise<number> {
   
   const key = `${LOGIN_ATTEMPTS_PREFIX}${identifier}`;
   
-  const count = await redis.incr(key);
-  
-  // Set expiry for first attempt (15 minutes window)
-  if (count === 1) {
-    await redis.expire(key, 15 * 60);
+  try {
+    const count = await redis.incr(key);
+    
+    // Set expiry for first attempt (15 minutes window)
+    if (count === 1) {
+      await redis.expire(key, 15 * 60);
+    }
+    
+    return count;
+  } catch (error) {
+    console.error('❌ Failed to record failed login:', error);
+    return 0;
   }
-  
-  return count;
 }
 
 /**
@@ -193,8 +214,13 @@ export async function getFailedLoginAttempts(identifier: string): Promise<number
   if (!redis) return 0;
   
   const key = `${LOGIN_ATTEMPTS_PREFIX}${identifier}`;
-  const count = await redis.get(key);
-  return count ? parseInt(count, 10) : 0;
+  try {
+    const count = await redis.get(key);
+    return count ? parseInt(count, 10) : 0;
+  } catch (error) {
+    console.error('❌ Failed to get failed login attempts:', error);
+    return 0;
+  }
 }
 
 /**
@@ -205,7 +231,11 @@ export async function resetFailedLoginAttempts(identifier: string): Promise<void
   if (!redis) return;
   
   const key = `${LOGIN_ATTEMPTS_PREFIX}${identifier}`;
-  await redis.del(key);
+  try {
+    await redis.del(key);
+  } catch (error) {
+    console.error('❌ Failed to reset failed login attempts:', error);
+  }
 }
 
 /**
@@ -216,7 +246,11 @@ export async function lockAccount(identifier: string, durationSeconds: number): 
   if (!redis) return;
   
   const key = `${LOGIN_LOCKOUT_PREFIX}${identifier}`;
-  await redis.set(key, Date.now().toString(), 'EX', durationSeconds);
+  try {
+    await redis.set(key, Date.now().toString(), 'EX', durationSeconds);
+  } catch (error) {
+    console.error('❌ Failed to lock account:', error);
+  }
 }
 
 /**
@@ -228,15 +262,20 @@ export async function isAccountLocked(identifier: string): Promise<{ locked: boo
   
   const key = `${LOGIN_LOCKOUT_PREFIX}${identifier}`;
   
-  const multi = redis.multi();
-  multi.exists(key);
-  multi.ttl(key);
-  
-  const results = await multi.exec();
-  const exists = results?.[0]?.[1] as number;
-  const ttl = results?.[1]?.[1] as number;
-  
-  return { locked: exists === 1, ttl: Math.max(0, ttl) };
+  try {
+    const multi = redis.multi();
+    multi.exists(key);
+    multi.ttl(key);
+    
+    const results = await multi.exec();
+    const exists = results?.[0]?.[1] as number;
+    const ttl = results?.[1]?.[1] as number;
+    
+    return { locked: exists === 1, ttl: Math.max(0, ttl) };
+  } catch (error) {
+    console.error('❌ Failed to check account lock status:', error);
+    return { locked: false, ttl: 0 };
+  }
 }
 
 // Email verification tokens

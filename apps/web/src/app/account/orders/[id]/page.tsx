@@ -193,6 +193,7 @@ export default function OrderDetailsPage() {
   const [showCancelResultModal, setShowCancelResultModal] = useState(false);
   const [cancelResultMessage, setCancelResultMessage] = useState('');
   const [cancelResultType, setCancelResultType] = useState<'success' | 'pending' | 'error'>('success');
+  const [cancelReason, setCancelReason] = useState('');
   const [expandedPackages, setExpandedPackages] = useState<Set<number>>(new Set());
   const [expandedProductLists, setExpandedProductLists] = useState<Set<number>>(new Set());
   
@@ -303,25 +304,16 @@ export default function OrderDetailsPage() {
 
     try {
       setCancelling(true);
-      const response = await ordersApi.cancel(order.id);
+      const response = await ordersApi.cancel(order.id, cancelReason || undefined);
       
-      // Check if this is a business order pending approval
-      if (response.pendingApproval) {
-        setCancelResultType('pending');
-        setCancelResultMessage('Prośba o anulowanie zamówienia firmowego została przesłana do weryfikacji. Skontaktujemy się z Tobą wkrótce.');
-        setShowCancelResultModal(true);
-        // Update local state to show pending status
-        setOrder({ ...order, pendingCancellation: true });
-      } else {
-        // Regular order - cancelled immediately
-        setCancelResultType('success');
-        setCancelResultMessage('Zamówienie zostało anulowane.');
-        setShowCancelResultModal(true);
-        setOrder({ ...order, status: 'CANCELLED' });
-      }
+      setCancelResultType('pending');
+      setCancelResultMessage('Próśba o anulowanie zamówienia została przesłana. Administrator rozpatrzy Twoją prośbę i poinformujemy Cię o decyzji.');
+      setShowCancelResultModal(true);
+      setOrder({ ...order, pendingCancellation: true });
+      setCancelReason('');
     } catch (err: unknown) {
-      console.error('Error cancelling order:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Nie udało się anulować zamówienia';
+      console.error('Error requesting cancellation:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Nie udało się złożyć prośby o anulowanie zamówienia';
       setCancelResultType('error');
       setCancelResultMessage(errorMessage);
       setShowCancelResultModal(true);
@@ -1086,13 +1078,13 @@ export default function OrderDetailsPage() {
                     </button>
                   </>
                 )}
-                {['OPEN', 'PENDING', 'CONFIRMED'].includes(order.status) && !order.pendingCancellation && (
+                {!['CANCELLED', 'REFUNDED'].includes(order.status) && !order.pendingCancellation && (
                   <button 
                     onClick={handleCancelOrderClick}
                     disabled={cancelling}
                     className="px-4 py-2 border border-red-300 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {cancelling ? 'Anulowanie...' : 'Anuluj zamówienie'}
+                    {cancelling ? 'Wysyłanie...' : 'Anuluj zamówienie'}
                   </button>
                 )}
                 {order.pendingCancellation && (
@@ -1269,14 +1261,26 @@ export default function OrderDetailsPage() {
                 </svg>
               </div>
               <h3 className="text-lg font-bold text-gray-900 dark:text-white text-center mb-2">
-                Anulować zamówienie?
+                Prośba o anulowanie zamówienia
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
-                Czy na pewno chcesz anulować zamówienie #{order?.orderNumber}? Tej operacji nie można cofnąć.
+              <p className="text-gray-600 dark:text-gray-400 text-center mb-4">
+                Złożysz prośbę o anulowanie zamówienia #{order?.orderNumber}. Administrator rozpatrzy Twoją prośbę.
               </p>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Powód anulowania (opcjonalnie)
+                </label>
+                <textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg text-gray-900 dark:text-white bg-white dark:bg-secondary-700 placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                  rows={3}
+                  placeholder="Np. zmiana decyzji, pomyłka w zamówieniu..."
+                />
+              </div>
               <div className="flex gap-3">
                 <button
-                  onClick={() => setShowCancelConfirmModal(false)}
+                  onClick={() => { setShowCancelConfirmModal(false); setCancelReason(''); }}
                   className="flex-1 px-4 py-3 border border-gray-300 dark:border-secondary-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors"
                 >
                   Nie, zostaw
@@ -1286,7 +1290,7 @@ export default function OrderDetailsPage() {
                   disabled={cancelling}
                   className="flex-1 px-4 py-3 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
                 >
-                  {cancelling ? 'Anulowanie...' : 'Tak, anuluj'}
+                  {cancelling ? 'Wysyłanie...' : 'Złóż prośbę'}
                 </button>
               </div>
             </div>
