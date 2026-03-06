@@ -491,8 +491,13 @@ app.listen(PORT, async () => {
     
     // 2. Baselinker order status sync + delivery tracking
     //    Try BullMQ (requires Redis) → fallback to setInterval if Redis unavailable
+    //    Workers only run in production (on Render) - not locally to avoid competing with prod
+    const workersEnabled = process.env.NODE_ENV === 'production' || process.env.ENABLE_WORKERS === 'true';
     let bullmqSyncStarted = false;
-    try {
+    if (!workersEnabled) {
+      console.log('ℹ️  Workers wyłączone lokalnie (NODE_ENV=development). Ustaw ENABLE_WORKERS=true aby włączyć.');
+    }
+    if (workersEnabled) try {
       const { createBaselinkerSyncWorker, scheduleBaselinkerSync } = await import('./workers/baselinker-sync.worker');
       createBaselinkerSyncWorker();
       await scheduleBaselinkerSync();
@@ -503,7 +508,7 @@ app.listen(PORT, async () => {
     }
 
     // Fallback: setInterval-based sync when Redis/BullMQ is not available
-    if (!bullmqSyncStarted) {
+    if (!bullmqSyncStarted && workersEnabled) {
       const { orderStatusSyncService } = await import('./services/order-status-sync.service');
       const { deliveryTrackingService } = await import('./services/delivery-tracking.service');
 
