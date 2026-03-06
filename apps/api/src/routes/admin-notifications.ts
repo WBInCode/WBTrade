@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { authGuard, adminOnly } from '../middleware/auth.middleware';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, TicketCategory, TicketStatus } from '@prisma/client';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -141,8 +141,8 @@ router.get('/', async (req: Request, res: Response) => {
       // Otwarte zwroty i reklamacje (ostatnie 7 dni)
       prisma.supportTicket.findMany({
         where: {
-          category: { in: ['RETURN', 'COMPLAINT'] },
-          status: { in: ['OPEN', 'IN_PROGRESS'] },
+          category: { in: [TicketCategory.RETURN, TicketCategory.COMPLAINT] },
+          status: { in: [TicketStatus.OPEN, TicketStatus.IN_PROGRESS] },
           isArchived: false,
           createdAt: { gte: last7d },
         },
