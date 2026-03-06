@@ -8,6 +8,7 @@ const OUTPUT_DIR = path.join(__dirname, 'apps', 'mobile', 'assets', 'images', 'c
 // Map SVG filenames to output PNG filenames
 // PNG names match the EXACT slugs used in production (from BaseLinker)
 const FILE_MAP = {
+  'Chemia Profesjonalna.svg': 'chemia-profesjonalna.png',
   'Dla Dziecka.svg': 'dla-dziecka.png',
   'Dom.svg': 'dom.png',
   'Elektronika i GSM.svg': 'elektronika-i-gsm.png',
@@ -18,6 +19,7 @@ const FILE_MAP = {
   'Ogrodnictwo.svg': 'ogrodnictwo.png',
   'Outlet.svg': 'outlet.png',
   'Sport i turystyka.svg': 'sport-i-turystyka.png',
+  'Wagi.svg': 'wagi.png',
 };
 
 const SIZE = 1024; // px - very high res for crisp display at any density

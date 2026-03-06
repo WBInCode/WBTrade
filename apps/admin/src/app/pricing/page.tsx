@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getAuthToken } from '@/lib/api';
-import { Loader2, Plus, X, Save, AlertCircle, CheckCircle } from 'lucide-react';
+import { Loader2, Plus, X, Save, AlertCircle, CheckCircle, RefreshCw, Clock } from 'lucide-react';
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
 
@@ -15,6 +15,13 @@ interface PriceRule {
 }
 
 type Warehouse = 'leker' | 'btp' | 'hp';
+
+interface SyncStatus {
+  lastSync: string | null;
+  xmlUrl: string;
+}
+
+const XML_SYNC_WAREHOUSES: Warehouse[] = ['leker', 'btp'];
 
 const WAREHOUSES: { key: Warehouse; label: string; description: string }[] = [
   { key: 'leker', label: 'Leker', description: 'Magazyn Chynów' },
@@ -57,6 +64,11 @@ export default function PricingPage() {
     hp: false,
   });
   const [editingCell, setEditingCell] = useState<{ ruleId: string; field: string; value: string } | null>(null);
+
+  // XML sync state
+  const [syncStatus, setSyncStatus] = useState<Record<string, SyncStatus>>({});
+  const [syncingWarehouse, setSyncingWarehouse] = useState<string | null>(null);
+  const [syncMessage, setSyncMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const fetchRules = useCallback(async () => {
     setLoading(true);
@@ -101,6 +113,56 @@ export default function PricingPage() {
   useEffect(() => {
     fetchRules();
   }, [fetchRules]);
+
+  const fetchSyncStatus = useCallback(async () => {
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/admin/sync/prices-xml/status`, {
+        headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSyncStatus(data);
+      }
+    } catch {
+      // ignore — sync status is optional
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSyncStatus();
+  }, [fetchSyncStatus]);
+
+  const triggerSync = async (warehouse: 'leker' | 'btp' | 'all') => {
+    setSyncingWarehouse(warehouse);
+    setSyncMessage(null);
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/admin/sync/prices-xml`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ warehouse }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Błąd synchronizacji');
+      const label = warehouse === 'all' ? 'Leker + BTP' : warehouse.toUpperCase();
+      if (data.status === 'queued') {
+        setSyncMessage({ type: 'success', text: `Synchronizacja ${label} dodana do kolejki (job: ${data.jobId})` });
+      } else {
+        const changed = (data.result?.leker?.priceChanged || 0) + (data.result?.btp?.priceChanged || 0);
+        setSyncMessage({ type: 'success', text: `Synchronizacja ${label} zakończona — zmieniono ${changed} cen` });
+      }
+      // refresh timestamps
+      await fetchSyncStatus();
+    } catch (err: any) {
+      setSyncMessage({ type: 'error', text: err.message || 'Błąd synchronizacji XML' });
+    } finally {
+      setSyncingWarehouse(null);
+    }
+  };
 
   const saveRules = async (warehouse: Warehouse) => {
     setSaving(true);
@@ -411,6 +473,79 @@ export default function PricingPage() {
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Zapisz {WAREHOUSES.find(w => w.key === activeWarehouse)?.label}
         </button>
+      </div>
+
+      {/* XML price sync section */}
+      <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-medium text-white">Synchronizacja cen z XML</h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Ceny hurtowe pobierane raz dziennie o 6:00 z plików XML dostawców. Możesz też uruchomić ręcznie.
+            </p>
+          </div>
+          <button
+            onClick={() => triggerSync('all')}
+            disabled={syncingWarehouse !== null}
+            className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            {syncingWarehouse === 'all' ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
+            Synchronizuj wszystko
+          </button>
+        </div>
+
+        {syncMessage && (
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs ${
+            syncMessage.type === 'success'
+              ? 'bg-green-500/10 border border-green-500/30 text-green-400'
+              : 'bg-red-500/10 border border-red-500/30 text-red-400'
+          }`}>
+            {syncMessage.type === 'success' ? <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" /> : <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />}
+            {syncMessage.text}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {XML_SYNC_WAREHOUSES.map(wh => {
+            const status = syncStatus[wh];
+            const isSyncing = syncingWarehouse === wh || syncingWarehouse === 'all';
+            const lastSyncDate = status?.lastSync ? new Date(status.lastSync) : null;
+            return (
+              <div key={wh} className="bg-slate-900/50 rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-white">{wh.toUpperCase()}</span>
+                  <button
+                    onClick={() => triggerSync(wh as 'leker' | 'btp')}
+                    disabled={syncingWarehouse !== null}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white rounded-md text-xs transition-colors"
+                  >
+                    {isSyncing ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-3 h-3" />
+                    )}
+                    Synchronizuj
+                  </button>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                  <Clock className="w-3 h-3" />
+                  {lastSyncDate
+                    ? `Ostatnia sync: ${lastSyncDate.toLocaleDateString('pl-PL')} ${lastSyncDate.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}`
+                    : 'Brak danych o ostatniej synchronizacji'}
+                </div>
+                {status?.xmlUrl && (
+                  <div className="text-xs text-slate-600 truncate" title={status.xmlUrl}>
+                    {status.xmlUrl}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Price simulator */}
