@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams } from 'next/navigation';
 import { 
   ShoppingCart, Search, Filter, Eye, ChevronLeft, ChevronRight, 
@@ -818,12 +819,12 @@ export default function OrdersPage() {
       {actionMenuId && (() => {
         const order = orders.find(o => o.id === actionMenuId);
         if (!order) return null;
-        return (
+        return createPortal(
           <>
-            <div className="fixed inset-0 z-40" onClick={() => setActionMenuId(null)} />
+            <div className="fixed inset-0 z-[9998]" onClick={() => setActionMenuId(null)} />
             <div
               style={{ top: actionMenuPos.top, left: actionMenuPos.left }}
-              className="fixed w-52 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 py-1 animate-in fade-in zoom-in-95 duration-150">
+              className="fixed w-52 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-[9999] py-1 animate-in fade-in zoom-in-95 duration-150">
               <Link href={`/orders/${order.id}`} onClick={() => setActionMenuId(null)}
                 className="flex items-center gap-2 px-4 py-2.5 text-gray-300 hover:bg-slate-700 hover:text-white transition-colors">
                 <Eye className="w-4 h-4" /> Szczegóły
@@ -855,7 +856,8 @@ export default function OrdersPage() {
                 </button>
               )}
             </div>
-          </>
+          </>,
+          document.body
         );
       })()}
 
