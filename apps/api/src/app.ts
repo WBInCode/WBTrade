@@ -51,6 +51,7 @@ import loyaltyRoutes from './routes/loyalty';
 import adminLoyaltyRoutes from './routes/admin-loyalty';
 import chatbotRoutes from './routes/chatbot';
 import supportRoutes from './routes/support';
+import adminSyncRoutes from './routes/admin-sync';
 import adminSupportRoutes from './routes/admin-support';
 import emailInboundRoutes from './routes/email-inbound';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
@@ -429,6 +430,7 @@ app.use('/api/admin/loyalty', adminLoyaltyRoutes); // Admin loyalty management
 app.use('/api/chatbot', chatbotRoutes); // WuBuś chatbot unmatched questions
 app.use('/api/support', supportRoutes); // Customer support messaging
 app.use('/api/admin/support', adminSupportRoutes); // Admin support management
+app.use('/api/admin/sync', adminSyncRoutes); // Admin manual XML price sync
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -495,7 +497,7 @@ app.listen(PORT, async () => {
       createBaselinkerSyncWorker();
       await scheduleBaselinkerSync();
       bullmqSyncStarted = true;
-      console.log('✅ Baselinker sync scheduled via BullMQ (orders: 15min, delivery: 15min, stock: 2h)');
+      console.log('✅ Baselinker sync scheduled via BullMQ (orders: 15min, delivery: 15min, stock: 2h, ceny XML: codziennie 06:00)');
     } catch (redisErr) {
       console.warn('⚠️  BullMQ/Redis unavailable — falling back to setInterval for delivery sync:', (redisErr as Error).message);
     }

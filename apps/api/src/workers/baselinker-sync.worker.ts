@@ -1,10 +1,10 @@
 /**
  * Baselinker Sync Worker
- * 
+ *
  * Handles background synchronization tasks:
  * - Order status sync from Baselinker to our shop (every 15 minutes)
  * - Stock/inventory sync from Baselinker (every 2 hours)
- * - Price sync from Baselinker (every 2 hours, offset 30 min after stock)
+ * - Price sync from XML files: Leker + BTP (daily at 06:00)
  */
 
 import { Worker, Job } from 'bullmq';
@@ -39,8 +39,8 @@ export function createBaselinkerSyncWorker(): Worker {
           return await processDeliveryTracking(job);
         case 'sync-stock':
           return await processStockSync(job);
-        case 'sync-price':
-          return await processPriceSync(job);
+        case 'sync-price-xml':
+          return await processPriceXmlSync(job);
         default:
           console.warn(`[BaselinkerSyncWorker] Unknown job type: ${job.name}`);
           return { success: false, error: 'Unknown job type' };
@@ -132,22 +132,45 @@ async function processStockSync(job: Job<StockSyncJobData>) {
   }
 }
 
+interface PriceXmlSyncJobData {
+  timestamp: number;
+  warehouse?: 'leker' | 'btp' | 'all';
+}
+
 /**
- * Process price synchronization from Baselinker
+ * Process price synchronization from XML files (Leker + BTP).
+ * Replaces the old Baselinker API price sync.
  */
-async function processPriceSync(job: Job<StockSyncJobData>) {
-  console.log(`[BaselinkerSyncWorker] Starting price sync from Baselinker`);
-  
+async function processPriceXmlSync(job: Job<PriceXmlSyncJobData>) {
+  const warehouse = job.data.warehouse || 'all';
+  console.log(`[BaselinkerSyncWorker] Starting XML price sync (warehouse: ${warehouse})`);
+
+  // Dynamic require so the CJS scripts only load when needed
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const path = require('path');
+  const scriptsDir = path.resolve(__dirname, '../..');  // apps/api/src/workers → apps/api
+
+  let lekerResult: any = null;
+  let btpResult: any = null;
+
   try {
-    const baselinkerService = new BaselinkerService();
-    
-    const result = await baselinkerService.runPriceSyncDirect();
-    
-    console.log(`[BaselinkerSyncWorker] Price sync finished: ${result.itemsProcessed} processed, ${result.itemsChanged} changed, syncLogId: ${result.syncLogId}`);
-    
-    return result;
+    if (warehouse === 'leker' || warehouse === 'all') {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { syncLekerXmlPrices } = require(path.join(scriptsDir, 'sync-leker-xml-prices.js'));
+      lekerResult = await syncLekerXmlPrices();
+      console.log(`[BaselinkerSyncWorker] Leker XML sync done: ${JSON.stringify(lekerResult)}`);
+    }
+
+    if (warehouse === 'btp' || warehouse === 'all') {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { syncBtpXmlPrices } = require(path.join(scriptsDir, 'sync-btp-xml-prices.js'));
+      btpResult = await syncBtpXmlPrices();
+      console.log(`[BaselinkerSyncWorker] BTP XML sync done: ${JSON.stringify(btpResult)}`);
+    }
+
+    return { success: true, leker: lekerResult, btp: btpResult };
   } catch (error) {
-    console.error('[BaselinkerSyncWorker] Price sync failed:', error);
+    console.error('[BaselinkerSyncWorker] XML price sync failed:', error);
     throw error;
   }
 }
@@ -162,7 +185,7 @@ export async function scheduleBaselinkerSync(): Promise<void> {
   // Remove existing repeatable jobs first
   const repeatableJobs = await queue.getRepeatableJobs();
   for (const job of repeatableJobs) {
-    if (job.name === 'sync-order-statuses' || job.name === 'sync-delivery-tracking' || job.name === 'sync-stock' || job.name === 'sync-price') {
+    if (job.name === 'sync-order-statuses' || job.name === 'sync-delivery-tracking' || job.name === 'sync-stock' || job.name === 'sync-price' || job.name === 'sync-price-xml') {
       await queue.removeRepeatableByKey(job.key);
     }
   }
@@ -217,22 +240,22 @@ export async function scheduleBaselinkerSync(): Promise<void> {
   
   console.log('✅ Baselinker stock sync scheduled (every 2 hours)');
 
-  // Add price sync job - every 2 hours, 30 min after stock sync
+  // Add XML price sync job - once a day at 06:00
   await queue.add(
-    'sync-price',
-    { 
+    'sync-price-xml',
+    {
       timestamp: Date.now(),
-      type: 'price'
+      warehouse: 'all',
     },
     {
       repeat: {
-        pattern: '30 */2 * * *', // Every 2 hours at :30
+        pattern: '0 6 * * *', // Every day at 06:00
       },
-      jobId: 'baselinker-price-sync',
+      jobId: 'xml-price-sync-daily',
     }
   );
-  
-  console.log('✅ Baselinker price sync scheduled (every 2 hours)');
+
+  console.log('✅ XML price sync scheduled (Leker + BTP, daily at 06:00)');
 }
 
 /**
@@ -253,5 +276,26 @@ export async function triggerImmediateStockSync(): Promise<string> {
   );
   
   console.log(`✅ Immediate stock sync triggered, jobId: ${job.id}`);
+  return job.id || 'unknown';
+}
+
+/**
+ * Trigger immediate XML price sync (manual button in admin panel)
+ */
+export async function triggerImmediatePriceXmlSync(warehouse: 'leker' | 'btp' | 'all' = 'all'): Promise<string> {
+  const queue = getQueue(QUEUE_NAMES.BASELINKER_SYNC);
+
+  const job = await queue.add(
+    'sync-price-xml',
+    {
+      timestamp: Date.now(),
+      warehouse,
+    },
+    {
+      jobId: `immediate-price-xml-sync-${warehouse}-${Date.now()}`,
+    }
+  );
+
+  console.log(`✅ Immediate XML price sync triggered (${warehouse}), jobId: ${job.id}`);
   return job.id || 'unknown';
 }
