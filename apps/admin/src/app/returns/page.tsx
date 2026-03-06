@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import {
   RotateCcw, Search, ChevronLeft, ChevronRight,
@@ -487,16 +488,16 @@ export default function ReturnsPage() {
         </div>
       </div>
 
-      {/* Quick Action Menu - Fixed position overlay */}
+      {/* Quick Action Menu - Portal to document.body to escape CSS transform context */}
       {quickActionId && (() => {
         const r = returns.find(ret => ret.id === quickActionId);
         if (!r) return null;
-        return (
+        return createPortal(
           <>
-            <div className="fixed inset-0 z-40" onClick={() => setQuickActionId(null)} />
+            <div className="fixed inset-0 z-[9998]" onClick={() => setQuickActionId(null)} />
             <div
               style={{ top: menuPos.top, left: menuPos.left }}
-              className="fixed w-56 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 py-1 animate-in fade-in zoom-in-95 duration-150">
+              className="fixed w-56 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-[9999] py-1 animate-in fade-in zoom-in-95 duration-150">
               <Link href={`/returns/${r.id}`} onClick={() => setQuickActionId(null)}
                 className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-slate-700/50 hover:text-white transition-colors">
                 <Eye className="w-4 h-4" /> Otwórz szczegóły
@@ -536,7 +537,8 @@ export default function ReturnsPage() {
                 </>
               )}
             </div>
-          </>
+          </>,
+          document.body
         );
       })()}
 
