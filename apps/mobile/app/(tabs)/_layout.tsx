@@ -132,28 +132,33 @@ function TabLayoutInner() {
   const hideBubble = useCallback(() => {
     isBubbleHidden.current = true;
     Animated.parallel([
-      Animated.timing(hideAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
-      Animated.timing(rotateAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+      Animated.timing(hideAnim, { toValue: 1, duration: 400, useNativeDriver: false }),
+      Animated.timing(rotateAnim, { toValue: 1, duration: 400, useNativeDriver: false }),
     ]).start();
   }, [hideAnim, rotateAnim]);
 
   const showBubble = useCallback(() => {
     isBubbleHidden.current = false;
     Animated.parallel([
-      Animated.timing(hideAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
-      Animated.timing(rotateAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+      Animated.timing(hideAnim, { toValue: 0, duration: 300, useNativeDriver: false }),
+      Animated.timing(rotateAnim, { toValue: 0, duration: 300, useNativeDriver: false }),
     ]).start();
   }, [hideAnim, rotateAnim]);
 
   useEffect(() => {
     if (!scrollCtx) return;
-    const unsub = scrollCtx.onDirectionChange((direction) => {
-      if (direction === 'down') {
-        hideBubble();
-      }
-      // No auto-show on scroll up — only a tap brings it back
-    });
-    return unsub;
+    // Delay attaching the scroll listener so layout scroll events on mount
+    // don't immediately hide the bubble before the user has a chance to tap it
+    const attachTimer = setTimeout(() => {
+      const unsub = scrollCtx.onDirectionChange((direction) => {
+        if (direction === 'down') {
+          hideBubble();
+        }
+        // No auto-show on scroll up — only a tap brings it back
+      });
+      return unsub;
+    }, 1500);
+    return () => clearTimeout(attachTimer);
   }, [scrollCtx, hideBubble]);
 
   // Translate X: 0 → 52px (slides bubble mostly off-screen to the right)
@@ -205,17 +210,17 @@ function TabLayoutInner() {
         }}
       />
       <Tabs.Screen
-        name="wishlist"
-        options={{
-          title: 'Ulubione',
-          tabBarIcon: ({ color }) => <WishlistIcon color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="cart"
         options={{
           title: 'Koszyk',
           tabBarIcon: ({ color }) => <CartIcon color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="wishlist"
+        options={{
+          title: 'Ulubione',
+          tabBarIcon: ({ color }) => <WishlistIcon color={color} />,
         }}
       />
       <Tabs.Screen

@@ -13,6 +13,8 @@
  *   Ogrodnictwo.svg     → "Ogrodnictwo"          → ogrodnictwo
  *   Outlet.svg          → "Outlet"               → outlet
  *   Sport i turystyka   → "Sport i turystyka"    → sport-i-turystyka
+ *   Wagi.svg            → "Wagi"                 → wagi
+ *   Chemia Profesjonalna.svg → "Chemia profesjonalna" → chemia-profesjonalna
  */
 import { ImageSourcePropType } from 'react-native';
 
@@ -28,6 +30,8 @@ const ICONS = {
   ogrodnictwo: require('../assets/images/categories/ogrodnictwo.png'),
   outlet: require('../assets/images/categories/outlet.png'),
   sport: require('../assets/images/categories/sport-i-turystyka.png'),
+  wagi: require('../assets/images/categories/wagi.png'),
+  chemiaProfesjonalna: require('../assets/images/categories/chemia-profesjonalna.png'),
 };
 
 const DEFAULT_ICON = ICONS.outlet;
@@ -54,6 +58,9 @@ const SLUG_MAP: Record<string, ImageSourcePropType> = {
   'uroda': ICONS.moda,
   'ogrod': ICONS.ogrodnictwo,
   'narzedzia-i-warsztat': ICONS.narzedzia,
+  'wagi': ICONS.wagi,
+  'chemia-profesjonalna': ICONS.chemiaProfesjonalna,
+  'chemia': ICONS.chemiaProfesjonalna,
 };
 
 // Keyword → icon (fallback for partial matching)
@@ -74,6 +81,8 @@ const KEYWORD_MAP: Array<[string, ImageSourcePropType]> = [
   ['turyst', ICONS.sport],
   ['outlet', ICONS.outlet],
   ['dom', ICONS.dom],              // keep "dom" AFTER "ogrod" so "dom-i-ogrod" matches ogrod first
+  ['wag', ICONS.wagi],             // "wagi", "waga"
+  ['chemia', ICONS.chemiaProfesjonalna], // "chemia-profesjonalna"
 ];
 
 /**

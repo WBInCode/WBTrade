@@ -34,8 +34,8 @@ export function ChatBubble({ onPress, hasActiveChat, unreadCount = 0, isChatOpen
   useEffect(() => {
     const animation = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, { toValue: 1.08, duration: 1500, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 1, duration: 1500, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1.08, duration: 1500, useNativeDriver: false }),
+        Animated.timing(pulse, { toValue: 1, duration: 1500, useNativeDriver: false }),
       ]),
     );
     animation.start();
@@ -46,8 +46,8 @@ export function ChatBubble({ onPress, hasActiveChat, unreadCount = 0, isChatOpen
   useEffect(() => {
     const animation = Animated.loop(
       Animated.sequence([
-        Animated.timing(glowOpacity, { toValue: 0.6, duration: 1500, useNativeDriver: true }),
-        Animated.timing(glowOpacity, { toValue: 0.15, duration: 1500, useNativeDriver: true }),
+        Animated.timing(glowOpacity, { toValue: 0.6, duration: 1500, useNativeDriver: false }),
+        Animated.timing(glowOpacity, { toValue: 0.15, duration: 1500, useNativeDriver: false }),
       ]),
     );
     animation.start();
@@ -56,7 +56,7 @@ export function ChatBubble({ onPress, hasActiveChat, unreadCount = 0, isChatOpen
 
   // Dismiss tooltip helper
   const dismissTooltip = useCallback(() => {
-    Animated.timing(tooltipOpacity, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
+    Animated.timing(tooltipOpacity, { toValue: 0, duration: 200, useNativeDriver: false }).start(() => {
       setShowTooltip(false);
     });
     if (tooltipHideTimer.current) {
@@ -103,7 +103,7 @@ export function ChatBubble({ onPress, hasActiveChat, unreadCount = 0, isChatOpen
   // Animate tooltip in + auto-hide after 5s
   useEffect(() => {
     if (showTooltip) {
-      Animated.timing(tooltipOpacity, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+      Animated.timing(tooltipOpacity, { toValue: 1, duration: 300, useNativeDriver: false }).start();
       tooltipHideTimer.current = setTimeout(() => {
         dismissTooltip();
       }, 5000);
@@ -151,24 +151,25 @@ export function ChatBubble({ onPress, hasActiveChat, unreadCount = 0, isChatOpen
         </Animated.View>
       )}
 
-      <Animated.View style={{ transform: [{ scale: pulse }] }}>
-        {/* Pulsating glow layer behind bubble */}
-        <Animated.View
-          style={[
-            bubbleStyles.glow,
-            {
-              backgroundColor: colors.tint,
-              opacity: glowOpacity,
-            },
-          ]}
-        />
-
-        <View style={bubbleStyles.wrapper}>
-          <TouchableOpacity
-            onPress={handlePress}
-            activeOpacity={0.8}
-            style={[bubbleStyles.container, { backgroundColor: colors.tint, shadowColor: colors.shadow }]}
-          >
+      <TouchableOpacity
+        onPress={handlePress}
+        activeOpacity={0.8}
+        style={bubbleStyles.wrapper}
+      >
+        {/* Scale animation wraps only the circle so touch bounds stay accurate on Android */}
+        <Animated.View style={{ transform: [{ scale: pulse }] }}>
+          {/* Pulsating glow layer behind bubble — decorative only */}
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              bubbleStyles.glow,
+              {
+                backgroundColor: colors.tint,
+                opacity: glowOpacity,
+              },
+            ]}
+          />
+          <View style={[bubbleStyles.container, { backgroundColor: colors.tint, shadowColor: colors.shadow }]}>
             <Image source={WUBUS_HEAD} style={bubbleStyles.mascotImage} />
             {unreadCount > 0 ? (
               <View style={bubbleStyles.badge}>
@@ -179,12 +180,13 @@ export function ChatBubble({ onPress, hasActiveChat, unreadCount = 0, isChatOpen
             ) : hasActiveChat ? (
               <View style={bubbleStyles.activeDot} />
             ) : null}
-          </TouchableOpacity>
-          <View style={[bubbleStyles.label, { backgroundColor: colors.card, shadowColor: colors.shadow, borderColor: colors.border }]}>
-            <Text style={[bubbleStyles.labelText, { color: colors.text }]}>Zapytaj</Text>
           </View>
+        </Animated.View>
+        {/* Label outside the scale Animated.View — always within TouchableOpacity bounds */}
+        <View style={[bubbleStyles.label, { backgroundColor: colors.card, shadowColor: colors.shadow, borderColor: colors.border }]}>
+          <Text style={[bubbleStyles.labelText, { color: colors.text }]}>Zapytaj</Text>
         </View>
-      </Animated.View>
+      </TouchableOpacity>
     </View>
   );
 }

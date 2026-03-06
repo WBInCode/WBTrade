@@ -544,6 +544,7 @@ function ImageGallery({ images }: { images: { url: string; alt: string | null }[
   const [activeIndex, setActiveIndex] = useState(0);
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const mainListRef = useRef<FlatList>(null);
 
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -555,6 +556,11 @@ function ImageGallery({ images }: { images: { url: string; alt: string | null }[
 
   const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
 
+  const scrollTo = (index: number) => {
+    mainListRef.current?.scrollToIndex({ index, animated: true });
+    setActiveIndex(index);
+  };
+
   if (!images || images.length === 0) {
     return (
       <View style={styles.galleryPlaceholder}>
@@ -565,8 +571,9 @@ function ImageGallery({ images }: { images: { url: string; alt: string | null }[
   }
 
   return (
-    <View>
+    <View style={{ backgroundColor: colors.backgroundSecondary }}>
       <FlatList
+        ref={mainListRef}
         data={images}
         horizontal
         pagingEnabled
@@ -584,17 +591,44 @@ function ImageGallery({ images }: { images: { url: string; alt: string | null }[
         )}
       />
       {images.length > 1 && (
-        <View style={styles.dotsContainer}>
-          {images.map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.dot,
-                index === activeIndex ? styles.dotActive : styles.dotInactive,
-              ]}
-            />
-          ))}
-        </View>
+        <>
+          {/* Thumbnail strip */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.thumbnailStrip}
+          >
+            {images.map((img, index) => (
+              <TouchableOpacity
+                key={index}
+                onPress={() => scrollTo(index)}
+                activeOpacity={0.8}
+                style={[
+                  styles.thumbnailWrap,
+                  index === activeIndex && styles.thumbnailWrapActive,
+                ]}
+              >
+                <Image
+                  source={{ uri: img.url }}
+                  style={styles.thumbnailImage}
+                  contentFit="cover"
+                />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+          {/* dot indicators */}
+          <View style={styles.dotsContainer}>
+            {images.map((_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.dot,
+                  index === activeIndex ? styles.dotActive : styles.dotInactive,
+                ]}
+              />
+            ))}
+          </View>
+        </>
       )}
     </View>
   );
@@ -850,6 +884,8 @@ export default function ProductDetailScreen() {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
   const [addingToCart, setAddingToCart] = useState(false);
+  const [buyingNow, setBuyingNow] = useState(false);
+  const [quantity, setQuantity] = useState(1);
   const [showListModal, setShowListModal] = useState(false);
 
   const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null);
@@ -865,21 +901,6 @@ export default function ProductDetailScreen() {
   const [reviewTitle, setReviewTitle] = useState('');
   const [reviewContent, setReviewContent] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
-
-  // Newsletter badge animation
-  const nlAnim = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(nlAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
-        Animated.timing(nlAnim, { toValue: 0, duration: 2000, useNativeDriver: true }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, []);
-  const nlScale = nlAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.02, 1] });
-  const nlOpacity = nlAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.85, 1, 0.85] });
 
   const { show: showToast } = useToast();
 
@@ -1097,12 +1118,12 @@ export default function ProductDetailScreen() {
     setAddingToCart(true);
     try {
       const price = Number(selectedVariant?.price || product.price) || 0;
-      await addToCart(variantId, 1, {
+      await addToCart(variantId, quantity, {
         productId: product.id,
         name: product.name,
         imageUrl: product.images?.[0]?.url,
         price,
-        quantity: 1,
+        quantity,
         warehouse: product.wholesaler || undefined,
       });
     } catch (err: any) {
@@ -1110,7 +1131,38 @@ export default function ProductDetailScreen() {
     } finally {
       setAddingToCart(false);
     }
-  }, [product, selectedVariant, addToCart, getStockInfo]);
+  }, [product, selectedVariant, addToCart, getStockInfo, quantity]);
+
+  // --- Buy now ---
+  const handleBuyNow = useCallback(async () => {
+    if (!product) return;
+    const variantId = selectedVariant?.id || product.variants?.[0]?.id;
+    if (!variantId) {
+      Alert.alert('Błąd', 'Brak dostępnego wariantu produktu');
+      return;
+    }
+    const stock = getStockInfo();
+    if (stock.status === 'out') {
+      Alert.alert('Niedostępny', 'Ten produkt jest obecnie niedostępny');
+      return;
+    }
+    setBuyingNow(true);
+    try {
+      const price = Number(selectedVariant?.price || product.price) || 0;
+      await addToCart(variantId, quantity, {
+        productId: product.id,
+        name: product.name,
+        imageUrl: product.images?.[0]?.url,
+        price,
+        quantity,
+        warehouse: product.wholesaler || undefined,
+      });
+      router.push('/cart');
+    } catch (err: any) {
+      Alert.alert('Błąd', err.message || 'Nie udało się dodać do koszyka');
+      setBuyingNow(false);
+    }
+  }, [product, selectedVariant, addToCart, getStockInfo, quantity, router]);
 
   // --- Loading / Error states ---
   if (loading) {
@@ -1248,7 +1300,7 @@ export default function ProductDetailScreen() {
 
           {/* SKU */}
           {product.sku && (
-            <Text style={styles.sku}>SKU: {product.sku}</Text>
+            <Text style={styles.sku}>SKU: {product.sku.replace(/^(hp-|leker-|btp-|outlet-|ikonka-)/i, '')}</Text>
           )}
 
           {/* Rating summary */}
@@ -1293,12 +1345,7 @@ export default function ProductDetailScreen() {
               </Text>
             )}
 
-            {/* Newsletter discount badge — animated */}
-            <Animated.View style={[styles.newsletterBadge, { transform: [{ scale: nlScale }], opacity: nlOpacity }]}>
-              <FontAwesome name="ticket" size={13} color={colors.tint} style={{ transform: [{ rotate: '-45deg' }] }} />
-              <Text style={styles.newsletterBadgeText}>10% rabatu z newsletterem</Text>
-              <FontAwesome name="chevron-right" size={10} color={colors.tint} />
-            </Animated.View>
+
           </View>
 
           {/* Variant Selection */}
@@ -1337,32 +1384,92 @@ export default function ProductDetailScreen() {
             </View>
           )}
 
+          {/* Quantity Selector */}
+          <View style={styles.quantityRow}>
+            <Text style={styles.quantityLabel}>Ilość:</Text>
+            <View style={styles.quantityStepper}>
+              <TouchableOpacity
+                style={styles.quantityBtn}
+                onPress={() => setQuantity(q => Math.max(1, q - 1))}
+                disabled={quantity <= 1}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.quantityBtnText, quantity <= 1 && { opacity: 0.4 }]}>−</Text>
+              </TouchableOpacity>
+              <Text style={styles.quantityValue}>{quantity}</Text>
+              <TouchableOpacity
+                style={styles.quantityBtn}
+                onPress={() => setQuantity(q => Math.min((selectedVariant?.stock ?? 999), q + 1))}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.quantityBtnText}>+</Text>
+              </TouchableOpacity>
+            </View>
+            {selectedVariant && selectedVariant.stock > 0 && (
+              <Text style={styles.stockAvailable}>Dostępne: {selectedVariant.stock}</Text>
+            )}
+          </View>
+
           {/* Stock Status */}
           <View style={styles.stockRow}>
-            <View style={[styles.stockDot, { backgroundColor: stockInfo.color }]} />
+            <FontAwesome
+              name={stockInfo.status !== 'out' ? 'check-circle' : 'times-circle'}
+              size={15}
+              color={stockInfo.color}
+            />
             <Text style={[styles.stockText, { color: stockInfo.color }]}>
-              {stockInfo.label}
+              {stockInfo.status === 'in'
+                ? 'W magazynie – wysyłka w ciągu 24–72h'
+                : stockInfo.status === 'low'
+                  ? `Mało sztuk – wysyłka w ciągu 24–72h`
+                  : 'Produkt chwilowo niedostępny'}
             </Text>
           </View>
+
+          {/* Kup teraz */}
+          <TouchableOpacity
+            style={[
+              styles.buyNowButton,
+              (stockInfo.status === 'out') && styles.addToCartDisabled,
+            ]}
+            onPress={handleBuyNow}
+            disabled={buyingNow || stockInfo.status === 'out'}
+            activeOpacity={0.8}
+          >
+            {buyingNow ? (
+              <ActivityIndicator color={colors.textInverse} size="small" />
+            ) : (
+              <Text style={styles.buyNowText}>
+                {stockInfo.status === 'out' ? 'Brak w magazynie' : 'Kup teraz'}
+              </Text>
+            )}
+          </TouchableOpacity>
 
           {/* Add to Cart + Wishlist */}
           <View style={styles.cartRow}>
             <TouchableOpacity
               style={[
-                styles.addToCartButton,
-                stockInfo.status === 'out' && styles.addToCartDisabled,
+                styles.addToCartOutline,
+                stockInfo.status === 'out' && styles.addToCartOutlineDisabled,
               ]}
               onPress={handleAddToCart}
               disabled={addingToCart || stockInfo.status === 'out'}
               activeOpacity={0.8}
             >
               {addingToCart ? (
-                <ActivityIndicator color={colors.textInverse} size="small" />
+                <ActivityIndicator color={colors.tint} size="small" />
               ) : (
                 <>
-                  <FontAwesome name="shopping-cart" size={18} color={colors.textInverse} />
-                  <Text style={styles.addToCartText}>
-                    {stockInfo.status === 'out' ? 'Niedostępny' : 'Dodaj do koszyka'}
+                  <FontAwesome
+                    name="shopping-cart"
+                    size={17}
+                    color={stockInfo.status === 'out' ? colors.textMuted : colors.tint}
+                  />
+                  <Text style={[
+                    styles.addToCartOutlineText,
+                    stockInfo.status === 'out' && { color: colors.textMuted },
+                  ]}>
+                    Dodaj do koszyka
                   </Text>
                 </>
               )}
@@ -1382,17 +1489,84 @@ export default function ProductDetailScreen() {
             }}
             activeOpacity={0.7}
           >
-            <FontAwesome name="list-ul" size={16} color={colors.tint} />
+            <FontAwesome name="list-ul" size={16} color={colors.textSecondary} />
             <Text style={styles.addToListText}>Dodaj do listy zakupowej</Text>
           </TouchableOpacity>
 
-          {/* Store/Warehouse info */}
-          {product.storeName && (
-            <View style={styles.storeRow}>
-              <FontAwesome name="building-o" size={14} color={colors.textMuted} />
-              <Text style={styles.storeText}>Magazyn: {product.storeName}</Text>
-            </View>
-          )}
+          {/* Warehouse city + Delivery options */}
+          {(() => {
+            const tags: string[] = (product as any).tags || [];
+            let warehouseCity = '';
+            if (tags.some(t => t.toLowerCase().includes('hurtownia przemysłowa'))) warehouseCity = 'Zielonej Górze';
+            else if (tags.some(t => t.toLowerCase() === 'ikonka')) warehouseCity = 'Białymstoku';
+            else if (tags.some(t => t.toLowerCase() === 'leker')) warehouseCity = 'Chynowie';
+            else if (tags.some(t => t.toLowerCase() === 'btp')) warehouseCity = 'Chotowie';
+
+            const productPrice = price;
+            const freeThreshold = 300;
+            const qualifiesFree = productPrice >= freeThreshold;
+            const gabarytTag = tags.find(t => /^(\d+(?:\.\d+)?\s*)?gabaryt$/i.test(t));
+            const isGabaryt = !!gabarytTag;
+            const gabarytMatch = gabarytTag?.match(/^(\d+(?:\.\d+)?)\s*gabaryt$/i);
+            const gabarytPrice = gabarytMatch ? parseFloat(gabarytMatch[1]) : 49.99;
+            const isCourierOnly = tags.some(t => /^tylko\s*kurier$/i.test(t));
+            let weightPrice = 28.99;
+            if (isCourierOnly) {
+              for (const t of tags) {
+                const wm = t.match(/^do\s*(\d+(?:[,.]\d+)?)\s*kg$/i);
+                if (wm) { weightPrice = parseFloat(wm[1].replace(',', '.')) <= 20 ? 25.99 : 28.99; break; }
+              }
+            }
+
+            type DeliveryMethod = { name: string; icon: string; price: number; freeEligible: boolean };
+            const methods: DeliveryMethod[] = isGabaryt
+              ? [{ name: 'Wysyłka gabaryt (kurier)', icon: 'truck', price: gabarytPrice, freeEligible: false }]
+              : isCourierOnly
+                ? [{ name: 'Kurier DPD', icon: 'truck', price: weightPrice, freeEligible: true }]
+                : [
+                    { name: 'InPost Paczkomat', icon: 'inbox', price: 15.99, freeEligible: true },
+                    { name: 'Kurier InPost / DPD', icon: 'truck', price: 19.99, freeEligible: true },
+                  ];
+
+            return (
+              <View style={styles.deliverySection}>
+                {warehouseCity ? (
+                  <View style={styles.warehouseCityRow}>
+                    <FontAwesome name="map-marker" size={14} color={colors.tint} />
+                    <Text style={styles.warehouseCityText}>
+                      Produkt znajduje się w magazynie w {warehouseCity}
+                    </Text>
+                  </View>
+                ) : null}
+                <View style={styles.deliveryHeader}>
+                  <FontAwesome name="truck" size={14} color={colors.textMuted} />
+                  <Text style={styles.deliveryTitle}>Opcje dostawy</Text>
+                </View>
+                {methods.map((m, i) => {
+                  const isFree = m.freeEligible && qualifiesFree;
+                  return (
+                    <View key={i} style={styles.deliveryRow}>
+                      <FontAwesome name={m.icon as any} size={15} color={colors.tint} />
+                      <Text style={styles.deliveryName}>{m.name}</Text>
+                      {isFree ? (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Text style={styles.deliveryPriceOld}>{m.price.toFixed(2).replace('.', ',')} zł</Text>
+                          <Text style={styles.deliveryFree}>GRATIS</Text>
+                        </View>
+                      ) : (
+                        <Text style={styles.deliveryPrice}>{m.price.toFixed(2).replace('.', ',')} zł</Text>
+                      )}
+                    </View>
+                  );
+                })}
+                {!qualifiesFree && !isGabaryt && (
+                  <Text style={styles.deliveryFreeHint}>
+                    Darmowa wysyłka od {freeThreshold} zł (brakuje {(freeThreshold - productPrice).toFixed(2).replace('.', ',')} zł)
+                  </Text>
+                )}
+              </View>
+            );
+          })()}
 
           {/* Description & Specifications Tabs */}
           {(product.description || (product.specifications && Object.keys(product.specifications).length > 0)) && (
@@ -1865,29 +2039,106 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '600',
   },
 
+  // Quantity
+  quantityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 14,
+  },
+  quantityLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  quantityStepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  quantityBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.backgroundSecondary,
+  },
+  quantityBtnText: {
+    fontSize: 20,
+    color: colors.text,
+    lineHeight: 22,
+  },
+  quantityValue: {
+    minWidth: 36,
+    height: 36,
+    textAlign: 'center',
+    lineHeight: 36,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  stockAvailable: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+
   // Stock
   stockRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 16,
-  },
-  stockDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    marginBottom: 14,
   },
   stockText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
+    flexShrink: 1,
   },
 
-  // Add to cart
+  // Buy now
+  buyNowButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.tint,
+    paddingVertical: 15,
+    borderRadius: 12,
+    marginBottom: 10,
+  },
+  buyNowText: {
+    color: colors.textInverse,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+
+  // Add to cart (outline)
   cartRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 16,
+    marginBottom: 12,
+  },
+  addToCartOutline: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.tint,
+    paddingVertical: 13,
+    borderRadius: 12,
+    gap: 8,
+  },
+  addToCartOutlineDisabled: {
+    borderColor: colors.border,
+  },
+  addToCartOutlineText: {
+    color: colors.tint,
+    fontSize: 15,
+    fontWeight: '700',
   },
   addToCartButton: {
     flex: 1,
@@ -1929,14 +2180,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingVertical: 12,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: colors.tintMuted,
+    borderColor: colors.border,
     borderRadius: 10,
-    backgroundColor: colors.tintLight,
+    backgroundColor: colors.card,
   },
   addToListText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.tint,
+    color: colors.textSecondary,
   },
 
   // Store
@@ -1953,6 +2204,93 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   storeText: {
     fontSize: 13,
     color: colors.textSecondary,
+  },
+
+  // Delivery section
+  deliverySection: {
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    gap: 8,
+  },
+  warehouseCityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  warehouseCityText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    flexShrink: 1,
+  },
+  deliveryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  deliveryTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  deliveryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.card,
+    borderRadius: 8,
+    paddingVertical: 9,
+    paddingHorizontal: 10,
+  },
+  deliveryName: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  deliveryPrice: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  deliveryPriceOld: {
+    fontSize: 12,
+    color: colors.textMuted,
+    textDecorationLine: 'line-through',
+  },
+  deliveryFree: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.success,
+  },
+  deliveryFreeHint: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+
+  // Thumbnail gallery
+  thumbnailStrip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  thumbnailWrap: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  thumbnailWrapActive: {
+    borderColor: colors.tint,
+  },
+  thumbnailImage: {
+    width: 56,
+    height: 56,
   },
 
   // Accordion
