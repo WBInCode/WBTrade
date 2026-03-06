@@ -1408,36 +1408,40 @@ export default function ChatBotWidget() {
     return () => window.removeEventListener('keydown', handleEsc);
   }, [isOpen, handleMinimize]);
 
-  // Smart-hide chatbot on scroll - slides to side, shows back on scroll up
+  // Smart-hide chatbot on scroll - hide after 1.5s continuous scrolling down,
+  // only restore by clicking the hidden bubble (no auto-restore on scroll up)
   useEffect(() => {
     let lastY = window.scrollY;
-    let scrollDownAccum = 0;
-    let scrollUpAccum = 0;
+    let scrollDownTimer: ReturnType<typeof setTimeout> | null = null;
+    let isScrollingDown = false;
 
     const onScroll = () => {
       const y = window.scrollY;
       const delta = y - lastY;
-      if (delta > 0) {
-        scrollDownAccum += delta;
-        scrollUpAccum = 0;
-        // Hide only after significant scroll down (150px)
-        if (scrollDownAccum > 150) {
-          setBubbleHidden(true);
+      lastY = y;
+
+      if (delta > 2) {
+        // Scrolling down — start timer if not already running
+        if (!isScrollingDown) {
+          isScrollingDown = true;
+          scrollDownTimer = setTimeout(() => {
+            setBubbleHidden(true);
+          }, 1500);
         }
-      } else if (delta < 0) {
-        scrollUpAccum += Math.abs(delta);
-        scrollDownAccum = 0;
-        // Show back after 50px scroll up
-        if (scrollUpAccum > 50) {
-          setBubbleHidden(false);
+      } else {
+        // Stopped or scrolling up — cancel the timer
+        isScrollingDown = false;
+        if (scrollDownTimer) {
+          clearTimeout(scrollDownTimer);
+          scrollDownTimer = null;
         }
       }
-      lastY = y;
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', onScroll);
+      if (scrollDownTimer) clearTimeout(scrollDownTimer);
     };
   }, []);
 
@@ -1447,29 +1451,40 @@ export default function ChatBotWidget() {
   return (
     <>
       {/* Floating Bubble */}
-      <div
-        className={`fixed bottom-6 right-6 z-50 transition-all duration-500 ease-in-out origin-bottom-right ${
-          bubbleHidden && !isOpen
-            ? 'translate-x-[40px] scale-90 opacity-90'
-            : 'translate-x-0 scale-100 opacity-100'
-        }`}
-        style={{ zIndex: 9999 }}
-      >
-        {!isOpen && (
-          <ChatBubble
+      {!isOpen && (
+        <div
+          className={`fixed bottom-6 right-0 z-50 transition-all duration-700 ease-in-out ${
+            bubbleHidden
+              ? 'translate-x-[calc(100%-20px)] rotate-90'
+              : 'translate-x-[-24px] rotate-0'
+          }`}
+          style={{ zIndex: 9999, transformOrigin: 'center center' }}
+        >
+          <div
             onClick={() => {
               if (bubbleHidden) {
                 setBubbleHidden(false);
-                // Animate back first, then open chat
-                setTimeout(() => handleOpen(), 400);
               } else {
                 handleOpen();
               }
             }}
-            hasActiveChat={isMinimized && hasConversation}
-          />
-        )}
-      </div>
+            className={`cursor-pointer ${
+              bubbleHidden ? 'p-3 -ml-4' : ''
+            }`}
+          >
+            <ChatBubble
+              onClick={() => {
+                if (bubbleHidden) {
+                  setBubbleHidden(false);
+                } else {
+                  handleOpen();
+                }
+              }}
+              hasActiveChat={isMinimized && hasConversation}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Chat Window */}
       {isOpen && (
