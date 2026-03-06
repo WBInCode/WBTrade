@@ -639,8 +639,8 @@ export const ordersApi = {
   getAll: (page?: number, limit?: number, status?: string, search?: string) =>
     api.get<OrdersListResponse>('/orders', { page, limit, status: status || undefined, search: search || undefined }),
     
-  getById: (id: string) =>
-    api.get<Order>(`/orders/${id}`),
+  getById: (id: string, email?: string) =>
+    api.get<Order>(`/orders/${id}`, email ? { email } : undefined),
     
   cancel: (id: string) =>
     api.delete<{ message: string; pendingApproval?: boolean; order?: Order }>(`/orders/${id}`),
@@ -1657,9 +1657,25 @@ export interface SupportTicketsResponse {
   };
 }
 
+// ============================================
+// CAROUSELS API
+// ============================================
+
+export const carouselsApi = {
+  // Get products for a carousel by slug (admin-configured, same as homepage) — cached 2 min
+  getProducts: (slug: string) => {
+    const cacheKey = `carousel-products:${slug}`;
+    return getCachedOrFetch(
+      cacheKey,
+      () => api.get<{ products: Product[] }>(`/carousels/${slug}/products`),
+      2 * 60 * 1000
+    );
+  },
+};
+
 export const supportApi = {
   getTickets: (params?: { page?: number; status?: string; category?: string }) =>
-    api.get<SupportTicketsResponse>('/support/tickets', { params: params as any }),
+    api.get<SupportTicketsResponse>('/support/tickets', params as any),
 
   getUnreadCount: () =>
     api.get<{ count: number }>('/support/unread-count'),

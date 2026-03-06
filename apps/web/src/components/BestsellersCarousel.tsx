@@ -2,18 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import ProductCarousel from './ProductCarousel';
-import { productsApi, Product } from '@/lib/api';
+import { carouselsApi, Product } from '@/lib/api';
 
 interface BestsellersCarouselProps {
   limit?: number;
-  category?: string; // Optional: filter by category slug
-  days?: number; // How many days back to look for sales (default 90)
 }
 
 export default function BestsellersCarousel({ 
   limit = 20, 
-  category,
-  days = 90 
 }: BestsellersCarouselProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,25 +17,18 @@ export default function BestsellersCarousel({
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        // Use new bestsellers endpoint based on actual sales data
-        const response = await productsApi.getBestsellers({ limit, category, days });
-        setProducts(response.products);
+        // Use admin-configured carousel (same source as homepage)
+        const response = await carouselsApi.getProducts('bestsellery');
+        setProducts((response.products || []).slice(0, limit));
       } catch (error) {
         console.error('Error fetching bestsellers:', error);
-        // Fallback: fetch by price if bestsellers endpoint fails
-        try {
-          const fallback = await productsApi.getAll({ limit, sort: 'price_desc' });
-          setProducts(fallback.products);
-        } catch (fallbackError) {
-          console.error('Fallback also failed:', fallbackError);
-        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchProducts();
-  }, [limit, category, days]);
+  }, [limit]);
 
   if (loading) {
     return (

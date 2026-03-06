@@ -54,6 +54,7 @@ const categoryLabels: Record<string, string> = {
   ORDER: 'Zamówienie',
   DELIVERY: 'Dostawa',
   COMPLAINT: 'Reklamacja',
+  RETURN: 'Zwrot',
   PAYMENT: 'Płatność',
   ACCOUNT: 'Konto',
   GENERAL: 'Ogólne',
@@ -276,6 +277,7 @@ export default function MessagesArchivePage() {
             <option value="ORDER">Zamówienie</option>
             <option value="DELIVERY">Dostawa</option>
             <option value="COMPLAINT">Reklamacja</option>
+            <option value="RETURN">Zwrot</option>
             <option value="PAYMENT">Płatność</option>
             <option value="ACCOUNT">Konto</option>
             <option value="GENERAL">Ogólne</option>
