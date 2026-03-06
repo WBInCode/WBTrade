@@ -122,6 +122,7 @@ export default function ReturnsPage() {
   const [quickActionId, setQuickActionId] = useState<string | null>(null);
   const quickMenuRef = useRef<HTMLDivElement>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [showArchive, setShowArchive] = useState(false);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -150,10 +151,16 @@ export default function ReturnsPage() {
   const loadReturns = useCallback(async () => {
     try {
       setLoading(true);
+      // When archive mode is active and no specific status filter, show CLOSED + REJECTED
+      let effectiveStatusFilter = statusFilter;
+      if (showArchive && !statusFilter) {
+        effectiveStatusFilter = 'CLOSED,REJECTED';
+      }
+
       const params = new URLSearchParams({
         page: page.toString(),
         limit: '20',
-        ...(statusFilter && { status: statusFilter }),
+        ...(effectiveStatusFilter && { status: effectiveStatusFilter }),
         ...(typeFilter && { type: typeFilter }),
         ...(searchTerm && { search: searchTerm }),
       });
@@ -171,7 +178,7 @@ export default function ReturnsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter, typeFilter, searchTerm]);
+  }, [page, statusFilter, typeFilter, searchTerm, showArchive]);
 
   useEffect(() => { loadStats(); }, [loadStats]);
   useEffect(() => { loadReturns(); }, [loadReturns]);
@@ -319,6 +326,39 @@ export default function ReturnsPage() {
         </div>
       )}
 
+      {/* Archive / Active toggle */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => { setShowArchive(false); setStatusFilter(''); setPage(1); }}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+            !showArchive
+              ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+              : 'bg-slate-800/50 text-gray-400 border border-slate-700/50 hover:text-white hover:border-slate-600'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Inbox className="w-4 h-4" />
+            Aktywne
+          </div>
+        </button>
+        <button
+          onClick={() => { setShowArchive(true); setStatusFilter(''); setPage(1); }}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+            showArchive
+              ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+              : 'bg-slate-800/50 text-gray-400 border border-slate-700/50 hover:text-white hover:border-slate-600'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Archive className="w-4 h-4" />
+            Archiwum
+            {stats && (stats.closedCount + stats.rejectedCount) > 0 && (
+              <span className="ml-1 text-xs bg-slate-700 px-1.5 py-0.5 rounded-full">{stats.closedCount + stats.rejectedCount}</span>
+            )}
+          </div>
+        </button>
+      </div>
+
       {/* Filters */}
       <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4">
         <div className="flex flex-col md:flex-row gap-4">
@@ -330,13 +370,21 @@ export default function ReturnsPage() {
           </div>
           <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
             className="px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition-shadow duration-200">
-            <option value="">Wszystkie statusy</option>
-            <option value="NEW">Nowe</option>
-            <option value="RECEIVED">Przyjęte</option>
-            <option value="APPROVED">Zaakceptowane</option>
-            <option value="REFUND_SENT">Zwrot wysłany</option>
-            <option value="CLOSED">Zamknięte</option>
-            <option value="REJECTED">Odrzucone</option>
+            {showArchive ? (
+              <>
+                <option value="">Zamknięte i odrzucone</option>
+                <option value="CLOSED">Zamknięte</option>
+                <option value="REJECTED">Odrzucone</option>
+              </>
+            ) : (
+              <>
+                <option value="">Wszystkie statusy</option>
+                <option value="NEW">Nowe</option>
+                <option value="RECEIVED">Przyjęte</option>
+                <option value="APPROVED">Zaakceptowane</option>
+                <option value="REFUND_SENT">Zwrot wysłany</option>
+              </>
+            )}
           </select>
           <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
             className="px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition-shadow duration-200">
@@ -348,7 +396,7 @@ export default function ReturnsPage() {
       </div>
 
       {/* Returns Table */}
-      <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
+      <div className="bg-slate-800/50 rounded-xl border border-slate-700/50">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
