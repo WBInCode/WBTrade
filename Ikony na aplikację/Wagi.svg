@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Warstwa_1" data-name="Warstwa 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1536 1024">
+  <defs>
+    <style>
+      .cls-1 { fill: #e85011; }
+      .cls-2 { fill: none; stroke: #e85011; stroke-width: 26; stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+  </defs>
+
+  <!-- Base plate -->
+  <rect class="cls-1" x="558" y="848" width="420" height="54" rx="15"/>
+
+  <!-- Vertical pillar -->
+  <rect class="cls-1" x="751" y="200" width="34" height="648" rx="10"/>
+
+  <!-- Top pivot ornament (sphere) -->
+  <circle class="cls-1" cx="768" cy="192" r="42"/>
+
+  <!-- Horizontal balance beam -->
+  <rect class="cls-1" x="286" y="244" width="964" height="34" rx="17"/>
+
+  <!-- Left chain – two lines forming a V from beam left end down to pan rim -->
+  <line class="cls-2" x1="303" y1="278" x2="128" y2="636"/>
+  <line class="cls-2" x1="303" y1="278" x2="512" y2="636"/>
+
+  <!-- Left pan: horizontal rim -->
+  <line class="cls-2" x1="86"  y1="636" x2="554" y2="636"/>
+  <!-- Left pan: curved bowl -->
+  <path class="cls-2" d="M86,636 Q320,758 554,636"/>
+
+  <!-- Right chain – mirror of left -->
+  <line class="cls-2" x1="1233" y1="278" x2="1024" y2="636"/>
+  <line class="cls-2" x1="1233" y1="278" x2="1408" y2="636"/>
+
+  <!-- Right pan: horizontal rim -->
+  <line class="cls-2" x1="982"  y1="636" x2="1450" y2="636"/>
+  <!-- Right pan: curved bowl -->
+  <path class="cls-2" d="M982,636 Q1216,758 1450,636"/>
+</svg>

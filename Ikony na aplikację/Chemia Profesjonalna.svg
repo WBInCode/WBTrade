@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Warstwa_1" data-name="Warstwa 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1536 1024">
+  <defs>
+    <style>
+      .cls-1 { fill: #e85011; }
+      .cls-2 { fill: none; stroke: #e85011; stroke-width: 26; stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+  </defs>
+
+  <!-- ===== SPRAY BOTTLE ===== -->
+
+  <!-- Main bottle body -->
+  <rect class="cls-1" x="390" y="318" width="300" height="534" rx="36"/>
+
+  <!-- Bottle neck (narrow bridge between body and pump) -->
+  <rect class="cls-1" x="478" y="236" width="124" height="94" rx="10"/>
+
+  <!-- Horizontal pump / nozzle arm -->
+  <rect class="cls-1" x="478" y="228" width="706" height="38" rx="19"/>
+
+  <!-- Nozzle head (wider cap at the end of the arm) -->
+  <rect class="cls-1" x="1148" y="214" width="60" height="66" rx="12"/>
+
+  <!-- Trigger loop (closed curved handle under the pump arm) -->
+  <path class="cls-2" d="M 868,266 Q 800,360 840,448 Q 888,520 972,486 Q 1060,450 1062,358 Q 1062,296 1016,266"/>
+
+  <!-- ===== SPRAY PARTICLES (3 arcs from nozzle tip) ===== -->
+  <path class="cls-2" d="M 1208,247 Q 1300,186 1408,212"/>
+  <path class="cls-2" d="M 1208,247 Q 1318,247 1424,248"/>
+  <path class="cls-2" d="M 1208,247 Q 1300,310 1408,286"/>
+</svg>
