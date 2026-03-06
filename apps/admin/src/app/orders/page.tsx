@@ -405,7 +405,7 @@ export default function OrdersPage() {
               </div>
               <div>
                 <p className="text-yellow-400 font-medium">
-                  {pendingCancellationsCount} zamówień firmowych (FV00) czeka na zatwierdzenie anulowania
+                  {pendingCancellationsCount} {pendingCancellationsCount === 1 ? 'zamówienie czeka' : 'zamówień czeka'} na zatwierdzenie anulowania
                 </p>
                 <p className="text-gray-400 text-sm">
                   Kliknij aby przejść do panelu zatwierdzania

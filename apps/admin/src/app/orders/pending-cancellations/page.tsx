@@ -57,6 +57,7 @@ interface Order {
     companyName?: string;
     nip?: string;
   };
+  cancellationReason?: string;
   items: { 
     id: string;
     productName: string;
@@ -111,7 +112,7 @@ export default function PendingCancellationsPage() {
     });
 
   const handleApprove = async (orderId: string) => {
-    if (!await confirm('Czy na pewno chcesz zatwierdzić anulowanie tego zamówienia firmowego?')) return;
+    if (!await confirm('Czy na pewno chcesz zatwierdzić anulowanie tego zamówienia?')) return;
     
     try {
       setProcessingId(orderId);
@@ -194,10 +195,10 @@ export default function PendingCancellationsPage() {
           <div>
             <h1 className="text-2xl font-bold text-white flex items-center gap-3">
               <AlertTriangle className="w-7 h-7 text-yellow-500" />
-              Zamówienia firmowe do zatwierdzenia
+              Prośby o anulowanie zamówień
             </h1>
             <p className="text-gray-400">
-              Zamówienia z FV00 oczekujące na potwierdzenie anulowania • {orders.length} zamówień
+              Zamówienia oczekujące na zatwierdzenie anulowania • {orders.length} {orders.length === 1 ? 'zamówienie' : 'zamówień'}
             </p>
           </div>
         </div>
@@ -215,10 +216,10 @@ export default function PendingCancellationsPage() {
         <div className="flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-yellow-400 font-medium">Zamówienia firmowe wymagają ręcznego zatwierdzenia</p>
+            <p className="text-yellow-400 font-medium">Prośby o anulowanie wymagają zatwierdzenia</p>
             <p className="text-gray-400 text-sm mt-1">
-              Klient poprosił o anulowanie tych zamówień. Przed zatwierdzeniem sprawdź wartość zamówienia 
-              i skontaktuj się z klientem jeśli potrzeba.
+              Klienci poprosili o anulowanie tych zamówień. Sprawdź powód anulowania i podejmij decyzję 
+              o zatwierdzeniu lub odrzuceniu prośby.
             </p>
           </div>
         </div>
@@ -256,7 +257,7 @@ export default function PendingCancellationsPage() {
                 <div className="p-4 border-b border-slate-700/50 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="p-2 rounded-lg bg-yellow-500/20">
-                      <Building2 className="w-5 h-5 text-yellow-400" />
+                      <AlertTriangle className="w-5 h-5 text-yellow-400" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
@@ -266,9 +267,11 @@ export default function PendingCancellationsPage() {
                         >
                           {order.orderNumber}
                         </Link>
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
-                          FV00 - Firma
-                        </span>
+                        {order.isBusinessOrder && (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                            FV - Firma
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-3 text-sm text-gray-400 mt-1">
                         <span className="flex items-center gap-1">
@@ -311,18 +314,29 @@ export default function PendingCancellationsPage() {
                     </div>
                   </div>
 
-                  {/* Company Info */}
+                  {/* Cancellation Reason */}
                   <div className="space-y-2">
-                    <p className="text-xs text-gray-500 uppercase tracking-wider">Dane firmy</p>
-                    <div className="space-y-1">
-                      <p className="text-white flex items-center gap-2">
-                        <Building2 className="w-4 h-4 text-gray-500" />
-                        {order.billingCompanyName || order.billingAddress?.companyName || '-'}
-                      </p>
-                      <p className="text-gray-400 text-sm">
-                        NIP: <span className="text-white font-mono">{order.billingNip || order.billingAddress?.nip || '-'}</span>
-                      </p>
-                    </div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider">Powód anulowania</p>
+                    {order.cancellationReason ? (
+                      <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-lg p-3">
+                        <p className="text-sm text-gray-300">{order.cancellationReason}</p>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 italic">Nie podano powodu</p>
+                    )}
+                    {order.isBusinessOrder && (order.billingCompanyName || order.billingAddress?.companyName) && (
+                      <div className="mt-2 space-y-1">
+                        <p className="text-white flex items-center gap-2 text-sm">
+                          <Building2 className="w-4 h-4 text-gray-500" />
+                          {order.billingCompanyName || order.billingAddress?.companyName}
+                        </p>
+                        {(order.billingNip || order.billingAddress?.nip) && (
+                          <p className="text-gray-400 text-sm">
+                            NIP: <span className="text-white font-mono">{order.billingNip || order.billingAddress?.nip}</span>
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Products Summary */}
