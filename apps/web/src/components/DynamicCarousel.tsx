@@ -86,12 +86,18 @@ export default function DynamicCarousel({ carousel, initialProducts }: DynamicCa
 
   if (products.length === 0) return null;
 
+  // Link to dedicated bestsellers page for "bestsellery" carousel,
+  // generic carousel page for all others
+  const viewAllHref = carousel.slug === 'bestsellery'
+    ? '/products/bestsellers'
+    : `/products/carousel/${carousel.slug}`;
+
   return (
     <ProductCarousel
       title={carousel.name}
       subtitle={carousel.description || undefined}
       products={products}
-      viewAllLink={`/products?carousel=${carousel.slug}`}
+      viewAllLink={viewAllHref}
       accentColor={extractAccentColor(carousel.color)}
       icon={<span>{ICON_EMOJI[carousel.icon] || '⭐'}</span>}
     />

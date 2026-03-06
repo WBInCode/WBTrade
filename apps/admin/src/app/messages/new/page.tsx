@@ -22,6 +22,7 @@ const categoryOptions = [
   { value: 'ORDER', label: 'Zamówienie' },
   { value: 'DELIVERY', label: 'Dostawa' },
   { value: 'COMPLAINT', label: 'Reklamacja' },
+  { value: 'RETURN', label: 'Zwrot' },
   { value: 'PAYMENT', label: 'Płatność' },
   { value: 'ACCOUNT', label: 'Konto' },
   { value: 'GENERAL', label: 'Ogólne' },

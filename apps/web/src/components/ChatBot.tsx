@@ -3,6 +3,7 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { searchApi } from '../lib/api';
 
 // Bot branding
@@ -957,17 +958,18 @@ const createInitialMessage = (): Message => ({
 export function ChatBubble({ onClick, hasActiveChat }: { onClick: () => void; hasActiveChat?: boolean }) {
   return (
     <div className="flex flex-col items-center">
-      <button
-        onClick={onClick}
-        className="relative w-14 h-14 rounded-full bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 animate-pulse-gentle focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900 overflow-hidden"
-        aria-label="Otwórz czat z WuBuś"
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/images/wubus-chatbot.png" alt="WuBuś" className="w-10 h-10 rounded-full object-cover" />
-        {hasActiveChat && (
-          <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full" />
-        )}
-      </button>
+      <div className="relative">
+        <button
+          onClick={onClick}
+          className="relative w-14 h-14 rounded-full bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 animate-pulse-gentle focus:outline-none overflow-hidden ring-2 ring-white/70 dark:ring-white/25"
+          aria-label="Otwórz czat z WuBuś"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/wubus-chatbot.png" alt="WuBuś" className="w-full h-full object-cover" />
+        </button>
+        {/* Online status dot — always visible, outside the clipped button */}
+        <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full shadow-sm" />
+      </div>
       <span className="mt-1 px-2 py-0.5 text-[10px] font-bold text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
         Zapytaj
       </span>
@@ -991,8 +993,20 @@ function formatTimestamp(date: Date): string {
   return date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
 }
 
+// ─── Allowed paths for chatbot visibility ───
+function shouldShowChatBot(pathname: string): boolean {
+  if (pathname === '/') return true;
+  if (pathname.startsWith('/product')) return true;
+  if (pathname.startsWith('/category')) return true;
+  if (pathname.startsWith('/search')) return true;
+  if (pathname.startsWith('/account')) return true;
+  if (pathname.startsWith('/cart') || pathname.startsWith('/checkout')) return true;
+  return false;
+}
+
 // ─── Chat Modal Component ───
 export default function ChatBotWidget() {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState<Message[]>([createInitialMessage()]);
@@ -1005,6 +1019,9 @@ export default function ChatBotWidget() {
   const noMatchCount = useRef(0);
   const waitingForProductSearch = useRef(false);
   const productSearchRetryCount = useRef(0);
+
+  // Check if chatbot should be visible on this page
+  const isAllowedPage = shouldShowChatBot(pathname);
 
   const hasConversation = messages.length > 1;
   const showInitialChips = messages.length <= 1;
@@ -1391,16 +1408,29 @@ export default function ChatBotWidget() {
     return () => window.removeEventListener('keydown', handleEsc);
   }, [isOpen, handleMinimize]);
 
-  // Smart-hide chatbot on scroll - slides to side and rotates 90deg, only comes back on click
+  // Smart-hide chatbot on scroll - slides to side, shows back on scroll up
   useEffect(() => {
     let lastY = window.scrollY;
+    let scrollDownAccum = 0;
+    let scrollUpAccum = 0;
 
     const onScroll = () => {
       const y = window.scrollY;
       const delta = y - lastY;
-      // Hide on scroll down only - no auto-show on scroll up
-      if (delta > 3) {
-        setBubbleHidden(true);
+      if (delta > 0) {
+        scrollDownAccum += delta;
+        scrollUpAccum = 0;
+        // Hide only after significant scroll down (150px)
+        if (scrollDownAccum > 150) {
+          setBubbleHidden(true);
+        }
+      } else if (delta < 0) {
+        scrollUpAccum += Math.abs(delta);
+        scrollDownAccum = 0;
+        // Show back after 50px scroll up
+        if (scrollUpAccum > 50) {
+          setBubbleHidden(false);
+        }
       }
       lastY = y;
     };
@@ -1411,14 +1441,17 @@ export default function ChatBotWidget() {
     };
   }, []);
 
+  // Hide chatbot on disallowed pages (must be after all hooks!)
+  if (!isAllowedPage && !isOpen) return null;
+
   return (
     <>
       {/* Floating Bubble */}
       <div
         className={`fixed bottom-6 right-6 z-50 transition-all duration-500 ease-in-out origin-bottom-right ${
           bubbleHidden && !isOpen
-            ? 'translate-x-[52px] translate-y-[10px] rotate-90 scale-90 opacity-80'
-            : 'translate-x-0 translate-y-0 rotate-0 scale-100 opacity-100'
+            ? 'translate-x-[40px] scale-90 opacity-90'
+            : 'translate-x-0 scale-100 opacity-100'
         }`}
         style={{ zIndex: 9999 }}
       >
@@ -1427,6 +1460,8 @@ export default function ChatBotWidget() {
             onClick={() => {
               if (bubbleHidden) {
                 setBubbleHidden(false);
+                // Animate back first, then open chat
+                setTimeout(() => handleOpen(), 400);
               } else {
                 handleOpen();
               }

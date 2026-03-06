@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Bell, ShoppingCart, AlertTriangle, UserPlus, PackageX, Star, ArrowLeft, X, CheckCheck, Eye } from 'lucide-react';
+import { Bell, ShoppingCart, AlertTriangle, UserPlus, PackageX, Star, ArrowLeft, X, CheckCheck, Eye, RotateCcw, Volume2, VolumeX } from 'lucide-react';
 import { getAuthToken } from '@/lib/api';
 import Link from 'next/link';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 const STORAGE_KEY = 'wbtrade_read_notifications';
+const SEEN_AT_KEY = 'wbtrade_notifications_seen_at';
+const SOUND_KEY = 'wbtrade_notification_sound';
 
 interface Notification {
   id: string;
@@ -30,6 +32,7 @@ interface NotificationSummary {
     refunds: number;
     newUsers: number;
     reviews: number;
+    returnRequests: number;
   };
 }
 
@@ -40,6 +43,7 @@ const typeConfig: Record<string, { icon: any; color: string }> = {
   new_order: { icon: ShoppingCart, color: 'text-green-400 bg-green-400/10' },
   new_user: { icon: UserPlus, color: 'text-blue-400 bg-blue-400/10' },
   review: { icon: Star, color: 'text-purple-400 bg-purple-400/10' },
+  return_request: { icon: RotateCcw, color: 'text-pink-400 bg-pink-400/10' },
 };
 
 const priorityDot: Record<string, string> = {
@@ -60,6 +64,7 @@ function timeAgo(dateStr: string): string {
 }
 
 // ── localStorage helpers for read state ──
+// Hybrid approach: timestamp for "mark all" + individual ID set
 function getReadIds(): Set<string> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -77,17 +82,90 @@ function saveReadIds(ids: Set<string>): void {
   } catch {}
 }
 
+function getSeenAt(): number {
+  try {
+    const raw = localStorage.getItem(SEEN_AT_KEY);
+    return raw ? parseInt(raw, 10) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function setSeenAt(ts: number): void {
+  try {
+    localStorage.setItem(SEEN_AT_KEY, ts.toString());
+  } catch {}
+}
+
+function getSoundEnabled(): boolean {
+  try {
+    const raw = localStorage.getItem(SOUND_KEY);
+    return raw !== 'false'; // default ON
+  } catch {
+    return true;
+  }
+}
+
+function setSoundEnabled(enabled: boolean): void {
+  try {
+    localStorage.setItem(SOUND_KEY, enabled.toString());
+  } catch {}
+}
+
+// Determine if notification is "read" via hybrid check
+function isNotificationRead(notif: Notification, readIds: Set<string>, seenAt: number): boolean {
+  if (readIds.has(notif.id)) return true;
+  const notifTime = new Date(notif.createdAt).getTime();
+  if (seenAt > 0 && notifTime <= seenAt) return true;
+  return false;
+}
+
+// Beep sound generator using Web Audio API
+function playNotificationBeep(): void {
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    oscillator.frequency.value = 800;
+    oscillator.type = 'sine';
+    gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.3);
+    setTimeout(() => ctx.close(), 500);
+  } catch {}
+}
+
 export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [summary, setSummary] = useState<NotificationSummary | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
+  const [seenAt, setSeenAtState] = useState(0);
+  const [soundOn, setSoundOn] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const prevUnreadCountRef = useRef<number>(-1); // -1 = first load, skip sound
+  const isFirstFetchRef = useRef(true);
 
   // Load read state from localStorage
   useEffect(() => {
     setReadIds(getReadIds());
+    setSeenAtState(getSeenAt());
+    setSoundOn(getSoundEnabled());
+  }, []);
+
+  // Toggle sound
+  const toggleSound = useCallback(() => {
+    setSoundOn(prev => {
+      const next = !prev;
+      setSoundEnabled(next);
+      return next;
+    });
   }, []);
 
   // Close dropdown when clicking outside
@@ -125,6 +203,23 @@ export default function NotificationBell() {
           saveReadIds(cleaned);
           setReadIds(cleaned);
         }
+
+        // Sound: play beep if new unread notifications appeared (skip first load)
+        const currentSeenAt = getSeenAt();
+        const currentReadIds = getReadIds();
+        const currentUnread = data.notifications.filter(
+          (n: Notification) => !isNotificationRead(n, currentReadIds, currentSeenAt)
+        ).length;
+
+        if (isFirstFetchRef.current) {
+          isFirstFetchRef.current = false;
+          prevUnreadCountRef.current = currentUnread;
+        } else if (currentUnread > prevUnreadCountRef.current && prevUnreadCountRef.current >= 0) {
+          if (getSoundEnabled()) {
+            playNotificationBeep();
+          }
+        }
+        prevUnreadCountRef.current = currentUnread;
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
@@ -159,25 +254,30 @@ export default function NotificationBell() {
     [readIds]
   );
 
-  // Mark ALL as read
+  // Mark ALL as read — sets seenAt timestamp
   const markAllAsRead = useCallback(() => {
+    const now = Date.now();
+    setSeenAt(now);
+    setSeenAtState(now);
+    // Also add all current IDs to the read set for immediate UI update
     const next = new Set(readIds);
     notifications.forEach((n) => next.add(n.id));
     setReadIds(next);
     saveReadIds(next);
   }, [readIds, notifications]);
 
-  // Unread count = notifications NOT in readIds
-  const unreadCount = notifications.filter((n) => !readIds.has(n.id)).length;
+  // Unread count = notifications NOT read by ID or timestamp
+  const unreadCount = notifications.filter((n) => !isNotificationRead(n, readIds, seenAt)).length;
 
   // Sort: low_stock always at bottom, others by priority then time
   const typePriority: Record<string, number> = {
     cancellation: 0,
-    refund: 1,
-    new_order: 2,
-    new_user: 3,
-    review: 4,
-    low_stock: 5,
+    return_request: 1,
+    refund: 2,
+    new_order: 3,
+    new_user: 4,
+    review: 5,
+    low_stock: 6,
   };
   const sortedNotifications = [...notifications].sort((a, b) => {
     const aPrio = typePriority[a.type] ?? 3;
@@ -223,6 +323,13 @@ export default function NotificationBell() {
               )}
             </div>
             <div className="flex items-center gap-1">
+              <button
+                onClick={toggleSound}
+                className={`p-1 rounded transition-colors ${soundOn ? 'text-green-400 hover:text-green-300' : 'text-slate-500 hover:text-slate-400'}`}
+                title={soundOn ? 'Wyłącz dźwięk' : 'Włącz dźwięk'}
+              >
+                {soundOn ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+              </button>
               {unreadCount > 0 && (
                 <button
                   onClick={markAllAsRead}
@@ -275,6 +382,11 @@ export default function NotificationBell() {
                   {summary.byType.reviews} recenzji
                 </span>
               )}
+              {summary.byType.returnRequests > 0 && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-pink-500/10 text-pink-400 font-medium">
+                  {summary.byType.returnRequests} zwrotów/rek.
+                </span>
+              )}
             </div>
           )}
 
@@ -295,7 +407,7 @@ export default function NotificationBell() {
               sortedNotifications.map((notif) => {
                 const config = typeConfig[notif.type] || { icon: Bell, color: 'text-slate-400 bg-slate-400/10' };
                 const Icon = config.icon;
-                const isRead = readIds.has(notif.id);
+                const isRead = isNotificationRead(notif, readIds, seenAt);
 
                 return (
                   <Link

@@ -30,6 +30,7 @@ router.get('/', async (req: Request, res: Response) => {
       newUsers,
       refundedOrders,
       recentReviews,
+      returnComplaintTickets,
     ] = await Promise.all([
       // Nowe zamówienia w ciągu ostatnich 24h
       prisma.order.findMany({
@@ -85,7 +86,7 @@ router.get('/', async (req: Request, res: Response) => {
           },
         },
         orderBy: { quantity: 'asc' },
-        take: 15,
+        take: 30,
       }),
 
       // Nowi użytkownicy w ciągu ostatnich 24h
@@ -136,6 +137,29 @@ router.get('/', async (req: Request, res: Response) => {
         orderBy: { createdAt: 'desc' },
         take: 5,
       }),
+
+      // Otwarte zwroty i reklamacje (ostatnie 7 dni)
+      prisma.supportTicket.findMany({
+        where: {
+          category: { in: ['RETURN', 'COMPLAINT'] },
+          status: { in: ['OPEN', 'IN_PROGRESS'] },
+          isArchived: false,
+          createdAt: { gte: last7d },
+        },
+        select: {
+          id: true,
+          ticketNumber: true,
+          returnNumber: true,
+          category: true,
+          subject: true,
+          createdAt: true,
+          user: { select: { firstName: true, lastName: true } },
+          guestEmail: true,
+          guestName: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      }),
     ]);
 
     // Helper: get customer name (supports guest orders)
@@ -171,17 +195,51 @@ router.get('/', async (req: Request, res: Response) => {
       });
     });
 
-    // Niski stan magazynowy — wysoki priorytet
-    lowStockInventory.forEach((inv) => {
-      const label = inv.variant.sku || inv.variant.name;
+    // Niski stan magazynowy — grupowanie gdy > 3 produkty
+    if (lowStockInventory.length <= 3) {
+      lowStockInventory.forEach((inv) => {
+        const label = inv.variant.sku || inv.variant.name;
+        notifications.push({
+          id: `stock-${inv.id}`,
+          type: 'low_stock',
+          title: 'Niski stan magazynowy',
+          message: `${inv.variant.product.name} (${label}) — Zostało ${inv.quantity} szt.`,
+          link: `/products/${inv.variant.product.id}`,
+          priority: inv.quantity === 0 ? 'high' : 'medium',
+          createdAt: new Date(),
+        });
+      });
+    } else {
+      const outOfStockCount = lowStockInventory.filter(inv => inv.quantity === 0).length;
+      const lowCount = lowStockInventory.length - outOfStockCount;
+      const parts: string[] = [];
+      if (outOfStockCount > 0) parts.push(`${outOfStockCount} niedostępnych`);
+      if (lowCount > 0) parts.push(`${lowCount} z niskim stanem`);
       notifications.push({
-        id: `stock-${inv.id}`,
+        id: `stock-grouped`,
         type: 'low_stock',
-        title: 'Niski stan magazynowy',
-        message: `${inv.variant.product.name} (${label}) — Zostało ${inv.quantity} szt.`,
-        link: `/products/${inv.variant.product.id}`,
-        priority: inv.quantity === 0 ? 'high' : 'medium',
+        title: `${lowStockInventory.length} produktów wymaga uwagi`,
+        message: parts.join(', ') + ' — sprawdź magazyn',
+        link: '/warehouse',
+        priority: outOfStockCount > 0 ? 'high' : 'medium',
         createdAt: new Date(),
+      });
+    }
+
+    // Zwroty i reklamacje — wysoki priorytet
+    returnComplaintTickets.forEach((ticket) => {
+      const customerName = ticket.user
+        ? `${ticket.user.firstName} ${ticket.user.lastName}`
+        : ticket.guestName || ticket.guestEmail || 'Gość';
+      const isReturn = ticket.category === 'RETURN';
+      notifications.push({
+        id: `return-${ticket.id}`,
+        type: 'return_request',
+        title: isReturn ? 'Nowy zwrot' : 'Nowa reklamacja',
+        message: `${ticket.returnNumber || ticket.ticketNumber} — ${customerName}: ${ticket.subject}`,
+        link: `/messages/${ticket.id}`,
+        priority: 'high',
+        createdAt: ticket.createdAt,
       });
     });
 
@@ -258,6 +316,7 @@ router.get('/', async (req: Request, res: Response) => {
         refunds: refundedOrders.length,
         newUsers: newUsers.length,
         reviews: recentReviews.length,
+        returnRequests: returnComplaintTickets.length,
       },
     };
 

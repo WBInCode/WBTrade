@@ -20,16 +20,48 @@ async function generateTicketNumber(): Promise<string> {
   return `SUP-${dateStr}-${seq}`;
 }
 
+// ─── Return/Complaint Number Generator ───
+// Format: ZXX-0000-00 (zwrot) or RXX-0000-00 (reklamacja)
+// X = random A-Z letter, 0 = random digit
+export async function generateReturnNumber(type: 'RETURN' | 'COMPLAINT'): Promise<string> {
+  const prefix = type === 'RETURN' ? 'Z' : 'R';
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const maxAttempts = 20;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const l1 = letters[Math.floor(Math.random() * 26)];
+    const l2 = letters[Math.floor(Math.random() * 26)];
+    const d1 = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    const d2 = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    const number = `${prefix}${l1}${l2}-${d1}-${d2}`;
+
+    // Check uniqueness in DB
+    const existing = await prisma.supportTicket.findUnique({
+      where: { returnNumber: number },
+    });
+    if (!existing) return number;
+  }
+
+  // Fallback: add timestamp suffix
+  const l1 = letters[Math.floor(Math.random() * 26)];
+  const l2 = letters[Math.floor(Math.random() * 26)];
+  const ts = Date.now().toString().slice(-6);
+  return `${prefix}${l1}${l2}-${ts.slice(0, 4)}-${ts.slice(4)}`;
+}
+
 // ─── Create Ticket ───
 export async function createTicket(data: {
   userId?: string;
   guestEmail?: string;
+  guestName?: string;
+  guestPhone?: string;
   orderId?: string;
   subject: string;
   category: TicketCategory;
   priority?: TicketPriority;
   message: string;
   senderRole?: MessageSender;
+  returnNumber?: string;
 }) {
   const ticketNumber = await generateTicketNumber();
 
@@ -38,11 +70,14 @@ export async function createTicket(data: {
       ticketNumber,
       userId: data.userId || null,
       guestEmail: data.guestEmail || null,
+      guestName: data.guestName || null,
+      guestPhone: data.guestPhone || null,
       orderId: data.orderId || null,
       subject: data.subject,
       category: data.category,
       priority: data.priority || 'NORMAL',
       status: 'OPEN',
+      returnNumber: data.returnNumber || null,
       lastMessageAt: new Date(),
       messages: {
         create: {
@@ -196,12 +231,29 @@ export async function getUnreadCount(userId: string): Promise<number> {
   return count;
 }
 
+// ─── Admin: Get Return/Complaint Stats ───
+export async function getReturnStats() {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const [totalReturns, totalComplaints, openReturns, openComplaints, inProgressCount, closedToday] = await Promise.all([
+    prisma.supportTicket.count({ where: { category: 'RETURN', isArchived: false } }),
+    prisma.supportTicket.count({ where: { category: 'COMPLAINT', isArchived: false } }),
+    prisma.supportTicket.count({ where: { category: 'RETURN', status: 'OPEN', isArchived: false } }),
+    prisma.supportTicket.count({ where: { category: 'COMPLAINT', status: 'OPEN', isArchived: false } }),
+    prisma.supportTicket.count({ where: { category: { in: ['RETURN', 'COMPLAINT'] }, status: 'IN_PROGRESS', isArchived: false } }),
+    prisma.supportTicket.count({ where: { category: { in: ['RETURN', 'COMPLAINT'] }, status: 'CLOSED', closedAt: { gte: todayStart }, isArchived: false } }),
+  ]);
+
+  return { totalReturns, totalComplaints, openReturns, openComplaints, inProgressCount, closedToday };
+}
+
 // ─── Admin: Get All Tickets ───
 export async function getAdminTickets(params: {
   page?: number;
   limit?: number;
   status?: TicketStatus;
-  category?: TicketCategory;
+  category?: string; // supports comma-separated like 'RETURN,COMPLAINT'
   search?: string;
   userId?: string;
   orderId?: string;
@@ -212,17 +264,26 @@ export async function getAdminTickets(params: {
 
   const where: any = { isArchived: false };
   if (params.status) where.status = params.status;
-  if (params.category) where.category = params.category;
+  if (params.category) {
+    const cats = (params.category as string).split(',').map(c => c.trim()).filter(Boolean);
+    if (cats.length === 1) {
+      where.category = cats[0];
+    } else if (cats.length > 1) {
+      where.category = { in: cats };
+    }
+  }
   if (params.userId) where.userId = params.userId;
   if (params.orderId) where.orderId = params.orderId;
   if (params.search) {
     where.OR = [
       { ticketNumber: { contains: params.search, mode: 'insensitive' } },
+      { returnNumber: { contains: params.search, mode: 'insensitive' } },
       { subject: { contains: params.search, mode: 'insensitive' } },
       { user: { email: { contains: params.search, mode: 'insensitive' } } },
       { user: { firstName: { contains: params.search, mode: 'insensitive' } } },
       { user: { lastName: { contains: params.search, mode: 'insensitive' } } },
       { guestEmail: { contains: params.search, mode: 'insensitive' } },
+      { guestName: { contains: params.search, mode: 'insensitive' } },
     ];
   }
 

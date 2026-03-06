@@ -208,16 +208,24 @@ export class OrdersService {
     console.log(`[Orders] Creating order: isBusinessOrder=${isBusinessOrder}, NIP=${data.billingNip || 'none'}, orderNumber=${orderNumber}`);
     
     // SECURITY: Look up real prices from DB for all items to prevent price manipulation
+    // Also pre-fetch product/variant names to avoid redundant lookups inside the transaction
     const itemsWithRealPrices = await Promise.all(
       data.items.map(async (item) => {
         const variant = await prisma.productVariant.findUnique({
           where: { id: item.variantId },
+          include: { product: { select: { name: true } } },
         });
         const realPrice = variant ? Number(variant.price) : item.unitPrice;
         if (variant && Math.abs(realPrice - item.unitPrice) > 0.01) {
           console.warn(`[SECURITY] Price mismatch for variant ${item.variantId}: client sent ${item.unitPrice}, DB price is ${realPrice}`);
         }
-        return { ...item, unitPrice: realPrice };
+        return {
+          ...item,
+          unitPrice: realPrice,
+          productName: variant?.product.name || 'Unknown',
+          variantName: variant?.name || 'Default',
+          sku: variant?.sku || '',
+        };
       })
     );
     
@@ -281,24 +289,15 @@ export class OrdersService {
           guestLastName: data.guestLastName,
           guestPhone: data.guestPhone,
           items: {
-            create: await Promise.all(
-              itemsWithRealPrices.map(async (item) => {
-                const variant = await tx.productVariant.findUnique({
-                  where: { id: item.variantId },
-                  include: { product: true },
-                });
-
-                return {
-                  variantId: item.variantId,
-                  productName: variant?.product.name || 'Unknown',
-                  variantName: variant?.name || 'Default',
-                  sku: variant?.sku || '',
-                  quantity: item.quantity,
-                  unitPrice: item.unitPrice, // Already validated real price from DB
-                  total: item.unitPrice * item.quantity,
-                };
-              })
-            ),
+            create: itemsWithRealPrices.map((item) => ({
+              variantId: item.variantId,
+              productName: item.productName,
+              variantName: item.variantName,
+              sku: item.sku,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice, // Already validated real price from DB
+              total: item.unitPrice * item.quantity,
+            })),
           },
           statusHistory: {
             create: {
@@ -324,12 +323,10 @@ export class OrdersService {
           : 0;
 
         if (available < item.quantity) {
-          const variant = await tx.productVariant.findUnique({
-            where: { id: item.variantId },
-            include: { product: { select: { name: true } } },
-          });
+          // Use pre-fetched product name from itemsWithRealPrices
+          const preloaded = itemsWithRealPrices.find(i => i.variantId === item.variantId);
           throw new Error(
-            `Niewystarczająca ilość produktu "${variant?.product.name || 'Unknown'}". ` +
+            `Niewystarczająca ilość produktu "${preloaded?.productName || 'Unknown'}". ` +
             `Dostępne: ${Math.max(0, available)} szt., żądane: ${item.quantity} szt.`
           );
         }
