@@ -350,8 +350,8 @@ export class BaselinkerOrdersService {
       paid: order.paymentStatus === 'PAID',
       user_comments: order.customerNotes || '',
       admin_comments: `WBTrade Order: ${order.orderNumber}`,
-      email: order.user?.email || '',
-      phone: order.shippingAddress?.phone || order.user?.phone || '',
+      email: order.user?.email || order.guestEmail || '',
+      phone: order.shippingAddress?.phone || order.user?.phone || order.guestPhone || '',
       delivery_method: deliveryMethod,
       delivery_price: Number(order.shipping),
       products,
@@ -364,6 +364,9 @@ export class BaselinkerOrdersService {
       blOrder.delivery_city = order.shippingAddress.city;
       blOrder.delivery_postcode = order.shippingAddress.postalCode;
       blOrder.delivery_country_code = order.shippingAddress.country || 'PL';
+    } else if (order.guestFirstName || order.guestLastName) {
+      // Guest order without saved shipping address - use guest name
+      blOrder.delivery_fullname = `${order.guestFirstName || ''} ${order.guestLastName || ''}`.trim();
     }
 
     // Add paczkomat data if applicable
