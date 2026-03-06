@@ -14,6 +14,7 @@ const SCRIPTS_DIR = path.resolve(__dirname, '../..');  // apps/api/src/routes �
 const XML_SOURCES: Record<string, string> = {
   leker: 'https://b2b.leker.pl/xml/drop_pln_pl_light.xml',
   btp: 'https://ext.btp.link/Gateway/ExportData/InventoryReport?Format=Xml&u=7C93A576-737A-4E62-B0AD-C2CB40FAB893&uc=A694FB15-1C0E-4A1C-81B8-6423BB43547A',
+  hp: 'https://www.hurtowniaprzemyslowa.pl/xml/baselinker.xml',
 };
 
 /**
@@ -24,14 +25,14 @@ const XML_SOURCES: Record<string, string> = {
 router.post('/prices-xml', async (req, res) => {
   const warehouse = (req.body?.warehouse as string) || 'all';
 
-  if (!['leker', 'btp', 'all'].includes(warehouse)) {
-    return res.status(400).json({ message: 'Nieprawidłowy warehouse. Dozwolone: leker, btp, all' });
+  if (!['leker', 'btp', 'hp', 'all'].includes(warehouse)) {
+    return res.status(400).json({ message: 'Nieprawidłowy warehouse. Dozwolone: leker, btp, hp, all' });
   }
 
   try {
     // Try BullMQ first (requires Redis)
     const { triggerImmediatePriceXmlSync } = await import('../workers/baselinker-sync.worker');
-    const jobId = await triggerImmediatePriceXmlSync(warehouse as 'leker' | 'btp' | 'all');
+    const jobId = await triggerImmediatePriceXmlSync(warehouse as 'leker' | 'btp' | 'hp' | 'all');
     return res.json({ success: true, jobId, status: 'queued', warehouse });
   } catch {
     // Fallback: run sync directly in-process if BullMQ / Redis unavailable
@@ -41,14 +42,18 @@ router.post('/prices-xml', async (req, res) => {
       const { syncLekerXmlPrices } = require(path.join(SCRIPTS_DIR, 'sync-leker-xml-prices.js')) as { syncLekerXmlPrices: () => Promise<unknown> };
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { syncBtpXmlPrices } = require(path.join(SCRIPTS_DIR, 'sync-btp-xml-prices.js')) as { syncBtpXmlPrices: () => Promise<unknown> };
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { syncHpXmlPrices } = require(path.join(SCRIPTS_DIR, 'sync-hp-xml-prices.js')) as { syncHpXmlPrices: () => Promise<unknown> };
 
       let lekerResult: unknown = null;
       let btpResult: unknown = null;
+      let hpResult: unknown = null;
 
       if (warehouse === 'leker' || warehouse === 'all') lekerResult = await syncLekerXmlPrices();
       if (warehouse === 'btp' || warehouse === 'all') btpResult = await syncBtpXmlPrices();
+      if (warehouse === 'hp' || warehouse === 'all') hpResult = await syncHpXmlPrices();
 
-      return res.json({ success: true, status: 'completed', warehouse, result: { leker: lekerResult, btp: btpResult } });
+      return res.json({ success: true, status: 'completed', warehouse, result: { leker: lekerResult, btp: btpResult, hp: hpResult } });
     } catch (syncErr) {
       const msg = syncErr instanceof Error ? syncErr.message : String(syncErr);
       console.error('[AdminSync] Direct sync failed:', syncErr);
@@ -63,9 +68,10 @@ router.post('/prices-xml', async (req, res) => {
  */
 router.get('/prices-xml/status', async (_req, res) => {
   try {
-    const [lekerSetting, btpSetting] = await Promise.all([
+    const [lekerSetting, btpSetting, hpSetting] = await Promise.all([
       prisma.settings.findUnique({ where: { key: 'last_sync_leker_xml' } }),
       prisma.settings.findUnique({ where: { key: 'last_sync_btp_xml' } }),
+      prisma.settings.findUnique({ where: { key: 'last_sync_hp_xml' } }),
     ]);
 
     return res.json({
@@ -76,6 +82,10 @@ router.get('/prices-xml/status', async (_req, res) => {
       btp: {
         lastSync: btpSetting?.value || null,
         xmlUrl: XML_SOURCES.btp,
+      },
+      hp: {
+        lastSync: hpSetting?.value || null,
+        xmlUrl: XML_SOURCES.hp,
       },
     });
   } catch (err) {
