@@ -66,8 +66,8 @@ const HeaderSection = React.memo(function HeaderSection() {
     <View style={[styles.header, { backgroundColor: colors.card }]}>
       <View style={styles.headerTop}>
         <Image
-          source={require('../../assets/images/wb-trade-logo.png')}
-          style={styles.headerLogo}
+          source={require('../../assets/images/splash-icon.png')}
+          style={styles.headerMascot}
           contentFit="contain"
         />
       </View>
@@ -624,6 +624,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', marginBottom: 10,
   },
   headerLogo: { width: 143, height: 42 },
+  headerMascot: { width: 80, height: 80 },
   headerDivider: {
     height: 1, marginBottom: 10,
   },

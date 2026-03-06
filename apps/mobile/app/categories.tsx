@@ -203,7 +203,7 @@ export default function CategoriesScreen() {
                     activeOpacity={0.6}
                   >
                     <View style={styles.parentLeft}>
-                      <View style={styles.parentIconCircle}>
+                      <View style={[styles.parentIconCircle, { backgroundColor: colors.card }]}>
                         <Image
                           source={getCategoryIcon(cat.slug)}
                           style={styles.categoryIconImage}
@@ -332,13 +332,12 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
     borderWidth: 2,
     borderColor: '#e85011',
   },
   categoryIconImage: {
-    width: 50,
-    height: 50,
+    width: 36,
+    height: 36,
   },
   parentInfo: {
     flex: 1,
