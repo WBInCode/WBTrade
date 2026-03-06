@@ -152,6 +152,7 @@ export default function OrdersPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [actionMenuId, setActionMenuId] = useState<string | null>(null);
+  const [actionMenuPos, setActionMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [pendingCancellationsCount, setPendingCancellationsCount] = useState(0);
   const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
   
@@ -738,75 +739,20 @@ export default function OrdersPage() {
                         <span>{formatDate(order.createdAt)}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-4 relative">
+                    <td className="px-4 py-4">
                       <button
-                        onClick={() => setActionMenuId(actionMenuId === order.id ? null : order.id)}
+                        onClick={(e) => {
+                          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                          const menuH = 250;
+                          const spaceBelow = window.innerHeight - rect.bottom;
+                          const top = spaceBelow < menuH ? rect.top - menuH : rect.bottom + 4;
+                          setActionMenuPos({ top, left: rect.right - 200 });
+                          setActionMenuId(actionMenuId === order.id ? null : order.id);
+                        }}
                         className="p-2 hover:bg-slate-600 rounded-lg transition-colors"
                       >
                         <MoreVertical className="w-4 h-4 text-gray-400" />
                       </button>
-                      
-                      {actionMenuId === order.id && (
-                        <div className="absolute right-0 top-full mt-1 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-20">
-                          <Link
-                            href={`/orders/${order.id}`}
-                            className="flex items-center gap-2 px-4 py-2.5 text-gray-300 hover:bg-slate-700 hover:text-white transition-colors"
-                          >
-                            <Eye className="w-4 h-4" />
-                            Szczegóły
-                          </Link>
-                          <Link
-                            href={`/orders/${order.id}/label`}
-                            className="flex items-center gap-2 px-4 py-2.5 text-gray-300 hover:bg-slate-700 hover:text-white transition-colors"
-                          >
-                            <Truck className="w-4 h-4" />
-                            Etykieta kurierska
-                          </Link>
-                          <Link
-                            href={`/orders/${order.id}/invoice`}
-                            className="flex items-center gap-2 px-4 py-2.5 text-gray-300 hover:bg-slate-700 hover:text-white transition-colors"
-                          >
-                            <FileText className="w-4 h-4" />
-                            Faktura
-                          </Link>
-                          <div className="border-t border-slate-700 my-1"></div>
-                          {order.status === 'CANCELLED' || order.status === 'REFUNDED' ? (
-                            <>
-                              <button
-                                onClick={() => {
-                                  setRestoreModal({ open: true, orderId: order.id, orderNumber: order.orderNumber });
-                                  setActionMenuId(null);
-                                }}
-                                className="flex items-center gap-2 w-full px-4 py-2.5 text-gray-300 hover:bg-slate-700 hover:text-white transition-colors"
-                              >
-                                <RotateCcw className="w-4 h-4" />
-                                Przywróć
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setDeleteModal({ open: true, orderId: order.id, orderNumber: order.orderNumber });
-                                  setActionMenuId(null);
-                                }}
-                                className="flex items-center gap-2 w-full px-4 py-2.5 text-red-400 hover:bg-red-500/10 transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                                Usuń (archiwum)
-                              </button>
-                            </>
-                          ) : (
-                            <button
-                              onClick={() => {
-                                setCancelModal({ open: true, orderId: order.id, orderNumber: order.orderNumber });
-                                setActionMenuId(null);
-                              }}
-                              className="flex items-center gap-2 w-full px-4 py-2.5 text-red-400 hover:bg-red-500/10 transition-colors"
-                            >
-                              <Ban className="w-4 h-4" />
-                              Anuluj
-                            </button>
-                          )}
-                        </div>
-                      )}
                     </td>
                   </tr>
                 ))
@@ -866,13 +812,50 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {/* Click outside to close menu */}
-      {actionMenuId && (
-        <div 
-          className="fixed inset-0 z-10" 
-          onClick={() => setActionMenuId(null)}
-        />
-      )}
+      {/* Action Menu - Fixed position overlay */}
+      {actionMenuId && (() => {
+        const order = orders.find(o => o.id === actionMenuId);
+        if (!order) return null;
+        return (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setActionMenuId(null)} />
+            <div
+              style={{ top: actionMenuPos.top, left: actionMenuPos.left }}
+              className="fixed w-52 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 py-1 animate-in fade-in zoom-in-95 duration-150">
+              <Link href={`/orders/${order.id}`} onClick={() => setActionMenuId(null)}
+                className="flex items-center gap-2 px-4 py-2.5 text-gray-300 hover:bg-slate-700 hover:text-white transition-colors">
+                <Eye className="w-4 h-4" /> Szczegóły
+              </Link>
+              <Link href={`/orders/${order.id}/label`} onClick={() => setActionMenuId(null)}
+                className="flex items-center gap-2 px-4 py-2.5 text-gray-300 hover:bg-slate-700 hover:text-white transition-colors">
+                <Truck className="w-4 h-4" /> Etykieta kurierska
+              </Link>
+              <Link href={`/orders/${order.id}/invoice`} onClick={() => setActionMenuId(null)}
+                className="flex items-center gap-2 px-4 py-2.5 text-gray-300 hover:bg-slate-700 hover:text-white transition-colors">
+                <FileText className="w-4 h-4" /> Faktura
+              </Link>
+              <div className="border-t border-slate-700 my-1" />
+              {order.status === 'CANCELLED' || order.status === 'REFUNDED' ? (
+                <>
+                  <button onClick={() => { setRestoreModal({ open: true, orderId: order.id, orderNumber: order.orderNumber }); setActionMenuId(null); }}
+                    className="flex items-center gap-2 w-full px-4 py-2.5 text-gray-300 hover:bg-slate-700 hover:text-white transition-colors">
+                    <RotateCcw className="w-4 h-4" /> Przywróć
+                  </button>
+                  <button onClick={() => { setDeleteModal({ open: true, orderId: order.id, orderNumber: order.orderNumber }); setActionMenuId(null); }}
+                    className="flex items-center gap-2 w-full px-4 py-2.5 text-red-400 hover:bg-red-500/10 transition-colors">
+                    <Trash2 className="w-4 h-4" /> Usuń (archiwum)
+                  </button>
+                </>
+              ) : (
+                <button onClick={() => { setCancelModal({ open: true, orderId: order.id, orderNumber: order.orderNumber }); setActionMenuId(null); }}
+                  className="flex items-center gap-2 w-full px-4 py-2.5 text-red-400 hover:bg-red-500/10 transition-colors">
+                  <Ban className="w-4 h-4" /> Anuluj
+                </button>
+              )}
+            </div>
+          </>
+        );
+      })()}
 
       {/* Archive link */}
       <div className="flex justify-center">

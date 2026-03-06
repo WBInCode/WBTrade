@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   RotateCcw, Search, ChevronLeft, ChevronRight,
@@ -120,7 +120,7 @@ export default function ReturnsPage() {
   const [stats, setStats] = useState<Stats | null>(null);
 
   const [quickActionId, setQuickActionId] = useState<string | null>(null);
-  const quickMenuRef = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [showArchive, setShowArchive] = useState(false);
 
@@ -188,16 +188,6 @@ export default function ReturnsPage() {
     return () => clearInterval(interval);
   }, [loadStats, loadReturns]);
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (quickMenuRef.current && !quickMenuRef.current.contains(e.target as Node)) {
-        setQuickActionId(null);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('pl-PL', {
       day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
@@ -214,6 +204,15 @@ export default function ReturnsPage() {
 
   const getItemsValue = (r: ReturnRequest) => {
     return r.items.reduce((sum, item) => sum + Number(item.orderItem.unitPrice) * item.quantity, 0);
+  };
+
+  const openQuickMenu = (e: React.MouseEvent, id: string) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const menuHeight = 280;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const top = spaceBelow < menuHeight ? rect.top - menuHeight : rect.bottom + 4;
+    setMenuPos({ top, left: rect.right - 220 });
+    setQuickActionId(quickActionId === id ? null : id);
   };
 
   // Quick status actions
@@ -472,39 +471,10 @@ export default function ReturnsPage() {
                           className="p-2 text-gray-400 hover:text-orange-400 transition-all duration-200 hover:bg-slate-700/50 rounded-lg">
                           <Eye className="w-4 h-4" />
                         </Link>
-                        <button onClick={() => setQuickActionId(quickActionId === r.id ? null : r.id)}
+                        <button onClick={(e) => openQuickMenu(e, r.id)}
                           className="p-2 text-gray-400 hover:text-white transition-all duration-200 hover:bg-slate-700/50 rounded-lg">
                           <MoreHorizontal className="w-4 h-4" />
                         </button>
-
-                        {quickActionId === r.id && (
-                          <div ref={quickMenuRef}
-                            className="absolute right-0 top-full mt-1 w-52 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-30 py-1">
-                            <Link href={`/returns/${r.id}`}
-                              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-slate-700/50 hover:text-white transition-colors">
-                              <Eye className="w-4 h-4" /> Otwórz szczegóły
-                            </Link>
-                            <div className="border-t border-slate-700 my-1" />
-                            {r.status === 'NEW' && (
-                              <button onClick={() => handleQuickAction(r.id, 'status', { status: 'RECEIVED' })}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-yellow-400 hover:bg-yellow-500/10 transition-colors">
-                                <PackageCheck className="w-4 h-4" /> Oznacz jako przyjęty
-                              </button>
-                            )}
-                            {(r.status === 'NEW' || r.status === 'RECEIVED') && (
-                              <button onClick={() => handleQuickAction(r.id, 'reject', { rejectionReason: 'Odrzucono z listy zwrotów' })}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors">
-                                <Ban className="w-4 h-4" /> Odrzuć
-                              </button>
-                            )}
-                            {r.status === 'REFUND_SENT' && (
-                              <button onClick={() => handleQuickAction(r.id, 'close')}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:bg-slate-700/50 transition-colors">
-                                <CheckCircle className="w-4 h-4" /> Zamknij zwrot
-                              </button>
-                            )}
-                          </div>
-                        )}
                       </div>
                     </td>
                   </tr>
@@ -514,6 +484,59 @@ export default function ReturnsPage() {
           </table>
         </div>
       </div>
+
+      {/* Quick Action Menu - Fixed position overlay */}
+      {quickActionId && (() => {
+        const r = returns.find(ret => ret.id === quickActionId);
+        if (!r) return null;
+        return (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setQuickActionId(null)} />
+            <div
+              style={{ top: menuPos.top, left: menuPos.left }}
+              className="fixed w-56 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 py-1 animate-in fade-in zoom-in-95 duration-150">
+              <Link href={`/returns/${r.id}`} onClick={() => setQuickActionId(null)}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-slate-700/50 hover:text-white transition-colors">
+                <Eye className="w-4 h-4" /> Otwórz szczegóły
+              </Link>
+              <div className="border-t border-slate-700 my-1" />
+              {r.status === 'NEW' && (
+                <button onClick={() => handleQuickAction(r.id, 'status', { status: 'RECEIVED' })}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-yellow-400 hover:bg-yellow-500/10 transition-colors">
+                  <PackageCheck className="w-4 h-4" /> Oznacz jako przyjęty
+                </button>
+              )}
+              {(r.status === 'NEW' || r.status === 'RECEIVED') && (
+                <button onClick={() => handleQuickAction(r.id, 'approve')}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-green-400 hover:bg-green-500/10 transition-colors">
+                  <CheckCircle className="w-4 h-4" /> Zaakceptuj
+                </button>
+              )}
+              {r.status === 'APPROVED' && (
+                <button onClick={() => handleQuickAction(r.id, 'refund-sent')}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-emerald-400 hover:bg-emerald-500/10 transition-colors">
+                  <Send className="w-4 h-4" /> Oznacz zwrot wysłany
+                </button>
+              )}
+              {r.status === 'REFUND_SENT' && (
+                <button onClick={() => handleQuickAction(r.id, 'close')}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:bg-slate-700/50 transition-colors">
+                  <Archive className="w-4 h-4" /> Zamknij (archiwum)
+                </button>
+              )}
+              {(r.status === 'NEW' || r.status === 'RECEIVED') && (
+                <>
+                  <div className="border-t border-slate-700 my-1" />
+                  <button onClick={() => handleQuickAction(r.id, 'reject', { rejectionReason: 'Odrzucono z listy zwrotów' })}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors">
+                    <Ban className="w-4 h-4" /> Odrzuć
+                  </button>
+                </>
+              )}
+            </div>
+          </>
+        );
+      })()}
 
       {/* Pagination */}
       {totalPages > 1 && (
