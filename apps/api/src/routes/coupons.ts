@@ -30,7 +30,8 @@ router.get('/my', authGuard, async (req, res) => {
       }
     }
 
-    const coupons = await prisma.coupon.findMany({
+    // 1. User's personal coupons
+    const personalCoupons = await prisma.coupon.findMany({
       where: {
         OR: [
           { userId },
@@ -55,11 +56,68 @@ router.get('/my', authGuard, async (req, res) => {
         isActive: true,
         couponSource: true,
         createdAt: true,
+        singleUsePerUser: true,
       },
     });
 
+    // 2. Public promotional coupons (no userId, singleUsePerUser=true, active)
+    const now = new Date();
+    const publicCoupons = await prisma.coupon.findMany({
+      where: {
+        userId: null,
+        singleUsePerUser: true,
+        isActive: true,
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: now } },
+        ],
+        AND: [
+          {
+            OR: [
+              { startsAt: null },
+              { startsAt: { lte: now } },
+            ],
+          },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        code: true,
+        description: true,
+        type: true,
+        value: true,
+        minimumAmount: true,
+        maximumUses: true,
+        usedCount: true,
+        expiresAt: true,
+        isActive: true,
+        couponSource: true,
+        createdAt: true,
+        singleUsePerUser: true,
+      },
+    });
+
+    // 3. Check which public coupons user has already used
+    const publicCouponIds = publicCoupons.map(c => c.id);
+    const usedByUser = await prisma.couponUsage.findMany({
+      where: {
+        userId,
+        couponId: { in: publicCouponIds },
+      },
+      select: { couponId: true },
+    });
+    const usedCouponIds = new Set(usedByUser.map(u => u.couponId));
+
+    // 4. Filter out already-used public coupons and merge with personal
+    const availablePublicCoupons = publicCoupons.filter(c => !usedCouponIds.has(c.id));
+    const personalIds = new Set(personalCoupons.map(c => c.id));
+    const uniquePublicCoupons = availablePublicCoupons.filter(c => !personalIds.has(c.id));
+    
+    const allCoupons = [...personalCoupons, ...uniquePublicCoupons];
+
     // Enrich with status
-    const enriched = coupons.map((c: any) => {
+    const enriched = allCoupons.map((c: any) => {
       const isExpired = c.expiresAt ? c.expiresAt < new Date() : false;
       const isUsed = c.maximumUses ? c.usedCount >= c.maximumUses : false;
       let status: 'active' | 'used' | 'expired' = 'active';

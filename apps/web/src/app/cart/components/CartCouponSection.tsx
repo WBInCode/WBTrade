@@ -110,6 +110,7 @@ export default function CartCouponSection({
       case 'WELCOME_DISCOUNT': return 'Powitalny';
       case 'NEWSLETTER': return 'Newsletter';
       case 'APP_DOWNLOAD': return 'Aplikacja';
+      case 'CAMPAIGN': return 'Promocja';
       case 'MANUAL': return 'Promocja';
       default: return 'Kupon';
     }
