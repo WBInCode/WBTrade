@@ -179,7 +179,7 @@ router.get('/:id', async (req: Request, res: Response) => {
  */
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { code, description, type, value, minimumAmount, maximumUses, startsAt, expiresAt, isActive, couponSource } = req.body;
+    const { code, description, type, value, minimumAmount, maximumUses, startsAt, expiresAt, isActive, couponSource, requiresAuth, singleUsePerUser } = req.body;
 
     if (!code || !value) {
       res.status(400).json({ message: 'Kod kuponu i wartość są wymagane' });
@@ -205,6 +205,8 @@ router.post('/', async (req: Request, res: Response) => {
         expiresAt: expiresAt ? new Date(expiresAt) : null,
         isActive: isActive !== undefined ? isActive : true,
         couponSource: couponSource || 'MANUAL',
+        requiresAuth: requiresAuth !== undefined ? requiresAuth : false,
+        singleUsePerUser: singleUsePerUser !== undefined ? singleUsePerUser : false,
       },
     });
 
@@ -221,7 +223,7 @@ router.post('/', async (req: Request, res: Response) => {
  */
 router.put('/:id', async (req: Request, res: Response) => {
   try {
-    const { code, description, type, value, minimumAmount, maximumUses, startsAt, expiresAt, isActive, couponSource } = req.body;
+    const { code, description, type, value, minimumAmount, maximumUses, startsAt, expiresAt, isActive, couponSource, requiresAuth } = req.body;
 
     // Check if coupon exists
     const existing = await prisma.coupon.findUnique({ where: { id: req.params.id } });
@@ -252,6 +254,7 @@ router.put('/:id', async (req: Request, res: Response) => {
         ...(expiresAt !== undefined && { expiresAt: expiresAt ? new Date(expiresAt) : null }),
         ...(isActive !== undefined && { isActive }),
         ...(couponSource && { couponSource }),
+        ...(requiresAuth !== undefined && { requiresAuth }),
       },
     });
 

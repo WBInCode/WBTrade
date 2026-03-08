@@ -760,11 +760,24 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       // Mark coupon as used for COD orders (online payments do this in payment webhook)
       if (cart.couponCode) {
         try {
-          await prisma.coupon.update({
+          const coupon = await prisma.coupon.update({
             where: { code: cart.couponCode },
             data: { usedCount: { increment: 1 } },
           });
           console.log(`[Checkout] Coupon ${cart.couponCode} marked as used for COD order ${order.orderNumber}`);
+          
+          // Record coupon usage per user (for single use per user coupons)
+          if (userId && coupon.singleUsePerUser) {
+            await prisma.couponUsage.create({
+              data: {
+                couponId: coupon.id,
+                userId: userId,
+                orderId: order.id,
+              },
+            }).catch(err => {
+              console.error(`[Checkout] Failed to record coupon usage:`, err);
+            });
+          }
         } catch (err) {
           console.error(`[Checkout] Failed to mark coupon ${cart.couponCode} as used:`, err);
         }

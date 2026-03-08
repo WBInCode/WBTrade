@@ -134,6 +134,21 @@ export class DiscountService {
       }
     }
 
+    // Check if coupon requires authentication (registered users only)
+    if (coupon.requiresAuth && !userId) {
+      return { valid: false, error: 'Ten kod rabatowy jest dostępny tylko dla zarejestrowanych użytkowników' };
+    }
+
+    // Check if user already used this coupon (single use per user)
+    if (coupon.singleUsePerUser && userId) {
+      const existingUsage = await prisma.couponUsage.findUnique({
+        where: { couponId_userId: { couponId: coupon.id, userId } },
+      });
+      if (existingUsage) {
+        return { valid: false, error: 'Już wykorzystałeś ten kupon' };
+      }
+    }
+
     return { valid: true, coupon };
   }
 

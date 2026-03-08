@@ -407,11 +407,25 @@ export class PaymentService {
         // Mark coupon as used NOW (only after payment is confirmed)
         if (order.couponCode) {
           try {
-            await prisma.coupon.update({
+            const coupon = await prisma.coupon.update({
               where: { code: order.couponCode },
               data: { usedCount: { increment: 1 } },
             });
             console.log(`[PaymentService] Coupon ${order.couponCode} marked as used for order ${order.orderNumber}`);
+            
+            // Record coupon usage per user (for single use per user coupons)
+            if (order.userId && coupon.singleUsePerUser) {
+              await prisma.couponUsage.create({
+                data: {
+                  couponId: coupon.id,
+                  userId: order.userId,
+                  orderId: order.id,
+                },
+              }).catch(err => {
+                // Ignore duplicate entry errors (user might have somehow used it twice)
+                console.error(`[PaymentService] Failed to record coupon usage:`, err);
+              });
+            }
           } catch (err) {
             console.error(`[PaymentService] Failed to mark coupon ${order.couponCode} as used:`, err);
           }

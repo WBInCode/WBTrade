@@ -24,6 +24,8 @@ interface Coupon {
   expiresAt: string | null;
   isActive: boolean;
   couponSource: string;
+  requiresAuth: boolean;
+  singleUsePerUser: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -47,6 +49,8 @@ interface CouponFormData {
   expiresAt: string;
   isActive: boolean;
   couponSource: string;
+  requiresAuth: boolean;
+  singleUsePerUser: boolean;
 }
 
 const emptyForm: CouponFormData = {
@@ -60,6 +64,8 @@ const emptyForm: CouponFormData = {
   expiresAt: '',
   isActive: true,
   couponSource: 'MANUAL',
+  requiresAuth: false,
+  singleUsePerUser: false,
 };
 
 const typeLabels: Record<string, { label: string; icon: any; color: string }> = {
@@ -238,6 +244,8 @@ export default function CouponsPage() {
       expiresAt: coupon.expiresAt ? new Date(coupon.expiresAt).toISOString().slice(0, 16) : '',
       isActive: coupon.isActive,
       couponSource: coupon.couponSource,
+      requiresAuth: coupon.requiresAuth,
+      singleUsePerUser: coupon.singleUsePerUser,
     });
     setError('');
     setShowModal(true);
@@ -264,6 +272,8 @@ export default function CouponsPage() {
         expiresAt: form.expiresAt || null,
         isActive: form.isActive,
         couponSource: form.couponSource,
+        requiresAuth: form.requiresAuth,
+        singleUsePerUser: form.singleUsePerUser,
       };
 
       const response = editingCoupon
@@ -787,6 +797,36 @@ export default function CouponsPage() {
                   className={`relative w-11 h-6 rounded-full transition-colors ${form.isActive ? 'bg-green-500' : 'bg-slate-600'}`}
                 >
                   <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${form.isActive ? 'left-[22px]' : 'left-0.5'}`} />
+                </button>
+              </div>
+
+              {/* Requires Auth toggle */}
+              <div className="flex items-center justify-between py-2">
+                <div>
+                  <span className="text-sm text-slate-300">Tylko dla zarejestrowanych</span>
+                  <p className="text-xs text-slate-500">Kupon będzie dostępny tylko dla zalogowanych użytkowników</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setForm(prev => ({ ...prev, requiresAuth: !prev.requiresAuth }))}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${form.requiresAuth ? 'bg-blue-500' : 'bg-slate-600'}`}
+                >
+                  <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${form.requiresAuth ? 'left-[22px]' : 'left-0.5'}`} />
+                </button>
+              </div>
+
+              {/* Single Use Per User toggle */}
+              <div className="flex items-center justify-between py-2">
+                <div>
+                  <span className="text-sm text-slate-300">Jedno użycie na konto</span>
+                  <p className="text-xs text-slate-500">Każdy użytkownik może użyć tego kuponu tylko raz</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setForm(prev => ({ ...prev, singleUsePerUser: !prev.singleUsePerUser }))}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${form.singleUsePerUser ? 'bg-purple-500' : 'bg-slate-600'}`}
+                >
+                  <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${form.singleUsePerUser ? 'left-[22px]' : 'left-0.5'}`} />
                 </button>
               </div>
             </div>

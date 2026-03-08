@@ -291,6 +291,21 @@ export class CartService {
       }
     }
 
+    // Check if coupon requires authentication (registered users only)
+    if (coupon.requiresAuth && !userId) {
+      throw new Error('Ten kod rabatowy jest dostępny tylko dla zarejestrowanych użytkowników');
+    }
+
+    // Check if user already used this coupon (single use per user)
+    if (coupon.singleUsePerUser && userId) {
+      const existingUsage = await prisma.couponUsage.findUnique({
+        where: { couponId_userId: { couponId: coupon.id, userId } },
+      });
+      if (existingUsage) {
+        throw new Error('Już wykorzystałeś ten kupon');
+      }
+    }
+
     // Check for NEWSLETTER coupon restrictions - cannot be combined with other discount types
     // This is informational since only one coupon can be applied at a time
     if (coupon.couponSource === 'NEWSLETTER') {
