@@ -251,6 +251,7 @@ function sourceLabel(source: string): string {
     case 'NEWSLETTER': return 'Newsletter';
     case 'REFERRAL': return 'Polecenie';
     case 'CAMPAIGN': return 'Kampania';
+    case 'MANUAL': return 'Promocja';
     case 'ALL_COLLECTED_BONUS': return 'Niespodzianka';
     default: return 'Rabat';
   }
