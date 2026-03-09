@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, ThemeColors } from '../../constants/Colors';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useCart } from '../../contexts/CartContext';
@@ -267,7 +268,10 @@ export default function CartScreen() {
               {pkg.subtotal < FREE_SHIPPING_THRESHOLD && (
                 <View style={ds.progressBarContainer}>
                   <View style={ds.progressBarTrack}>
-                    <View
+                    <LinearGradient
+                      colors={['#ea580c', '#f59e0b', '#22c55e']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
                       style={[
                         ds.progressBarFill,
                         { width: `${Math.min((pkg.subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100)}%` },

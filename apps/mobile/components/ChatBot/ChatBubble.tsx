@@ -156,6 +156,10 @@ export function ChatBubble({ onPress, hasActiveChat, unreadCount = 0, isChatOpen
         activeOpacity={0.8}
         style={bubbleStyles.wrapper}
       >
+        {/* Label to the left of the bubble */}
+        <View style={[bubbleStyles.label, { backgroundColor: colors.card, shadowColor: colors.shadow, borderColor: colors.border }]}>
+          <Text style={[bubbleStyles.labelText, { color: colors.text }]}>Zapytaj</Text>
+        </View>
         {/* Scale animation wraps only the circle so touch bounds stay accurate on Android */}
         <Animated.View style={{ transform: [{ scale: pulse }] }}>
           {/* Pulsating glow layer behind bubble — decorative only */}
@@ -171,21 +175,17 @@ export function ChatBubble({ onPress, hasActiveChat, unreadCount = 0, isChatOpen
           />
           <View style={[bubbleStyles.container, { backgroundColor: colors.tint, shadowColor: colors.shadow }]}>
             <Image source={WUBUS_HEAD} style={bubbleStyles.mascotImage} />
-            {unreadCount > 0 ? (
-              <View style={bubbleStyles.badge}>
-                <Text style={bubbleStyles.badgeText}>
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </Text>
-              </View>
-            ) : hasActiveChat ? (
-              <View style={bubbleStyles.activeDot} />
-            ) : null}
           </View>
+          {unreadCount > 0 ? (
+            <View style={bubbleStyles.badge}>
+              <Text style={bubbleStyles.badgeText}>
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </Text>
+            </View>
+          ) : (
+            <View style={bubbleStyles.activeDot} />
+          )}
         </Animated.View>
-        {/* Label outside the scale Animated.View — always within TouchableOpacity bounds */}
-        <View style={[bubbleStyles.label, { backgroundColor: colors.card, shadowColor: colors.shadow, borderColor: colors.border }]}>
-          <Text style={[bubbleStyles.labelText, { color: colors.text }]}>Zapytaj</Text>
-        </View>
       </TouchableOpacity>
     </View>
   );
@@ -205,6 +205,7 @@ const bubbleStyles = StyleSheet.create({
     alignSelf: 'center',
   },
   wrapper: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
   container: {
@@ -258,7 +259,7 @@ const bubbleStyles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   label: {
-    marginTop: 4,
+    marginRight: 8,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 10,
@@ -275,14 +276,15 @@ const bubbleStyles = StyleSheet.create({
   },
   activeDot: {
     position: 'absolute',
-    top: 2,
-    right: 2,
+    top: -1,
+    right: -1,
     width: 14,
     height: 14,
     borderRadius: 7,
     backgroundColor: '#22c55e',
-    borderWidth: 2,
+    borderWidth: 2.5,
     borderColor: '#fff',
+    zIndex: 10,
   },
   badge: {
     position: 'absolute',
@@ -297,6 +299,7 @@ const bubbleStyles = StyleSheet.create({
     paddingHorizontal: 4,
     borderWidth: 2,
     borderColor: '#fff',
+    zIndex: 10,
   },
   badgeText: {
     color: '#fff',
