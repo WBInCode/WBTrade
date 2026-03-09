@@ -221,8 +221,8 @@ export default memo(function ProductCard({ product, showDelivery = false, showWi
 
           {/* Outlet notice */}
           {isOutletProduct && (
-            <p className="text-[9px] sm:text-[10px] text-amber-600 dark:text-amber-400 mt-1 font-medium">
-              Outlet
+            <p className="text-[9px] sm:text-[10px] text-amber-600 dark:text-amber-400 mt-1 font-bold">
+              OUTLET
             </p>
           )}
 
