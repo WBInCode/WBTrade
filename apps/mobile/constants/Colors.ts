@@ -113,6 +113,9 @@ const lightTheme = {
   searchBackground: Colors.secondary[100],
   searchText: Colors.secondary[900],
   searchPlaceholder: Colors.secondary[400],
+
+  // Category icons
+  categoryIconBg: Colors.white,
 };
 
 const darkTheme: ThemeColors = {
@@ -192,6 +195,9 @@ const darkTheme: ThemeColors = {
   searchBackground: '#2C2C2E',
   searchText: '#F5F5F5',
   searchPlaceholder: '#808080',
+
+  // Category icons
+  categoryIconBg: '#3A3A3C',
 };
 
 export const themes = {

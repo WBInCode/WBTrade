@@ -249,13 +249,13 @@ export default function AccountScreen() {
             )}
             {dashboardStats.unreadMessages > 0 && (
               <TouchableOpacity
-                style={[styles.statCard, { backgroundColor: colors.destructiveBg }]}
+                style={[styles.statCard, { backgroundColor: colors.tintLight }]}
                 onPress={() => router.push('/account/messages' as any)}
                 activeOpacity={0.7}
               >
-                <FontAwesome name="envelope" size={18} color={colors.destructiveText} />
-                <Text style={[styles.statNumber, { color: colors.destructiveText }]}>{dashboardStats.unreadMessages}</Text>
-                <Text style={[styles.statLabel, { color: colors.destructiveText }]}>Wiadomości</Text>
+                <FontAwesome name="envelope" size={18} color={colors.tint} />
+                <Text style={[styles.statNumber, { color: colors.tint }]}>{dashboardStats.unreadMessages}</Text>
+                <Text style={[styles.statLabel, { color: colors.tint }]}>Wiadomości</Text>
               </TouchableOpacity>
             )}
           </View>

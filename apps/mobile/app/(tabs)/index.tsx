@@ -47,7 +47,7 @@ const CATEGORY_BANNER_PRESETS: Array<{ keywords: string[]; subtitle: string; ico
   { keywords: ['narz', 'warsztat'], subtitle: 'Narzędzia dla profesjonalistów', icon: 'toolbox-outline', icon2: 'hammer-screwdriver', bgColor: '#1e1b4b', accentColor: '#818cf8' },
   { keywords: ['chemia', 'czyst'], subtitle: 'Środki do sprzątania i higieny', icon: 'bottle-tonic-outline', icon2: 'spray-bottle', bgColor: '#0f2b4a', accentColor: '#38bdf8' },
   { keywords: ['wag', 'pomiar'], subtitle: 'Precyzyjny sprzęt pomiarowy', icon: 'scale-balance', icon2: 'numeric', bgColor: '#1f2937', accentColor: '#6ee7b7' },
-  { keywords: ['outlet'], subtitle: 'Najlepsze okazje cenowe', icon: 'tag-multiple-outline', icon2: 'sale', bgColor: '#4a0d0d', accentColor: '#f87171' },
+  { keywords: ['outlet'], subtitle: 'Najlepsze okazje cenowe', icon: 'tag-multiple-outline', icon2: 'sale', bgColor: '#4a2400', accentColor: '#fb923c' },
   { keywords: ['gastro', 'food', 'jedz'], subtitle: 'Wyposażenie gastronomiczne', icon: 'chef-hat', icon2: 'silverware-fork-knife', bgColor: '#1a2e1a', accentColor: '#86efac' },
 ];
 
@@ -157,7 +157,7 @@ const CategoriesSection = React.memo(function CategoriesSection({ categories }: 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScrollContent}>
         {categories.map((cat, index) => (
           <TouchableOpacity key={cat.id} style={styles.categoryCircleWrap} onPress={() => router.push(`/category/${cat.slug}`)}>
-            <View style={[styles.categoryCircle, { backgroundColor: colors.card, borderColor: colors.tint }]}>
+            <View style={[styles.categoryCircle, { backgroundColor: colors.categoryIconBg || colors.card, borderColor: colors.tint }]}>
               <Image source={getCategoryIcon(cat.slug)} style={styles.categoryIconImage} contentFit="contain" />
             </View>
             <Text style={[styles.categoryCircleLabel, { color: colors.textSecondary }]} numberOfLines={2}>{cat.name}</Text>
@@ -223,7 +223,7 @@ const PromoSection = React.memo(function PromoSection({ categories }: { categori
 const CarouselSection = React.memo(function CarouselSection({ title, slug, products }: { title: string; slug: string; products: Product[] }) {
   const router = useRouter();
   const colors = useThemeColors();
-  const goToList = () => router.push({ pathname: '/(tabs)/search', params: { carousel: slug, carouselName: title } } as any);
+  const goToList = () => router.push({ pathname: '/products/list', params: { carousel: slug, carouselName: title } } as any);
   return (
     <View style={[styles.productSection, { backgroundColor: colors.card }]}>
       <View style={styles.sectionHeader}>
