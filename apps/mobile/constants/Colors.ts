@@ -196,7 +196,7 @@ const darkTheme: ThemeColors = {
   searchBackground: '#3A3A3C',
   searchBorder: '#555557',
   searchText: '#F5F5F5',
-  searchPlaceholder: '#808080',
+  searchPlaceholder: '#9A9A9A',
 
   // Category icons
   categoryIconBg: '#3A3A3C',
