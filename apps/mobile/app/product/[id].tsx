@@ -1059,7 +1059,7 @@ export default function ProductDetailScreen() {
                   {
                     backgroundColor:
                       product.badge === 'super-price'
-                        ? colors.destructive
+                        ? colors.success
                         : product.badge === 'outlet'
                           ? colors.warning
                           : product.badge === 'bestseller'
@@ -1105,7 +1105,6 @@ export default function ProductDetailScreen() {
               <Text
                 style={[
                   styles.currentPrice,
-                  hasDiscount && { color: colors.destructive },
                 ]}
               >
                 {Number(price).toFixed(2).replace('.', ',')} zł
@@ -1780,7 +1779,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     textDecorationLine: 'line-through',
   },
   discountBadge: {
-    backgroundColor: colors.destructive,
+    backgroundColor: colors.success,
     borderRadius: 4,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -1817,26 +1816,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 11,
     color: '#b45309',
     lineHeight: 16,
-  },
-  newsletterBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    backgroundColor: colors.tintLight,
-    borderWidth: 1,
-    borderColor: colors.tintMuted,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginTop: 10,
-    alignSelf: 'flex-start',
-    borderStyle: 'dashed',
-  },
-  newsletterBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.tint,
-    letterSpacing: 0.2,
   },
 
   // Variants

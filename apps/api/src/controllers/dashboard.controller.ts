@@ -29,6 +29,7 @@ export async function getDashboardOverview(req: Request, res: Response): Promise
       inTransitCount,
       recentOrdersData,
       loyaltyPoints, // Simulated for now
+      unreadMessagesCount,
     ] = await Promise.all([
       // Count unpaid orders
       prisma.order.count({
@@ -68,6 +69,14 @@ export async function getDashboardOverview(req: Request, res: Response): Promise
       }),
       // Simulated loyalty points (could be calculated from order history)
       Promise.resolve(350),
+      // Count unread messages from admin/support for the user
+      prisma.supportMessage.count({
+        where: {
+          senderRole: 'ADMIN',
+          isRead: false,
+          ticket: { userId, isArchived: false },
+        },
+      }),
     ]);
 
     // Format recent orders for frontend
@@ -94,7 +103,7 @@ export async function getDashboardOverview(req: Request, res: Response): Promise
       stats: {
         unpaidOrders: unpaidCount,
         inTransitOrders: inTransitCount,
-        unreadMessages: 5, // Placeholder - would come from messaging system
+        unreadMessages: unreadMessagesCount,
         loyaltyPoints,
       },
       recentOrders,
@@ -205,7 +214,7 @@ export async function simulatePayment(req: Request, res: Response): Promise<void
     console.log('Order found:', order ? { id: order.id, paymentStatus: order.paymentStatus, status: order.status } : null);
 
     if (!order) {
-      res.status(404).json({ message: 'Zamówienie nie zostalo znalezione' });
+      res.status(404).json({ message: 'Zamï¿½wienie nie zostalo znalezione' });
       return;
     }
 
