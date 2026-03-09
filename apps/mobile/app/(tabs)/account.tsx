@@ -1,11 +1,12 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState, useCallback } from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { api } from '../../services/api';
 import Button from '../../components/ui/Button';
 import Constants from 'expo-constants';
 
@@ -71,6 +72,21 @@ export default function AccountScreen() {
   const colors = useThemeColors();
   const { themePreference } = useTheme();
   const [googleLoading, setGoogleLoading] = React.useState(false);
+
+  // Dashboard stats
+  const [dashboardStats, setDashboardStats] = useState({ unpaidOrders: 0, inTransitOrders: 0, unreadMessages: 0 });
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!user) return;
+      (async () => {
+        try {
+          const res = await api.get<{ stats: typeof dashboardStats }>('/dashboard');
+          if (res.stats) setDashboardStats(res.stats);
+        } catch {}
+      })();
+    }, [user])
+  );
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
@@ -206,6 +222,45 @@ export default function AccountScreen() {
           <FontAwesome name="chevron-right" size={14} color={colors.textMuted} />
         </TouchableOpacity>
 
+        {/* Dashboard stats */}
+        {(dashboardStats.unpaidOrders > 0 || dashboardStats.inTransitOrders > 0 || dashboardStats.unreadMessages > 0) && (
+          <View style={[styles.statsRow, { marginHorizontal: 12, marginBottom: 4 }]}>
+            {dashboardStats.unpaidOrders > 0 && (
+              <TouchableOpacity
+                style={[styles.statCard, { backgroundColor: colors.warningBg }]}
+                onPress={() => router.push('/account/orders')}
+                activeOpacity={0.7}
+              >
+                <FontAwesome name="credit-card" size={18} color={colors.warningText} />
+                <Text style={[styles.statNumber, { color: colors.warningText }]}>{dashboardStats.unpaidOrders}</Text>
+                <Text style={[styles.statLabel, { color: colors.warningText }]}>Nieopłacone</Text>
+              </TouchableOpacity>
+            )}
+            {dashboardStats.inTransitOrders > 0 && (
+              <TouchableOpacity
+                style={[styles.statCard, { backgroundColor: colors.tintLight }]}
+                onPress={() => router.push('/account/orders')}
+                activeOpacity={0.7}
+              >
+                <FontAwesome name="truck" size={18} color={colors.tint} />
+                <Text style={[styles.statNumber, { color: colors.tint }]}>{dashboardStats.inTransitOrders}</Text>
+                <Text style={[styles.statLabel, { color: colors.tint }]}>W drodze</Text>
+              </TouchableOpacity>
+            )}
+            {dashboardStats.unreadMessages > 0 && (
+              <TouchableOpacity
+                style={[styles.statCard, { backgroundColor: colors.destructiveBg }]}
+                onPress={() => router.push('/account/messages' as any)}
+                activeOpacity={0.7}
+              >
+                <FontAwesome name="envelope" size={18} color={colors.destructiveText} />
+                <Text style={[styles.statNumber, { color: colors.destructiveText }]}>{dashboardStats.unreadMessages}</Text>
+                <Text style={[styles.statLabel, { color: colors.destructiveText }]}>Wiadomości</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
         {/* Zakupy */}
         <SectionHeader title="Zakupy" colors={colors} />
         <View style={[styles.menuSection, { backgroundColor: colors.card }]}>
@@ -216,6 +271,7 @@ export default function AccountScreen() {
           <MenuItem colors={colors} icon="star" title="Moje opinie" onPress={() => router.push('/account/reviews')} />
           <MenuItem colors={colors} icon="list-ul" title="Listy zakupowe" onPress={() => router.push('/account/shopping-lists')} />
           <MenuItem colors={colors} icon="map-marker" title="Dane do zamówień" onPress={() => router.push('/account/addresses')} />
+          <MenuItem colors={colors} icon="envelope" title="Wiadomości" badge={dashboardStats.unreadMessages} onPress={() => router.push('/account/messages' as any)} />
           <MenuItem colors={colors} icon="refresh" title="Reklamacje i zwroty" onPress={() => router.push('/account/orders')} />
         </View>
 
@@ -405,5 +461,25 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 12,
     marginTop: 16,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  statCard: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 4,
+  },
+  statNumber: {
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  statLabel: {
+    fontSize: 11,
+    fontWeight: '600',
   },
 });

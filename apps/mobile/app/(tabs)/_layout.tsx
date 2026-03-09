@@ -130,18 +130,20 @@ function TabLayoutInner() {
   const isBubbleHidden = useRef(false);
 
   const hideBubble = useCallback(() => {
+    if (isBubbleHidden.current) return;
     isBubbleHidden.current = true;
     Animated.parallel([
-      Animated.timing(hideAnim, { toValue: 1, duration: 400, useNativeDriver: false }),
-      Animated.timing(rotateAnim, { toValue: 1, duration: 400, useNativeDriver: false }),
+      Animated.timing(hideAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+      Animated.timing(rotateAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
     ]).start();
   }, [hideAnim, rotateAnim]);
 
   const showBubble = useCallback(() => {
+    if (!isBubbleHidden.current) return;
     isBubbleHidden.current = false;
     Animated.parallel([
-      Animated.timing(hideAnim, { toValue: 0, duration: 300, useNativeDriver: false }),
-      Animated.timing(rotateAnim, { toValue: 0, duration: 300, useNativeDriver: false }),
+      Animated.timing(hideAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+      Animated.timing(rotateAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
     ]).start();
   }, [hideAnim, rotateAnim]);
 
@@ -149,17 +151,21 @@ function TabLayoutInner() {
     if (!scrollCtx) return;
     // Delay attaching the scroll listener so layout scroll events on mount
     // don't immediately hide the bubble before the user has a chance to tap it
+    let unsub: (() => void) | null = null;
     const attachTimer = setTimeout(() => {
-      const unsub = scrollCtx.onDirectionChange((direction) => {
+      unsub = scrollCtx.onDirectionChange((direction) => {
         if (direction === 'down') {
           hideBubble();
+        } else if (direction === 'up' || direction === 'idle') {
+          showBubble();
         }
-        // No auto-show on scroll up — only a tap brings it back
       });
-      return unsub;
     }, 1500);
-    return () => clearTimeout(attachTimer);
-  }, [scrollCtx, hideBubble]);
+    return () => {
+      clearTimeout(attachTimer);
+      if (unsub) unsub();
+    };
+  }, [scrollCtx, hideBubble, showBubble]);
 
   // Translate X: 0 → 52px (slides bubble mostly off-screen to the right)
   const bubbleTranslateX = hideAnim.interpolate({
@@ -246,6 +252,7 @@ function TabLayoutInner() {
       {/* Floating chat bubble — only on allowed tabs */}
       {showChatBubble && (
         <Animated.View
+          pointerEvents="auto"
           style={{
             position: 'absolute',
             bottom: 90,
@@ -257,11 +264,8 @@ function TabLayoutInner() {
         >
           <ChatBubble
             onPress={() => {
-              if (isBubbleHidden.current) {
-                showBubble();
-              } else {
-                setChatOpen(true); setChatActive(true); setUnreadCount(0);
-              }
+              if (isBubbleHidden.current) showBubble();
+              setChatOpen(true); setChatActive(true); setUnreadCount(0);
             }}
             hasActiveChat={chatActive && !chatOpen}
             unreadCount={!chatOpen ? unreadCount : 0}

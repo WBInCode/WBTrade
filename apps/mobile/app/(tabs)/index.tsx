@@ -12,9 +12,10 @@ import {
   Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { FontAwesome, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { loadNotifications } from '../notifications';
 import { api } from '../../services/api';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { getCategoryIcon } from '../../constants/CategoryIcons';
@@ -25,19 +26,63 @@ import type { Product, Category } from '../../services/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const PROMO_BANNERS = [
-  { id: 'elektronika', title: 'Elektronika', subtitle: 'Odkryj hity technologiczne', icon: 'laptop' as const, bgColor: '#1e3a5f', accentColor: '#60a5fa', icon2: 'chip' as const },
-  { id: 'dom-i-ogrod', title: 'Dom i ogród', subtitle: 'Wiosenne inspiracje dla domu', icon: 'home-roof' as const, bgColor: '#14532d', accentColor: '#4ade80', icon2: 'flower-tulip-outline' as const },
-  { id: 'sport', title: 'Sport', subtitle: 'Wyposaż się na nowy sezon!', icon: 'basketball' as const, bgColor: '#78350f', accentColor: '#fbbf24', icon2: 'trophy-outline' as const },
-  { id: 'dziecko', title: 'Dla dzieci', subtitle: 'Najlepsze dla Twojego malucha', icon: 'baby-face-outline' as const, bgColor: '#4c1d95', accentColor: '#a78bfa', icon2: 'teddy-bear' as const },
+type MCIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+
+interface CategoryBanner {
+  slug: string;
+  title: string;
+  subtitle: string;
+  icon: MCIconName;
+  icon2: MCIconName;
+  bgColor: string;
+  accentColor: string;
+}
+
+const CATEGORY_BANNER_PRESETS: Array<{ keywords: string[]; subtitle: string; icon: MCIconName; icon2: MCIconName; bgColor: string; accentColor: string }> = [
+  { keywords: ['elektron', 'gsm', 'rtv', 'agd'], subtitle: 'Odkryj hity technologiczne', icon: 'laptop', icon2: 'chip', bgColor: '#1e3a5f', accentColor: '#60a5fa' },
+  { keywords: ['dom', 'ogrod', 'meble', 'dekor'], subtitle: 'Wiosenne inspiracje dla domu', icon: 'home-roof', icon2: 'flower-tulip-outline', bgColor: '#14532d', accentColor: '#4ade80' },
+  { keywords: ['sport', 'turyst', 'fitness'], subtitle: 'Wyposaż się na nowy sezon!', icon: 'basketball', icon2: 'trophy-outline', bgColor: '#78350f', accentColor: '#fbbf24' },
+  { keywords: ['dziec', 'dziecko', 'zabaw'], subtitle: 'Najlepsze dla Twojego malucha', icon: 'baby-face-outline', icon2: 'teddy-bear', bgColor: '#4c1d95', accentColor: '#a78bfa' },
+  { keywords: ['motor', 'samoch', 'auto'], subtitle: 'Wszystko do Twojego auta', icon: 'car-outline', icon2: 'wrench-outline', bgColor: '#1c1917', accentColor: '#f97316' },
+  { keywords: ['narz', 'warsztat'], subtitle: 'Narzędzia dla profesjonalistów', icon: 'toolbox-outline', icon2: 'hammer-screwdriver', bgColor: '#1e1b4b', accentColor: '#818cf8' },
+  { keywords: ['chemia', 'czyst'], subtitle: 'Środki do sprzątania i higieny', icon: 'bottle-tonic-outline', icon2: 'spray-bottle', bgColor: '#0f2b4a', accentColor: '#38bdf8' },
+  { keywords: ['wag', 'pomiar'], subtitle: 'Precyzyjny sprzęt pomiarowy', icon: 'scale-balance', icon2: 'numeric', bgColor: '#1f2937', accentColor: '#6ee7b7' },
+  { keywords: ['outlet'], subtitle: 'Najlepsze okazje cenowe', icon: 'tag-multiple-outline', icon2: 'sale', bgColor: '#4a0d0d', accentColor: '#f87171' },
+  { keywords: ['gastro', 'food', 'jedz'], subtitle: 'Wyposażenie gastronomiczne', icon: 'chef-hat', icon2: 'silverware-fork-knife', bgColor: '#1a2e1a', accentColor: '#86efac' },
 ];
+
+const FALLBACK_PRESET = { subtitle: 'Sprawdź ofertę', icon: 'store-outline' as MCIconName, icon2: 'arrow-right' as MCIconName, bgColor: '#1e293b', accentColor: '#94a3b8' };
+
+function buildCategoryBanners(categories: Category[]): CategoryBanner[] {
+  return categories.slice(0, 4).map((cat) => {
+    const s = cat.slug.toLowerCase();
+    const preset = CATEGORY_BANNER_PRESETS.find((p) => p.keywords.some((k) => s.includes(k))) || FALLBACK_PRESET;
+    return {
+      slug: cat.slug,
+      title: cat.name,
+      subtitle: preset.subtitle,
+      icon: preset.icon,
+      icon2: preset.icon2,
+      bgColor: preset.bgColor,
+      accentColor: preset.accentColor,
+    };
+  });
+}
 const BANNER_WIDTH = SCREEN_WIDTH - 32;
 
+interface CarouselMeta {
+  id: string;
+  slug: string;
+  name: string;
+  icon: string;
+  color: string;
+  description?: string;
+  productLimit: number;
+  sortOrder: number;
+}
+
 interface HomeData {
-  bestsellers: Product[];
-  featured: Product[];
-  newArrivals: Product[];
-  topRated: Product[];
+  carousels: { meta: CarouselMeta; products: Product[] }[];
   categories: Category[];
   mostWishlisted: Product | null;
 }
@@ -46,8 +91,8 @@ interface HomeData {
 type SectionItem =
   | { type: 'header' }
   | { type: 'categories'; categories: Category[] }
-  | { type: 'promo' }
-  | { type: 'carousel'; title: string; products: Product[]; key: string }
+  | { type: 'promo'; categories: Category[] }
+  | { type: 'carousel'; title: string; slug: string; products: Product[]; key: string }
   | { type: 'hero'; product: Product }
   | { type: 'top3'; products: Product[] }
   | { type: 'trust' }
@@ -59,9 +104,19 @@ type SectionItem =
 // Memoized section components — each renders in isolation
 // ═══════════════════════════════════════════════════════
 
-const HeaderSection = React.memo(function HeaderSection() {
+function HeaderSection() {
   const router = useRouter();
   const colors = useThemeColors();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadNotifications().then((items) => {
+        setUnreadCount(items.filter((n) => !n.read).length);
+      });
+    }, [])
+  );
+
   return (
     <View style={[styles.header, { backgroundColor: colors.card }]}>
       <View style={styles.headerTop}>
@@ -70,6 +125,20 @@ const HeaderSection = React.memo(function HeaderSection() {
           style={styles.headerMascot}
           contentFit="contain"
         />
+        <TouchableOpacity
+          style={styles.bellButton}
+          onPress={() => router.push('/notifications' as any)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="notifications-outline" size={24} color={colors.textSecondary} />
+          {unreadCount > 0 && (
+            <View style={[styles.bellBadge, { backgroundColor: colors.badge }]}>
+              <Text style={[styles.bellBadgeText, { color: colors.badgeText }]}>
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
       </View>
       <View style={[styles.headerDivider, { backgroundColor: colors.border }]} />
       <TouchableOpacity style={[styles.searchBar, { backgroundColor: colors.searchBackground }]} onPress={() => router.push('/(tabs)/search')} activeOpacity={0.8}>
@@ -78,7 +147,7 @@ const HeaderSection = React.memo(function HeaderSection() {
       </TouchableOpacity>
     </View>
   );
-});
+}
 
 const CategoriesSection = React.memo(function CategoriesSection({ categories }: { categories: Category[] }) {
   const router = useRouter();
@@ -104,9 +173,13 @@ const CategoriesSection = React.memo(function CategoriesSection({ categories }: 
   );
 });
 
-const PromoSection = React.memo(function PromoSection() {
+const PromoSection = React.memo(function PromoSection({ categories }: { categories: Category[] }) {
   const router = useRouter();
   const colors = useThemeColors();
+  const banners = useMemo(() => buildCategoryBanners(categories), [categories]);
+
+  if (banners.length === 0) return null;
+
   return (
     <View style={[styles.promoSection, { backgroundColor: colors.card }]}>
       <ScrollView
@@ -116,11 +189,11 @@ const PromoSection = React.memo(function PromoSection() {
         decelerationRate="fast"
         contentContainerStyle={styles.promoScrollContent}
       >
-        {PROMO_BANNERS.map((banner) => (
+        {banners.map((banner) => (
           <TouchableOpacity
-            key={banner.id}
+            key={banner.slug}
             style={[styles.promoBanner, { backgroundColor: banner.bgColor }]}
-            onPress={() => router.push(`/category/${banner.id}` as any)}
+            onPress={() => router.push(`/category/${banner.slug}` as any)}
             activeOpacity={0.9}
           >
             <View style={styles.promoDecorWrap}>
@@ -147,19 +220,20 @@ const PromoSection = React.memo(function PromoSection() {
   );
 });
 
-const CarouselSection = React.memo(function CarouselSection({ title, products }: { title: string; products: Product[] }) {
+const CarouselSection = React.memo(function CarouselSection({ title, slug, products }: { title: string; slug: string; products: Product[] }) {
   const router = useRouter();
   const colors = useThemeColors();
+  const goToList = () => router.push({ pathname: '/(tabs)/search', params: { carousel: slug, carouselName: title } } as any);
   return (
     <View style={[styles.productSection, { backgroundColor: colors.card }]}>
       <View style={styles.sectionHeader}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/search')} style={styles.seeAllBtn}>
+        <TouchableOpacity onPress={goToList} style={styles.seeAllBtn}>
           <Text style={[styles.seeAllText, { color: colors.tint }]}>Więcej</Text>
           <FontAwesome name="chevron-right" size={11} color={colors.tint} />
         </TouchableOpacity>
       </View>
-      <ProductCarousel products={products} />
+      <ProductCarousel products={products} onSeeAll={goToList} />
     </View>
   );
 });
@@ -380,34 +454,50 @@ export default function HomeScreen() {
   const loadData = useCallback(async () => {
     try {
       setError(null);
-      const [bestRes, featRes, catRes, newRes, heroRes, topRatedRes] = await Promise.allSettled([
-        api.get<{ products: Product[] }>('/products/bestsellers', { limit: 6 }),
-        api.get<{ products: Product[] }>('/products/featured', { limit: 6 }),
+      const [carouselListRes, catRes, heroRes] = await Promise.allSettled([
+        api.get<{ carousels: CarouselMeta[] }>('/carousels'),
         api.get<{ categories: Category[] }>('/categories/main'),
-        api.get<{ products: Product[] }>('/products/new-arrivals', { limit: 6 }),
         api.get<{ product: Product | null }>('/products/most-wishlisted'),
-        api.get<{ products: Product[] }>('/products/top-rated', { limit: 6 }),
       ]);
 
-      const results: HomeData = {
-        bestsellers: bestRes.status === 'fulfilled' ? bestRes.value.products || [] : [],
-        featured: featRes.status === 'fulfilled' ? featRes.value.products || [] : [],
-        categories: catRes.status === 'fulfilled' ? catRes.value.categories || [] : [],
-        newArrivals: newRes.status === 'fulfilled' ? newRes.value.products || [] : [],
-        mostWishlisted: heroRes.status === 'fulfilled' ? heroRes.value.product || null : null,
-        topRated: topRatedRes.status === 'fulfilled' ? topRatedRes.value.products || [] : [],
-      };
+      const carouselMetas: CarouselMeta[] =
+        carouselListRes.status === 'fulfilled' ? carouselListRes.value.carousels || [] : [];
 
-      if (!results.bestsellers.length && !results.featured.length) {
+      // Fetch products for each carousel in parallel
+      const carouselProductResults = await Promise.allSettled(
+        carouselMetas.map((c) =>
+          api.get<{ products: Product[] }>(`/carousels/${c.slug}/products`)
+        )
+      );
+
+      const carousels = carouselMetas
+        .map((meta, i) => ({
+          meta,
+          products:
+            carouselProductResults[i].status === 'fulfilled'
+              ? (carouselProductResults[i] as PromiseFulfilledResult<{ products: Product[] }>).value.products || []
+              : [],
+        }))
+        .filter((c) => c.products.length > 0);
+
+      // Fallback jeśli karuzele puste
+      if (carousels.length === 0) {
         try {
           const fallback = await api.get<{ products: Product[] }>('/products', { limit: 10, sort: 'newest' });
-          results.featured = fallback.products || [];
+          carousels.push({
+            meta: { id: 'fallback', slug: 'featured', name: 'Polecane', icon: 'star', color: 'from-violet-600 to-purple-700', productLimit: 10, sortOrder: 0 },
+            products: fallback.products || [],
+          });
         } catch {
           setError('Nie udało się załadować produktów. Sprawdź połączenie z internetem.');
         }
       }
 
-      setData(results);
+      setData({
+        carousels,
+        categories: catRes.status === 'fulfilled' ? catRes.value.categories || [] : [],
+        mostWishlisted: heroRes.status === 'fulfilled' ? heroRes.value.product || null : null,
+      });
     } catch (err: any) {
       console.error('Error loading home data:', err);
       setError(err.message || 'Nie udało się załadować produktów');
@@ -468,26 +558,35 @@ export default function HomeScreen() {
     if (data.categories.length > 0) {
       items.push({ type: 'categories', categories: data.categories });
     }
-    items.push({ type: 'promo' });
-    if (data.featured.length > 0) {
-      items.push({ type: 'carousel', title: 'Polecane', products: data.featured, key: 'feat' });
+    items.push({ type: 'promo', categories: data.categories });
+
+    // Wstaw karuzele dynamicznie z panelu admina
+    const firstCarousel = data.carousels[0];
+    if (firstCarousel) {
+      items.push({ type: 'carousel', title: firstCarousel.meta.name, slug: firstCarousel.meta.slug, products: firstCarousel.products, key: firstCarousel.meta.slug });
     }
-    const heroProduct = data.mostWishlisted || data.featured[0] || data.bestsellers[0];
+
+    // Hero produkt
+    const allProducts = data.carousels.flatMap((c) => c.products);
+    const heroProduct = data.mostWishlisted || allProducts[0] || null;
     if (heroProduct) {
       items.push({ type: 'hero', product: heroProduct });
     }
-    if (data.bestsellers.length > 0) {
-      items.push({ type: 'carousel', title: 'Bestsellery', products: data.bestsellers, key: 'best' });
+
+    // Pozostałe karuzele
+    for (let i = 1; i < data.carousels.length; i++) {
+      const c = data.carousels[i];
+      items.push({ type: 'carousel', title: c.meta.name, slug: c.meta.slug, products: c.products, key: c.meta.slug });
+      // Po drugiej karuzeli dodaj Top3 (z bestsellery jeśli istnieje)
+      if (i === 1) {
+        const bestsellersCarousel = data.carousels.find((x) => x.meta.slug === 'bestsellers');
+        const top3products = bestsellersCarousel?.products || c.products;
+        if (top3products.length >= 3) {
+          items.push({ type: 'top3', products: top3products });
+        }
+      }
     }
-    if (data.bestsellers.length >= 3) {
-      items.push({ type: 'top3', products: data.bestsellers });
-    }
-    if (data.topRated.length > 0) {
-      items.push({ type: 'carousel', title: 'Najlepiej oceniane', products: data.topRated, key: 'top-rated' });
-    }
-    if (data.newArrivals.length > 0) {
-      items.push({ type: 'carousel', title: 'Nowości', products: data.newArrivals, key: 'new' });
-    }
+
     items.push({ type: 'trust' });
     if (discoverProducts.length > 0) {
       items.push({ type: 'discover-header' });
@@ -509,9 +608,9 @@ export default function HomeScreen() {
       case 'categories':
         return <CategoriesSection categories={item.categories} />;
       case 'promo':
-        return <PromoSection />;
+        return <PromoSection categories={item.categories} />;
       case 'carousel':
-        return <CarouselSection title={item.title} products={item.products} />;
+        return <CarouselSection title={item.title} slug={item.slug} products={item.products} />;
       case 'hero':
         return <HeroSection product={item.product} />;
       case 'top3':
@@ -621,10 +720,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingTop: 10, paddingBottom: 10,
   },
   headerTop: {
-    alignItems: 'center', marginBottom: 10,
+    alignItems: 'center', marginBottom: 10, position: 'relative',
   },
   headerLogo: { width: 143, height: 42 },
   headerMascot: { width: 80, height: 80 },
+  bellButton: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bellBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 0,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  bellBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+  },
   headerDivider: {
     height: 1, marginBottom: 10,
   },

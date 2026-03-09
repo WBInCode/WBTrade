@@ -12,6 +12,7 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColors } from '../hooks/useThemeColors';
 import type { ThemeColors } from '../constants/Colors';
 import { api } from '../services/api';
@@ -43,6 +44,7 @@ export default function AddToCartModal({
 }: AddToCartModalProps) {
   const router = useRouter();
   const colors = useThemeColors();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [sameWarehouseProducts, setSameWarehouseProducts] = useState<Product[]>([]);
   const [loadingRelated, setLoadingRelated] = useState(false);
@@ -239,7 +241,7 @@ export default function AddToCartModal({
           </ScrollView>
 
           {/* Action buttons */}
-          <View style={styles.actions}>
+          <View style={[styles.actions, { paddingBottom: Math.max(insets.bottom, 12) }]}>
             <TouchableOpacity style={styles.continueButton} onPress={onClose}>
               <Ionicons name="arrow-back" size={16} color={colors.textSecondary} />
               <Text style={styles.continueText}>Kupuj dalej</Text>
@@ -282,7 +284,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '85%',
-    paddingBottom: 20,
   },
   closeButton: {
     position: 'absolute',
