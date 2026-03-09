@@ -117,7 +117,7 @@ export default function ShoppingListsScreen() {
         />
         <SafeAreaView style={styles.container} edges={[]}>
           <View style={styles.guestState}>
-            <FontAwesome name="list-ul" size={48} color={colors.inputBorder} />
+            <FontAwesome name="list-ul" size={48} color={colors.textMuted} />
             <Text style={styles.guestTitle}>Zaloguj się</Text>
             <Text style={styles.guestHint}>
               Aby korzystać z list zakupowych, musisz się zalogować.
@@ -181,7 +181,7 @@ export default function ShoppingListsScreen() {
         ) : lists.length === 0 ? (
           <View style={styles.emptyState}>
             <View style={styles.emptyIcon}>
-              <FontAwesome name="list-ul" size={40} color={colors.inputBorder} />
+              <FontAwesome name="list-ul" size={40} color={colors.textMuted} />
             </View>
             <Text style={styles.emptyTitle}>Brak list zakupowych</Text>
             <Text style={styles.emptyHint}>
