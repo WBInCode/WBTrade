@@ -100,6 +100,8 @@ async function tryRefreshToken(): Promise<boolean> {
 
 // --- Main fetch wrapper ---
 
+const FETCH_TIMEOUT_MS = 15000; // 15 seconds
+
 interface FetchOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: any;
@@ -148,7 +150,22 @@ export async function apiFetch<T>(endpoint: string, options: FetchOptions = {}):
     fetchOptions.body = JSON.stringify(body);
   }
 
-  let response = await fetch(url, fetchOptions);
+  // Timeout wrapper
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  fetchOptions.signal = controller.signal;
+
+  let response: Response;
+  try {
+    response = await fetch(url, fetchOptions);
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    if (err?.name === 'AbortError') {
+      throw new ApiError('Serwer nie odpowiada. Spróbuj ponownie za chwilę.', 0);
+    }
+    throw new ApiError('Brak połączenia z internetem lub serwer jest niedostępny.', 0);
+  }
+  clearTimeout(timeoutId);
 
   // Handle 401 — try token refresh once
   if (response.status === 401 && !skipAuth) {

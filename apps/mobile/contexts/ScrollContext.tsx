@@ -27,10 +27,10 @@ export function ScrollProvider({ children }: { children: React.ReactNode }) {
       const y = event.nativeEvent.contentOffset.y;
       const diff = y - lastOffsetY.current;
 
-      // Only trigger on meaningful scroll (>3px threshold)
-      if (diff > 3) {
+      // Only trigger on meaningful scroll (>8px threshold to avoid thrashing)
+      if (diff > 8) {
         notify('down');
-      } else if (diff < -3) {
+      } else if (diff < -8) {
         notify('up');
       }
 

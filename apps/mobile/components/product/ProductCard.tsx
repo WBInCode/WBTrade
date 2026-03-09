@@ -82,10 +82,14 @@ function ProductCard({ product, width }: ProductCardProps) {
 
   const badge = product.badge ? badgeMap[product.badge] : null;
 
-  // Check stock from variants
-  const hasStock = product.variants
-    ? product.variants.some((v) => v.stock > 0)
-    : true;
+  // Check stock: use product.stock if available (from carousel/transformed API),
+  // otherwise fall back to variants array
+  const hasStock =
+    typeof product.stock === 'number'
+      ? product.stock > 0
+      : product.variants
+        ? product.variants.some((v) => (v.stock ?? (v.inventory?.reduce((acc: number, inv: any) => acc + Math.max(0, (inv.quantity || 0) - (inv.reserved || 0)), 0) ?? 0)) > 0)
+        : true;
 
   // Entrance animation
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -166,24 +170,26 @@ function ProductCard({ product, width }: ProductCardProps) {
             {product.name}
           </Text>
 
-          {/* Star rating */}
-          <View style={styles.ratingRow}>
-            {[1, 2, 3, 4, 5].map((star) => (
-              <FontAwesome
-                key={star}
-                name="star"
-                size={10}
-                color={
-                  star <= Math.round(Number(product.rating || 0))
-                    ? '#f59e0b'
-                    : colors.border
-                }
-              />
-            ))}
-            <Text style={styles.ratingText}>
-              ({product.reviewCount || 0})
-            </Text>
-          </View>
+          {/* Star rating — only shown when there are reviews */}
+          {(Number(product.reviewCount) > 0 || Number(product.rating) > 0) && (
+            <View style={styles.ratingRow}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <FontAwesome
+                  key={star}
+                  name="star"
+                  size={10}
+                  color={
+                    star <= Math.round(Number(product.rating || 0))
+                      ? '#f59e0b'
+                      : colors.border
+                  }
+                />
+              ))}
+              <Text style={styles.ratingText}>
+                ({product.reviewCount || 0})
+              </Text>
+            </View>
+          )}
 
           <View style={styles.priceRow}>
             <Text
@@ -364,7 +370,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   deliveryText: {
     fontSize: 11,
-    color: colors.tint,
+    color: colors.success,
     fontWeight: '500',
   },
   deliveryOutOfStock: {

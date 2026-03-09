@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,10 @@ import {
   ScrollView,
   StyleSheet,
   RefreshControl,
+  Modal,
+  TextInput,
+  Animated,
+  Keyboard,
 } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -26,7 +30,217 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'name_asc', label: 'Nazwa A-Z' },
 ];
 
+const WAREHOUSES = [
+  { id: 'leker', label: 'Leker', location: 'Chynów' },
+  { id: 'hp', label: 'HP', location: 'Zielona Góra' },
+  { id: 'btp', label: 'BTP', location: 'Chotów' },
+  { id: 'outlet', label: 'Outlet', location: 'Rzeszów' },
+];
+
 const PAGE_LIMIT = 48;
+
+// ── Filter Modal ──
+
+interface Filters {
+  minPrice: string;
+  maxPrice: string;
+  warehouse: string;
+  discounted: boolean;
+}
+
+const EMPTY_FILTERS: Filters = { minPrice: '', maxPrice: '', warehouse: '', discounted: false };
+
+function FilterModal({
+  visible,
+  onClose,
+  filters,
+  onApply,
+  colors,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  filters: Filters;
+  onApply: (f: Filters) => void;
+  colors: ReturnType<typeof useThemeColors>;
+}) {
+  const [local, setLocal] = useState<Filters>(filters);
+
+  useEffect(() => {
+    if (visible) setLocal(filters);
+  }, [visible, filters]);
+
+  const hasFilters =
+    local.minPrice !== '' || local.maxPrice !== '' || local.warehouse !== '' || local.discounted;
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={fStyles.overlay}>
+        <View style={[fStyles.sheet, { backgroundColor: colors.card }]}>
+          {/* Header */}
+          <View style={[fStyles.sheetHeader, { borderBottomColor: colors.border }]}>
+            <Text style={[fStyles.sheetTitle, { color: colors.text }]}>Filtry</Text>
+            <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+              <FontAwesome name="times" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={fStyles.sheetBody} keyboardShouldPersistTaps="handled">
+            {/* Price range */}
+            <Text style={[fStyles.filterLabel, { color: colors.text }]}>Cena (zł)</Text>
+            <View style={fStyles.priceRow}>
+              <TextInput
+                style={[fStyles.priceInput, { backgroundColor: colors.inputBackground, borderColor: colors.inputBorder, color: colors.text }]}
+                placeholder="Od"
+                placeholderTextColor={colors.textMuted}
+                keyboardType="numeric"
+                value={local.minPrice}
+                onChangeText={(v) => setLocal((p) => ({ ...p, minPrice: v.replace(/[^0-9.,]/g, '') }))}
+              />
+              <Text style={{ color: colors.textMuted }}>—</Text>
+              <TextInput
+                style={[fStyles.priceInput, { backgroundColor: colors.inputBackground, borderColor: colors.inputBorder, color: colors.text }]}
+                placeholder="Do"
+                placeholderTextColor={colors.textMuted}
+                keyboardType="numeric"
+                value={local.maxPrice}
+                onChangeText={(v) => setLocal((p) => ({ ...p, maxPrice: v.replace(/[^0-9.,]/g, '') }))}
+              />
+            </View>
+
+            {/* Warehouse */}
+            <Text style={[fStyles.filterLabel, { color: colors.text, marginTop: 20 }]}>Magazyn</Text>
+            {WAREHOUSES.map((w) => (
+              <TouchableOpacity
+                key={w.id}
+                style={[
+                  fStyles.chipBtn,
+                  {
+                    borderColor: local.warehouse === w.id ? colors.tint : colors.border,
+                    backgroundColor: local.warehouse === w.id ? colors.tintLight : colors.background,
+                  },
+                ]}
+                onPress={() => setLocal((p) => ({ ...p, warehouse: p.warehouse === w.id ? '' : w.id }))}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    fStyles.chipBtnText,
+                    { color: local.warehouse === w.id ? colors.tint : colors.text },
+                  ]}
+                >
+                  {w.label} — {w.location}
+                </Text>
+                {local.warehouse === w.id && (
+                  <FontAwesome name="check" size={12} color={colors.tint} />
+                )}
+              </TouchableOpacity>
+            ))}
+
+            {/* Discounted */}
+            <Text style={[fStyles.filterLabel, { color: colors.text, marginTop: 20 }]}>Promocje</Text>
+            <TouchableOpacity
+              style={[
+                fStyles.chipBtn,
+                {
+                  borderColor: local.discounted ? colors.tint : colors.border,
+                  backgroundColor: local.discounted ? colors.tintLight : colors.background,
+                },
+              ]}
+              onPress={() => setLocal((p) => ({ ...p, discounted: !p.discounted }))}
+              activeOpacity={0.7}
+            >
+              <FontAwesome name="tag" size={14} color={local.discounted ? colors.tint : colors.textMuted} />
+              <Text style={[fStyles.chipBtnText, { color: local.discounted ? colors.tint : colors.text }]}>
+                Tylko przecenione
+              </Text>
+              {local.discounted && <FontAwesome name="check" size={12} color={colors.tint} />}
+            </TouchableOpacity>
+          </ScrollView>
+
+          {/* Actions */}
+          <View style={[fStyles.sheetFooter, { borderTopColor: colors.border }]}>
+            {hasFilters && (
+              <TouchableOpacity
+                style={[fStyles.clearBtn, { borderColor: colors.border }]}
+                onPress={() => setLocal(EMPTY_FILTERS)}
+                activeOpacity={0.7}
+              >
+                <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 14 }}>Wyczyść</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={[fStyles.applyBtn, { backgroundColor: colors.tint, flex: hasFilters ? 1 : undefined }]}
+              onPress={() => {
+                Keyboard.dismiss();
+                onApply(local);
+                onClose();
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={{ color: colors.textInverse, fontWeight: '700', fontSize: 15 }}>Zastosuj filtry</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const fStyles = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  sheet: { borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '80%' },
+  sheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  sheetTitle: { fontSize: 18, fontWeight: '700' },
+  sheetBody: { padding: 16 },
+  filterLabel: { fontSize: 14, fontWeight: '700', marginBottom: 10 },
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  priceInput: {
+    flex: 1,
+    height: 44,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    fontSize: 15,
+  },
+  chipBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  chipBtnText: { fontSize: 14, fontWeight: '500', flex: 1 },
+  sheetFooter: {
+    flexDirection: 'row',
+    gap: 10,
+    padding: 16,
+    borderTopWidth: 1,
+  },
+  clearBtn: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  applyBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+});
+
+// ── Main Screen ──
 
 export default function CategoryScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -48,6 +262,17 @@ export default function CategoryScreen() {
   // Filters & Sort
   const [sort, setSort] = useState<SortOption>('popularity');
   const [showSortMenu, setShowSortMenu] = useState(false);
+  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  const [showFilters, setShowFilters] = useState(false);
+
+  const activeFilterCount = useMemo(() => {
+    let c = 0;
+    if (filters.minPrice) c++;
+    if (filters.maxPrice) c++;
+    if (filters.warehouse) c++;
+    if (filters.discounted) c++;
+    return c;
+  }, [filters]);
 
   const fetchCategory = useCallback(async () => {
     if (!slug) return;
@@ -68,12 +293,18 @@ export default function CategoryScreen() {
       setError(null);
 
       try {
-        const res = await api.get<any>('/products', {
+        const params: Record<string, any> = {
           category: slug,
           sort,
           page: pageNum,
           limit: PAGE_LIMIT,
-        });
+        };
+        if (filters.minPrice) params.minPrice = filters.minPrice.replace(',', '.');
+        if (filters.maxPrice) params.maxPrice = filters.maxPrice.replace(',', '.');
+        if (filters.warehouse) params.warehouse = filters.warehouse;
+        if (filters.discounted) params.discounted = 'true';
+
+        const res = await api.get<any>('/products', params);
 
         if (pageNum === 1) {
           setProducts(res.products || []);
@@ -93,7 +324,7 @@ export default function CategoryScreen() {
         setRefreshing(false);
       }
     },
-    [slug, sort]
+    [slug, sort, filters]
   );
 
   // Initial load
@@ -121,6 +352,10 @@ export default function CategoryScreen() {
   const handleSortChange = useCallback((newSort: SortOption) => {
     setSort(newSort);
     setShowSortMenu(false);
+  }, []);
+
+  const handleApplyFilters = useCallback((f: Filters) => {
+    setFilters(f);
   }, []);
 
   const categoryName = category?.name || slug || 'Kategoria';
@@ -158,27 +393,86 @@ export default function CategoryScreen() {
     <>
       <Stack.Screen options={{ title: categoryName }} />
       <View style={dynamicStyles.container}>
-        {/* Sort bar */}
+        {/* Sort + Filter bar */}
         <View style={dynamicStyles.toolbar}>
           <Text style={dynamicStyles.resultCount}>
             {totalProducts} produkt{totalProducts === 1 ? '' : totalProducts < 5 ? 'y' : 'ów'}
           </Text>
-          <TouchableOpacity
-            style={dynamicStyles.sortButton}
-            onPress={() => setShowSortMenu(!showSortMenu)}
-            activeOpacity={0.7}
-          >
-            <FontAwesome name="sort" size={14} color={colors.textSecondary} />
-            <Text style={dynamicStyles.sortButtonText}>
-              {SORT_OPTIONS.find((o) => o.value === sort)?.label}
-            </Text>
-            <FontAwesome
-              name={showSortMenu ? 'chevron-up' : 'chevron-down'}
-              size={10}
-              color={colors.textMuted}
-            />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {/* Filter button */}
+            <TouchableOpacity
+              style={[dynamicStyles.sortButton, activeFilterCount > 0 && { borderColor: colors.tint }]}
+              onPress={() => setShowFilters(true)}
+              activeOpacity={0.7}
+            >
+              <FontAwesome name="sliders" size={14} color={activeFilterCount > 0 ? colors.tint : colors.textSecondary} />
+              <Text style={[dynamicStyles.sortButtonText, activeFilterCount > 0 && { color: colors.tint }]}>
+                Filtry{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+              </Text>
+            </TouchableOpacity>
+            {/* Sort button */}
+            <TouchableOpacity
+              style={dynamicStyles.sortButton}
+              onPress={() => setShowSortMenu(!showSortMenu)}
+              activeOpacity={0.7}
+            >
+              <FontAwesome name="sort" size={14} color={colors.textSecondary} />
+              <Text style={dynamicStyles.sortButtonText}>
+                {SORT_OPTIONS.find((o) => o.value === sort)?.label}
+              </Text>
+              <FontAwesome
+                name={showSortMenu ? 'chevron-up' : 'chevron-down'}
+                size={10}
+                color={colors.textMuted}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
+
+        {/* Active filter chips */}
+        {activeFilterCount > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={dynamicStyles.chipBar}
+            contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
+          >
+            {filters.minPrice !== '' && (
+              <View style={[dynamicStyles.activeChip, { backgroundColor: colors.tintLight }]}>
+                <Text style={[dynamicStyles.activeChipText, { color: colors.tint }]}>Od {filters.minPrice} zł</Text>
+                <TouchableOpacity onPress={() => setFilters((p) => ({ ...p, minPrice: '' }))}>
+                  <FontAwesome name="times-circle" size={14} color={colors.tint} />
+                </TouchableOpacity>
+              </View>
+            )}
+            {filters.maxPrice !== '' && (
+              <View style={[dynamicStyles.activeChip, { backgroundColor: colors.tintLight }]}>
+                <Text style={[dynamicStyles.activeChipText, { color: colors.tint }]}>Do {filters.maxPrice} zł</Text>
+                <TouchableOpacity onPress={() => setFilters((p) => ({ ...p, maxPrice: '' }))}>
+                  <FontAwesome name="times-circle" size={14} color={colors.tint} />
+                </TouchableOpacity>
+              </View>
+            )}
+            {filters.warehouse !== '' && (
+              <View style={[dynamicStyles.activeChip, { backgroundColor: colors.tintLight }]}>
+                <Text style={[dynamicStyles.activeChipText, { color: colors.tint }]}>
+                  {WAREHOUSES.find((w) => w.id === filters.warehouse)?.label}
+                </Text>
+                <TouchableOpacity onPress={() => setFilters((p) => ({ ...p, warehouse: '' }))}>
+                  <FontAwesome name="times-circle" size={14} color={colors.tint} />
+                </TouchableOpacity>
+              </View>
+            )}
+            {filters.discounted && (
+              <View style={[dynamicStyles.activeChip, { backgroundColor: colors.tintLight }]}>
+                <Text style={[dynamicStyles.activeChipText, { color: colors.tint }]}>Przecenione</Text>
+                <TouchableOpacity onPress={() => setFilters((p) => ({ ...p, discounted: false }))}>
+                  <FontAwesome name="times-circle" size={14} color={colors.tint} />
+                </TouchableOpacity>
+              </View>
+            )}
+          </ScrollView>
+        )}
 
         {/* Sort dropdown */}
         {showSortMenu && (
@@ -218,6 +512,15 @@ export default function CategoryScreen() {
           hasNextPage={page < totalPages}
           isFetchingNextPage={loadingMore}
           emptyMessage="Brak produktów w tej kategorii"
+        />
+
+        {/* Filter Modal */}
+        <FilterModal
+          visible={showFilters}
+          onClose={() => setShowFilters(false)}
+          filters={filters}
+          onApply={handleApplyFilters}
+          colors={colors}
         />
       </View>
     </>
@@ -322,6 +625,26 @@ const createDynamicStyles = (colors: ReturnType<typeof useThemeColors>) =>
     },
     sortOptionTextActive: {
       color: colors.tint,
+      fontWeight: '600',
+    },
+
+    // Active filter chips
+    chipBar: {
+      backgroundColor: colors.card,
+      paddingVertical: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    activeChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 16,
+    },
+    activeChipText: {
+      fontSize: 12,
       fontWeight: '600',
     },
   });

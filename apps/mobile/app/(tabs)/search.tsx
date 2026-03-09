@@ -138,7 +138,7 @@ async function clearAllRecentSearches(): Promise<void> {
 // ═════════════════════════════════════════════════════════════
 export default function SearchScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ warehouse?: string }>();
+  const params = useLocalSearchParams<{ warehouse?: string; carousel?: string; carouselName?: string }>();
   const inputRef = useRef<TextInput>(null);
   const colors = useThemeColors();
 
@@ -154,6 +154,8 @@ export default function SearchScreen() {
   const [sort, setSort] = useState<SortOption>('relevance');
   const [showSort, setShowSort] = useState(false);
   const [warehouseFilter, setWarehouseFilter] = useState<string | null>(null);
+  const [carouselFilter, setCarouselFilter] = useState<string | null>(null);
+  const [carouselName, setCarouselName] = useState<string>('');
 
   // Results fade animation
   const resultsFadeAnim = useRef(new Animated.Value(0)).current;
@@ -210,6 +212,41 @@ export default function SearchScreen() {
     setSearched(false);
     setQuery('');
     router.setParams({ warehouse: '' });
+  };
+
+  // Handle carousel param from home screen "Więcej" button
+  useEffect(() => {
+    if (params.carousel) {
+      const name = params.carouselName || params.carousel;
+      setCarouselFilter(params.carousel);
+      setCarouselName(name);
+      loadCarouselProducts(params.carousel);
+    }
+  }, [params.carousel]);
+
+  const loadCarouselProducts = async (slug: string) => {
+    setLoading(true);
+    setSearched(true);
+    try {
+      const response = await api.get<{ products: Product[] }>(`/carousels/${slug}/products`);
+      setRawProducts(response.products || []);
+      setTotal(response.products?.length || 0);
+    } catch {
+      setRawProducts([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clearCarouselFilter = () => {
+    setCarouselFilter(null);
+    setCarouselName('');
+    setRawProducts([]);
+    setTotal(0);
+    setSearched(false);
+    setQuery('');
+    router.setParams({ carousel: '' });
   };
 
   // Infinite scroll
@@ -553,6 +590,21 @@ export default function SearchScreen() {
         </View>
       )}
 
+      {/* ── CAROUSEL FILTER BAR ── */}
+      {carouselFilter && (
+        <View style={[styles.warehouseFilterBar, { backgroundColor: colors.tintLight, borderBottomColor: colors.border }]}>
+          <View style={styles.warehouseFilterInfo}>
+            <FontAwesome name="star" size={16} color={colors.tint} />
+            <Text style={[styles.warehouseFilterText, { color: colors.tint }]}>
+              {carouselName || carouselFilter}
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.warehouseFilterClear} onPress={clearCarouselFilter}>
+            <FontAwesome name="times-circle" size={20} color={colors.tint} />
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* ── RESULTS ── */}
       {searched && !loading && (
         <Animated.View style={{ flex: 1, opacity: resultsFadeAnim }}>
@@ -560,7 +612,7 @@ export default function SearchScreen() {
             <View style={[styles.toolbar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
               <Text style={[styles.resultCount, { color: colors.textSecondary }]}>
                 {sortedProducts.length} wynik{sortedProducts.length === 1 ? '' : sortedProducts.length < 5 ? 'i' : 'ów'}
-                {warehouseFilter ? ` z ${WAREHOUSE_NAMES[warehouseFilter] || warehouseFilter}` : query ? ` dla "${query}"` : ''}
+                {warehouseFilter ? ` z ${WAREHOUSE_NAMES[warehouseFilter] || warehouseFilter}` : carouselFilter ? ` — ${carouselName || carouselFilter}` : query ? ` dla "${query}"` : ''}
               </Text>
               <TouchableOpacity
                 style={[styles.sortButton, { borderColor: colors.border }]}
