@@ -1105,7 +1105,6 @@ export default function ProductDetailScreen() {
               <Text
                 style={[
                   styles.currentPrice,
-                  hasDiscount && { color: colors.success },
                 ]}
               >
                 {Number(price).toFixed(2).replace('.', ',')} zł
