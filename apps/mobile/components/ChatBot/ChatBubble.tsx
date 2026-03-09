@@ -34,8 +34,8 @@ export function ChatBubble({ onPress, hasActiveChat, unreadCount = 0, isChatOpen
   useEffect(() => {
     const animation = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, { toValue: 1.08, duration: 1500, useNativeDriver: false }),
-        Animated.timing(pulse, { toValue: 1, duration: 1500, useNativeDriver: false }),
+        Animated.timing(pulse, { toValue: 1.08, duration: 1500, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1, duration: 1500, useNativeDriver: true }),
       ]),
     );
     animation.start();
@@ -46,8 +46,8 @@ export function ChatBubble({ onPress, hasActiveChat, unreadCount = 0, isChatOpen
   useEffect(() => {
     const animation = Animated.loop(
       Animated.sequence([
-        Animated.timing(glowOpacity, { toValue: 0.6, duration: 1500, useNativeDriver: false }),
-        Animated.timing(glowOpacity, { toValue: 0.15, duration: 1500, useNativeDriver: false }),
+        Animated.timing(glowOpacity, { toValue: 0.6, duration: 1500, useNativeDriver: true }),
+        Animated.timing(glowOpacity, { toValue: 0.15, duration: 1500, useNativeDriver: true }),
       ]),
     );
     animation.start();
@@ -56,7 +56,7 @@ export function ChatBubble({ onPress, hasActiveChat, unreadCount = 0, isChatOpen
 
   // Dismiss tooltip helper
   const dismissTooltip = useCallback(() => {
-    Animated.timing(tooltipOpacity, { toValue: 0, duration: 200, useNativeDriver: false }).start(() => {
+    Animated.timing(tooltipOpacity, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
       setShowTooltip(false);
     });
     if (tooltipHideTimer.current) {
@@ -103,7 +103,7 @@ export function ChatBubble({ onPress, hasActiveChat, unreadCount = 0, isChatOpen
   // Animate tooltip in + auto-hide after 5s
   useEffect(() => {
     if (showTooltip) {
-      Animated.timing(tooltipOpacity, { toValue: 1, duration: 300, useNativeDriver: false }).start();
+      Animated.timing(tooltipOpacity, { toValue: 1, duration: 300, useNativeDriver: true }).start();
       tooltipHideTimer.current = setTimeout(() => {
         dismissTooltip();
       }, 5000);

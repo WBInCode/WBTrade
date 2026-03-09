@@ -93,15 +93,18 @@ function transformProduct(product: any): any {
   const attributes = parseJsonField(product.attributes);
 
   let stock = 0;
-  if (product.variants) {
-    for (const v of product.variants) {
-      if (v.inventory) {
-        for (const inv of v.inventory) {
-          stock += Math.max(0, (inv.quantity || 0) - (inv.reserved || 0));
+  const variantsWithStock = product.variants
+    ? product.variants.map((v: any) => {
+        let variantStock = 0;
+        if (v.inventory) {
+          for (const inv of v.inventory) {
+            variantStock += Math.max(0, (inv.quantity || 0) - (inv.reserved || 0));
+          }
         }
-      }
-    }
-  }
+        stock += variantStock;
+        return { ...v, stock: variantStock };
+      })
+    : [];
 
   let tags: string[] = [];
   if (Array.isArray(product.tags)) {
@@ -112,6 +115,7 @@ function transformProduct(product: any): any {
 
   return {
     ...product,
+    variants: variantsWithStock,
     specifications,
     attributes,
     stock,

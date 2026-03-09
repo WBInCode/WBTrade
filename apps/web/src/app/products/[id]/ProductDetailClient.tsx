@@ -7,7 +7,7 @@ import Image from 'next/image';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import Breadcrumb from '../../../components/Breadcrumb';
-import { productsApi, carouselsApi, reviewsApi, Product, Review, ReviewStats, CanReviewResult } from '../../../lib/api';
+import { productsApi, reviewsApi, Product, Review, ReviewStats, CanReviewResult } from '../../../lib/api';
 import ProductCard from '../../../components/ProductCard';
 import { useCart } from '../../../contexts/CartContext';
 import { useWishlist } from '../../../contexts/WishlistContext';
@@ -238,35 +238,34 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     trackViewItem(item, price);
   }, [product]);
 
-  // Fetch bestsellers for recommendations (from admin-configured carousel)
+  // Fetch same-warehouse products for recommendations
   useEffect(() => {
-    async function fetchBestsellers() {
+    if (!product?.id) return;
+    async function fetchSameWarehouse() {
       try {
-        const response = await carouselsApi.getProducts('bestsellery');
-        // Filter out current product and take up to 5
+        const response = await productsApi.getSameWarehouseProducts(product.id, { limit: 5 });
         const filtered = (response.products || [])
           .filter((p) => p.id !== product.id)
           .slice(0, 5);
         setRelatedProducts(filtered);
-      } catch (error) {
-        console.error('Failed to fetch bestsellers:', error);
+      } catch {
         // Fallback to category products
         try {
           const categorySlug = product?.category?.slug;
           const fallbackResponse = await productsApi.getAll({
             category: categorySlug,
-            limit: 5,
+            limit: 6,
           });
           const filtered = fallbackResponse.products
             .filter((p) => p.id !== product.id)
             .slice(0, 5);
           setRelatedProducts(filtered);
-        } catch (fallbackError) {
-          console.error('Fallback also failed:', fallbackError);
+        } catch {
+          // silently fail
         }
       }
     }
-    fetchBestsellers();
+    fetchSameWarehouse();
   }, [product]);
 
   // Fetch reviews, stats, and can-review status
@@ -890,7 +889,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                     freeEligible: true,
                   });
                   methods.push({
-                    name: 'Kurier InPost / DPD',
+                    name: 'Kurier InPost',
                     icon: (
                       <svg className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
@@ -1477,23 +1476,17 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
           </div>
         </div>
 
-        {/* Polecane dla Ciebie - Bestsellery */}
+        {/* Polecane z tego magazynu */}
         {relatedProducts.length > 0 && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <span className="text-xl">🔥</span>
+                <span className="text-xl">🏪</span>
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Bestsellery</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Najchętniej kupowane produkty</p>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Proponowane z tego magazynu</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Produkty z tej samej hurtowni — dostawa w jednej przesyłce</p>
                 </div>
               </div>
-              <Link href="/products/bestsellers" className="text-orange-500 hover:text-orange-600 text-sm font-medium flex items-center gap-1">
-                Zobacz więcej
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">

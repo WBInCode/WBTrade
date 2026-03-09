@@ -15,7 +15,7 @@ export const productsApi = {
     api.get<any>('/products/filters', category ? { category } : undefined),
 
   getBestsellers: (limit?: number) =>
-    api.get<{ products: Product[] }>('/products/bestsellers', { limit }),
+    api.get<{ products: Product[] }>('/carousels/bestsellery/products', { limit }),
 
   getFeatured: (limit?: number) =>
     api.get<{ products: Product[] }>('/products/featured', { limit }),
