@@ -62,6 +62,10 @@ export default function ProductGrid({
       }
       onEndReached={hasNextPage ? onEndReached : undefined}
       onEndReachedThreshold={0.5}
+      initialNumToRender={8}
+      maxToRenderPerBatch={6}
+      windowSize={5}
+      removeClippedSubviews={true}
       ListFooterComponent={
         isFetchingNextPage ? (
           <View style={{ padding: 20, alignItems: 'center' }}>

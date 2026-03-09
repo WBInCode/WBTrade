@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { streamGoogleMerchantFeed, generateGoogleMerchantFeed, getFeedStats } from '../services/google-feed.service';
+import { streamGoogleMerchantFeed, streamFilteredGoogleMerchantFeed, generateGoogleMerchantFeed, getFeedStats } from '../services/google-feed.service';
 import { authGuard, adminOnly } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -73,6 +73,52 @@ router.get('/google.xml', async (req: Request, res: Response) => {
     if (!res.headersSent) {
       res.status(500).json({ 
         error: 'Failed to generate feed',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+});
+
+/**
+ * GET /api/feed/filtered.xml?categories=slug1,slug2
+ * Filtered Google feed — only products from specified categories (and their subcategories)
+ * Example: /api/feed/filtered.xml?categories=chemia,agd
+ */
+router.get('/filtered.xml', async (req: Request, res: Response) => {
+  try {
+    const categoriesParam = req.query.categories;
+    if (!categoriesParam || typeof categoriesParam !== 'string') {
+      res.status(400).json({ error: 'Missing required query parameter: categories (comma-separated slugs)' });
+      return;
+    }
+
+    const categorySlugs = categoriesParam
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)
+      .slice(0, 50); // limit to 50 categories for safety
+
+    if (categorySlugs.length === 0) {
+      res.status(400).json({ error: 'No valid category slugs provided' });
+      return;
+    }
+
+    const baseUrl = process.env.FRONTEND_URL?.split(',')[0]?.trim()
+      || `${req.protocol}://${req.get('host')}`;
+
+    res.set({
+      'Content-Type': 'application/xml; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600',
+      'X-Robots-Tag': 'noindex',
+      'Transfer-Encoding': 'chunked',
+    });
+
+    await streamFilteredGoogleMerchantFeed(baseUrl, res, categorySlugs);
+  } catch (error) {
+    console.error('Error generating filtered feed:', error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Failed to generate filtered feed',
         message: error instanceof Error ? error.message : 'Unknown error'
       });
     }
