@@ -195,7 +195,6 @@ function ProductCard({ product, width }: ProductCardProps) {
             <Text
               style={[
                 styles.price,
-                hasDiscount && { color: colors.success },
               ]}
             >
               {price.toFixed(2).replace('.', ',')} zł
