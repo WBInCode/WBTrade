@@ -1256,7 +1256,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   surpriseClaimText: {
     fontSize: 16,
     fontWeight: '800' as const,
-    color: '#1a1a1a',
+    color: '#FFFFFF',
   },
   surpriseClaimedRow: {
     flexDirection: 'row' as const,

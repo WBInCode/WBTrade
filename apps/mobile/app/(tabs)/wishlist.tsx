@@ -151,7 +151,7 @@ export default function WishlistScreen() {
         </View>
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIcon}>
-            <FontAwesome name="heart-o" size={64} color={colors.border} />
+            <FontAwesome name="heart-o" size={64} color={colors.textMuted} />
           </View>
           <Text style={styles.emptyTitle}>Zaloguj się</Text>
           <Text style={styles.emptySubtitle}>
@@ -189,7 +189,7 @@ export default function WishlistScreen() {
         </View>
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIcon}>
-            <FontAwesome name="heart-o" size={64} color={colors.border} />
+            <FontAwesome name="heart-o" size={64} color={colors.textMuted} />
           </View>
           <Text style={styles.emptyTitle}>Brak ulubionych</Text>
           <Text style={styles.emptySubtitle}>

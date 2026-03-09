@@ -141,7 +141,7 @@ function HeaderSection() {
         </TouchableOpacity>
       </View>
       <View style={[styles.headerDivider, { backgroundColor: colors.border }]} />
-      <TouchableOpacity style={[styles.searchBar, { backgroundColor: colors.searchBackground }]} onPress={() => router.push('/(tabs)/search')} activeOpacity={0.8}>
+      <TouchableOpacity style={[styles.searchBar, { backgroundColor: colors.searchBackground, borderWidth: 1, borderColor: colors.searchBorder }]} onPress={() => router.push('/(tabs)/search')} activeOpacity={0.8}>
         <FontAwesome name="search" size={15} color={colors.searchPlaceholder} />
         <Text style={[styles.searchPlaceholder, { color: colors.searchPlaceholder }]}>Czego szukasz?</Text>
       </TouchableOpacity>

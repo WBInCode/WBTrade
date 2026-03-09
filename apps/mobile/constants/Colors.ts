@@ -111,6 +111,7 @@ const lightTheme = {
 
   // Search
   searchBackground: Colors.secondary[100],
+  searchBorder: Colors.secondary[200],
   searchText: Colors.secondary[900],
   searchPlaceholder: Colors.secondary[400],
 };
@@ -189,9 +190,10 @@ const darkTheme: ThemeColors = {
   priceDiscount: '#4ade80',
 
   // Search
-  searchBackground: '#2C2C2E',
+  searchBackground: '#3A3A3C',
+  searchBorder: '#555557',
   searchText: '#F5F5F5',
-  searchPlaceholder: '#808080',
+  searchPlaceholder: '#9A9A9A',
 };
 
 export const themes = {

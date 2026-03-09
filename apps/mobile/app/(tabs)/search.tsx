@@ -426,7 +426,7 @@ export default function SearchScreen() {
         <TouchableOpacity onPress={handleBack} style={[styles.backButton, { backgroundColor: colors.backgroundTertiary }]}>
           <FontAwesome name="chevron-left" size={16} color={colors.icon} />
         </TouchableOpacity>
-        <View style={[styles.searchInputContainer, { backgroundColor: colors.searchBackground }]}>
+        <View style={[styles.searchInputContainer, { backgroundColor: colors.searchBackground, borderWidth: 1, borderColor: colors.searchBorder }]}>
           <FontAwesome name="search" size={15} color={colors.searchPlaceholder} />
           <TextInput
             ref={inputRef}
@@ -697,6 +697,7 @@ const styles = StyleSheet.create({
   searchInputContainer: {
     flex: 1, flexDirection: 'row', alignItems: 'center',
     borderRadius: 24, paddingHorizontal: 14, gap: 8,
+    minHeight: 44,
   },
   searchInput: {
     flex: 1, paddingVertical: 10, fontSize: 16,
