@@ -180,7 +180,7 @@ function ProductCard({ product, width }: ProductCardProps) {
                   size={10}
                   color={
                     star <= Math.round(Number(product.rating || 0))
-                      ? '#f59e0b'
+                      ? colors.warning
                       : colors.border
                   }
                 />
@@ -216,7 +216,7 @@ function ProductCard({ product, width }: ProductCardProps) {
       {/* Add to cart button */}
       <Animated.View style={{ transform: [{ scale: cartBtnScale }] }}>
       <TouchableOpacity
-        style={[styles.addButton, !hasStock && styles.addButtonDisabled, adding && styles.addButtonAdding, addSuccess && { backgroundColor: '#22c55e' }]}
+        style={[styles.addButton, !hasStock && styles.addButtonDisabled, adding && styles.addButtonAdding, addSuccess && { backgroundColor: colors.success }]}
         onPressIn={onCartPressIn}
         onPressOut={onCartPressOut}
         onPress={async () => {

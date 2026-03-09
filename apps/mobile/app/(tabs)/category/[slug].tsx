@@ -13,6 +13,7 @@ import {
   Keyboard,
 } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
 import { FontAwesome } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
 import { useThemeColors } from '../../../hooks/useThemeColors';
@@ -246,6 +247,7 @@ export default function CategoryScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const colors = useThemeColors();
   const dynamicStyles = useMemo(() => createDynamicStyles(colors), [colors]);
+  const navigation = useNavigation();
 
   const [category, setCategory] = useState<Category | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -359,6 +361,11 @@ export default function CategoryScreen() {
   }, []);
 
   const categoryName = category?.name || slug || 'Kategoria';
+
+  // Keep the header title in sync with the loaded category name
+  useEffect(() => {
+    navigation.setOptions({ title: categoryName });
+  }, [categoryName, navigation]);
 
   // Loading state
   if (loading && products.length === 0) {

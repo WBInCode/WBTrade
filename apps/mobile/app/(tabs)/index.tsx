@@ -18,6 +18,7 @@ import { Image } from 'expo-image';
 import { loadNotifications } from '../notifications';
 import { api } from '../../services/api';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { useTheme } from '../../contexts/ThemeContext';
 import { getCategoryIcon } from '../../constants/CategoryIcons';
 import { useScrollContext } from '../../contexts/ScrollContext';
 import ProductCarousel from '../../components/product/ProductCarousel';
@@ -107,7 +108,12 @@ type SectionItem =
 function HeaderSection() {
   const router = useRouter();
   const colors = useThemeColors();
+  const { colorScheme, setThemePreference } = useTheme();
   const [unreadCount, setUnreadCount] = useState(0);
+
+  const handleThemeToggle = useCallback(() => {
+    setThemePreference(colorScheme === 'dark' ? 'light' : 'dark');
+  }, [colorScheme, setThemePreference]);
 
   useFocusEffect(
     useCallback(() => {
@@ -125,6 +131,17 @@ function HeaderSection() {
           style={styles.headerMascot}
           contentFit="contain"
         />
+        <TouchableOpacity
+          style={styles.themeToggleButton}
+          onPress={handleThemeToggle}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={colorScheme === 'dark' ? 'sunny-outline' : 'moon-outline'}
+            size={22}
+            color={colors.textSecondary}
+          />
+        </TouchableOpacity>
         <TouchableOpacity
           style={styles.bellButton}
           onPress={() => router.push('/notifications' as any)}
@@ -322,7 +339,7 @@ const TrustSection = React.memo(function TrustSection() {
         { icon: 'truck' as const, title: 'Szybka wysyłka' },
         { icon: 'shield' as const, title: 'Bezpieczne\npłatności' },
         { icon: 'undo' as const, title: 'Zwrot\n14 dni' },
-        { icon: 'headphones' as const, title: 'Wsparcie\n24/7' },
+        { icon: 'headphones' as const, title: 'Wsparcie\n9-17' },
       ]).map((item) => (
         <View key={item.title} style={styles.trustItem}>
           <View style={[styles.trustIconWrap, { backgroundColor: colors.tintLight }]}>
@@ -727,6 +744,15 @@ const styles = StyleSheet.create({
   bellButton: {
     position: 'absolute',
     right: 0,
+    top: 0,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  themeToggleButton: {
+    position: 'absolute',
+    right: 44,
     top: 0,
     width: 40,
     height: 40,
