@@ -1,5 +1,6 @@
 import React from 'react';
 import { FlatList, View, Text, ActivityIndicator, RefreshControl } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
 import ProductCard, { CARD_WIDTH, CARD_GAP, CARD_PADDING } from './ProductCard';
 import Spinner from '../ui/Spinner';
 import { useThemeColors } from '../../hooks/useThemeColors';
@@ -49,7 +50,9 @@ export default function ProductGrid({
       contentContainerStyle={{
         paddingTop: CARD_GAP,
         paddingBottom: 20,
+        ...(products.length === 0 && { flexGrow: 1 }),
       }}
+      showsVerticalScrollIndicator={false}
       refreshControl={
         onRefresh ? (
           <RefreshControl
@@ -74,8 +77,24 @@ export default function ProductGrid({
         ) : null
       }
       ListEmptyComponent={
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60 }}>
-          <Text style={{ color: colors.textMuted, fontSize: 15 }}>{emptyMessage}</Text>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
+          <View style={{
+            width: 80,
+            height: 80,
+            borderRadius: 40,
+            backgroundColor: colors.backgroundTertiary,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 16,
+          }}>
+            <FontAwesome name="inbox" size={32} color={colors.textMuted} />
+          </View>
+          <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginBottom: 6, textAlign: 'center' }}>
+            {emptyMessage}
+          </Text>
+          <Text style={{ color: colors.textMuted, fontSize: 13, textAlign: 'center', lineHeight: 18 }}>
+            Spróbuj zmienić filtry lub wybierz inną kategorię
+          </Text>
         </View>
       }
     />
