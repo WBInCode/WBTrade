@@ -1,12 +1,12 @@
-import { api } from './api';
+import { api, apiFetch } from './api';
 import type { User, RegisterData, AuthResponse } from './types';
 
 export const authApi = {
   login: (email: string, password: string) =>
-    api.post<AuthResponse>('/auth/login', { email, password }),
+    apiFetch<AuthResponse>('/auth/login', { method: 'POST', body: { email, password }, skipAuth: true }),
 
   register: (data: RegisterData) =>
-    api.post<AuthResponse>('/auth/register', data),
+    apiFetch<AuthResponse>('/auth/register', { method: 'POST', body: data, skipAuth: true }),
 
   logout: (refreshToken: string) =>
     api.post('/auth/logout', { refreshToken }),

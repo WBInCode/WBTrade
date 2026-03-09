@@ -8,13 +8,14 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useThemeColors } from '../../../hooks/useThemeColors';
 import type { ThemeColors } from '../../../constants/Colors';
-import { ordersApi } from '../../../services/orders';
+import { ordersApi, checkoutApi } from '../../../services/orders';
 import type { Order } from '../../../services/types';
 
 // --- Status config ---
@@ -60,14 +61,22 @@ function formatPrice(value: number): string {
 const OrderCard = React.memo(function OrderCard({
   order,
   onPress,
+  onPayNow,
+  payingId,
 }: {
   order: Order;
   onPress: () => void;
+  onPayNow: (order: Order) => void;
+  payingId: string | null;
 }) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const statusCfg = getStatusConfig(order.status, colors);
   const itemCount = order.items?.length ?? 0;
+  const showPayBtn =
+    order.status !== 'CANCELLED' &&
+    (order.paymentStatus === 'PENDING' || order.paymentStatus === 'FAILED') &&
+    order.paymentMethod !== 'cod';
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
@@ -95,6 +104,24 @@ const OrderCard = React.memo(function OrderCard({
         <Text style={styles.totalValue}>{formatPrice(order.total)}</Text>
       </View>
 
+      {showPayBtn && (
+        <TouchableOpacity
+          style={[styles.payBtn, { backgroundColor: colors.tint }]}
+          onPress={(e) => { e.stopPropagation?.(); onPayNow(order); }}
+          disabled={payingId === order.id}
+          activeOpacity={0.7}
+        >
+          {payingId === order.id ? (
+            <ActivityIndicator size="small" color={colors.textInverse} />
+          ) : (
+            <>
+              <FontAwesome name="credit-card" size={13} color={colors.textInverse} />
+              <Text style={styles.payBtnText}>Zapłać teraz</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      )}
+
       <View style={styles.cardArrow}>
         <FontAwesome name="chevron-right" size={14} color={colors.inputBorder} />
       </View>
@@ -116,6 +143,7 @@ export default function OrdersScreen() {
   const [totalPages, setTotalPages] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [payingId, setPayingId] = useState<string | null>(null);
 
   const fetchOrders = useCallback(
     async (pageNum: number, append = false) => {
@@ -167,13 +195,33 @@ export default function OrdersScreen() {
     [router],
   );
 
+  const handlePayNow = useCallback(
+    async (order: Order) => {
+      setPayingId(order.id);
+      try {
+        const res = await checkoutApi.retryPayment(order.id);
+        const data = res as any;
+        if (data.paymentUrl) {
+          router.push(`/order/${order.id}/payment?url=${encodeURIComponent(data.paymentUrl)}` as any);
+        } else {
+          Alert.alert('Błąd', 'Nie udało się utworzyć sesji płatności.');
+        }
+      } catch {
+        Alert.alert('Błąd', 'Nie udało się ponowić płatności. Spróbuj ponownie.');
+      } finally {
+        setPayingId(null);
+      }
+    },
+    [router],
+  );
+
   // --- renders ---
 
   const renderItem = useCallback(
     ({ item }: { item: Order }) => (
-      <OrderCard order={item} onPress={() => handleOrderPress(item)} />
+      <OrderCard order={item} onPress={() => handleOrderPress(item)} onPayNow={handlePayNow} payingId={payingId} />
     ),
-    [handleOrderPress],
+    [handleOrderPress, handlePayNow, payingId],
   );
 
   const keyExtractor = useCallback((item: Order) => item.id, []);
@@ -339,6 +387,20 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     position: 'absolute',
     right: 16,
     top: '50%',
+  },
+  payBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  payBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 13,
   },
 
   // loading

@@ -52,15 +52,14 @@ function decodeEntities(text: string): string {
     .trim();
 }
 
-// Parse HTML into structured blocks for rendering
+// Parse HTML into structured blocks for rendering — simple universal approach
 type HtmlBlock = { type: 'heading' | 'paragraph' | 'list' | 'table'; text?: string; items?: string[]; rows?: Array<[string, string]> };
 
 function parseHtmlBlocks(html: string): HtmlBlock[] {
   const blocks: HtmlBlock[] = [];
-
-  // 1) Extract <table> blocks first
   let cleaned = html.replace(/\r\n/g, '\n').replace(/\t/g, ' ');
 
+  // 1) Extract <table> blocks
   const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
   cleaned = cleaned.replace(tableRegex, (_, tableContent) => {
     const rows: Array<[string, string]> = [];
@@ -80,7 +79,7 @@ function parseHtmlBlocks(html: string): HtmlBlock[] {
     return '';
   });
 
-  // 2) Extract <ul>/<ol> lists
+  // 2) Extract <ul>/<ol> lists — keep as plain bullet lists
   const ulRegex = /<[uo]l[^>]*>([\s\S]*?)<\/[uo]l>/gi;
   cleaned = cleaned.replace(ulRegex, (_, listContent) => {
     const items: string[] = [];
@@ -88,30 +87,10 @@ function parseHtmlBlocks(html: string): HtmlBlock[] {
     let liMatch;
     while ((liMatch = liRegex.exec(listContent)) !== null) {
       let text = decodeEntities(liMatch[1].replace(/<[^>]*>/g, '').trim());
-      // Strip leading dash/bullet that some formats add inside <li>
       text = text.replace(/^[\-–•·]\s*/, '');
       if (text) items.push(text);
     }
-    if (items.length > 0) {
-      // Check if list items look like specs (key - value or key: value)
-      const specLike = items.filter(item =>
-        /^[^:\-–]{2,35}\s*[\-–]\s*\S/.test(item) || /^[^:]{2,30}:\s/.test(item)
-      );
-      if (specLike.length >= 3 && specLike.length >= items.length * 0.6) {
-        const rows: Array<[string, string]> = items.map(item => {
-          // Try "key - value" format first
-          const dashMatch = item.match(/^(.{2,35}?)\s*[\-–]\s+(.+)$/);
-          if (dashMatch) return [dashMatch[1].trim(), dashMatch[2].trim()];
-          // Try "key: value" format
-          const colonIdx = item.indexOf(':');
-          if (colonIdx > 0 && colonIdx < 40) return [item.slice(0, colonIdx).trim(), item.slice(colonIdx + 1).trim()];
-          return [item, ''];
-        });
-        blocks.push({ type: 'table', rows });
-      } else {
-        blocks.push({ type: 'list', items });
-      }
-    }
+    if (items.length > 0) blocks.push({ type: 'list', items });
     return '';
   });
 
@@ -122,211 +101,24 @@ function parseHtmlBlocks(html: string): HtmlBlock[] {
     return '';
   });
 
-  // 4) Convert <strong>/<b> into heading markers or keep as text with separators
-  cleaned = cleaned.replace(/<(?:strong|b)[^>]*>([\s\S]*?)<\/(?:strong|b)>/gi, (_, inner) => {
-    // Split by <br> inside strong — each part may be separate heading/text
-    const parts = inner.split(/<br\s*\/?>/gi).map((p: string) => p.replace(/<[^>]*>/g, '').trim()).filter(Boolean);
-    if (parts.length === 0) return '';
-    return parts.map((part: string) => {
-      if (part.endsWith(':') && part.length <= 60) {
-        return '\n===SHEADING===' + part + '===ESHEADING===\n';
-      }
-      return ' ' + part + ' ';
-    }).join('\n');
-  });
+  // 4) Strip all remaining HTML tags, preserve line breaks from <br> and </p>
+  cleaned = cleaned
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ');
 
-  // 5) Process <P> blocks — split by <BR> to detect bullets inside paragraphs
-  const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
-  cleaned = cleaned.replace(pRegex, (_, pContent) => {
-    processParagraphContent(pContent, blocks);
-    return '';
-  });
+  // 5) Decode entities, split into paragraphs by double-newline
+  const paragraphs = decodeEntities(cleaned)
+    .split(/\n{2,}/)
+    .map(p => p.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim())
+    .filter(p => p.length > 0);
 
-  // 6) Process any remaining text outside <P> tags (handles no-<P> formats)
-  if (cleaned.trim()) {
-    processRemainingContent(cleaned, blocks);
+  for (const p of paragraphs) {
+    blocks.push({ type: 'paragraph', text: p });
   }
 
-  // 7) Merge consecutive list blocks
-  const merged: HtmlBlock[] = [];
-  for (const block of blocks) {
-    if (block.type === 'list' && merged.length > 0 && merged[merged.length - 1].type === 'list') {
-      merged[merged.length - 1].items!.push(...block.items!);
-    } else {
-      merged.push(block);
-    }
-  }
-
-  // 8) Strip any remaining ===SHEADING=== / ===ESHEADING=== markers (safety net)
-  for (const block of merged) {
-    if (block.text) {
-      block.text = block.text.replace(/===SHEADING===|===ESHEADING===/g, '').trim();
-    }
-    if (block.items) {
-      block.items = block.items.map(item => item.replace(/===SHEADING===|===ESHEADING===/g, '').trim()).filter(Boolean);
-    }
-  }
-
-  // 9) Filter out empty blocks
-  return merged.filter(b => {
-    if (b.type === 'list') return (b.items?.length ?? 0) > 0;
-    if (b.type === 'table') return (b.rows?.length ?? 0) > 0;
-    return b.text && b.text.length > 0;
-  });
-}
-
-// Process inner content of a <P> tag — handles bullets separated by <BR>
-function processParagraphContent(pContent: string, blocks: HtmlBlock[]) {
-  // Split content by <BR> tags, normalize whitespace within each segment
-  const segments = pContent
-    .split(/<br\s*\/?>/gi)
-    .map(s => decodeEntities(s.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()))
-    .filter(Boolean);
-
-  if (segments.length === 0) return;
-
-  // Extract ===SHEADING=== markers as heading blocks, keep remaining segments
-  const cleanSegments: string[] = [];
-  for (const seg of segments) {
-    if (seg.includes('===SHEADING===')) {
-      const match = seg.match(/===SHEADING===([\s\S]*?)===ESHEADING===/);
-      if (match) {
-        const headingText = match[1].trim();
-        if (headingText) blocks.push({ type: 'heading', text: headingText });
-      }
-      const after = seg.replace(/===SHEADING===[\s\S]*?===ESHEADING===/g, '').trim();
-      if (after) cleanSegments.push(after);
-    } else {
-      cleanSegments.push(seg);
-    }
-  }
-
-  if (cleanSegments.length === 0) return;
-
-  // Check if segments contain bullet points (•, -, –)
-  const bulletSegments = cleanSegments.filter(s => /^[•·\-–]\s/.test(s));
-
-  if (bulletSegments.length >= 2) {
-    // This <P> is a bullet list with possible heading before bullets
-    const items: string[] = [];
-    for (const seg of cleanSegments) {
-      if (/^[•·\-–]\s/.test(seg)) {
-        items.push(seg.replace(/^[•·\-–]\s*/, ''));
-      } else if (items.length === 0 && seg.length > 0) {
-        // Text before bullets — treat as heading or paragraph
-        if (isLikelyHeading(seg)) {
-          blocks.push({ type: 'heading', text: seg });
-        } else {
-          blocks.push({ type: 'paragraph', text: seg });
-        }
-      }
-    }
-    if (items.length > 0) {
-      // Check if items look like specs (key: value pairs)
-      const specItems = items.filter(item => /^[^:]{2,30}:\s/.test(item));
-      if (specItems.length >= 3 && specItems.length >= items.length * 0.6) {
-        // Convert to table
-        const rows: Array<[string, string]> = items.map(item => {
-          const colonIdx = item.indexOf(':');
-          if (colonIdx > 0 && colonIdx < 40) {
-            return [item.slice(0, colonIdx).trim(), item.slice(colonIdx + 1).trim()];
-          }
-          return [item, ''];
-        });
-        blocks.push({ type: 'table', rows });
-      } else {
-        blocks.push({ type: 'list', items });
-      }
-    }
-  } else if (bulletSegments.length === 1) {
-    // Mixed: some text + one bullet. Treat all as paragraph
-    const fullText = cleanSegments.join(' ');
-    blocks.push({ type: 'paragraph', text: fullText });
-  } else {
-    // Regular paragraph — join segments into one text
-    const fullText = cleanSegments.join(' ');
-    if (isLikelyHeading(fullText)) {
-      blocks.push({ type: 'heading', text: fullText });
-    } else {
-      blocks.push({ type: 'paragraph', text: fullText });
-    }
-  }
-}
-
-// Process remaining content that has no <P> wrappers (uses <br>, <strong> etc)
-function processRemainingContent(content: string, blocks: HtmlBlock[]) {
-  // Split by <br> tags
-  const segments = content
-    .split(/<br\s*\/?>/gi)
-    .map(s => s.trim())
-    .filter(Boolean);
-
-  let currentParagraph = '';
-  const bulletItems: string[] = [];
-
-  const flushParagraph = () => {
-    if (currentParagraph.trim()) {
-      const text = decodeEntities(currentParagraph.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim());
-      if (text) blocks.push({ type: 'paragraph', text });
-      currentParagraph = '';
-    }
-  };
-
-  const flushBullets = () => {
-    if (bulletItems.length > 0) {
-      blocks.push({ type: 'list', items: [...bulletItems] });
-      bulletItems.length = 0;
-    }
-  };
-
-  for (const seg of segments) {
-    // Check for heading markers
-    if (seg.includes('===SHEADING===')) {
-      flushParagraph();
-      flushBullets();
-      const match = seg.match(/===SHEADING===([\s\S]*?)===ESHEADING===/);
-      if (match) {
-        const headingText = decodeEntities(match[1].trim());
-        if (headingText) blocks.push({ type: 'heading', text: headingText });
-      }
-      const after = seg.replace(/.*===ESHEADING===/, '').trim();
-      if (after) {
-        const text = decodeEntities(after.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim());
-        if (text) currentParagraph = text;
-      }
-      continue;
-    }
-
-    const text = decodeEntities(seg.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim());
-    if (!text) continue;
-
-    // Check if this is a bullet item
-    if (/^[•·\-–]\s/.test(text)) {
-      flushParagraph();
-      bulletItems.push(text.replace(/^[•·\-–]\s*/, ''));
-    } else {
-      // Regular text — flush bullets first if we had any
-      flushBullets();
-      if (currentParagraph) {
-        currentParagraph += ' ' + text;
-      } else {
-        currentParagraph = text;
-      }
-    }
-  }
-
-  flushBullets();
-  flushParagraph();
-}
-
-// Detect if a short text is likely a heading
-function isLikelyHeading(text: string): boolean {
-  if (text.length < 3) return false;
-  // ALL CAPS (allow digits, spaces, punctuation) — up to 120 chars
-  if (text.length <= 120 && /^[A-ZĄĆĘŁŃÓŚŻŹ0-9\s\-–:,./+()!?]+$/.test(text) && text.length > 5) return true;
-  // Ends with : or ? and is short
-  if (/[?:]$/.test(text) && text.length <= 60) return true;
-  return false;
+  return blocks;
 }
 
 // Render parsed HTML blocks as React Native components
@@ -1148,15 +940,8 @@ export default function ProductDetailScreen() {
     }
     setBuyingNow(true);
     try {
-      const price = Number(selectedVariant?.price || product.price) || 0;
-      await addToCart(variantId, quantity, {
-        productId: product.id,
-        name: product.name,
-        imageUrl: product.images?.[0]?.url,
-        price,
-        quantity,
-        warehouse: product.wholesaler || undefined,
-      });
+      // No productInfo → modal is skipped; navigate straight to cart
+      await addToCart(variantId, quantity);
       router.push('/cart');
     } catch (err: any) {
       Alert.alert('Błąd', err.message || 'Nie udało się dodać do koszyka');
@@ -1211,6 +996,7 @@ export default function ProductDetailScreen() {
   const comparePrice = getComparePrice();
   const lowestPrice30 = getLowestPrice30();
   const hasDiscount = comparePrice != null && comparePrice > price;
+  const isOutletProduct = !!(product.sku?.toUpperCase().startsWith('OUTLET-') || (product as any).badge === 'outlet' || ((product as any).tags as string[] | undefined)?.some((t: string) => t.toLowerCase() === 'rzeszów'));
   const stockInfo = getStockInfo();
   const attributeKeys = getAttributeKeys();
 
@@ -1345,6 +1131,18 @@ export default function ProductDetailScreen() {
               </Text>
             )}
 
+            {/* Outlet Product Notice */}
+            {isOutletProduct && (
+              <View style={styles.outletNotice}>
+                <FontAwesome name="info-circle" size={15} color="#92400e" />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.outletNoticeTitle}>Produkt outletowy</Text>
+                  <Text style={styles.outletNoticeText}>
+                    Produkt może posiadać uszkodzone opakowanie. Objęty pełną gwarancją, identyczną jak przy zakupie nowego produktu.
+                  </Text>
+                </View>
+              </View>
+            )}
 
           </View>
 
@@ -1525,7 +1323,7 @@ export default function ProductDetailScreen() {
                 ? [{ name: 'Kurier DPD', icon: 'truck', price: weightPrice, freeEligible: true }]
                 : [
                     { name: 'InPost Paczkomat', icon: 'inbox', price: 15.99, freeEligible: true },
-                    { name: 'Kurier InPost / DPD', icon: 'truck', price: 19.99, freeEligible: true },
+                    { name: 'Kurier InPost', icon: 'truck', price: 19.99, freeEligible: true },
                   ];
 
             return (
@@ -1600,6 +1398,26 @@ export default function ProductDetailScreen() {
                 </>
               )}
             </View>
+
+            {/* Rating Distribution */}
+            {reviewStats && reviewStats.distribution && reviewStats.distribution.length > 0 && (
+              <View style={styles.ratingDistribution}>
+                {[5, 4, 3, 2, 1].map((star) => {
+                  const entry = reviewStats.distribution.find(d => d.rating === star);
+                  const count = entry?.count || 0;
+                  const pct = reviewStats.totalReviews > 0 ? (count / reviewStats.totalReviews) * 100 : 0;
+                  return (
+                    <View key={star} style={styles.distRow}>
+                      <Text style={styles.distStar}>{star} gw.</Text>
+                      <View style={styles.distBarBg}>
+                        <View style={[styles.distBarFill, { width: `${pct}%` as any }]} />
+                      </View>
+                      <Text style={styles.distCount}>{count}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
 
             {/* Horizontal scrollable review cards */}
             {reviews.length > 0 && (
@@ -1978,6 +1796,28 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginTop: 4,
     fontStyle: 'italic',
   },
+  outletNotice: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginTop: 10,
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fcd34d',
+    borderRadius: 8,
+    padding: 10,
+  },
+  outletNoticeTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#92400e',
+    marginBottom: 2,
+  },
+  outletNoticeText: {
+    fontSize: 11,
+    color: '#b45309',
+    lineHeight: 16,
+  },
   newsletterBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2266,8 +2106,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.success,
   },
   deliveryFreeHint: {
-    fontSize: 11,
-    color: colors.textMuted,
+    fontSize: 14,
+    color: '#16a34a',
     marginTop: 2,
   },
 
@@ -2419,6 +2259,38 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   reviewsSectionCount: {
     fontSize: 13,
     color: colors.textMuted,
+  },
+  ratingDistribution: {
+    marginBottom: 16,
+  },
+  distRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  distStar: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    width: 36,
+  },
+  distBarBg: {
+    flex: 1,
+    height: 8,
+    backgroundColor: colors.border,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  distBarFill: {
+    height: 8,
+    backgroundColor: '#facc15',
+    borderRadius: 4,
+  },
+  distCount: {
+    fontSize: 12,
+    color: colors.textMuted,
+    width: 24,
+    textAlign: 'right',
   },
 
   // Horizontal review cards
