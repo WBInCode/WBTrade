@@ -206,6 +206,11 @@ function ProductCard({ product, width }: ProductCardProps) {
             )}
           </View>
 
+          {/* Outlet label */}
+          {product.badge === 'outlet' && (
+            <Text style={styles.outletLabel}>OUTLET</Text>
+          )}
+
           {/* Delivery info */}
           <Text style={[styles.deliveryText, !hasStock && styles.deliveryOutOfStock]}>
             {hasStock ? 'Wysyłka w 24-72h' : 'Niedostępny'}
@@ -366,6 +371,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
     textDecorationLine: 'line-through',
+  },
+  outletLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.warning,
+    marginBottom: 2,
   },
   deliveryText: {
     fontSize: 11,
