@@ -107,7 +107,7 @@ const lightTheme = {
   // Price
   priceText: Colors.secondary[900],
   priceOld: Colors.secondary[400],
-  priceDiscount: Colors.destructive,
+  priceDiscount: Colors.success,
 
   // Search
   searchBackground: Colors.secondary[100],
@@ -186,7 +186,7 @@ const darkTheme: ThemeColors = {
   // Price
   priceText: '#F5F5F5',
   priceOld: '#808080',
-  priceDiscount: '#f87171',
+  priceDiscount: '#4ade80',
 
   // Search
   searchBackground: '#2C2C2E',

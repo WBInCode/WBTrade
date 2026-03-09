@@ -1059,7 +1059,7 @@ export default function ProductDetailScreen() {
                   {
                     backgroundColor:
                       product.badge === 'super-price'
-                        ? colors.destructive
+                        ? colors.success
                         : product.badge === 'outlet'
                           ? colors.warning
                           : product.badge === 'bestseller'
@@ -1105,7 +1105,7 @@ export default function ProductDetailScreen() {
               <Text
                 style={[
                   styles.currentPrice,
-                  hasDiscount && { color: colors.destructive },
+                  hasDiscount && { color: colors.success },
                 ]}
               >
                 {Number(price).toFixed(2).replace('.', ',')} zł
@@ -1780,7 +1780,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     textDecorationLine: 'line-through',
   },
   discountBadge: {
-    backgroundColor: colors.destructive,
+    backgroundColor: colors.success,
     borderRadius: 4,
     paddingHorizontal: 6,
     paddingVertical: 2,

@@ -74,7 +74,7 @@ function ProductCard({ product, width }: ProductCardProps) {
   const imageUrl = product.images?.[0]?.url;
 
   const badgeMap: Record<string, { text: string; variant: 'danger' | 'primary' | 'success' | 'warning' }> = {
-    'super-price': { text: 'Super cena', variant: 'danger' },
+    'super-price': { text: 'Super cena', variant: 'success' },
     outlet: { text: 'Outlet', variant: 'warning' },
     bestseller: { text: 'Bestseller', variant: 'primary' },
     new: { text: 'Nowość', variant: 'success' },
@@ -195,7 +195,7 @@ function ProductCard({ product, width }: ProductCardProps) {
             <Text
               style={[
                 styles.price,
-                hasDiscount && { color: colors.destructive },
+                hasDiscount && { color: colors.success },
               ]}
             >
               {price.toFixed(2).replace('.', ',')} zł
@@ -302,7 +302,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: colors.destructive,
+    backgroundColor: colors.success,
     borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 2,
