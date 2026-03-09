@@ -156,6 +156,10 @@ export function ChatBubble({ onPress, hasActiveChat, unreadCount = 0, isChatOpen
         activeOpacity={0.8}
         style={bubbleStyles.wrapper}
       >
+        {/* Label to the left of the bubble */}
+        <View style={[bubbleStyles.label, { backgroundColor: colors.card, shadowColor: colors.shadow, borderColor: colors.border }]}>
+          <Text style={[bubbleStyles.labelText, { color: colors.text }]}>Zapytaj</Text>
+        </View>
         {/* Scale animation wraps only the circle so touch bounds stay accurate on Android */}
         <Animated.View style={{ transform: [{ scale: pulse }] }}>
           {/* Pulsating glow layer behind bubble — decorative only */}
@@ -178,14 +182,10 @@ export function ChatBubble({ onPress, hasActiveChat, unreadCount = 0, isChatOpen
                 {unreadCount > 99 ? '99+' : unreadCount}
               </Text>
             </View>
-          ) : hasActiveChat ? (
+          ) : (
             <View style={bubbleStyles.activeDot} />
-          ) : null}
+          )}
         </Animated.View>
-        {/* Label outside the scale Animated.View — always within TouchableOpacity bounds */}
-        <View style={[bubbleStyles.label, { backgroundColor: colors.card, shadowColor: colors.shadow, borderColor: colors.border }]}>
-          <Text style={[bubbleStyles.labelText, { color: colors.text }]}>Zapytaj</Text>
-        </View>
       </TouchableOpacity>
     </View>
   );
@@ -205,6 +205,7 @@ const bubbleStyles = StyleSheet.create({
     alignSelf: 'center',
   },
   wrapper: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
   container: {
@@ -258,7 +259,7 @@ const bubbleStyles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   label: {
-    marginTop: 4,
+    marginRight: 8,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 10,
