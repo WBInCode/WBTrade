@@ -262,7 +262,7 @@ const HeroSection = React.memo(function HeroSection({ product }: { product: Prod
           <View style={styles.heroPriceRow}>
             <Text style={[styles.heroPrice, { color: colors.tint }]}>{Number(product.price).toFixed(2).replace('.', ',')} zł</Text>
             {product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price) && (
-              <View style={[styles.heroDiscountBadge, { backgroundColor: colors.destructive }]}>
+              <View style={[styles.heroDiscountBadge, { backgroundColor: colors.success }]}>
                 <Text style={[styles.heroDiscountText, { color: colors.textInverse }]}>
                   -{Math.round((1 - Number(product.price) / Number(product.compareAtPrice)) * 100)}%
                 </Text>

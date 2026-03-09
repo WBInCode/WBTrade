@@ -479,11 +479,11 @@ const createDynamicStyles = (c: ThemeColors) =>
 
     // Shipping bar styles (per package)
     shippingBar: {
-      backgroundColor: c.tintLight,
+      backgroundColor: c.successBg,
       paddingHorizontal: 12,
       paddingVertical: 10,
       borderTopWidth: 1,
-      borderTopColor: c.tintMuted,
+      borderTopColor: c.success,
     },
     shippingBarTop: {
       flexDirection: 'row',
@@ -523,7 +523,7 @@ const createDynamicStyles = (c: ThemeColors) =>
     shippingPrice: {
       fontSize: 14,
       fontWeight: '700',
-      color: c.tint,
+      color: c.success,
     },
     shippingAtOrder: {
       fontSize: 12,
@@ -544,7 +544,7 @@ const createDynamicStyles = (c: ThemeColors) =>
     progressBarFill: {
       height: '100%',
       borderRadius: 3,
-      backgroundColor: c.tint,
+      backgroundColor: c.success,
     },
     progressBarText: {
       fontSize: 11,
@@ -554,7 +554,7 @@ const createDynamicStyles = (c: ThemeColors) =>
     },
     progressBarAmount: {
       fontWeight: '600',
-      color: c.tint,
+      color: c.success,
     },
 
     // Coupon section
