@@ -154,9 +154,9 @@ function TabLayoutInner() {
     let unsub: (() => void) | null = null;
     const attachTimer = setTimeout(() => {
       unsub = scrollCtx.onDirectionChange((direction) => {
-        if (direction === 'down') {
+        if (direction === 'down' || direction === 'up') {
           hideBubble();
-        } else if (direction === 'up' || direction === 'idle') {
+        } else if (direction === 'idle') {
           showBubble();
         }
       });

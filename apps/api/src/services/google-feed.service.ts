@@ -376,6 +376,146 @@ export async function generateGoogleMerchantFeed(baseUrl: string): Promise<strin
 }
 
 /**
+ * Streams filtered Google Merchant Center XML feed — only products from specified categories
+ * Accepts category slugs and includes all their subcategories recursively
+ */
+export async function streamFilteredGoogleMerchantFeed(
+  baseUrl: string,
+  res: Response,
+  categorySlugs: string[]
+): Promise<void> {
+  // Resolve category IDs from slugs, including all subcategories
+  const categoryIds = await resolveCategoryIds(categorySlugs);
+
+  if (categoryIds.length === 0) {
+    res.write(`<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">
+  <channel>
+    <title>WBTrade - Sklep internetowy (filtrowany)</title>
+    <link>${escapeXml(baseUrl)}</link>
+    <description>Produkty ze sklepu WBTrade - wybrany asortyment</description>
+  </channel>
+</rss>`);
+    res.end();
+    return;
+  }
+
+  const BATCH_SIZE = 200;
+  let skip = 0;
+  let hasMore = true;
+
+  res.write(`<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">
+  <channel>
+    <title>WBTrade - Sklep internetowy (filtrowany)</title>
+    <link>${escapeXml(baseUrl)}</link>
+    <description>Produkty ze sklepu WBTrade - wybrany asortyment</description>`);
+
+  while (hasMore) {
+    const products = await prisma.product.findMany({
+      where: {
+        status: ProductStatus.ACTIVE,
+        price: { gt: 0 },
+        NOT: { tags: { hasSome: HIDDEN_TAGS } },
+        tags: { hasSome: DELIVERY_TAGS },
+        images: { some: {} },
+        categoryId: { in: categoryIds },
+        OR: [
+          { NOT: { tags: { hasSome: PACZKOMAT_TAGS } } },
+          { tags: { hasSome: PACKAGE_TAGS } },
+        ],
+      },
+      select: {
+        sku: true,
+        name: true,
+        slug: true,
+        description: true,
+        price: true,
+        compareAtPrice: true,
+        barcode: true,
+        tags: true,
+        baselinkerCategoryPath: true,
+        images: {
+          select: { url: true },
+          orderBy: { order: 'asc' },
+          take: 5,
+        },
+        category: {
+          select: { name: true },
+        },
+        variants: {
+          select: {
+            inventory: {
+              select: { quantity: true, reserved: true },
+            },
+          },
+          take: 1,
+        },
+      },
+      skip,
+      take: BATCH_SIZE,
+    });
+
+    if (products.length === 0) {
+      hasMore = false;
+      break;
+    }
+
+    for (const product of products) {
+      const xml = buildProductXml(product, baseUrl);
+      if (xml) {
+        res.write(xml);
+      }
+    }
+
+    skip += BATCH_SIZE;
+    if (skip >= 50000) {
+      hasMore = false;
+    }
+
+    await new Promise(resolve => setImmediate(resolve));
+  }
+
+  res.write(`
+  </channel>
+</rss>`);
+  res.end();
+}
+
+/**
+ * Resolves category slugs to a flat list of category IDs including all subcategories
+ */
+async function resolveCategoryIds(slugs: string[]): Promise<string[]> {
+  // Find root categories by slug
+  const rootCategories = await prisma.category.findMany({
+    where: { slug: { in: slugs } },
+    select: { id: true },
+  });
+
+  if (rootCategories.length === 0) return [];
+
+  const allIds = new Set<string>(rootCategories.map(c => c.id));
+
+  // BFS to collect all descendant category IDs
+  let currentParentIds = [...allIds];
+  while (currentParentIds.length > 0) {
+    const children = await prisma.category.findMany({
+      where: { parentId: { in: currentParentIds } },
+      select: { id: true },
+    });
+    currentParentIds = [];
+    for (const child of children) {
+      if (!allIds.has(child.id)) {
+        allIds.add(child.id);
+        currentParentIds.push(child.id);
+      }
+    }
+  }
+
+  return [...allIds];
+}
+
+/**
  * Get feed statistics - optimized query
  */
 export async function getFeedStats(): Promise<{
