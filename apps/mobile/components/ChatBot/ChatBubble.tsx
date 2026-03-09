@@ -18,9 +18,10 @@ interface ChatBubbleProps {
   hasActiveChat?: boolean;
   unreadCount?: number;
   isChatOpen?: boolean;
+  isHidden?: boolean;
 }
 
-export function ChatBubble({ onPress, hasActiveChat, unreadCount = 0, isChatOpen = false }: ChatBubbleProps) {
+export function ChatBubble({ onPress, hasActiveChat, unreadCount = 0, isChatOpen = false, isHidden = false }: ChatBubbleProps) {
   const colors = useThemeColors();
   const pulse = useRef(new Animated.Value(1)).current;
   const glowOpacity = useRef(new Animated.Value(0.2)).current;
@@ -124,7 +125,7 @@ export function ChatBubble({ onPress, hasActiveChat, unreadCount = 0, isChatOpen
   return (
     <View style={bubbleStyles.outerWrapper}>
       {/* Tooltip "Potrzebujesz pomocy?" */}
-      {showTooltip && (
+      {showTooltip && !isHidden && (
         <Animated.View
           style={[
             bubbleStyles.tooltip,
@@ -154,12 +155,12 @@ export function ChatBubble({ onPress, hasActiveChat, unreadCount = 0, isChatOpen
       <TouchableOpacity
         onPress={handlePress}
         activeOpacity={0.8}
-        style={bubbleStyles.wrapper}
+        style={[
+          bubbleStyles.wrapper,
+          isHidden && bubbleStyles.wrapperHidden,
+        ]}
+        hitSlop={isHidden ? { top: 30, bottom: 30, left: 80, right: 20 } : undefined}
       >
-        {/* Label to the left of the bubble */}
-        <View style={[bubbleStyles.label, { backgroundColor: colors.card, shadowColor: colors.shadow, borderColor: colors.border }]}>
-          <Text style={[bubbleStyles.labelText, { color: colors.text }]}>Zapytaj</Text>
-        </View>
         {/* Scale animation wraps only the circle so touch bounds stay accurate on Android */}
         <Animated.View style={{ transform: [{ scale: pulse }] }}>
           {/* Pulsating glow layer behind bubble — decorative only */}
@@ -207,6 +208,11 @@ const bubbleStyles = StyleSheet.create({
   wrapper: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  wrapperHidden: {
+    // Larger touch area when hidden so the peeking part is easy to tap
+    paddingLeft: 40,
+    paddingVertical: 20,
   },
   container: {
     width: 56,
