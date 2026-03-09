@@ -123,41 +123,33 @@ function TabLayoutInner() {
   const [chatActive, setChatActive] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const scrollCtx = useScrollContext();
+  const currentTab = segments.length > 1 ? segments[1] : 'index';
+  const showChatBubble = CHATBOT_ALLOWED_TABS.includes(currentTab as string);
 
-  // Animated value: 0 = fully visible, 1 = hidden/rotated to corner
+  // Animated value: 0 = fully visible, 1 = hidden (slid to side)
   const hideAnim = useRef(new Animated.Value(0)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
   const isBubbleHidden = useRef(false);
 
   const hideBubble = useCallback(() => {
     if (isBubbleHidden.current) return;
     isBubbleHidden.current = true;
-    Animated.parallel([
-      Animated.timing(hideAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
-      Animated.timing(rotateAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
-    ]).start();
-  }, [hideAnim, rotateAnim]);
+    Animated.timing(hideAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
+  }, [hideAnim]);
 
   const showBubble = useCallback(() => {
     if (!isBubbleHidden.current) return;
     isBubbleHidden.current = false;
-    Animated.parallel([
-      Animated.timing(hideAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
-      Animated.timing(rotateAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
-    ]).start();
-  }, [hideAnim, rotateAnim]);
+    Animated.timing(hideAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start();
+  }, [hideAnim]);
 
+  // Hide on scroll down only — no auto-return
   useEffect(() => {
     if (!scrollCtx) return;
-    // Delay attaching the scroll listener so layout scroll events on mount
-    // don't immediately hide the bubble before the user has a chance to tap it
     let unsub: (() => void) | null = null;
     const attachTimer = setTimeout(() => {
       unsub = scrollCtx.onDirectionChange((direction) => {
-        if (direction === 'down' || direction === 'up') {
+        if (direction === 'down') {
           hideBubble();
-        } else if (direction === 'idle') {
-          showBubble();
         }
       });
     }, 1500);
@@ -165,28 +157,27 @@ function TabLayoutInner() {
       clearTimeout(attachTimer);
       if (unsub) unsub();
     };
-  }, [scrollCtx, hideBubble, showBubble]);
+  }, [scrollCtx, hideBubble]);
 
-  // Translate X: 0 → 52px (slides bubble mostly off-screen to the right)
+  // Reset bubble to visible when user switches tabs
+  useEffect(() => {
+    if (isBubbleHidden.current) {
+      isBubbleHidden.current = false;
+      hideAnim.setValue(0);
+    }
+  }, [currentTab, hideAnim]);
+
+  // Slide right: 0 → 60px (peeks ~12px from edge)
   const bubbleTranslateX = hideAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 52],
+    outputRange: [0, 60],
   });
 
-  // Rotate: 0 → 90deg so the bubble head peeks from the right edge
-  const bubbleRotate = rotateAnim.interpolate({
+  // Rotate -90deg (counter-clockwise) when hiding
+  const bubbleRotate = hideAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0deg', '90deg'],
+    outputRange: ['0deg', '-90deg'],
   });
-
-  // Keep slightly visible so user knows it's there
-  const bubbleOpacity = hideAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 0.8],
-  });
-
-  const currentTab = segments.length > 1 ? segments[1] : 'index';
-  const showChatBubble = CHATBOT_ALLOWED_TABS.includes(currentTab as string);
 
   return (
     <View style={{ flex: 1 }}>
@@ -252,24 +243,27 @@ function TabLayoutInner() {
       {/* Floating chat bubble — only on allowed tabs */}
       {showChatBubble && (
         <Animated.View
-          pointerEvents="auto"
+          pointerEvents="box-none"
           style={{
             position: 'absolute',
             bottom: 90,
             right: 16,
             zIndex: 100,
             transform: [{ translateX: bubbleTranslateX }, { rotate: bubbleRotate }],
-            opacity: bubbleOpacity,
           }}
         >
           <ChatBubble
             onPress={() => {
-              if (isBubbleHidden.current) showBubble();
+              if (isBubbleHidden.current) {
+                showBubble();
+                return;
+              }
               setChatOpen(true); setChatActive(true); setUnreadCount(0);
             }}
             hasActiveChat={chatActive && !chatOpen}
             unreadCount={!chatOpen ? unreadCount : 0}
             isChatOpen={chatOpen}
+            isHidden={isBubbleHidden.current}
           />
         </Animated.View>
       )}
