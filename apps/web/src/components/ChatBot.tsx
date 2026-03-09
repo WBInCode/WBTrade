@@ -1408,8 +1408,8 @@ export default function ChatBotWidget() {
     return () => window.removeEventListener('keydown', handleEsc);
   }, [isOpen, handleMinimize]);
 
-  // Smart-hide chatbot on scroll - hide after 0.6s continuous scrolling down,
-  // only restore by clicking the hidden bubble (no auto-restore on scroll up)
+  // Smart-hide chatbot on scroll - only on mobile viewport (< 768px)
+  // Hide after 0.6s continuous scrolling down, only restore by clicking
   useEffect(() => {
     let scrollDownTimer: ReturnType<typeof setTimeout> | null = null;
     let lastScrollY = window.scrollY;
@@ -1424,6 +1424,12 @@ export default function ChatBotWidget() {
     };
 
     const onScroll = () => {
+      // Desktop viewport — never hide the bubble
+      if (window.innerWidth >= 768) {
+        clearTimer();
+        return;
+      }
+
       const y = window.scrollY;
       const delta = y - lastScrollY;
       lastScrollY = y;
@@ -1443,7 +1449,6 @@ export default function ChatBotWidget() {
       }
     };
 
-    // Also handle touch-based scrolling on mobile
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', onScroll);
