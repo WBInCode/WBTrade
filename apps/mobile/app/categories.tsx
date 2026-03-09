@@ -203,7 +203,7 @@ export default function CategoriesScreen() {
                     activeOpacity={0.6}
                   >
                     <View style={styles.parentLeft}>
-                      <View style={[styles.parentIconCircle, { backgroundColor: colors.card }]}>
+                      <View style={[styles.parentIconCircle, { backgroundColor: colors.categoryIconBg || colors.card }]}>
                         <Image
                           source={getCategoryIcon(cat.slug)}
                           style={styles.categoryIconImage}

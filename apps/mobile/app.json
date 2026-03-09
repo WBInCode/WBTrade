@@ -48,7 +48,17 @@
           "locationAlwaysAndWhenInUsePermission": "Potrzebujemy dostępu do lokalizacji, aby znaleźć najbliższe Paczkomaty InPost.",
           "locationWhenInUsePermission": "Potrzebujemy dostępu do lokalizacji, aby znaleźć najbliższe Paczkomaty InPost."
         }
-      ]
+      ],
+      ["expo-splash-screen", {
+        "image": "./assets/images/splash-icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#ffffff",
+        "dark": {
+          "image": "./assets/images/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#1C1C1E"
+        }
+      }]
     ],
     "experiments": {
       "typedRoutes": true
