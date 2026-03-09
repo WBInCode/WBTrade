@@ -74,7 +74,7 @@ function ProductCard({ product, width }: ProductCardProps) {
   const imageUrl = product.images?.[0]?.url;
 
   const badgeMap: Record<string, { text: string; variant: 'danger' | 'primary' | 'success' | 'warning' }> = {
-    'super-price': { text: 'Super cena', variant: 'danger' },
+    'super-price': { text: 'Super cena', variant: 'success' },
     outlet: { text: 'Outlet', variant: 'warning' },
     bestseller: { text: 'Bestseller', variant: 'primary' },
     new: { text: 'Nowość', variant: 'success' },
@@ -180,7 +180,7 @@ function ProductCard({ product, width }: ProductCardProps) {
                   size={10}
                   color={
                     star <= Math.round(Number(product.rating || 0))
-                      ? '#f59e0b'
+                      ? colors.warning
                       : colors.border
                   }
                 />
@@ -195,7 +195,6 @@ function ProductCard({ product, width }: ProductCardProps) {
             <Text
               style={[
                 styles.price,
-                hasDiscount && { color: colors.destructive },
               ]}
             >
               {price.toFixed(2).replace('.', ',')} zł
@@ -217,7 +216,7 @@ function ProductCard({ product, width }: ProductCardProps) {
       {/* Add to cart button */}
       <Animated.View style={{ transform: [{ scale: cartBtnScale }] }}>
       <TouchableOpacity
-        style={[styles.addButton, !hasStock && styles.addButtonDisabled, adding && styles.addButtonAdding, addSuccess && { backgroundColor: '#22c55e' }]}
+        style={[styles.addButton, !hasStock && styles.addButtonDisabled, adding && styles.addButtonAdding, addSuccess && { backgroundColor: colors.success }]}
         onPressIn={onCartPressIn}
         onPressOut={onCartPressOut}
         onPress={async () => {
@@ -302,7 +301,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: colors.destructive,
+    backgroundColor: colors.success,
     borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 2,
