@@ -37,6 +37,12 @@ export class WishlistService {
               orderBy: { order: 'asc' },
               take: 1,
             },
+            variants: {
+              select: {
+                id: true,
+                inventory: { select: { quantity: true, reserved: true } },
+              },
+            },
           },
         },
         variant: true,
@@ -57,6 +63,10 @@ export class WishlistService {
           ? Number(item.product.compareAtPrice)
           : null,
         images: item.product.images,
+        variants: (item.product as any).variants?.map((v: any) => ({
+          id: v.id,
+          stock: v.inventory?.reduce((sum: number, inv: any) => sum + Math.max(0, (inv.quantity || 0) - (inv.reserved || 0)), 0) ?? 0,
+        })) ?? [],
       },
       variant: item.variant
         ? {
@@ -176,7 +186,10 @@ export class WishlistService {
               take: 1,
             },
             variants: {
-              select: { id: true, stock: true },
+              select: {
+                id: true,
+                inventory: { select: { quantity: true, reserved: true } },
+              },
             },
           },
         },
@@ -202,7 +215,10 @@ export class WishlistService {
           ? Number(item.product.compareAtPrice)
           : null,
         images: item.product.images,
-        variants: (item.product as any).variants?.map((v: any) => ({ id: v.id, stock: v.stock })) ?? [],
+        variants: (item.product as any).variants?.map((v: any) => ({
+          id: v.id,
+          stock: v.inventory?.reduce((sum: number, inv: any) => sum + Math.max(0, (inv.quantity || 0) - (inv.reserved || 0)), 0) ?? 0,
+        })) ?? [],
       },
       variant: item.variant
         ? {
