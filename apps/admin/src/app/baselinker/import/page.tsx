@@ -242,10 +242,13 @@ export default function BaselinkerImportPage() {
     startedAt: null,
   });
 
-  // Inventory state (for full-resync warehouse picker)
+  // Inventory state (for warehouse picker)
   const [inventories, setInventories] = useState<InventoryItem[]>([]);
-  const [selectedInventoryId, setSelectedInventoryId] = useState<string>('');
   const [loadingInventories, setLoadingInventories] = useState(false);
+
+  // Action selection state (two-step flow)
+  const [selectedAction, setSelectedAction] = useState<SyncMode | null>(null);
+  const [actionInventoryId, setActionInventoryId] = useState<string>('all');
 
   // UI state
   const [showAbortDialog, setShowAbortDialog] = useState(false);
@@ -287,9 +290,6 @@ export default function BaselinkerImportPage() {
               inv.name !== 'Główny'
           );
           setInventories(productInventories);
-          if (productInventories.length > 0) {
-            setSelectedInventoryId(productInventories[0].inventory_id.toString());
-          }
         }
       } catch (err) {
         console.error('Failed to fetch inventories:', err);
@@ -617,115 +617,217 @@ export default function BaselinkerImportPage() {
       {/* Action Buttons — shown only when idle */}
       {syncState === 'idle' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {/* Update existing */}
             <button
-              onClick={() => startSync('update-only')}
-              className="group bg-gray-800 hover:bg-gray-750 border border-gray-700 hover:border-blue-500/50 rounded-xl p-6 text-left transition-all duration-200"
+              onClick={() => {
+                setSelectedAction(selectedAction === 'update-only' ? null : 'update-only');
+                setActionInventoryId('all');
+              }}
+              className={`group bg-gray-800 hover:bg-gray-750 border rounded-xl p-6 text-left transition-all duration-200 ${
+                selectedAction === 'update-only'
+                  ? 'border-blue-500 ring-1 ring-blue-500/30'
+                  : 'border-gray-700 hover:border-blue-500/50'
+              }`}
             >
               <div className="flex items-start gap-4">
-                <div className="p-3 bg-blue-500/20 rounded-xl group-hover:bg-blue-500/30 transition-colors">
+                <div className={`p-3 rounded-xl transition-colors ${
+                  selectedAction === 'update-only' ? 'bg-blue-500/30' : 'bg-blue-500/20 group-hover:bg-blue-500/30'
+                }`}>
                   <RefreshCw className="w-7 h-7 text-blue-400" />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-white mb-1">
                     Aktualizuj istniejące produkty
                   </h3>
-                  <p className="text-sm text-gray-400 mb-3">
+                  <p className="text-sm text-gray-400">
                     Zaktualizuj nazwy, ceny, opisy i stany magazynowe wcześniej zaimportowanych produktów.
                   </p>
-                  <div className="flex items-center gap-2 text-blue-400 text-sm font-medium">
-                    <Play className="w-4 h-4" />
-                    Rozpocznij aktualizację
-                  </div>
                 </div>
               </div>
             </button>
 
             {/* Import new */}
             <button
-              onClick={() => startSync('new-only')}
-              className="group bg-gray-800 hover:bg-gray-750 border border-gray-700 hover:border-green-500/50 rounded-xl p-6 text-left transition-all duration-200"
+              onClick={() => {
+                setSelectedAction(selectedAction === 'new-only' ? null : 'new-only');
+                setActionInventoryId('all');
+              }}
+              className={`group bg-gray-800 hover:bg-gray-750 border rounded-xl p-6 text-left transition-all duration-200 ${
+                selectedAction === 'new-only'
+                  ? 'border-green-500 ring-1 ring-green-500/30'
+                  : 'border-gray-700 hover:border-green-500/50'
+              }`}
             >
               <div className="flex items-start gap-4">
-                <div className="p-3 bg-green-500/20 rounded-xl group-hover:bg-green-500/30 transition-colors">
+                <div className={`p-3 rounded-xl transition-colors ${
+                  selectedAction === 'new-only' ? 'bg-green-500/30' : 'bg-green-500/20 group-hover:bg-green-500/30'
+                }`}>
                   <Download className="w-7 h-7 text-green-400" />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-white mb-1">
                     Dodaj nowe produkty
                   </h3>
-                  <p className="text-sm text-gray-400 mb-3">
+                  <p className="text-sm text-gray-400">
                     Pobierz tylko nowe produkty z Baselinker (bez aktualizacji istniejących, bez stanów 0).
                   </p>
-                  <div className="flex items-center gap-2 text-green-400 text-sm font-medium">
-                    <Play className="w-4 h-4" />
-                    Rozpocznij import
-                  </div>
+                </div>
+              </div>
+            </button>
+
+            {/* Full sync */}
+            <button
+              onClick={() => {
+                setSelectedAction(selectedAction === 'full-resync' ? null : 'full-resync');
+                setActionInventoryId(inventories.length > 0 ? inventories[0].inventory_id.toString() : '');
+              }}
+              className={`group bg-gray-800 hover:bg-gray-750 border rounded-xl p-6 text-left transition-all duration-200 ${
+                selectedAction === 'full-resync'
+                  ? 'border-orange-500 ring-1 ring-orange-500/30'
+                  : 'border-gray-700 hover:border-orange-500/50'
+              }`}
+            >
+              <div className="flex items-start gap-4">
+                <div className={`p-3 rounded-xl transition-colors ${
+                  selectedAction === 'full-resync' ? 'bg-orange-500/30' : 'bg-orange-500/20 group-hover:bg-orange-500/30'
+                }`}>
+                  <Database className="w-7 h-7 text-orange-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-white mb-1">
+                    Pełna synchronizacja
+                  </h3>
+                  <p className="text-sm text-gray-400">
+                    Pobierz i zaktualizuj wszystkie produkty z wybranego magazynu.
+                  </p>
                 </div>
               </div>
             </button>
           </div>
 
-          {/* Full sync with warehouse picker */}
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-orange-500/20 rounded-xl">
-                <Database className="w-7 h-7 text-orange-400" />
+          {/* Configuration panel — shown when an action is selected */}
+          {selectedAction && (
+            <div className={`bg-gray-800 border rounded-xl p-6 transition-all duration-200 ${
+              selectedAction === 'update-only'
+                ? 'border-blue-500/50'
+                : selectedAction === 'new-only'
+                ? 'border-green-500/50'
+                : 'border-orange-500/50'
+            }`}>
+              <div className="flex items-start gap-4 mb-5">
+                <div className={`p-2.5 rounded-lg ${
+                  selectedAction === 'update-only'
+                    ? 'bg-blue-500/20'
+                    : selectedAction === 'new-only'
+                    ? 'bg-green-500/20'
+                    : 'bg-orange-500/20'
+                }`}>
+                  {selectedAction === 'update-only' ? (
+                    <RefreshCw className={`w-5 h-5 text-blue-400`} />
+                  ) : selectedAction === 'new-only' ? (
+                    <Download className={`w-5 h-5 text-green-400`} />
+                  ) : (
+                    <Database className={`w-5 h-5 text-orange-400`} />
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">
+                    {selectedAction === 'update-only'
+                      ? 'Konfiguracja aktualizacji'
+                      : selectedAction === 'new-only'
+                      ? 'Konfiguracja importu nowych'
+                      : 'Konfiguracja pełnej synchronizacji'}
+                  </h3>
+                  <p className="text-sm text-gray-400 mt-0.5">
+                    {selectedAction === 'update-only'
+                      ? 'Wybierz hurtownię do aktualizacji istniejących produktów'
+                      : selectedAction === 'new-only'
+                      ? 'Wybierz hurtownię do importu nowych produktów'
+                      : 'Wybierz magazyn do pełnej synchronizacji'}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-white mb-1">
-                  Pełna synchronizacja magazynu
-                </h3>
-                <p className="text-sm text-gray-400 mb-4">
-                  Pobierz i zaktualizuj <span className="text-orange-400 font-medium">wszystkie produkty</span> z wybranego magazynu.
-                  Zczyta dane każdego produktu i zaktualizuje nazwy, ceny, opisy, obrazy, stany i warianty.
-                </p>
 
-                <div className="flex flex-col sm:flex-row items-start sm:items-end gap-3">
-                  {/* Warehouse selector */}
-                  <div className="flex-1 w-full sm:w-auto">
-                    <label className="block text-xs text-gray-500 mb-1.5">Wybierz magazyn</label>
-                    {loadingInventories ? (
-                      <div className="flex items-center gap-2 text-gray-500 text-sm py-2">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Ładowanie magazynów...
-                      </div>
-                    ) : inventories.length === 0 ? (
-                      <p className="text-sm text-red-400">Nie znaleziono magazynów. Sprawdź konfigurację Baselinker.</p>
-                    ) : (
-                      <select
-                        value={selectedInventoryId}
-                        onChange={(e) => setSelectedInventoryId(e.target.value)}
-                        className="w-full sm:w-64 bg-gray-900 border border-gray-600 rounded-lg px-3 py-2.5 text-white text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500/30 outline-none transition-colors"
-                      >
-                        {inventories.map((inv) => (
-                          <option key={inv.inventory_id} value={inv.inventory_id.toString()}>
-                            {inv.name} (ID: {inv.inventory_id})
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4">
+                {/* Warehouse selector */}
+                <div className="flex-1 w-full sm:w-auto">
+                  <label className="block text-xs text-gray-500 mb-1.5">Wybierz hurtownię / magazyn</label>
+                  {loadingInventories ? (
+                    <div className="flex items-center gap-2 text-gray-500 text-sm py-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Ładowanie magazynów...
+                    </div>
+                  ) : inventories.length === 0 ? (
+                    <p className="text-sm text-red-400">Nie znaleziono magazynów. Sprawdź konfigurację Baselinker.</p>
+                  ) : (
+                    <select
+                      value={selectedAction === 'full-resync' ? actionInventoryId : actionInventoryId}
+                      onChange={(e) => setActionInventoryId(e.target.value)}
+                      className={`w-full sm:w-72 bg-gray-900 border border-gray-600 rounded-lg px-3 py-2.5 text-white text-sm outline-none transition-colors ${
+                        selectedAction === 'update-only'
+                          ? 'focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30'
+                          : selectedAction === 'new-only'
+                          ? 'focus:border-green-500 focus:ring-1 focus:ring-green-500/30'
+                          : 'focus:border-orange-500 focus:ring-1 focus:ring-orange-500/30'
+                      }`}
+                    >
+                      {selectedAction !== 'full-resync' && (
+                        <option value="all">Wszystkie hurtownie (domyślna)</option>
+                      )}
+                      {inventories.map((inv) => (
+                        <option key={inv.inventory_id} value={inv.inventory_id.toString()}>
+                          {inv.name} (ID: {inv.inventory_id})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
 
-                  {/* Start button */}
+                {/* Action buttons */}
+                <div className="flex items-center gap-3">
                   <button
-                    onClick={() => startSync('full-resync', selectedInventoryId)}
-                    disabled={!selectedInventoryId || inventories.length === 0}
-                    className="px-5 py-2.5 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap"
+                    onClick={() => setSelectedAction(null)}
+                    className="px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Anuluj
+                  </button>
+                  <button
+                    onClick={() => {
+                      const invId = actionInventoryId === 'all' ? undefined : actionInventoryId;
+                      startSync(selectedAction, invId);
+                      setSelectedAction(null);
+                    }}
+                    disabled={selectedAction === 'full-resync' && (!actionInventoryId || actionInventoryId === 'all')}
+                    className={`px-5 py-2.5 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap disabled:bg-gray-700 disabled:text-gray-500 ${
+                      selectedAction === 'update-only'
+                        ? 'bg-blue-600 hover:bg-blue-700'
+                        : selectedAction === 'new-only'
+                        ? 'bg-green-600 hover:bg-green-700'
+                        : 'bg-orange-600 hover:bg-orange-700'
+                    }`}
                   >
                     <Play className="w-4 h-4" />
-                    Rozpocznij pełną synchronizację
+                    Rozpocznij działanie
                   </button>
                 </div>
+              </div>
 
-                <div className="mt-3 flex items-start gap-2 text-xs text-yellow-500/80 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2">
+              {/* Warning for full-resync */}
+              {selectedAction === 'full-resync' && (
+                <div className="mt-4 flex items-start gap-2 text-xs text-yellow-500/80 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2">
                   <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                  <span>Ta operacja może zająć dłuższy czas w zależności od liczby produktów w magazynie.</span>
+                  <span>Ta operacja może zająć dłuższy czas w zależności od liczby produktów w magazynie. Wymaga wybrania konkretnego magazynu.</span>
                 </div>
+              )}
+
+              {/* Info about batch processing */}
+              <div className="mt-3 flex items-start gap-2 text-xs text-gray-500 bg-gray-900/50 border border-gray-700/50 rounded-lg px-3 py-2">
+                <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                <span>Produkty przetwarzane w partiach po 10. Możesz przerwać operację w dowolnym momencie — dotychczasowe zmiany zostaną zachowane.</span>
               </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
