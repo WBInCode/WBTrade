@@ -17,6 +17,7 @@ import { Stack } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import type { ThemeColors } from '../../constants/Colors';
+import { Config } from '../../constants/Config';
 
 const TOPICS = [
   'Zamówienie',
@@ -63,19 +64,48 @@ export default function ContactScreen() {
   const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
   const [showTopics, setShowTopics] = useState(false);
+  const [sent, setSent] = useState(false);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!topic || !email.trim() || !message.trim()) {
       Alert.alert('Uzupełnij pola', 'Wybierz temat, podaj e-mail i wpisz wiadomość.');
       return;
     }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      Alert.alert('Błąd', 'Podaj prawidłowy adres e-mail.');
+      return;
+    }
+
     setSending(true);
-    // Build mailto link with pre-filled subject and body
-    const subject = encodeURIComponent(`[WBTrade] ${topic}`);
-    const body = encodeURIComponent(`Temat: ${topic}\n\nWiadomość:\n${message}\n\nAdres e-mail nadawcy: ${email}`);
-    Linking.openURL(`mailto:support@wb-partners.pl?subject=${subject}&body=${body}`).finally(() => {
+    try {
+      const res = await fetch(`${Config.API_URL}/contact/general`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: email.trim().split('@')[0],
+          email: email.trim(),
+          subject: topic,
+          message: message.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setSent(true);
+        setTopic('');
+        setMessage('');
+        setEmail('');
+      } else {
+        Alert.alert('Błąd', data.message || 'Nie udało się wysłać wiadomości. Spróbuj ponownie.');
+      }
+    } catch {
+      Alert.alert('Błąd', 'Błąd połączenia z serwerem. Sprawdź połączenie internetowe.');
+    } finally {
       setSending(false);
-    });
+    }
   };
 
   return (
@@ -131,6 +161,25 @@ export default function ContactScreen() {
 
           {/* Contact form */}
           <View style={styles.formSection}>
+            {sent ? (
+              <View style={styles.sentContainer}>
+                <View style={styles.sentIcon}>
+                  <FontAwesome name="check" size={32} color="#fff" />
+                </View>
+                <Text style={styles.sentTitle}>Wiadomość wysłana!</Text>
+                <Text style={styles.sentText}>
+                  Dziękujemy za kontakt. Odpowiemy najszybciej jak to możliwe.
+                </Text>
+                <TouchableOpacity
+                  style={styles.sentBtn}
+                  onPress={() => setSent(false)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.sentBtnText}>Wyślij kolejną wiadomość</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+            <>
             <Text style={styles.formTitle}>Napisz do nas</Text>
             <Text style={styles.formSubtitle}>
               Odpowiadamy zwykle w ciągu 24 godzin w dni robocze
@@ -216,6 +265,8 @@ export default function ContactScreen() {
                 </>
               )}
             </TouchableOpacity>
+            </>
+            )}
           </View>
 
           {/* Company info */}
@@ -432,6 +483,46 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: colors.textInverse,
+  },
+
+  // ─── Sent confirmation ───
+  sentContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  sentIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#22c55e',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  sentTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  sentText: {
+    fontSize: 14,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  sentBtn: {
+    borderWidth: 1,
+    borderColor: colors.tint,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  sentBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.tint,
   },
 
   // ─── Company ───
