@@ -183,31 +183,144 @@ function AccountPageContent() {
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
-            {/* Mobile User Card */}
-            <div className="lg:hidden mb-6">
+            {/* Mobile User Card + Full Navigation (matching native app layout) */}
+            <div className="lg:hidden mb-6 space-y-3">
+              {/* User Card */}
               <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-100 dark:border-secondary-700 p-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white font-semibold">
+                <Link href="/account/profile" className="flex items-center gap-3">
+                  <div className="w-14 h-14 bg-orange-500 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-sm">
                     {userData.avatar}
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">{userData.fullName}</h3>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-gray-900 dark:text-white text-lg">{userData.fullName}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Dane konta i ustawienia</p>
                   </div>
+                  <svg className="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              </div>
+
+              {/* Dashboard Stats (if any) */}
+              {(stats.unpaidOrders > 0 || stats.inTransitOrders > 0 || stats.unreadMessages > 0) && !dashboardLoading && (
+                <div className="flex gap-2">
+                  {stats.unpaidOrders > 0 && (
+                    <Link href="/account/orders" className="flex-1 flex flex-col items-center py-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
+                      <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+                      <span className="text-xl font-extrabold text-amber-700 dark:text-amber-300">{stats.unpaidOrders}</span>
+                      <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">Nieopłacone</span>
+                    </Link>
+                  )}
+                  {stats.inTransitOrders > 0 && (
+                    <Link href="/account/orders" className="flex-1 flex flex-col items-center py-3 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-800">
+                      <svg className="w-5 h-5 text-orange-600 dark:text-orange-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
+                      <span className="text-xl font-extrabold text-orange-700 dark:text-orange-300">{stats.inTransitOrders}</span>
+                      <span className="text-[11px] font-semibold text-orange-600 dark:text-orange-400">W drodze</span>
+                    </Link>
+                  )}
+                  {stats.unreadMessages > 0 && (
+                    <Link href="/account/messages" className="flex-1 flex flex-col items-center py-3 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-800">
+                      <svg className="w-5 h-5 text-orange-600 dark:text-orange-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                      <span className="text-xl font-extrabold text-orange-700 dark:text-orange-300">{stats.unreadMessages}</span>
+                      <span className="text-[11px] font-semibold text-orange-600 dark:text-orange-400">Wiadomości</span>
+                    </Link>
+                  )}
                 </div>
-                {/* Mobile Navigation */}
-                <div className="grid grid-cols-3 gap-2">
-                  {sidebarItems.slice(1, 4).map((item) => (
+              )}
+
+              {/* Section: Zakupy */}
+              <div>
+                <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-1 mb-1.5">Zakupy</h3>
+                <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-100 dark:border-secondary-700 overflow-hidden">
+                  {[
+                    { href: '/account/orders', icon: 'shopping-bag', label: 'Moje zamówienia' },
+                    { href: '/account/discounts', icon: 'tag', label: 'Moje rabaty' },
+                    { href: '/wishlist', icon: 'heart', label: 'Ulubione' },
+                    { href: '/account/reviews', icon: 'star', label: 'Moje opinie' },
+                    { href: '/account/shopping-lists', icon: 'list', label: 'Listy zakupowe' },
+                    { href: '/account/addresses', icon: 'location', label: 'Dane do zamówień' },
+                    { href: '/account/messages', icon: 'mail', label: 'Wiadomości', badge: stats.unreadMessages },
+                    { href: '/returns', icon: 'refresh', label: 'Reklamacje i zwroty' },
+                  ].map((item, idx, arr) => (
                     <Link
-                      key={item.id}
+                      key={item.href}
                       href={item.href}
-                      className="flex flex-col items-center justify-start gap-1 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors"
+                      className={`flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors ${idx < arr.length - 1 ? 'border-b border-gray-100 dark:border-secondary-700' : ''}`}
                     >
-                      <SidebarIcon icon={item.icon} />
-                      <span className="text-xs text-center leading-tight">{item.label}</span>
+                      <div className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center shrink-0">
+                        <SidebarIcon icon={item.icon} />
+                      </div>
+                      <span className="flex-1 text-[15px] text-gray-800 dark:text-gray-200">{item.label}</span>
+                      {item.badge && item.badge > 0 ? (
+                        <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center">{item.badge}</span>
+                      ) : null}
+                      <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
                     </Link>
                   ))}
                 </div>
               </div>
+
+              {/* Section: Ustawienia */}
+              <div>
+                <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-1 mb-1.5">Ustawienia</h3>
+                <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-100 dark:border-secondary-700 overflow-hidden">
+                  {[
+                    { href: '/account/profile', icon: 'user', label: 'Edytuj profil' },
+                    { href: '/account/password', icon: 'lock', label: 'Zmień hasło' },
+                    { href: '/account/settings', icon: 'settings', label: 'Ustawienia' },
+                  ].map((item, idx, arr) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors ${idx < arr.length - 1 ? 'border-b border-gray-100 dark:border-secondary-700' : ''}`}
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center shrink-0">
+                        <SidebarIcon icon={item.icon} />
+                      </div>
+                      <span className="flex-1 text-[15px] text-gray-800 dark:text-gray-200">{item.label}</span>
+                      <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Section: Pomoc */}
+              <div>
+                <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-1 mb-1.5">Pomoc</h3>
+                <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-100 dark:border-secondary-700 overflow-hidden">
+                  {[
+                    { href: '/contact', icon: 'mail', label: 'Skontaktuj się z nami' },
+                    { href: '/terms', icon: 'list', label: 'Regulamin' },
+                    { href: '/privacy', icon: 'lock', label: 'Polityka prywatności' },
+                  ].map((item, idx, arr) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors ${idx < arr.length - 1 ? 'border-b border-gray-100 dark:border-secondary-700' : ''}`}
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-secondary-700 flex items-center justify-center shrink-0">
+                        <SidebarIcon icon={item.icon} />
+                      </div>
+                      <span className="flex-1 text-[15px] text-gray-800 dark:text-gray-200">{item.label}</span>
+                      <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Logout button */}
+              <button
+                onClick={async () => { await logout(); }}
+                className="w-full py-3.5 rounded-xl border border-gray-200 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-gray-500 dark:text-gray-400 text-[15px] font-semibold hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors"
+              >
+                Wyloguj się
+              </button>
             </div>
 
             {/* Greeting Header */}
