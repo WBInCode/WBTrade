@@ -52,12 +52,15 @@ function WishlistCard({ item, onRemove }: { item: WishlistItem; onRemove: () => 
       setAdding(true);
       try {
         const data = await productsApi.getById(p.id);
-        const product = data.product;
+        // API returns product directly (not wrapped in { product })
+        const product = (data as any)?.product || data;
         const firstVariant = product?.variants?.[0];
         if (firstVariant?.id) {
           variantId = firstVariant.id;
         }
-      } catch {}
+      } catch (err) {
+        console.warn('Failed to fetch product for cart:', err);
+      }
     }
 
     if (!variantId) {
@@ -76,7 +79,9 @@ function WishlistCard({ item, onRemove }: { item: WishlistItem; onRemove: () => 
         price,
         quantity: 1,
       });
-    } catch {}
+    } catch (err) {
+      console.warn('Failed to add to cart:', err);
+    }
     setAdding(false);
   };
 
