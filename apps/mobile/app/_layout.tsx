@@ -17,6 +17,7 @@ import { ToastProvider } from '../contexts/ToastContext';
 import { useAuthRedirect } from '../hooks/useProtectedRoute';
 import GiftNotification from '../components/GiftNotification';
 import { couponsApi } from '../services/coupons';
+import AnimatedSplash from '../components/AnimatedSplash';
 
 export {
   ErrorBoundary,
@@ -119,6 +120,7 @@ function GiftNotificationHandler() {
 
 function RootLayoutNav() {
   const { colorScheme, colors, themeLoaded } = useTheme();
+  const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
 
   useEffect(() => {
     if (themeLoaded) {
@@ -139,6 +141,9 @@ function RootLayoutNav() {
               <AuthRedirectHandler />
               <GiftNotificationHandler />
               <StatusBar barStyle={colors.statusBar} />
+              {showAnimatedSplash && (
+                <AnimatedSplash onFinish={() => setShowAnimatedSplash(false)} />
+              )}
               <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
                 <Stack>
                   <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
