@@ -3,6 +3,12 @@
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
+declare global {
+  interface Window {
+    fbq?: (...args: unknown[]) => void;
+  }
+}
+
 const COOKIE_CONSENT_KEY = 'wb_cookie_consent';
 
 // Pages where cookie consent banner should not appear
@@ -30,6 +36,10 @@ function updateGoogleConsent(analytics: boolean, marketing: boolean) {
       'ad_personalization': marketing ? 'granted' : 'denied',
       'analytics_storage': analytics ? 'granted' : 'denied',
     });
+  }
+  // Update Meta Pixel consent
+  if (typeof window.fbq === 'function') {
+    window.fbq('consent', marketing ? 'grant' : 'revoke');
   }
 }
 
