@@ -2185,23 +2185,36 @@ export class ProductsService {
     }
 
     // Find other products from the same warehouse by prefix
+    // Fetch more than needed to account for inventory filtering
+    const fetchLimit = limit * 3;
+    const isOutlet = warehouse.id === 'outlet';
     const products = await prisma.product.findMany({
       where: {
         status: 'ACTIVE',
         price: { gt: 0 },
         id: { not: productId }, // Exclude the source product
         baselinkerProductId: { startsWith: warehouse.prefix }, // Same warehouse prefix
-        // Must have at least one delivery tag to be visible
-        OR: DELIVERY_TAGS.map(tag => ({ tags: { has: tag } })),
+        // Must have at least one delivery tag to be visible (outlet products exempt)
+        ...(isOutlet ? {} : { OR: DELIVERY_TAGS.map(tag => ({ tags: { has: tag } })) }),
         // Additional visibility filters
-        baselinkerCategoryPath: { not: null },
-        ...PACKAGE_FILTER_WHERE,
+        ...(isOutlet ? {} : { baselinkerCategoryPath: { not: null } }),
+        ...(isOutlet ? {} : PACKAGE_FILTER_WHERE),
+        // Only products with inventory in stock
+        variants: {
+          some: {
+            inventory: {
+              some: {
+                quantity: { gt: 0 },
+              },
+            },
+          },
+        },
       },
       orderBy: [
         { review_count: 'desc' }, // Popular products first
         { createdAt: 'desc' },
       ],
-      take: limit,
+      take: fetchLimit,
       include: {
         images: { orderBy: { order: 'asc' } },
         category: true,
@@ -2211,15 +2224,8 @@ export class ProductsService {
       },
     });
 
-    // Filter to only include products with inventory
-    const productsWithInventory = products.filter((p: typeof products[number]) => 
-      p.variants.some((v: typeof p.variants[number]) => 
-        v.inventory && v.inventory.some((inv: typeof v.inventory[number]) => inv.quantity > 0)
-      )
-    );
-
     return {
-      products: filterProductsWithPackageInfo(transformProducts(productsWithInventory)),
+      products: filterProductsWithPackageInfo(transformProducts(products)).slice(0, limit),
       wholesaler: warehouse.displayName,
     };
   }
