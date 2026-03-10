@@ -1531,6 +1531,76 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
     }
   }
 
+  /**
+   * Send confirmation email to customer after contact form submission
+   */
+  async sendContactConfirmationEmail(data: {
+    name: string;
+    email: string;
+    subject: string;
+  }): Promise<EmailResult> {
+    try {
+      const resend = getResend();
+      const { name, email, subject } = data;
+
+      const htmlContent = `
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+    <tr>
+      <td style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 30px; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">✅ Otrzymaliśmy Twoją wiadomość</h1>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 30px;">
+        <p style="margin: 0 0 16px; color: #1e293b; font-size: 16px;">Cześć <strong>${name}</strong>,</p>
+        <p style="margin: 0 0 16px; color: #334155; line-height: 1.6;">
+          Dziękujemy za kontakt! Potwierdzamy otrzymanie Twojej wiadomości dotyczącej tematu: <strong>${subject}</strong>.
+        </p>
+        <p style="margin: 0 0 16px; color: #334155; line-height: 1.6;">
+          Nasz zespół odpowie najszybciej jak to możliwe — zwykle w ciągu <strong>24 godzin</strong> w dni robocze
+          (poniedziałek–piątek, 9:00–17:00).
+        </p>
+        <div style="background-color: #f0fdf4; border-left: 4px solid #22c55e; border-radius: 4px; padding: 16px; margin: 24px 0;">
+          <p style="margin: 0; color: #166534; font-size: 14px;">Nie musisz odpowiadać na tego maila. Jeśli masz dodatkowe pytania, po prostu napisz do nas ponownie przez formularz na stronie lub na adres <a href="mailto:support@wb-partners.pl" style="color: #f97316;">support@wb-partners.pl</a>.</p>
+        </div>
+        <p style="margin: 24px 0 0; color: #64748b; font-size: 14px;">Pozdrawiamy,<br><strong>Zespół WB Trade</strong></p>
+      </td>
+    </tr>
+    <tr>
+      <td style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+        <p style="margin: 0; color: #94a3b8; font-size: 12px;">WB Partners Sp. z o.o. | ul. Słowackiego 24/11, 35-060 Rzeszów</p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+      const { data: responseData, error } = await resend.emails.send({
+        from: FROM_EMAIL,
+        to: [email],
+        subject: `Potwierdzenie otrzymania wiadomości — ${subject}`,
+        html: htmlContent,
+        text: `Cześć ${name},\n\nDziękujemy za kontakt! Potwierdzamy otrzymanie Twojej wiadomości dotyczącej tematu: ${subject}.\n\nNasz zespół odpowie najszybciej jak to możliwe — zwykle w ciągu 24 godzin w dni robocze (poniedziałek–piątek, 9:00–17:00).\n\nPozdrawiamy,\nZespół WB Trade`,
+      });
+
+      if (error) {
+        console.error('[EmailService] Contact confirmation error:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, messageId: responseData?.id };
+    } catch (err: any) {
+      console.error('[EmailService] Contact confirmation exception:', err);
+      return { success: false, error: err.message };
+    }
+  }
+
   // ─── Support Messaging Notifications ───
 
   async sendSupportNewTicketToAdmin(ticket: {
