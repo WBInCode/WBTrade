@@ -220,8 +220,9 @@ export class CartService {
    * Remove item from cart
    */
   async removeItem(cartId: string, itemId: string): Promise<CartWithItems> {
-    await prisma.cartItem.delete({
-      where: { id: itemId },
+    // Use deleteMany with cartId check — won't throw if item doesn't exist
+    await prisma.cartItem.deleteMany({
+      where: { id: itemId, cartId },
     });
 
     const cart = await prisma.cart.findUnique({
