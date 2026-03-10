@@ -243,10 +243,10 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     if (!product?.id) return;
     async function fetchSameWarehouse() {
       try {
-        const response = await productsApi.getSameWarehouseProducts(product.id, { limit: 5 });
+        const response = await productsApi.getSameWarehouseProducts(product.id, { limit: 12 });
         const filtered = (response.products || [])
           .filter((p) => p.id !== product.id)
-          .slice(0, 5);
+          .slice(0, 10);
         setRelatedProducts(filtered);
       } catch {
         // Fallback to category products
@@ -254,11 +254,11 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
           const categorySlug = product?.category?.slug;
           const fallbackResponse = await productsApi.getAll({
             category: categorySlug,
-            limit: 6,
+            limit: 12,
           });
           const filtered = fallbackResponse.products
             .filter((p) => p.id !== product.id)
-            .slice(0, 5);
+            .slice(0, 10);
           setRelatedProducts(filtered);
         } catch {
           // silently fail
