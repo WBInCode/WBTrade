@@ -323,6 +323,8 @@ function AccountPageContent() {
               </button>
             </div>
 
+            {/* Desktop dashboard content - hidden on mobile */}
+            <div className="hidden lg:block">
             {/* Greeting Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-2">
               <div>
@@ -533,6 +535,7 @@ function AccountPageContent() {
                 </div>
               )}
             </div>
+            </div>{/* end hidden lg:block desktop wrapper */}
           </div>
         </div>
       </main>
