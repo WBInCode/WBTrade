@@ -12,6 +12,7 @@ export interface WishlistItemWithProduct {
     price: number;
     compareAtPrice: number | null;
     images: { url: string; alt: string | null }[];
+    variants?: { id: string; stock: number }[];
   };
   variant?: {
     id: string;
@@ -174,6 +175,9 @@ export class WishlistService {
               orderBy: { order: 'asc' },
               take: 1,
             },
+            variants: {
+              select: { id: true, stock: true },
+            },
           },
         },
         variant: true,
@@ -198,6 +202,7 @@ export class WishlistService {
           ? Number(item.product.compareAtPrice)
           : null,
         images: item.product.images,
+        variants: (item.product as any).variants?.map((v: any) => ({ id: v.id, stock: v.stock })) ?? [],
       },
       variant: item.variant
         ? {

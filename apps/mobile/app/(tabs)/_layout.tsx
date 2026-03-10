@@ -173,10 +173,10 @@ function TabLayoutInner() {
     outputRange: [0, 60],
   });
 
-  // Rotate -90deg (counter-clockwise) when hiding
+  // Rotate 90deg (clockwise) when hiding — matches web behavior
   const bubbleRotate = hideAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0deg', '-90deg'],
+    outputRange: ['0deg', '90deg'],
   });
 
   return (

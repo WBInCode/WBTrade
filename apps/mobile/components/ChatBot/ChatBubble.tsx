@@ -6,12 +6,14 @@ import {
   StyleSheet,
   Animated,
   Image,
+  useColorScheme,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { WB_LOGO } from './constants';
 
-const WUBUS_HEAD = require('../../assets/images/wubus-head.png');
+// Use the same chat image as web (wubus-chat.png = wubus-chatbot.png equivalent)
+const WUBUS_CHAT = require('../../assets/images/wubus-chat.png');
 
 interface ChatBubbleProps {
   onPress: () => void;
@@ -23,6 +25,8 @@ interface ChatBubbleProps {
 
 export function ChatBubble({ onPress, hasActiveChat, unreadCount = 0, isChatOpen = false, isHidden = false }: ChatBubbleProps) {
   const colors = useThemeColors();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const pulse = useRef(new Animated.Value(1)).current;
   const glowOpacity = useRef(new Animated.Value(0.2)).current;
   const [showTooltip, setShowTooltip] = useState(false);
@@ -31,11 +35,11 @@ export function ChatBubble({ onPress, hasActiveChat, unreadCount = 0, isChatOpen
   const tooltipHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tooltipShownOnce = useRef(false);
 
-  // Existing scale pulse
+  // Gentle pulse animation matching web: scale(1) → scale(1.06), 3s ease-in-out infinite
   useEffect(() => {
     const animation = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, { toValue: 1.08, duration: 1500, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1.06, duration: 1500, useNativeDriver: true }),
         Animated.timing(pulse, { toValue: 1, duration: 1500, useNativeDriver: true }),
       ]),
     );
@@ -47,7 +51,7 @@ export function ChatBubble({ onPress, hasActiveChat, unreadCount = 0, isChatOpen
   useEffect(() => {
     const animation = Animated.loop(
       Animated.sequence([
-        Animated.timing(glowOpacity, { toValue: 0.6, duration: 1500, useNativeDriver: true }),
+        Animated.timing(glowOpacity, { toValue: 0.5, duration: 1500, useNativeDriver: true }),
         Animated.timing(glowOpacity, { toValue: 0.15, duration: 1500, useNativeDriver: true }),
       ]),
     );
@@ -161,32 +165,62 @@ export function ChatBubble({ onPress, hasActiveChat, unreadCount = 0, isChatOpen
         ]}
         hitSlop={isHidden ? { top: 30, bottom: 30, left: 80, right: 20 } : undefined}
       >
-        {/* Scale animation wraps only the circle so touch bounds stay accurate on Android */}
-        <Animated.View style={{ transform: [{ scale: pulse }] }}>
-          {/* Pulsating glow layer behind bubble — decorative only */}
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              bubbleStyles.glow,
+        {/* Column layout: circle + "Zapytaj" label below (matching web design) */}
+        <View style={bubbleStyles.column}>
+          {/* Scale animation wraps only the circle so touch bounds stay accurate on Android */}
+          <Animated.View style={{ transform: [{ scale: pulse }] }}>
+            {/* Pulsating glow layer behind bubble — decorative only */}
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                bubbleStyles.glow,
+                {
+                  backgroundColor: colors.tint,
+                  opacity: glowOpacity,
+                },
+              ]}
+            />
+            {/* Main bubble — matching web: bg-orange-500, rounded-full, ring-2 ring-white/70 */}
+            <View style={[
+              bubbleStyles.container,
               {
                 backgroundColor: colors.tint,
-                opacity: glowOpacity,
+                shadowColor: colors.shadow,
+                borderColor: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.7)',
               },
-            ]}
-          />
-          <View style={[bubbleStyles.container, { backgroundColor: colors.tint, shadowColor: colors.shadow }]}>
-            <Image source={WUBUS_HEAD} style={bubbleStyles.mascotImage} />
-          </View>
-          {unreadCount > 0 ? (
-            <View style={bubbleStyles.badge}>
-              <Text style={bubbleStyles.badgeText}>
-                {unreadCount > 99 ? '99+' : unreadCount}
+            ]}>
+              <Image source={WUBUS_CHAT} style={bubbleStyles.mascotImage} />
+            </View>
+            {unreadCount > 0 ? (
+              <View style={bubbleStyles.badge}>
+                <Text style={bubbleStyles.badgeText}>
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Text>
+              </View>
+            ) : (
+              <View style={bubbleStyles.activeDot} />
+            )}
+          </Animated.View>
+
+          {/* "Zapytaj" label — matching web design */}
+          {!isHidden && (
+            <View style={[
+              bubbleStyles.label,
+              {
+                backgroundColor: isDark ? '#1f2937' : '#fff',
+                borderColor: isDark ? '#374151' : '#e5e7eb',
+                shadowColor: colors.shadow,
+              },
+            ]}>
+              <Text style={[
+                bubbleStyles.labelText,
+                { color: isDark ? '#e5e7eb' : '#1f2937' },
+              ]}>
+                Zapytaj
               </Text>
             </View>
-          ) : (
-            <View style={bubbleStyles.activeDot} />
           )}
-        </Animated.View>
+        </View>
       </TouchableOpacity>
     </View>
   );
@@ -195,6 +229,9 @@ export function ChatBubble({ onPress, hasActiveChat, unreadCount = 0, isChatOpen
 const bubbleStyles = StyleSheet.create({
   outerWrapper: {
     alignItems: 'flex-end',
+  },
+  column: {
+    alignItems: 'center',
   },
   glow: {
     position: 'absolute',
@@ -225,12 +262,13 @@ const bubbleStyles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
     overflow: 'hidden',
+    // ring-2 equivalent (white semi-transparent border)
+    borderWidth: 2,
   },
   mascotImage: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    resizeMode: 'contain',
+    width: 56,
+    height: 56,
+    resizeMode: 'cover',
   },
   tooltip: {
     position: 'absolute',
@@ -265,10 +303,10 @@ const bubbleStyles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   label: {
-    marginRight: 8,
+    marginTop: 4,
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
+    paddingVertical: 2,
+    borderRadius: 8,
     borderWidth: 1,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -278,17 +316,16 @@ const bubbleStyles = StyleSheet.create({
   labelText: {
     fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 0.3,
   },
   activeDot: {
     position: 'absolute',
-    top: -1,
-    right: -1,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+    top: -2,
+    right: -2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: '#22c55e',
-    borderWidth: 2.5,
+    borderWidth: 2,
     borderColor: '#fff',
     zIndex: 10,
   },
