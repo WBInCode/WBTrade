@@ -373,6 +373,14 @@ router.post('/general', async (req: Request, res: Response) => {
 
     if (result.success) {
       console.log(`✅ [Contact] General contact from ${email}`);
+
+      // Send confirmation email to customer (fire and forget)
+      emailService.sendContactConfirmationEmail({
+        name: name.trim(),
+        email: email.trim(),
+        subject: subject?.trim() || 'Wiadomość ze strony',
+      }).catch((err) => console.error('[Contact] Confirmation email error:', err));
+
       return res.json({
         success: true,
         message: 'Wiadomość została wysłana. Dziękujemy!',
