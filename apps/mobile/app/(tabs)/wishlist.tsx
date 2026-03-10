@@ -110,7 +110,7 @@ function WishlistCard({ item, onRemove }: { item: WishlistItem; onRemove: () => 
           </Text>
 
           <View style={styles.priceRow}>
-            <Text style={[styles.price, hasDiscount && { color: colors.destructive }]}>
+            <Text style={[styles.price, hasDiscount && { color: colors.text }]}>
               {price.toFixed(2).replace('.', ',')} zł
             </Text>
             {hasDiscount && (
