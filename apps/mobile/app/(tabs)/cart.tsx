@@ -9,6 +9,7 @@ import {
   TextInput,
   Alert,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -18,8 +19,10 @@ import { useThemeColors } from '../../hooks/useThemeColors';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { checkoutApi } from '../../services/orders';
+import { couponsApi, UserCoupon } from '../../services/coupons';
 import CartItem from '../../components/cart/CartItem';
 import Button from '../../components/ui/Button';
+import { FontAwesome } from '@expo/vector-icons';
 
 // Free shipping threshold per warehouse (in PLN) - same as backend
 const FREE_SHIPPING_THRESHOLD = 300;
@@ -54,6 +57,11 @@ export default function CartScreen() {
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [myCoupons, setMyCoupons] = useState<UserCoupon[]>([]);
+  const [loadingCoupons, setLoadingCoupons] = useState(false);
+  const [couponsFetched, setCouponsFetched] = useState(false);
+  const [showManualInput, setShowManualInput] = useState(false);
+  const [applyingCode, setApplyingCode] = useState<string | null>(null);
   const [shippingPrices, setShippingPrices] = useState<Record<string, number>>({});
   const [totalShippingCost, setTotalShippingCost] = useState<number>(0);
   const [loadingShipping, setLoadingShipping] = useState(false);
@@ -130,29 +138,84 @@ export default function CartScreen() {
     });
   }, [items, shippingPrices]);
 
+  // Fetch user's coupons
+  useEffect(() => {
+    if (isAuthenticated && !couponsFetched && !cart?.couponCode) {
+      fetchMyCoupons();
+    }
+  }, [isAuthenticated, couponsFetched, cart?.couponCode]);
+
+  const fetchMyCoupons = async () => {
+    setLoadingCoupons(true);
+    try {
+      const response = await couponsApi.getMyCoupons();
+      const activeCoupons = (response.coupons || []).filter(
+        (c: UserCoupon) => c.status === 'active' && c.couponSource !== 'APP_DOWNLOAD'
+      );
+      setMyCoupons(activeCoupons);
+    } catch (err) {
+      console.error('Failed to fetch coupons:', err);
+    } finally {
+      setLoadingCoupons(false);
+      setCouponsFetched(true);
+    }
+  };
+
+  const formatDiscount = (coupon: UserCoupon) => {
+    if (coupon.type === 'PERCENTAGE') return `-${coupon.value}%`;
+    if (coupon.type === 'FREE_SHIPPING') return 'Darmowa dostawa';
+    return `-${Number(coupon.value).toFixed(2).replace('.', ',')} zł`;
+  };
+
+  const couponSourceLabel = (source: string) => {
+    switch (source) {
+      case 'WELCOME_DISCOUNT': return 'Powitalny';
+      case 'NEWSLETTER': return 'Newsletter';
+      case 'APP_DOWNLOAD': return 'Aplikacja';
+      case 'CAMPAIGN': return 'Promocja';
+      case 'MANUAL': return 'Promocja';
+      default: return 'Kupon';
+    }
+  };
+
+  const daysLeft = (dateStr: string | null): string => {
+    if (!dateStr) return '';
+    const diff = new Date(dateStr).getTime() - Date.now();
+    const days = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+    if (days === 0) return 'Ostatni dzień!';
+    if (days <= 7) return `Zostało ${days} ${days === 1 ? 'dzień' : 'dni'}`;
+    return `Ważny ${days} dni`;
+  };
+
   const onRefresh = async () => {
     setRefreshing(true);
     await refreshCart();
+    setCouponsFetched(false);
     setRefreshing(false);
   };
 
-  const handleApplyCoupon = async () => {
-    if (!couponCode.trim()) return;
+  const handleApplyCoupon = async (code?: string) => {
+    const codeToApply = code || couponCode.trim();
+    if (!codeToApply) return;
     setCouponLoading(true);
+    setApplyingCode(codeToApply);
     setCouponError('');
     try {
-      await applyCoupon(couponCode.trim());
+      await applyCoupon(codeToApply);
       setCouponCode('');
+      setShowManualInput(false);
     } catch (err: any) {
       setCouponError(err.message || 'Nieprawidłowy kod kuponu');
     } finally {
       setCouponLoading(false);
+      setApplyingCode(null);
     }
   };
 
   const handleRemoveCoupon = async () => {
     try {
       await removeCoupon();
+      setCouponsFetched(false);
     } catch (err: any) {
       Alert.alert('Błąd', err.message || 'Nie udało się usunąć kuponu');
     }
@@ -303,24 +366,106 @@ export default function CartScreen() {
               </TouchableOpacity>
             </View>
           ) : (
-            <View style={ds.couponInputRow}>
-              <TextInput
-                style={ds.couponInput}
-                placeholder="Wpisz kod kuponu"
-                placeholderTextColor={colors.placeholder}
-                value={couponCode}
-                onChangeText={setCouponCode}
-                autoCapitalize="characters"
-                autoCorrect={false}
-              />
-              <Button
-                title="Zastosuj"
-                onPress={handleApplyCoupon}
-                loading={couponLoading}
-                size="sm"
-                variant="outline"
-              />
-            </View>
+            <>
+              {/* User's available coupons */}
+              {isAuthenticated && (
+                <>
+                  {loadingCoupons ? (
+                    <View style={ds.couponsLoadingRow}>
+                      <ActivityIndicator size="small" color={colors.tint} />
+                      <Text style={ds.couponsLoadingText}>Ładowanie kuponów...</Text>
+                    </View>
+                  ) : myCoupons.length > 0 ? (
+                    <View style={ds.myCouponsList}>
+                      <View style={ds.myCouponsHeader}>
+                        <FontAwesome name="ticket" size={14} color={colors.tint} />
+                        <Text style={ds.myCouponsTitle}>Twoje kupony ({myCoupons.length})</Text>
+                      </View>
+                      <ScrollView style={ds.myCouponsScroll} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+                        {myCoupons.map((coupon) => {
+                          const isApplying = applyingCode === coupon.code;
+                          const expiring = coupon.expiresAt &&
+                            (new Date(coupon.expiresAt).getTime() - Date.now()) < 7 * 24 * 60 * 60 * 1000;
+                          return (
+                            <TouchableOpacity
+                              key={coupon.id}
+                              onPress={() => handleApplyCoupon(coupon.code)}
+                              disabled={couponLoading}
+                              style={[ds.myCouponCard, couponLoading && { opacity: 0.5 }]}
+                              activeOpacity={0.7}
+                            >
+                              <View style={ds.myCouponContent}>
+                                <View style={ds.myCouponTopRow}>
+                                  <Text style={ds.myCouponCode}>{coupon.code}</Text>
+                                  <View style={ds.myCouponDiscountBadge}>
+                                    <Text style={ds.myCouponDiscountText}>{formatDiscount(coupon)}</Text>
+                                  </View>
+                                  <Text style={ds.myCouponSource}>{couponSourceLabel(coupon.couponSource)}</Text>
+                                </View>
+                                {coupon.expiresAt && (
+                                  <Text style={[ds.myCouponExpiry, expiring && ds.myCouponExpiryUrgent]}>
+                                    {daysLeft(coupon.expiresAt)}
+                                  </Text>
+                                )}
+                              </View>
+                              <View style={ds.myCouponAction}>
+                                {isApplying ? (
+                                  <ActivityIndicator size="small" color={colors.tint} />
+                                ) : (
+                                  <Text style={ds.myCouponUseText}>Użyj →</Text>
+                                )}
+                              </View>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </ScrollView>
+                    </View>
+                  ) : null}
+                </>
+              )}
+
+              {/* Manual code input — collapsed by default */}
+              {!showManualInput ? (
+                <TouchableOpacity
+                  onPress={() => setShowManualInput(true)}
+                  style={ds.manualInputToggle}
+                  activeOpacity={0.7}
+                >
+                  <FontAwesome name="tag" size={14} color={colors.textSecondary} />
+                  <Text style={ds.manualInputToggleText}>
+                    {myCoupons.length > 0 ? 'Wpisz inny kod' : 'Masz kod rabatowy?'}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <View>
+                  <View style={ds.couponInputRow}>
+                    <TextInput
+                      style={ds.couponInput}
+                      placeholder="Wpisz kod kuponu"
+                      placeholderTextColor={colors.placeholder}
+                      value={couponCode}
+                      onChangeText={(t) => { setCouponCode(t.toUpperCase()); setCouponError(''); }}
+                      autoCapitalize="characters"
+                      autoCorrect={false}
+                      autoFocus
+                    />
+                    <Button
+                      title="Zastosuj"
+                      onPress={() => handleApplyCoupon()}
+                      loading={couponLoading && applyingCode === couponCode}
+                      size="sm"
+                      variant="outline"
+                    />
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => { setShowManualInput(false); setCouponCode(''); setCouponError(''); }}
+                    style={ds.manualInputCancel}
+                  >
+                    <Text style={ds.manualInputCancelText}>Anuluj</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </>
           )}
           {couponError ? (
             <Text style={ds.couponErrorText}>{couponError}</Text>
@@ -615,6 +760,109 @@ const createDynamicStyles = (c: ThemeColors) =>
       color: c.destructive,
       fontSize: 13,
       marginTop: 6,
+    },
+
+    // User coupons list
+    couponsLoadingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingVertical: 4,
+      marginBottom: 8,
+    },
+    couponsLoadingText: {
+      fontSize: 12,
+      color: c.textSecondary,
+    },
+    myCouponsList: {
+      marginBottom: 10,
+    },
+    myCouponsHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginBottom: 8,
+    },
+    myCouponsTitle: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: c.text,
+    },
+    myCouponsScroll: {
+      maxHeight: 180,
+    },
+    myCouponCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 10,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 10,
+      marginBottom: 6,
+    },
+    myCouponContent: {
+      flex: 1,
+    },
+    myCouponTopRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      flexWrap: 'wrap',
+    },
+    myCouponCode: {
+      fontSize: 13,
+      fontWeight: '700',
+      fontFamily: 'monospace' as any,
+      color: c.text,
+    },
+    myCouponDiscountBadge: {
+      backgroundColor: c.tintLight,
+      borderRadius: 4,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+    },
+    myCouponDiscountText: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: c.tint,
+    },
+    myCouponSource: {
+      fontSize: 10,
+      color: c.textMuted,
+    },
+    myCouponExpiry: {
+      fontSize: 10,
+      color: c.textMuted,
+      marginTop: 2,
+    },
+    myCouponExpiryUrgent: {
+      color: c.destructive,
+      fontWeight: '500',
+    },
+    myCouponAction: {
+      marginLeft: 8,
+    },
+    myCouponUseText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: c.tint,
+    },
+    manualInputToggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 4,
+    },
+    manualInputToggleText: {
+      fontSize: 12,
+      color: c.textSecondary,
+    },
+    manualInputCancel: {
+      marginTop: 4,
+    },
+    manualInputCancelText: {
+      fontSize: 10,
+      color: c.textMuted,
     },
 
     // Summary bar
