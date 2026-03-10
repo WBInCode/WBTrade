@@ -348,12 +348,27 @@ function HeaderContent() {
               <div className="relative" ref={userMenuRef}>
                 {isAuthenticated ? (
                   <>
-                    <button
-                      onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                      className="flex flex-col items-center p-1.5 sm:p-2 text-secondary-700 dark:text-secondary-300 hover:text-primary-500 transition-colors group"
+                    {/* Mobile: link to /account page (app-style full menu) */}
+                    <Link
+                      href="/account"
+                      className="flex flex-col items-center p-1.5 sm:hidden text-secondary-700 dark:text-secondary-300 hover:text-primary-500 transition-colors group"
                     >
                       <div className="relative">
-                        <div className="w-6 h-6 sm:w-7 sm:h-7 bg-primary-500 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-bold group-hover:scale-110 transition-transform shadow-sm">
+                        <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center text-white text-xs font-bold group-hover:scale-110 transition-transform shadow-sm">
+                          {user?.firstName?.[0]}{user?.lastName?.[0]}
+                        </div>
+                        {unreadMessages > 0 && (
+                          <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-secondary-900 animate-pulse" />
+                        )}
+                      </div>
+                    </Link>
+                    {/* Desktop: dropdown menu */}
+                    <button
+                      onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                      className="hidden sm:flex flex-col items-center p-2 text-secondary-700 dark:text-secondary-300 hover:text-primary-500 transition-colors group"
+                    >
+                      <div className="relative">
+                        <div className="w-7 h-7 bg-primary-500 rounded-full flex items-center justify-center text-white text-sm font-bold group-hover:scale-110 transition-transform shadow-sm">
                           {user?.firstName?.[0]}{user?.lastName?.[0]}
                         </div>
                         {unreadMessages > 0 && (
