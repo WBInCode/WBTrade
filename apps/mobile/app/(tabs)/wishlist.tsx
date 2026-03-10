@@ -19,6 +19,7 @@ import type { ThemeColors } from '../../constants/Colors';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
+import { productsApi } from '../../services/products';
 import Button from '../../components/ui/Button';
 import type { WishlistItem } from '../../services/types';
 
@@ -42,11 +43,30 @@ function WishlistCard({ item, onRemove }: { item: WishlistItem; onRemove: () => 
   const hasStock = p.variants ? p.variants.some((v) => v.stock > 0) : true;
 
   const handleAddToCart = async () => {
-    const variantId = p.variants?.[0]?.id;
+    // 1) Use item-level variantId first (saved when added to wishlist)
+    // 2) Then fallback to the first variant from product data
+    let variantId = item.variantId || p.variants?.[0]?.id;
+
+    // 3) If still no variantId — fetch product details from API to get variants
     if (!variantId) {
+      setAdding(true);
+      try {
+        const data = await productsApi.getById(p.id);
+        const product = data.product;
+        const firstVariant = product?.variants?.[0];
+        if (firstVariant?.id) {
+          variantId = firstVariant.id;
+        }
+      } catch {}
+    }
+
+    if (!variantId) {
+      // Truly no variant available — navigate to product page
+      setAdding(false);
       router.push(`/product/${p.id}`);
       return;
     }
+
     setAdding(true);
     try {
       await addToCart(variantId, 1, {
