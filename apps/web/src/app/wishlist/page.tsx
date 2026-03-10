@@ -274,16 +274,18 @@ export default function WishlistPage() {
                           className="object-contain p-4 group-hover:scale-105 transition-transform duration-300"
                         />
                         {item.compareAtPrice && Number(item.compareAtPrice) > Number(item.price) && (
-                          <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-                            -{Math.round((1 - Number(item.price) / Number(item.compareAtPrice)) * 100)}%
-                          </span>
+                          <div className="absolute top-1.5 left-1.5 sm:top-2.5 sm:left-2.5">
+                            <span className="bg-green-500 text-white text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg">
+                              -{Math.round((1 - Number(item.price) / Number(item.compareAtPrice)) * 100)}%
+                            </span>
+                          </div>
                         )}
                         <button
                           onClick={(e) => {
                             e.preventDefault();
                             handleRemove(item.id);
                           }}
-                          className="absolute top-2 right-2 w-8 h-8 bg-red-50 text-red-500 rounded-full flex items-center justify-center hover:bg-red-100 transition-colors"
+                          className="absolute top-2 right-2 w-8 h-8 bg-pink-50 text-pink-500 rounded-full flex items-center justify-center hover:bg-pink-100 transition-colors"
                           title="Usuń z ulubionych"
                         >
                           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -382,7 +384,7 @@ export default function WishlistPage() {
                             </Link>
                             <button
                               onClick={() => handleRemove(item.id)}
-                              className="shrink-0 w-8 h-8 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 flex items-center justify-center transition-colors"
+                              className="shrink-0 w-8 h-8 text-gray-400 hover:text-pink-500 rounded-full hover:bg-pink-50 flex items-center justify-center transition-colors"
                               title="Usuń z ulubionych"
                             >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -400,7 +402,7 @@ export default function WishlistPage() {
                                 <span className="text-xs sm:text-sm text-gray-400 dark:text-secondary-500 line-through">
                                   {Number(item.compareAtPrice).toFixed(2).replace('.', ',')} zł
                                 </span>
-                                <span className="text-xs sm:text-sm text-red-500 font-medium">
+                                <span className="text-xs sm:text-sm text-green-600 font-medium">
                                   -{Math.round((1 - Number(item.price) / Number(item.compareAtPrice)) * 100)}%
                                 </span>
                               </>
