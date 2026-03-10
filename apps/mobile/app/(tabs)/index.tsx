@@ -23,6 +23,7 @@ import { getCategoryIcon } from '../../constants/CategoryIcons';
 import { useScrollContext } from '../../contexts/ScrollContext';
 import ProductCarousel from '../../components/product/ProductCarousel';
 import ProductCard from '../../components/product/ProductCard';
+import { signalDataReady } from '../../components/AnimatedSplash';
 import type { Product, Category } from '../../services/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -480,19 +481,22 @@ export default function HomeScreen() {
       const carouselMetas: CarouselMeta[] =
         carouselListRes.status === 'fulfilled' ? carouselListRes.value.carousels || [] : [];
 
-      // Fetch products for each carousel in parallel
-      const carouselProductResults = await Promise.allSettled(
-        carouselMetas.map((c) =>
+      // Fetch first 2 carousels immediately, rest in background
+      const firstMetas = carouselMetas.slice(0, 2);
+      const restMetas = carouselMetas.slice(2);
+
+      const firstResults = await Promise.allSettled(
+        firstMetas.map((c) =>
           api.get<{ products: Product[] }>(`/carousels/${c.slug}/products`)
         )
       );
 
-      const carousels = carouselMetas
+      const carousels = firstMetas
         .map((meta, i) => ({
           meta,
           products:
-            carouselProductResults[i].status === 'fulfilled'
-              ? (carouselProductResults[i] as PromiseFulfilledResult<{ products: Product[] }>).value.products || []
+            firstResults[i].status === 'fulfilled'
+              ? (firstResults[i] as PromiseFulfilledResult<{ products: Product[] }>).value.products || []
               : [],
         }))
         .filter((c) => c.products.length > 0);
@@ -510,17 +514,46 @@ export default function HomeScreen() {
         }
       }
 
+      // Show screen with first 2 carousels
       setData({
         carousels,
         categories: catRes.status === 'fulfilled' ? catRes.value.categories || [] : [],
         mostWishlisted: heroRes.status === 'fulfilled' ? heroRes.value.product || null : null,
       });
+      setLoading(false);
+      setRefreshing(false);
+      signalDataReady();
+
+      // Load remaining carousels in background
+      if (restMetas.length > 0) {
+        const restResults = await Promise.allSettled(
+          restMetas.map((c) =>
+            api.get<{ products: Product[] }>(`/carousels/${c.slug}/products`)
+          )
+        );
+        const restCarousels = restMetas
+          .map((meta, i) => ({
+            meta,
+            products:
+              restResults[i].status === 'fulfilled'
+                ? (restResults[i] as PromiseFulfilledResult<{ products: Product[] }>).value.products || []
+                : [],
+          }))
+          .filter((c) => c.products.length > 0);
+
+        if (restCarousels.length > 0) {
+          setData((prev) => prev ? {
+            ...prev,
+            carousels: [...prev.carousels, ...restCarousels],
+          } : prev);
+        }
+      }
     } catch (err: any) {
       console.error('Error loading home data:', err);
       setError(err.message || 'Nie udało się załadować produktów');
-    } finally {
       setLoading(false);
       setRefreshing(false);
+      signalDataReady();
     }
   }, []);
 
@@ -671,7 +704,7 @@ export default function HomeScreen() {
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-        <HomeSkeleton colors={colors} />
+        <View style={{ flex: 1, backgroundColor: colors.background }} />
       </SafeAreaView>
     );
   }

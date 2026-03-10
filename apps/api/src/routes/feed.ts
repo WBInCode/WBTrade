@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { streamGoogleMerchantFeed, streamFilteredGoogleMerchantFeed, generateGoogleMerchantFeed, getFeedStats } from '../services/google-feed.service';
+import { streamFaviFeed } from '../services/favi-feed.service';
 import { authGuard, adminOnly } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -119,6 +120,63 @@ router.get('/filtered.xml', async (req: Request, res: Response) => {
     if (!res.headersSent) {
       res.status(500).json({
         error: 'Failed to generate filtered feed',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+});
+
+/**
+ * GET /api/feed/favi
+ * Returns FAVI-compatible Google-format XML feed (streaming)
+ * Public endpoint
+ */
+router.get('/favi', async (req: Request, res: Response) => {
+  try {
+    const baseUrl = process.env.FRONTEND_URL?.split(',')[0]?.trim()
+      || `${req.protocol}://${req.get('host')}`;
+
+    res.set({
+      'Content-Type': 'application/xml; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600',
+      'X-Robots-Tag': 'noindex',
+      'Transfer-Encoding': 'chunked',
+    });
+
+    await streamFaviFeed(baseUrl, res);
+  } catch (error) {
+    console.error('Error generating FAVI feed:', error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Failed to generate FAVI feed',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+});
+
+/**
+ * GET /api/feed/favi.xml
+ * Alternative URL with .xml extension
+ */
+router.get('/favi.xml', async (req: Request, res: Response) => {
+  try {
+    const baseUrl = process.env.FRONTEND_URL?.split(',')[0]?.trim()
+      || `${req.protocol}://${req.get('host')}`;
+
+    res.set({
+      'Content-Type': 'application/xml; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600',
+      'X-Robots-Tag': 'noindex',
+      'Transfer-Encoding': 'chunked',
+    });
+
+    await streamFaviFeed(baseUrl, res);
+  } catch (error) {
+    console.error('Error generating FAVI feed:', error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Failed to generate FAVI feed',
         message: error instanceof Error ? error.message : 'Unknown error'
       });
     }
