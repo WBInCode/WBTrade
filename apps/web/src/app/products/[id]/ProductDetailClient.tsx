@@ -9,6 +9,7 @@ import Footer from '../../../components/Footer';
 import Breadcrumb from '../../../components/Breadcrumb';
 import { productsApi, reviewsApi, Product, Review, ReviewStats, CanReviewResult } from '../../../lib/api';
 import ProductCard from '../../../components/ProductCard';
+import ProductCarousel from '../../../components/ProductCarousel';
 import { useCart } from '../../../contexts/CartContext';
 import { useWishlist } from '../../../contexts/WishlistContext';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -243,10 +244,10 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     if (!product?.id) return;
     async function fetchSameWarehouse() {
       try {
-        const response = await productsApi.getSameWarehouseProducts(product.id, { limit: 12 });
+        const response = await productsApi.getSameWarehouseProducts(product.id, { limit: 20 });
         const filtered = (response.products || [])
           .filter((p) => p.id !== product.id)
-          .slice(0, 10);
+          .slice(0, 20);
         setRelatedProducts(filtered);
       } catch {
         // Fallback to category products
@@ -1478,23 +1479,12 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
 
         {/* Polecane z tego magazynu */}
         {relatedProducts.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">🏪</span>
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Proponowane z tego magazynu</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Produkty z tej samej hurtowni — dostawa w jednej przesyłce</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {relatedProducts.map((relatedProduct) => (
-                <ProductCard key={relatedProduct.id} product={relatedProduct} />
-              ))}
-            </div>
-          </div>
+          <ProductCarousel
+            title="Proponowane z tego magazynu"
+            subtitle="Produkty z tej samej hurtowni — dostawa w jednej przesyłce"
+            products={relatedProducts}
+            icon={<span>🏪</span>}
+          />
         )}
       </main>
 
