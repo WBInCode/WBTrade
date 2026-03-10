@@ -108,13 +108,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const removeFromCart = useCallback(async (itemId: string) => {
     try {
       setError(null);
+      // Optimistic: remove item from state immediately
+      setCart(prev => {
+        if (!prev) return prev;
+        const items = prev.items.filter(i => i.id !== itemId);
+        const subtotal = items.reduce((sum, i) => sum + i.variant.price * i.quantity, 0);
+        return { ...prev, items, subtotal, total: subtotal - (prev.discount || 0) };
+      });
       const updatedCart = await cartApi.removeItem(itemId);
       setCart(updatedCart);
     } catch (err: any) {
       setError(err.message);
-      throw err;
+      // Refresh to get correct state
+      await refreshCart();
     }
-  }, []);
+  }, [refreshCart]);
 
   const clearCartItems = useCallback(async () => {
     try {
