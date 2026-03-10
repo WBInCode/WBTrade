@@ -555,7 +555,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                     <span className="text-sm sm:text-lg text-gray-400 line-through">
                       {Number(product.compareAtPrice).toFixed(2).replace('.', ',')} zł
                     </span>
-                    <span className="bg-red-500 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2 rounded">
+                    <span className="bg-green-500 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2 rounded">
                       -{discountPercent}%
                     </span>
                   </>

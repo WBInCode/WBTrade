@@ -5,40 +5,7 @@ import Link from 'next/link';
 import { Product } from '../lib/api';
 import { useWishlist } from '../contexts/WishlistContext';
 import { useCart } from '../contexts/CartContext';
-
-// Placeholder SVG as data URI
-const PLACEHOLDER_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect fill='%23f3f4f6' width='400' height='400'/%3E%3Cpath fill='%23d1d5db' d='M160 150h80v100h-80z'/%3E%3Ccircle fill='%23d1d5db' cx='180' cy='130' r='20'/%3E%3Cpath fill='%23e5e7eb' d='M120 250l60-80 40 50 40-30 60 60v50H120z'/%3E%3C/svg%3E";
-
-// Mapowanie magazynów na miejscowości (zgodnie z koszykiem)
-const WAREHOUSE_LOCATIONS: Record<string, string> = {
-  'leker': 'Chynów',
-  'hp': 'Zielona Góra',
-  'btp': 'Chotów',
-  'outlet': 'Rzeszów',
-};
-
-// Funkcja do określenia magazynu na podstawie produktu
-function getWarehouseLocation(product: Product): string | null {
-  // Sprawdź baselinkerProductId
-  const blId = (product as any).baselinkerProductId?.toLowerCase() || '';
-  if (blId.startsWith('leker-')) return WAREHOUSE_LOCATIONS['leker'];
-  if (blId.startsWith('hp-')) return WAREHOUSE_LOCATIONS['hp'];
-  if (blId.startsWith('btp-')) return WAREHOUSE_LOCATIONS['btp'];
-  if (blId.startsWith('outlet-')) return WAREHOUSE_LOCATIONS['outlet'];
-  
-  // Sprawdź tagi - szukamy "Rzeszów"
-  const tags = (product as any).tags || [];
-  if (tags.some((t: string) => t.toLowerCase() === 'rzeszów')) return WAREHOUSE_LOCATIONS['outlet'];
-  
-  // Sprawdź SKU
-  const sku = product.sku?.toUpperCase() || '';
-  if (sku.startsWith('LEKER-')) return WAREHOUSE_LOCATIONS['leker'];
-  if (sku.startsWith('HP-')) return WAREHOUSE_LOCATIONS['hp'];
-  if (sku.startsWith('BTP-')) return WAREHOUSE_LOCATIONS['btp'];
-  if (sku.startsWith('OUTLET-')) return WAREHOUSE_LOCATIONS['outlet'];
-  
-  return null;
-}
+import { PLACEHOLDER_IMAGE, WAREHOUSE_LOCATIONS, getWarehouseLocation, calculateDiscountPercent } from './productUtils';
 
 export interface ProductListCardProps {
   product: Product;
@@ -62,6 +29,7 @@ export default memo(function ProductListCard({ product, showWishlist = true, vie
   const [added, setAdded] = useState(false);
   const mainImage = imgError || !product.images?.[0]?.url ? PLACEHOLDER_IMAGE : product.images[0].url;
   const hasDiscount = product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price);
+  const discountPercent = calculateDiscountPercent(product.price, product.compareAtPrice);
   
   // Demo data for display
   const storeName = product.storeName || 'TopStore';
@@ -168,6 +136,11 @@ export default memo(function ProductListCard({ product, showWishlist = true, vie
                 {badge === 'super-price' ? 'Super Cena' : 
                  badge === 'outlet' ? 'Outlet' : 
                  badge === 'bestseller' ? 'Bestseller' : 'Nowość'}
+              </span>
+            )}
+            {hasDiscount && discountPercent > 0 && (
+              <span className="absolute top-3 left-3 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg">
+                -{discountPercent}%
               </span>
             )}
           </div>
@@ -344,6 +317,20 @@ export default memo(function ProductListCard({ product, showWishlist = true, vie
                badge === 'outlet' ? 'Outlet' : 
                badge === 'bestseller' ? 'Bestseller' : 'Nowość'}
             </span>
+          )}
+          {hasDiscount && discountPercent > 0 && !badge && (
+            <div className="absolute top-1 left-1 sm:top-2 sm:left-2">
+              <span className="bg-green-500 text-white text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg">
+                -{discountPercent}%
+              </span>
+            </div>
+          )}
+          {hasDiscount && discountPercent > 0 && badge && (
+            <div className="absolute top-8 left-1 sm:top-10 sm:left-2">
+              <span className="bg-green-500 text-white text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg">
+                -{discountPercent}%
+              </span>
+            </div>
           )}
         </div>
 
