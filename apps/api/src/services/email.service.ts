@@ -1512,7 +1512,7 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
 
       const { data: responseData, error } = await resend.emails.send({
         from: FROM_EMAIL,
-        to: ['kontakt@wb-trade.pl'],
+        to: ['support@wb-partners.pl'],
         replyTo: email,
         subject: `[Kontakt] ${subject}`,
         html: htmlContent,
