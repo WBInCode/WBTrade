@@ -26,11 +26,11 @@ router.get('/', async (req: Request, res: Response) => {
     const [
       newOrders,
       pendingCancellations,
-      lowStockInventory,
       newUsers,
       refundedOrders,
       recentReviews,
       returnComplaintTickets,
+      customerMessages,
     ] = await Promise.all([
       // Nowe zamówienia w ciągu ostatnich 24h
       prisma.order.findMany({
@@ -65,28 +65,6 @@ router.get('/', async (req: Request, res: Response) => {
         },
         orderBy: { updatedAt: 'desc' },
         take: 10,
-      }),
-
-      // Niski stan magazynowy — z Inventory model (quantity <= minimum)
-      prisma.inventory.findMany({
-        where: {
-          quantity: { lte: 5 },
-        },
-        select: {
-          id: true,
-          quantity: true,
-          minimum: true,
-          variant: {
-            select: {
-              id: true,
-              sku: true,
-              name: true,
-              product: { select: { id: true, name: true } },
-            },
-          },
-        },
-        orderBy: { quantity: 'asc' },
-        take: 30,
       }),
 
       // Nowi użytkownicy w ciągu ostatnich 24h
@@ -160,6 +138,32 @@ router.get('/', async (req: Request, res: Response) => {
         orderBy: { createdAt: 'desc' },
         take: 10,
       }),
+
+      // Nowe wiadomości od klientów (nieprzeczytane, ostatnie 24h)
+      prisma.supportMessage.findMany({
+        where: {
+          senderRole: 'CUSTOMER',
+          isRead: false,
+          createdAt: { gte: last24h },
+        },
+        select: {
+          id: true,
+          content: true,
+          createdAt: true,
+          ticket: {
+            select: {
+              id: true,
+              ticketNumber: true,
+              subject: true,
+              user: { select: { firstName: true, lastName: true } },
+              guestName: true,
+              guestEmail: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 15,
+      }),
     ]);
 
     // Helper: get customer name (supports guest orders)
@@ -194,37 +198,6 @@ router.get('/', async (req: Request, res: Response) => {
         createdAt: order.updatedAt,
       });
     });
-
-    // Niski stan magazynowy — grupowanie gdy > 3 produkty
-    if (lowStockInventory.length <= 3) {
-      lowStockInventory.forEach((inv) => {
-        const label = inv.variant.sku || inv.variant.name;
-        notifications.push({
-          id: `stock-${inv.id}`,
-          type: 'low_stock',
-          title: 'Niski stan magazynowy',
-          message: `${inv.variant.product.name} (${label}) — Zostało ${inv.quantity} szt.`,
-          link: `/products/${inv.variant.product.id}`,
-          priority: inv.quantity === 0 ? 'high' : 'medium',
-          createdAt: new Date(),
-        });
-      });
-    } else {
-      const outOfStockCount = lowStockInventory.filter(inv => inv.quantity === 0).length;
-      const lowCount = lowStockInventory.length - outOfStockCount;
-      const parts: string[] = [];
-      if (outOfStockCount > 0) parts.push(`${outOfStockCount} niedostępnych`);
-      if (lowCount > 0) parts.push(`${lowCount} z niskim stanem`);
-      notifications.push({
-        id: `stock-grouped`,
-        type: 'low_stock',
-        title: `${lowStockInventory.length} produktów wymaga uwagi`,
-        message: parts.join(', ') + ' — sprawdź magazyn',
-        link: '/warehouse',
-        priority: outOfStockCount > 0 ? 'high' : 'medium',
-        createdAt: new Date(),
-      });
-    }
 
     // Zwroty i reklamacje — wysoki priorytet
     returnComplaintTickets.forEach((ticket) => {
@@ -282,6 +255,23 @@ router.get('/', async (req: Request, res: Response) => {
       });
     });
 
+    // Wiadomości od klientów — średni priorytet
+    customerMessages.forEach((msg) => {
+      const customerName = msg.ticket.user
+        ? `${msg.ticket.user.firstName} ${msg.ticket.user.lastName}`
+        : msg.ticket.guestName || msg.ticket.guestEmail || 'Klient';
+      const preview = msg.content.length > 60 ? msg.content.slice(0, 60) + '...' : msg.content;
+      notifications.push({
+        id: `msg-${msg.id}`,
+        type: 'new_message',
+        title: 'Nowa wiadomość',
+        message: `${customerName}: ${preview}`,
+        link: `/messages/${msg.ticket.id}`,
+        priority: 'medium',
+        createdAt: msg.createdAt,
+      });
+    });
+
     // Recenzje — informacyjne
     recentReviews.forEach((r) => {
       notifications.push({
@@ -311,12 +301,13 @@ router.get('/', async (req: Request, res: Response) => {
       low: notifications.filter((n) => n.priority === 'low').length,
       byType: {
         cancellations: pendingCancellations.length,
-        lowStock: lowStockInventory.length,
+        lowStock: 0,
         newOrders: newOrders.length,
         refunds: refundedOrders.length,
         newUsers: newUsers.length,
         reviews: recentReviews.length,
         returnRequests: returnComplaintTickets.length,
+        customerMessages: customerMessages.length,
       },
     };
 

@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import { optionalAuth } from '../middleware/auth.middleware';
 import * as supportService from '../services/support.service';
 import { returnService } from '../services/return.service';
+import { logAuditEvent, AuditAction, AuditSeverity } from '../lib/audit';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -374,6 +375,21 @@ router.post('/general', async (req: Request, res: Response) => {
     if (result.success) {
       console.log(`✅ [Contact] General contact from ${email}`);
 
+      // Audit log
+      logAuditEvent({
+        action: AuditAction.CONTACT_FORM_SENT,
+        email: email.trim(),
+        severity: AuditSeverity.INFO,
+        success: true,
+        metadata: {
+          fromEmail: email.trim(),
+          toEmail: 'support@wb-partners.pl',
+          fromName: name.trim(),
+          subject: subject?.trim() || 'Wiadomość ze strony',
+          messageId: result.messageId,
+        },
+      }).catch(() => {});
+
       // Send confirmation email to customer (fire and forget)
       emailService.sendContactConfirmationEmail({
         name: name.trim(),
@@ -386,6 +402,21 @@ router.post('/general', async (req: Request, res: Response) => {
         message: 'Wiadomość została wysłana. Dziękujemy!',
       });
     } else {
+      // Audit log — failed
+      logAuditEvent({
+        action: AuditAction.CONTACT_FORM_FAILED,
+        email: email.trim(),
+        severity: AuditSeverity.WARNING,
+        success: false,
+        metadata: {
+          fromEmail: email.trim(),
+          toEmail: 'support@wb-partners.pl',
+          fromName: name.trim(),
+          subject: subject?.trim() || 'Wiadomość ze strony',
+          error: result.error,
+        },
+      }).catch(() => {});
+
       return res.status(500).json({
         success: false,
         message: 'Nie udało się wysłać wiadomości',
