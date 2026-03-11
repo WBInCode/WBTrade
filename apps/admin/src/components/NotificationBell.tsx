@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Bell, ShoppingCart, AlertTriangle, UserPlus, PackageX, Star, ArrowLeft, X, CheckCheck, Eye, RotateCcw, Volume2, VolumeX } from 'lucide-react';
+import { Bell, ShoppingCart, AlertTriangle, UserPlus, Star, ArrowLeft, X, CheckCheck, Eye, RotateCcw, Volume2, VolumeX } from 'lucide-react';
 import { getAuthToken } from '@/lib/api';
 import Link from 'next/link';
 
@@ -38,7 +38,7 @@ interface NotificationSummary {
 
 const typeConfig: Record<string, { icon: any; color: string }> = {
   cancellation: { icon: AlertTriangle, color: 'text-red-400 bg-red-400/10' },
-  low_stock: { icon: PackageX, color: 'text-yellow-400 bg-yellow-400/10' },
+
   refund: { icon: ArrowLeft, color: 'text-orange-400 bg-orange-400/10' },
   new_order: { icon: ShoppingCart, color: 'text-green-400 bg-green-400/10' },
   new_user: { icon: UserPlus, color: 'text-blue-400 bg-blue-400/10' },
@@ -357,11 +357,7 @@ export default function NotificationBell() {
                   {summary.byType.cancellations} anulowań
                 </span>
               )}
-              {summary.byType.lowStock > 0 && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 font-medium">
-                  {summary.byType.lowStock} niski stan
-                </span>
-              )}
+
               {summary.byType.newOrders > 0 && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 font-medium">
                   {summary.byType.newOrders} nowych zam.
