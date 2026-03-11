@@ -63,7 +63,7 @@ export default function FooterNewsletter() {
         <button
           type="submit"
           disabled={status === 'loading'}
-          className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors disabled:opacity-50"
+          className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
         >
           {status === 'loading' ? (
             <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">

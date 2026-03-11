@@ -71,7 +71,7 @@ export default function CareersPage() {
       <Header />
       
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-primary-600 to-primary-800 text-white py-20 lg:py-32">
+      <section className="relative bg-gradient-to-br from-primary-500 to-primary-700 text-white py-20 lg:py-32">
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1920')] bg-cover bg-center opacity-10"></div>
         <div className="container-custom relative">
           <div className="max-w-3xl">
@@ -243,7 +243,7 @@ export default function CareersPage() {
               </p>
               <a
                 href="mailto:kariera@wbtrade.pl"
-                className="inline-flex items-center justify-center px-6 py-3 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-colors"
+                className="inline-flex items-center justify-center px-6 py-3 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 transition-colors"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -256,7 +256,7 @@ export default function CareersPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 bg-gradient-to-r from-primary-600 to-primary-700">
+      <section className="py-16 bg-gradient-to-r from-primary-500 to-primary-600">
         <div className="container-custom text-center">
           <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
             Nie widzisz odpowiedniej oferty?
