@@ -126,7 +126,7 @@ export default function HelpPage() {
       <Header />
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary-600 to-primary-700 text-white py-16 lg:py-24">
+      <section className="bg-gradient-to-br from-primary-500 to-primary-600 text-white py-16 lg:py-24">
         <div className="container-custom">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl lg:text-5xl font-bold mb-6">
@@ -241,7 +241,7 @@ export default function HelpPage() {
       </section>
 
       {/* Contact CTA */}
-      <section className="py-16 bg-gradient-to-r from-primary-600 to-primary-700">
+      <section className="py-16 bg-gradient-to-r from-primary-500 to-primary-600">
         <div className="container-custom">
           <div className="max-w-3xl mx-auto text-center text-white">
             <h2 className="text-2xl lg:text-3xl font-bold mb-4">

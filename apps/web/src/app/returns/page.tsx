@@ -358,7 +358,7 @@ export default function ReturnsPage() {
       <Header />
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary-600 to-primary-700 text-white py-16 lg:py-24">
+      <section className="bg-gradient-to-br from-primary-500 to-primary-600 text-white py-16 lg:py-24">
         <div className="container-custom">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl lg:text-5xl font-bold mb-6">
@@ -431,7 +431,7 @@ export default function ReturnsPage() {
                 }`}>
                   <div className="flex items-center gap-3 mb-4">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${
-                      stepIndex > index ? 'bg-green-500' : stepIndex === index ? 'bg-primary-600' : 'bg-secondary-400'
+                      stepIndex > index ? 'bg-green-500' : stepIndex === index ? 'bg-primary-500' : 'bg-secondary-400'
                     }`}>
                       {stepIndex > index ? (
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -558,7 +558,7 @@ export default function ReturnsPage() {
                       onClick={handleCheckOrder}
                       disabled={loading || !orderNumber.trim()}
                       className={`flex-1 px-6 py-4 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                        type === 'COMPLAINT' ? 'bg-red-600 hover:bg-red-700' : 'bg-primary-600 hover:bg-primary-700'
+                        type === 'COMPLAINT' ? 'bg-red-600 hover:bg-red-700' : 'bg-primary-500 hover:bg-primary-600'
                       }`}
                     >
                       {loading ? 'Sprawdzanie...' : 'Sprawdź zamówienie'}
@@ -609,7 +609,7 @@ export default function ReturnsPage() {
                           {/* Checkbox */}
                           <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                             isSelected
-                              ? 'border-primary-600 bg-primary-600'
+                              ? 'border-primary-500 bg-primary-500'
                               : 'border-secondary-300 dark:border-secondary-600'
                           }`}>
                             {isSelected && (
@@ -714,7 +714,7 @@ export default function ReturnsPage() {
                         setStep('form');
                       }}
                       className={`flex-1 px-6 py-4 text-white font-semibold rounded-xl transition-colors ${
-                        type === 'COMPLAINT' ? 'bg-red-600 hover:bg-red-700' : 'bg-primary-600 hover:bg-primary-700'
+                        type === 'COMPLAINT' ? 'bg-red-600 hover:bg-red-700' : 'bg-primary-500 hover:bg-primary-600'
                       } ${selectedItems.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       Dalej
@@ -851,7 +851,7 @@ export default function ReturnsPage() {
                         type="submit"
                         disabled={loading}
                         className={`flex-1 px-6 py-4 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
-                          type === 'COMPLAINT' ? 'bg-red-600 hover:bg-red-700' : 'bg-primary-600 hover:bg-primary-700'
+                          type === 'COMPLAINT' ? 'bg-red-600 hover:bg-red-700' : 'bg-primary-500 hover:bg-primary-600'
                         }`}
                       >
                         {loading ? (
@@ -945,7 +945,7 @@ export default function ReturnsPage() {
                   disabled={!canClose}
                   className={`w-full px-8 py-4 font-semibold rounded-xl transition-colors ${
                     canClose
-                      ? 'bg-primary-600 text-white hover:bg-primary-700 cursor-pointer'
+                      ? 'bg-primary-500 text-white hover:bg-primary-600 cursor-pointer'
                       : 'bg-secondary-300 dark:bg-secondary-600 text-secondary-500 dark:text-secondary-400 cursor-not-allowed'
                   }`}
                 >
@@ -993,7 +993,7 @@ export default function ReturnsPage() {
       </section>
 
       {/* Contact CTA */}
-      <section className="py-16 bg-gradient-to-r from-primary-600 to-primary-700">
+      <section className="py-16 bg-gradient-to-r from-primary-500 to-primary-600">
         <div className="container-custom text-center text-white">
           <h2 className="text-2xl lg:text-3xl font-bold mb-4">
             Potrzebujesz pomocy?
