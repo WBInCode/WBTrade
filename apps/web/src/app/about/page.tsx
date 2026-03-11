@@ -57,7 +57,7 @@ export default function AboutPage() {
       <Header />
       
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-primary-600 to-primary-800 text-white py-20 lg:py-32">
+      <section className="relative bg-gradient-to-br from-primary-500 to-primary-700 text-white py-20 lg:py-32">
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1556761175-b413da4baf72?w=1920')] bg-cover bg-center opacity-10"></div>
         <div className="container-custom relative">
           <div className="max-w-3xl">
@@ -162,7 +162,7 @@ export default function AboutPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 bg-gradient-to-r from-primary-600 to-primary-700">
+      <section className="py-16 bg-gradient-to-r from-primary-500 to-primary-600">
         <div className="container-custom text-center">
           <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
             Dołącz do naszej społeczności
