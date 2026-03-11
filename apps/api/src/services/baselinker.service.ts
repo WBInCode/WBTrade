@@ -437,7 +437,7 @@ export class BaselinkerService {
         if (syncProgress.isAborted(syncLogId)) throw new Error('ABORTED');
 
         syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Synchronizacja stanów magazynowych...', phase: 'stock' });
-        const stockResult = await this.syncStock(provider, activeInventoryId);
+        const stockResult = await this.syncStock(provider, activeInventoryId, syncLogId);
         itemsProcessed += stockResult.processed;
         itemsChanged += stockResult.changed;
         allChangedSkus.push(...stockResult.changedSkus);
@@ -462,8 +462,9 @@ export class BaselinkerService {
         console.log('[BaselinkerSync] Syncing stock after products sync...');
         if (!syncProgress.isAborted(syncLogId)) {
           syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Synchronizacja stanów magazynowych...', phase: 'stock' });
-          const stockResult = await this.syncStock(provider, activeInventoryId);
-          itemsProcessed += stockResult.processed;
+          const stockResult = await this.syncStock(provider, activeInventoryId, syncLogId);
+          // Don't add stockResult.processed to itemsProcessed to avoid confusing totals
+          // (products: 105 + stock: 105 = 210 looks wrong when there are only 105 products)
           itemsChanged += stockResult.changed;
           allChangedSkus.push(...stockResult.changedSkus);
           errors.push(...stockResult.errors);
@@ -473,7 +474,7 @@ export class BaselinkerService {
         await this.reindexMeilisearch();
       } else if (type === 'stock') {
         syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Synchronizacja stanów magazynowych...', phase: 'stock' });
-        const result = await this.syncStock(provider, activeInventoryId);
+        const result = await this.syncStock(provider, activeInventoryId, syncLogId);
         itemsProcessed = result.processed;
         itemsChanged = result.changed;
         allChangedSkus = result.changedSkus;
@@ -483,7 +484,7 @@ export class BaselinkerService {
         itemsProcessed = result.processed;
         errors.push(...result.errors);
       } else if (type === 'price') {
-        const result = await this.syncPrices(provider, activeInventoryId);
+        const result = await this.syncPrices(provider, activeInventoryId, syncLogId);
         itemsProcessed = result.processed;
         itemsChanged = result.changed;
         allChangedSkus = result.changedPrices as any;
@@ -583,7 +584,8 @@ export class BaselinkerService {
       if (!stored) throw new Error('No Baselinker configuration found');
 
       const provider = await this.createProvider();
-      const result = await this.syncStock(provider, stored.inventoryId);
+      // Worker syncs ALL warehouses (cron every 2h)
+      const result = await this.syncStock(provider, 'all');
 
       const status = result.errors.length > 0 ? BaselinkerSyncStatus.FAILED : BaselinkerSyncStatus.SUCCESS;
 
@@ -1033,6 +1035,24 @@ export class BaselinkerService {
   }
 
   /**
+   * Get baselinkerProductId prefix for a given inventory name.
+   * Must match the convention used by sync scripts (sync-all-warehouses.js, sync-btp-full.js, etc.)
+   * Products from HP → "hp-{id}", BTP → "btp-{id}", Leker → "leker-{id}", others → "{id}"
+   */
+  private getInventoryPrefix(inventoryName: string): string {
+    const prefixMap: Record<string, string> = {
+      'leker': 'leker-',
+      'btp': 'btp-',
+      'hp': 'hp-',
+      'magazyn zwrotów': 'outlet-',
+      'ikonka': '',
+      'główny': '',
+    };
+    const lower = inventoryName.toLowerCase();
+    return prefixMap[lower] ?? '';
+  }
+
+  /**
    * Round price to .99 ending (e.g., 12.34 → 12.99, 50.00 → 50.99)
    * This makes prices more attractive psychologically
    */
@@ -1163,7 +1183,9 @@ export class BaselinkerService {
       const allInventories = await provider.getInventories();
       const currentInventory = allInventories.find(inv => inv.inventory_id.toString() === inventoryId);
       const warehouseKey = currentInventory ? this.getWarehouseKey(currentInventory.name) : null;
-      console.log(`[BaselinkerSync] Inventory: ${currentInventory?.name || inventoryId}, warehouse: ${warehouseKey || 'unknown'}, price rules: ${warehouseKey && priceRules[warehouseKey] ? priceRules[warehouseKey].length + ' rules' : 'none'}`);
+      // Get inventory prefix for baselinkerProductId (e.g., "leker-", "btp-", "hp-")
+      const inventoryPrefix = currentInventory ? this.getInventoryPrefix(currentInventory.name) : '';
+      console.log(`[BaselinkerSync] Inventory: ${currentInventory?.name || inventoryId}, warehouse: ${warehouseKey || 'unknown'}, prefix: "${inventoryPrefix}", price rules: ${warehouseKey && priceRules[warehouseKey] ? priceRules[warehouseKey].length + ' rules' : 'none'}`);
 
       if (syncLogId) {
         syncProgress.sendProgress(syncLogId, {
@@ -1202,21 +1224,53 @@ export class BaselinkerService {
       // First pass: identify which products need updating based on mode
       const productsToFetch: number[] = [];
       
+      // Skip reason tracking for better diagnostics
+      let skippedExisting = 0;
+      let skippedZeroStock = 0;
+      let skippedNoStockData = 0;
+      let skippedUnchanged = 0;
+      
       // Dla trybu new-only, pobieramy też stany magazynowe aby pominąć produkty z zerowym stanem
       let stockMap: Map<number, number> | null = null;
       if (mode === 'new-only') {
         console.log('[BaselinkerSync] Fetching stock data for new-only mode...');
+        if (syncLogId) {
+          syncProgress.sendProgress(syncLogId, {
+            type: 'info',
+            message: 'Pobieranie danych stanów magazynowych dla trybu "tylko nowe"...',
+          });
+        }
         const stockEntries = await provider.getInventoryProductsStock(inventoryId);
         stockMap = new Map();
         for (const entry of stockEntries) {
-          const totalStock = Object.values(entry.stock as Record<string, number>).reduce((sum: number, qty: number) => sum + qty, 0);
+          const stockData = entry.stock as Record<string, number>;
+          const stockValues = Object.values(stockData);
+          const totalStock = stockValues.reduce((sum: number, qty: number) => sum + qty, 0);
           stockMap.set(entry.product_id, totalStock);
         }
         console.log(`[BaselinkerSync] Got stock data for ${stockMap.size} products`);
+        
+        if (stockMap.size === 0) {
+          const warnMsg = `Uwaga: Nie pobrano żadnych danych stanów magazynowych z inventoryId: ${inventoryId}. Wszystkie nowe produkty mogą zostać pominięte.`;
+          console.warn(`[BaselinkerSync] ${warnMsg}`);
+          errors.push(warnMsg);
+          if (syncLogId) {
+            syncProgress.sendProgress(syncLogId, {
+              type: 'warning',
+              message: warnMsg,
+            });
+          }
+        } else if (syncLogId) {
+          syncProgress.sendProgress(syncLogId, {
+            type: 'info',
+            message: `Pobrano stany magazynowe dla ${stockMap.size} produktów`,
+          });
+        }
       }
       
       for (const blProduct of productList) {
-        const blId = blProduct.id.toString();
+        const blIdRaw = blProduct.id.toString();
+        const blId = `${inventoryPrefix}${blIdRaw}`;
         const existing = existingMap.get(blId);
         
         // MODE: fetch-all - pobierz wszystkie produkty (inicjalizacja)
@@ -1224,6 +1278,7 @@ export class BaselinkerService {
           // Skip only if product already exists
           if (existing) {
             skipped++;
+            skippedExisting++;
             continue;
           }
           // Pobierz wszystkie nowe produkty, nawet ze stanem 0
@@ -1242,13 +1297,25 @@ export class BaselinkerService {
           // Skip if product already exists
           if (existing) {
             skipped++;
+            skippedExisting++;
+            continue;
+          }
+          
+          // Check if stock data exists for this product
+          const hasStockData = stockMap?.has(blProduct.id) ?? false;
+          const productStock = stockMap?.get(blProduct.id) ?? 0;
+          
+          if (!hasStockData) {
+            // Product has no stock entry at all - still import it (might be a data gap)
+            console.log(`[BaselinkerSync] Product ${blProduct.id} has no stock data entry, importing anyway`);
+            productsToFetch.push(blProduct.id);
             continue;
           }
           
           // Skip if stock is 0
-          const productStock = stockMap?.get(blProduct.id) ?? 0;
           if (productStock <= 0) {
             skipped++;
+            skippedZeroStock++;
             continue;
           }
           
@@ -1261,6 +1328,7 @@ export class BaselinkerService {
           // Skip if product does not exist
           if (!existing) {
             skipped++;
+            skippedExisting++;
             continue;
           }
           
@@ -1285,15 +1353,34 @@ export class BaselinkerService {
           productsToFetch.push(blProduct.id);
         } else {
           skipped++;
+          skippedUnchanged++;
         }
       }
 
       console.log(`[BaselinkerSync] ${productsToFetch.length} products to process, ${skipped} skipped (mode: ${mode || 'all'})`);
+      if (mode === 'new-only') {
+        console.log(`[BaselinkerSync] Skip reasons: existing=${skippedExisting}, zeroStock=${skippedZeroStock}, noStockData=${skippedNoStockData}`);
+      }
 
       if (syncLogId) {
+        let skipDetails = '';
+        if (mode === 'new-only') {
+          const parts: string[] = [];
+          if (skippedExisting > 0) parts.push(`${skippedExisting} już istnieje`);
+          if (skippedZeroStock > 0) parts.push(`${skippedZeroStock} z zerowym stanem`);
+          if (skippedNoStockData > 0) parts.push(`${skippedNoStockData} bez danych stanu`);
+          skipDetails = parts.length > 0 ? ` (${parts.join(', ')})` : '';
+        } else if (mode === 'update-only') {
+          skipDetails = skippedExisting > 0 ? ` (${skippedExisting} nie istnieje w bazie)` : '';
+        } else if (mode === 'fetch-all') {
+          skipDetails = skippedExisting > 0 ? ` (${skippedExisting} już istnieje)` : '';
+        } else {
+          skipDetails = skippedUnchanged > 0 ? ` (${skippedUnchanged} bez zmian)` : '';
+        }
+        
         syncProgress.sendProgress(syncLogId, {
           type: 'info',
-          message: `Znaleziono ${productsToFetch.length} produktów do przetworzenia, ${skipped} pominiętych`,
+          message: `Znaleziono ${productsToFetch.length} produktów do przetworzenia, ${skipped} pominiętych${skipDetails}`,
           current: 0,
           total: productsToFetch.length,
           percent: 0,
@@ -1348,11 +1435,14 @@ export class BaselinkerService {
           });
         }
 
+        // Collect price updates to execute AFTER transaction (avoids nested tx deadlock)
+        const pendingPriceUpdates: Array<{ type: 'product' | 'variant'; id: string; newPrice: number }> = [];
+
         await prisma.$transaction(
           async (tx) => {
             for (const blProduct of batch) {
               try {
-                const baselinkerProductId = blProduct.id.toString();
+                const baselinkerProductId = `${inventoryPrefix}${blProduct.id.toString()}`;
               const sku = generateSku(blProduct.id, blProduct.sku);
               
               // Get name and description using helper methods
@@ -1392,7 +1482,7 @@ export class BaselinkerService {
                 });
               }
               
-              const slug = await this.ensureUniqueProductSlug(slugify(name) || `product-${baselinkerProductId}`, baselinkerProductId);
+              const slug = await this.ensureUniqueProductSlug(slugify(name) || `product-${baselinkerProductId}`, baselinkerProductId, tx);
 
               // Find category by Baselinker category_id
               // Category in Baselinker has ID, and our Category has baselinkerCategoryId field
@@ -1403,7 +1493,7 @@ export class BaselinkerService {
               // Get baselinker category path for product record (from the category if found)
               let baselinkerCategoryPath: string | null = null;
               if (category) {
-                const catWithPath = await prisma.category.findUnique({
+                const catWithPath = await tx.category.findUnique({
                   where: { id: category.id },
                   select: { baselinkerCategoryPath: true },
                 });
@@ -1426,7 +1516,7 @@ export class BaselinkerService {
                 const productChanges: string[] = [];
                 if (existingProduct.name !== name) productChanges.push(`Nazwa: "${existingProduct.name}" → "${name}"`);
                 const existingSku = existingProduct.sku;
-                const newSku = await this.ensureUniqueSku(sku, baselinkerProductId);
+                const newSku = await this.ensureUniqueSku(sku, baselinkerProductId, tx);
                 if (existingSku !== newSku) productChanges.push(`SKU: ${existingSku} → ${newSku}`);
                 if (existingProduct.barcode !== productEan) productChanges.push(`EAN: ${existingProduct.barcode || 'brak'} → ${productEan || 'brak'}`);
                 const currentPrice = Number(existingProduct.price);
@@ -1456,13 +1546,8 @@ export class BaselinkerService {
                 
                 // Handle price change with Omnibus compliance
                 if (Math.abs(currentPrice - productPrice) > 0.01) {
-                  // Schedule price update with history (will be executed after tx)
-                  await priceHistoryService.updateProductPrice({
-                    productId: existingProduct.id,
-                    newPrice: productPrice,
-                    source: PriceChangeSource.BASELINKER,
-                    reason: 'Baselinker sync',
-                  });
+                  // Schedule price update AFTER transaction to avoid nested tx deadlock
+                  pendingPriceUpdates.push({ type: 'product', id: existingProduct.id, newPrice: productPrice });
                 }
               } else {
                 // New product - create with initial price (no history needed)
@@ -1472,7 +1557,7 @@ export class BaselinkerService {
                     name,
                     slug,
                     description,
-                    sku: await this.ensureUniqueSku(sku, baselinkerProductId),
+                    sku: await this.ensureUniqueSku(sku, baselinkerProductId, tx),
                     barcode: productEan,
                     price: productPrice,
                     lowestPrice30Days: productPrice, // Initial lowest = current price
@@ -1538,7 +1623,7 @@ export class BaselinkerService {
                       where: { baselinkerVariantId: variantId },
                       data: {
                         name: blVariant.name,
-                        sku: await this.ensureUniqueVariantSku(variantSku, variantId),
+                        sku: await this.ensureUniqueVariantSku(variantSku, variantId, tx),
                         barcode: variantEan,
                       },
                     });
@@ -1546,12 +1631,7 @@ export class BaselinkerService {
                     // Handle price change with Omnibus compliance
                     const currentVariantPrice = Number(existingVariant.price);
                     if (currentVariantPrice !== variantPrice) {
-                      await priceHistoryService.updateVariantPrice({
-                        variantId: existingVariant.id,
-                        newPrice: variantPrice,
-                        source: PriceChangeSource.BASELINKER,
-                        reason: 'Baselinker sync',
-                      });
+                      pendingPriceUpdates.push({ type: 'variant', id: existingVariant.id, newPrice: variantPrice });
                     }
                   } else {
                     // New variant - create with initial price
@@ -1560,7 +1640,7 @@ export class BaselinkerService {
                         baselinkerVariantId: variantId,
                         productId: product.id,
                         name: blVariant.name,
-                        sku: await this.ensureUniqueVariantSku(variantSku, variantId),
+                        sku: await this.ensureUniqueVariantSku(variantSku, variantId, tx),
                         barcode: variantEan,
                         price: variantPrice,
                         lowestPrice30Days: variantPrice,
@@ -1585,7 +1665,7 @@ export class BaselinkerService {
                     where: { baselinkerVariantId: defaultVariantId },
                     data: {
                       name: 'Domyślny',
-                      sku: await this.ensureUniqueVariantSku(`${sku}-DEFAULT`, defaultVariantId),
+                      sku: await this.ensureUniqueVariantSku(`${sku}-DEFAULT`, defaultVariantId, tx),
                       barcode: productEan,
                     },
                   });
@@ -1593,12 +1673,7 @@ export class BaselinkerService {
                   // Handle price change with Omnibus compliance
                   const currentDefaultPrice = Number(existingDefaultVariant.price);
                   if (currentDefaultPrice !== productPrice) {
-                    await priceHistoryService.updateVariantPrice({
-                      variantId: existingDefaultVariant.id,
-                      newPrice: productPrice,
-                      source: PriceChangeSource.BASELINKER,
-                      reason: 'Baselinker sync - default variant',
-                    });
+                    pendingPriceUpdates.push({ type: 'variant', id: existingDefaultVariant.id, newPrice: productPrice });
                   }
                 } else {
                   // Create new default variant
@@ -1607,7 +1682,7 @@ export class BaselinkerService {
                       baselinkerVariantId: defaultVariantId,
                       productId: product.id,
                       name: 'Domyślny',
-                      sku: await this.ensureUniqueVariantSku(`${sku}-DEFAULT`, defaultVariantId),
+                      sku: await this.ensureUniqueVariantSku(`${sku}-DEFAULT`, defaultVariantId, tx),
                       barcode: productEan,
                       price: productPrice,
                       lowestPrice30Days: productPrice,
@@ -1645,6 +1720,29 @@ export class BaselinkerService {
           maxWait: 60000, // 60 seconds max wait to acquire connection
           timeout: 120000, // 2 minutes timeout for the transaction
         });
+
+        // Execute pending price updates AFTER transaction commit (avoids nested tx deadlock)
+        for (const pu of pendingPriceUpdates) {
+          try {
+            if (pu.type === 'product') {
+              await priceHistoryService.updateProductPrice({
+                productId: pu.id,
+                newPrice: pu.newPrice,
+                source: PriceChangeSource.BASELINKER,
+                reason: 'Baselinker sync',
+              });
+            } else {
+              await priceHistoryService.updateVariantPrice({
+                variantId: pu.id,
+                newPrice: pu.newPrice,
+                source: PriceChangeSource.BASELINKER,
+                reason: 'Baselinker sync',
+              });
+            }
+          } catch (priceErr) {
+            console.error(`[BaselinkerSync] Price update error for ${pu.type} ${pu.id}:`, priceErr);
+          }
+        }
       }
     } catch (error) {
       if (error instanceof Error && error.message === 'ABORTED') throw error;
@@ -1657,12 +1755,12 @@ export class BaselinkerService {
   /**
    * Ensure unique product slug
    */
-  private async ensureUniqueProductSlug(baseSlug: string, baselinkerProductId: string): Promise<string> {
+  private async ensureUniqueProductSlug(baseSlug: string, baselinkerProductId: string, client: any = prisma): Promise<string> {
     let slug = baseSlug;
     let counter = 1;
 
     while (counter < 10000) {
-      const existing = await prisma.product.findUnique({
+      const existing = await client.product.findUnique({
         where: { slug },
       });
 
@@ -1681,12 +1779,12 @@ export class BaselinkerService {
   /**
    * Ensure unique SKU
    */
-  private async ensureUniqueSku(baseSku: string, baselinkerProductId: string): Promise<string> {
+  private async ensureUniqueSku(baseSku: string, baselinkerProductId: string, client: any = prisma): Promise<string> {
     let sku = baseSku;
     let counter = 1;
 
     while (counter < 10000) {
-      const existing = await prisma.product.findUnique({
+      const existing = await client.product.findUnique({
         where: { sku },
       });
 
@@ -1705,12 +1803,12 @@ export class BaselinkerService {
   /**
    * Ensure unique variant SKU
    */
-  private async ensureUniqueVariantSku(baseSku: string, baselinkerVariantId: string): Promise<string> {
+  private async ensureUniqueVariantSku(baseSku: string, baselinkerVariantId: string, client: any = prisma): Promise<string> {
     let sku = baseSku;
     let counter = 1;
 
     while (counter < 10000) {
-      const existing = await prisma.productVariant.findUnique({
+      const existing = await client.productVariant.findUnique({
         where: { sku },
       });
 
@@ -1732,7 +1830,8 @@ export class BaselinkerService {
    */
   async syncStock(
     provider: BaselinkerProvider,
-    inventoryId: string
+    inventoryId: string,
+    syncLogId?: string
   ): Promise<{ processed: number; errors: string[]; changed: number; changedSkus: { sku: string; oldQty: number; newQty: number; inventory: string }[] }> {
     const errors: string[] = [];
     let processed = 0;
@@ -1756,31 +1855,45 @@ export class BaselinkerService {
         });
       }
 
-      // Fetch all inventories to sync stock from each one
-      const inventories = await provider.getInventories();
-      
-      // Map inventory name to prefix used in baselinkerProductId
-      const inventoryPrefixMap: Record<string, string> = {
-        'HP': 'hp-',
-        'BTP': 'btp-',
-        'Leker': 'leker-',
-        'ikonka': '', // ikonka products have no prefix
-        'Główny': '', // Main inventory - no prefix
-      };
+      // Fetch inventories — if specific inventoryId provided, only sync that one
+      const allInventories = await provider.getInventories();
+      const inventories = inventoryId && inventoryId !== 'all'
+        ? allInventories.filter(inv => inv.inventory_id.toString() === inventoryId)
+        : allInventories;
+
+      if (inventories.length === 0 && inventoryId !== 'all') {
+        errors.push(`Inventory ${inventoryId} not found in Baselinker`);
+      }
 
       for (const inv of inventories) {
-        // Skip non-product inventories (empik, zwroty) and ikonka/Główny
-        if (inv.name.includes('empik') || inv.name.includes('zwrot') || inv.name === 'ikonka' || inv.name === 'Główny') {
+        // Skip non-product inventories (empik) and ikonka/Główny
+        if (inv.name.includes('empik') || inv.name === 'ikonka' || inv.name === 'Główny') {
           console.log(`[BaselinkerSync] Skipping inventory: ${inv.name}`);
           continue;
         }
 
-        const prefix = inventoryPrefixMap[inv.name] ?? '';
+        const prefix = this.getInventoryPrefix(inv.name);
         console.log(`[BaselinkerSync] Syncing stock from inventory: ${inv.name} (${inv.inventory_id}), prefix: "${prefix}"`);
+
+        if (syncLogId) {
+          syncProgress.sendProgress(syncLogId, {
+            type: 'info',
+            message: `📦 Pobieranie stanów z magazynu: ${inv.name}...`,
+            phase: 'stock',
+          });
+        }
 
         try {
           const stockEntries = await provider.getInventoryProductsStock(inv.inventory_id.toString());
           console.log(`[BaselinkerSync] Fetched ${stockEntries.length} stock entries from ${inv.name}`);
+
+          if (syncLogId) {
+            syncProgress.sendProgress(syncLogId, {
+              type: 'info',
+              message: `📦 ${inv.name}: pobrano ${stockEntries.length} pozycji, dopasowywanie...`,
+              phase: 'stock',
+            });
+          }
 
           // === OPTIMIZATION: Batch processing instead of individual queries ===
           
@@ -1929,12 +2042,38 @@ export class BaselinkerService {
 
             if (i + BATCH_SIZE < upsertOps.length) {
               console.log(`[BaselinkerSync] Processed ${i + BATCH_SIZE}/${upsertOps.length} from ${inv.name}`);
+              if (syncLogId) {
+                syncProgress.sendProgress(syncLogId, {
+                  type: 'progress',
+                  message: `📦 ${inv.name}: ${Math.min(i + BATCH_SIZE, upsertOps.length)}/${upsertOps.length}`,
+                  phase: 'stock',
+                  current: Math.min(i + BATCH_SIZE, upsertOps.length),
+                  total: upsertOps.length,
+                  percent: Math.round(((i + BATCH_SIZE) / upsertOps.length) * 100),
+                });
+              }
             }
           }
 
+          const changedInInv = changedSkus.filter(s => s.inventory === inv.name).length;
           console.log(`[BaselinkerSync] Completed ${inv.name}: ${upsertOps.length} variants processed`);
+          if (syncLogId) {
+            syncProgress.sendProgress(syncLogId, {
+              type: 'success',
+              message: `✅ ${inv.name}: ${upsertOps.length} wariantów, ${changedInInv} zmian`,
+              phase: 'stock',
+            });
+          }
         } catch (error) {
-          errors.push(`Failed to fetch stock from ${inv.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          const errMsg = `Failed to fetch stock from ${inv.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          errors.push(errMsg);
+          if (syncLogId) {
+            syncProgress.sendProgress(syncLogId, {
+              type: 'error',
+              message: `❌ ${inv.name}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              phase: 'stock',
+            });
+          }
         }
       }
     } catch (error) {
@@ -1951,7 +2090,8 @@ export class BaselinkerService {
    */
   async syncPrices(
     provider: BaselinkerProvider,
-    inventoryId: string
+    inventoryId: string,
+    syncLogId?: string
   ): Promise<{ processed: number; errors: string[]; changed: number; changedPrices: { sku: string; oldPrice: number; newPrice: number; inventory: string }[] }> {
     const errors: string[] = [];
     let processed = 0;
@@ -1959,24 +2099,26 @@ export class BaselinkerService {
     const changedPrices: { sku: string; oldPrice: number; newPrice: number; inventory: string }[] = [];
 
     try {
-      const inventories = await provider.getInventories();
-
-      const inventoryPrefixMap: Record<string, string> = {
-        'HP': 'hp-',
-        'BTP': 'btp-',
-        'Leker': 'leker-',
-        'ikonka': '',
-        'Główny': '',
-      };
+      const allInventories = await provider.getInventories();
+      const inventories = inventoryId && inventoryId !== 'all'
+        ? allInventories.filter(inv => inv.inventory_id.toString() === inventoryId)
+        : allInventories;
 
       for (const inv of inventories) {
-        if (inv.name.includes('empik') || inv.name.includes('zwrot') || inv.name === 'ikonka' || inv.name === 'Główny') {
+        if (inv.name.includes('empik') || inv.name === 'ikonka' || inv.name === 'Główny') {
           console.log(`[BaselinkerSync] Skipping price inventory: ${inv.name}`);
           continue;
         }
 
-        const prefix = inventoryPrefixMap[inv.name] ?? '';
+        const prefix = this.getInventoryPrefix(inv.name);
         console.log(`[BaselinkerSync] Syncing prices from inventory: ${inv.name} (${inv.inventory_id}), prefix: "${prefix}"`);
+
+        if (syncLogId) {
+          syncProgress.sendProgress(syncLogId, {
+            type: 'info',
+            message: `Synchronizacja cen z magazynu: ${inv.name}...`,
+          });
+        }
 
         try {
           // 1. Fetch all BL prices for this inventory (paginated internally by provider)
@@ -2166,6 +2308,13 @@ export class BaselinkerService {
           }
 
           console.log(`[BaselinkerSync] Completed ${inv.name}: ${prodChanges.length + varChanges.length} price changes applied`);
+
+          if (syncLogId) {
+            syncProgress.sendProgress(syncLogId, {
+              type: 'success',
+              message: `${inv.name}: ${prodChanges.length + varChanges.length} zmian cen zastosowanych`,
+            });
+          }
         } catch (error) {
           errors.push(`Failed to sync prices from ${inv.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
           console.error(`[BaselinkerSync] Error syncing prices from ${inv.name}:`, error);
@@ -2210,7 +2359,8 @@ export class BaselinkerService {
       if (!stored) throw new Error('No Baselinker configuration found');
 
       const provider = await this.createProvider();
-      const result = await this.syncPrices(provider, stored.inventoryId);
+      // Worker syncs ALL warehouses (cron)
+      const result = await this.syncPrices(provider, 'all', syncLog.id);
 
       const status = result.errors.length > 0 ? BaselinkerSyncStatus.FAILED : BaselinkerSyncStatus.SUCCESS;
 

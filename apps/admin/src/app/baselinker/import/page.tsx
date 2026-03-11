@@ -281,11 +281,10 @@ export default function BaselinkerImportPage() {
         });
         if (res.ok) {
           const data = await res.json();
-          // Filter to only product inventories (skip empik, zwrot, ikonka, Główny)
+          // Filter to only product inventories (skip empik, ikonka, Główny)
           const productInventories = (data.inventories || []).filter(
             (inv: InventoryItem) =>
               !inv.name.includes('empik') &&
-              !inv.name.includes('zwrot') &&
               inv.name !== 'ikonka' &&
               inv.name !== 'Główny'
           );
