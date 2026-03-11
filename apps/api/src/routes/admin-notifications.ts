@@ -26,7 +26,6 @@ router.get('/', async (req: Request, res: Response) => {
     const [
       newOrders,
       pendingCancellations,
-      lowStockInventory,
       newUsers,
       refundedOrders,
       recentReviews,
@@ -65,28 +64,6 @@ router.get('/', async (req: Request, res: Response) => {
         },
         orderBy: { updatedAt: 'desc' },
         take: 10,
-      }),
-
-      // Niski stan magazynowy — z Inventory model (quantity <= minimum)
-      prisma.inventory.findMany({
-        where: {
-          quantity: { lte: 5 },
-        },
-        select: {
-          id: true,
-          quantity: true,
-          minimum: true,
-          variant: {
-            select: {
-              id: true,
-              sku: true,
-              name: true,
-              product: { select: { id: true, name: true } },
-            },
-          },
-        },
-        orderBy: { quantity: 'asc' },
-        take: 30,
       }),
 
       // Nowi użytkownicy w ciągu ostatnich 24h
@@ -195,37 +172,6 @@ router.get('/', async (req: Request, res: Response) => {
       });
     });
 
-    // Niski stan magazynowy — grupowanie gdy > 3 produkty
-    if (lowStockInventory.length <= 3) {
-      lowStockInventory.forEach((inv) => {
-        const label = inv.variant.sku || inv.variant.name;
-        notifications.push({
-          id: `stock-${inv.id}`,
-          type: 'low_stock',
-          title: 'Niski stan magazynowy',
-          message: `${inv.variant.product.name} (${label}) — Zostało ${inv.quantity} szt.`,
-          link: `/products/${inv.variant.product.id}`,
-          priority: inv.quantity === 0 ? 'high' : 'medium',
-          createdAt: new Date(),
-        });
-      });
-    } else {
-      const outOfStockCount = lowStockInventory.filter(inv => inv.quantity === 0).length;
-      const lowCount = lowStockInventory.length - outOfStockCount;
-      const parts: string[] = [];
-      if (outOfStockCount > 0) parts.push(`${outOfStockCount} niedostępnych`);
-      if (lowCount > 0) parts.push(`${lowCount} z niskim stanem`);
-      notifications.push({
-        id: `stock-grouped`,
-        type: 'low_stock',
-        title: `${lowStockInventory.length} produktów wymaga uwagi`,
-        message: parts.join(', ') + ' — sprawdź magazyn',
-        link: '/warehouse',
-        priority: outOfStockCount > 0 ? 'high' : 'medium',
-        createdAt: new Date(),
-      });
-    }
-
     // Zwroty i reklamacje — wysoki priorytet
     returnComplaintTickets.forEach((ticket) => {
       const customerName = ticket.user
@@ -311,7 +257,7 @@ router.get('/', async (req: Request, res: Response) => {
       low: notifications.filter((n) => n.priority === 'low').length,
       byType: {
         cancellations: pendingCancellations.length,
-        lowStock: lowStockInventory.length,
+        lowStock: 0,
         newOrders: newOrders.length,
         refunds: refundedOrders.length,
         newUsers: newUsers.length,
