@@ -138,6 +138,32 @@ router.get('/', async (req: Request, res: Response) => {
         orderBy: { createdAt: 'desc' },
         take: 10,
       }),
+
+      // Nowe wiadomości od klientów (nieprzeczytane, ostatnie 24h)
+      prisma.supportMessage.findMany({
+        where: {
+          senderRole: 'CUSTOMER',
+          isRead: false,
+          createdAt: { gte: last24h },
+        },
+        select: {
+          id: true,
+          content: true,
+          createdAt: true,
+          ticket: {
+            select: {
+              id: true,
+              ticketNumber: true,
+              subject: true,
+              user: { select: { firstName: true, lastName: true } },
+              guestName: true,
+              guestEmail: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 15,
+      }),
     ]);
 
     // Helper: get customer name (supports guest orders)
