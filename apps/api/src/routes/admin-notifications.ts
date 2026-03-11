@@ -30,6 +30,7 @@ router.get('/', async (req: Request, res: Response) => {
       refundedOrders,
       recentReviews,
       returnComplaintTickets,
+      customerMessages,
     ] = await Promise.all([
       // Nowe zamówienia w ciągu ostatnich 24h
       prisma.order.findMany({
@@ -137,6 +138,32 @@ router.get('/', async (req: Request, res: Response) => {
         orderBy: { createdAt: 'desc' },
         take: 10,
       }),
+
+      // Nowe wiadomości od klientów (nieprzeczytane, ostatnie 24h)
+      prisma.supportMessage.findMany({
+        where: {
+          senderRole: 'CUSTOMER',
+          isRead: false,
+          createdAt: { gte: last24h },
+        },
+        select: {
+          id: true,
+          content: true,
+          createdAt: true,
+          ticket: {
+            select: {
+              id: true,
+              ticketNumber: true,
+              subject: true,
+              user: { select: { firstName: true, lastName: true } },
+              guestName: true,
+              guestEmail: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 15,
+      }),
     ]);
 
     // Helper: get customer name (supports guest orders)
@@ -228,6 +255,23 @@ router.get('/', async (req: Request, res: Response) => {
       });
     });
 
+    // Wiadomości od klientów — średni priorytet
+    customerMessages.forEach((msg) => {
+      const customerName = msg.ticket.user
+        ? `${msg.ticket.user.firstName} ${msg.ticket.user.lastName}`
+        : msg.ticket.guestName || msg.ticket.guestEmail || 'Klient';
+      const preview = msg.content.length > 60 ? msg.content.slice(0, 60) + '...' : msg.content;
+      notifications.push({
+        id: `msg-${msg.id}`,
+        type: 'new_message',
+        title: 'Nowa wiadomość',
+        message: `${customerName}: ${preview}`,
+        link: `/messages/${msg.ticket.id}`,
+        priority: 'medium',
+        createdAt: msg.createdAt,
+      });
+    });
+
     // Recenzje — informacyjne
     recentReviews.forEach((r) => {
       notifications.push({
@@ -263,6 +307,7 @@ router.get('/', async (req: Request, res: Response) => {
         newUsers: newUsers.length,
         reviews: recentReviews.length,
         returnRequests: returnComplaintTickets.length,
+        customerMessages: customerMessages.length,
       },
     };
 
