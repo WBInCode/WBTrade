@@ -88,9 +88,9 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
           {/* Brand Column */}
           <div className="sm:col-span-2 lg:col-span-3">
             <Link href="/" className="inline-block mb-4">
-              {/* Light mode logo */}
+              {/* Light mode logo - transparent background */}
               <Image 
-                src="/images/WB-TRADE-logo.webp" 
+                src="/images/wb-trade-bez-tla-light.png" 
                 alt="WB Trade" 
                 width={300} 
                 height={180} 
