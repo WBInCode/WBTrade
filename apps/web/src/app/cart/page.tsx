@@ -243,7 +243,7 @@ export default function CartPage() {
           /* Cart with items */
           <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {/* Cart Items - grouped by packages */}
-            <div className="lg:col-span-2 order-2 lg:order-1">
+            <div className="lg:col-span-2 order-1 lg:order-1">
               <CartPackageView
                 items={cart.items}
                 onUpdateQuantity={handleQuantityChange}
@@ -256,7 +256,7 @@ export default function CartPage() {
             </div>
 
             {/* Order Summary Sidebar - sticky on mobile at bottom, sidebar on desktop */}
-            <div className="lg:col-span-1 order-1 lg:order-2">
+            <div className="lg:col-span-1 order-2 lg:order-2">
               <div className="bg-white dark:bg-secondary-800 rounded-xl p-4 sm:p-6 lg:sticky lg:top-24 shadow-sm">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6">Podsumowanie</h2>
 
