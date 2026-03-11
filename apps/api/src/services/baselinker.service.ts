@@ -1506,8 +1506,11 @@ export class BaselinkerService {
               // Check if product exists
               const existingProduct = await tx.product.findUnique({
                 where: { baselinkerProductId },
-                select: { id: true, price: true, name: true, sku: true, barcode: true, description: true, categoryId: true },
+                select: { id: true, price: true, name: true, sku: true, barcode: true, description: true, categoryId: true, tags: true, compareAtPrice: true },
               });
+
+              // Detect outlet products - preserve their category, tags, and sale pricing
+              const isOutletProduct = baselinkerProductId.startsWith('outlet-');
 
               let product;
               
@@ -1524,20 +1527,29 @@ export class BaselinkerService {
                 if (existingProduct.categoryId !== (category?.id || null)) productChanges.push('Kategoria zmieniona');
                 
                 // Product exists - update without price first
-                product = await tx.product.update({
-                  where: { baselinkerProductId },
-                  data: {
+                // For outlet products, preserve category, tags, and compareAtPrice
+                const updateData: any = {
                     name,
                     slug,
                     description,
                     sku: newSku,
                     barcode: productEan,
-                    categoryId: category?.id || null,
                     baselinkerCategoryPath: baselinkerCategoryPath,
                     status: 'ACTIVE',
                     specifications: blProduct.features || {},
-                    tags: productTags,
-                  },
+                };
+
+                // Merge BL tags with existing tags to prevent losing delivery/custom tags
+                const existingTags = existingProduct.tags || [];
+                const requiredTags = isOutletProduct ? ['outlet', 'zwrot'] : [];
+                const mergedTags = [...new Set([...productTags, ...existingTags, ...requiredTags])];
+                updateData.tags = mergedTags;
+                // Preserve category if already set, otherwise use BL category
+                updateData.categoryId = existingProduct.categoryId || category?.id || null;
+
+                product = await tx.product.update({
+                  where: { baselinkerProductId },
+                  data: updateData,
                 });
                 
                 if (productChanges.length > 0) {
@@ -1545,12 +1557,30 @@ export class BaselinkerService {
                 }
                 
                 // Handle price change with Omnibus compliance
+                // Skip for products with active promotions (compareAtPrice) to preserve sale pricing
                 if (Math.abs(currentPrice - productPrice) > 0.01) {
-                  // Schedule price update AFTER transaction to avoid nested tx deadlock
-                  pendingPriceUpdates.push({ type: 'product', id: existingProduct.id, newPrice: productPrice });
+                  if (existingProduct.compareAtPrice) {
+                    // Product has active promotion — don't overwrite price
+                    if (syncLogId) {
+                      syncProgress.sendProgress(syncLogId, {
+                        type: 'info',
+                        message: `🛡️ "${name}" — pominięto zmianę ceny (aktywna promocja)`,
+                        productName: name,
+                        sku,
+                      });
+                    }
+                  } else {
+                    // Schedule price update AFTER transaction to avoid nested tx deadlock
+                    pendingPriceUpdates.push({ type: 'product', id: existingProduct.id, newPrice: productPrice });
+                  }
                 }
               } else {
                 // New product - create with initial price (no history needed)
+                // For outlet products, ensure 'outlet' and 'zwrot' tags are always included
+                const newProductTags = isOutletProduct
+                  ? [...new Set([...productTags, 'outlet', 'zwrot'])]
+                  : productTags;
+                
                 product = await tx.product.create({
                   data: {
                     baselinkerProductId,
@@ -1566,7 +1596,7 @@ export class BaselinkerService {
                     baselinkerCategoryPath: baselinkerCategoryPath,
                     status: 'ACTIVE',
                     specifications: blProduct.features || {},
-                    tags: productTags,
+                    tags: newProductTags,
                   },
                 });
               }
@@ -1653,7 +1683,7 @@ export class BaselinkerService {
                 // Create default variant for product without variants
                 const defaultVariantId = `default-${baselinkerProductId}`;
                 
-                // Check if default variant exists
+                // Check if default variant exists by baselinkerVariantId
                 const existingDefaultVariant = await tx.productVariant.findUnique({
                   where: { baselinkerVariantId: defaultVariantId },
                   select: { id: true, price: true },
@@ -1676,19 +1706,44 @@ export class BaselinkerService {
                     pendingPriceUpdates.push({ type: 'variant', id: existingDefaultVariant.id, newPrice: productPrice });
                   }
                 } else {
-                  // Create new default variant
-                  await tx.productVariant.create({
-                    data: {
-                      baselinkerVariantId: defaultVariantId,
-                      productId: product.id,
-                      name: 'Domyślny',
-                      sku: await this.ensureUniqueVariantSku(`${sku}-DEFAULT`, defaultVariantId, tx),
-                      barcode: productEan,
-                      price: productPrice,
-                      lowestPrice30Days: productPrice,
-                      lowestPrice30DaysAt: new Date(),
-                    },
+                  // Before creating a default variant, check if the product already has
+                  // any variant (e.g., created by sync-outlet.js or price sync).
+                  // This prevents creating duplicate variants for outlet products.
+                  const existingProductVariants = await tx.productVariant.findMany({
+                    where: { productId: product.id },
+                    select: { id: true, baselinkerVariantId: true, price: true },
+                    take: 1,
                   });
+
+                  if (existingProductVariants.length > 0) {
+                    // Product already has a variant — adopt it by setting baselinkerVariantId
+                    const existingVar = existingProductVariants[0];
+                    if (!existingVar.baselinkerVariantId) {
+                      await tx.productVariant.update({
+                        where: { id: existingVar.id },
+                        data: { baselinkerVariantId: defaultVariantId },
+                      });
+                    }
+                    // Handle price change if needed
+                    const currentVarPrice = Number(existingVar.price);
+                    if (Math.abs(currentVarPrice - productPrice) > 0.01) {
+                      pendingPriceUpdates.push({ type: 'variant', id: existingVar.id, newPrice: productPrice });
+                    }
+                  } else {
+                    // Create new default variant
+                    await tx.productVariant.create({
+                      data: {
+                        baselinkerVariantId: defaultVariantId,
+                        productId: product.id,
+                        name: 'Domyślny',
+                        sku: await this.ensureUniqueVariantSku(`${sku}-DEFAULT`, defaultVariantId, tx),
+                        barcode: productEan,
+                        price: productPrice,
+                        lowestPrice30Days: productPrice,
+                        lowestPrice30DaysAt: new Date(),
+                      },
+                    });
+                  }
                 }
               }
 
@@ -2160,13 +2215,13 @@ export class BaselinkerService {
           // 3. Batch fetch ALL matching products in ONE query
           const allProducts = await prisma.product.findMany({
             where: { baselinkerProductId: { in: allBlIds } },
-            select: { id: true, baselinkerProductId: true, price: true, sku: true, lowestPrice30Days: true },
+            select: { id: true, baselinkerProductId: true, price: true, sku: true, lowestPrice30Days: true, compareAtPrice: true },
           });
           console.log(`[BaselinkerSync] DB products matched: ${allProducts.length}`);
 
           // 4. Batch fetch ALL matching variants — chunked to stay under PostgreSQL 32767 bind variable limit
           const VARIANT_CHUNK_SIZE = 10000;
-          const allVariants: { id: string; baselinkerVariantId: string | null; productId: string; price: any; sku: string | null; lowestPrice30Days: any }[] = [];
+          const allVariants: { id: string; baselinkerVariantId: string | null; productId: string; price: any; sku: string | null; lowestPrice30Days: any; compareAtPrice: any }[] = [];
 
           for (let ci = 0; ci < allBlIds.length; ci += VARIANT_CHUNK_SIZE) {
             const chunk = allBlIds.slice(ci, ci + VARIANT_CHUNK_SIZE);
@@ -2179,7 +2234,7 @@ export class BaselinkerService {
 
             const chunkVariants = await prisma.productVariant.findMany({
               where: { OR: searchConditions },
-              select: { id: true, baselinkerVariantId: true, productId: true, price: true, sku: true, lowestPrice30Days: true },
+              select: { id: true, baselinkerVariantId: true, productId: true, price: true, sku: true, lowestPrice30Days: true, compareAtPrice: true },
             });
             allVariants.push(...chunkVariants);
           }
@@ -2197,12 +2252,19 @@ export class BaselinkerService {
           const prodChanges: { id: string; oldPrice: number; newPrice: number; sku: string }[] = [];
           const varChanges: { id: string; productId: string; oldPrice: number; newPrice: number; sku: string }[] = [];
           const productIdsWithChanges = new Set<string>();
+          let promoSkipped = 0;
 
           for (const product of allProducts) {
             if (!product.baselinkerProductId) continue;
             const np = blPrices.get(product.baselinkerProductId);
             if (!np) continue;
             processed++;
+
+            // Skip price update for products with active promotions (compareAtPrice set)
+            if (product.compareAtPrice) {
+              promoSkipped++;
+              continue;
+            }
 
             const currentPrice = Number(product.price);
             if (Math.abs(currentPrice - np) > 0.01) {
@@ -2212,9 +2274,32 @@ export class BaselinkerService {
               changedPrices.push({ sku: product.sku || product.baselinkerProductId, oldPrice: currentPrice, newPrice: np, inventory: inv.name });
             }
           }
+          
+          if (promoSkipped > 0) {
+            console.log(`[BaselinkerSync] Skipped ${promoSkipped} products with active promotions in ${inv.name}`);
+            if (syncLogId) {
+              syncProgress.sendProgress(syncLogId, {
+                type: 'info',
+                message: `🛡️ Pominięto ${promoSkipped} produktów z aktywnymi promocjami`,
+              });
+            }
+          }
+
+          // Build set of product IDs with active promotions (to protect their variants too)
+          const promoProductIds = new Set(
+            allProducts
+              .filter(p => p.compareAtPrice)
+              .map(p => p.id)
+          );
 
           for (const variant of allVariants) {
             if (!variant.baselinkerVariantId) continue;
+            
+            // Skip variant price update if its product has active promotion
+            if (promoProductIds.has(variant.productId) || variant.compareAtPrice) {
+              continue;
+            }
+            
             // Map variant BL id to the blPrices key
             let blId = variant.baselinkerVariantId;
             if (!prefix && blId.startsWith('default-')) {

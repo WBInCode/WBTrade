@@ -820,6 +820,15 @@ export default function BaselinkerImportPage() {
                 </div>
               )}
 
+              {/* Protection info for all sync operations */}
+              <div className="mt-4 flex items-start gap-2 text-xs text-blue-400/90 bg-blue-500/10 border border-blue-500/20 rounded-lg px-3 py-2.5">
+                <Shield className="w-4 h-4 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-semibold">Ochrona danych:</span>{' '}
+                  <span>Istniejące tagi (np. dostawy), kategorie i ceny promocyjne są chronione. Synchronizacja aktualizuje: nazwy, opisy, SKU, EAN i stany magazynowe. Ceny produktów z aktywnymi promocjami nie zostaną zmienione.</span>
+                </div>
+              </div>
+
               {/* Info about batch processing */}
               <div className="mt-3 flex items-start gap-2 text-xs text-gray-500 bg-gray-900/50 border border-gray-700/50 rounded-lg px-3 py-2">
                 <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
