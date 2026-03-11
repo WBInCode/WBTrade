@@ -1,15 +1,16 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { useCart } from '../../contexts/CartContext';
-import { productsApi } from '../../lib/api';
+import { productsApi, Product } from '../../lib/api';
 import { roundMoney } from '../../lib/currency';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import Breadcrumb from '../../components/Breadcrumb';
+import ProductCard from '../../components/ProductCard';
+import ProductListCard from '../../components/ProductListCard';
 
 type SortOption = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'name';
 type ViewMode = 'grid' | 'list';
@@ -19,11 +20,13 @@ export default function WishlistPage() {
   const { addToCart } = useCart();
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [removingId, setRemovingId] = useState<string | null>(null);
   const [addedToCartIds, setAddedToCartIds] = useState<Set<string>>(new Set());
   const [addingItemIds, setAddingItemIds] = useState<Set<string>>(new Set());
   const [addingAll, setAddingAll] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [productsMap, setProductsMap] = useState<Map<string, Product>>(new Map());
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const fetchedIdsRef = useRef<Set<string>>(new Set());
 
   const sortedItems = useMemo(() => {
     const sorted = [...items];
@@ -43,12 +46,42 @@ export default function WishlistPage() {
     }
   }, [items, sortBy]);
 
-  const handleRemove = async (id: string) => {
-    setRemovingId(id);
-    await new Promise(resolve => setTimeout(resolve, 300));
-    removeFromWishlist(id);
-    setRemovingId(null);
-  };
+  // Fetch full product data for wishlist items
+  useEffect(() => {
+    if (items.length === 0) {
+      setProductsMap(new Map());
+      fetchedIdsRef.current.clear();
+      setLoadingProducts(false);
+      return;
+    }
+
+    const newIds = items.filter(i => !fetchedIdsRef.current.has(i.id)).map(i => i.id);
+    if (newIds.length === 0) {
+      setLoadingProducts(false);
+      return;
+    }
+
+    const fetchProducts = async () => {
+      setLoadingProducts(true);
+      try {
+        const response = await productsApi.getFeatured({ productIds: newIds, limit: newIds.length });
+        setProductsMap(prev => {
+          const next = new Map(prev);
+          for (const p of response.products) {
+            next.set(p.id, p);
+            fetchedIdsRef.current.add(p.id);
+          }
+          return next;
+        });
+      } catch (err) {
+        console.error('Failed to fetch wishlist products:', err);
+      } finally {
+        setLoadingProducts(false);
+      }
+    };
+
+    fetchProducts();
+  }, [items]);
 
   const handleAddToCart = async (item: typeof items[0]) => {
     // Prevent double-clicking
@@ -59,20 +92,24 @@ export default function WishlistPage() {
     try {
       let variantId = item.variantId;
       
-      // If no variantId stored, fetch product to get first variant
+      // If no variantId stored, try productsMap first, then fetch
       if (!variantId) {
-        const product = await productsApi.getById(item.id);
-        if (product.variants && product.variants.length > 0) {
-          // Use first variant
-          variantId = product.variants[0].id;
+        const cached = productsMap.get(item.id);
+        if (cached?.variants && cached.variants.length > 0) {
+          variantId = cached.variants[0].id;
         } else {
-          console.error('Product has no variants:', item.id);
-          setAddingItemIds(prev => {
-            const next = new Set(prev);
-            next.delete(item.id);
-            return next;
-          });
-          return;
+          const product = await productsApi.getById(item.id);
+          if (product.variants && product.variants.length > 0) {
+            variantId = product.variants[0].id;
+          } else {
+            console.error('Product has no variants:', item.id);
+            setAddingItemIds(prev => {
+              const next = new Set(prev);
+              next.delete(item.id);
+              return next;
+            });
+            return;
+          }
         }
       }
       
@@ -255,211 +292,34 @@ export default function WishlistPage() {
               </div>
 
               {/* Products grid/list */}
-              {viewMode === 'grid' ? (
+              {loadingProducts && productsMap.size === 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                  {sortedItems.map((item) => (
-                    <div 
-                      key={item.id}
-                      className={`bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-100 dark:border-secondary-700 overflow-hidden group transition-all duration-300 ${
-                        removingId === item.id ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
-                      }`}
-                    >
-                      {/* Image */}
-                      <Link href={`/products/${item.id}`} className="block relative aspect-square bg-gray-50 dark:bg-secondary-700">
-                        <Image
-                          src={item.image}
-                          alt={item.name}
-                          fill
-                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                          className="object-contain p-4 group-hover:scale-105 transition-transform duration-300"
-                        />
-                        {item.compareAtPrice && Number(item.compareAtPrice) > Number(item.price) && (
-                          <div className="absolute top-1.5 left-1.5 sm:top-2.5 sm:left-2.5">
-                            <span className="bg-green-500 text-white text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg">
-                              -{Math.round((1 - Number(item.price) / Number(item.compareAtPrice)) * 100)}%
-                            </span>
-                          </div>
-                        )}
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handleRemove(item.id);
-                          }}
-                          className="absolute top-2 right-2 w-8 h-8 bg-pink-50 text-pink-500 rounded-full flex items-center justify-center hover:bg-pink-100 transition-colors"
-                          title="Usuń z ulubionych"
-                        >
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                          </svg>
-                        </button>
-                      </Link>
-
-                      {/* Info */}
-                      <div className="p-3">
-                        <Link href={`/products/${item.id}`}>
-                          <h3 className="text-sm text-gray-800 dark:text-gray-200 line-clamp-2 mb-2 min-h-[2.5rem] hover:text-primary-600 transition-colors">
-                            {item.name}
-                          </h3>
-                        </Link>
-                        <div className="flex items-baseline gap-2 mb-3">
-                          <span className="text-lg font-bold text-primary-600 dark:text-primary-400">
-                            {Number(item.price).toFixed(2).replace('.', ',')} zł
-                          </span>
-                          {item.compareAtPrice && Number(item.compareAtPrice) > Number(item.price) && (
-                            <span className="text-sm text-gray-400 dark:text-secondary-500 line-through">
-                              {Number(item.compareAtPrice).toFixed(2).replace('.', ',')} zł
-                            </span>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => handleAddToCart(item)}
-                          disabled={addedToCartIds.has(item.id) || addingItemIds.has(item.id)}
-                          className={`w-full py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
-                            addedToCartIds.has(item.id)
-                              ? 'bg-green-500 text-white'
-                              : addingItemIds.has(item.id)
-                                ? 'bg-primary-400 text-white cursor-wait'
-                                : 'bg-primary-500 text-white hover:bg-primary-600'
-                          }`}
-                        >
-                          {addedToCartIds.has(item.id) ? (
-                            <>
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              Dodano!
-                            </>
-                          ) : addingItemIds.has(item.id) ? (
-                            <>
-                              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              Dodawanie...
-                            </>
-                          ) : (
-                            <>
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                              </svg>
-                              Do koszyka
-                            </>
-                          )}
-                        </button>
+                  {Array.from({ length: items.length }).map((_, i) => (
+                    <div key={i} className="bg-white dark:bg-secondary-800 rounded-xl sm:rounded-2xl overflow-hidden animate-pulse">
+                      <div className="m-2 sm:m-3 aspect-square rounded-xl bg-gray-200 dark:bg-secondary-700" />
+                      <div className="p-2 sm:p-3 space-y-2 border-t border-gray-100 dark:border-secondary-700">
+                        <div className="h-4 bg-gray-200 dark:bg-secondary-700 rounded w-full" />
+                        <div className="h-4 bg-gray-200 dark:bg-secondary-700 rounded w-2/3" />
+                        <div className="h-6 bg-gray-200 dark:bg-secondary-700 rounded w-1/3" />
                       </div>
                     </div>
                   ))}
                 </div>
+              ) : viewMode === 'grid' ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {sortedItems.map((item) => {
+                    const product = productsMap.get(item.id);
+                    if (!product) return null;
+                    return <ProductCard key={item.id} product={product} />;
+                  })}
+                </div>
               ) : (
-                /* List view */
                 <div className="space-y-3">
-                  {sortedItems.map((item) => (
-                    <div 
-                      key={item.id}
-                      className={`bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-100 dark:border-secondary-700 p-4 transition-all duration-300 ${
-                        removingId === item.id ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'
-                      }`}
-                    >
-                      <div className="flex gap-4">
-                        {/* Image */}
-                        <Link href={`/products/${item.id}`} className="shrink-0">
-                          <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gray-50 dark:bg-secondary-700 rounded-lg overflow-hidden relative">
-                            <Image
-                              src={item.image}
-                              alt={item.name}
-                              fill
-                              sizes="128px"
-                              className="object-contain p-2"
-                            />
-                          </div>
-                        </Link>
-
-                        {/* Info */}
-                        <div className="flex-grow min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <Link href={`/products/${item.id}`}>
-                              <h3 className="text-base font-medium text-gray-800 dark:text-white hover:text-primary-600 transition-colors line-clamp-2">
-                                {item.name}
-                              </h3>
-                            </Link>
-                            <button
-                              onClick={() => handleRemove(item.id)}
-                              className="shrink-0 w-8 h-8 text-gray-400 hover:text-pink-500 rounded-full hover:bg-pink-50 flex items-center justify-center transition-colors"
-                              title="Usuń z ulubionych"
-                            >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </div>
-                          
-                          <div className="flex items-baseline gap-2 mt-2">
-                            <span className="text-lg sm:text-xl font-bold text-primary-600 dark:text-primary-400">
-                              {Number(item.price).toFixed(2).replace('.', ',')} zł
-                            </span>
-                            {item.compareAtPrice && Number(item.compareAtPrice) > Number(item.price) && (
-                              <>
-                                <span className="text-xs sm:text-sm text-gray-400 dark:text-secondary-500 line-through">
-                                  {Number(item.compareAtPrice).toFixed(2).replace('.', ',')} zł
-                                </span>
-                                <span className="text-xs sm:text-sm text-green-600 font-medium">
-                                  -{Math.round((1 - Number(item.price) / Number(item.compareAtPrice)) * 100)}%
-                                </span>
-                              </>
-                            )}
-                          </div>
-
-                          <p className="text-xs text-gray-400 dark:text-secondary-500 mt-1">
-                            Dodano: {new Date(item.addedAt).toLocaleDateString('pl-PL')}
-                          </p>
-
-                          <div className="flex flex-wrap gap-2 mt-3">
-                            <button
-                              onClick={() => handleAddToCart(item)}
-                              disabled={addedToCartIds.has(item.id) || addingItemIds.has(item.id)}
-                              className={`py-1.5 sm:py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1.5 sm:gap-2 ${
-                                addedToCartIds.has(item.id)
-                                  ? 'bg-green-500 text-white'
-                                  : addingItemIds.has(item.id)
-                                    ? 'bg-primary-400 text-white cursor-wait'
-                                    : 'bg-primary-500 text-white hover:bg-primary-600'
-                              }`}
-                            >
-                              {addedToCartIds.has(item.id) ? (
-                                <>
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                  Dodano!
-                                </>
-                              ) : addingItemIds.has(item.id) ? (
-                                <>
-                                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                  </svg>
-                                  Dodawanie...
-                                </>
-                              ) : (
-                                <>
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                                  </svg>
-                                  Do koszyka
-                                </>
-                              )}
-                            </button>
-                            <Link
-                              href={`/products/${item.id}`}
-                              className="py-1.5 sm:py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-medium border border-gray-200 dark:border-secondary-600 text-gray-600 dark:text-gray-300 hover:border-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors"
-                            >
-                              Zobacz szczegóły
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                  {sortedItems.map((item) => {
+                    const product = productsMap.get(item.id);
+                    if (!product) return null;
+                    return <ProductListCard key={item.id} product={product} viewMode="list" />;
+                  })}
                 </div>
               )}
 
