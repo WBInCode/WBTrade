@@ -283,7 +283,7 @@ function HeaderContent() {
                 alt="WB Trade" 
                 width={200} 
                 height={120} 
-                className="h-12 sm:h-14 lg:h-16 w-auto object-contain dark:hidden"
+                className="h-9 sm:h-10 lg:h-11 w-auto object-contain dark:hidden"
                 priority
               />
               {/* Dark mode logo - no priority since it's hidden by default */}
@@ -292,7 +292,7 @@ function HeaderContent() {
                 alt="WB Trade" 
                 width={200} 
                 height={120} 
-                className="h-12 sm:h-14 lg:h-16 w-auto object-contain hidden dark:block"
+                className="h-9 sm:h-10 lg:h-11 w-auto object-contain hidden dark:block"
                 loading="lazy"
               />
             </Link>

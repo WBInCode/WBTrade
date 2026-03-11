@@ -965,7 +965,7 @@ export function ChatBubble({ onClick, hasActiveChat }: { onClick: () => void; ha
           aria-label="Otwórz czat z WuBuś"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/wubus-chatbot.png" alt="WuBuś" className="w-full h-full object-cover" />
+          <img src="/images/wubus-chat.png" alt="WuBuś" className="w-full h-full object-cover" />
         </button>
         {/* Online status dot — always visible, outside the clipped button */}
         <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full shadow-sm" />
