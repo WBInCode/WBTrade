@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#e85011',
+    borderColor: '#f97316',
   },
   categoryIconImage: {
     width: 36,
