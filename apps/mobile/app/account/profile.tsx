@@ -200,7 +200,7 @@ export default function ProfileScreen() {
 
   if (!user) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <Stack.Screen options={{ title: 'Edytuj profil', headerShown: true }} />
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.tint} />
@@ -210,7 +210,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <Stack.Screen options={{ title: 'Edytuj profil', headerShown: true }} />
 
       <KeyboardAvoidingView
@@ -455,7 +455,7 @@ export default function ProfileScreen() {
       {/* Toast */}
       {toastVisible && (
         <View style={styles.toast}>
-          <FontAwesome name="check-circle" size={18} color={colors.success} />
+          <FontAwesome name="check-circle" size={18} color="#ffffff" />
           <Text style={styles.toastText}>Profil zaktualizowany</Text>
         </View>
       )}
@@ -627,20 +627,20 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: colors.text,
+    backgroundColor: '#16a34a',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderRadius: 10,
+    borderRadius: 12,
     elevation: 8,
-    shadowColor: colors.shadow,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.25,
     shadowRadius: 8,
   },
   toastText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.textInverse,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#ffffff',
   },
 
   // ─── Delete account ───

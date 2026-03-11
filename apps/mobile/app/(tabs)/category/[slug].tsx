@@ -129,7 +129,7 @@ function FilterModal({
                     { color: local.warehouse === w.id ? colors.tint : colors.text },
                   ]}
                 >
-                  {w.label} — {w.location}
+                  {w.location}
                 </Text>
                 {local.warehouse === w.id && (
                   <FontAwesome name="check" size={12} color={colors.tint} />
@@ -236,8 +236,10 @@ const fStyles = StyleSheet.create({
   applyBtn: {
     flex: 1,
     paddingVertical: 14,
+    paddingHorizontal: 20,
     borderRadius: 10,
     alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 
