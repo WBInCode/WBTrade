@@ -59,6 +59,8 @@ const actionLabels: Record<string, string> = {
   SUSPICIOUS_ACTIVITY: 'Podejrzana aktywność',
   RATE_LIMIT_EXCEEDED: 'Limit zapytań',
   INVALID_TOKEN: 'Nieprawidłowy token',
+  CONTACT_FORM_SENT: 'Formularz kontaktowy — wysłano',
+  CONTACT_FORM_FAILED: 'Formularz kontaktowy — błąd',
 };
 
 export default function ActivityLogPage() {
