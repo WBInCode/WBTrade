@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Bell, ShoppingCart, AlertTriangle, UserPlus, Star, ArrowLeft, X, CheckCheck, Eye, RotateCcw, Volume2, VolumeX } from 'lucide-react';
+import { Bell, ShoppingCart, AlertTriangle, UserPlus, MessageSquare, Star, ArrowLeft, X, CheckCheck, Eye, RotateCcw, Volume2, VolumeX } from 'lucide-react';
 import { getAuthToken } from '@/lib/api';
 import Link from 'next/link';
 
@@ -33,11 +33,13 @@ interface NotificationSummary {
     newUsers: number;
     reviews: number;
     returnRequests: number;
+    customerMessages: number;
   };
 }
 
 const typeConfig: Record<string, { icon: any; color: string }> = {
   cancellation: { icon: AlertTriangle, color: 'text-red-400 bg-red-400/10' },
+  new_message: { icon: MessageSquare, color: 'text-cyan-400 bg-cyan-400/10' },
 
   refund: { icon: ArrowLeft, color: 'text-orange-400 bg-orange-400/10' },
   new_order: { icon: ShoppingCart, color: 'text-green-400 bg-green-400/10' },
@@ -273,11 +275,12 @@ export default function NotificationBell() {
   const typePriority: Record<string, number> = {
     cancellation: 0,
     return_request: 1,
-    refund: 2,
-    new_order: 3,
-    new_user: 4,
-    review: 5,
-    low_stock: 6,
+    new_message: 2,
+    refund: 3,
+    new_order: 4,
+    new_user: 5,
+    review: 6,
+    low_stock: 7,
   };
   const sortedNotifications = [...notifications].sort((a, b) => {
     const aPrio = typePriority[a.type] ?? 3;
@@ -381,6 +384,11 @@ export default function NotificationBell() {
               {summary.byType.returnRequests > 0 && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-pink-500/10 text-pink-400 font-medium">
                   {summary.byType.returnRequests} zwrotów/rek.
+                </span>
+              )}
+              {summary.byType.customerMessages > 0 && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 font-medium">
+                  {summary.byType.customerMessages} wiadomości
                 </span>
               )}
             </div>
