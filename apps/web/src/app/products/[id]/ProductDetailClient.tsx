@@ -469,7 +469,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
               )}
               
               {/* Main Image */}
-              <div className="aspect-square overflow-hidden rounded-xl sm:rounded-2xl mb-3 sm:mb-4 max-w-full relative">
+              <div className="aspect-square overflow-hidden rounded-xl sm:rounded-2xl mb-3 sm:mb-4 max-w-full relative bg-white">
                 <Image
                   src={mainImage}
                   alt={product.name}
@@ -486,7 +486,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                   <button
                     key={image.id}
                     onClick={() => setSelectedImage(index)}
-                    className={`shrink-0 w-14 h-14 sm:w-20 sm:h-20 rounded-md sm:rounded-lg overflow-hidden border-2 transition-colors relative ${
+                    className={`shrink-0 w-14 h-14 sm:w-20 sm:h-20 rounded-md sm:rounded-lg overflow-hidden border-2 transition-colors relative bg-white ${
                       selectedImage === index ? 'border-orange-500' : 'border-gray-200 dark:border-secondary-700 hover:border-gray-300 dark:hover:border-secondary-600'
                     }`}
                   >
