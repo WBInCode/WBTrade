@@ -286,7 +286,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   imageContainer: {
     width: '100%',
     aspectRatio: 1,
-    backgroundColor: colors.backgroundTertiary,
+    backgroundColor: '#ffffff',
   },
   image: {
     width: '100%',

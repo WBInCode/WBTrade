@@ -110,7 +110,7 @@ export default memo(function ProductCard({ product, showDelivery = false, showWi
 
       <Link href={`/products/${product.id}`} className="flex flex-col flex-grow">
         {/* Image */}
-        <div className="relative aspect-square m-2 sm:m-3 rounded-xl sm:rounded-2xl overflow-hidden bg-gray-50 dark:bg-secondary-700">
+        <div className="relative aspect-square m-2 sm:m-3 rounded-xl sm:rounded-2xl overflow-hidden bg-white">
           {/* Use next/image to proxy external images through the Next.js server,  */}
           {/* avoiding supplier CDN rate-limiting and aggressive no-cache headers. */}
           {showPlaceholder ? (
