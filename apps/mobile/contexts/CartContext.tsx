@@ -81,6 +81,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const addToCart = useCallback(async (variantId: string, quantity: number = 1, productInfo?: AddedProductInfo) => {
     try {
       setError(null);
+
+      // Optimistic update: increment quantity immediately so UI feels instant
+      if (cart) {
+        const existingItem = cart.items.find(item => item.variant.id === variantId);
+        if (existingItem) {
+          setCart(prev => prev ? {
+            ...prev,
+            items: prev.items.map(item =>
+              item.variant.id === variantId
+                ? { ...item, quantity: item.quantity + quantity }
+                : item
+            ),
+          } : prev);
+        }
+      }
+
       const updatedCart = await cartApi.addItem(variantId, quantity);
       setCart(updatedCart);
       // Show modal if product info provided
@@ -89,10 +105,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setModalVisible(true);
       }
     } catch (err: any) {
+      // Revert optimistic update on error
+      await refreshCart().catch(() => {});
       setError(err.message);
       throw err;
     }
-  }, []);
+  }, [cart, refreshCart]);
 
   const updateQuantity = useCallback(async (itemId: string, quantity: number) => {
     try {

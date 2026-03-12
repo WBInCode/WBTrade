@@ -29,6 +29,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { api } from '../../services/api';
 import ProductCarousel from '../../components/product/ProductCarousel';
 import AddToListModal from '../../components/AddToListModal';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Product, ProductVariant } from '../../services/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -1045,6 +1046,7 @@ export default function ProductDetailScreen() {
   return (
     <>
       <Stack.Screen options={{ title: product.name.substring(0, 30) }} />
+      <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Image Gallery */}
         <ImageGallery images={product.images || []} />
@@ -1623,6 +1625,7 @@ export default function ProductDetailScreen() {
           <View style={{ height: 40 }} />
         </View>
       </ScrollView>
+      </SafeAreaView>
 
       {/* Add to Shopping List Modal */}
       {product && (

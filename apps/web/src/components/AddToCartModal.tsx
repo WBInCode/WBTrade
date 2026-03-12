@@ -66,10 +66,11 @@ export default function AddToCartModal({ isOpen, product, onClose, onAddToCart }
     };
   }, [isOpen, onClose]);
 
-  // Fetch same warehouse products when modal opens
+  // Fetch same warehouse products after a short delay so modal appears instantly
   useEffect(() => {
     if (isOpen && product?.productId) {
-      fetchSameWarehouseProducts(product.productId);
+      const timer = setTimeout(() => fetchSameWarehouseProducts(product.productId!), 100);
+      return () => clearTimeout(timer);
     } else {
       setSameWarehouseProducts([]);
       setWarehouseName(null);

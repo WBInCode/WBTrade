@@ -1,13 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { emailService } from '../services/email.service';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../db';
 import { optionalAuth } from '../middleware/auth.middleware';
 import * as supportService from '../services/support.service';
 import { returnService } from '../services/return.service';
 import { logAuditEvent, AuditAction, AuditSeverity } from '../lib/audit';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // ============================================
 // CONTACT ROUTES

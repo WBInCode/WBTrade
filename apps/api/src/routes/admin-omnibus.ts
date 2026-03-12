@@ -1,10 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { authGuard, adminOnly } from '../middleware/auth.middleware';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../db';
 import { getTopSearches } from '../services/search-analytics.service';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 router.use(authGuard, adminOnly);
 

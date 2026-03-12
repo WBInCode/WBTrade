@@ -12,10 +12,9 @@ import { orderStatusSyncService } from '../services/order-status-sync.service';
 import { paymentReminderService } from '../services/payment-reminder.service';
 import { syncProgress } from '../services/sync-progress';
 import { secureAuthService } from '../services/auth.service.secure';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../db';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // ========================================
 // SSE Progress Stream (before auth middleware - uses query param auth)

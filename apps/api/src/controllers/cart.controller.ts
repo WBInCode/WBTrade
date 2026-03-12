@@ -95,6 +95,15 @@ export class CartController {
   }
 
   /**
+   * Extract cached cart ID from header (validated as CUID)
+   */
+  private getCachedCartId(req: Request): string | undefined {
+    const cartId = req.headers['x-cart-id'] as string | undefined;
+    if (cartId && isValidCUID(cartId)) return cartId;
+    return undefined;
+  }
+
+  /**
    * Add item to cart
    * POST /api/cart/items
    */
@@ -102,6 +111,7 @@ export class CartController {
     try {
       const userId = this.getUserId(req);
       const sessionId = req.headers['x-session-id'] as string | undefined;
+      const cachedCartId = this.getCachedCartId(req);
 
       if (userId && !isValidCUID(userId)) {
         return res.status(400).json({
@@ -122,11 +132,8 @@ export class CartController {
 
       const { variantId, quantity } = validation.data;
 
-      // Get or create cart
-      const cart = await cartService.getOrCreateCart(userId, sessionId);
-
-      // Add item
-      const updatedCart = await cartService.addItem(cart.id, variantId, quantity);
+      // Fast path: parallelize cart lookup + variant check
+      const updatedCart = await cartService.addItemFast(userId, sessionId, variantId, quantity, cachedCartId);
 
       res.json({
         success: true,
@@ -169,8 +176,8 @@ export class CartController {
         });
       }
 
-      const cart = await cartService.getOrCreateCart(userId, sessionId);
-      const updatedCart = await cartService.updateItemQuantity(cart.id, itemId, validation.data.quantity);
+      const cartId = this.getCachedCartId(req) || await cartService.getOrCreateCartId(userId, sessionId);
+      const updatedCart = await cartService.updateItemQuantity(cartId, itemId, validation.data.quantity);
 
       res.json({
         success: true,
@@ -202,8 +209,8 @@ export class CartController {
         });
       }
 
-      const cart = await cartService.getOrCreateCart(userId, sessionId);
-      const updatedCart = await cartService.removeItem(cart.id, itemId);
+      const cartId = this.getCachedCartId(req) || await cartService.getOrCreateCartId(userId, sessionId);
+      const updatedCart = await cartService.removeItem(cartId, itemId);
 
       res.json({
         success: true,
@@ -228,8 +235,8 @@ export class CartController {
       const userId = this.getUserId(req);
       const sessionId = req.headers['x-session-id'] as string | undefined;
 
-      const cart = await cartService.getOrCreateCart(userId, sessionId);
-      const updatedCart = await cartService.clearCart(cart.id);
+      const cartId = this.getCachedCartId(req) || await cartService.getOrCreateCartId(userId, sessionId);
+      const updatedCart = await cartService.clearCart(cartId);
 
       res.json({
         success: true,
@@ -264,8 +271,8 @@ export class CartController {
         });
       }
 
-      const cart = await cartService.getOrCreateCart(userId, sessionId);
-      const updatedCart = await cartService.applyCoupon(cart.id, validation.data.code, userId);
+      const cartId = this.getCachedCartId(req) || await cartService.getOrCreateCartId(userId, sessionId);
+      const updatedCart = await cartService.applyCoupon(cartId, validation.data.code, userId);
 
       res.json({
         success: true,
@@ -290,8 +297,8 @@ export class CartController {
       const userId = this.getUserId(req);
       const sessionId = req.headers['x-session-id'] as string | undefined;
 
-      const cart = await cartService.getOrCreateCart(userId, sessionId);
-      const updatedCart = await cartService.removeCoupon(cart.id);
+      const cartId = this.getCachedCartId(req) || await cartService.getOrCreateCartId(userId, sessionId);
+      const updatedCart = await cartService.removeCoupon(cartId);
 
       res.json({
         success: true,

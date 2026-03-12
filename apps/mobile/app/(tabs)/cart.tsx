@@ -571,7 +571,7 @@ const createDynamicStyles = (c: ThemeColors) =>
     },
     scrollContent: {
       padding: 16,
-      paddingBottom: 24,
+      paddingBottom: 16,
     },
 
     // Package container styles

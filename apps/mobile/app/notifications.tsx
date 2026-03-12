@@ -173,7 +173,7 @@ export default function NotificationsScreen() {
 const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     container: { flex: 1 },
-    list: { paddingVertical: 8 },
+    list: { paddingVertical: 8, paddingBottom: 32 },
     item: {
       flexDirection: 'row',
       alignItems: 'flex-start',

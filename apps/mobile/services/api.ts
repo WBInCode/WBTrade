@@ -107,10 +107,11 @@ interface FetchOptions {
   body?: any;
   params?: Record<string, any>;
   skipAuth?: boolean;
+  extraHeaders?: Record<string, string>;
 }
 
 export async function apiFetch<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
-  const { method = 'GET', body, params, skipAuth = false } = options;
+  const { method = 'GET', body, params, skipAuth = false, extraHeaders } = options;
 
   // Build URL with query params
   let url = `${API_URL}${endpoint}`;
@@ -142,6 +143,11 @@ export async function apiFetch<T>(endpoint: string, options: FetchOptions = {}):
   const sessionId = await getSessionId();
   if (sessionId) {
     headers['X-Session-Id'] = sessionId;
+  }
+
+  // Merge in any extra headers
+  if (extraHeaders) {
+    Object.assign(headers, extraHeaders);
   }
 
   // Make request
@@ -202,18 +208,18 @@ export async function apiFetch<T>(endpoint: string, options: FetchOptions = {}):
 // --- Convenience methods ---
 
 export const api = {
-  get: <T>(endpoint: string, params?: Record<string, any>) =>
-    apiFetch<T>(endpoint, { method: 'GET', params }),
+  get: <T>(endpoint: string, params?: Record<string, any>, extraHeaders?: Record<string, string>) =>
+    apiFetch<T>(endpoint, { method: 'GET', params, extraHeaders }),
 
-  post: <T>(endpoint: string, body?: any) =>
-    apiFetch<T>(endpoint, { method: 'POST', body }),
+  post: <T>(endpoint: string, body?: any, extraHeaders?: Record<string, string>) =>
+    apiFetch<T>(endpoint, { method: 'POST', body, extraHeaders }),
 
-  put: <T>(endpoint: string, body?: any) =>
-    apiFetch<T>(endpoint, { method: 'PUT', body }),
+  put: <T>(endpoint: string, body?: any, extraHeaders?: Record<string, string>) =>
+    apiFetch<T>(endpoint, { method: 'PUT', body, extraHeaders }),
 
-  patch: <T>(endpoint: string, body?: any) =>
-    apiFetch<T>(endpoint, { method: 'PATCH', body }),
+  patch: <T>(endpoint: string, body?: any, extraHeaders?: Record<string, string>) =>
+    apiFetch<T>(endpoint, { method: 'PATCH', body, extraHeaders }),
 
-  delete: <T>(endpoint: string, body?: any) =>
-    apiFetch<T>(endpoint, { method: 'DELETE', body }),
+  delete: <T>(endpoint: string, body?: any, extraHeaders?: Record<string, string>) =>
+    apiFetch<T>(endpoint, { method: 'DELETE', body, extraHeaders }),
 };

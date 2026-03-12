@@ -1,11 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { authGuard, adminOnly } from '../middleware/auth.middleware';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../db';
 import { v4 as uuidv4 } from 'uuid';
 import { sendCampaign } from '../workers/newsletter-campaign.worker';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 router.use(authGuard, adminOnly);
 

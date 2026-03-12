@@ -49,7 +49,7 @@ export default function ProductGrid({
       }}
       contentContainerStyle={{
         paddingTop: CARD_GAP,
-        paddingBottom: 20,
+        paddingBottom: 80,
         ...(products.length === 0 && { flexGrow: 1 }),
       }}
       showsVerticalScrollIndicator={false}
