@@ -2,6 +2,9 @@ import * as Crypto from 'expo-crypto';
 import { api, saveSessionId, getSessionId } from './api';
 import type { Cart } from './types';
 
+// In-memory cache for cart ID (avoids async storage reads on every request)
+let cachedCartId: string | null = null;
+
 // API wraps cart in { success, data, message? } — unwrap it
 interface CartResponse {
   success: boolean;
@@ -9,12 +12,15 @@ interface CartResponse {
   message?: string;
 }
 
-// Unwrap and save session ID from cart response body
+// Unwrap and save session ID + cart ID from cart response body
 const unwrap = async (res: CartResponse): Promise<Cart> => {
   const cart = res.data;
-  // API returns sessionId in the cart object body (not in headers!)
   if (cart?.sessionId) {
     await saveSessionId(cart.sessionId);
+  }
+  // Cache cart ID in memory for faster subsequent requests
+  if (cart?.id) {
+    cachedCartId = cart.id;
   }
   return cart;
 };
@@ -28,32 +34,37 @@ async function ensureSessionId(): Promise<void> {
   }
 }
 
+// Helper to build extra headers with cached cart ID
+function cartHeaders(): Record<string, string> | undefined {
+  return cachedCartId ? { 'X-Cart-Id': cachedCartId } : undefined;
+}
+
 export const cartApi = {
   getCart: async () => {
     await ensureSessionId();
-    return api.get<CartResponse>('/cart').then(unwrap);
+    return api.get<CartResponse>('/cart', undefined, cartHeaders()).then(unwrap);
   },
 
   addItem: async (variantId: string, quantity: number = 1) => {
     await ensureSessionId();
-    return api.post<CartResponse>('/cart/items', { variantId, quantity }).then(unwrap);
+    return api.post<CartResponse>('/cart/items', { variantId, quantity }, cartHeaders()).then(unwrap);
   },
 
   updateItem: (itemId: string, quantity: number) =>
-    api.patch<CartResponse>(`/cart/items/${itemId}`, { quantity }).then(unwrap),
+    api.patch<CartResponse>(`/cart/items/${itemId}`, { quantity }, cartHeaders()).then(unwrap),
 
   removeItem: (itemId: string) =>
-    api.delete<CartResponse>(`/cart/items/${itemId}`).then(unwrap),
+    api.delete<CartResponse>(`/cart/items/${itemId}`, undefined, cartHeaders()).then(unwrap),
 
   clearCart: () =>
-    api.delete<CartResponse>('/cart').then(unwrap),
+    api.delete<CartResponse>('/cart', undefined, cartHeaders()).then(unwrap),
 
   applyCoupon: (code: string) =>
-    api.post<CartResponse>('/cart/coupon', { code }).then(unwrap),
+    api.post<CartResponse>('/cart/coupon', { code }, cartHeaders()).then(unwrap),
 
   removeCoupon: () =>
-    api.delete<CartResponse>('/cart/coupon').then(unwrap),
+    api.delete<CartResponse>('/cart/coupon', undefined, cartHeaders()).then(unwrap),
 
   mergeCarts: (sessionId: string) =>
-    api.post<CartResponse>('/cart/merge', { sessionId }).then(unwrap),
+    api.post<CartResponse>('/cart/merge', { sessionId }, cartHeaders()).then(unwrap),
 };

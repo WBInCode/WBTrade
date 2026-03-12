@@ -921,6 +921,12 @@ async function cartFetch<T>(endpoint: string, options: RequestInit = {}): Promis
     headers['X-Session-Id'] = sessionId;
   }
 
+  // Send cached cart ID to skip DB lookup on the server
+  const cachedCartId = sessionStorage.getItem('cart_id');
+  if (cachedCartId) {
+    headers['X-Cart-Id'] = cachedCartId;
+  }
+
   // Include Authorization header if available (needed for coupon ownership checks)
   try {
     const tokensStr = localStorage.getItem('auth_tokens');
@@ -943,6 +949,12 @@ async function cartFetch<T>(endpoint: string, options: RequestInit = {}): Promis
   }
   
   const data = await response.json();
+
+  // Cache the cart ID from the response for future requests
+  if (data.data?.id) {
+    sessionStorage.setItem('cart_id', data.data.id);
+  }
+
   return data.data;
 }
 

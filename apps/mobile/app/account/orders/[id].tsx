@@ -390,7 +390,7 @@ export default function OrderDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <Stack.Screen options={{ title: 'Zamówienie' }} />
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.tint} />
@@ -402,7 +402,7 @@ export default function OrderDetailScreen() {
 
   if (error || !order) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <Stack.Screen options={{ title: 'Zamówienie' }} />
         <View style={styles.center}>
           <FontAwesome name="exclamation-circle" size={48} color={colors.destructive} />
@@ -426,7 +426,7 @@ export default function OrderDetailScreen() {
   const sentPackages = trackingPackages.filter((p) => p.trackingNumber);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <Stack.Screen options={{ title: `#${order.orderNumber}` }} />
       <ScrollView
         contentContainerStyle={styles.scroll}

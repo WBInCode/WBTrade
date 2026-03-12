@@ -188,7 +188,7 @@ export default function PasswordScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
       >
-        <SafeAreaView style={styles.container} edges={[]}>
+        <SafeAreaView style={styles.container} edges={['bottom']}>
           <ScrollView
             style={styles.flex}
             contentContainerStyle={styles.scrollContent}

@@ -762,7 +762,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   list: { flex: 1 },
-  listContent: { paddingBottom: 24 },
+  listContent: { paddingBottom: 80 },
   centerContent: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
 
   // Header

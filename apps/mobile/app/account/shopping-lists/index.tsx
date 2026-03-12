@@ -115,7 +115,7 @@ export default function ShoppingListsScreen() {
             headerTintColor: colors.text,
           }}
         />
-        <SafeAreaView style={styles.container} edges={[]}>
+        <SafeAreaView style={styles.container} edges={['bottom']}>
           <View style={styles.guestState}>
             <FontAwesome name="list-ul" size={48} color={colors.textMuted} />
             <Text style={styles.guestTitle}>Zaloguj się</Text>
@@ -173,7 +173,7 @@ export default function ShoppingListsScreen() {
           headerTintColor: colors.text,
         }}
       />
-      <SafeAreaView style={styles.container} edges={[]}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         {loading ? (
           <View style={styles.centerContent}>
             <ActivityIndicator size="large" color={colors.tint} />
