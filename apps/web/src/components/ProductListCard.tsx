@@ -118,7 +118,7 @@ export default memo(function ProductListCard({ product, showWishlist = true, vie
                 </svg>
               </button>
             )}
-            <div className="w-full h-full rounded-xl overflow-hidden bg-gray-50 dark:bg-secondary-700 relative">
+            <div className="w-full h-full rounded-xl overflow-hidden bg-white relative">
               <img
                 src={mainImage}
                 alt={product.name}
@@ -299,7 +299,7 @@ export default memo(function ProductListCard({ product, showWishlist = true, vie
 
       <Link href={`/products/${product.id}`} className="flex flex-col h-full">
         {/* Image */}
-        <div className="relative aspect-square m-2 sm:m-3 overflow-hidden rounded-xl sm:rounded-2xl bg-gray-50 dark:bg-secondary-700">
+        <div className="relative aspect-square m-2 sm:m-3 overflow-hidden rounded-xl sm:rounded-2xl bg-white">
           <img
             src={mainImage}
             alt={product.name}
