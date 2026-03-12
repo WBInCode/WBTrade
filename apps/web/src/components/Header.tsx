@@ -325,12 +325,12 @@ function HeaderContent() {
             </div>
 
             {/* Right Icons */}
-            <div className="flex items-center gap-1 sm:gap-2 md:gap-4 lg:gap-6">
+            <div className="flex items-center gap-1 sm:gap-2 md:gap-6">
               {/* Theme Toggle */}
               <ThemeToggle />
 
               {/* Favorites */}
-              <Link href="/wishlist" className="flex flex-col items-center shrink-0 p-1.5 sm:p-2 text-secondary-700 dark:text-secondary-300 hover:text-primary-500 transition-colors relative group">
+              <Link href="/wishlist" className="flex flex-col items-center p-1.5 sm:p-2 text-secondary-700 dark:text-secondary-300 hover:text-primary-500 transition-colors relative group">
                 <div className="relative">
                   <svg className="w-6 h-6 sm:w-7 sm:h-7 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -341,7 +341,7 @@ function HeaderContent() {
                     </span>
                   )}
                 </div>
-                <span className="text-xs font-medium mt-1 whitespace-nowrap hidden md:block">Ulubione</span>
+                <span className="text-xs font-medium mt-1 hidden sm:block">Ulubione</span>
               </Link>
 
               {/* Account */}
@@ -375,7 +375,7 @@ function HeaderContent() {
                           <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-secondary-900 animate-pulse" />
                         )}
                       </div>
-                      <span className="text-xs font-medium mt-1 whitespace-nowrap hidden md:block">{user?.firstName}</span>
+                      <span className="text-xs font-medium mt-1 hidden sm:block">{user?.firstName}</span>
                     </button>
                     {isUserMenuOpen && (
                       <div className="absolute top-full right-0 mt-1 w-56 bg-white dark:bg-secondary-800 border border-gray-200 dark:border-secondary-600 rounded-lg shadow-lg py-2 z-50">
@@ -436,17 +436,17 @@ function HeaderContent() {
                     )}
                   </>
                 ) : (
-                  <Link href="/login" className="flex flex-col items-center shrink-0 p-1.5 sm:p-2 text-secondary-700 dark:text-secondary-300 hover:text-primary-500 transition-colors group">
+                  <Link href="/login" className="flex flex-col items-center p-1.5 sm:p-2 text-secondary-700 dark:text-secondary-300 hover:text-primary-500 transition-colors group">
                     <svg className="w-6 h-6 sm:w-7 sm:h-7 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
-                    <span className="text-xs font-medium mt-1 whitespace-nowrap hidden md:block">Zaloguj</span>
+                    <span className="text-xs font-medium mt-1 hidden sm:block">Zaloguj</span>
                   </Link>
                 )}
               </div>
 
               {/* Cart */}
-              <Link href="/cart" className="flex flex-col items-center shrink-0 p-1.5 sm:p-2 text-secondary-700 dark:text-secondary-300 hover:text-primary-500 transition-colors relative group">
+              <Link href="/cart" className="flex flex-col items-center p-1.5 sm:p-2 text-secondary-700 dark:text-secondary-300 hover:text-primary-500 transition-colors relative group">
                 <div className="relative">
                   <svg className="w-6 h-6 sm:w-7 sm:h-7 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -457,7 +457,7 @@ function HeaderContent() {
                     </span>
                   )}
                 </div>
-                <span className="text-xs font-medium mt-1 whitespace-nowrap hidden md:block">Koszyk</span>
+                <span className="text-xs font-medium mt-1 hidden sm:block">Koszyk</span>
               </Link>
             </div>
           </div>
@@ -493,7 +493,7 @@ function HeaderContent() {
             <nav 
               ref={categoryNavRef}
               onScroll={handleCarouselScroll}
-              className="flex items-center gap-1 overflow-x-auto scrollbar-hide pt-2 pb-3"
+              className="flex items-center gap-1 overflow-x-auto scrollbar-hide pt-2 pb-3 px-1"
               style={categories.length > 0 ? { visibility: 'hidden' } : undefined}
             >
               <button
