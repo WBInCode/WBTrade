@@ -72,6 +72,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addToCart = useCallback(async (variantId: string, quantity: number = 1, productInfo?: AddedProductInfo, skipModal?: boolean) => {
     try {
       setError(null);
+
+      // Optimistic update: increment itemCount immediately so UI feels instant
+      if (productInfo && cart) {
+        const existingItem = cart.items.find(item => item.variant.id === variantId);
+        if (existingItem) {
+          setCart(prev => prev ? {
+            ...prev,
+            items: prev.items.map(item =>
+              item.variant.id === variantId
+                ? { ...item, quantity: item.quantity + quantity }
+                : item
+            ),
+          } : prev);
+        }
+      }
+
       const updatedCart = await cartApi.addItem(variantId, quantity);
       setCart(updatedCart);
       
@@ -92,10 +108,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch (err: any) {
+      // Revert optimistic update on error
+      await refreshCart().catch(() => {});
       setError(err.message);
       throw err;
     }
-  }, [showAddToCartModal]);
+  }, [showAddToCartModal, cart, refreshCart]);
 
   const updateQuantity = useCallback(async (itemId: string, quantity: number) => {
     try {

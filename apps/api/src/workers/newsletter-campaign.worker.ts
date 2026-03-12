@@ -10,10 +10,8 @@
  * Works WITHOUT Redis/BullMQ — uses direct function calls and setInterval
  */
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../db';
 import { sendEmailDirect } from './email.worker';
-
-const prisma = new PrismaClient();
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://wb-trade.pl';
 

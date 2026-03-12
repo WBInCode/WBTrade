@@ -239,7 +239,7 @@ export default function OrdersScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <Stack.Screen options={{ title: 'Moje zamówienia' }} />
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.tint} />
@@ -251,7 +251,7 @@ export default function OrdersScreen() {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <Stack.Screen options={{ title: 'Moje zamówienia' }} />
         <View style={styles.center}>
           <FontAwesome name="exclamation-circle" size={48} color={colors.destructive} />
@@ -266,7 +266,7 @@ export default function OrdersScreen() {
 
   if (orders.length === 0) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <Stack.Screen options={{ title: 'Moje zamówienia' }} />
         <View style={styles.center}>
           <FontAwesome name="shopping-bag" size={64} color={colors.inputBorder} />
@@ -284,7 +284,7 @@ export default function OrdersScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <Stack.Screen options={{ title: 'Moje zamówienia' }} />
       <FlatList
         data={orders}

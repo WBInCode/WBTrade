@@ -154,7 +154,7 @@ export default function ShoppingListDetailScreen() {
   // --- Loading ---
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <Stack.Screen options={{ title: 'Lista zakupowa', headerBackTitle: 'Wróć', headerTintColor: colors.tint }} />
         <View style={styles.loadingWrap}>
           <ActivityIndicator size="large" color={colors.tint} />
@@ -165,7 +165,7 @@ export default function ShoppingListDetailScreen() {
 
   if (!list) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <Stack.Screen options={{ title: 'Lista zakupowa', headerBackTitle: 'Wróć', headerTintColor: colors.tint }} />
         <View style={styles.emptyWrap}>
           <FontAwesome name="exclamation-circle" size={40} color={colors.inputBorder} />

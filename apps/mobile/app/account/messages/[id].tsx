@@ -131,7 +131,7 @@ export default function MessageDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={s.container} edges={['top']}>
+      <SafeAreaView style={s.container} edges={['bottom']}>
         <Stack.Screen options={{ title: 'Wiadomość' }} />
         <View style={s.center}>
           <ActivityIndicator size="large" color={colors.tint} />
@@ -142,7 +142,7 @@ export default function MessageDetailScreen() {
 
   if (!ticket) {
     return (
-      <SafeAreaView style={s.container} edges={['top']}>
+      <SafeAreaView style={s.container} edges={['bottom']}>
         <Stack.Screen options={{ title: 'Wiadomość' }} />
         <View style={s.center}>
           <Text style={{ color: colors.text, fontSize: 16 }}>Nie znaleziono zgłoszenia</Text>
@@ -152,7 +152,7 @@ export default function MessageDetailScreen() {
   }
 
   return (
-    <SafeAreaView style={s.container} edges={['top']}>
+    <SafeAreaView style={s.container} edges={['bottom']}>
       <Stack.Screen options={{ title: ticket.subject }} />
 
       {/* Ticket info header */}

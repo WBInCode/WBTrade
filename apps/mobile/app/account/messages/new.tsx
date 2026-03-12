@@ -73,7 +73,7 @@ export default function NewTicketScreen() {
   }, [subject, category, message, orderId, router]);
 
   return (
-    <SafeAreaView style={s.container} edges={['top']}>
+    <SafeAreaView style={s.container} edges={['bottom']}>
       <Stack.Screen options={{ title: 'Nowe zgłoszenie' }} />
       <ScrollView style={s.scroll} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
         {/* Category */}

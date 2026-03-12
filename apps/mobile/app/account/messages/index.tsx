@@ -265,7 +265,7 @@ export default function MessagesScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={s.container} edges={['top']}>
+      <SafeAreaView style={s.container} edges={['bottom']}>
         <Stack.Screen options={{ title: 'Wiadomości' }} />
         <View style={s.center}>
           <ActivityIndicator size="large" color={colors.tint} />
@@ -275,7 +275,7 @@ export default function MessagesScreen() {
   }
 
   return (
-    <SafeAreaView style={s.container} edges={['top']}>
+    <SafeAreaView style={s.container} edges={['bottom']}>
       <Stack.Screen
         options={{
           title: 'Wiadomości',

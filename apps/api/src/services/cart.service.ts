@@ -37,7 +37,7 @@ export interface CartItemWithProduct {
 
 export class CartService {
   /**
-   * Get or create cart for user or session
+   * Get or create cart for user or session (full version with formatted items)
    */
   async getOrCreateCart(userId?: string, sessionId?: string): Promise<CartWithItems> {
     let cart = await this.findCart(userId, sessionId);
@@ -54,6 +54,31 @@ export class CartService {
     }
 
     return await this.formatCart(cart);
+  }
+
+  /**
+   * Lightweight: get or create cart, return only the ID (no heavy includes/formatting)
+   */
+  async getOrCreateCartId(userId?: string, sessionId?: string): Promise<string> {
+    const selectId = { id: true };
+
+    if (userId) {
+      const existing = await prisma.cart.findUnique({ where: { userId }, select: selectId });
+      if (existing) return existing.id;
+    } else if (sessionId) {
+      const existing = await prisma.cart.findUnique({ where: { sessionId }, select: selectId });
+      if (existing) return existing.id;
+    }
+
+    const cart = await prisma.cart.create({
+      data: {
+        userId: userId || null,
+        sessionId: userId ? null : sessionId || null,
+        expiresAt: userId ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+      select: selectId,
+    });
+    return cart.id;
   }
 
   /**
@@ -78,14 +103,96 @@ export class CartService {
   }
 
   /**
-   * Add item to cart
+   * Add item to cart (accepts userId/sessionId to parallelize cart lookup with variant check).
+   * If cachedCartId is provided and valid, skips the cart ID lookup entirely.
+   */
+  async addItemFast(
+    userId: string | undefined,
+    sessionId: string | undefined,
+    variantId: string,
+    quantity = 1,
+    cachedCartId?: string
+  ): Promise<CartWithItems> {
+    // Step 1: Get cart ID and variant info in parallel (saves a round-trip)
+    // If we have a cached cart ID, verify it exists in parallel with variant fetch
+    const [cartId, variant] = await Promise.all([
+      cachedCartId
+        ? prisma.cart.findUnique({ where: { id: cachedCartId }, select: { id: true } })
+            .then(c => c?.id || this.getOrCreateCartId(userId, sessionId))
+        : this.getOrCreateCartId(userId, sessionId),
+      prisma.productVariant.findUnique({
+        where: { id: variantId },
+        include: {
+          inventory: true,
+          product: {
+            select: { name: true, status: true }
+          }
+        }
+      }),
+    ]);
+
+    if (!variant) {
+      throw new Error(`Wariant o ID ${variantId} nie został znaleziony`);
+    }
+
+    if (variant.product.status !== 'ACTIVE') {
+      throw new Error(`Produkt "${variant.product.name}" jest niedostępny`);
+    }
+
+    // Calculate available stock
+    const availableStock = variant.inventory.reduce(
+      (sum, inv) => sum + (inv.quantity - inv.reserved), 
+      0
+    );
+
+    if (availableStock <= 0) {
+      throw new Error(`Produkt "${variant.product.name}" jest niedostępny (brak na stanie)`);
+    }
+
+    // Step 2: Upsert cart item (single query instead of find + update/create)
+    // Use a raw approach: try to find existing and handle accordingly
+    const existingItem = await prisma.cartItem.findUnique({
+      where: { cartId_variantId: { cartId, variantId } },
+      select: { id: true, quantity: true },
+    });
+
+    const totalRequestedQuantity = (existingItem?.quantity || 0) + quantity;
+
+    if (totalRequestedQuantity > availableStock) {
+      throw new Error(
+        `Niewystarczająca ilość produktu "${variant.product.name}". ` +
+        `Dostępne: ${availableStock} szt., żądane: ${totalRequestedQuantity} szt.`
+      );
+    }
+
+    if (existingItem) {
+      await prisma.cartItem.update({
+        where: { id: existingItem.id },
+        data: { quantity: totalRequestedQuantity },
+      });
+    } else {
+      await prisma.cartItem.create({
+        data: { cartId, variantId, quantity },
+      });
+    }
+
+    // Step 3: Fetch full cart with items (single query + format)
+    const cart = await prisma.cart.findUnique({
+      where: { id: cartId },
+      include: this.cartInclude,
+    });
+
+    return await this.formatCart(cart!);
+  }
+
+  /**
+   * Add item to cart (legacy — used internally)
    */
   async addItem(
     cartId: string,
     variantId: string,
     quantity = 1
   ): Promise<CartWithItems> {
-    // First, verify the variant exists and check stock
     const variant = await prisma.productVariant.findUnique({
       where: { id: variantId },
       include: {
@@ -100,27 +207,22 @@ export class CartService {
       throw new Error(`Wariant o ID ${variantId} nie został znaleziony`);
     }
 
-    // Check if product is active
     if (variant.product.status !== 'ACTIVE') {
       throw new Error(`Produkt "${variant.product.name}" jest niedostępny`);
     }
 
-    // Calculate available stock
     const availableStock = variant.inventory.reduce(
       (sum, inv) => sum + (inv.quantity - inv.reserved), 
       0
     );
 
-    // Check if item already exists in cart to calculate total quantity
     const existingItem = await prisma.cartItem.findUnique({
-      where: {
-        cartId_variantId: { cartId, variantId },
-      },
+      where: { cartId_variantId: { cartId, variantId } },
+      select: { id: true, quantity: true },
     });
 
     const totalRequestedQuantity = (existingItem?.quantity || 0) + quantity;
 
-    // Validate stock availability
     if (availableStock <= 0) {
       throw new Error(`Produkt "${variant.product.name}" jest niedostępny (brak na stanie)`);
     }
@@ -133,23 +235,16 @@ export class CartService {
     }
 
     if (existingItem) {
-      // Update quantity
       await prisma.cartItem.update({
         where: { id: existingItem.id },
-        data: { quantity: existingItem.quantity + quantity },
+        data: { quantity: totalRequestedQuantity },
       });
     } else {
-      // Create new item
       await prisma.cartItem.create({
-        data: {
-          cartId,
-          variantId,
-          quantity,
-        },
+        data: { cartId, variantId, quantity },
       });
     }
 
-    // Return updated cart
     const cart = await prisma.cart.findUnique({
       where: { id: cartId },
       include: this.cartInclude,

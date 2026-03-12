@@ -334,7 +334,7 @@ export default function AddressesScreen() {
   // ─── Loading state ───
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <Stack.Screen options={{ title: 'Moje adresy', headerShown: true }} />
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.tint} />
@@ -346,7 +346,7 @@ export default function AddressesScreen() {
   // ─── Error state ───
   if (error && addresses.length === 0) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <Stack.Screen options={{ title: 'Moje adresy', headerShown: true }} />
         <View style={styles.center}>
           <FontAwesome name="exclamation-circle" size={48} color={colors.inputBorder} />
@@ -360,7 +360,7 @@ export default function AddressesScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <Stack.Screen options={{ title: 'Moje adresy', headerShown: true }} />
 
       <FlatList

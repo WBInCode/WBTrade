@@ -1,9 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { authGuard, adminOnly } from '../middleware/auth.middleware';
-import { PrismaClient, TicketCategory, TicketStatus } from '@prisma/client';
+import { TicketCategory, TicketStatus } from '@prisma/client';
+import { prisma } from '../db';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 router.use(authGuard, adminOnly);
 
