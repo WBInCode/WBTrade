@@ -221,7 +221,7 @@ export default function ReviewsScreen() {
           headerTintColor: colors.text,
         }}
       />
-      <SafeAreaView style={styles.container} edges={[]}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         {loading ? (
           <View style={styles.centerContent}>
             <ActivityIndicator size="large" color={colors.tint} />

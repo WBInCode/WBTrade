@@ -76,7 +76,7 @@ export default function ProductListScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.backgroundTertiary }]} edges={['top']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.backgroundTertiary }]} edges={['top', 'bottom']}>
         {/* Header */}
         <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
           <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>

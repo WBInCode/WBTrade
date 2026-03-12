@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import type { ThemeColors } from '../../constants/Colors';
 import { api } from '../../services/api';
@@ -111,6 +112,7 @@ export default function ProductReviewsScreen() {
           headerTitleStyle: { color: colors.headerText },
         }}
       />
+      <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
       <ScrollView
         style={[styles.container, { backgroundColor: colors.background }]}
         contentContainerStyle={styles.contentContainer}
@@ -276,6 +278,7 @@ export default function ProductReviewsScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+      </SafeAreaView>
     </>
   );
 }
@@ -287,6 +290,7 @@ const createStyles = (colors: ThemeColors) =>
     },
     contentContainer: {
       padding: 16,
+      paddingBottom: 40,
     },
     productName: {
       fontSize: 16,

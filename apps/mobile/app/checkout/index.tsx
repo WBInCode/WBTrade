@@ -259,7 +259,7 @@ export default function CheckoutScreen() {
 
   if (!cart || cart.items.length === 0) {
     return (
-      <SafeAreaView style={styles.emptyContainer}>
+      <SafeAreaView style={styles.emptyContainer} edges={['bottom']}>
         <Text style={styles.emptyText}>Koszyk jest pusty</Text>
       </SafeAreaView>
     );

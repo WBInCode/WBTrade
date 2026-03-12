@@ -473,7 +473,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   // ─── List ───
   listContent: {
     padding: 12,
-    paddingBottom: 32,
+    paddingBottom: 80,
   },
 
   // ─── Card ───
