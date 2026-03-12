@@ -29,6 +29,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { api } from '../../services/api';
 import ProductCarousel from '../../components/product/ProductCarousel';
 import AddToListModal from '../../components/AddToListModal';
+import BottomTabBar from '../../components/ui/BottomTabBar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Product, ProductVariant } from '../../services/types';
 
@@ -364,7 +365,7 @@ function ImageGallery({ images }: { images: { url: string; alt: string | null }[
   }
 
   return (
-    <View style={{ backgroundColor: colors.backgroundSecondary }}>
+    <View style={{ backgroundColor: '#FFFFFF' }}>
       <FlatList
         ref={mainListRef}
         data={images}
@@ -375,12 +376,14 @@ function ImageGallery({ images }: { images: { url: string; alt: string | null }[
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
         renderItem={({ item }) => (
-          <Image
-            source={{ uri: item.url }}
-            style={styles.galleryImage}
-            contentFit="contain"
-            transition={200}
-          />
+          <View style={styles.galleryImageWrap}>
+            <Image
+              source={{ uri: item.url }}
+              style={styles.galleryImage}
+              contentFit="contain"
+              transition={200}
+            />
+          </View>
         )}
       />
       {images.length > 1 && (
@@ -1626,6 +1629,7 @@ export default function ProductDetailScreen() {
         </View>
       </ScrollView>
       </SafeAreaView>
+      <BottomTabBar />
 
       {/* Add to Shopping List Modal */}
       {product && (
@@ -1688,10 +1692,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.textMuted,
     fontSize: 14,
   },
-  galleryImage: {
+  galleryImageWrap: {
     width: SCREEN_WIDTH,
     height: SCREEN_WIDTH * 0.8,
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: '#FFFFFF',
+  },
+  galleryImage: {
+    width: '100%',
+    height: '100%',
   },
   dotsContainer: {
     flexDirection: 'row',
@@ -2106,6 +2114,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 2,
     borderColor: 'transparent',
+    backgroundColor: '#FFFFFF',
   },
   thumbnailWrapActive: {
     borderColor: colors.tint,

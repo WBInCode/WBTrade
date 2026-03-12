@@ -124,23 +124,21 @@ function ProductCard({ product, width }: ProductCardProps) {
             </View>
           )}
 
-          {/* Badge */}
-          {badge && (
-            <View style={styles.badgeContainer}>
-              <Badge text={badge.text} variant={badge.variant} />
+          {/* Badges (stacked vertically) */}
+          {(badge || hasDiscount) && (
+            <View style={styles.badgesColumn}>
+              {badge && <Badge text={badge.text} variant={badge.variant} />}
+              {hasDiscount && (
+                <View style={styles.discountBadge}>
+                  <Text style={styles.discountText}>
+                    -{Math.round(((compareAt - price) / compareAt) * 100)}%
+                  </Text>
+                </View>
+              )}
             </View>
           )}
 
-          {/* Discount percentage */}
-          {hasDiscount && (
-            <View style={styles.discountBadge}>
-              <Text style={styles.discountText}>
-                -{Math.round(((compareAt - price) / compareAt) * 100)}%
-              </Text>
-            </View>
-          )}
-
-          {/* Heart / Favourite */}
+          {/* Heart / Favourite — top-right corner */}
           <TouchableOpacity
             style={styles.heartBtn}
             onPress={(e) => {
@@ -162,6 +160,8 @@ function ProductCard({ product, width }: ProductCardProps) {
               />
             </Animated.View>
           </TouchableOpacity>
+
+
         </View>
 
         {/* Info */}
@@ -297,15 +297,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeContainer: {
+  badgesColumn: {
     position: 'absolute',
     top: 8,
     left: 8,
+    gap: 4,
+    alignItems: 'flex-start',
   },
   discountBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
     backgroundColor: colors.success,
     borderRadius: 6,
     paddingHorizontal: 6,
@@ -318,7 +317,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   heartBtn: {
     position: 'absolute',
-    bottom: 8,
+    top: 8,
     right: 8,
     width: 32,
     height: 32,

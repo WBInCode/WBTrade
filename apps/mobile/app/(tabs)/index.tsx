@@ -273,7 +273,7 @@ const HeroSection = React.memo(function HeroSection({ product }: { product: Prod
         activeOpacity={0.9}
       >
         {product.images?.[0]?.url && (
-          <Image source={{ uri: product.images[0].url }} style={[styles.heroImage, { backgroundColor: colors.card }]} contentFit="contain" />
+          <Image source={{ uri: product.images[0].url }} style={[styles.heroImage, { backgroundColor: '#FFFFFF' }]} contentFit="contain" />
         )}
         <View style={styles.heroInfo}>
           <Text style={[styles.heroName, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
@@ -321,7 +321,9 @@ const Top3Section = React.memo(function Top3Section({ products }: { products: Pr
               <Text style={[styles.topMedalText, { color: colors.textInverse }]}>{index + 1}</Text>
             </View>
             {product.images?.[0]?.url && (
-              <Image source={{ uri: product.images[0].url }} style={styles.topProductImage} contentFit="contain" />
+              <View style={styles.topImageWrap}>
+                <Image source={{ uri: product.images[0].url }} style={styles.topProductImage} contentFit="contain" />
+              </View>
             )}
             <Text style={[styles.topProductName, { color: colors.textSecondary }]} numberOfLines={2}>{product.name}</Text>
             <Text style={[styles.topProductPrice, { color: colors.tint }]}>{Number(product.price).toFixed(2).replace('.', ',')} zł</Text>
@@ -947,7 +949,11 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   topMedalText: { fontSize: 13, fontWeight: '800' },
-  topProductImage: { width: 100, height: 100, marginBottom: 8 },
+  topImageWrap: {
+    width: 100, height: 100, marginBottom: 8,
+    borderRadius: 12, overflow: 'hidden', backgroundColor: '#f5f5f5',
+  },
+  topProductImage: { width: '100%', height: '100%' },
   topProductName: {
     fontSize: 12, fontWeight: '500',
     textAlign: 'center', height: 32, marginBottom: 4,
