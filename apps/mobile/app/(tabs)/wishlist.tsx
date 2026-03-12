@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { pluralizeProducts } from '../../utils/pluralize';
 import {
   StyleSheet,
@@ -19,6 +19,7 @@ import type { ThemeColors } from '../../constants/Colors';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
+import { useToast } from '../../contexts/ToastContext';
 import { productsApi } from '../../services/products';
 import Button from '../../components/ui/Button';
 import type { WishlistItem } from '../../services/types';
@@ -157,8 +158,12 @@ export default function WishlistScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { items, loading, count, remove, refresh } = useWishlist();
+  const { addToCart } = useCart();
+  const toast = useToast();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const [addingAll, setAddingAll] = useState(false);
+  const [addedAllCount, setAddedAllCount] = useState(0);
 
   // Refresh on focus
   useFocusEffect(
@@ -166,6 +171,54 @@ export default function WishlistScreen() {
       if (user) refresh();
     }, [user, refresh])
   );
+
+  // Total value
+  const totalValue = useMemo(() => {
+    return items.reduce((sum, item) => {
+      const p = item.product;
+      const price = Number(typeof p.price === 'string' ? parseFloat(p.price as string) : p.price) || 0;
+      return sum + price;
+    }, 0);
+  }, [items]);
+
+  const handleAddAllToCart = async () => {
+    setAddingAll(true);
+    setAddedAllCount(0);
+    let added = 0;
+
+    for (const item of items) {
+      const p = item.product;
+      const hasStock = p.variants ? p.variants.some((v) => v.stock > 0) : true;
+      if (!hasStock) continue;
+
+      let variantId = item.variantId || p.variants?.[0]?.id;
+
+      if (!variantId) {
+        try {
+          const data = await productsApi.getById(p.id);
+          const product = (data as any)?.product || data;
+          variantId = product?.variants?.[0]?.id;
+        } catch {}
+      }
+
+      if (!variantId) continue;
+
+      try {
+        await addToCart(variantId, 1);
+        added++;
+        setAddedAllCount(added);
+      } catch {}
+    }
+
+    if (added > 0) {
+      toast.show(`Dodano ${added} ${added === 1 ? 'produkt' : added < 5 ? 'produkty' : 'produktów'} do koszyka`, 'success');
+    }
+
+    setTimeout(() => {
+      setAddingAll(false);
+      setAddedAllCount(0);
+    }, 2500);
+  };
 
   // Guest state
   if (!user) {
@@ -235,6 +288,45 @@ export default function WishlistScreen() {
         <Text style={[styles.headerTitle, { flex: 1 }]}>Ulubione</Text>
         <Text style={styles.headerCount}>{pluralizeProducts(count)}</Text>
       </View>
+
+      {/* Summary bar */}
+      <View style={styles.summaryBar}>
+        <View style={styles.summaryItem}>
+          <FontAwesome name="heart" size={14} color={colors.tint} />
+          <Text style={styles.summaryLabel}>{pluralizeProducts(count)}</Text>
+        </View>
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryLabel}>Łączna wartość:</Text>
+          <Text style={styles.summaryValue}>{totalValue.toFixed(2).replace('.', ',')} zł</Text>
+        </View>
+      </View>
+
+      {/* Add all to cart */}
+      <TouchableOpacity
+        style={[styles.addAllBtn, addingAll && styles.addAllBtnDisabled]}
+        onPress={handleAddAllToCart}
+        disabled={addingAll}
+        activeOpacity={0.8}
+      >
+        {addingAll ? (
+          <View style={styles.addAllBtnInner}>
+            <ActivityIndicator size="small" color={colors.textInverse} />
+            <Text style={styles.addAllBtnText}>
+              Dodawanie... ({addedAllCount}/{items.length})
+            </Text>
+          </View>
+        ) : addedAllCount > 0 ? (
+          <View style={styles.addAllBtnInner}>
+            <FontAwesome name="check" size={14} color={colors.textInverse} />
+            <Text style={styles.addAllBtnText}>Dodano do koszyka!</Text>
+          </View>
+        ) : (
+          <View style={styles.addAllBtnInner}>
+            <FontAwesome name="shopping-cart" size={14} color={colors.textInverse} />
+            <Text style={styles.addAllBtnText}>Dodaj wszystkie do koszyka</Text>
+          </View>
+        )}
+      </TouchableOpacity>
 
       <FlatList
         data={items}
@@ -327,6 +419,55 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   emptyButtons: {
     width: '100%',
     gap: 12,
+  },
+
+  // ─── Summary bar ───
+  summaryBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.card,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.cardBorder,
+  },
+  summaryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  summaryLabel: {
+    fontSize: 13,
+    color: colors.textMuted,
+  },
+  summaryValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.tint,
+  },
+
+  // ─── Add all button ───
+  addAllBtn: {
+    marginHorizontal: 12,
+    marginTop: 10,
+    backgroundColor: colors.tint,
+    borderRadius: 10,
+    paddingVertical: 12,
+  },
+  addAllBtnDisabled: {
+    backgroundColor: colors.inputBorder,
+  },
+  addAllBtnInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  addAllBtnText: {
+    color: colors.textInverse,
+    fontSize: 14,
+    fontWeight: '600',
   },
 
   // ─── List ───
