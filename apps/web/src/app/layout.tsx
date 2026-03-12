@@ -31,6 +31,20 @@ export const metadata: Metadata = {
     siteName: 'WB Trade',
     locale: 'pl_PL',
     type: 'website',
+    images: [
+      {
+        url: 'https://www.wb-trade.pl/images/WB-TRADE-logo.png',
+        width: 1267,
+        height: 771,
+        alt: 'WB Trade - Shop Everything',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'WB Trade - Shop Everything',
+    description: 'Najniższe ceny na rynku na tysiące produktów. Sprawdź nasze oferty i oszczędzaj więcej przy każdym zakupie.',
+    images: ['https://www.wb-trade.pl/images/WB-TRADE-logo.png'],
   },
 };
 
