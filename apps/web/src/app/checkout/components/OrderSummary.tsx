@@ -233,24 +233,13 @@ export default function OrderSummary({
           </button>
         </div>
 
-        {/* Payment method */}
+        {/* Payment method - auto-selected PayU */}
         <div className="flex justify-between items-start p-3 sm:p-4 border dark:border-secondary-600 rounded-lg">
           <div className="flex-1 min-w-0">
             <h4 className="text-sm sm:text-base font-medium text-gray-900 dark:text-white mb-1">💳 Płatność</h4>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{paymentMethodNames[payment.method]}</p>
-            {payment.extraFee > 0 && (
-              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Opłata: +{payment.extraFee.toFixed(2).replace('.', ',')} zł
-              </p>
-            )}
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Płatność online (PayU)</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">BLIK, karta płatnicza, szybki przelew, Google Pay, Apple Pay</p>
           </div>
-          <button
-            type="button"
-            onClick={() => onEditStep(3)}
-            className="text-xs sm:text-sm text-orange-500 hover:text-orange-600 font-medium shrink-0 ml-2"
-          >
-            Zmień
-          </button>
         </div>
       </div>
 

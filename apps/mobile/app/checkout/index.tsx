@@ -17,7 +17,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useCheckout, type AddressData, type ShippingData } from '../../hooks/useCheckout';
 import AddressForm from '../../components/checkout/AddressForm';
 import ShippingPerPackage from '../../components/checkout/ShippingPerPackage';
-import PaymentMethod from '../../components/checkout/PaymentMethod';
 import OrderSummary from '../../components/checkout/OrderSummary';
 import { api } from '../../services/api';
 
@@ -56,7 +55,7 @@ export default function CheckoutScreen() {
 
   // Update navigation header title per step
   useEffect(() => {
-    const stepTitles = ['Adres dostawy', 'Metoda dostawy', 'Płatność', 'Podsumowanie'];
+    const stepTitles = ['Adres dostawy', 'Metoda dostawy', 'Podsumowanie'];
     navigation.setOptions({
       title: stepTitles[checkout.state.step] || 'Zamówienie',
     });
@@ -75,7 +74,7 @@ export default function CheckoutScreen() {
   };
 
   // Step indicators
-  const steps = ['Adres', 'Dostawa', 'Płatność', 'Podsumowanie'];
+  const steps = ['Adres', 'Dostawa', 'Podsumowanie'];
 
   const handleAddressSubmit = (data: AddressData) => {
     checkout.setAddress(data);
@@ -95,18 +94,16 @@ export default function CheckoutScreen() {
     });
     // Store package shipping in state for order creation
     setPackageShippingData(data.packageShipping);
+    // Auto-set payment to PayU (only option)
+    checkout.setPayment({
+      method: 'payu',
+      methodName: 'PayU',
+    });
     checkout.nextStep();
   };
 
   const [packageShippingData, setPackageShippingData] = useState<any[]>([]);
 
-  const handlePaymentSubmit = (data: { method: string; methodName: string; extraFee: number }) => {
-    checkout.setPayment({
-      method: data.method,
-      methodName: data.methodName,
-    });
-    checkout.nextStep();
-  };
 
   const handlePlaceOrder = async () => {
     if (!checkout.state.address || !checkout.state.shipping || !checkout.state.payment) {
@@ -332,14 +329,7 @@ export default function CheckoutScreen() {
         />
       )}
 
-      {checkout.state.step === 2 && (
-        <PaymentMethod
-          onSubmit={handlePaymentSubmit}
-          onBack={checkout.prevStep}
-        />
-      )}
-
-      {checkout.state.step === 3 && checkout.state.address && checkout.state.shipping && checkout.state.payment && (
+      {checkout.state.step === 2 && checkout.state.address && checkout.state.shipping && checkout.state.payment && (
         <OrderSummary
           address={checkout.state.address}
           shipping={checkout.state.shipping}

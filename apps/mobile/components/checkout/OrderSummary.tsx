@@ -181,18 +181,16 @@ export default function OrderSummary({
         )}
       </View>
 
-      {/* Payment summary */}
+      {/* Payment summary - auto-selected PayU */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <View style={styles.sectionLeft}>
             <Ionicons name="card-outline" size={18} color={colors.tint} />
             <Text style={styles.sectionTitle}>Płatność</Text>
           </View>
-          <TouchableOpacity onPress={() => onGoToStep(2)}>
-            <Text style={styles.changeLink}>Zmień</Text>
-          </TouchableOpacity>
         </View>
-        <Text style={styles.summaryText}>{payment.methodName || payment.method}</Text>
+        <Text style={styles.summaryText}>PayU - płatność online</Text>
+        <Text style={[styles.summaryText, { fontSize: 12, color: colors.textMuted, marginTop: 2 }]}>BLIK, karta płatnicza, szybki przelew, Google Pay</Text>
       </View>
 
       {/* Products list */}

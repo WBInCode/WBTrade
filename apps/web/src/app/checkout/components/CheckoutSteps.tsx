@@ -9,8 +9,7 @@ interface CheckoutStepsProps {
 const steps = [
   { id: 1, name: 'Adres', shortName: 'Adres' },
   { id: 2, name: 'Dostawa', shortName: 'Dostawa' },
-  { id: 3, name: 'Płatność', shortName: 'Płatność' },
-  { id: 4, name: 'Podsumowanie', shortName: 'Suma' },
+  { id: 3, name: 'Podsumowanie', shortName: 'Suma' },
 ];
 
 export default function CheckoutSteps({ currentStep }: CheckoutStepsProps) {
