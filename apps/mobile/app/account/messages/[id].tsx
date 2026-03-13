@@ -237,36 +237,33 @@ export default function MessageDetailScreen() {
         />
 
         {/* Reply input */}
-        {ticket.status !== 'CLOSED' ? (
-          <View style={[s.inputBar, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
-            <TextInput
-              style={[s.replyInput, { backgroundColor: colors.inputBackground, borderColor: colors.inputBorder, color: colors.text }]}
-              placeholder="Napisz wiadomość..."
-              placeholderTextColor={colors.textMuted}
-              value={replyText}
-              onChangeText={setReplyText}
-              multiline
-              maxLength={5000}
-            />
-            <TouchableOpacity
-              style={[s.sendBtn, { backgroundColor: colors.tint, opacity: !replyText.trim() || sending ? 0.5 : 1 }]}
-              onPress={handleSend}
-              disabled={!replyText.trim() || sending}
-            >
-              {sending ? (
-                <ActivityIndicator size="small" color={colors.textInverse} />
-              ) : (
-                <FontAwesome name="send" size={16} color={colors.textInverse} />
-              )}
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={[s.closedBar, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
-            <Text style={{ color: colors.textMuted, fontSize: 13, textAlign: 'center' }}>
-              To zgłoszenie zostało zamknięte.
+        <View style={[s.inputBar, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
+          {ticket.status === 'CLOSED' && (
+            <Text style={{ color: colors.textMuted, fontSize: 11, position: 'absolute', top: -18, left: 12 }}>
+              Zgłoszenie zamknięte — odpowiedź ponownie je otworzy
             </Text>
-          </View>
-        )}
+          )}
+          <TextInput
+            style={[s.replyInput, { backgroundColor: colors.inputBackground, borderColor: colors.inputBorder, color: colors.text }]}
+            placeholder="Napisz wiadomość..."
+            placeholderTextColor={colors.textMuted}
+            value={replyText}
+            onChangeText={setReplyText}
+            multiline
+            maxLength={5000}
+          />
+          <TouchableOpacity
+            style={[s.sendBtn, { backgroundColor: colors.tint, opacity: !replyText.trim() || sending ? 0.5 : 1 }]}
+            onPress={handleSend}
+            disabled={!replyText.trim() || sending}
+          >
+            {sending ? (
+              <ActivityIndicator size="small" color={colors.textInverse} />
+            ) : (
+              <FontAwesome name="send" size={16} color={colors.textInverse} />
+            )}
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

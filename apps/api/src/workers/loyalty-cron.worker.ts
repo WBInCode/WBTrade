@@ -31,18 +31,18 @@ async function checkLoyaltyTasks() {
   const today = now.toISOString().slice(0, 10); // YYYY-MM-DD
   const hour = now.getHours();
 
-  // Birthday coupons - run once daily after 8:00 AM
-  if (hour >= 8 && today !== lastBirthdayCheckDate) {
-    lastBirthdayCheckDate = today;
-    try {
-      const result = await loyaltyService.processBirthdayCoupons();
-      if (result.processed > 0) {
-        console.log(`[LoyaltyCron] Birthday coupons: ${result.processed} generated`);
-      }
-    } catch (error) {
-      console.error('[LoyaltyCron] Error processing birthday coupons:', error);
-    }
-  }
+  // Birthday coupons - TEMPORARILY DISABLED
+  // if (hour >= 8 && today !== lastBirthdayCheckDate) {
+  //   lastBirthdayCheckDate = today;
+  //   try {
+  //     const result = await loyaltyService.processBirthdayCoupons();
+  //     if (result.processed > 0) {
+  //       console.log(`[LoyaltyCron] Birthday coupons: ${result.processed} generated`);
+  //     }
+  //   } catch (error) {
+  //     console.error('[LoyaltyCron] Error processing birthday coupons:', error);
+  //   }
+  // }
 
   // Quarterly coupons - run on the 1st of each quarter
   const currentQuarter = getCurrentQuarter();
