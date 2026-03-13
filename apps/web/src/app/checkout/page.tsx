@@ -12,7 +12,7 @@ import CheckoutSteps from './components/CheckoutSteps';
 import CheckoutAuthChoice from './components/CheckoutAuthChoice';
 import AddressForm from './components/AddressForm';
 import ShippingPerPackage from './components/ShippingPerPackage';
-import PaymentMethod from './components/PaymentMethod';
+
 import OrderSummary from './components/OrderSummary';
 import CheckoutPackagesList from './components/CheckoutPackagesList';
 import CouponInput from './components/CouponInput';
@@ -190,7 +190,7 @@ function CheckoutPageContent() {
           ? `Płatność dla zamówienia została anulowana. Możesz spróbować ponownie lub wybrać inną metodę płatności.`
           : 'Płatność została anulowana. Możesz spróbować ponownie lub wybrać inną metodę płatności.'
       );
-      // Skip to payment step if coming back from cancelled payment
+      // Skip to summary step if coming back from cancelled payment
       setCurrentStep(3);
       
       // Clean URL without reloading
@@ -281,6 +281,11 @@ function CheckoutPageContent() {
     const totalValue = checkoutItems.reduce((sum, item) => sum + ((item.variant?.price || 0) * item.quantity), 0);
     trackAddShippingInfo(items, totalValue, shipping.method);
 
+    // Auto-set payment to PayU (only option) and track
+    const payment: PaymentData = { method: 'payu', extraFee: 0 };
+    setCheckoutData(prev => ({ ...prev, payment }));
+    trackAddPaymentInfo(items, totalValue, payment.method);
+
     setCurrentStep(3);
     window.scrollTo(0, 0);
   };
@@ -295,17 +300,7 @@ function CheckoutPageContent() {
     }));
   };
 
-  const handlePaymentSubmit = (payment: PaymentData) => {
-    setCheckoutData(prev => ({ ...prev, payment }));
 
-    // Track add_payment_info
-    const items = checkoutItems.map((item, index) => cartItemToGA4(item, index));
-    const totalValue = checkoutItems.reduce((sum, item) => sum + ((item.variant?.price || 0) * item.quantity), 0);
-    trackAddPaymentInfo(items, totalValue, payment.method);
-
-    setCurrentStep(4);
-    window.scrollTo(0, 0);
-  };
 
   const handleBack = () => {
     setCurrentStep(prev => Math.max(1, prev - 1));
@@ -677,14 +672,6 @@ function CheckoutPageContent() {
             )}
 
             {currentStep === 3 && (
-              <PaymentMethod
-                initialData={checkoutData.payment}
-                onSubmit={handlePaymentSubmit}
-                onBack={handleBack}
-              />
-            )}
-
-            {currentStep === 4 && (
               <OrderSummary
                 checkoutData={checkoutData}
                 cart={displayCart}
