@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, ThemeColors } from '../../constants/Colors';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useCart } from '../../contexts/CartContext';
@@ -65,11 +66,80 @@ export default function CartScreen() {
   const [shippingPrices, setShippingPrices] = useState<Record<string, number>>({});
   const [totalShippingCost, setTotalShippingCost] = useState<number>(0);
   const [loadingShipping, setLoadingShipping] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
   const items = cart?.items || [];
   const subtotal = cart?.subtotal || 0;
   const discount = cart?.discount || 0;
   const total = cart?.total || 0;
+
+  // Initialize selectedItems when cart items change
+  useEffect(() => {
+    if (cart?.items) {
+      setSelectedItems(new Set(cart.items.map(item => item.id)));
+    }
+  }, [cart?.items]);
+
+  // Selection handlers
+  const handleSelectAll = (selected: boolean) => {
+    if (selected && cart?.items) {
+      setSelectedItems(new Set(cart.items.map(item => item.id)));
+    } else {
+      setSelectedItems(new Set());
+    }
+  };
+
+  const handleSelectItem = (itemId: string, selected: boolean) => {
+    setSelectedItems(prev => {
+      const next = new Set(prev);
+      if (selected) {
+        next.add(itemId);
+      } else {
+        next.delete(itemId);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectPackage = (packageItems: typeof items, selected: boolean) => {
+    setSelectedItems(prev => {
+      const next = new Set(prev);
+      for (const item of packageItems) {
+        if (selected) {
+          next.add(item.id);
+        } else {
+          next.delete(item.id);
+        }
+      }
+      return next;
+    });
+  };
+
+  // Calculate totals based on selected items
+  const selectedTotals = useMemo(() => {
+    if (!items.length) return { subtotal: 0, shipping: 0, discount: 0, total: 0, selectedCount: 0 };
+
+    const selectedCartItems = items.filter(item => selectedItems.has(item.id));
+    const sub = selectedCartItems.reduce((sum, item) => sum + (Number(item.variant.price) * item.quantity), 0);
+    const allSelected = selectedItems.size === items.length;
+    const selectedWholesalers = new Set(selectedCartItems.map(item => item.variant.product.wholesaler || 'default'));
+    const ship = allSelected
+      ? totalShippingCost
+      : Array.from(selectedWholesalers).reduce((sum, ws) => sum + (shippingPrices[ws] || 0), 0);
+    const disc = allSelected ? discount : 0; // Discount only applies when all items selected
+    const count = selectedCartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+    return {
+      subtotal: Math.round(sub * 100) / 100,
+      shipping: Math.round(ship * 100) / 100,
+      discount: Math.round(disc * 100) / 100,
+      total: Math.round((sub + ship - disc) * 100) / 100,
+      selectedCount: count,
+    };
+  }, [items, selectedItems, discount, shippingPrices, totalShippingCost]);
+
+  const allSelected = items.length > 0 && items.every(item => selectedItems.has(item.id));
+  const someSelected = items.some(item => selectedItems.has(item.id));
 
   // Fetch shipping prices per package (same logic as web version)
   useEffect(() => {
@@ -221,7 +291,13 @@ export default function CartScreen() {
     }
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
+    if (selectedItems.size === 0) {
+      Alert.alert('Brak produktów', 'Zaznacz produkty, które chcesz zamówić.');
+      return;
+    }
+    // Save selected items for checkout
+    await AsyncStorage.setItem('checkoutSelectedItems', JSON.stringify(Array.from(selectedItems)));
     if (!isAuthenticated) {
       Alert.alert(
         'Zaloguj się',
@@ -273,12 +349,46 @@ export default function CartScreen() {
         contentContainerStyle={ds.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tint} />}
       >
+        {/* Select All Header */}
+        <TouchableOpacity
+          style={ds.selectAllContainer}
+          onPress={() => handleSelectAll(!allSelected)}
+          activeOpacity={0.7}
+        >
+          <View style={[ds.checkbox, allSelected && ds.checkboxChecked, (!allSelected && someSelected) && ds.checkboxIndeterminate]}>
+            {allSelected ? (
+              <FontAwesome name="check" size={12} color="#fff" />
+            ) : someSelected ? (
+              <View style={ds.checkboxDash} />
+            ) : null}
+          </View>
+          <Text style={ds.selectAllText}>Cały koszyk</Text>
+          <Text style={ds.selectAllCount}>{items.length} {items.length === 1 ? 'produkt' : 'produktów'}</Text>
+        </TouchableOpacity>
+
         {/* Cart items grouped by warehouse with shipping info */}
-        {packages.map((pkg, pkgIndex) => (
+        {packages.map((pkg, pkgIndex) => {
+          const pkgAllSelected = pkg.items.every(item => selectedItems.has(item.id));
+          const pkgSomeSelected = pkg.items.some(item => selectedItems.has(item.id));
+
+          return (
           <View key={pkg.wholesaler} style={ds.packageContainer}>
             {/* Package Header */}
             <View style={ds.packageHeader}>
               <View style={ds.packageHeaderLeft}>
+                <TouchableOpacity
+                  onPress={() => handleSelectPackage(pkg.items, !pkgAllSelected)}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <View style={[ds.checkbox, pkgAllSelected && ds.checkboxChecked, (!pkgAllSelected && pkgSomeSelected) && ds.checkboxIndeterminate]}>
+                    {pkgAllSelected ? (
+                      <FontAwesome name="check" size={12} color="#fff" />
+                    ) : pkgSomeSelected ? (
+                      <View style={ds.checkboxDash} />
+                    ) : null}
+                  </View>
+                </TouchableOpacity>
                 <View style={[ds.warehouseBadge, { backgroundColor: pkg.color }]}>
                   <Text style={ds.warehouseBadgeText}>📍</Text>
                 </View>
@@ -296,12 +406,25 @@ export default function CartScreen() {
 
             {/* Package Items */}
             {pkg.items.map((item) => (
-              <CartItem
-                key={item.id}
-                item={item}
-                onUpdateQuantity={updateQuantity}
-                onRemove={removeFromCart}
-              />
+              <View key={item.id} style={[ds.cartItemRow, !selectedItems.has(item.id) && ds.cartItemUnselected]}>
+                <TouchableOpacity
+                  onPress={() => handleSelectItem(item.id, !selectedItems.has(item.id))}
+                  activeOpacity={0.7}
+                  style={ds.itemCheckboxContainer}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <View style={[ds.checkbox, selectedItems.has(item.id) && ds.checkboxChecked]}>
+                    {selectedItems.has(item.id) && <FontAwesome name="check" size={12} color="#fff" />}
+                  </View>
+                </TouchableOpacity>
+                <View style={ds.cartItemContent}>
+                  <CartItem
+                    item={item}
+                    onUpdateQuantity={updateQuantity}
+                    onRemove={removeFromCart}
+                  />
+                </View>
+              </View>
             ))}
 
             {/* Estimated Delivery per Package */}
@@ -351,7 +474,8 @@ export default function CartScreen() {
               )}
             </View>
           </View>
-        ))}
+          );
+        })}
 
         {/* Coupon section */}
         <View style={ds.couponSection}>
@@ -477,44 +601,40 @@ export default function CartScreen() {
       <View style={ds.summary}>
         <View style={ds.summaryRows}>
           <View style={ds.summaryRow}>
-            <Text style={ds.summaryLabel}>Suma produktów</Text>
-            <Text style={ds.summaryValue}>{subtotal.toFixed(2).replace('.', ',')} zł</Text>
+            <Text style={ds.summaryLabel}>Zaznaczono {selectedTotals.selectedCount} szt.</Text>
+            <Text style={ds.summaryValue}>{selectedTotals.subtotal.toFixed(2).replace('.', ',')} zł</Text>
           </View>
-          {discount > 0 && (
+          {selectedTotals.discount > 0 && (
             <View style={ds.summaryRow}>
               <Text style={ds.discountLabel}>Rabat</Text>
-              <Text style={ds.discountValue}>-{discount.toFixed(2).replace('.', ',')} zł</Text>
+              <Text style={ds.discountValue}>-{selectedTotals.discount.toFixed(2).replace('.', ',')} zł</Text>
             </View>
           )}
           <View style={ds.summaryRow}>
             <Text style={ds.summaryLabel}>Szacowana dostawa</Text>
             {loadingShipping ? (
               <Text style={ds.shippingInfo}>Obliczanie...</Text>
-            ) : totalShippingCost > 0 ? (
+            ) : selectedTotals.shipping > 0 ? (
               <Text style={ds.summaryValue}>
-                {totalShippingCost.toFixed(2).replace('.', ',')} zł
+                {selectedTotals.shipping.toFixed(2).replace('.', ',')} zł
               </Text>
             ) : (
               <Text style={ds.shippingInfo}>przy zamówieniu</Text>
             )}
           </View>
-          {Object.keys(shippingPrices).length > 1 && (
-            <Text style={ds.multiPackageInfo}>
-              Otrzymasz {Object.keys(shippingPrices).length} przesyłki
-            </Text>
-          )}
           <View style={[ds.summaryRow, ds.totalRow]}>
             <Text style={ds.totalLabel}>Razem</Text>
             <Text style={ds.totalValue}>
-              {(total + totalShippingCost).toFixed(2).replace('.', ',')} zł
+              {selectedTotals.total.toFixed(2).replace('.', ',')} zł
             </Text>
           </View>
         </View>
         <Button
-          title="Dostawa i płatność"
+          title={selectedItems.size > 0 ? 'Dostawa i płatność' : 'Zaznacz produkty'}
           onPress={handleCheckout}
           fullWidth
           size="lg"
+          disabled={selectedItems.size === 0}
         />
       </View>
     </SafeAreaView>
@@ -572,6 +692,71 @@ const createDynamicStyles = (c: ThemeColors) =>
     scrollContent: {
       padding: 16,
       paddingBottom: 16,
+    },
+
+    // Select all
+    selectAllContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.card,
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      marginBottom: 12,
+      gap: 10,
+    },
+    selectAllText: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: c.text,
+      flex: 1,
+    },
+    selectAllCount: {
+      fontSize: 13,
+      color: c.textMuted,
+    },
+
+    // Checkbox
+    checkbox: {
+      width: 22,
+      height: 22,
+      borderRadius: 6,
+      borderWidth: 2,
+      borderColor: c.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.inputBackground,
+    },
+    checkboxChecked: {
+      backgroundColor: c.tint,
+      borderColor: c.tint,
+    },
+    checkboxIndeterminate: {
+      backgroundColor: c.tint,
+      borderColor: c.tint,
+    },
+    checkboxDash: {
+      width: 10,
+      height: 2,
+      backgroundColor: '#fff',
+      borderRadius: 1,
+    },
+
+    // Cart item row with checkbox
+    cartItemRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      paddingLeft: 12,
+    },
+    cartItemUnselected: {
+      opacity: 0.5,
+    },
+    itemCheckboxContainer: {
+      paddingTop: 20,
+      paddingRight: 4,
+    },
+    cartItemContent: {
+      flex: 1,
     },
 
     // Package container styles

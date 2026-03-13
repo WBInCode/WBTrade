@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useRouter, useNavigation } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import type { ThemeColors } from '../../constants/Colors';
 import { useCart } from '../../contexts/CartContext';
@@ -32,6 +33,21 @@ export default function CheckoutScreen() {
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
   const [loadingAddresses, setLoadingAddresses] = useState(false);
   const [guestEmail, setGuestEmail] = useState('');
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
+
+  // Load selected items from AsyncStorage (saved by cart screen)
+  useEffect(() => {
+    AsyncStorage.getItem('checkoutSelectedItems').then(raw => {
+      if (raw) {
+        try {
+          const ids = JSON.parse(raw);
+          if (Array.isArray(ids) && ids.length > 0) {
+            setSelectedItemIds(ids);
+          }
+        } catch {}
+      }
+    });
+  }, []);
 
   // Load saved addresses for logged-in users
   useEffect(() => {
@@ -127,6 +143,11 @@ export default function CheckoutScreen() {
       acceptTerms: checkout.state.acceptTerms,
       wantInvoice: address.wantInvoice,
     };
+
+    // Include selected items if partial checkout
+    if (selectedItemIds.length > 0) {
+      checkoutData.selectedItemIds = selectedItemIds;
+    }
 
     // Per-package shipping
     if (packageShippingData.length > 0) {
@@ -228,8 +249,9 @@ export default function CheckoutScreen() {
         total: number;
       }>('/checkout', checkoutData);
 
-      // Refresh cart (it's now empty)
+      // Refresh cart (it's now empty or partial)
       refreshCart();
+      AsyncStorage.removeItem('checkoutSelectedItems');
 
       if (response.paymentUrl) {
         // Navigate to payment WebView
