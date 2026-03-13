@@ -135,9 +135,7 @@ router.post('/tickets/:id/messages', async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Brak dostępu' });
     }
 
-    if (ticket.status === 'CLOSED') {
-      return res.status(400).json({ error: 'Nie można pisać w zamkniętym wątku. Wątek zostanie ponownie otwarty.' });
-    }
+    // Note: closed tickets can receive replies — they will be auto-reopened by addMessage().
 
     const message = await supportService.addMessage({
       ticketId: req.params.id,
