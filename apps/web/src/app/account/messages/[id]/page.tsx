@@ -276,51 +276,44 @@ export default function MessageDetailPage() {
                 </div>
 
                 {/* Reply input */}
-                {ticket.status !== 'CLOSED' ? (
-                  <div className="border-t border-gray-200 dark:border-secondary-700 p-4">
-                    <div className="flex gap-3">
-                      <textarea
-                        value={replyText}
-                        onChange={(e) => setReplyText(e.target.value)}
-                        placeholder="Napisz wiadomość..."
-                        rows={3}
-                        className="flex-1 px-4 py-3 bg-gray-50 dark:bg-secondary-900 border border-gray-200 dark:border-secondary-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && e.ctrlKey) {
-                            handleSendReply();
-                          }
-                        }}
-                      />
-                      <button
-                        onClick={handleSendReply}
-                        disabled={!replyText.trim() || sending}
-                        className="px-4 py-3 bg-orange-500 rounded-xl text-white hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed self-end"
-                      >
-                        {sending ? (
-                          <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
-                        ) : (
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                          </svg>
-                        )}
-                      </button>
-                    </div>
-                    <p className="text-xs text-gray-400 mt-2">Ctrl+Enter aby wysłać</p>
-                  </div>
-                ) : (
-                  <div className="border-t border-gray-200 dark:border-secondary-700 p-4 text-center">
-                    <p className="text-gray-500 text-sm">
-                      To zgłoszenie zostało zamknięte. Jeśli potrzebujesz dalszej pomocy,{' '}
-                      <Link href="/account/messages/new" className="text-orange-500 hover:text-orange-600">
-                        utwórz nowe zgłoszenie
-                      </Link>
-                      .
+                <div className="border-t border-gray-200 dark:border-secondary-700 p-4">
+                  {ticket.status === 'CLOSED' && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mb-2">
+                      Zgłoszenie zamknięte — wysłanie wiadomości ponownie je otworzy.
                     </p>
+                  )}
+                  <div className="flex gap-3">
+                    <textarea
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      placeholder="Napisz wiadomość..."
+                      rows={3}
+                      className="flex-1 px-4 py-3 bg-gray-50 dark:bg-secondary-900 border border-gray-200 dark:border-secondary-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && e.ctrlKey) {
+                          handleSendReply();
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={handleSendReply}
+                      disabled={!replyText.trim() || sending}
+                      className="px-4 py-3 bg-orange-500 rounded-xl text-white hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed self-end"
+                    >
+                      {sending ? (
+                        <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                      )}
+                    </button>
                   </div>
-                )}
+                  <p className="text-xs text-gray-400 mt-2">Ctrl+Enter aby wysłać</p>
+                </div>
               </div>
             </div>
           </div>

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useRouter, useNavigation } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import type { ThemeColors } from '../../constants/Colors';
 import { useCart } from '../../contexts/CartContext';
@@ -17,7 +18,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useCheckout, type AddressData, type ShippingData } from '../../hooks/useCheckout';
 import AddressForm from '../../components/checkout/AddressForm';
 import ShippingPerPackage from '../../components/checkout/ShippingPerPackage';
-import PaymentMethod from '../../components/checkout/PaymentMethod';
 import OrderSummary from '../../components/checkout/OrderSummary';
 import { api } from '../../services/api';
 
@@ -33,6 +33,21 @@ export default function CheckoutScreen() {
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
   const [loadingAddresses, setLoadingAddresses] = useState(false);
   const [guestEmail, setGuestEmail] = useState('');
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
+
+  // Load selected items from AsyncStorage (saved by cart screen)
+  useEffect(() => {
+    AsyncStorage.getItem('checkoutSelectedItems').then(raw => {
+      if (raw) {
+        try {
+          const ids = JSON.parse(raw);
+          if (Array.isArray(ids) && ids.length > 0) {
+            setSelectedItemIds(ids);
+          }
+        } catch {}
+      }
+    });
+  }, []);
 
   // Load saved addresses for logged-in users
   useEffect(() => {
@@ -56,7 +71,7 @@ export default function CheckoutScreen() {
 
   // Update navigation header title per step
   useEffect(() => {
-    const stepTitles = ['Adres dostawy', 'Metoda dostawy', 'Płatność', 'Podsumowanie'];
+    const stepTitles = ['Adres dostawy', 'Metoda dostawy', 'Podsumowanie'];
     navigation.setOptions({
       title: stepTitles[checkout.state.step] || 'Zamówienie',
     });
@@ -75,7 +90,7 @@ export default function CheckoutScreen() {
   };
 
   // Step indicators
-  const steps = ['Adres', 'Dostawa', 'Płatność', 'Podsumowanie'];
+  const steps = ['Adres', 'Dostawa', 'Podsumowanie'];
 
   const handleAddressSubmit = (data: AddressData) => {
     checkout.setAddress(data);
@@ -95,18 +110,16 @@ export default function CheckoutScreen() {
     });
     // Store package shipping in state for order creation
     setPackageShippingData(data.packageShipping);
+    // Auto-set payment to PayU (only option)
+    checkout.setPayment({
+      method: 'payu',
+      methodName: 'PayU',
+    });
     checkout.nextStep();
   };
 
   const [packageShippingData, setPackageShippingData] = useState<any[]>([]);
 
-  const handlePaymentSubmit = (data: { method: string; methodName: string; extraFee: number }) => {
-    checkout.setPayment({
-      method: data.method,
-      methodName: data.methodName,
-    });
-    checkout.nextStep();
-  };
 
   const handlePlaceOrder = async () => {
     if (!checkout.state.address || !checkout.state.shipping || !checkout.state.payment) {
@@ -130,6 +143,11 @@ export default function CheckoutScreen() {
       acceptTerms: checkout.state.acceptTerms,
       wantInvoice: address.wantInvoice,
     };
+
+    // Include selected items if partial checkout
+    if (selectedItemIds.length > 0) {
+      checkoutData.selectedItemIds = selectedItemIds;
+    }
 
     // Per-package shipping
     if (packageShippingData.length > 0) {
@@ -231,8 +249,9 @@ export default function CheckoutScreen() {
         total: number;
       }>('/checkout', checkoutData);
 
-      // Refresh cart (it's now empty)
+      // Refresh cart (it's now empty or partial)
       refreshCart();
+      AsyncStorage.removeItem('checkoutSelectedItems');
 
       if (response.paymentUrl) {
         // Navigate to payment WebView
@@ -332,14 +351,7 @@ export default function CheckoutScreen() {
         />
       )}
 
-      {checkout.state.step === 2 && (
-        <PaymentMethod
-          onSubmit={handlePaymentSubmit}
-          onBack={checkout.prevStep}
-        />
-      )}
-
-      {checkout.state.step === 3 && checkout.state.address && checkout.state.shipping && checkout.state.payment && (
+      {checkout.state.step === 2 && checkout.state.address && checkout.state.shipping && checkout.state.payment && (
         <OrderSummary
           address={checkout.state.address}
           shipping={checkout.state.shipping}
