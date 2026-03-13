@@ -385,7 +385,7 @@ export class BaselinkerOrdersService {
       blOrder.invoice_city = order.billingAddress.city;
       blOrder.invoice_postcode = order.billingAddress.postalCode;
       blOrder.invoice_country_code = order.billingAddress.country || 'PL';
-      blOrder.want_invoice = true;
+      blOrder.want_invoice = order.wantInvoice || false;
     }
 
     return blOrder;
