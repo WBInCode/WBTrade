@@ -639,7 +639,7 @@ export class BaselinkerOrdersService {
       const shippingCost = Number(order.shipping || 0);
       if (shippingCost > 0) {
         positions.push({
-          name: `TRANSPORT: ${this.mapShippingMethod(order.shippingMethod)}`,
+          name: `Dostawa: ${this.mapShippingMethod(order.shippingMethod)}`,
           quantity: 1,
           quantity_unit: 'szt',
           price_gross: shippingCost,

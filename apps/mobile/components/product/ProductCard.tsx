@@ -74,7 +74,7 @@ function ProductCard({ product, width }: ProductCardProps) {
   const imageUrl = product.images?.[0]?.url;
 
   const badgeMap: Record<string, { text: string; variant: 'danger' | 'primary' | 'success' | 'warning' }> = {
-    'super-price': { text: 'Super cena', variant: 'success' },
+    'super-price': { text: 'Super cena', variant: 'danger' },
     outlet: { text: 'Outlet', variant: 'warning' },
     bestseller: { text: 'Bestseller', variant: 'primary' },
     new: { text: 'Nowość', variant: 'success' },
@@ -82,14 +82,12 @@ function ProductCard({ product, width }: ProductCardProps) {
 
   const badge = product.badge ? badgeMap[product.badge] : null;
 
-  // Check stock: use product.stock if available (from carousel/transformed API),
-  // otherwise fall back to variants array
-  const hasStock =
-    typeof product.stock === 'number'
-      ? product.stock > 0
-      : product.variants
-        ? product.variants.some((v) => (v.stock ?? (v.inventory?.reduce((acc: number, inv: any) => acc + Math.max(0, (inv.quantity || 0) - (inv.reserved || 0)), 0) ?? 0)) > 0)
-        : true;
+  // Check stock - use product-level stock first, then check variants
+  const hasStock = typeof product.stock === 'number'
+    ? product.stock > 0
+    : product.variants && product.variants.length > 0
+      ? product.variants.some((v) => (v.stock || 0) > 0)
+      : true;
 
   // Entrance animation
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -124,21 +122,23 @@ function ProductCard({ product, width }: ProductCardProps) {
             </View>
           )}
 
-          {/* Badges (stacked vertically) */}
-          {(badge || hasDiscount) && (
-            <View style={styles.badgesColumn}>
-              {badge && <Badge text={badge.text} variant={badge.variant} />}
-              {hasDiscount && (
-                <View style={styles.discountBadge}>
-                  <Text style={styles.discountText}>
-                    -{Math.round(((compareAt - price) / compareAt) * 100)}%
-                  </Text>
-                </View>
-              )}
+          {/* Badge */}
+          {badge && (
+            <View style={styles.badgeContainer}>
+              <Badge text={badge.text} variant={badge.variant} />
             </View>
           )}
 
-          {/* Heart / Favourite — top-right corner */}
+          {/* Discount percentage */}
+          {hasDiscount && (
+            <View style={styles.discountBadge}>
+              <Text style={styles.discountText}>
+                -{Math.round(((compareAt - price) / compareAt) * 100)}%
+              </Text>
+            </View>
+          )}
+
+          {/* Heart / Favourite */}
           <TouchableOpacity
             style={styles.heartBtn}
             onPress={(e) => {
@@ -160,8 +160,6 @@ function ProductCard({ product, width }: ProductCardProps) {
               />
             </Animated.View>
           </TouchableOpacity>
-
-
         </View>
 
         {/* Info */}
@@ -170,31 +168,30 @@ function ProductCard({ product, width }: ProductCardProps) {
             {product.name}
           </Text>
 
-          {/* Star rating — only shown when there are reviews */}
-          {(Number(product.reviewCount) > 0 || Number(product.rating) > 0) && (
-            <View style={styles.ratingRow}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <FontAwesome
-                  key={star}
-                  name="star"
-                  size={10}
-                  color={
-                    star <= Math.round(Number(product.rating || 0))
-                      ? colors.warning
-                      : colors.border
-                  }
-                />
-              ))}
-              <Text style={styles.ratingText}>
-                ({product.reviewCount || 0})
-              </Text>
-            </View>
-          )}
+          {/* Star rating */}
+          <View style={styles.ratingRow}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <FontAwesome
+                key={star}
+                name="star"
+                size={10}
+                color={
+                  star <= Math.round(Number(product.rating || 0))
+                    ? '#f59e0b'
+                    : colors.border
+                }
+              />
+            ))}
+            <Text style={styles.ratingText}>
+              ({product.reviewCount || 0})
+            </Text>
+          </View>
 
           <View style={styles.priceRow}>
             <Text
               style={[
                 styles.price,
+                hasDiscount && { color: colors.destructive },
               ]}
             >
               {price.toFixed(2).replace('.', ',')} zł
@@ -206,11 +203,6 @@ function ProductCard({ product, width }: ProductCardProps) {
             )}
           </View>
 
-          {/* Outlet label */}
-          {product.badge === 'outlet' && (
-            <Text style={styles.outletLabel}>OUTLET</Text>
-          )}
-
           {/* Delivery info */}
           <Text style={[styles.deliveryText, !hasStock && styles.deliveryOutOfStock]}>
             {hasStock ? 'Wysyłka w 24-72h' : 'Niedostępny'}
@@ -221,7 +213,7 @@ function ProductCard({ product, width }: ProductCardProps) {
       {/* Add to cart button */}
       <Animated.View style={{ transform: [{ scale: cartBtnScale }] }}>
       <TouchableOpacity
-        style={[styles.addButton, !hasStock && styles.addButtonDisabled, adding && styles.addButtonAdding, addSuccess && { backgroundColor: colors.success }]}
+        style={[styles.addButton, !hasStock && styles.addButtonDisabled, adding && styles.addButtonAdding, addSuccess && { backgroundColor: '#22c55e' }]}
         onPressIn={onCartPressIn}
         onPressOut={onCartPressOut}
         onPress={async () => {
@@ -286,7 +278,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   imageContainer: {
     width: '100%',
     aspectRatio: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.backgroundTertiary,
   },
   image: {
     width: '100%',
@@ -297,15 +289,16 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgesColumn: {
+  badgeContainer: {
     position: 'absolute',
     top: 8,
     left: 8,
-    gap: 4,
-    alignItems: 'flex-start',
   },
   discountBadge: {
-    backgroundColor: colors.success,
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: colors.destructive,
     borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -317,7 +310,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   heartBtn: {
     position: 'absolute',
-    top: 8,
+    bottom: 8,
     right: 8,
     width: 32,
     height: 32,
@@ -371,15 +364,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.textMuted,
     textDecorationLine: 'line-through',
   },
-  outletLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.warning,
-    marginBottom: 2,
-  },
   deliveryText: {
     fontSize: 11,
-    color: colors.success,
+    color: '#16a34a',
     fontWeight: '500',
   },
   deliveryOutOfStock: {

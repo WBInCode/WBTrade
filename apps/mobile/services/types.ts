@@ -64,6 +64,7 @@ export interface Product {
   sku?: string;
   barcode?: string;
   status: 'active' | 'draft' | 'archived';
+  stock?: number;
   images?: ProductImage[];
   variants?: ProductVariant[];
   category?: Category;
