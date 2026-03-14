@@ -86,11 +86,8 @@ export default function DynamicCarousel({ carousel, initialProducts }: DynamicCa
 
   if (products.length === 0) return null;
 
-  // Link to dedicated bestsellers page for "bestsellery" carousel,
-  // generic carousel page for all others
-  const viewAllHref = carousel.slug === 'bestsellery'
-    ? '/products/bestsellers'
-    : `/products/carousel/${carousel.slug}`;
+  // Link to carousel subpage
+  const viewAllHref = `/products/carousel/${carousel.slug}`;
 
   return (
     <ProductCarousel
