@@ -92,19 +92,15 @@ function transformProduct(product: any): any {
   const specifications = parseJsonField(product.specifications);
   const attributes = parseJsonField(product.attributes);
 
-  let stock = 0;
-  const variantsWithStock = product.variants
-    ? product.variants.map((v: any) => {
-        let variantStock = 0;
-        if (v.inventory) {
-          for (const inv of v.inventory) {
-            variantStock += Math.max(0, (inv.quantity || 0) - (inv.reserved || 0));
-          }
-        }
-        stock += variantStock;
-        return { ...v, stock: variantStock };
-      })
-    : [];
+  // Transform variants with stock calculated from inventory (matching products.service.ts)
+  const transformedVariants = product.variants?.map((variant: any) => ({
+    ...variant,
+    attributes: parseJsonField(variant.attributes) || {},
+    stock: variant.inventory?.reduce((sum: number, inv: any) => sum + Math.max(0, (inv.quantity || 0) - (inv.reserved || 0)), 0) ?? 0,
+  }));
+
+  // Calculate total stock as sum of all variant stocks
+  const stock = transformedVariants?.reduce((sum: number, v: any) => sum + (v.stock || 0), 0) ?? 0;
 
   let tags: string[] = [];
   if (Array.isArray(product.tags)) {
@@ -115,12 +111,13 @@ function transformProduct(product: any): any {
 
   return {
     ...product,
-    variants: variantsWithStock,
     specifications,
     attributes,
+    variants: transformedVariants,
     stock,
     tags,
     rating: product.average_rating ?? null,
+    reviewCount: product.review_count || 0,
   };
 }
 
