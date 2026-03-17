@@ -16,6 +16,13 @@ const CARD_GAP = 10;
 // Keep a static fallback for exports (used by ProductGrid)
 const CARD_WIDTH = 170;
 
+// Responsive column count based on screen width
+function getNumColumns(screenWidth: number): number {
+  if (screenWidth >= 900) return 4;
+  if (screenWidth >= 600) return 3;
+  return 2;
+}
+
 interface ProductCardProps {
   product: Product;
   width?: number;
@@ -32,8 +39,10 @@ function ProductCard({ product, width }: ProductCardProps) {
   const [addSuccess, setAddSuccess] = useState(false);
   const isFav = isInWishlist(product.id);
   const { width: screenWidth } = useWindowDimensions();
-  const dynamicCardWidth = (screenWidth - CARD_PADDING * 2 - CARD_GAP) / 2;
+  const numCols = getNumColumns(screenWidth);
+  const dynamicCardWidth = (screenWidth - CARD_PADDING * 2 - CARD_GAP * (numCols - 1)) / numCols;
   const cardWidth = width || dynamicCardWidth;
+  const isSmallCard = cardWidth < 160;
 
   // Heart animation
   const heartScale = useRef(new Animated.Value(1)).current;
@@ -111,7 +120,7 @@ function ProductCard({ product, width }: ProductCardProps) {
         <View style={styles.imageContainer}>
           {imageUrl ? (
             <Image
-              source={{ uri: imageUrl }}
+              source={{ uri: imageUrl, width: Math.round(cardWidth * 2), height: Math.round(cardWidth * 2) }}
               style={styles.image}
               contentFit="cover"
               transition={200}
@@ -163,48 +172,51 @@ function ProductCard({ product, width }: ProductCardProps) {
         </View>
 
         {/* Info */}
-        <View style={styles.info}>
-          <Text numberOfLines={2} style={styles.name}>
+        <View style={[styles.info, isSmallCard && styles.infoCompact]}>
+          <Text numberOfLines={2} style={[styles.name, isSmallCard && styles.nameCompact]}>
             {product.name}
           </Text>
 
-          {/* Star rating */}
-          <View style={styles.ratingRow}>
-            {[1, 2, 3, 4, 5].map((star) => (
-              <FontAwesome
-                key={star}
-                name="star"
-                size={10}
-                color={
-                  star <= Math.round(Number(product.rating || 0))
-                    ? '#f59e0b'
-                    : colors.border
-                }
-              />
-            ))}
-            <Text style={styles.ratingText}>
-              ({product.reviewCount || 0})
-            </Text>
-          </View>
+          {/* Star rating — only shown when there are reviews */}
+          {(Number(product.reviewCount) > 0 || Number(product.rating) > 0) && (
+            <View style={styles.ratingRow}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <FontAwesome
+                  key={star}
+                  name="star"
+                  size={isSmallCard ? 8 : 10}
+                  color={
+                    star <= Math.round(Number(product.rating || 0))
+                      ? colors.warning
+                      : colors.border
+                  }
+                />
+              ))}
+              <Text style={styles.ratingText}>
+                ({product.reviewCount || 0})
+              </Text>
+            </View>
+          )}
 
           <View style={styles.priceRow}>
             <Text
               style={[
                 styles.price,
                 hasDiscount && { color: colors.destructive },
+                isSmallCard && styles.priceCompact,
               ]}
             >
               {price.toFixed(2).replace('.', ',')} zł
             </Text>
             {hasDiscount && (
-              <Text style={styles.oldPrice}>
+              <Text style={[styles.oldPrice, isSmallCard && styles.oldPriceCompact]}>
                 {compareAt.toFixed(2).replace('.', ',')} zł
               </Text>
             )}
           </View>
 
           {/* Delivery info */}
-          <Text style={[styles.deliveryText, !hasStock && styles.deliveryOutOfStock]}>
+          <Text style={[styles.deliveryText, !hasStock && styles.deliveryOutOfStock, isSmallCard && styles.deliveryTextCompact]}>
             {hasStock ? 'Wysyłka w 24-72h' : 'Niedostępny'}
           </Text>
         </View>
@@ -329,6 +341,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.borderLight,
   },
+  infoCompact: {
+    padding: 8,
+  },
   name: {
     fontSize: 13,
     color: colors.text,
@@ -336,6 +351,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     height: 36,
     marginBottom: 2,
     fontWeight: '500',
+  },
+  nameCompact: {
+    fontSize: 11,
+    lineHeight: 15,
+    height: 30,
   },
   ratingRow: {
     flexDirection: 'row',
@@ -359,15 +379,30 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
   },
+  priceCompact: {
+    fontSize: 14,
+  },
   oldPrice: {
     fontSize: 12,
     color: colors.textMuted,
     textDecorationLine: 'line-through',
   },
+  oldPriceCompact: {
+    fontSize: 10,
+  },
+  outletLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.warning,
+    marginBottom: 2,
+  },
   deliveryText: {
     fontSize: 11,
     color: '#16a34a',
     fontWeight: '500',
+  },
+  deliveryTextCompact: {
+    fontSize: 10,
   },
   deliveryOutOfStock: {
     color: colors.destructive,
@@ -393,6 +428,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
 });
 
-export { CARD_WIDTH, CARD_GAP, CARD_PADDING };
+export { CARD_WIDTH, CARD_GAP, CARD_PADDING, getNumColumns };
 
 export default React.memo(ProductCard);

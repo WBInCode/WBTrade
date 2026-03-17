@@ -1,7 +1,7 @@
 import React from 'react';
-import { FlatList, View, Text, ActivityIndicator, RefreshControl } from 'react-native';
+import { FlatList, View, Text, ActivityIndicator, RefreshControl, useWindowDimensions } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import ProductCard, { CARD_WIDTH, CARD_GAP, CARD_PADDING } from './ProductCard';
+import ProductCard, { CARD_WIDTH, CARD_GAP, CARD_PADDING, getNumColumns } from './ProductCard';
 import Spinner from '../ui/Spinner';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import type { Product } from '../../services/types';
@@ -28,6 +28,8 @@ export default function ProductGrid({
   emptyMessage = 'Nie znaleziono produktów',
 }: ProductGridProps) {
   const colors = useThemeColors();
+  const { width: screenWidth } = useWindowDimensions();
+  const numColumns = getNumColumns(screenWidth);
 
   if (loading && products.length === 0) {
     return <Spinner fullScreen />;
@@ -35,8 +37,9 @@ export default function ProductGrid({
 
   return (
     <FlatList
+      key={`grid-${numColumns}`}
       data={products}
-      numColumns={2}
+      numColumns={numColumns}
       keyExtractor={(item, index) => `${item.id}-${index}`}
       renderItem={({ item }) => (
         <View style={{ marginBottom: CARD_GAP }}>
