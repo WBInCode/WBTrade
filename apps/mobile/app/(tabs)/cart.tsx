@@ -35,9 +35,9 @@ const WHOLESALER_CONFIG: Record<string, { name: string; color: string }> = {
   'Ikonka': { name: 'Magazyn Białystok', color: '#a855f7' },
   'BTP': { name: 'Magazyn Chotów', color: '#22c55e' },
   'Leker': { name: 'Magazyn Chynów', color: '#ef4444' },
-  'Gastro': { name: 'Magazyn Chotów', color: '#eab308' },
-  'Horeca': { name: 'Magazyn Chotów', color: '#f97316' },
-  'Forcetop': { name: 'Magazyn Chotów', color: '#14b8a6' },
+  'Gastro': { name: 'Magazyn Centralny', color: '#eab308' },
+  'Horeca': { name: 'Magazyn Centralny', color: '#f97316' },
+  'Forcetop': { name: 'Magazyn Chynów', color: '#14b8a6' },
   'Rzeszów': { name: 'Magazyn Rzeszów', color: '#ec4899' },
   'Outlet': { name: 'Magazyn Rzeszów', color: '#ec4899' },
   'default': { name: 'Magazyn Chynów', color: '#6b7280' },
@@ -190,12 +190,26 @@ export default function CartScreen() {
       grouped[wholesaler].push(item);
     }
 
-    return Object.entries(grouped).map(([wholesaler, packageItems]) => {
-      const config = getWholesalerConfig(wholesaler);
-      const pkgSubtotal = packageItems.reduce(
+    // Calculate subtotal per wholesaler
+    const subtotalByWholesaler: Record<string, number> = {};
+    for (const [wholesaler, packageItems] of Object.entries(grouped)) {
+      subtotalByWholesaler[wholesaler] = packageItems.reduce(
         (sum, item) => sum + (Number(item.variant.price) * item.quantity),
         0
       );
+    }
+
+    // Aggregate subtotals by physical warehouse (multiple wholesalers can map to same warehouse)
+    const warehouseSubtotals: Record<string, number> = {};
+    for (const [wholesaler, subtotal] of Object.entries(subtotalByWholesaler)) {
+      const warehouseName = getWholesalerConfig(wholesaler).name;
+      warehouseSubtotals[warehouseName] = (warehouseSubtotals[warehouseName] || 0) + subtotal;
+    }
+
+    return Object.entries(grouped).map(([wholesaler, packageItems]) => {
+      const config = getWholesalerConfig(wholesaler);
+      const pkgSubtotal = subtotalByWholesaler[wholesaler];
+      const warehouseSubtotal = warehouseSubtotals[config.name] || pkgSubtotal;
 
       return {
         wholesaler,
@@ -203,6 +217,7 @@ export default function CartScreen() {
         color: config.color,
         items: packageItems,
         subtotal: pkgSubtotal,
+        warehouseSubtotal,
         shippingPrice: shippingPrices[wholesaler] || 0,
       };
     });
@@ -438,7 +453,7 @@ export default function CartScreen() {
                   </View>
                 </View>
                 <View>
-                  {pkg.subtotal >= FREE_SHIPPING_THRESHOLD ? (
+                  {pkg.warehouseSubtotal >= FREE_SHIPPING_THRESHOLD ? (
                     <Text style={ds.shippingFree}>GRATIS!</Text>
                   ) : pkg.shippingPrice > 0 ? (
                     <Text style={ds.shippingPrice}>
@@ -451,7 +466,7 @@ export default function CartScreen() {
               </View>
 
               {/* Free shipping progress bar */}
-              {pkg.subtotal < FREE_SHIPPING_THRESHOLD && (
+              {pkg.warehouseSubtotal < FREE_SHIPPING_THRESHOLD && (
                 <View style={ds.progressBarContainer}>
                   <View style={ds.progressBarTrack}>
                     <LinearGradient
@@ -460,13 +475,13 @@ export default function CartScreen() {
                       end={{ x: 1, y: 0 }}
                       style={[
                         ds.progressBarFill,
-                        { width: `${Math.min((pkg.subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100)}%` },
+                        { width: `${Math.min((pkg.warehouseSubtotal / FREE_SHIPPING_THRESHOLD) * 100, 100)}%` },
                       ]}
                     />
                   </View>
                   <Text style={ds.progressBarText}>
                     <Text style={ds.progressBarAmount}>
-                      {(FREE_SHIPPING_THRESHOLD - pkg.subtotal).toFixed(2).replace('.', ',')} zł
+                      {(FREE_SHIPPING_THRESHOLD - pkg.warehouseSubtotal).toFixed(2).replace('.', ',')} zł
                     </Text>
                     {' '}do darmowej dostawy
                   </Text>
