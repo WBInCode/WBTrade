@@ -41,9 +41,9 @@ const WHOLESALER_CONFIG: Record<string, { name: string; color: string; icon: str
   'Ikonka': { name: 'Magazyn Białystok', color: 'bg-purple-500', icon: '📍' },
   'BTP': { name: 'Magazyn Chotów', color: 'bg-green-500', icon: '📍' },
   'Leker': { name: 'Magazyn Chynów', color: 'bg-red-500', icon: '📍' },
-  'Gastro': { name: 'Magazyn Chotów', color: 'bg-yellow-500', icon: '📍' },
-  'Horeca': { name: 'Magazyn Chotów', color: 'bg-orange-500', icon: '📍' },
-  'Forcetop': { name: 'Magazyn Chotów', color: 'bg-teal-500', icon: '📍' },
+  'Gastro': { name: 'Magazyn Centralny', color: 'bg-yellow-500', icon: '📍' },
+  'Horeca': { name: 'Magazyn Centralny', color: 'bg-orange-500', icon: '📍' },
+  'Forcetop': { name: 'Magazyn Chynów', color: 'bg-teal-500', icon: '📍' },
   'Rzeszów': { name: 'Magazyn Rzeszów', color: 'bg-pink-500', icon: '📍' },
   'Outlet': { name: 'Magazyn Rzeszów', color: 'bg-pink-500', icon: '📍' },
   'default': { name: 'Magazyn Chynów', color: 'bg-gray-500', icon: '📍' },
@@ -85,9 +85,25 @@ export default function CartPackageView({
       grouped[wholesaler].push(item);
     }
 
+    // Calculate subtotal per wholesaler
+    const subtotalByWholesaler: Record<string, number> = {};
+    for (const [wholesaler, packageItems] of Object.entries(grouped)) {
+      subtotalByWholesaler[wholesaler] = roundMoney(
+        packageItems.reduce((sum, item) => sum + (item.variant.price * item.quantity), 0)
+      );
+    }
+
+    // Aggregate subtotals by physical warehouse (multiple wholesalers can map to same warehouse)
+    const warehouseSubtotals: Record<string, number> = {};
+    for (const [wholesaler, subtotal] of Object.entries(subtotalByWholesaler)) {
+      const warehouseName = getWholesalerConfig(wholesaler).name;
+      warehouseSubtotals[warehouseName] = (warehouseSubtotals[warehouseName] || 0) + subtotal;
+    }
+
     return Object.entries(grouped).map(([wholesaler, packageItems], index) => {
       const config = getWholesalerConfig(wholesaler);
-      const subtotal = roundMoney(packageItems.reduce((sum, item) => sum + (item.variant.price * item.quantity), 0));
+      const subtotal = subtotalByWholesaler[wholesaler];
+      const warehouseSubtotal = warehouseSubtotals[config.name] || subtotal;
       
       return {
         id: `pkg-${index}`,
@@ -100,6 +116,7 @@ export default function CartPackageView({
           selected: selectedItems.has(item.id),
         })),
         subtotal,
+        warehouseSubtotal,
         shippingPrice: shippingPrices[wholesaler] || 0,
         shippingMethod: 'Kurier',
       };
@@ -385,7 +402,7 @@ export default function CartPackageView({
                 </div>
               </div>
               <div className="text-right">
-                {pkg.subtotal >= 300 ? (
+                {pkg.warehouseSubtotal >= 300 ? (
                   <span className="font-semibold text-green-600 dark:text-green-400 text-sm sm:text-base">GRATIS!</span>
                 ) : pkg.shippingPrice > 0 ? (
                   <span className="font-semibold text-orange-600 dark:text-orange-400 text-sm sm:text-base">{pkg.shippingPrice.toFixed(2).replace('.', ',')} zł</span>
@@ -396,16 +413,16 @@ export default function CartPackageView({
             </div>
             
             {/* Free shipping progress bar per warehouse */}
-            {pkg.subtotal < 300 && (
+            {pkg.warehouseSubtotal < 300 && (
               <div className="space-y-1">
                 <div className="h-1.5 bg-orange-200 dark:bg-orange-800 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-gradient-to-r from-orange-400 to-green-500 rounded-full transition-all duration-300"
-                    style={{ width: `${Math.min((pkg.subtotal / 300) * 100, 100)}%` }}
+                    style={{ width: `${Math.min((pkg.warehouseSubtotal / 300) * 100, 100)}%` }}
                   />
                 </div>
                 <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
-                  <span className="font-medium text-orange-600 dark:text-orange-400">{(300 - pkg.subtotal).toFixed(2).replace('.', ',')} zł</span> do darmowej dostawy
+                  <span className="font-medium text-orange-600 dark:text-orange-400">{(300 - pkg.warehouseSubtotal).toFixed(2).replace('.', ',')} zł</span> do darmowej dostawy
                 </p>
               </div>
             )}
