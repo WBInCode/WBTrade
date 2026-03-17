@@ -1,10 +1,13 @@
-FROM getmeili/meilisearch:v1.6
+FROM getmeili/meilisearch:v1.12
 
 # Expose Meilisearch default port
 EXPOSE 7700
 
-# Set environment variable for data directory
+# Render uses PORT env variable
+ENV MEILI_HTTP_ADDR=0.0.0.0:${PORT:-7700}
 ENV MEILI_DATA_DIR=/data.ms
+ENV MEILI_ENV=production
+ENV MEILI_NO_ANALYTICS=true
 
 # Run Meilisearch
-CMD ["meilisearch"]
+CMD meilisearch --http-addr "0.0.0.0:${PORT:-7700}"
