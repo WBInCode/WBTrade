@@ -289,7 +289,7 @@ export default function SearchBar() {
   const showDropdown = isOpen && (query.trim() || recentSearches.length > 0 || popularSearches.length > 0);
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full z-[100]">
       <form onSubmit={handleSearch} className="relative w-full flex">
         <input
           ref={inputRef}
@@ -404,7 +404,7 @@ export default function SearchBar() {
       {showDropdown && (
         <div 
           ref={dropdownRef}
-          className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-secondary-800 rounded-lg shadow-xl dark:shadow-secondary-950/50 border border-gray-200 dark:border-secondary-700 z-50 overflow-hidden"
+          className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-secondary-800 rounded-lg shadow-xl dark:shadow-secondary-950/50 border border-gray-200 dark:border-secondary-700 z-[100] overflow-hidden"
         >
           {/* Loading state */}
           {isLoading && query.trim() && (
