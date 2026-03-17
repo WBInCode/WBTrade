@@ -273,7 +273,7 @@ function HeaderContent() {
     <header className="bg-white dark:bg-secondary-900 sticky top-0 z-50 shadow-sm dark:shadow-secondary-950/50 relative">
       {/* Top Header - Always visible */}
       <div className="border-b border-gray-100 dark:border-secondary-700">
-        <div className="container-custom overflow-hidden">
+        <div className="container-custom overflow-visible">
           <div className="flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-3">
             {/* Logo */}
             <Link href="/" className="flex items-center shrink-0">
