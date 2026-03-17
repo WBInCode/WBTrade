@@ -29,6 +29,8 @@ export const PAYMENT_LOGOS = {
   paypal: 'paypal.com',
   applepay: 'apple.com',
   googlepay: 'google.com',
+  paypo: 'paypo.pl',
+  twisto: 'twisto.pl',
 } as const;
 
 // Social media domains for logo.dev

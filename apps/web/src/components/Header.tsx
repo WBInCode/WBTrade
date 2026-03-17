@@ -273,8 +273,8 @@ function HeaderContent() {
     <header className="bg-white dark:bg-secondary-900 sticky top-0 z-50 shadow-sm dark:shadow-secondary-950/50 relative">
       {/* Top Header - Always visible */}
       <div className="border-b border-gray-100 dark:border-secondary-700">
-        <div className="container-custom">
-          <div className="flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
+        <div className="container-custom overflow-hidden">
+          <div className="flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-3">
             {/* Logo */}
             <Link href="/" className="flex items-center shrink-0">
               {/* Light mode logo */}
@@ -283,7 +283,7 @@ function HeaderContent() {
                 alt="WB Trade" 
                 width={200} 
                 height={120} 
-                className="h-9 sm:h-10 lg:h-11 w-auto object-contain dark:hidden"
+                className="h-8 sm:h-9 lg:h-11 w-auto object-contain dark:hidden"
                 priority
               />
               {/* Dark mode logo - no priority since it's hidden by default */}
@@ -292,7 +292,7 @@ function HeaderContent() {
                 alt="WB Trade" 
                 width={200} 
                 height={120} 
-                className="h-9 sm:h-10 lg:h-11 w-auto object-contain hidden dark:block"
+                className="h-8 sm:h-9 lg:h-11 w-auto object-contain hidden dark:block"
                 loading="lazy"
               />
             </Link>
@@ -319,13 +319,13 @@ function HeaderContent() {
               </button>
             </div>
 
-            {/* Search */}
-            <div className="hidden md:block flex-1 max-w-xl">
+            {/* Search - inline only on large screens */}
+            <div className="hidden lg:block flex-1 max-w-xl">
               <SearchBar />
             </div>
 
             {/* Right Icons */}
-            <div className="flex items-center gap-1 sm:gap-2 md:gap-6">
+            <div className="flex items-center gap-1 sm:gap-1.5 lg:gap-4 shrink-0">
               {/* Theme Toggle */}
               <ThemeToggle />
 
@@ -341,7 +341,7 @@ function HeaderContent() {
                     </span>
                   )}
                 </div>
-                <span className="text-xs font-medium mt-1 hidden sm:block">Ulubione</span>
+                <span className="text-xs font-medium mt-1 hidden lg:block">Ulubione</span>
               </Link>
 
               {/* Account */}
@@ -375,7 +375,7 @@ function HeaderContent() {
                           <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-secondary-900 animate-pulse" />
                         )}
                       </div>
-                      <span className="text-xs font-medium mt-1 hidden sm:block">{user?.firstName}</span>
+                      <span className="text-xs font-medium mt-1 hidden lg:block">{user?.firstName}</span>
                     </button>
                     {isUserMenuOpen && (
                       <div className="absolute top-full right-0 mt-1 w-56 bg-white dark:bg-secondary-800 border border-gray-200 dark:border-secondary-600 rounded-lg shadow-lg py-2 z-50">
@@ -440,7 +440,7 @@ function HeaderContent() {
                     <svg className="w-6 h-6 sm:w-7 sm:h-7 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
-                    <span className="text-xs font-medium mt-1 hidden sm:block">Zaloguj</span>
+                    <span className="text-xs font-medium mt-1 hidden lg:block">Zaloguj</span>
                   </Link>
                 )}
               </div>
@@ -457,13 +457,13 @@ function HeaderContent() {
                     </span>
                   )}
                 </div>
-                <span className="text-xs font-medium mt-1 hidden sm:block">Koszyk</span>
+                <span className="text-xs font-medium mt-1 hidden lg:block">Koszyk</span>
               </Link>
             </div>
           </div>
 
-          {/* Mobile Search */}
-          <div className="md:hidden pb-3">
+          {/* Mobile & Tablet Search */}
+          <div className="lg:hidden pb-3">
             <SearchBar />
           </div>
         </div>
