@@ -66,7 +66,7 @@ export function ThemeToggle() {
           </span>
         )}
       </div>
-      <span className="text-xs font-medium mt-1 hidden sm:block">
+      <span className="text-xs font-medium mt-1 hidden lg:block">
         {theme === 'system' ? 'Auto' : theme === 'dark' ? 'Ciemny' : 'Jasny'}
       </span>
     </button>

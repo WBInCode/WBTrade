@@ -107,7 +107,7 @@ export default function HeroBanner() {
         {/* Navigation arrows - outside the banner */}
         <button
           onClick={() => { prevSlide(); setIsAutoPlaying(false); setTimeout(() => setIsAutoPlaying(true), 10000); }}
-          className="absolute -left-4 sm:-left-5 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white dark:bg-secondary-800 text-gray-700 dark:text-secondary-200 items-center justify-center hover:bg-gray-50 dark:hover:bg-secondary-700 shadow-md transition-all hover:scale-105 z-10 hidden lg:flex"
+          className="absolute -left-2 sm:-left-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white dark:bg-secondary-800 text-gray-700 dark:text-secondary-200 items-center justify-center hover:bg-gray-50 dark:hover:bg-secondary-700 shadow-md transition-all hover:scale-105 z-10 hidden lg:flex"
           aria-label="Poprzedni slajd"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
@@ -116,7 +116,7 @@ export default function HeroBanner() {
         </button>
         <button
           onClick={() => { nextSlide(); setIsAutoPlaying(false); setTimeout(() => setIsAutoPlaying(true), 10000); }}
-          className="absolute -right-4 sm:-right-5 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white dark:bg-secondary-800 text-gray-700 dark:text-secondary-200 items-center justify-center hover:bg-gray-50 dark:hover:bg-secondary-700 shadow-md transition-all hover:scale-105 z-10 hidden lg:flex"
+          className="absolute -right-2 sm:-right-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white dark:bg-secondary-800 text-gray-700 dark:text-secondary-200 items-center justify-center hover:bg-gray-50 dark:hover:bg-secondary-700 shadow-md transition-all hover:scale-105 z-10 hidden lg:flex"
           aria-label="Następny slajd"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">

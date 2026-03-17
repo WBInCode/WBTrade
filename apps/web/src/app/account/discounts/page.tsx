@@ -207,7 +207,8 @@ export default function DiscountsPage() {
   };
 
   // Hide APP_DOWNLOAD coupons from the list (app not yet published)
-  const visibleCoupons = coupons.filter(c => c.couponSource !== 'APP_DOWNLOAD');
+  // Also hide used coupons - once used in an order, they disappear from "Moje rabaty"
+  const visibleCoupons = coupons.filter(c => c.couponSource !== 'APP_DOWNLOAD' && c.status !== 'used');
 
   const filteredCoupons = visibleCoupons.filter(c => {
     if (filter === 'all') return true;
@@ -215,7 +216,6 @@ export default function DiscountsPage() {
   });
 
   const activeCoupons = visibleCoupons.filter(c => c.status === 'active');
-  const usedCoupons = visibleCoupons.filter(c => c.status === 'used');
   const expiredCoupons = visibleCoupons.filter(c => c.status === 'expired');
 
   const handleClaimAppDownload = async () => {
@@ -364,7 +364,6 @@ export default function DiscountsPage() {
                 {[
                   { key: 'all' as const, label: 'Wszystkie', count: visibleCoupons.length },
                   { key: 'active' as const, label: 'Aktywne', count: activeCoupons.length },
-                  { key: 'used' as const, label: 'Wykorzystane', count: usedCoupons.length },
                   { key: 'expired' as const, label: 'Wygasłe', count: expiredCoupons.length },
                 ].map(tab => (
                   <button

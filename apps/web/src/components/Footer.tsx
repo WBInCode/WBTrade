@@ -1,22 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { getLogoUrl, PAYMENT_LOGOS, SOCIAL_LOGOS } from '@/lib/logo-dev';
 import FooterNewsletter from './FooterNewsletter';
-
-// Helper component for conditional logo rendering
-function LogoImage({ src, alt, width, height, className }: { src: string | null; alt: string; width: number; height: number; className?: string }) {
-  if (!src) {
-    return (
-      <div 
-        className={`bg-secondary-200 dark:bg-secondary-700 rounded flex items-center justify-center text-secondary-500 dark:text-secondary-400 text-xs font-medium ${className || ''}`}
-        style={{ width, height }}
-      >
-        {alt.charAt(0)}
-      </div>
-    );
-  }
-  return <Image src={src} alt={alt} width={width} height={height} className={className} />;
-}
 
 interface FooterProps {
   hideTrustBadges?: boolean;
@@ -107,14 +91,14 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
             </Link>
             {/* Social Media */}
             <div className="flex items-center gap-4 mt-4">
-              <a href="https://www.facebook.com/people/WB-Trade/61578263513701/" target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
-                <LogoImage src={getLogoUrl(SOCIAL_LOGOS.facebook)} alt="Facebook" width={28} height={28} className="object-contain" />
+              <a href="https://www.facebook.com/people/WB-Trade/61578263513701/" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform" aria-label="Facebook">
+                <Image src="/images/social/facebook.png" alt="Facebook" width={36} height={36} className="rounded-lg" />
               </a>
-              <a href="https://www.instagram.com/wbtrade.pl" target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
-                <LogoImage src={getLogoUrl(SOCIAL_LOGOS.instagram)} alt="Instagram" width={28} height={28} className="object-contain" />
+              <a href="https://www.instagram.com/wbtrade.pl" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform" aria-label="Instagram">
+                <Image src="/images/social/instagram.svg" alt="Instagram" width={36} height={36} className="rounded-lg" />
               </a>
-              <a href="https://linktr.ee/wbpartners" target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
-                <LogoImage src={getLogoUrl(SOCIAL_LOGOS.linktree)} alt="Linktree" width={28} height={28} className="object-contain rounded-lg" />
+              <a href="https://linktr.ee/wbpartners" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform" aria-label="Linktree">
+                <Image src="/images/social/linktree.svg" alt="Linktree" width={36} height={36} className="rounded-lg" />
               </a>
             </div>
           </div>
@@ -188,15 +172,16 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
       {/* Payment Methods */}
       <div className="border-t border-secondary-200/50 dark:border-secondary-700/50">
         <div className="container-custom py-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-secondary-500 dark:text-secondary-400">Akceptowane metody płatności</p>
-            <div className="flex items-center gap-3">
-              <div className="w-[48px] h-[32px] flex items-center justify-center">
-                <LogoImage src={getLogoUrl(PAYMENT_LOGOS.visa)} alt="Visa" width={48} height={32} className="object-contain rounded-md w-[48px] h-[32px]" />
-              </div>
-              <div className="w-[48px] h-[32px] flex items-center justify-center bg-white rounded-md p-0.5">
-                <LogoImage src={getLogoUrl(PAYMENT_LOGOS.blik)} alt="BLIK" width={48} height={32} className="object-contain w-[44px] h-[28px]" />
-              </div>
+          <div className="flex flex-col md:flex-row items-center justify-center gap-3">
+            <p className="text-sm text-secondary-400 dark:text-secondary-500">Akceptowane metody płatności:</p>
+            <div className="flex items-center gap-4 text-sm font-medium text-secondary-600 dark:text-secondary-300">
+              <span>Przelew bankowy</span>
+              <span className="text-secondary-300 dark:text-secondary-600">·</span>
+              <span>BLIK</span>
+              <span className="text-secondary-300 dark:text-secondary-600">·</span>
+              <span>Płacę później</span>
+              <span className="text-secondary-300 dark:text-secondary-600">·</span>
+              <span>Raty</span>
             </div>
           </div>
         </div>
