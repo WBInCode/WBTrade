@@ -20,7 +20,8 @@ import { useThemeColors } from '../../hooks/useThemeColors';
 import { getCategoryIcon } from '../../constants/CategoryIcons';
 import { useScrollContext } from '../../contexts/ScrollContext';
 import ProductCarousel from '../../components/product/ProductCarousel';
-import ProductCard from '../../components/product/ProductCard';
+import ProductCard, { getNumColumns } from '../../components/product/ProductCard';
+import { signalDataReady } from '../../components/AnimatedSplash';
 import type { Product, Category } from '../../services/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -288,7 +289,9 @@ const DiscoverRow = React.memo(function DiscoverRow({ products }: { products: Pr
   return (
     <View style={[styles.discoverGrid, { backgroundColor: colors.card }]}>
       {products.map((product) => (
-        <ProductCard key={product.id} product={product} />
+        <View key={product.id} style={{ flex: 1 }}>
+          <ProductCard product={product} />
+        </View>
       ))}
     </View>
   );
@@ -528,9 +531,10 @@ export default function HomeScreen() {
     items.push({ type: 'trust' });
     if (discoverProducts.length > 0) {
       items.push({ type: 'discover-header' });
-      // Split discover products into rows of 2 for virtualization
-      for (let i = 0; i < discoverProducts.length; i += 2) {
-        items.push({ type: 'discover-row', products: discoverProducts.slice(i, i + 2) });
+      // Split discover products into rows based on screen width
+      const cols = getNumColumns(SCREEN_WIDTH);
+      for (let i = 0; i < discoverProducts.length; i += cols) {
+        items.push({ type: 'discover-row', products: discoverProducts.slice(i, i + cols) });
       }
     }
     if (hasMoreDiscover) {

@@ -529,6 +529,7 @@ export class ShippingCalculatorService {
     
     // Calculate total value per warehouse (for free shipping calculation)
     // Includes both gabaryt and standard items
+    // First aggregate by wholesaler tag, then combine by physical warehouse
     const valueByWholesaler = new Map<string, number>();
     
     for (const item of gabarytItems) {
@@ -547,6 +548,15 @@ export class ShippingCalculatorService {
       valueByWholesaler.set(wholesaler, currentValue + totalValue);
     }
     
+    // Aggregate by physical warehouse (multiple wholesaler tags can map to same warehouse)
+    // e.g., "Leker" + "Forcetop" → both "Magazyn Chynów" → combined for free shipping
+    const valueByWarehouse = new Map<string, number>();
+    for (const [wholesaler, value] of valueByWholesaler) {
+      const warehouseName = getWarehouseName(wholesaler);
+      const currentValue = valueByWarehouse.get(warehouseName) || 0;
+      valueByWarehouse.set(warehouseName, currentValue + value);
+    }
+    
     // Create packages for gabaryt items (each one is a separate shipment)
     // GABARYTY NIE MAJĄ DARMOWEJ DOSTAWY - niezależnie od wartości zamówienia
     let packageId = 1;
@@ -554,7 +564,8 @@ export class ShippingCalculatorService {
       const gabarytPrice = getGabarytPrice(gabarytItem.product.tags);
       const productIsInPostOnly = isInPostOnly(gabarytItem.product.tags);
       const wholesaler = getWholesaler(gabarytItem.product.tags) || 'default';
-      const warehouseValue = valueByWholesaler.get(wholesaler) || 0;
+      const warehouseName = getWarehouseName(wholesaler);
+      const warehouseValue = valueByWarehouse.get(warehouseName) || 0;
       // Gabaryty NIGDY nie mają darmowej dostawy - płatna wysyłka zawsze
       const hasFreeShipping = false;
       
@@ -648,8 +659,9 @@ export class ShippingCalculatorService {
       // Paczkomat available only if NOT courier-only (DPD only)
       const isPaczkomatAvailableForPackage = !packageIsCourierOnly;
       
-      // Calculate warehouse value and check for free shipping
-      const warehouseValue = valueByWholesaler.get(wholesaler) || 0;
+      // Calculate warehouse value and check for free shipping (aggregated by physical warehouse)
+      const warehouseName = getWarehouseName(wholesaler);
+      const warehouseValue = valueByWarehouse.get(warehouseName) || 0;
       const hasFreeShipping = warehouseValue >= FREE_SHIPPING_THRESHOLD;
       
       packages.push({

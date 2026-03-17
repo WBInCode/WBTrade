@@ -1060,12 +1060,24 @@ Zespół WB Trade
 
     // Map shipping method to display name
     const shippingMethodNames: Record<string, string> = {
+      'inpost_paczkomat': 'InPost Paczkomat',
+      'inpost_paczkomaty': 'InPost Paczkomat',
+      'inpost_kurier': 'Kurier InPost',
       'inpost_courier': 'Kurier InPost',
-      'inpost_locker': 'Paczkomat InPost',
+      'dpd_kurier': 'Kurier DPD',
+      'dpd_courier': 'Kurier DPD',
       'dpd': 'Kurier DPD',
+      'dhl_kurier': 'Kurier DHL',
       'dhl': 'Kurier DHL',
+      'ups': 'Kurier UPS',
+      'gls': 'Kurier GLS',
+      'poczta_polska': 'Poczta Polska',
+      'pocztex': 'Pocztex',
+      'fedex': 'Kurier FedEx',
+      'wysylka_gabaryt': 'Wysyłka gabaryt',
       'orlen': 'Paczka Orlen',
       'pickup': 'Odbiór osobisty',
+      'odbior_osobisty_outlet': 'Odbiór osobisty (Outlet)',
     };
     const shippingMethodDisplay = shippingMethodNames[shippingMethod] || shippingMethod;
 

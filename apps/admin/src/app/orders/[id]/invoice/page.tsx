@@ -17,6 +17,25 @@ interface OrderItem {
   total: number;
 }
 
+// Shipping method display names
+const shippingMethodNames: Record<string, string> = {
+  'inpost_paczkomat': 'InPost Paczkomat',
+  'inpost_paczkomaty': 'InPost Paczkomat',
+  'inpost_kurier': 'Kurier InPost',
+  'inpost_courier': 'Kurier InPost',
+  'dpd_kurier': 'Kurier DPD',
+  'dpd_courier': 'Kurier DPD',
+  'dpd': 'Kurier DPD',
+  'dhl_kurier': 'Kurier DHL',
+  'dhl': 'Kurier DHL',
+  'ups': 'Kurier UPS',
+  'gls': 'Kurier GLS',
+  'poczta_polska': 'Poczta Polska',
+  'pocztex': 'Pocztex',
+  'fedex': 'Kurier FedEx',
+  'wysylka_gabaryt': 'Wysyłka gabaryt',
+};
+
 interface Order {
   id: string;
   orderNumber: string;
@@ -27,6 +46,7 @@ interface Order {
   discount: number;
   total: number;
   paymentMethod: string;
+  shippingMethod?: string;
   createdAt: string;
   user?: {
     firstName: string;
@@ -280,7 +300,7 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
                   <tr className="border-b border-gray-200">
                     <td className="py-3 px-4">{order.items.length + 1}</td>
                     <td className="py-3 px-4">
-                      <p className="font-medium">Dostawa</p>
+                      <p className="font-medium">Dostawa - {order.shippingMethod ? (shippingMethodNames[order.shippingMethod] || order.shippingMethod) : 'Standardowa'}</p>
                     </td>
                     <td className="py-3 px-4 text-center">1</td>
                     <td className="py-3 px-4 text-right">{formatPrice(order.shipping / 1.23)}</td>
