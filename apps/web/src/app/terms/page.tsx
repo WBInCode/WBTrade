@@ -19,7 +19,7 @@ export default function TermsPage() {
               Regulamin
             </h1>
             <p className="text-secondary-500 dark:text-secondary-400">
-              Ostatnia aktualizacja: 4 lutego 2026 r.
+              Ostatnia aktualizacja: 17 marca 2026 r.
             </p>
           </div>
         </div>
@@ -36,7 +36,7 @@ export default function TermsPage() {
                   § 1. Postanowienia ogólne
                 </h2>
                 <ol className="list-decimal pl-6 text-secondary-600 dark:text-secondary-400 mb-6 space-y-3">
-                  <li>Niniejszy Regulamin określa zasady korzystania ze sklepu internetowego prowadzonego pod adresem: https://www.wb-trade.pl (dalej: „Sklep”).</li>
+                  <li>Niniejszy Regulamin określa zasady korzystania ze Sklepu prowadzonego za pośrednictwem serwisu internetowego dostępnego pod adresem www.wb-trade.pl oraz aplikacji mobilnej WB Trade (dalej łącznie: „Sklep").</li>
                   <li>Właścicielem i operatorem Sklepu jest: WB Partners Sp. z o.o. z siedzibą w Rzeszowie, ul. Juliusza Słowackiego 24/11, 35-060 Rzeszów, NIP: 5170455185, REGON: 540735769, KRS: 0001151642 (dalej: „Sprzedawca”).</li>
                   <li>
                     Kontakt ze Sprzedawcą:
@@ -47,7 +47,7 @@ export default function TermsPage() {
                     </ul>
                   </li>
                   <li>Regulamin jest udostępniony nieodpłatnie w Sklepie w sposób umożliwiający jego pozyskanie, odtwarzanie i utrwalanie.</li>
-                  <li>Do korzystania ze Sklepu niezbędne są: urządzenie z dostępem do Internetu, przeglądarka internetowa, aktywne konto e-mail (w przypadku składania Zamówień).</li>
+                  <li>Do korzystania ze Sklepu niezbędne są: urządzenie z dostępem do Internetu oraz, odpowiednio, aktualna przeglądarka internetowa lub aplikacja mobilna WB Trade w aktualnej wersji, a także aktywne konto e-mail (w przypadku składania Zamówień).</li>
                   <li>Regulamin ma zastosowanie do Umów sprzedaży zawieranych w Sklepie z Klientami na terytorium Rzeczypospolitej Polskiej, o ile Strony nie postanowią inaczej (dotyczy wyłącznie Klientów B2B – po indywidualnym uzgodnieniu).</li>
                   <li>Sklep nie jest marketplace’em umożliwiającym sprzedaż przez zewnętrznych sprzedawców – Sprzedawca oferuje produkty we własnym imieniu.</li>
                   <li>Korzystanie ze Sklepu oznacza akceptację niniejszego Regulaminu.</li>
@@ -229,9 +229,9 @@ export default function TermsPage() {
                   <li>
                     Oświadczenie o odstąpieniu:
                     <ul className="list-[lower-alpha] pl-6 mt-2 space-y-1">
-                      <li>może zostać złożone poprzez formularz na podstronie „Zwroty i reklamacje” lub mailowo na: support@wb-partners.pl,</li>
+                      <li>może zostać złożone za pośrednictwem formularza „Zwroty i reklamacje" dostępnego w Sklepie lub mailowo na: support@wb-partners.pl,</li>
                       <li>powinno zawierać: numer Zamówienia, dane identyfikujące Klienta, wskazanie zwracanych Produktów,</li>
-                      <li>W przypadku, gdy zgłoszenie odstąpienia składa Przedsiębiorca, może ono zostać złożone poprzez formularz na podstronie „Zwroty i reklamacje” lub poprzez kontakt z Biurem Obsługi Klienta. Sprzedawca weryfikuje, czy zakup ma dla danej osoby charakter zawodowy oraz czy Klientowi przysługują uprawnienia do odstąpienia (w szczególności jako Przedsiębiorcy na prawach konsumenta) – każdorazowo na podstawie przepisów prawa.</li>
+                      <li>W przypadku, gdy zgłoszenie odstąpienia składa Przedsiębiorca, może ono zostać złożone za pośrednictwem formularza „Zwroty i reklamacje" dostępnego w Sklepie lub poprzez kontakt z Biurem Obsługi Klienta. Sprzedawca weryfikuje, czy zakup ma dla danej osoby charakter zawodowy oraz czy Klientowi przysługują uprawnienia do odstąpienia (w szczególności jako Przedsiębiorcy na prawach konsumenta) – każdorazowo na podstawie przepisów prawa.</li>
                     </ul>
                   </li>
                   <li>Warunek formalny: zgłoszenie odstąpienia wymaga podania numeru Zamówienia oraz danych identyfikujących Klienta; Zamówienie musi zostać dostarczone do Klienta, a zgłoszenie musi nastąpić w terminie 14 dni.</li>
@@ -272,7 +272,7 @@ export default function TermsPage() {
                   <li>
                     Zgłoszenie reklamacji:
                     <ul className="list-[lower-alpha] pl-6 mt-2 space-y-1">
-                      <li>poprzez formularz na podstronie „Zwroty i reklamacje” albo mailowo: support@wb-partners.pl,</li>
+                      <li>za pośrednictwem formularza „Zwroty i reklamacje" dostępnego w Sklepie albo mailowo: support@wb-partners.pl,</li>
                       <li>reklamacja powinna zawierać: numer Zamówienia, opis problemu, żądanie Klienta (np. naprawa, wymiana, obniżenie ceny, odstąpienie), dane kontaktowe.</li>
                     </ul>
                   </li>
@@ -356,7 +356,7 @@ export default function TermsPage() {
                 </h2>
                 <ol className="list-decimal pl-6 text-secondary-600 dark:text-secondary-400 mb-6 space-y-3">
                   <li>Sprzedawca zastrzega sobie prawo do zmiany Regulaminu z ważnych przyczyn, w szczególności: zmiany przepisów, zmiany sposobów płatności/dostawy, zmian technologicznych lub organizacyjnych.</li>
-                  <li>Zmiany Regulaminu wchodzą w życie z dniem publikacji w Sklepie, z zastrzeżeniem, że do Zamówień złożonych przed zmianą stosuje się Regulamin obowiązujący w dniu złożenia Zamówienia.</li>
+                  <li>Zmiany Regulaminu wchodzą w życie z dniem publikacji w Sklepie (na stronie internetowej i/lub w aplikacji mobilnej), z zastrzeżeniem, że do Zamówień złożonych przed zmianą stosuje się Regulamin obowiązujący w dniu złożenia Zamówienia. O istotnych zmianach Regulaminu Sprzedawca poinformuje Klientów za pośrednictwem komunikatu w aplikacji mobilnej lub wiadomości e-mail.</li>
                   <li>W sprawach nieuregulowanych Regulaminem zastosowanie mają przepisy prawa polskiego.</li>
                   <li>
                     Ewentualne spory:
