@@ -29,11 +29,11 @@ const SECTIONS: Section[] = [
   {
     title: '§ 1. Postanowienia ogólne',
     content:
-      '1. Niniejszy Regulamin określa zasady korzystania ze sklepu internetowego prowadzonego pod adresem: https://www.wb-trade.pl (dalej: „Sklep").\n\n' +
+      '1. Niniejszy Regulamin określa zasady korzystania ze Sklepu prowadzonego za pośrednictwem serwisu internetowego dostępnego pod adresem www.wb-trade.pl oraz aplikacji mobilnej WB Trade (dalej łącznie: „Sklep").\n\n' +
       '2. Właścicielem i operatorem Sklepu jest: WB Partners Sp. z o.o. z siedzibą w Rzeszowie, ul. Juliusza Słowackiego 24/11, 35-060 Rzeszów, NIP: 5170455185, REGON: 540735769, KRS: 0001151642 (dalej: „Sprzedawca").\n\n' +
       '3. Kontakt ze Sprzedawcą:\n   a) e-mail: support@wb-partners.pl,\n   b) telefon: +48 570 034 367,\n   c) godziny obsługi: pon.–pt. 9:00–17:00.\n\n' +
       '4. Regulamin jest udostępniony nieodpłatnie w Sklepie w sposób umożliwiający jego pozyskanie, odtwarzanie i utrwalanie.\n\n' +
-      '5. Do korzystania ze Sklepu niezbędne są: urządzenie z dostępem do Internetu, przeglądarka internetowa, aktywne konto e-mail (w przypadku składania Zamówień).\n\n' +
+      '5. Do korzystania ze Sklepu niezbędne są: urządzenie z dostępem do Internetu oraz, odpowiednio, aktualna przeglądarka internetowa lub aplikacja mobilna WB Trade w aktualnej wersji, a także aktywne konto e-mail (w przypadku składania Zamówień).\n\n' +
       '6. Regulamin ma zastosowanie do Umów sprzedaży zawieranych w Sklepie z Klientami na terytorium Rzeczypospolitej Polskiej.\n\n' +
       '7. Sklep nie jest marketplace\'em umożliwiającym sprzedaż przez zewnętrznych sprzedawców – Sprzedawca oferuje produkty we własnym imieniu.\n\n' +
       '8. Korzystanie ze Sklepu oznacza akceptację niniejszego Regulaminu.',
@@ -109,7 +109,7 @@ const SECTIONS: Section[] = [
     content:
       '1. Konsument oraz Przedsiębiorca na prawach konsumenta mają prawo odstąpić od Umowy bez podania przyczyny w terminie 14 dni od dnia otrzymania Produktu.\n\n' +
       '2. Dla zachowania terminu wystarczy wysłanie oświadczenia o odstąpieniu przed jego upływem.\n\n' +
-      '3. Oświadczenie o odstąpieniu może zostać złożone poprzez formularz na podstronie „Zwroty i reklamacje" lub mailowo na: support@wb-partners.pl.\n\n' +
+      '3. Oświadczenie o odstąpieniu może zostać złożone za pośrednictwem formularza „Zwroty i reklamacje" dostępnego w Sklepie lub mailowo na: support@wb-partners.pl.\n\n' +
       '4. Warunek formalny: zgłoszenie wymaga podania numeru Zamówienia oraz danych identyfikujących Klienta.\n\n' +
       '5. Zwrot Produktu: Klient odsyła Produkt niezwłocznie, nie później niż 14 dni od złożenia oświadczenia. Produkt powinien być zwrócony kompletny, w stanie niepogorszonym.\n\n' +
       '6. Koszty zwrotu Produktu ponosi Klient, chyba że Sprzedawca wyraźnie zgodzi się pokryć te koszty.\n\n' +
@@ -120,7 +120,7 @@ const SECTIONS: Section[] = [
     title: '§ 9. Reklamacje i szkody',
     content:
       '1. Sprzedawca odpowiada wobec Klienta za zgodność Produktu z Umową na zasadach wynikających z przepisów prawa.\n\n' +
-      '2. Zgłoszenie reklamacji:\n   a) poprzez formularz na podstronie „Zwroty i reklamacje" albo mailowo: support@wb-partners.pl,\n   b) reklamacja powinna zawierać: numer Zamówienia, opis problemu, żądanie Klienta, dane kontaktowe.\n\n' +
+      '2. Zgłoszenie reklamacji:\n   a) za pośrednictwem formularza „Zwroty i reklamacje" dostępnego w Sklepie albo mailowo: support@wb-partners.pl,\n   b) reklamacja powinna zawierać: numer Zamówienia, opis problemu, żądanie Klienta, dane kontaktowe.\n\n' +
       '3. Zaleca się dołączenie zdjęć dokumentujących problem.\n\n' +
       '4. Termin rozpatrzenia: Sprzedawca udzieli odpowiedzi w terminie 14 dni od dnia otrzymania reklamacji.\n\n' +
       '5. W przypadku uznania reklamacji Sprzedawca ponosi uzasadnione koszty związane z reklamacją.\n\n' +
@@ -159,7 +159,7 @@ const SECTIONS: Section[] = [
     title: '§ 14. Postanowienia końcowe',
     content:
       '1. Sprzedawca zastrzega sobie prawo do zmiany Regulaminu z ważnych przyczyn.\n\n' +
-      '2. Zmiany Regulaminu wchodzą w życie z dniem publikacji w Sklepie.\n\n' +
+      '2. Zmiany Regulaminu wchodzą w życie z dniem publikacji w Sklepie (na stronie internetowej i/lub w aplikacji mobilnej). O istotnych zmianach Regulaminu Sprzedawca poinformuje Klientów za pośrednictwem komunikatu w aplikacji mobilnej lub wiadomości e-mail.\n\n' +
       '3. W sprawach nieuregulowanych Regulaminem zastosowanie mają przepisy prawa polskiego.\n\n' +
       '4. Ewentualne spory:\n   a) dla Konsumentów – sąd właściwy zgodnie z przepisami prawa,\n   b) dla Klientów niebędących Konsumentami – sąd właściwy dla siedziby Sprzedawcy.\n\n' +
       '5. Konsument może skorzystać z pozasądowych sposobów rozpatrywania reklamacji i dochodzenia roszczeń (ADR). Szczegółowe informacje: polubowne.uokik.gov.pl.',
@@ -210,7 +210,7 @@ export default function TermsScreen() {
             <FontAwesome name="file-text-o" size={28} color={colors.tint} />
           </View>
           <Text style={styles.heroTitle}>Regulamin</Text>
-          <Text style={styles.heroDate}>Ostatnia aktualizacja: 4 lutego 2026 r.</Text>
+          <Text style={styles.heroDate}>Ostatnia aktualizacja: 17 marca 2026 r.</Text>
         </View>
 
         {/* Intro */}
