@@ -1,13 +1,12 @@
 FROM getmeili/meilisearch:v1.12
 
-# Expose Meilisearch default port
+# Expose default port
 EXPOSE 7700
 
-# Render uses PORT env variable
-ENV MEILI_HTTP_ADDR=0.0.0.0:${PORT:-7700}
+# Meilisearch config
 ENV MEILI_DATA_DIR=/data.ms
 ENV MEILI_ENV=production
 ENV MEILI_NO_ANALYTICS=true
 
-# Run Meilisearch
-CMD meilisearch --http-addr "0.0.0.0:${PORT:-7700}"
+# Render sets PORT env at runtime - use shell form so variable is resolved at runtime
+CMD /bin/sh -c "meilisearch --http-addr 0.0.0.0:${PORT:-7700}"
