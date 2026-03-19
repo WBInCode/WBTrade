@@ -26,6 +26,20 @@ const CONTENT_TYPE_MAP: Record<string, string> = {
   'image/svg+xml': '.svg',
 };
 
+// Strict allowlist of known product image source domains (SSRF protection)
+const ALLOWED_DOMAINS = new Set([
+  'www.hurtowniaprzemyslowa.pl',
+  'hurtowniaprzemyslowa.pl',
+  'pub.btp.pro',
+  'pub.btp.link',
+  'thumbs.cdn.baselinker.com',
+  'upload.cdn.baselinker.com',
+  'www.ikonka.eu',
+  'ikonka.eu',
+  'b2b.leker.pl',
+  'storage.wbtrade.pl',
+]);
+
 function urlToHash(url: string): string {
   return crypto.createHash('sha256').update(url).digest('hex');
 }
@@ -85,25 +99,15 @@ router.get('/', async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Invalid URL' });
   }
 
-  // Only allow http/https
-  if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-    return res.status(400).json({ error: 'Only HTTP/HTTPS URLs allowed' });
+  // Only allow https
+  if (parsedUrl.protocol !== 'https:') {
+    return res.status(400).json({ error: 'Only HTTPS URLs allowed' });
   }
 
-  // Block private/internal IPs (SSRF protection)
+  // Strict domain allowlist — only proxy images from known product image sources
   const hostname = parsedUrl.hostname.toLowerCase();
-  if (
-    hostname === 'localhost' ||
-    hostname === '127.0.0.1' ||
-    hostname === '0.0.0.0' ||
-    hostname.startsWith('10.') ||
-    hostname.startsWith('192.168.') ||
-    hostname.startsWith('172.') ||
-    hostname === '[::1]' ||
-    hostname.endsWith('.local') ||
-    hostname.endsWith('.internal')
-  ) {
-    return res.status(403).json({ error: 'Private URLs not allowed' });
+  if (!ALLOWED_DOMAINS.has(hostname)) {
+    return res.status(403).json({ error: 'Domain not allowed' });
   }
 
   const hash = urlToHash(imageUrl);
