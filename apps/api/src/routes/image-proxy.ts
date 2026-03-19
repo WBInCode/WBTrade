@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { prisma } from '../db';
 
 const router = Router();
 
@@ -13,9 +14,6 @@ if (!fs.existsSync(CACHE_DIR)) {
   fs.mkdirSync(CACHE_DIR, { recursive: true });
 }
 
-// Allowed image extensions
-const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif', '.svg']);
-
 // Map content-type to extension
 const CONTENT_TYPE_MAP: Record<string, string> = {
   'image/jpeg': '.jpg',
@@ -26,26 +24,14 @@ const CONTENT_TYPE_MAP: Record<string, string> = {
   'image/svg+xml': '.svg',
 };
 
-// Strict allowlist of known product image source domains (SSRF protection)
-const ALLOWED_DOMAINS = new Set([
-  'www.hurtowniaprzemyslowa.pl',
-  'hurtowniaprzemyslowa.pl',
-  'pub.btp.pro',
-  'pub.btp.link',
-  'thumbs.cdn.baselinker.com',
-  'upload.cdn.baselinker.com',
-  'www.ikonka.eu',
-  'ikonka.eu',
-  'b2b.leker.pl',
-  'storage.wbtrade.pl',
-]);
+// Allowed image extensions for cache lookup
+const CACHE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif', '.svg'];
 
 function urlToHash(url: string): string {
   return crypto.createHash('sha256').update(url).digest('hex');
 }
 
 function getCachePath(hash: string, ext: string): string {
-  // Use 2-level directory structure to avoid too many files in one dir
   const dir = path.join(CACHE_DIR, hash.substring(0, 2), hash.substring(2, 4));
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
@@ -57,7 +43,7 @@ function findCachedFile(hash: string): string | null {
   const subdir = path.join(CACHE_DIR, hash.substring(0, 2), hash.substring(2, 4));
   if (!fs.existsSync(subdir)) return null;
   
-  for (const ext of ALLOWED_EXTENSIONS) {
+  for (const ext of CACHE_EXTENSIONS) {
     const filePath = path.join(subdir, `${hash}${ext}`);
     if (fs.existsSync(filePath)) return filePath;
   }
@@ -77,61 +63,12 @@ function getContentType(ext: string): string {
   return map[ext] || 'application/octet-stream';
 }
 
-/**
- * GET /api/img?url=<encoded_url>
- * Proxies and caches external product images.
- * On first request: fetches from source, saves to disk cache, serves to client.
- * On subsequent requests: serves directly from disk cache.
- * If source is down but image is cached: serves from cache.
- */
-router.get('/', async (req: Request, res: Response) => {
-  const imageUrl = req.query.url as string;
-  
-  if (!imageUrl) {
-    return res.status(400).json({ error: 'Missing url parameter' });
-  }
+async function fetchAndCacheImage(imageUrl: string): Promise<{ buffer: Buffer; contentType: string } | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
 
-  // Validate URL
-  let parsedUrl: URL;
   try {
-    parsedUrl = new URL(imageUrl);
-  } catch {
-    return res.status(400).json({ error: 'Invalid URL' });
-  }
-
-  // Only allow https
-  if (parsedUrl.protocol !== 'https:') {
-    return res.status(400).json({ error: 'Only HTTPS URLs allowed' });
-  }
-
-  // Strict domain allowlist — only proxy images from known product image sources
-  const hostname = parsedUrl.hostname.toLowerCase();
-  if (!ALLOWED_DOMAINS.has(hostname)) {
-    return res.status(403).json({ error: 'Domain not allowed' });
-  }
-
-  // Reconstruct a canonical URL from the parsed object to prevent parsing-quirk exploits
-  const safeUrl = parsedUrl.toString();
-
-  const hash = urlToHash(safeUrl);
-  
-  // Check cache first
-  const cachedPath = findCachedFile(hash);
-  if (cachedPath) {
-    const ext = path.extname(cachedPath);
-    const contentType = getContentType(ext);
-    res.setHeader('Content-Type', contentType);
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-    res.setHeader('X-Cache', 'HIT');
-    return fs.createReadStream(cachedPath).pipe(res);
-  }
-
-  // Fetch from source
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
-
-    const response = await fetch(safeUrl, {
+    const response = await fetch(imageUrl, {
       signal: controller.signal,
       headers: {
         'User-Agent': 'WBTrade-ImageProxy/1.0',
@@ -140,40 +77,28 @@ router.get('/', async (req: Request, res: Response) => {
     });
     clearTimeout(timeout);
 
-    if (!response.ok) {
-      return res.status(response.status).json({ error: `Source returned ${response.status}` });
-    }
+    if (!response.ok) return null;
 
-    const contentType = response.headers.get('content-type') || '';
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
     const ext = CONTENT_TYPE_MAP[contentType.split(';')[0].trim()] || '.jpg';
-    
-    const cachePath = getCachePath(hash, ext);
     const buffer = Buffer.from(await response.arrayBuffer());
 
-    // Sanity check - don't cache empty or suspiciously small files
-    if (buffer.length < 100) {
-      return res.status(502).json({ error: 'Image too small, likely an error page' });
-    }
+    if (buffer.length < 100) return null;
 
-    // Write to cache
+    const hash = urlToHash(imageUrl);
+    const cachePath = getCachePath(hash, ext);
     fs.writeFileSync(cachePath, buffer);
 
-    // Serve
-    res.setHeader('Content-Type', contentType || 'image/jpeg');
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-    res.setHeader('X-Cache', 'MISS');
-    return res.send(buffer);
-  } catch (err: unknown) {
-    if (err instanceof Error && err.name === 'AbortError') {
-      return res.status(504).json({ error: 'Source timeout' });
-    }
-    return res.status(502).json({ error: 'Failed to fetch image' });
+    return { buffer, contentType };
+  } catch {
+    clearTimeout(timeout);
+    return null;
   }
-});
+}
 
 /**
  * GET /api/img/stats
- * Returns cache statistics
+ * Returns cache statistics (must be before /:imageId to not be caught by it)
  */
 router.get('/stats', async (_req: Request, res: Response) => {
   function scanDir(dir: string, stats: { totalFiles: number; totalSize: number }) {
@@ -202,6 +127,54 @@ router.get('/stats', async (_req: Request, res: Response) => {
   } catch {
     res.json({ cachedImages: 0, totalSizeMB: 0 });
   }
+});
+
+/**
+ * GET /api/img/:imageId
+ * Serves a product image by its database ID, with disk caching.
+ * The URL is fetched from the ProductImage table — no user-provided URL reaches fetch().
+ */
+router.get('/:imageId', async (req: Request, res: Response) => {
+  const { imageId } = req.params;
+  
+  if (!imageId) {
+    return res.status(400).json({ error: 'Missing image ID' });
+  }
+
+  // Look up the image URL from the database (trusted source)
+  const image = await prisma.productImage.findUnique({
+    where: { id: imageId },
+    select: { url: true },
+  });
+
+  if (!image || !image.url) {
+    return res.status(404).json({ error: 'Image not found' });
+  }
+
+  // The URL comes from our database, not from user input
+  const trustedUrl = image.url;
+  const hash = urlToHash(trustedUrl);
+
+  // Check disk cache first
+  const cachedPath = findCachedFile(hash);
+  if (cachedPath) {
+    const ext = path.extname(cachedPath);
+    res.setHeader('Content-Type', getContentType(ext));
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.setHeader('X-Cache', 'HIT');
+    return fs.createReadStream(cachedPath).pipe(res);
+  }
+
+  // Fetch from the original source and cache
+  const result = await fetchAndCacheImage(trustedUrl);
+  if (!result) {
+    return res.status(502).json({ error: 'Failed to fetch image from source' });
+  }
+
+  res.setHeader('Content-Type', result.contentType);
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  res.setHeader('X-Cache', 'MISS');
+  return res.send(result.buffer);
 });
 
 export default router;
