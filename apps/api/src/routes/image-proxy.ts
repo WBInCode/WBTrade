@@ -110,7 +110,10 @@ router.get('/', async (req: Request, res: Response) => {
     return res.status(403).json({ error: 'Domain not allowed' });
   }
 
-  const hash = urlToHash(imageUrl);
+  // Reconstruct a canonical URL from the parsed object to prevent parsing-quirk exploits
+  const safeUrl = parsedUrl.toString();
+
+  const hash = urlToHash(safeUrl);
   
   // Check cache first
   const cachedPath = findCachedFile(hash);
@@ -128,7 +131,7 @@ router.get('/', async (req: Request, res: Response) => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
 
-    const response = await fetch(imageUrl, {
+    const response = await fetch(safeUrl, {
       signal: controller.signal,
       headers: {
         'User-Agent': 'WBTrade-ImageProxy/1.0',
