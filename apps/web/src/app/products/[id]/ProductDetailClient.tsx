@@ -17,6 +17,7 @@ import { cleanCategoryName } from '../../../lib/categories';
 import { trackViewItem, toGA4Item } from '../../../lib/analytics';
 import AddToListModal from '../../../components/AddToListModal';
 import { PLACEHOLDER_IMAGE } from '../../../components/productUtils';
+import { getProxiedImageUrl } from '../../../lib/image-proxy';
 
 interface ProductDetailClientProps {
   product: Product;
@@ -413,11 +414,15 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     };
   }, [product?.description]);
 
-  // Use product images or fallback
+  // Use product images or fallback - route through proxy cache by image ID
   const images = product.images?.length ? product.images : [];
+  const proxiedImages = useMemo(() => images.map(img => ({
+    ...img,
+    url: img.id ? getProxiedImageUrl(img.id) : img.url,
+  })), [images]);
   const mainImage = failedImages.has(selectedImage)
     ? PLACEHOLDER_IMAGE
-    : (images?.[selectedImage]?.url || PLACEHOLDER_IMAGE);
+    : (proxiedImages?.[selectedImage]?.url || PLACEHOLDER_IMAGE);
   
   // Use variant price if available and > 0, otherwise fall back to product price
   const variantPrice = selectedVariant?.price ? Number(selectedVariant.price) : 0;
@@ -495,7 +500,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
 
               {/* Thumbnail Gallery */}
               <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-2 -mx-2 px-2 sm:mx-0 sm:px-0">
-                {images?.map((image, index) => (
+                {proxiedImages?.map((image, index) => (
                   <button
                     key={image.id}
                     onClick={() => setSelectedImage(index)}
