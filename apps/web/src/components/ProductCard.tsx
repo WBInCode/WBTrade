@@ -7,6 +7,7 @@ import { Product } from '../lib/api';
 import { useWishlist } from '../contexts/WishlistContext';
 import { useCart } from '../contexts/CartContext';
 import { PLACEHOLDER_IMAGE, WAREHOUSE_LOCATIONS, getWarehouseLocation, calculateDiscountPercent } from './productUtils';
+import { getProxiedImageUrl } from '../lib/image-proxy';
 
 // Cart icon
 const CartIcon = ({ className }: { className?: string }) => (
@@ -32,7 +33,7 @@ export interface ProductCardProps {
 
 export default memo(function ProductCard({ product, showDelivery = false, showWishlist = true, showAddToCart = true }: ProductCardProps) {
   const [imgError, setImgError] = useState(false);
-  const productImage = product.images?.[0]?.url;
+  const productImage = getProxiedImageUrl(product.images?.[0]?.url);
   const showPlaceholder = imgError || !productImage;
   const mainImage = showPlaceholder ? PLACEHOLDER_IMAGE : productImage;
   const hasDiscount = product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price);
