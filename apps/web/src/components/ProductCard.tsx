@@ -33,7 +33,8 @@ export interface ProductCardProps {
 
 export default memo(function ProductCard({ product, showDelivery = false, showWishlist = true, showAddToCart = true }: ProductCardProps) {
   const [imgError, setImgError] = useState(false);
-  const productImage = getProxiedImageUrl(product.images?.[0]?.url);
+  const firstImage = product.images?.[0];
+  const productImage = firstImage?.id ? getProxiedImageUrl(firstImage.id) : firstImage?.url;
   const showPlaceholder = imgError || !productImage;
   const mainImage = showPlaceholder ? PLACEHOLDER_IMAGE : productImage;
   const hasDiscount = product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price);

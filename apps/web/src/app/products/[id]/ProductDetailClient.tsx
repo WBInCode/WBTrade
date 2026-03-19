@@ -414,11 +414,11 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     };
   }, [product?.description]);
 
-  // Use product images or fallback - route through proxy cache
+  // Use product images or fallback - route through proxy cache by image ID
   const images = product.images?.length ? product.images : [];
   const proxiedImages = useMemo(() => images.map(img => ({
     ...img,
-    url: getProxiedImageUrl(img.url),
+    url: img.id ? getProxiedImageUrl(img.id) : img.url,
   })), [images]);
   const mainImage = failedImages.has(selectedImage)
     ? PLACEHOLDER_IMAGE
