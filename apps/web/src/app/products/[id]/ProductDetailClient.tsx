@@ -16,6 +16,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { cleanCategoryName } from '../../../lib/categories';
 import { trackViewItem, toGA4Item } from '../../../lib/analytics';
 import AddToListModal from '../../../components/AddToListModal';
+import { PLACEHOLDER_IMAGE } from '../../../components/productUtils';
 
 interface ProductDetailClientProps {
   product: Product;
@@ -23,6 +24,7 @@ interface ProductDetailClientProps {
 
 export default function ProductDetailClient({ product }: ProductDetailClientProps) {
   const [selectedImage, setSelectedImage] = useState(0);
+  const [failedImages, setFailedImages] = useState<Set<number>>(new Set());
   const [activeTab, setActiveTab] = useState('description');
   const [addingToCart, setAddingToCart] = useState(false);
   const [buyingNow, setBuyingNow] = useState(false);
@@ -413,7 +415,9 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
 
   // Use product images or fallback
   const images = product.images?.length ? product.images : [];
-  const mainImage = images?.[selectedImage]?.url || '/placeholder.jpg';
+  const mainImage = failedImages.has(selectedImage)
+    ? PLACEHOLDER_IMAGE
+    : (images?.[selectedImage]?.url || PLACEHOLDER_IMAGE);
   
   // Use variant price if available and > 0, otherwise fall back to product price
   const variantPrice = selectedVariant?.price ? Number(selectedVariant.price) : 0;
@@ -470,14 +474,23 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
               
               {/* Main Image */}
               <div className="aspect-square overflow-hidden rounded-xl sm:rounded-2xl mb-3 sm:mb-4 max-w-full relative bg-white">
-                <Image
-                  src={mainImage}
-                  alt={product.name}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 66vw"
-                  className="object-contain max-w-full"
-                  priority
-                />
+                {mainImage === PLACEHOLDER_IMAGE ? (
+                  <img
+                    src={PLACEHOLDER_IMAGE}
+                    alt={product.name}
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <Image
+                    src={mainImage}
+                    alt={product.name}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 66vw"
+                    className="object-contain max-w-full"
+                    priority
+                    onError={() => setFailedImages(prev => new Set(prev).add(selectedImage))}
+                  />
+                )}
               </div>
 
               {/* Thumbnail Gallery */}
@@ -490,13 +503,22 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                       selectedImage === index ? 'border-orange-500' : 'border-gray-200 dark:border-secondary-700 hover:border-gray-300 dark:hover:border-secondary-600'
                     }`}
                   >
-                    <Image
-                      src={image.url}
-                      alt={image.alt || `Product image ${index + 1}`}
-                      fill
-                      sizes="80px"
-                      className="object-cover"
-                    />
+                    {failedImages.has(index) ? (
+                      <img
+                        src={PLACEHOLDER_IMAGE}
+                        alt={image.alt || `Product image ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Image
+                        src={image.url}
+                        alt={image.alt || `Product image ${index + 1}`}
+                        fill
+                        sizes="80px"
+                        className="object-cover"
+                        onError={() => setFailedImages(prev => new Set(prev).add(index))}
+                      />
+                    )}
                   </button>
                 ))}
               </div>
