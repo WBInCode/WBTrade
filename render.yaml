@@ -112,14 +112,18 @@ services:
       - key: SMTP_FROM
         value: "WB Trade <noreply@wbtrade.pl>"
 
-  # Meilisearch (opcjonalnie - możesz użyć zewnętrznego serwisu)
+  # Meilisearch
   - type: web
     name: wbtrade-meilisearch
     runtime: docker
     dockerfilePath: ./Dockerfile.meilisearch
-    plan: free # Darmowy plan - serwis usypia się po 15 min nieaktywności
+    plan: starter
     region: frankfurt
     branch: main
+    disk:
+      name: meilisearch-data
+      mountPath: /data.ms
+      sizeGB: 1
     envVars:
       - key: MEILI_MASTER_KEY
         # Ten sam klucz co w API
