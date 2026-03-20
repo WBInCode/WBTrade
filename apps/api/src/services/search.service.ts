@@ -134,6 +134,16 @@ export class SearchService {
       // Mark Meilisearch as available on success
       markMeilisearchAvailable();
 
+      // If Meilisearch returned 0 hits, the index might be empty — fall back to Prisma
+      if (results.hits.length === 0) {
+        const prismaResults = await this.searchWithPrisma(query, minPrice, maxPrice, limit);
+        if (prismaResults.products.length > 0) {
+          return prismaResults;
+        }
+        // Both returned nothing — genuinely no results
+        return { products: [], total: 0, processingTimeMs: results.processingTimeMs };
+      }
+
       // Get product IDs to fetch tags for filtering
       const productIds = results.hits.map(hit => hit.id);
       const productsWithTags = await prisma.product.findMany({
@@ -302,6 +312,25 @@ export class SearchService {
       });
 
       markMeilisearchAvailable();
+
+      // If Meilisearch returned 0 hits, the index might be empty — fall back to Prisma
+      if (results.hits.length === 0) {
+        const prismaResults = await this.suggestWithPrisma(query, categorySlug);
+        if (prismaResults.products.length > 0) {
+          return prismaResults;
+        }
+        // Both returned nothing — genuinely no results, still return categories
+        const categories = await prisma.category.findMany({
+          where: { isActive: true, name: { contains: query, mode: 'insensitive' } },
+          select: { id: true, name: true, slug: true },
+          take: 3,
+        });
+        return {
+          products: [],
+          categories: categories.map((c) => ({ type: 'category' as const, ...c })),
+          processingTimeMs: results.processingTimeMs,
+        };
+      }
 
       // Get product IDs to fetch tags from database
       const productIds = results.hits.map(hit => hit.id);
