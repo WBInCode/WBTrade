@@ -36,6 +36,12 @@ module.exports = {
                 protocol: 'https',
                 hostname: 'hurtowniaprzemyslowa.pl',
             },
+            // Local dev image proxy
+            {
+                protocol: 'http',
+                hostname: 'localhost',
+                port: '5000',
+            },
             // Catch-all for other supplier image domains
             {
                 protocol: 'https',
