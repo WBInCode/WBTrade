@@ -1,5 +1,5 @@
 import { prisma } from '../db';
-import { getProductsIndex, PRODUCTS_INDEX, meiliClient, isMeilisearchAvailable, markMeilisearchUnavailable, markMeilisearchAvailable } from '../lib/meilisearch';
+import { getProductsIndex, PRODUCTS_INDEX, meiliClient, isMeilisearchAvailable, markMeilisearchUnavailable, markMeilisearchAvailable, initializeMeilisearch } from '../lib/meilisearch';
 
 // Tagi dostawy - produkty MUSZĄ mieć przynajmniej jeden z tych tagów żeby być widoczne
 const DELIVERY_TAGS = [
@@ -462,6 +462,9 @@ export class SearchService {
    * Index all products to Meilisearch
    */
   async reindexAllProducts(): Promise<{ indexed: number; taskUid: number }> {
+    // Re-initialize Meilisearch settings in case it was restarted
+    await initializeMeilisearch();
+
     const products = await prisma.product.findMany({
       where: {
         price: { gt: 0 },
