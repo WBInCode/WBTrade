@@ -288,6 +288,8 @@ export class OrdersService {
           guestFirstName: data.guestFirstName,
           guestLastName: data.guestLastName,
           guestPhone: data.guestPhone,
+          // Auto-calculate estimated delivery date based on shipping method
+          estimatedDeliveryDate: this.calculateEstimatedDelivery(data.shippingMethod),
           items: {
             create: itemsWithRealPrices.map((item) => ({
               variantId: item.variantId,
@@ -1461,5 +1463,36 @@ export class OrdersService {
     });
 
     return { deleted: orders.length, orders: orders.map((o) => o.orderNumber) };
+  }
+
+  /**
+   * Calculate estimated delivery date based on shipping method.
+   * Adds business days (skips weekends) from now.
+   */
+  private calculateEstimatedDelivery(shippingMethod: string): Date {
+    const now = new Date();
+    let businessDays: number;
+
+    const method = shippingMethod.toLowerCase();
+    if (method.includes('paczkomat') || method.includes('inpost')) {
+      businessDays = 3; // InPost Paczkomat: 2-3 business days
+    } else if (method.includes('kurier') || method.includes('courier') || method.includes('dpd') || method.includes('dhl') || method.includes('ups')) {
+      businessDays = 2; // Courier: 1-2 business days
+    } else if (method.includes('poczta') || method.includes('pocztex')) {
+      businessDays = 5; // Poczta Polska: 3-5 business days
+    } else {
+      businessDays = 3; // Default
+    }
+
+    let date = new Date(now);
+    let added = 0;
+    while (added < businessDays) {
+      date.setDate(date.getDate() + 1);
+      const day = date.getDay();
+      if (day !== 0 && day !== 6) { // Skip weekends
+        added++;
+      }
+    }
+    return date;
   }
 }

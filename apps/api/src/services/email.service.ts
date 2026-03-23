@@ -1977,6 +1977,82 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
       return { success: false, error: err.message };
     }
   }
+
+  // ────────────────────────────────────────────────────────
+  // Delivery Delay Notification Email
+  // ────────────────────────────────────────────────────────
+
+  async sendDeliveryDelayEmail(data: {
+    to: string;
+    customerName: string;
+    orderNumber: string;
+    messageContent: string;
+  }): Promise<EmailResult> {
+    debugLog(`sendDeliveryDelayEmail called for order ${data.orderNumber}`);
+    try {
+      const resend = getResend();
+      const safeCustomerName = escapeHtml(data.customerName);
+      const safeOrderNumber = escapeHtml(data.orderNumber);
+      // Convert newlines to <br> for HTML, escape HTML in content
+      const htmlContent = escapeHtml(data.messageContent).replace(/\n/g, '<br>');
+
+      const { data: responseData, error } = await resend.emails.send({
+        from: FROM_EMAIL,
+        to: [data.to],
+        subject: `Informacja o zamówieniu #${data.orderNumber} — WBTrade`,
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #0f172a; color: #e2e8f0; padding: 0;">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 24px 32px; text-align: center;">
+              <h1 style="margin: 0; font-size: 22px; color: #ffffff; font-weight: 700;">WBTrade</h1>
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 32px;">
+              <h2 style="color: #f97316; font-size: 20px; margin: 0 0 8px 0;">Informacja o Twoim zamówieniu</h2>
+              <p style="color: #94a3b8; font-size: 14px; margin: 0 0 24px 0;">Zamówienie #${safeOrderNumber}</p>
+
+              <div style="background: #1e293b; border-radius: 12px; padding: 24px; margin-bottom: 24px; border-left: 4px solid #f97316;">
+                <p style="color: #e2e8f0; font-size: 15px; line-height: 1.7; margin: 0;">
+                  ${htmlContent}
+                </p>
+              </div>
+
+              <!-- CTA -->
+              <div style="text-align: center; margin: 32px 0;">
+                <a href="${SITE_URL}/account/orders" style="display: inline-block; background: linear-gradient(135deg, #f97316, #ea580c); color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px;">
+                  Sprawdź status zamówienia
+                </a>
+              </div>
+
+              <p style="color: #94a3b8; font-size: 13px; line-height: 1.6;">
+                W razie pytań odpowiedz na tę wiadomość lub skontaktuj się z nami przez formularz na stronie.
+              </p>
+            </div>
+
+            <!-- Footer -->
+            <div style="padding: 24px 32px; text-align: center; border-top: 1px solid #1e293b;">
+              <p style="color: #64748b; font-size: 12px; margin: 0;">
+                © ${new Date().getFullYear()} WBTrade — wb-trade.pl
+              </p>
+            </div>
+          </div>
+        `,
+        text: `Informacja o zamówieniu #${data.orderNumber}\n\n${data.messageContent}\n\nSprawdź status: ${SITE_URL}/account/orders\n\n© ${new Date().getFullYear()} WBTrade — wb-trade.pl`,
+      });
+
+      if (error) {
+        console.error('[EmailService] Delivery delay email error:', error);
+        return { success: false, error: error.message };
+      }
+
+      console.log(`✅ [EmailService] Delivery delay email sent to ${data.to}, order: ${data.orderNumber}`);
+      return { success: true, messageId: responseData?.id };
+    } catch (err: any) {
+      console.error('[EmailService] Delivery delay email exception:', err.message);
+      return { success: false, error: err.message };
+    }
+  }
 }
 
 export const emailService = new EmailService();

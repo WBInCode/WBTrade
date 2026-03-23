@@ -1703,4 +1703,43 @@ export const supportApi = {
     api.post<SupportMessage>(`/support/tickets/${ticketId}/messages`, { content }),
 };
 
+// ============================================
+// NOTIFICATIONS API (User in-app notifications)
+// ============================================
+
+export interface UserNotification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  link: string | null;
+  isRead: boolean;
+  metadata: any;
+  createdAt: string;
+}
+
+export interface NotificationsResponse {
+  notifications: UserNotification[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export const notificationsApi = {
+  getAll: (params?: { page?: number; limit?: number }) =>
+    api.get<NotificationsResponse>('/notifications', params as any),
+
+  getUnreadCount: () =>
+    api.get<{ count: number }>('/notifications/unread-count'),
+
+  markAsRead: (id: string) =>
+    api.patch<{ success: boolean }>(`/notifications/${id}/read`, {}),
+
+  markAllAsRead: () =>
+    api.patch<{ success: boolean }>('/notifications/read-all', {}),
+};
+
 export default api;

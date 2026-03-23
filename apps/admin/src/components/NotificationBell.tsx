@@ -39,6 +39,7 @@ interface NotificationSummary {
 
 const typeConfig: Record<string, { icon: any; color: string }> = {
   cancellation: { icon: AlertTriangle, color: 'text-red-400 bg-red-400/10' },
+  delivery_delay: { icon: AlertTriangle, color: 'text-orange-400 bg-orange-400/10' },
   new_message: { icon: MessageSquare, color: 'text-cyan-400 bg-cyan-400/10' },
 
   refund: { icon: ArrowLeft, color: 'text-orange-400 bg-orange-400/10' },
@@ -274,13 +275,14 @@ export default function NotificationBell() {
   // Sort: low_stock always at bottom, others by priority then time
   const typePriority: Record<string, number> = {
     cancellation: 0,
-    return_request: 1,
-    new_message: 2,
-    refund: 3,
-    new_order: 4,
-    new_user: 5,
-    review: 6,
-    low_stock: 7,
+    delivery_delay: 1,
+    return_request: 2,
+    new_message: 3,
+    refund: 4,
+    new_order: 5,
+    new_user: 6,
+    review: 7,
+    low_stock: 8,
   };
   const sortedNotifications = [...notifications].sort((a, b) => {
     const aPrio = typePriority[a.type] ?? 3;
