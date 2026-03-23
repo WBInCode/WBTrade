@@ -2494,55 +2494,82 @@ export class BaselinkerService {
     let processed = 0;
 
     try {
+      // Get all inventories to iterate through
+      const allInventories = await provider.getInventories();
+      const inventories = allInventories.filter(inv => 
+        !inv.name.includes('empik') && inv.name !== 'ikonka' && inv.name !== 'Główny'
+      );
+
       // Get products with their Baselinker IDs
       const products = await prisma.product.findMany({
         where: { baselinkerProductId: { not: null } },
         select: { id: true, baselinkerProductId: true },
       });
 
-      const productIds = products
-        .filter((p) => p.baselinkerProductId)
-        .map((p) => {
-          const id = (p.baselinkerProductId as string).replace(/^[a-z]+-/i, '');
-          return parseInt(id, 10);
-        })
-        .filter((id) => !isNaN(id));
+      for (const inv of inventories) {
+        const prefix = this.getInventoryPrefix(inv.name);
+        console.log(`[BaselinkerSync] Syncing images from inventory: ${inv.name} (${inv.inventory_id}), prefix: "${prefix}"`);
 
-      // Fetch product data with images
-      const blProducts = await provider.getInventoryProductsData(inventoryId, productIds);
+        // Filter products belonging to this inventory
+        const invProducts = products.filter((p) => {
+          const blId = p.baselinkerProductId as string;
+          if (prefix) return blId.startsWith(prefix);
+          return !blId.includes('-');
+        });
 
-      for (const blProduct of blProducts) {
-        try {
-          const blIdStr = blProduct.id.toString();
-          const product = products.find((p) => {
-            const stored = p.baselinkerProductId as string;
-            return stored === blIdStr || stored.endsWith('-' + blIdStr);
-          });
-          if (!product) continue;
-
-          if (blProduct.images && Object.keys(blProduct.images).length > 0) {
-            await prisma.productImage.deleteMany({
-              where: { productId: product.id },
-            });
-
-            const imageEntries = Object.entries(blProduct.images).sort(([a], [b]) => parseInt(a) - parseInt(b));
-            let imgOrder = 0;
-            for (const [, rawUrl] of imageEntries) {
-              const url = toBaselinkerCdnUrl(rawUrl as string, product.baselinkerProductId as string, imgOrder);
-              if (!url) continue;
-              await prisma.productImage.create({
-                data: {
-                  productId: product.id,
-                  url,
-                  order: imgOrder++,
-                },
-              });
-            }
-            processed++;
-          }
-        } catch (error) {
-          errors.push(`Images ${blProduct.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        if (invProducts.length === 0) {
+          console.log(`[BaselinkerSync] No products for inventory ${inv.name}, skipping`);
+          continue;
         }
+
+        const productIds = invProducts
+          .map((p) => {
+            const id = (p.baselinkerProductId as string).replace(/^[a-z]+-/i, '');
+            return parseInt(id, 10);
+          })
+          .filter((id) => !isNaN(id));
+
+        console.log(`[BaselinkerSync] Fetching image data for ${productIds.length} products from ${inv.name}`);
+
+        // Fetch product data with images
+        const blProducts = await provider.getInventoryProductsData(inv.inventory_id.toString(), productIds);
+
+        let invProcessed = 0;
+        for (const blProduct of blProducts) {
+          try {
+            const blIdStr = blProduct.id.toString();
+            const product = invProducts.find((p) => {
+              const stored = p.baselinkerProductId as string;
+              return stored === blIdStr || stored.endsWith('-' + blIdStr);
+            });
+            if (!product) continue;
+
+            if (blProduct.images && Object.keys(blProduct.images).length > 0) {
+              await prisma.productImage.deleteMany({
+                where: { productId: product.id },
+              });
+
+              const imageEntries = Object.entries(blProduct.images).sort(([a], [b]) => parseInt(a) - parseInt(b));
+              let imgOrder = 0;
+              for (const [, rawUrl] of imageEntries) {
+                const url = toBaselinkerCdnUrl(rawUrl as string, product.baselinkerProductId as string, imgOrder);
+                if (!url) continue;
+                await prisma.productImage.create({
+                  data: {
+                    productId: product.id,
+                    url,
+                    order: imgOrder++,
+                  },
+                });
+              }
+              invProcessed++;
+              processed++;
+            }
+          } catch (error) {
+            errors.push(`Images ${blProduct.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
+        }
+        console.log(`[BaselinkerSync] Updated images for ${invProcessed} products from ${inv.name}`);
       }
     } catch (error) {
       errors.push(`Failed to sync images: ${error instanceof Error ? error.message : 'Unknown error'}`);
