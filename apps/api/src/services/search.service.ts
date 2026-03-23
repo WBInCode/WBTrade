@@ -196,12 +196,14 @@ export class SearchService {
         // Nie pokazuj produktów z tagami błędów + warunek paczkomatu
         NOT: { tags: { hasSome: HIDDEN_TAGS } },
         AND: [
-          {
+          // Split query into words and match each one (AND logic)
+          // so "butelka pusheen" matches products containing both words anywhere in name/sku
+          ...query.split(/\s+/).filter(w => w.length > 0).map(word => ({
             OR: [
-              { name: { contains: query, mode: 'insensitive' } },
-              { sku: { contains: query, mode: 'insensitive' } },
+              { name: { contains: word, mode: 'insensitive' as const } },
+              { sku: { contains: word, mode: 'insensitive' as const } },
             ],
-          },
+          })),
           minPrice !== undefined ? { price: { gte: minPrice } } : {},
           maxPrice !== undefined ? { price: { lte: maxPrice } } : {},
         ],
@@ -320,8 +322,9 @@ export class SearchService {
           return prismaResults;
         }
         // Both returned nothing — genuinely no results, still return categories
+        const categoryWords = query.split(/\s+/).filter(w => w.length > 0);
         const categories = await prisma.category.findMany({
-          where: { isActive: true, name: { contains: query, mode: 'insensitive' } },
+          where: { isActive: true, AND: categoryWords.map(word => ({ name: { contains: word, mode: 'insensitive' } })) },
           select: { id: true, name: true, slug: true },
           take: 3,
         });
@@ -350,10 +353,11 @@ export class SearchService {
       }).slice(0, 8); // Limit to 8 after filtering
 
       // Also get category suggestions from Prisma
+      const categoryWords = query.split(/\s+/).filter(w => w.length > 0);
       const categories = await prisma.category.findMany({
         where: {
           isActive: true,
-          name: { contains: query, mode: 'insensitive' },
+          AND: categoryWords.map(word => ({ name: { contains: word, mode: 'insensitive' } })),
         },
         select: {
           id: true,
@@ -395,7 +399,11 @@ export class SearchService {
       where: {
         status: 'ACTIVE',
         price: { gt: 0 },
-        name: { contains: query, mode: 'insensitive' },
+        // Split query into words and match each one (AND logic)
+        // so "butelka pusheen" matches products containing both words anywhere in name
+        AND: query.split(/\s+/).filter(w => w.length > 0).map(word => ({
+          name: { contains: word, mode: 'insensitive' as const },
+        })),
         // Musi mieć tag dostawy
         tags: { hasSome: DELIVERY_TAGS },
         // Musi mieć kategorię z Baselinker
@@ -423,10 +431,11 @@ export class SearchService {
       shouldProductBeVisible(p.tags, p.images[0]?.url)
     ).slice(0, 8);
 
+    const catWords = query.split(/\s+/).filter(w => w.length > 0);
     const categories = await prisma.category.findMany({
       where: {
         isActive: true,
-        name: { contains: query, mode: 'insensitive' },
+        AND: catWords.map(word => ({ name: { contains: word, mode: 'insensitive' } })),
       },
       select: {
         id: true,

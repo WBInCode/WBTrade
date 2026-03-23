@@ -4,7 +4,8 @@ module.exports = {
     
     // Image optimization configuration
     images: {
-        domains: ['images.unsplash.com', 'img.logo.dev'],
+        // In development, allow all image sources without restriction
+        ...(process.env.NODE_ENV === 'development' ? { unoptimized: true } : {}),
         // Remote patterns for production CDN
         remotePatterns: [
             {
@@ -41,6 +42,10 @@ module.exports = {
                 protocol: 'http',
                 hostname: 'localhost',
                 port: '5000',
+            },
+            {
+                protocol: 'http',
+                hostname: 'localhost',
             },
             // Catch-all for other supplier image domains
             {
