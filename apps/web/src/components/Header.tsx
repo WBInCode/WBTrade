@@ -23,6 +23,7 @@ function HeaderContent() {
   const { user, isAuthenticated, logout } = useAuth();
   const { itemCount: wishlistCount } = useWishlist();
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
@@ -40,6 +41,7 @@ function HeaderContent() {
   useEffect(() => {
     if (!isAuthenticated) {
       setUnreadMessages(0);
+      setUnreadNotifications(0);
       return;
     }
     async function fetchUnread() {
@@ -49,12 +51,21 @@ function HeaderContent() {
         const token = JSON.parse(stored).accessToken;
         if (!token) return;
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-        const res = await fetch(`${apiUrl}/support/unread-count`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
+        const [msgRes, notifRes] = await Promise.all([
+          fetch(`${apiUrl}/support/unread-count`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`${apiUrl}/notifications/unread-count`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+        if (msgRes.ok) {
+          const data = await msgRes.json();
           setUnreadMessages(data.count || 0);
+        }
+        if (notifRes.ok) {
+          const data = await notifRes.json();
+          setUnreadNotifications(data.count || 0);
         }
       } catch { /* ignore */ }
     }
@@ -343,6 +354,23 @@ function HeaderContent() {
                 </div>
                 <span className="text-xs font-medium mt-1 hidden lg:block">Ulubione</span>
               </Link>
+
+              {/* Notifications Bell */}
+              {isAuthenticated && (
+                <Link href="/account/notifications" className="flex flex-col items-center p-1.5 sm:p-2 text-secondary-700 dark:text-secondary-300 hover:text-primary-500 transition-colors relative group">
+                  <div className="relative">
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                    {unreadNotifications > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs h-4 sm:h-5 w-4 sm:w-5 rounded-full flex items-center justify-center font-bold shadow-sm">
+                        {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xs font-medium mt-1 hidden lg:block">Powiadomienia</span>
+                </Link>
+              )}
 
               {/* Account */}
               <div className="relative" ref={userMenuRef}>

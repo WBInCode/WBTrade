@@ -47,6 +47,7 @@ model User {
   wishlistItems              WishlistItem[]
   shoppingLists              ShoppingList[]
   supportTickets             SupportTicket[]
+  notifications              UserNotification[]
 
   @@map("users")
 }
@@ -361,10 +362,13 @@ model Order {
   pendingCancellationAt    DateTime?            @map("pending_cancellation_at")
   cancellationReason       String?              @map("cancellation_reason")
   deletedAt                DateTime?            @map("deleted_at")
+  estimatedDeliveryDate    DateTime?            @map("estimated_delivery_date")
+  deliveryDelayNotifiedAt  DateTime?            @map("delivery_delay_notified_at")
   items                    OrderItem[]
   statusHistory            OrderStatusHistory[]
   supportTickets           SupportTicket[]
   returnRequests           ReturnRequest[]
+  deliveryDelayAlerts      DeliveryDelayAlert[]
   billingAddress           Address?             @relation("BillingAddress", fields: [billingAddressId], references: [id])
   shippingAddress          Address?             @relation("ShippingAddress", fields: [shippingAddressId], references: [id])
   user                     User?                @relation(fields: [userId], references: [id])
@@ -650,6 +654,39 @@ model Settings {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("settings")
+}
+
+model UserNotification {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  type      String
+  title     String
+  message   String   @db.Text
+  link      String?
+  isRead    Boolean  @default(false) @map("is_read")
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("user_notifications")
+}
+
+model DeliveryDelayAlert {
+  id            String    @id @default(cuid())
+  orderId       String    @map("order_id")
+  status        String    @default("pending")
+  detectedAt    DateTime  @default(now()) @map("detected_at")
+  notifiedAt    DateTime? @map("notified_at")
+  messageType   String?   @map("message_type")
+  customMessage String?   @map("custom_message") @db.Text
+  sentBy        String?   @map("sent_by")
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([orderId])
+  @@map("delivery_delay_alerts")
 }
 
 model Carousel {

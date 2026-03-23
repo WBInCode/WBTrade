@@ -25,6 +25,7 @@ import {
   Settings,
   Percent,
   RotateCcw,
+  Clock,
   // Trophy,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -84,6 +85,11 @@ const navSections: NavSection[] = [
         title: 'Przeceny',
         href: '/sale-campaigns',
         icon: Percent,
+      },
+      {
+        title: 'Opóźnienia dostaw',
+        href: '/delivery-delays',
+        icon: Clock,
       },
     ],
   },
