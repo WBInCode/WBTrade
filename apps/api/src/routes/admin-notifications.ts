@@ -31,6 +31,7 @@ router.get('/', async (req: Request, res: Response) => {
       recentReviews,
       returnComplaintTickets,
       customerMessages,
+      pendingDelayAlerts,
     ] = await Promise.all([
       // Nowe zamówienia w ciągu ostatnich 24h
       prisma.order.findMany({
@@ -164,6 +165,26 @@ router.get('/', async (req: Request, res: Response) => {
         orderBy: { createdAt: 'desc' },
         take: 15,
       }),
+
+      // Pending delivery delay alerts
+      prisma.deliveryDelayAlert.findMany({
+        where: { status: 'pending' },
+        include: {
+          order: {
+            select: {
+              id: true,
+              orderNumber: true,
+              estimatedDeliveryDate: true,
+              total: true,
+              user: { select: { firstName: true, lastName: true } },
+              guestFirstName: true,
+              guestLastName: true,
+            },
+          },
+        },
+        orderBy: { detectedAt: 'desc' },
+        take: 10,
+      }),
     ]);
 
     // Helper: get customer name (supports guest orders)
@@ -185,6 +206,24 @@ router.get('/', async (req: Request, res: Response) => {
     };
 
     const notifications: Notification[] = [];
+
+    // Opóźnienia dostaw — wysoki priorytet
+    pendingDelayAlerts.forEach((alert) => {
+      const order = alert.order;
+      const customerName = getCustomerName(order);
+      const estDate = order.estimatedDeliveryDate
+        ? new Date(order.estimatedDeliveryDate).toLocaleDateString('pl-PL')
+        : 'brak daty';
+      notifications.push({
+        id: `delay-${alert.id}`,
+        type: 'delivery_delay',
+        title: 'Opóźnienie dostawy',
+        message: `Zamówienie #${order.orderNumber} — ${customerName} (planowana dostawa: ${estDate})`,
+        link: `/delivery-delays`,
+        priority: 'high',
+        createdAt: alert.detectedAt,
+      });
+    });
 
     // Prośby o anulowanie — wysoki priorytet
     pendingCancellations.forEach((order) => {
@@ -301,6 +340,7 @@ router.get('/', async (req: Request, res: Response) => {
       low: notifications.filter((n) => n.priority === 'low').length,
       byType: {
         cancellations: pendingCancellations.length,
+        deliveryDelays: pendingDelayAlerts.length,
         lowStock: 0,
         newOrders: newOrders.length,
         refunds: refundedOrders.length,

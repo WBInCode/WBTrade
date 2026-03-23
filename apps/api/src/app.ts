@@ -54,6 +54,8 @@ import supportRoutes from './routes/support';
 import adminSyncRoutes from './routes/admin-sync';
 import adminSupportRoutes from './routes/admin-support';
 import adminReturnsRoutes from './routes/admin-returns';
+import adminDeliveryDelaysRoutes from './routes/admin-delivery-delays';
+import userNotificationsRoutes from './routes/user-notifications';
 import emailInboundRoutes from './routes/email-inbound';
 import imageProxyRoutes from './routes/image-proxy';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
@@ -434,6 +436,8 @@ app.use('/api/support', supportRoutes); // Customer support messaging
 app.use('/api/admin/support', adminSupportRoutes); // Admin support management
 app.use('/api/admin/sync', adminSyncRoutes); // Admin manual XML price sync
 app.use('/api/admin/returns', adminReturnsRoutes); // Admin returns management
+app.use('/api/admin/delivery-delays', adminDeliveryDelaysRoutes); // Admin delivery delay alerts
+app.use('/api/notifications', userNotificationsRoutes); // User in-app notifications
 app.use('/api/img', imageProxyRoutes); // Image proxy with disk cache
 
 // Serve uploaded files statically
@@ -612,6 +616,30 @@ app.listen(PORT, async () => {
     // 5. Loyalty cron worker - birthday/quarterly/monthly coupons
     const { startLoyaltyCronWorker } = await import('./workers/loyalty-cron.worker');
     startLoyaltyCronWorker();
+
+    // 6. Delivery delay detection - every 6 hours (08:00, 14:00, 20:00, 02:00)
+    const { deliveryDelayService } = await import('./services/delivery-delay.service');
+    setInterval(async () => {
+      try {
+        console.log('[DeliveryDelayCron] Running delay detection...');
+        const result = await deliveryDelayService.detectDelays();
+        console.log(`[DeliveryDelayCron] Detection complete: ${result.detected} new alerts, ${result.skipped} skipped`);
+      } catch (e) {
+        console.error('[DeliveryDelayCron] Error:', e);
+      }
+    }, 6 * 60 * 60 * 1000); // every 6 hours
+
+    // Run initial delay detection after 3 minutes
+    setTimeout(async () => {
+      try {
+        console.log('[DeliveryDelayCron] Running initial delay detection...');
+        const result = await deliveryDelayService.detectDelays();
+        console.log(`[DeliveryDelayCron] Initial detection: ${result.detected} new alerts, ${result.skipped} skipped`);
+      } catch (e) {
+        console.error('[DeliveryDelayCron] Initial detection error:', e);
+      }
+    }, 3 * 60 * 1000);
+    console.log('✅ Delivery delay detection scheduled (every 6 hours)');
 
     console.log('✅ All cron jobs started');
   } catch (error) {

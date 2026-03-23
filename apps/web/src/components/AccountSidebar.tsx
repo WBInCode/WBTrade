@@ -11,6 +11,7 @@ export const sidebarItems = [
   { id: 'wishlist', label: 'Ulubione', icon: 'heart', href: '/wishlist' },
   { id: 'reviews', label: 'Moje opinie', icon: 'star', href: '/account/reviews' },
   { id: 'messages', label: 'Wiadomości', icon: 'mail', href: '/account/messages' },
+  { id: 'notifications', label: 'Powiadomienia', icon: 'bell', href: '/account/notifications' },
   { id: 'shopping-lists', label: 'Listy zakupowe', icon: 'list', href: '/account/shopping-lists' },
   { id: 'addresses', label: 'Dane do zamówień', icon: 'location', href: '/account/addresses' },
   { id: 'returns', label: 'Reklamacje i zwroty', icon: 'refresh', href: '/returns' },
@@ -55,6 +56,12 @@ export function SidebarIcon({ icon }: { icon: string }) {
       return (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+      );
+    case 'bell':
+      return (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
       );
     case 'list':
@@ -108,6 +115,7 @@ interface AccountSidebarProps {
 
 export default function AccountSidebar({ activeId, userName, userEmail }: AccountSidebarProps) {
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   useEffect(() => {
     async function fetchUnread() {
@@ -117,12 +125,18 @@ export default function AccountSidebar({ activeId, userName, userEmail }: Accoun
         const token = JSON.parse(stored).accessToken;
         if (!token) return;
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-        const res = await fetch(`${apiUrl}/support/unread-count`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
+        const headers = { Authorization: `Bearer ${token}` };
+        const [msgRes, notifRes] = await Promise.all([
+          fetch(`${apiUrl}/support/unread-count`, { headers }),
+          fetch(`${apiUrl}/notifications/unread-count`, { headers }),
+        ]);
+        if (msgRes.ok) {
+          const data = await msgRes.json();
           setUnreadMessages(data.count || 0);
+        }
+        if (notifRes.ok) {
+          const data = await notifRes.json();
+          setUnreadNotifications(data.count || 0);
         }
       } catch { /* ignore */ }
     }
@@ -157,6 +171,12 @@ export default function AccountSidebar({ activeId, userName, userEmail }: Accoun
                 <span className="relative flex h-3 w-3">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
+                </span>
+              )}
+              {item.id === 'notifications' && unreadNotifications > 0 && (
+                <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500" />
                 </span>
               )}
             </Link>
