@@ -844,9 +844,17 @@ export class ProductsService {
     }
 
     if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { sku: { contains: search, mode: 'insensitive' } },
+      // Split search into words and match each one (AND logic)
+      // so "butelka pusheen" matches products containing both words anywhere in name/sku
+      const searchWords = search.split(/\s+/).filter(w => w.length > 0);
+      where.AND = [
+        ...(where.AND as Prisma.ProductWhereInput[] || []),
+        ...searchWords.map(word => ({
+          OR: [
+            { name: { contains: word, mode: 'insensitive' as const } },
+            { sku: { contains: word, mode: 'insensitive' as const } },
+          ],
+        })),
       ];
     }
 
