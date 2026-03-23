@@ -110,17 +110,17 @@ const CDN_PROXY_DOMAINS = ['b2b.leker.pl'];
 
 /**
  * Convert blocked wholesaler image URLs to BaseLinker CDN proxy URLs.
- * CDN only serves the main (first) image per product at max 400x300.
+ * Uses imageIndex to fetch each photo separately (0 = main, 1, 2, …).
  * Returns the original URL if the domain is not blocked.
  */
-function toBaselinkerCdnUrl(imageUrl: string, baselinkerProductId: string): string | null {
+function toBaselinkerCdnUrl(imageUrl: string, baselinkerProductId: string, imageIndex: number = 0): string | null {
   try {
     const url = new URL(imageUrl);
     if (CDN_PROXY_DOMAINS.some(domain => url.hostname === domain || url.hostname.endsWith('.' + domain))) {
       // Extract numeric BL product ID (format: "leker-212543771" or just "212543771")
       const numericId = baselinkerProductId.replace(/^[a-z]+-/i, '');
       if (!numericId || isNaN(Number(numericId))) return null;
-      return `https://thumbs.cdn.baselinker.com/thumb/db/${BASELINKER_ACCOUNT_ID}/${numericId}/0/400/300.png?s=g&is_new_inventory=1`;
+      return `https://thumbs.cdn.baselinker.com/thumb/db/${BASELINKER_ACCOUNT_ID}/${numericId}/${imageIndex}/400/300.png?s=g&is_new_inventory=1`;
     }
     return imageUrl;
   } catch {
@@ -1610,14 +1610,10 @@ export class BaselinkerService {
 
                 // Create new images (convert blocked domains to CDN proxy)
                 const imageEntries = Object.entries(blProduct.images).sort(([a], [b]) => parseInt(a) - parseInt(b));
-                const seenCdnUrls = new Set<string>();
                 let imgOrder = 0;
                 for (const [, rawUrl] of imageEntries) {
-                  const url = toBaselinkerCdnUrl(rawUrl as string, baselinkerProductId);
+                  const url = toBaselinkerCdnUrl(rawUrl as string, baselinkerProductId, imgOrder);
                   if (!url) continue;
-                  // CDN returns same image for all indices — deduplicate
-                  if (seenCdnUrls.has(url)) continue;
-                  seenCdnUrls.add(url);
                   await tx.productImage.create({
                     data: {
                       productId: product.id,
@@ -2522,14 +2518,10 @@ export class BaselinkerService {
             });
 
             const imageEntries = Object.entries(blProduct.images).sort(([a], [b]) => parseInt(a) - parseInt(b));
-            const seenCdnUrls = new Set<string>();
             let imgOrder = 0;
             for (const [, rawUrl] of imageEntries) {
-              const url = toBaselinkerCdnUrl(rawUrl as string, product.baselinkerProductId as string);
+              const url = toBaselinkerCdnUrl(rawUrl as string, product.baselinkerProductId as string, imgOrder);
               if (!url) continue;
-              // CDN returns same image for all indices — deduplicate
-              if (seenCdnUrls.has(url)) continue;
-              seenCdnUrls.add(url);
               await prisma.productImage.create({
                 data: {
                   productId: product.id,
