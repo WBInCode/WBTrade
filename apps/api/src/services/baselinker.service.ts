@@ -2502,14 +2502,22 @@ export class BaselinkerService {
 
       const productIds = products
         .filter((p) => p.baselinkerProductId)
-        .map((p) => parseInt(p.baselinkerProductId as string, 10));
+        .map((p) => {
+          const id = (p.baselinkerProductId as string).replace(/^[a-z]+-/i, '');
+          return parseInt(id, 10);
+        })
+        .filter((id) => !isNaN(id));
 
       // Fetch product data with images
       const blProducts = await provider.getInventoryProductsData(inventoryId, productIds);
 
       for (const blProduct of blProducts) {
         try {
-          const product = products.find((p) => p.baselinkerProductId === blProduct.id.toString());
+          const blIdStr = blProduct.id.toString();
+          const product = products.find((p) => {
+            const stored = p.baselinkerProductId as string;
+            return stored === blIdStr || stored.endsWith('-' + blIdStr);
+          });
           if (!product) continue;
 
           if (blProduct.images && Object.keys(blProduct.images).length > 0) {
