@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Fragment } from 'react';
 import { createPortal } from 'react-dom';
 import { getAuthToken } from '@/lib/api';
 import { useToast } from '@/lib/toast';
@@ -19,6 +19,7 @@ import {
   Bell,
   Eye,
   XCircle,
+  CheckSquare,
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
@@ -29,6 +30,8 @@ interface DelayAlert {
   detectedAt: string;
   notifiedAt: string | null;
   messageType: string | null;
+  customMessage: string | null;
+  sentBy: string | null;
   order: {
     id: string;
     orderNumber: string;
@@ -58,6 +61,8 @@ type FilterStatus = 'all' | 'pending' | 'notified' | 'dismissed';
 export default function DeliveryDelaysPage() {
   const [alerts, setAlerts] = useState<DelayAlert[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
+  const [notifiedCount, setNotifiedCount] = useState(0);
+  const [expandedAlertId, setExpandedAlertId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('pending');
   const [page, setPage] = useState(1);
@@ -76,6 +81,13 @@ export default function DeliveryDelaysPage() {
   const [sending, setSending] = useState(false);
   const [previewExpanded, setPreviewExpanded] = useState<string | null>(null);
 
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkPreset, setBulkPreset] = useState<string>('preset_1');
+  const [bulkCustomMessage, setBulkCustomMessage] = useState('');
+  const [bulkSending, setBulkSending] = useState(false);
+
   const { success, error: toastError } = useToast();
 
   const fetchAlerts = useCallback(async () => {
@@ -90,6 +102,7 @@ export default function DeliveryDelaysPage() {
         const data = await res.json();
         setAlerts(data.alerts);
         setPendingCount(data.pendingCount);
+        setNotifiedCount(data.notifiedCount || 0);
         setTotalPages(data.pagination.totalPages);
       }
     } catch (e) {
@@ -129,7 +142,7 @@ export default function DeliveryDelaysPage() {
     }
   };
 
-  useEffect(() => { fetchAlerts(); }, [fetchAlerts]);
+  useEffect(() => { fetchAlerts(); setSelectedIds(new Set()); }, [fetchAlerts]);
   useEffect(() => { fetchSettings(); fetchPresets(); }, []);
 
   const saveSettings = async () => {
@@ -212,6 +225,76 @@ export default function DeliveryDelaysPage() {
       }
     } catch (e) {
       toastError('Błąd', 'Nie udało się uruchomić wykrywania');
+    }
+  };
+
+  // Bulk actions
+  const pendingAlerts = alerts.filter((a) => a.status === 'pending');
+  const allPendingSelected = pendingAlerts.length > 0 && pendingAlerts.every((a) => selectedIds.has(a.id));
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (allPendingSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(pendingAlerts.map((a) => a.id)));
+    }
+  };
+
+  const handleBulkNotify = async () => {
+    if (selectedIds.size === 0) return;
+    try {
+      setBulkSending(true);
+      const token = getAuthToken();
+      const body: Record<string, unknown> = { alertIds: [...selectedIds], messageType: bulkPreset };
+      if (bulkPreset === 'custom') body.customMessage = bulkCustomMessage;
+      const res = await fetch(`${API_URL}/admin/delivery-delays/bulk-notify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        success('Masowe powiadomienie', `Wysłano: ${data.successCount}${data.failCount ? `, błędy: ${data.failCount}` : ''}`);
+        setShowBulkModal(false);
+        setSelectedIds(new Set());
+        fetchAlerts();
+      } else {
+        toastError('Błąd', data.message || 'Nie udało się wysłać');
+      }
+    } catch (e) {
+      toastError('Błąd', 'Nie udało się wysłać powiadomień');
+    } finally {
+      setBulkSending(false);
+    }
+  };
+
+  const handleBulkDismiss = async () => {
+    if (selectedIds.size === 0) return;
+    try {
+      const token = getAuthToken();
+      const res = await fetch(`${API_URL}/admin/delivery-delays/bulk-dismiss`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ alertIds: [...selectedIds] }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        success('Masowe odrzucenie', `Odrzucono: ${data.successCount}`);
+        setSelectedIds(new Set());
+        fetchAlerts();
+      } else {
+        toastError('Błąd', data.message || 'Nie udało się odrzucić');
+      }
+    } catch (e) {
+      toastError('Błąd', 'Nie udało się odrzucić alertów');
     }
   };
 
@@ -313,29 +396,84 @@ export default function DeliveryDelaysPage() {
         </div>
       )}
 
-      {/* Filters */}
-      <div className="flex items-center gap-2 mb-4">
-        {(['pending', 'notified', 'dismissed', 'all'] as FilterStatus[]).map((s) => (
-          <button
-            key={s}
-            onClick={() => { setFilterStatus(s); setPage(1); }}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              filterStatus === s
-                ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'
-            }`}
-          >
-            {s === 'pending' && 'Oczekujące'}
-            {s === 'notified' && 'Powiadomione'}
-            {s === 'dismissed' && 'Odrzucone'}
-            {s === 'all' && 'Wszystkie'}
-            {s === 'pending' && pendingCount > 0 && (
-              <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-xs bg-orange-500 text-white">
-                {pendingCount}
-              </span>
-            )}
-          </button>
-        ))}
+      {/* Kafelki statusów */}
+      <div className="grid grid-cols-4 gap-3 mb-6">
+        {/* Oczekujące */}
+        <button
+          onClick={() => { setFilterStatus('pending'); setPage(1); }}
+          className={`relative p-4 rounded-xl border transition-all text-left ${
+            filterStatus === 'pending'
+              ? 'bg-orange-500/10 border-orange-500/40 ring-1 ring-orange-500/20'
+              : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
+          }`}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center">
+              <AlertTriangle className="w-4 h-4 text-orange-400" />
+            </div>
+            <span className="text-2xl font-bold text-white">{pendingCount}</span>
+          </div>
+          <div className="text-xs font-medium text-slate-400">Oczekujące</div>
+          <div className="text-[10px] text-slate-500 mt-0.5">Wymagają reakcji</div>
+          {pendingCount > 0 && (
+            <span className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse" />
+          )}
+        </button>
+
+        {/* Wysłane — powiadomione */}
+        <button
+          onClick={() => { setFilterStatus('notified'); setPage(1); }}
+          className={`relative p-4 rounded-xl border transition-all text-left ${
+            filterStatus === 'notified'
+              ? 'bg-green-500/10 border-green-500/40 ring-1 ring-green-500/20'
+              : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
+          }`}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+              <Send className="w-4 h-4 text-green-400" />
+            </div>
+            <span className="text-2xl font-bold text-white">{notifiedCount}</span>
+          </div>
+          <div className="text-xs font-medium text-slate-400">Wysłane alerty</div>
+          <div className="text-[10px] text-slate-500 mt-0.5">Klient powiadomiony</div>
+        </button>
+
+        {/* Odrzucone */}
+        <button
+          onClick={() => { setFilterStatus('dismissed'); setPage(1); }}
+          className={`p-4 rounded-xl border transition-all text-left ${
+            filterStatus === 'dismissed'
+              ? 'bg-slate-500/10 border-slate-500/40 ring-1 ring-slate-500/20'
+              : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
+          }`}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-slate-600/30 flex items-center justify-center">
+              <XCircle className="w-4 h-4 text-slate-400" />
+            </div>
+          </div>
+          <div className="text-xs font-medium text-slate-400">Odrzucone</div>
+          <div className="text-[10px] text-slate-500 mt-0.5">Zamknięte bez powiadomienia</div>
+        </button>
+
+        {/* Wszystkie */}
+        <button
+          onClick={() => { setFilterStatus('all'); setPage(1); }}
+          className={`p-4 rounded-xl border transition-all text-left ${
+            filterStatus === 'all'
+              ? 'bg-blue-500/10 border-blue-500/40 ring-1 ring-blue-500/20'
+              : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
+          }`}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+              <Package className="w-4 h-4 text-blue-400" />
+            </div>
+          </div>
+          <div className="text-xs font-medium text-slate-400">Wszystkie</div>
+          <div className="text-[10px] text-slate-500 mt-0.5">Pełna historia</div>
+        </button>
       </div>
 
       {/* Table */}
@@ -352,6 +490,17 @@ export default function DeliveryDelaysPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-700 text-left">
+                {filterStatus === 'pending' && (
+                  <th className="px-3 py-3 w-10">
+                    <input
+                      type="checkbox"
+                      checked={allPendingSelected}
+                      onChange={toggleSelectAll}
+                      className="accent-orange-500 w-4 h-4 rounded cursor-pointer"
+                      title="Zaznacz wszystkie"
+                    />
+                  </th>
+                )}
                 <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase">Zamówienie</th>
                 <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase">Klient</th>
                 <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase">Planowana dostawa</th>
@@ -363,7 +512,20 @@ export default function DeliveryDelaysPage() {
             </thead>
             <tbody>
               {alerts.map((alert) => (
-                <tr key={alert.id} className="border-b border-slate-700/50 hover:bg-slate-700/20 transition-colors">
+                <Fragment key={alert.id}>
+                <tr className={`border-b border-slate-700/50 hover:bg-slate-700/20 transition-colors ${selectedIds.has(alert.id) ? 'bg-orange-500/5' : ''}`}>
+                  {filterStatus === 'pending' && (
+                    <td className="px-3 py-3 w-10">
+                      {alert.status === 'pending' && (
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(alert.id)}
+                          onChange={() => toggleSelect(alert.id)}
+                          className="accent-orange-500 w-4 h-4 rounded cursor-pointer"
+                        />
+                      )}
+                    </td>
+                  )}
                   <td className="px-4 py-3">
                     <div className="text-sm font-medium text-white">#{alert.order.orderNumber}</div>
                     <div className="text-xs text-slate-400">{Number(alert.order.total).toFixed(2)} zł</div>
@@ -403,10 +565,58 @@ export default function DeliveryDelaysPage() {
                       </div>
                     )}
                     {alert.status === 'notified' && (
-                      <span className="text-xs text-green-400">Wysłano {formatDate(alert.notifiedAt)}</span>
+                      <button
+                        onClick={() => setExpandedAlertId(expandedAlertId === alert.id ? null : alert.id)}
+                        className="flex items-center gap-1 text-xs text-green-400 hover:text-green-300 transition-colors"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        Szczegóły
+                        {expandedAlertId === alert.id ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                      </button>
                     )}
                   </td>
                 </tr>
+                {/* Expanded detail row for notified alerts */}
+                {alert.status === 'notified' && expandedAlertId === alert.id && (
+                  <tr className="bg-green-500/5 border-b border-slate-700/50">
+                    <td colSpan={filterStatus === 'pending' ? 8 : 7} className="px-4 py-4">
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div className="space-y-1">
+                          <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+                            <Send className="w-3 h-3" /> Wysłano
+                          </div>
+                          <div className="text-white">
+                            {alert.notifiedAt ? new Date(alert.notifiedAt).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+                            <Mail className="w-3 h-3" /> Odbiorca
+                          </div>
+                          <div className="text-white">{getCustomerName(alert.order)}</div>
+                          <div className="text-xs text-slate-400">{getCustomerEmail(alert.order)}</div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Typ wiadomości</div>
+                          <div className="text-white">
+                            {alert.messageType === 'preset_1' && 'Krótkie przeprosiny'}
+                            {alert.messageType === 'preset_2' && 'Przeprosiny z rabatem'}
+                            {alert.messageType === 'preset_3' && 'Informacyjny'}
+                            {alert.messageType === 'custom' && 'Własna wiadomość'}
+                            {!alert.messageType && '—'}
+                          </div>
+                        </div>
+                      </div>
+                      {alert.messageType === 'custom' && alert.customMessage && (
+                        <div className="mt-3 p-3 bg-slate-800/60 rounded-lg border border-slate-700">
+                          <div className="text-xs font-semibold text-slate-400 mb-1">Treść wiadomości:</div>
+                          <div className="text-sm text-slate-300 whitespace-pre-wrap">{alert.customMessage}</div>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               ))}
             </tbody>
           </table>
@@ -434,6 +644,170 @@ export default function DeliveryDelaysPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Floating bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 bg-slate-800 border border-slate-600 rounded-2xl shadow-2xl shadow-black/40">
+          <div className="flex items-center gap-2 text-sm text-white">
+            <CheckSquare className="w-4 h-4 text-orange-400" />
+            <span className="font-medium">{selectedIds.size}</span>
+            <span className="text-slate-400">zaznaczonych</span>
+          </div>
+          <div className="w-px h-6 bg-slate-600" />
+          <button
+            onClick={() => { setShowBulkModal(true); setBulkPreset('preset_1'); setBulkCustomMessage(''); }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium transition-colors"
+          >
+            <Send className="w-4 h-4" />
+            Wyślij alerty ({selectedIds.size})
+          </button>
+          <button
+            onClick={handleBulkDismiss}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm transition-colors"
+          >
+            <XCircle className="w-4 h-4" />
+            Odrzuć
+          </button>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="p-2 rounded-lg hover:bg-slate-700 text-slate-400 transition-colors"
+            title="Odznacz wszystkie"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Bulk Notify Modal */}
+      {showBulkModal && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60" onClick={() => setShowBulkModal(false)}>
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-2xl relative flex flex-col max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setShowBulkModal(false)}
+              className="absolute top-3 right-3 z-10 p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="overflow-y-auto flex-1 min-h-0">
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                    <Send className="w-4 h-4 text-orange-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-white">Masowe powiadomienie</h2>
+                    <p className="text-sm text-slate-400">{selectedIds.size} zamówień</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Selected orders list */}
+              <div className="px-6 py-4 border-b border-slate-700/50 bg-slate-800/50">
+                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Zamówienia do powiadomienia</h3>
+                <div className="flex flex-wrap gap-2">
+                  {alerts.filter((a) => selectedIds.has(a.id)).map((a) => (
+                    <div key={a.id} className="flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 rounded-lg text-xs">
+                      <span className="text-white font-medium">#{a.order.orderNumber}</span>
+                      <span className="text-slate-400">{getCustomerName(a.order)}</span>
+                      <span className="text-slate-500">{getCustomerEmail(a.order)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Preset selection */}
+              <div className="px-6 py-4">
+                <h3 className="text-sm font-semibold text-white mb-3">Wybierz treść wiadomości dla wszystkich</h3>
+                <div className="space-y-2">
+                  {presets.map((preset) => (
+                    <label
+                      key={preset.id}
+                      className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                        bulkPreset === preset.id
+                          ? 'border-orange-500/50 bg-orange-500/5'
+                          : 'border-slate-700 hover:border-slate-600'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="bulkPreset"
+                        value={preset.id}
+                        checked={bulkPreset === preset.id}
+                        onChange={() => setBulkPreset(preset.id)}
+                        className="mt-0.5 accent-orange-500"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-white">{preset.name}</div>
+                        <div className="text-xs text-slate-400 mt-0.5">{preset.description}</div>
+                      </div>
+                    </label>
+                  ))}
+
+                  <label
+                    className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                      bulkPreset === 'custom'
+                        ? 'border-orange-500/50 bg-orange-500/5'
+                        : 'border-slate-700 hover:border-slate-600'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="bulkPreset"
+                      value="custom"
+                      checked={bulkPreset === 'custom'}
+                      onChange={() => setBulkPreset('custom')}
+                      className="mt-0.5 accent-orange-500"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-white">Własna wiadomość</div>
+                      <div className="text-xs text-slate-400 mt-0.5">Wpisz własną treść dla wszystkich</div>
+                    </div>
+                  </label>
+
+                  {bulkPreset === 'custom' && (
+                    <textarea
+                      value={bulkCustomMessage}
+                      onChange={(e) => setBulkCustomMessage(e.target.value)}
+                      placeholder="Wpisz treść wiadomości...&#10;Użyj {orderNumber} aby wstawić numer zamówienia"
+                      rows={6}
+                      className="w-full mt-2 px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:ring-orange-500 focus:border-orange-500 resize-none"
+                    />
+                  )}
+                </div>
+
+                <div className="flex items-start gap-2 mt-4 p-3 bg-orange-500/10 rounded-lg border border-orange-500/20">
+                  <AlertTriangle className="w-4 h-4 text-orange-400 mt-0.5 shrink-0" />
+                  <div className="text-xs text-slate-300">
+                    Wybrana wiadomość zostanie wysłana do <strong className="text-white">{selectedIds.size}</strong> klientów.
+                    Każdy klient otrzyma email z numerem swojego zamówienia.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-700 shrink-0">
+              <button
+                onClick={() => setShowBulkModal(false)}
+                className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-slate-300 transition-colors"
+              >
+                Anuluj
+              </button>
+              <button
+                onClick={handleBulkNotify}
+                disabled={bulkSending || (bulkPreset === 'custom' && !bulkCustomMessage.trim())}
+                className="flex items-center gap-2 px-5 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                <Send className="w-4 h-4" />
+                {bulkSending ? 'Wysyłam...' : `Wyślij do ${selectedIds.size} klientów`}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       {/* Notify Modal — rendered via portal to bypass .page-enter transform */}

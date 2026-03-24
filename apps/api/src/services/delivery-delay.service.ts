@@ -7,6 +7,7 @@
 
 import { prisma } from '../db';
 import { emailService } from './email.service';
+import * as supportService from './support.service';
 
 // ────────────────────────────────────────────────────────
 // Message Presets
@@ -110,8 +111,10 @@ export class DeliveryDelayService {
     // Find orders where:
     // - estimatedDeliveryDate is within the threshold window (now to now + threshold)
     // - OR estimatedDeliveryDate is already past
-    // - status is NOT shipped/delivered/cancelled/refunded
-    // - no delay alert has been sent yet
+    // - status is NOT delivered/cancelled/refunded
+    // - SHIPPED is INCLUDED — the package may have been sent late (e.g. waited for supplier)
+    //   and admin may still want to notify the customer about the delay
+    // - no delay notification has been sent yet
     const atRiskOrders = await prisma.order.findMany({
       where: {
         estimatedDeliveryDate: {
@@ -120,7 +123,7 @@ export class DeliveryDelayService {
         },
         deliveryDelayNotifiedAt: null,
         status: {
-          notIn: ['SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED'],
+          notIn: ['DELIVERED', 'CANCELLED', 'REFUNDED'],
         },
         deletedAt: null,
       },
@@ -224,6 +227,30 @@ export class DeliveryDelayService {
       ? `${order.user.firstName} ${order.user.lastName}`
       : `${order.guestFirstName || ''} ${order.guestLastName || ''}`.trim() || 'Kliencie';
 
+    // Create support ticket so customer can reply to the delay notification email
+    let replyToAddress: string | undefined;
+    try {
+      const ticket = await supportService.createTicket({
+        userId: order.userId || undefined,
+        guestEmail: !order.userId ? recipientEmail : undefined,
+        guestName: !order.userId ? customerName : undefined,
+        orderId: order.id,
+        subject: `Opóźnienie dostawy — zamówienie #${order.orderNumber}`,
+        category: 'DELIVERY',
+        priority: 'NORMAL',
+        message: messageContent,
+        senderRole: 'ADMIN',
+      });
+      // Reply-To: skrzynka support@wb-partners.pl (monitorowana)
+      // Ticket # jest w temacie maila — admin może łatwo powiązać odpowiedź z ticketem
+      const supportEmail = process.env.SUPPORT_EMAIL || 'support@wb-partners.pl';
+      replyToAddress = supportEmail;
+      console.log(`[DeliveryDelayService] Support ticket ${ticket.ticketNumber} created for order ${order.orderNumber}, reply-to: ${supportEmail}`);
+    } catch (ticketErr) {
+      console.error('[DeliveryDelayService] Failed to create support ticket:', ticketErr);
+      // Continue without reply-to — email still goes out
+    }
+
     // Send email
     try {
       const emailResult = await emailService.sendDeliveryDelayEmail({
@@ -231,6 +258,7 @@ export class DeliveryDelayService {
         customerName,
         orderNumber: order.orderNumber,
         messageContent,
+        replyTo: replyToAddress,
       });
 
       if (!emailResult.success) {
