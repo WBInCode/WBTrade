@@ -1303,6 +1303,8 @@ export default function ProductDetailScreen() {
             else if (tags.some(t => t.toLowerCase() === 'ikonka')) warehouseCity = 'Białymstoku';
             else if (tags.some(t => t.toLowerCase() === 'leker')) warehouseCity = 'Chynowie';
             else if (tags.some(t => t.toLowerCase() === 'btp')) warehouseCity = 'Chotowie';
+            else if (tags.some(t => t.toLowerCase() === 'zakupowo')) warehouseCity = 'Wyszkowie';
+            else if (tags.some(t => t.toLowerCase() === 'supertoys')) warehouseCity = 'Toruniu';
 
             const productPrice = price;
             const freeThreshold = 300;
@@ -2267,6 +2269,32 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   distBarBg: {
     flex: 1,
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     height: 8,
     backgroundColor: colors.border,
     borderRadius: 4,

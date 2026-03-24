@@ -175,6 +175,8 @@ export default function SearchScreen() {
     'btp': 'Magazyn Chotów',
     'leker': 'Magazyn Chynów',
     'outlet': 'Magazyn Rzeszów',
+    'zakupowo': 'Magazyn Wyszków',
+    'supertoys': 'Magazyn Toruń',
   };
 
   // Handle warehouse param from cart

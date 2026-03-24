@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "WBTrade",
-    "slug": "wbtrade",
+    "slug": "apeczka",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -30,7 +30,9 @@
       "package": "pl.wbtrade.app",
       "permissions": [
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
     "web": {
@@ -49,16 +51,19 @@
           "locationWhenInUsePermission": "Potrzebujemy dostępu do lokalizacji, aby znaleźć najbliższe Paczkomaty InPost."
         }
       ],
-      ["expo-splash-screen", {
-        "image": "./assets/images/splash-icon.png",
-        "resizeMode": "contain",
-        "backgroundColor": "#ffffff",
-        "dark": {
+      [
+        "expo-splash-screen",
+        {
           "image": "./assets/images/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#1C1C1E"
+          "backgroundColor": "#ffffff",
+          "dark": {
+            "image": "./assets/images/splash-icon.png",
+            "resizeMode": "contain",
+            "backgroundColor": "#1C1C1E"
+          }
         }
-      }]
+      ]
     ],
     "experiments": {
       "typedRoutes": true
@@ -66,10 +71,10 @@
     "extra": {
       "apiUrl": "https://wbtradeprod.onrender.com/api",
       "eas": {
-        "projectId": "9e3ccf4b-aed1-4f12-a6be-3083af7b0121"
+        "projectId": "8a24b172-11b7-49e0-82c8-a903b12386ba"
       },
       "router": {}
     },
-    "owner": "wbincode"
+    "owner": "technical-support1"
   }
 }
