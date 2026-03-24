@@ -2,18 +2,16 @@ import { Resend } from 'resend';
 import { discountService } from './discount.service';
 
 // ============================================
-// EMAIL SERVICE
+// EMAIL SERVICE — Redesigned Templates
 // Wysyłka emaili przez Resend
 // ============================================
 
-// Structured logger (console only, no file)
 function debugLog(msg: string) {
   if (process.env.NODE_ENV !== 'production') {
     console.log(`[EmailService] ${msg}`);
   }
 }
 
-// HTML entity escaping to prevent XSS in email templates
 function escapeHtml(str: string): string {
   return String(str)
     .replace(/&/g, '&amp;')
@@ -27,7 +25,6 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 const FROM_EMAIL = process.env.FROM_EMAIL || 'WBTrade <noreply@wb-trade.pl>';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://wb-trade.pl';
 
-// Initialize Resend (lazily to avoid errors if API key missing)
 let resendInstance: Resend | null = null;
 
 function getResend(): Resend {
@@ -47,10 +44,135 @@ export interface EmailResult {
   error?: string;
 }
 
+// ============================================
+// SHARED DESIGN SYSTEM
+// ============================================
+
+const LOGO_URL = process.env.EMAIL_LOGO_URL || `${SITE_URL}/images/WB-TRADE-logo.png`;
+const YEAR = new Date().getFullYear();
+
+function emailWrapper(opts: {
+  title: string;
+  headerColor?: string;
+  content: string;
+  footerNote?: string;
+  footerExtra?: string;
+}): string {
+  const headerBg = opts.headerColor || 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)';
+  const isGradient = headerBg.includes('gradient');
+  const bgStyle = isGradient ? `background: ${headerBg};` : `background-color: ${headerBg};`;
+  const footerNote = opts.footerNote || 'Ten email został wysłany automatycznie.';
+
+  return `<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${opts.title}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f1f5f9;">
+    <tr>
+      <td align="center" style="padding: 32px 16px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08);">
+          <!-- HEADER -->
+          <tr>
+            <td style="${bgStyle} padding: 36px 40px 28px; text-align: center;">
+              <p style="margin: 0 0 16px; font-size: 28px; font-weight: 800; color: #ffffff; letter-spacing: 1px;">WB-Trade</p>
+              <h1 style="margin: 0; font-size: 22px; font-weight: 700; color: #ffffff; line-height: 1.3;">${opts.title}</h1>
+            </td>
+          </tr>
+          <!-- CONTENT -->
+          <tr>
+            <td style="background-color: #ffffff; padding: 36px 40px;">
+              ${opts.content}
+            </td>
+          </tr>
+          <!-- FOOTER -->
+          <tr>
+            <td style="background-color: #0f172a; padding: 28px 40px; text-align: center;">
+              <p style="margin: 0 0 6px; color: #cbd5e1; font-size: 13px; font-weight: 600;">Zespół WB Trade</p>
+              <p style="margin: 0 0 12px; color: #64748b; font-size: 12px;">${footerNote}</p>
+              ${opts.footerExtra || ''}
+              <p style="margin: 0; color: #475569; font-size: 11px;">© ${YEAR} WBTrade - <a href="${SITE_URL}" style="color: #f97316; text-decoration: none;">wb-trade.pl</a></p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+function ctaButton(text: string, href: string, color?: string): string {
+  const bg = color || 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)';
+  const isGrad = bg.includes('gradient');
+  const bgProp = isGrad ? `background: ${bg};` : `background-color: ${bg};`;
+  return `<div style="text-align: center; margin: 32px 0 8px;">
+  <a href="${href}" style="display: inline-block; ${bgProp} color: #ffffff; text-decoration: none; padding: 14px 36px; border-radius: 8px; font-size: 15px; font-weight: 700; letter-spacing: 0.3px; mso-padding-alt: 14px 36px;">${text}</a>
+</div>`;
+}
+
+function infoBox(content: string, borderColor?: string): string {
+  const border = borderColor || '#f97316';
+  return `<div style="background-color: #f8fafc; border-left: 4px solid ${border}; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 20px 0;">
+  ${content}
+</div>`;
+}
+
+function alertBox(content: string, type: 'warning' | 'error' | 'success' | 'info' = 'warning'): string {
+  const colors: Record<string, { bg: string; border: string; text: string }> = {
+    warning: { bg: '#fffbeb', border: '#f59e0b', text: '#92400e' },
+    error: { bg: '#fef2f2', border: '#ef4444', text: '#991b1b' },
+    success: { bg: '#f0fdf4', border: '#22c55e', text: '#166534' },
+    info: { bg: '#eff6ff', border: '#3b82f6', text: '#1e40af' },
+  };
+  const c = colors[type];
+  return `<div style="background-color: ${c.bg}; border-left: 4px solid ${c.border}; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 20px 0;">
+  <p style="margin: 0; color: ${c.text}; font-size: 14px; line-height: 1.5;">${content}</p>
+</div>`;
+}
+
+function greeting(name: string): string {
+  return `<p style="font-size: 17px; color: #1e293b; margin: 0 0 16px; line-height: 1.5;">Cześć <strong>${escapeHtml(name)}</strong>,</p>`;
+}
+
+function paragraph(text: string): string {
+  return `<p style="font-size: 15px; color: #334155; line-height: 1.7; margin: 0 0 16px;">${text}</p>`;
+}
+
+function divider(): string {
+  return `<hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />`;
+}
+
+function helpSection(email?: string): string {
+  const addr = email || 'support@wb-partners.pl';
+  return `${divider()}
+<p style="font-size: 13px; color: #64748b; margin: 0; line-height: 1.5;">Masz pytania? Napisz do nas: <a href="mailto:${addr}" style="color: #f97316; text-decoration: none; font-weight: 600;">${addr}</a></p>`;
+}
+
+function badge(label: string, color: string): string {
+  return `<span style="display: inline-block; background-color: ${color}; color: #ffffff; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; letter-spacing: 0.3px;">${escapeHtml(label)}</span>`;
+}
+
+function metaRow(label: string, value: string): string {
+  return `<tr>
+  <td style="padding: 6px 0; color: #64748b; font-size: 13px; vertical-align: top; width: 130px;">${label}</td>
+  <td style="padding: 6px 0; color: #1e293b; font-size: 14px; font-weight: 600;">${value}</td>
+</tr>`;
+}
+
+// ============================================
+// EMAIL SERVICE CLASS
+// ============================================
+
 export class EmailService {
-  /**
-   * Send welcome discount email after registration
-   */
+
+  // ──────────────────────────────────────
+  // 1. WELCOME DISCOUNT
+  // ──────────────────────────────────────
+
   async sendWelcomeDiscountEmail(
     to: string,
     firstName: string,
@@ -61,12 +183,7 @@ export class EmailService {
     debugLog('sendWelcomeDiscountEmail called');
     try {
       const resend = getResend();
-      
-      const formattedExpiry = expiresAt.toLocaleDateString('pl-PL', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      });
+      const formattedExpiry = expiresAt.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' });
 
       const { data, error } = await resend.emails.send({
         from: FROM_EMAIL,
@@ -80,7 +197,6 @@ export class EmailService {
         console.error('[EmailService] Resend error:', error.message);
         return { success: false, error: error.message };
       }
-
       debugLog(`Welcome discount email sent, messageId: ${data?.id}`);
       return { success: true, messageId: data?.id };
     } catch (err: any) {
@@ -89,135 +205,40 @@ export class EmailService {
     }
   }
 
-  /**
-   * HTML template for welcome discount email
-   */
-  private getWelcomeDiscountHtml(
-    firstName: string,
-    couponCode: string,
-    discountPercent: number,
-    expiresAt: string
-  ): string {
-    return `
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-    <!-- Header with Logo -->
-    <tr>
-      <td style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 40px 30px; text-align: center;">
-        <img src="${SITE_URL}/images/WB-TRADE-logo.png" alt="WBTrade" style="height: 50px; width: auto; margin-bottom: 15px;" />
-        <h1 style="color: white; margin: 0; font-size: 28px;">🎉 Witaj w WB Trade!</h1>
-      </td>
-    </tr>
-    
-    <!-- Content -->
-    <tr>
-      <td style="padding: 40px 30px;">
-        <p style="font-size: 18px; color: #333; margin-bottom: 20px;">
-          Cześć <strong>${escapeHtml(firstName)}</strong>!
-        </p>
-        
-        <p style="font-size: 16px; color: #555; line-height: 1.6;">
-          Dziękujemy za założenie konta w naszym sklepie! 
-          Na początek mamy dla Ciebie specjalną niespodziankę:
-        </p>
-        
+  private getWelcomeDiscountHtml(firstName: string, couponCode: string, discountPercent: number, expiresAt: string): string {
+    return emailWrapper({
+      title: '🎉 Witaj w WB Trade!',
+      content: `
+        ${greeting(firstName)}
+        ${paragraph('Dziękujemy za założenie konta w naszym sklepie! Na początek mamy dla Ciebie specjalną niespodziankę:')}
+
         <!-- Discount Box -->
-        <div style="background: linear-gradient(135deg, #fef3e2 0%, #fff7ed 100%); border: 2px dashed #f97316; border-radius: 12px; padding: 30px; text-align: center; margin: 30px 0;">
-          <p style="font-size: 14px; color: #666; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 1px;">
-            Twój kod rabatowy
-          </p>
-          <div style="background-color: #ffffff; border: 2px solid #ea580c; border-radius: 8px; padding: 15px 25px; display: inline-block; margin: 10px 0; cursor: pointer;" title="Kliknij aby zaznaczyć">
-            <p style="font-size: 32px; font-weight: bold; color: #ea580c; margin: 0; letter-spacing: 4px; font-family: 'Courier New', monospace; user-select: all; -webkit-user-select: all; -moz-user-select: all; -ms-user-select: all;">${escapeHtml(couponCode)}</p>
+        <div style="background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border: 2px dashed #f97316; border-radius: 16px; padding: 28px 20px; text-align: center; margin: 24px 0;">
+          <p style="font-size: 12px; color: #9a3412; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 2px; font-weight: 700;">Twój kod rabatowy</p>
+          <div style="background-color: #ffffff; border: 2px solid #ea580c; border-radius: 10px; padding: 14px 28px; display: inline-block; margin: 8px 0;">
+            <p style="font-size: 30px; font-weight: 800; color: #ea580c; margin: 0; letter-spacing: 5px; font-family: 'Courier New', monospace;">${escapeHtml(couponCode)}</p>
           </div>
-          <p style="font-size: 12px; color: #888; margin: 5px 0 15px 0;">👆 Kliknij kod aby zaznaczyć, potem Ctrl+C</p>
-          <p style="font-size: 24px; font-weight: bold; color: #333; margin: 0;">
-            -${discountPercent}% na pierwsze zakupy
-          </p>
+          <p style="font-size: 22px; font-weight: 800; color: #1e293b; margin: 12px 0 0;">-${discountPercent}% na pierwsze zakupy</p>
         </div>
-        
-        <!-- Expiry Warning -->
-        <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px 20px; margin: 20px 0;">
-          <p style="margin: 0; color: #dc2626; font-size: 14px;">
-            ⏰ <strong>Uwaga!</strong> Kod jest ważny tylko do <strong>${expiresAt}</strong> (14 dni).
-          </p>
-        </div>
-        
-        <p style="font-size: 16px; color: #555; line-height: 1.6; margin-top: 20px;">
-          Aby skorzystać ze zniżki, dodaj produkty do koszyka i wpisz kod przy finalizacji zamówienia.
-        </p>
-        
-        <!-- CTA Button -->
-        <div style="text-align: center; margin: 35px 0;">
-          <a href="${SITE_URL}/products" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-size: 16px; font-weight: bold; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);">
-            Rozpocznij zakupy →
-          </a>
-        </div>
-      </td>
-    </tr>
-    
-    <!-- Footer -->
-    <tr>
-      <td style="background-color: #f8fafc; padding: 25px 30px; text-align: center; border-top: 1px solid #e2e8f0;">
-        <p style="margin: 0 0 10px 0; color: #64748b; font-size: 14px;">
-          Pozdrawiamy,<br>
-          <strong>Zespół WB Trade</strong>
-        </p>
-        <p style="margin: 0; color: #94a3b8; font-size: 12px;">
-          Ten email został wysłany automatycznie. Nie odpowiadaj na niego.
-        </p>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+
+        ${alertBox(`⏰ <strong>Uwaga!</strong> Kod jest ważny tylko do <strong>${expiresAt}</strong> (14 dni).`, 'error')}
+        ${paragraph('Aby skorzystać ze zniżki, dodaj produkty do koszyka i wpisz kod przy finalizacji zamówienia.')}
+        ${ctaButton('Rozpocznij zakupy →', `${SITE_URL}/products`)}
+      `,
+    });
   }
 
-  /**
-   * Plain text version for email clients that don't support HTML
-   */
-  private getWelcomeDiscountText(
-    firstName: string,
-    couponCode: string,
-    discountPercent: number,
-    expiresAt: string
-  ): string {
-    return `
-Witaj ${firstName}!
-
-Dziękujemy za założenie konta w WB Trade!
-
-Na początek mamy dla Ciebie specjalną zniżkę:
-
-Twój kod rabatowy: ${couponCode}
-Zniżka: -${discountPercent}% na pierwsze zakupy
-
-UWAGA: Kod jest ważny tylko do ${expiresAt} (14 dni).
-
-Aby skorzystać ze zniżki, dodaj produkty do koszyka i wpisz kod przy finalizacji zamówienia.
-
-Rozpocznij zakupy: ${SITE_URL}/products
-
-Pozdrawiamy,
-Zespół WB Trade
-    `.trim();
+  private getWelcomeDiscountText(firstName: string, couponCode: string, discountPercent: number, expiresAt: string): string {
+    return `Witaj ${firstName}!\n\nDziękujemy za założenie konta w WB Trade!\n\nTwój kod rabatowy: ${couponCode}\nZniżka: -${discountPercent}% na pierwsze zakupy\n\nUWAGA: Kod jest ważny tylko do ${expiresAt} (14 dni).\n\nRozpocznij zakupy: ${SITE_URL}/products\n\nPozdrawiamy,\nZespół WB Trade`;
   }
 
-  /**
-   * Send newsletter verification email
-   */
-  async sendNewsletterVerificationEmail(
-    to: string,
-    token: string
-  ): Promise<EmailResult> {
+  // ──────────────────────────────────────
+  // 2. NEWSLETTER VERIFICATION
+  // ──────────────────────────────────────
+
+  async sendNewsletterVerificationEmail(to: string, token: string): Promise<EmailResult> {
     try {
       const resend = getResend();
-      
       const verifyUrl = `${SITE_URL}/newsletter/verify?token=${token}`;
 
       const { data, error } = await resend.emails.send({
@@ -232,7 +253,6 @@ Zespół WB Trade
         console.error('[EmailService] Newsletter verification error:', error);
         return { success: false, error: error.message };
       }
-
       console.log(`✅ [EmailService] Newsletter verification email sent to ${to}, messageId: ${data?.id}`);
       return { success: true, messageId: data?.id };
     } catch (err: any) {
@@ -241,132 +261,50 @@ Zespół WB Trade
     }
   }
 
-  /**
-   * HTML template for newsletter verification email
-   */
   private getNewsletterVerificationHtml(verifyUrl: string): string {
-    return `
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-    <!-- Header with Logo -->
-    <tr>
-      <td style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 40px 30px; text-align: center;">
-        <img src="${SITE_URL}/images/WB-TRADE-logo.png" alt="WBTrade" style="height: 50px; width: auto; margin-bottom: 15px;" />
-        <h1 style="color: white; margin: 0; font-size: 28px;">📬 Potwierdź zapis do newslettera</h1>
-      </td>
-    </tr>
-    
-    <!-- Content -->
-    <tr>
-      <td style="padding: 40px 30px;">
-        <p style="font-size: 18px; color: #333; margin-bottom: 20px;">
-          Cześć!
-        </p>
-        
-        <p style="font-size: 16px; color: #555; line-height: 1.6;">
-          Dziękujemy za zainteresowanie naszym newsletterem! 
-          Aby potwierdzić swój adres e-mail, kliknij poniższy przycisk:
-        </p>
-        
-        <!-- CTA Button -->
-        <div style="text-align: center; margin: 35px 0;">
-          <a href="${verifyUrl}" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-size: 16px; font-weight: bold; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);">
-            ✅ Potwierdź zapis
-          </a>
-        </div>
-        
-        <p style="font-size: 14px; color: #777; line-height: 1.6;">
-          Jeśli nie zapisywałeś/aś się do naszego newslettera, zignoruj tę wiadomość.
-        </p>
-        
-        <p style="font-size: 14px; color: #555; line-height: 1.6; margin-top: 30px;">
-          <strong>Co zyskujesz jako subskrybent?</strong>
-        </p>
-        <ul style="font-size: 14px; color: #555; line-height: 1.8;">
-          <li>🎁 Ekskluzywne kody rabatowe</li>
-          <li>🆕 Informacje o nowościach przed innymi</li>
-          <li>💰 Specjalne promocje tylko dla subskrybentów</li>
-          <li>📦 Powiadomienia o wyprzedażach</li>
-        </ul>
-      </td>
-    </tr>
-    
-    <!-- Footer -->
-    <tr>
-      <td style="background-color: #f8fafc; padding: 25px 30px; text-align: center; border-top: 1px solid #e2e8f0;">
-        <p style="margin: 0 0 10px 0; color: #64748b; font-size: 14px;">
-          Pozdrawiamy,<br>
-          <strong>Zespół WB Trade</strong>
-        </p>
-        <p style="margin: 0; color: #94a3b8; font-size: 12px;">
-          Ten email został wysłany automatycznie. Nie odpowiadaj na niego.
-        </p>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+    return emailWrapper({
+      title: '📬 Potwierdź zapis do newslettera',
+      content: `
+        <p style="font-size: 17px; color: #1e293b; margin: 0 0 16px;">Cześć!</p>
+        ${paragraph('Dziękujemy za zainteresowanie naszym newsletterem! Aby potwierdzić swój adres e-mail, kliknij poniższy przycisk:')}
+        ${ctaButton('✅ Potwierdź zapis', verifyUrl)}
+        <p style="font-size: 13px; color: #94a3b8; text-align: center; margin: 0 0 24px;">Jeśli nie zapisywałeś/aś się, zignoruj tę wiadomość.</p>
+        ${divider()}
+        <p style="font-size: 15px; color: #1e293b; font-weight: 700; margin: 0 0 12px;">Co zyskujesz jako subskrybent?</p>
+        <table role="presentation" cellspacing="0" cellpadding="0" style="width: 100%;">
+          <tr><td style="padding: 6px 0; font-size: 14px; color: #334155;">🎁 Ekskluzywne kody rabatowe</td></tr>
+          <tr><td style="padding: 6px 0; font-size: 14px; color: #334155;">🆕 Informacje o nowościach przed innymi</td></tr>
+          <tr><td style="padding: 6px 0; font-size: 14px; color: #334155;">💰 Specjalne promocje tylko dla subskrybentów</td></tr>
+          <tr><td style="padding: 6px 0; font-size: 14px; color: #334155;">📦 Powiadomienia o wyprzedażach</td></tr>
+        </table>
+      `,
+    });
   }
 
-  /**
-   * Plain text version for newsletter verification
-   */
   private getNewsletterVerificationText(verifyUrl: string): string {
-    return `
-Cześć!
-
-Dziękujemy za zainteresowanie naszym newsletterem!
-
-Aby potwierdzić swój adres e-mail, kliknij poniższy link:
-${verifyUrl}
-
-Jeśli nie zapisywałeś/aś się do naszego newslettera, zignoruj tę wiadomość.
-
-Co zyskujesz jako subskrybent?
-- Ekskluzywne kody rabatowe
-- Informacje o nowościach przed innymi
-- Specjalne promocje tylko dla subskrybentów
-- Powiadomienia o wyprzedażach
-
-Pozdrawiamy,
-Zespół WB Trade
-    `.trim();
+    return `Cześć!\n\nDziękujemy za zainteresowanie naszym newsletterem!\n\nPotwierdź zapis: ${verifyUrl}\n\nCo zyskujesz?\n- Ekskluzywne kody rabatowe\n- Informacje o nowościach\n- Specjalne promocje\n- Powiadomienia o wyprzedażach\n\nPozdrawiamy,\nZespół WB Trade`;
   }
 
-  /**
-   * Send newsletter welcome email after verification with discount code
-   */
-  async sendNewsletterWelcomeEmail(
-    to: string,
-    unsubscribeToken: string
-  ): Promise<EmailResult> {
+  // ──────────────────────────────────────
+  // 3. NEWSLETTER WELCOME
+  // ──────────────────────────────────────
+
+  async sendNewsletterWelcomeEmail(to: string, unsubscribeToken: string): Promise<EmailResult> {
     debugLog('sendNewsletterWelcomeEmail called');
     try {
       const resend = getResend();
-      
-      // Generate 10% discount code for newsletter subscriber
+
       let discountCode = '';
       let discountExpiry = '';
       try {
         const discount = await discountService.generateNewsletterDiscount(to);
         discountCode = discount.couponCode;
-        discountExpiry = discount.expiresAt.toLocaleDateString('pl-PL', { 
-          day: 'numeric', 
-          month: 'long', 
-          year: 'numeric' 
-        });
+        discountExpiry = discount.expiresAt.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' });
         debugLog('Newsletter discount generated');
       } catch (discountErr) {
         console.error('[EmailService] Failed to generate newsletter discount:', discountErr);
-        // Continue without discount code
       }
-      
+
       const unsubscribeUrl = `${SITE_URL}/newsletter/unsubscribe?token=${unsubscribeToken}`;
 
       const { data, error } = await resend.emails.send({
@@ -381,7 +319,6 @@ Zespół WB Trade
         console.error('[EmailService] Newsletter welcome error:', error.message);
         return { success: false, error: error.message };
       }
-
       debugLog(`Newsletter welcome email sent, messageId: ${data?.id}`);
       return { success: true, messageId: data?.id };
     } catch (err: any) {
@@ -390,197 +327,84 @@ Zespół WB Trade
     }
   }
 
-  /**
-   * HTML template for newsletter welcome email with discount code
-   */
   private getNewsletterWelcomeHtml(unsubscribeUrl: string, discountCode?: string, discountExpiry?: string): string {
     const discountSection = discountCode ? `
-        <!-- Discount Code Section -->
-        <tr>
-          <td style="padding: 0 30px 30px 30px;">
-            <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px dashed #f59e0b; border-radius: 12px; padding: 25px; text-align: center;">
-              <p style="margin: 0 0 10px 0; font-size: 14px; color: #92400e; text-transform: uppercase; letter-spacing: 1px;">Twój ekskluzywny kod rabatowy</p>
-              <div style="background-color: #ffffff; border: 2px solid #d97706; border-radius: 8px; padding: 12px 20px; display: inline-block; margin: 10px 0; cursor: pointer;" title="Kliknij aby zaznaczyć">
-                <p style="margin: 0; font-size: 32px; font-weight: bold; color: #78350f; letter-spacing: 4px; font-family: 'Courier New', monospace; user-select: all; -webkit-user-select: all; -moz-user-select: all; -ms-user-select: all;">${escapeHtml(discountCode)}</p>
-              </div>
-              <p style="margin: 5px 0 15px 0; font-size: 12px; color: #a16207;">👆 Kliknij kod aby zaznaczyć, potem Ctrl+C</p>
-              <p style="margin: 0 0 5px 0; font-size: 18px; color: #92400e;"><strong>-10%</strong> na Twoje kolejne zakupy!</p>
-              <p style="margin: 0 0 5px 0; font-size: 13px; color: #6b7280;">Ważny do: <span style="color: #dc2626; font-weight: bold;">${discountExpiry}</span> • Jednorazowego użytku</p>
-              <p style="margin: 0; font-size: 11px; color: #b45309;">⚠️ Nie łączy się z rabatem za rejestrację (20%) ani kuponami promocyjnymi (30%)</p>
-            </div>
-          </td>
-        </tr>` : '';
+        <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px dashed #f59e0b; border-radius: 16px; padding: 24px 20px; text-align: center; margin: 24px 0;">
+          <p style="margin: 0 0 8px; font-size: 12px; color: #92400e; text-transform: uppercase; letter-spacing: 2px; font-weight: 700;">Twój ekskluzywny kod rabatowy</p>
+          <div style="background-color: #ffffff; border: 2px solid #d97706; border-radius: 10px; padding: 12px 20px; display: inline-block; margin: 8px 0;">
+            <p style="margin: 0; font-size: 30px; font-weight: 800; color: #78350f; letter-spacing: 5px; font-family: 'Courier New', monospace;">${escapeHtml(discountCode)}</p>
+          </div>
+          <p style="margin: 8px 0 4px; font-size: 18px; color: #92400e; font-weight: 700;">-10% na Twoje kolejne zakupy!</p>
+          <p style="margin: 0; font-size: 12px; color: #a16207;">Ważny do: <strong>${discountExpiry}</strong> · Jednorazowego użytku</p>
+          <p style="margin: 6px 0 0; font-size: 11px; color: #b45309;">⚠️ Nie łączy się z rabatem za rejestrację (20%) ani kuponami promocyjnymi (30%)</p>
+        </div>` : '';
 
-    return `
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-    <!-- Header with Logo -->
-    <tr>
-      <td style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 40px 30px; text-align: center;">
-        <img src="${SITE_URL}/images/WB-TRADE-logo.png" alt="WBTrade" style="height: 50px; width: auto; margin-bottom: 15px;" />
-        <h1 style="color: white; margin: 0; font-size: 28px;">${discountCode ? '🎁 Mamy prezent dla Ciebie!' : '🎉 Dziękujemy za zapis!'}</h1>
-      </td>
-    </tr>
-    
-    ${discountSection}
-    
-    <!-- Content -->
-    <tr>
-      <td style="padding: 30px;">
-        <p style="font-size: 18px; color: #333; margin-bottom: 20px;">
-          Cześć!
-        </p>
-        
-        <p style="font-size: 16px; color: #555; line-height: 1.6;">
-          ${discountCode 
-            ? 'Twój adres e-mail został potwierdzony! Na powitanie mamy dla Ciebie <strong>kod rabatowy -10%</strong> na kolejne zakupy. Użyj go podczas składania zamówienia! Uwaga: kod nie łączy się z rabatem za rejestrację (20%) oraz kuponami promocyjnymi (30%).'
-            : 'Twój adres e-mail został potwierdzony!'} Od teraz będziesz otrzymywać od nas:
-        </p>
-        
-        <ul style="font-size: 16px; color: #555; line-height: 2;">
-          <li>🎁 <strong>Ekskluzywne kody rabatowe</strong></li>
-          <li>🆕 <strong>Informacje o nowościach</strong> przed innymi</li>
-          <li>💰 <strong>Specjalne promocje</strong> tylko dla subskrybentów</li>
-          <li>📦 <strong>Powiadomienia o wyprzedażach</strong></li>
-        </ul>
-        
-        <!-- CTA Button -->
-        <div style="text-align: center; margin: 35px 0;">
-          <a href="${SITE_URL}/products" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-size: 16px; font-weight: bold; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);">
-            🛒 ${discountCode ? 'Wykorzystaj kod teraz!' : 'Przejdź do sklepu'}
-          </a>
-        </div>
-      </td>
-    </tr>
-    
-    <!-- Footer -->
-    <tr>
-      <td style="background-color: #f8fafc; padding: 25px 30px; text-align: center; border-top: 1px solid #e2e8f0;">
-        <p style="margin: 0 0 10px 0; color: #64748b; font-size: 14px;">
-          Pozdrawiamy,<br>
-          <strong>Zespół WB Trade</strong>
-        </p>
-        <p style="margin: 0; color: #94a3b8; font-size: 12px;">
-          <a href="${unsubscribeUrl}" style="color: #94a3b8;">Wypisz się z newslettera</a>
-        </p>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+    return emailWrapper({
+      title: discountCode ? '🎁 Mamy prezent dla Ciebie!' : '🎉 Dziękujemy za zapis!',
+      content: `
+        <p style="font-size: 17px; color: #1e293b; margin: 0 0 16px;">Cześć!</p>
+        ${discountSection}
+        ${paragraph(discountCode
+          ? 'Twój adres e-mail został potwierdzony! Na powitanie mamy dla Ciebie <strong>kod rabatowy -10%</strong> na kolejne zakupy. Od teraz będziesz otrzymywać:'
+          : 'Twój adres e-mail został potwierdzony! Od teraz będziesz otrzymywać:'
+        )}
+        <table role="presentation" cellspacing="0" cellpadding="0" style="width: 100%; margin-bottom: 8px;">
+          <tr><td style="padding: 6px 0; font-size: 14px; color: #334155;">🎁 <strong>Ekskluzywne kody rabatowe</strong></td></tr>
+          <tr><td style="padding: 6px 0; font-size: 14px; color: #334155;">🆕 <strong>Informacje o nowościach</strong> przed innymi</td></tr>
+          <tr><td style="padding: 6px 0; font-size: 14px; color: #334155;">💰 <strong>Specjalne promocje</strong> tylko dla subskrybentów</td></tr>
+          <tr><td style="padding: 6px 0; font-size: 14px; color: #334155;">📦 <strong>Powiadomienia o wyprzedażach</strong></td></tr>
+        </table>
+        ${ctaButton(discountCode ? '🛒 Wykorzystaj kod teraz!' : '🛒 Przejdź do sklepu', `${SITE_URL}/products`)}
+      `,
+      footerExtra: `<p style="margin: 0 0 10px;"><a href="${unsubscribeUrl}" style="color: #64748b; font-size: 11px; text-decoration: underline;">Wypisz się z newslettera</a></p>`,
+    });
   }
 
-  /**
-   * Plain text version for newsletter welcome with discount
-   */
   private getNewsletterWelcomeText(unsubscribeUrl: string, discountCode?: string, discountExpiry?: string): string {
-    const discountText = discountCode ? `
-🎁 TWÓJ KOD RABATOWY: ${discountCode}
--10% na kolejne zakupy!
-Ważny do: ${discountExpiry} • Jednorazowego użytku
-⚠️ Nie łączy się z rabatem za rejestrację (20%) ani kuponami promocyjnymi (30%)
-
-` : '';
-
-    return `
-Cześć!
-
-Dziękujemy za zapis do newslettera WB Trade!
-
-${discountText}Twój adres e-mail został potwierdzony. Od teraz będziesz otrzymywać od nas:
-- Ekskluzywne kody rabatowe
-- Informacje o nowościach przed innymi
-- Specjalne promocje tylko dla subskrybentów
-- Powiadomienia o wyprzedażach
-
-Przejdź do sklepu: ${SITE_URL}/products
-
-Pozdrawiamy,
-Zespół WB Trade
-
----
-Wypisz się z newslettera: ${unsubscribeUrl}
-    `.trim();
+    const dc = discountCode ? `\n🎁 TWÓJ KOD RABATOWY: ${discountCode}\n-10% na kolejne zakupy!\nWażny do: ${discountExpiry}\n` : '';
+    return `Cześć!\n\nDziękujemy za zapis do newslettera WB Trade!\n${dc}\nPrzejdź do sklepu: ${SITE_URL}/products\n\nWypisz się: ${unsubscribeUrl}\n\nPozdrawiamy,\nZespół WB Trade`;
   }
 
-  /**
-   * Send payment reminder email with ordered products
-   */
+  // ──────────────────────────────────────
+  // 4. PAYMENT REMINDER
+  // ──────────────────────────────────────
+
   async sendPaymentReminderEmail(
     to: string,
     customerName: string,
     orderNumber: string,
     orderId: string,
     total: number,
-    items: {
-      name: string;
-      variant: string;
-      quantity: number;
-      price: number;
-      total: number;
-      imageUrl: string | null;
-    }[],
+    items: { name: string; variant: string; quantity: number; price: number; total: number; imageUrl: string | null }[],
     reminderNumber: number,
     daysRemaining: number
   ): Promise<EmailResult> {
     try {
       const resend = getResend();
-      
       const paymentUrl = `${SITE_URL}/order/${orderId}/payment`;
-      
-      // Determine urgency based on days remaining
+
       let urgencyEmoji = '⏰';
       let urgencyText = 'Przypomnienie o płatności';
-      let urgencyColor = '#f97316'; // orange
-      
-      if (daysRemaining <= 2) {
-        urgencyEmoji = '🚨';
-        urgencyText = 'Pilne! Ostatnie dni na płatność';
-        urgencyColor = '#dc2626'; // red
-      } else if (daysRemaining <= 4) {
-        urgencyEmoji = '⚠️';
-        urgencyText = 'Przypomnienie o płatności';
-        urgencyColor = '#f59e0b'; // amber
-      }
+      let urgencyColor = '#f97316';
 
-      const subject = `${urgencyEmoji} ${urgencyText} - Zamówienie #${orderNumber}`;
+      if (daysRemaining <= 2) {
+        urgencyEmoji = '🚨'; urgencyText = 'Pilne! Ostatnie dni na płatność'; urgencyColor = '#dc2626';
+      } else if (daysRemaining <= 4) {
+        urgencyEmoji = '⚠️'; urgencyText = 'Przypomnienie o płatności'; urgencyColor = '#f59e0b';
+      }
 
       const { data, error } = await resend.emails.send({
         from: FROM_EMAIL,
         to: [to],
-        subject,
-        html: this.getPaymentReminderHtml(
-          customerName,
-          orderNumber,
-          orderId,
-          total,
-          items,
-          reminderNumber,
-          daysRemaining,
-          paymentUrl,
-          urgencyColor
-        ),
-        text: this.getPaymentReminderText(
-          customerName,
-          orderNumber,
-          total,
-          items,
-          daysRemaining,
-          paymentUrl
-        ),
+        subject: `${urgencyEmoji} ${urgencyText} - Zamówienie #${orderNumber}`,
+        html: this.getPaymentReminderHtml(customerName, orderNumber, orderId, total, items, reminderNumber, daysRemaining, paymentUrl, urgencyColor),
+        text: this.getPaymentReminderText(customerName, orderNumber, total, items, daysRemaining, paymentUrl),
       });
 
       if (error) {
         console.error('[EmailService] Payment reminder error:', error);
         return { success: false, error: error.message };
       }
-
       console.log(`✅ [EmailService] Payment reminder #${reminderNumber} sent to ${to} for order ${orderNumber}`);
       return { success: true, messageId: data?.id };
     } catch (err: any) {
@@ -589,215 +413,79 @@ Wypisz się z newslettera: ${unsubscribeUrl}
     }
   }
 
-  /**
-   * HTML template for payment reminder email
-   */
   private getPaymentReminderHtml(
-    customerName: string,
-    orderNumber: string,
-    orderId: string,
-    total: number,
-    items: {
-      name: string;
-      variant: string;
-      quantity: number;
-      price: number;
-      total: number;
-      imageUrl: string | null;
-    }[],
-    reminderNumber: number,
-    daysRemaining: number,
-    paymentUrl: string,
-    urgencyColor: string
+    customerName: string, orderNumber: string, orderId: string, total: number,
+    items: { name: string; variant: string; quantity: number; price: number; total: number; imageUrl: string | null }[],
+    reminderNumber: number, daysRemaining: number, paymentUrl: string, urgencyColor: string
   ): string {
-    // Generate product list HTML
     const productsHtml = items.map(item => `
       <tr>
-        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">
-          <div style="display: flex; align-items: center;">
-            ${item.imageUrl ? `<img src="${item.imageUrl}" alt="${item.name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; margin-right: 12px;" />` : ''}
-            <div>
-              <p style="margin: 0; font-weight: 600; color: #333;">${item.name}</p>
-              ${item.variant ? `<p style="margin: 4px 0 0 0; font-size: 13px; color: #666;">${item.variant}</p>` : ''}
-            </div>
-          </div>
+        <td style="padding: 10px 12px; border-bottom: 1px solid #f1f5f9;">
+          ${item.imageUrl ? `<img src="${item.imageUrl}" alt="" width="48" height="48" style="border-radius: 8px; vertical-align: middle; margin-right: 10px;" />` : ''}
+          <span style="color: #1e293b; font-size: 14px; font-weight: 600;">${escapeHtml(item.name)}</span>
+          ${item.variant ? `<br><span style="color: #64748b; font-size: 12px;">${escapeHtml(item.variant)}</span>` : ''}
         </td>
-        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #555;">
-          ${item.quantity} szt.
-        </td>
-        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: 600; color: #333;">
-          ${item.total.toFixed(2)} zł
-        </td>
-      </tr>
-    `).join('');
+        <td style="padding: 10px 12px; border-bottom: 1px solid #f1f5f9; text-align: center; color: #64748b; font-size: 14px;">${item.quantity} szt.</td>
+        <td style="padding: 10px 12px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 700; color: #1e293b; font-size: 14px;">${item.total.toFixed(2)} zł</td>
+      </tr>`).join('');
 
-    return `
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-    <!-- Header with Logo -->
-    <tr>
-      <td style="background: linear-gradient(135deg, ${urgencyColor} 0%, ${urgencyColor}dd 100%); padding: 40px 30px; text-align: center;">
-        <img src="${SITE_URL}/images/WB-TRADE-logo.png" alt="WBTrade" style="height: 50px; width: auto; margin-bottom: 15px;" />
-        <h1 style="color: white; margin: 0; font-size: 24px;">⏰ Przypomnienie o płatności</h1>
-      </td>
-    </tr>
-    
-    <!-- Content -->
-    <tr>
-      <td style="padding: 30px;">
-        <p style="font-size: 18px; color: #333; margin-bottom: 20px;">
-          Cześć <strong>${customerName}</strong>!
-        </p>
-        
-        <p style="font-size: 16px; color: #555; line-height: 1.6;">
-          Zauważyliśmy, że Twoje zamówienie <strong>#${orderNumber}</strong> nie zostało jeszcze opłacone.
-          Twoje produkty czekają na Ciebie!
-        </p>
-        
-        <!-- Urgency Warning -->
-        <div style="background-color: ${daysRemaining <= 2 ? '#fef2f2' : '#fef3e2'}; border-left: 4px solid ${urgencyColor}; padding: 15px 20px; margin: 20px 0; border-radius: 0 8px 8px 0;">
-          <p style="margin: 0; color: ${daysRemaining <= 2 ? '#dc2626' : '#92400e'}; font-size: 15px;">
-            ${daysRemaining <= 1 
-              ? '🚨 <strong>Ostatni dzień!</strong> Twoje zamówienie zostanie anulowane jutro.'
-              : daysRemaining <= 2
-                ? `⚠️ <strong>Zostały tylko ${daysRemaining} dni!</strong> Opłać zamówienie, aby nie zostało anulowane.`
-                : `⏰ Masz jeszcze <strong>${daysRemaining} dni</strong> na opłacenie zamówienia.`
-            }
-          </p>
-        </div>
+    const urgencyMsg = daysRemaining <= 1
+      ? '🚨 <strong>Ostatni dzień!</strong> Twoje zamówienie zostanie anulowane jutro.'
+      : daysRemaining <= 2
+        ? `⚠️ <strong>Zostały tylko ${daysRemaining} dni!</strong> Opłać zamówienie, aby nie zostało anulowane.`
+        : `⏰ Masz jeszcze <strong>${daysRemaining} dni</strong> na opłacenie zamówienia.`;
 
-        <!-- Order Summary Box -->
-        <div style="background-color: #f8fafc; border-radius: 12px; padding: 20px; margin: 25px 0;">
-          <h3 style="margin: 0 0 15px 0; color: #333; font-size: 16px;">📦 Twoje zamówienie #${orderNumber}</h3>
-          
-          <table width="100%" cellspacing="0" cellpadding="0" style="font-size: 14px;">
-            <thead>
-              <tr style="background-color: #e2e8f0;">
-                <th style="padding: 10px 12px; text-align: left; color: #475569;">Produkt</th>
-                <th style="padding: 10px 12px; text-align: center; color: #475569;">Ilość</th>
-                <th style="padding: 10px 12px; text-align: right; color: #475569;">Cena</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${productsHtml}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colspan="2" style="padding: 15px 12px; text-align: right; font-weight: bold; color: #333; font-size: 16px;">
-                  Do zapłaty:
-                </td>
-                <td style="padding: 15px 12px; text-align: right; font-weight: bold; color: ${urgencyColor}; font-size: 20px;">
-                  ${total.toFixed(2)} zł
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-        
-        <!-- CTA Button -->
-        <div style="text-align: center; margin: 35px 0;">
-          <a href="${paymentUrl}" style="display: inline-block; background: linear-gradient(135deg, ${urgencyColor} 0%, ${urgencyColor}dd 100%); color: white; text-decoration: none; padding: 18px 50px; border-radius: 8px; font-size: 18px; font-weight: bold; box-shadow: 0 4px 15px ${urgencyColor}50;">
-            💳 Opłać teraz
-          </a>
-        </div>
-        
-        <p style="font-size: 14px; color: #777; line-height: 1.6; text-align: center;">
-          Kliknij przycisk powyżej, aby przejść do bezpiecznej płatności.
-        </p>
-        
-        <!-- Help section -->
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
-          <p style="font-size: 14px; color: #666; margin: 0;">
-            <strong>Masz pytania?</strong> Skontaktuj się z nami: 
-            <a href="mailto:kontakt@wb-trade.pl" style="color: ${urgencyColor};">kontakt@wb-trade.pl</a>
-          </p>
-        </div>
-      </td>
-    </tr>
-    
-    <!-- Footer -->
-    <tr>
-      <td style="background-color: #f8fafc; padding: 25px 30px; text-align: center; border-top: 1px solid #e2e8f0;">
-        <p style="margin: 0 0 10px 0; color: #64748b; font-size: 14px;">
-          Pozdrawiamy,<br>
-          <strong>Zespół WB Trade</strong>
-        </p>
-        <p style="margin: 0; color: #94a3b8; font-size: 12px;">
-          Ten email został wysłany automatycznie. Nie odpowiadaj na niego.
-        </p>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+    const alertType = daysRemaining <= 2 ? 'error' : 'warning';
+
+    return emailWrapper({
+      title: '⏰ Przypomnienie o płatności',
+      headerColor: urgencyColor,
+      content: `
+        ${greeting(customerName)}
+        ${paragraph(`Zauważyliśmy, że Twoje zamówienie <strong>#${escapeHtml(orderNumber)}</strong> nie zostało jeszcze opłacone. Twoje produkty czekają na Ciebie!`)}
+        ${alertBox(urgencyMsg, alertType)}
+
+        <!-- Product table -->
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin: 24px 0;">
+          <thead>
+            <tr style="background-color: #f8fafc;">
+              <th style="padding: 10px 12px; text-align: left; font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Produkt</th>
+              <th style="padding: 10px 12px; text-align: center; font-size: 12px; color: #64748b; text-transform: uppercase;">Ilość</th>
+              <th style="padding: 10px 12px; text-align: right; font-size: 12px; color: #64748b; text-transform: uppercase;">Cena</th>
+            </tr>
+          </thead>
+          <tbody>${productsHtml}</tbody>
+          <tfoot>
+            <tr style="background-color: #f8fafc;">
+              <td colspan="2" style="padding: 14px 12px; text-align: right; font-weight: 700; color: #1e293b; font-size: 15px;">Do zapłaty:</td>
+              <td style="padding: 14px 12px; text-align: right; font-weight: 800; color: ${urgencyColor}; font-size: 20px;">${total.toFixed(2)} zł</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        ${ctaButton('💳 Opłać teraz', paymentUrl, urgencyColor)}
+        <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 4px 0 0;">Kliknij aby przejść do bezpiecznej płatności</p>
+        ${helpSection('kontakt@wb-trade.pl')}
+      `,
+    });
   }
 
-  /**
-   * Plain text version for payment reminder
-   */
   private getPaymentReminderText(
-    customerName: string,
-    orderNumber: string,
-    total: number,
-    items: {
-      name: string;
-      variant: string;
-      quantity: number;
-      price: number;
-      total: number;
-      imageUrl: string | null;
-    }[],
-    daysRemaining: number,
-    paymentUrl: string
+    customerName: string, orderNumber: string, total: number,
+    items: { name: string; variant: string; quantity: number; price: number; total: number; imageUrl: string | null }[],
+    daysRemaining: number, paymentUrl: string
   ): string {
-    const productsList = items.map(item => 
-      `- ${item.name}${item.variant ? ` (${item.variant})` : ''} x${item.quantity} - ${item.total.toFixed(2)} zł`
-    ).join('\n');
-
-    return `
-Cześć ${customerName}!
-
-Przypomnienie o płatności - Zamówienie #${orderNumber}
-
-Zauważyliśmy, że Twoje zamówienie nie zostało jeszcze opłacone.
-
-${daysRemaining <= 2 
-  ? `⚠️ UWAGA: Zostały tylko ${daysRemaining} dni na opłacenie! Zamówienie zostanie automatycznie anulowane.`
-  : `Masz jeszcze ${daysRemaining} dni na opłacenie zamówienia.`
-}
-
-Twoje produkty:
-${productsList}
-
-Do zapłaty: ${total.toFixed(2)} zł
-
-Opłać zamówienie: ${paymentUrl}
-
-Masz pytania? Napisz do nas: kontakt@wb-trade.pl
-
-Pozdrawiamy,
-Zespół WB Trade
-    `.trim();
+    const pl = items.map(i => `- ${i.name}${i.variant ? ` (${i.variant})` : ''} x${i.quantity} - ${i.total.toFixed(2)} zł`).join('\n');
+    return `Cześć ${customerName}!\n\nPrzypomnienie o płatności — Zamówienie #${orderNumber}\n\n${daysRemaining <= 2 ? `⚠️ Zostały tylko ${daysRemaining} dni!` : `Masz jeszcze ${daysRemaining} dni.`}\n\nProdukty:\n${pl}\n\nDo zapłaty: ${total.toFixed(2)} zł\n\nOpłać: ${paymentUrl}\n\nPozdrawiamy,\nZespół WB Trade`;
   }
 
-  /**
-   * Send order cancelled due to non-payment email
-   */
-  async sendOrderCancelledDueToNonPaymentEmail(
-    to: string,
-    customerName: string,
-    orderNumber: string,
-    total: number
-  ): Promise<EmailResult> {
+  // ──────────────────────────────────────
+  // 5. ORDER CANCELLED (non-payment)
+  // ──────────────────────────────────────
+
+  async sendOrderCancelledDueToNonPaymentEmail(to: string, customerName: string, orderNumber: string, total: number): Promise<EmailResult> {
     try {
       const resend = getResend();
-
       const { data, error } = await resend.emails.send({
         from: FROM_EMAIL,
         to: [to],
@@ -810,7 +498,6 @@ Zespół WB Trade
         console.error('[EmailService] Order cancelled email error:', error);
         return { success: false, error: error.message };
       }
-
       console.log(`✅ [EmailService] Order cancelled email sent to ${to} for order ${orderNumber}`);
       return { success: true, messageId: data?.id };
     } catch (err: any) {
@@ -819,187 +506,53 @@ Zespół WB Trade
     }
   }
 
-  /**
-   * HTML template for order cancelled email
-   */
-  private getOrderCancelledHtml(
-    customerName: string,
-    orderNumber: string,
-    total: number
-  ): string {
-    return `
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-    <!-- Header with Logo -->
-    <tr>
-      <td style="background: linear-gradient(135deg, #64748b 0%, #475569 100%); padding: 40px 30px; text-align: center;">
-        <img src="${SITE_URL}/images/WB-TRADE-logo.png" alt="WBTrade" style="height: 50px; width: auto; margin-bottom: 15px;" />
-        <h1 style="color: white; margin: 0; font-size: 24px;">❌ Zamówienie anulowane</h1>
-      </td>
-    </tr>
-    
-    <!-- Content -->
-    <tr>
-      <td style="padding: 30px;">
-        <p style="font-size: 18px; color: #333; margin-bottom: 20px;">
-          Cześć <strong>${customerName}</strong>,
-        </p>
-        
-        <p style="font-size: 16px; color: #555; line-height: 1.6;">
-          Z przykrością informujemy, że Twoje zamówienie <strong>#${orderNumber}</strong> o wartości 
-          <strong>${total.toFixed(2)} zł</strong> zostało automatycznie anulowane z powodu braku płatności.
-        </p>
-        
-        <div style="background-color: #f1f5f9; border-radius: 8px; padding: 20px; margin: 25px 0; text-align: center;">
-          <p style="margin: 0; font-size: 14px; color: #64748b;">
-            Zamówienie oczekiwało na płatność przez 7 dni.
-          </p>
-        </div>
-        
-        <p style="font-size: 16px; color: #555; line-height: 1.6;">
-          Jeśli nadal jesteś zainteresowany/a naszymi produktami, zapraszamy do złożenia nowego zamówienia.
-          Wszystkie produkty są nadal dostępne w naszym sklepie!
-        </p>
-        
-        <!-- CTA Button -->
-        <div style="text-align: center; margin: 35px 0;">
-          <a href="${SITE_URL}/products" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-size: 16px; font-weight: bold; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);">
-            🛒 Przejdź do sklepu
-          </a>
-        </div>
-        
-        <!-- Help section -->
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
-          <p style="font-size: 14px; color: #666; margin: 0;">
-            Jeśli masz pytania lub wystąpił problem z płatnością, skontaktuj się z nami:
-            <a href="mailto:kontakt@wb-trade.pl" style="color: #f97316;">kontakt@wb-trade.pl</a>
-          </p>
-        </div>
-      </td>
-    </tr>
-    
-    <!-- Footer -->
-    <tr>
-      <td style="background-color: #f8fafc; padding: 25px 30px; text-align: center; border-top: 1px solid #e2e8f0;">
-        <p style="margin: 0 0 10px 0; color: #64748b; font-size: 14px;">
-          Pozdrawiamy,<br>
-          <strong>Zespół WB Trade</strong>
-        </p>
-        <p style="margin: 0; color: #94a3b8; font-size: 12px;">
-          Ten email został wysłany automatycznie. Nie odpowiadaj na niego.
-        </p>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+  private getOrderCancelledHtml(customerName: string, orderNumber: string, total: number): string {
+    return emailWrapper({
+      title: '❌ Zamówienie anulowane',
+      headerColor: 'linear-gradient(135deg, #64748b 0%, #475569 100%)',
+      content: `
+        ${greeting(customerName)}
+        ${paragraph(`Z przykrością informujemy, że Twoje zamówienie <strong>#${escapeHtml(orderNumber)}</strong> o wartości <strong>${total.toFixed(2)} zł</strong> zostało automatycznie anulowane z powodu braku płatności.`)}
+
+        ${infoBox('<p style="margin: 0; color: #64748b; font-size: 14px; text-align: center;">Zamówienie oczekiwało na płatność przez 7 dni.</p>', '#94a3b8')}
+
+        ${paragraph('Jeśli nadal jesteś zainteresowany/a naszymi produktami, zapraszamy do złożenia nowego zamówienia. Wszystkie produkty są nadal dostępne w naszym sklepie!')}
+        ${ctaButton('🛒 Przejdź do sklepu', `${SITE_URL}/products`)}
+        ${helpSection('kontakt@wb-trade.pl')}
+      `,
+    });
   }
 
-  /**
-   * Plain text version for order cancelled email
-   */
-  private getOrderCancelledText(
-    customerName: string,
-    orderNumber: string,
-    total: number
-  ): string {
-    return `
-Cześć ${customerName},
-
-Zamówienie #${orderNumber} zostało anulowane
-
-Z przykrością informujemy, że Twoje zamówienie o wartości ${total.toFixed(2)} zł zostało automatycznie anulowane z powodu braku płatności.
-
-Zamówienie oczekiwało na płatność przez 7 dni.
-
-Jeśli nadal jesteś zainteresowany/a naszymi produktami, zapraszamy do złożenia nowego zamówienia: ${SITE_URL}/products
-
-Masz pytania? Napisz do nas: kontakt@wb-trade.pl
-
-Pozdrawiamy,
-Zespół WB Trade
-    `.trim();
+  private getOrderCancelledText(customerName: string, orderNumber: string, total: number): string {
+    return `Cześć ${customerName},\n\nZamówienie #${orderNumber} o wartości ${total.toFixed(2)} zł zostało anulowane z powodu braku płatności (7 dni).\n\nZłóż nowe zamówienie: ${SITE_URL}/products\n\nPozdrawiamy,\nZespół WB Trade`;
   }
 
-  // ============================================
-  // ORDER CONFIRMATION EMAIL
-  // ============================================
+  // ──────────────────────────────────────
+  // 6. ORDER CONFIRMATION
+  // ──────────────────────────────────────
 
-  /**
-   * Send order confirmation email after successful payment
-   * Works for both logged-in users and guest checkout
-   */
   async sendOrderConfirmationEmail(
-    to: string,
-    customerName: string,
-    orderNumber: string,
-    orderId: string,
-    total: number,
-    items: {
-      name: string;
-      variant: string;
-      quantity: number;
-      price: number;
-      total: number;
-      imageUrl: string | null;
-    }[],
-    shippingAddress: {
-      firstName: string;
-      lastName: string;
-      street: string;
-      city: string;
-      postalCode: string;
-      phone?: string;
-    },
-    shippingMethod: string,
-    paymentMethod: string,
-    isPaid: boolean
+    to: string, customerName: string, orderNumber: string, orderId: string, total: number,
+    items: { name: string; variant: string; quantity: number; price: number; total: number; imageUrl: string | null }[],
+    shippingAddress: { firstName: string; lastName: string; street: string; city: string; postalCode: string; phone?: string },
+    shippingMethod: string, paymentMethod: string, isPaid: boolean
   ): Promise<EmailResult> {
     try {
       const resend = getResend();
-      
       const orderUrl = `${SITE_URL}/order/${orderId}/confirmation`;
-      
+
       const { data, error } = await resend.emails.send({
         from: FROM_EMAIL,
         to: [to],
         subject: `✅ Potwierdzenie zamówienia #${orderNumber}`,
-        html: this.getOrderConfirmationHtml(
-          customerName,
-          orderNumber,
-          orderId,
-          total,
-          items,
-          shippingAddress,
-          shippingMethod,
-          paymentMethod,
-          isPaid,
-          orderUrl
-        ),
-        text: this.getOrderConfirmationText(
-          customerName,
-          orderNumber,
-          total,
-          items,
-          shippingAddress,
-          shippingMethod,
-          paymentMethod,
-          isPaid,
-          orderUrl
-        ),
+        html: this.getOrderConfirmationHtml(customerName, orderNumber, orderId, total, items, shippingAddress, shippingMethod, paymentMethod, isPaid, orderUrl),
+        text: this.getOrderConfirmationText(customerName, orderNumber, total, items, shippingAddress, shippingMethod, paymentMethod, isPaid, orderUrl),
       });
 
       if (error) {
         console.error('[EmailService] Order confirmation email error:', error);
         return { success: false, error: error.message };
       }
-
       console.log(`✅ [EmailService] Order confirmation email sent to ${to} for order ${orderNumber}`);
       return { success: true, messageId: data?.id };
     } catch (err: any) {
@@ -1008,274 +561,117 @@ Zespół WB Trade
     }
   }
 
-  /**
-   * HTML template for order confirmation email
-   */
   private getOrderConfirmationHtml(
-    customerName: string,
-    orderNumber: string,
-    orderId: string,
-    total: number,
-    items: {
-      name: string;
-      variant: string;
-      quantity: number;
-      price: number;
-      total: number;
-      imageUrl: string | null;
-    }[],
-    shippingAddress: {
-      firstName: string;
-      lastName: string;
-      street: string;
-      city: string;
-      postalCode: string;
-      phone?: string;
-    },
-    shippingMethod: string,
-    paymentMethod: string,
-    isPaid: boolean,
-    orderUrl: string
+    customerName: string, orderNumber: string, orderId: string, total: number,
+    items: { name: string; variant: string; quantity: number; price: number; total: number; imageUrl: string | null }[],
+    shippingAddress: { firstName: string; lastName: string; street: string; city: string; postalCode: string; phone?: string },
+    shippingMethod: string, paymentMethod: string, isPaid: boolean, orderUrl: string
   ): string {
-    // Generate product list HTML
+    const shippingMethodNames: Record<string, string> = {
+      'inpost_paczkomat': 'InPost Paczkomat', 'inpost_paczkomaty': 'InPost Paczkomat',
+      'inpost_kurier': 'Kurier InPost', 'inpost_courier': 'Kurier InPost',
+      'dpd_kurier': 'Kurier DPD', 'dpd_courier': 'Kurier DPD', 'dpd': 'Kurier DPD',
+      'dhl_kurier': 'Kurier DHL', 'dhl': 'Kurier DHL', 'ups': 'Kurier UPS', 'gls': 'Kurier GLS',
+      'poczta_polska': 'Poczta Polska', 'pocztex': 'Pocztex', 'fedex': 'Kurier FedEx',
+      'wysylka_gabaryt': 'Wysyłka gabaryt', 'orlen': 'Paczka Orlen',
+      'pickup': 'Odbiór osobisty', 'odbior_osobisty_outlet': 'Odbiór osobisty (Outlet)',
+    };
+    const paymentMethodNames: Record<string, string> = {
+      'cod': 'Płatność przy odbiorze', 'blik': 'BLIK', 'card': 'Karta płatnicza',
+      'transfer': 'Przelew bankowy', 'przelewy24': 'Przelewy24', 'payu': 'PayU',
+    };
+    const shippingDisplay = shippingMethodNames[shippingMethod] || shippingMethod;
+    const paymentDisplay = paymentMethodNames[paymentMethod] || paymentMethod;
+
     const productsHtml = items.map(item => `
       <tr>
-        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">
-          <div style="display: flex; align-items: center;">
-            ${item.imageUrl ? `<img src="${item.imageUrl}" alt="${item.name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; margin-right: 12px;" />` : ''}
-            <div>
-              <p style="margin: 0; font-weight: 600; color: #333;">${item.name}</p>
-              ${item.variant ? `<p style="margin: 4px 0 0 0; font-size: 13px; color: #666;">${item.variant}</p>` : ''}
-            </div>
-          </div>
+        <td style="padding: 10px 12px; border-bottom: 1px solid #f1f5f9;">
+          ${item.imageUrl ? `<img src="${item.imageUrl}" alt="" width="48" height="48" style="border-radius: 8px; vertical-align: middle; margin-right: 10px;" />` : ''}
+          <span style="color: #1e293b; font-size: 14px; font-weight: 600;">${escapeHtml(item.name)}</span>
+          ${item.variant ? `<br><span style="color: #64748b; font-size: 12px;">${escapeHtml(item.variant)}</span>` : ''}
         </td>
-        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #666;">
-          ${item.quantity} szt.
-        </td>
-        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: 600; color: #333;">
-          ${item.total.toFixed(2)} zł
-        </td>
-      </tr>
-    `).join('');
+        <td style="padding: 10px 12px; border-bottom: 1px solid #f1f5f9; text-align: center; color: #64748b; font-size: 14px;">${item.quantity} szt.</td>
+        <td style="padding: 10px 12px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 700; color: #1e293b; font-size: 14px;">${item.total.toFixed(2)} zł</td>
+      </tr>`).join('');
 
-    // Map shipping method to display name
-    const shippingMethodNames: Record<string, string> = {
-      'inpost_paczkomat': 'InPost Paczkomat',
-      'inpost_paczkomaty': 'InPost Paczkomat',
-      'inpost_kurier': 'Kurier InPost',
-      'inpost_courier': 'Kurier InPost',
-      'dpd_kurier': 'Kurier DPD',
-      'dpd_courier': 'Kurier DPD',
-      'dpd': 'Kurier DPD',
-      'dhl_kurier': 'Kurier DHL',
-      'dhl': 'Kurier DHL',
-      'ups': 'Kurier UPS',
-      'gls': 'Kurier GLS',
-      'poczta_polska': 'Poczta Polska',
-      'pocztex': 'Pocztex',
-      'fedex': 'Kurier FedEx',
-      'wysylka_gabaryt': 'Wysyłka gabaryt',
-      'orlen': 'Paczka Orlen',
-      'pickup': 'Odbiór osobisty',
-      'odbior_osobisty_outlet': 'Odbiór osobisty (Outlet)',
-    };
-    const shippingMethodDisplay = shippingMethodNames[shippingMethod] || shippingMethod;
+    const paymentBadge = isPaid
+      ? '<span style="color: #16a34a; font-weight: 700;">✓ Opłacone</span>'
+      : '<span style="color: #f59e0b; font-weight: 600;">⏳ Oczekuje</span>';
 
-    // Map payment method to display name
-    const paymentMethodNames: Record<string, string> = {
-      'cod': 'Płatność przy odbiorze',
-      'blik': 'BLIK',
-      'card': 'Karta płatnicza',
-      'transfer': 'Przelew bankowy',
-      'przelewy24': 'Przelewy24',
-      'payu': 'PayU',
-    };
-    const paymentMethodDisplay = paymentMethodNames[paymentMethod] || paymentMethod;
+    return emailWrapper({
+      title: '✅ Dziękujemy za zamówienie!',
+      headerColor: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+      content: `
+        ${greeting(customerName)}
+        ${paragraph(`Twoje zamówienie <strong>#${escapeHtml(orderNumber)}</strong> zostało przyjęte${isPaid ? ' i opłacone' : ''}. Poniżej znajdziesz podsumowanie:`)}
 
-    return `
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-    <!-- Header with Logo -->
-    <tr>
-      <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 30px; text-align: center;">
-        <img src="${SITE_URL}/images/WB-TRADE-logo.png" alt="WBTrade" style="height: 50px; width: auto; margin-bottom: 15px;" />
-        <h1 style="color: white; margin: 0; font-size: 24px;">✅ Dziękujemy za zamówienie!</h1>
-      </td>
-    </tr>
-    
-    <!-- Content -->
-    <tr>
-      <td style="padding: 30px;">
-        <p style="font-size: 18px; color: #333; margin-bottom: 20px;">
-          Cześć <strong>${customerName}</strong>,
-        </p>
-        
-        <p style="font-size: 16px; color: #555; line-height: 1.6;">
-          Twoje zamówienie <strong>#${orderNumber}</strong> zostało przyjęte${isPaid ? ' i opłacone' : ''}.
-        </p>
-        
-        <!-- Order Number Box -->
-        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #10b981; border-radius: 12px; padding: 20px; text-align: center; margin: 25px 0;">
-          <p style="font-size: 14px; color: #666; margin: 0 0 5px 0;">Numer zamówienia</p>
-          <p style="font-size: 28px; font-weight: bold; color: #059669; margin: 0; letter-spacing: 2px;">#${orderNumber}</p>
+        <!-- Order number -->
+        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #22c55e; border-radius: 12px; padding: 18px; text-align: center; margin: 20px 0;">
+          <p style="font-size: 12px; color: #16a34a; margin: 0 0 4px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Numer zamówienia</p>
+          <p style="font-size: 26px; font-weight: 800; color: #059669; margin: 0; letter-spacing: 2px;">#${escapeHtml(orderNumber)}</p>
         </div>
-        
-        <!-- Products Table -->
-        <h3 style="color: #333; margin: 25px 0 15px 0; font-size: 16px;">📦 Zamówione produkty</h3>
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+
+        <!-- Products -->
+        <p style="font-size: 15px; font-weight: 700; color: #1e293b; margin: 24px 0 12px;">📦 Zamówione produkty</p>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
           <thead>
             <tr style="background-color: #f8fafc;">
-              <th style="padding: 12px; text-align: left; font-size: 13px; color: #667;">Produkt</th>
-              <th style="padding: 12px; text-align: center; font-size: 13px; color: #666;">Ilość</th>
-              <th style="padding: 12px; text-align: right; font-size: 13px; color: #666;">Cena</th>
+              <th style="padding: 10px 12px; text-align: left; font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Produkt</th>
+              <th style="padding: 10px 12px; text-align: center; font-size: 12px; color: #64748b; text-transform: uppercase;">Ilość</th>
+              <th style="padding: 10px 12px; text-align: right; font-size: 12px; color: #64748b; text-transform: uppercase;">Cena</th>
             </tr>
           </thead>
-          <tbody>
-            ${productsHtml}
-          </tbody>
+          <tbody>${productsHtml}</tbody>
           <tfoot>
-            <tr style="background-color: #f8fafc;">
-              <td colspan="2" style="padding: 15px; text-align: right; font-weight: bold; color: #333;">
-                Razem do zapłaty:
-              </td>
-              <td style="padding: 15px; text-align: right; font-weight: bold; font-size: 18px; color: #059669;">
-                ${total.toFixed(2)} zł
-              </td>
+            <tr style="background-color: #f0fdf4;">
+              <td colspan="2" style="padding: 14px 12px; text-align: right; font-weight: 700; color: #1e293b; font-size: 15px;">Razem:</td>
+              <td style="padding: 14px 12px; text-align: right; font-weight: 800; color: #059669; font-size: 20px;">${total.toFixed(2)} zł</td>
             </tr>
           </tfoot>
         </table>
-        
-        <!-- Shipping & Payment Info -->
-        <div style="display: flex; gap: 20px; margin-top: 25px;">
-          <div style="flex: 1; background-color: #f8fafc; border-radius: 8px; padding: 15px;">
-            <h4 style="margin: 0 0 10px 0; color: #333; font-size: 14px;">📍 Adres dostawy</h4>
-            <p style="margin: 0; color: #555; font-size: 14px; line-height: 1.5;">
-              ${shippingAddress.firstName} ${shippingAddress.lastName}<br>
-              ${shippingAddress.street}<br>
-              ${shippingAddress.postalCode} ${shippingAddress.city}
-              ${shippingAddress.phone ? `<br>Tel: ${shippingAddress.phone}` : ''}
-            </p>
-          </div>
-        </div>
-        
-        <div style="margin-top: 15px; background-color: #f8fafc; border-radius: 8px; padding: 15px;">
-          <p style="margin: 0 0 8px 0; color: #333; font-size: 14px;">
-            <strong>🚚 Metoda dostawy:</strong> ${shippingMethodDisplay}
-          </p>
-          <p style="margin: 0; color: #333; font-size: 14px;">
-            <strong>💳 Płatność:</strong> ${paymentMethodDisplay} ${isPaid ? '<span style="color: #10b981;">✓ Opłacone</span>' : '<span style="color: #f59e0b;">⏳ Oczekuje na płatność</span>'}
-          </p>
-        </div>
-        
-        <!-- CTA Button -->
-        <div style="text-align: center; margin: 35px 0;">
-          <a href="${orderUrl}" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-size: 16px; font-weight: bold; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);">
-            📋 Szczegóły zamówienia
-          </a>
-        </div>
-        
-        <!-- Help section -->
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
-          <p style="font-size: 14px; color: #666; margin: 0;">
-            Masz pytania? Skontaktuj się z nami:
-            <a href="mailto:kontakt@wb-trade.pl" style="color: #f97316;">kontakt@wb-trade.pl</a>
-          </p>
-        </div>
-      </td>
-    </tr>
-    
-    <!-- Footer -->
-    <tr>
-      <td style="background-color: #f8fafc; padding: 25px 30px; text-align: center; border-top: 1px solid #e2e8f0;">
-        <p style="margin: 0 0 10px 0; color: #64748b; font-size: 14px;">
-          Pozdrawiamy,<br>
-          <strong>Zespół WB Trade</strong>
-        </p>
-        <p style="margin: 0; color: #94a3b8; font-size: 12px;">
-          Ten email został wysłany automatycznie.
-        </p>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+
+        <!-- Shipping + Payment -->
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 24px 0;">
+          <tr>
+            <td style="background-color: #f8fafc; border-radius: 12px; padding: 16px 20px; vertical-align: top;" width="50%">
+              <p style="margin: 0 0 8px; font-size: 13px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">📍 Adres dostawy</p>
+              <p style="margin: 0; color: #1e293b; font-size: 14px; line-height: 1.6;">
+                ${escapeHtml(shippingAddress.firstName)} ${escapeHtml(shippingAddress.lastName)}<br>
+                ${escapeHtml(shippingAddress.street)}<br>
+                ${escapeHtml(shippingAddress.postalCode)} ${escapeHtml(shippingAddress.city)}
+                ${shippingAddress.phone ? `<br>Tel: ${escapeHtml(shippingAddress.phone)}` : ''}
+              </p>
+            </td>
+          </tr>
+          <tr><td style="height: 12px;"></td></tr>
+          <tr>
+            <td style="background-color: #f8fafc; border-radius: 12px; padding: 16px 20px;">
+              <p style="margin: 0 0 6px; color: #1e293b; font-size: 14px;"><strong>🚚 Dostawa:</strong> ${escapeHtml(shippingDisplay)}</p>
+              <p style="margin: 0; color: #1e293b; font-size: 14px;"><strong>💳 Płatność:</strong> ${escapeHtml(paymentDisplay)} ${paymentBadge}</p>
+            </td>
+          </tr>
+        </table>
+
+        ${ctaButton('📋 Szczegóły zamówienia', orderUrl)}
+        ${helpSection('kontakt@wb-trade.pl')}
+      `,
+    });
   }
 
-  /**
-   * Plain text version for order confirmation email
-   */
   private getOrderConfirmationText(
-    customerName: string,
-    orderNumber: string,
-    total: number,
-    items: {
-      name: string;
-      variant: string;
-      quantity: number;
-      price: number;
-      total: number;
-      imageUrl: string | null;
-    }[],
-    shippingAddress: {
-      firstName: string;
-      lastName: string;
-      street: string;
-      city: string;
-      postalCode: string;
-      phone?: string;
-    },
-    shippingMethod: string,
-    paymentMethod: string,
-    isPaid: boolean,
-    orderUrl: string
+    customerName: string, orderNumber: string, total: number,
+    items: { name: string; variant: string; quantity: number; price: number; total: number; imageUrl: string | null }[],
+    shippingAddress: { firstName: string; lastName: string; street: string; city: string; postalCode: string; phone?: string },
+    shippingMethod: string, paymentMethod: string, isPaid: boolean, orderUrl: string
   ): string {
-    const itemsList = items.map(item => 
-      `- ${item.name}${item.variant ? ` (${item.variant})` : ''} x ${item.quantity} = ${item.total.toFixed(2)} zł`
-    ).join('\n');
-
-    return `
-Cześć ${customerName},
-
-Dziękujemy za zamówienie #${orderNumber}!
-
-Twoje zamówienie zostało przyjęte${isPaid ? ' i opłacone' : ''}.
-
-ZAMÓWIONE PRODUKTY:
-${itemsList}
-
-RAZEM DO ZAPŁATY: ${total.toFixed(2)} zł
-
-ADRES DOSTAWY:
-${shippingAddress.firstName} ${shippingAddress.lastName}
-${shippingAddress.street}
-${shippingAddress.postalCode} ${shippingAddress.city}
-${shippingAddress.phone ? `Tel: ${shippingAddress.phone}` : ''}
-
-Metoda dostawy: ${shippingMethod}
-Płatność: ${paymentMethod} ${isPaid ? '(Opłacone)' : '(Oczekuje na płatność)'}
-
-Szczegóły zamówienia: ${orderUrl}
-
-Masz pytania? Napisz do nas: kontakt@wb-trade.pl
-
-Pozdrawiamy,
-Zespół WB Trade
-    `.trim();
+    const il = items.map(i => `- ${i.name}${i.variant ? ` (${i.variant})` : ''} x${i.quantity} = ${i.total.toFixed(2)} zł`).join('\n');
+    return `Cześć ${customerName},\n\nDziękujemy za zamówienie #${orderNumber}!\n\nStatus: ${isPaid ? 'Opłacone' : 'Oczekuje na płatność'}\n\nProdukty:\n${il}\n\nRazem: ${total.toFixed(2)} zł\n\nAdres dostawy:\n${shippingAddress.firstName} ${shippingAddress.lastName}\n${shippingAddress.street}\n${shippingAddress.postalCode} ${shippingAddress.city}\n\nDostawa: ${shippingMethod}\nPłatność: ${paymentMethod}\n\nSzczegóły: ${orderUrl}\n\nPozdrawiamy,\nZespół WB Trade`;
   }
 
-  // ============================================
-  // CONTACT & COMPLAINT EMAILS
-  // ============================================
+  // ──────────────────────────────────────
+  // 7. COMPLAINT (to admin)
+  // ──────────────────────────────────────
 
-  /**
-   * Send complaint email to support
-   */
   async sendComplaintEmail(data: {
     customerEmail: string;
     subject: string;
@@ -1287,40 +683,46 @@ Zespół WB Trade
       const resend = getResend();
       const { customerEmail, subject, description, orderNumber, images = [] } = data;
 
-      // Prepare attachments from base64 images
       const attachments: { filename: string; content: Buffer }[] = [];
-      
       for (let i = 0; i < Math.min(images.length, 5); i++) {
         const img = images[i];
         if (img && img.startsWith('data:image')) {
           const matches = img.match(/^data:image\/(\w+);base64,(.+)$/);
           if (matches) {
-            const ext = matches[1];
-            const content = matches[2];
-            attachments.push({
-              filename: `zdjecie_${i + 1}.${ext}`,
-              content: Buffer.from(content, 'base64'),
-            });
+            attachments.push({ filename: `zdjecie_${i + 1}.${matches[1]}`, content: Buffer.from(matches[2], 'base64') });
           }
         }
       }
 
-      const htmlContent = this.getComplaintEmailHtml({
-        customerEmail,
-        subject,
-        description,
-        orderNumber,
-        hasImages: attachments.length > 0,
-        imageCount: attachments.length,
-      });
+      const now = new Date().toLocaleString('pl-PL', { dateStyle: 'long', timeStyle: 'short' });
+      const adminEmail = process.env.SUPPORT_EMAIL || 'support@wb-partners.pl';
 
       const { data: responseData, error } = await resend.emails.send({
         from: FROM_EMAIL,
-        to: ['support@wb-partners.pl'],
+        to: [adminEmail],
         replyTo: customerEmail,
         subject: `[Reklamacja] ${subject}`,
-        html: htmlContent,
-        text: this.getComplaintEmailText({ customerEmail, subject, description, orderNumber }),
+        html: emailWrapper({
+          title: '⚠️ Nowe zgłoszenie reklamacyjne',
+          headerColor: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+          content: `
+            <table role="presentation" cellspacing="0" cellpadding="0" style="width: 100%; margin-bottom: 16px;">
+              ${metaRow('Data zgłoszenia', now)}
+              ${metaRow('Email klienta', `<a href="mailto:${customerEmail}" style="color: #f97316; text-decoration: none;">${escapeHtml(customerEmail)}</a>`)}
+              ${orderNumber ? metaRow('Nr zamówienia', escapeHtml(orderNumber)) : ''}
+              ${metaRow('Temat', `<strong>${escapeHtml(subject)}</strong>`)}
+            </table>
+            ${divider()}
+            <p style="font-size: 13px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 8px;">Opis problemu</p>
+            <div style="background-color: #f8fafc; border-radius: 10px; padding: 18px 20px;">
+              <p style="margin: 0; color: #334155; font-size: 14px; line-height: 1.7; white-space: pre-wrap;">${escapeHtml(description)}</p>
+            </div>
+            ${attachments.length > 0 ? alertBox(`📎 Załączono <strong>${attachments.length}</strong> ${attachments.length === 1 ? 'zdjęcie' : 'zdjęcia'}. Sprawdź załączniki tego emaila.`, 'warning') : ''}
+            ${ctaButton('Odpowiedz klientowi', `mailto:${customerEmail}?subject=Re: ${encodeURIComponent(subject)}`)}
+          `,
+          footerNote: 'Zgłoszenie reklamacyjne — WB Trade',
+        }),
+        text: `REKLAMACJA\n\nData: ${now}\nEmail: ${customerEmail}\n${orderNumber ? `Zamówienie: ${orderNumber}\n` : ''}Temat: ${subject}\n\nOpis:\n${description}`,
         ...(attachments.length > 0 && { attachments }),
       });
 
@@ -1328,7 +730,6 @@ Zespół WB Trade
         console.error('[EmailService] Complaint email error:', error);
         return { success: false, error: error.message };
       }
-
       console.log(`✅ [EmailService] Complaint email sent, messageId: ${responseData?.id}`);
       return { success: true, messageId: responseData?.id };
     } catch (err: any) {
@@ -1337,197 +738,37 @@ Zespół WB Trade
     }
   }
 
-  /**
-   * HTML template for complaint email
-   */
-  private getComplaintEmailHtml(data: {
-    customerEmail: string;
-    subject: string;
-    description: string;
-    orderNumber?: string;
-    hasImages: boolean;
-    imageCount: number;
-  }): string {
-    const { customerEmail, subject, description, orderNumber, hasImages, imageCount } = data;
-    const now = new Date().toLocaleString('pl-PL', { 
-      dateStyle: 'long', 
-      timeStyle: 'short' 
-    });
+  // ──────────────────────────────────────
+  // 8. CONTACT FORM (to admin)
+  // ──────────────────────────────────────
 
-    return `
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-    <!-- Header -->
-    <tr>
-      <td style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); padding: 30px; text-align: center;">
-        <h1 style="color: white; margin: 0; font-size: 24px;">⚠️ Nowe zgłoszenie reklamacyjne</h1>
-      </td>
-    </tr>
-    
-    <!-- Content -->
-    <tr>
-      <td style="padding: 30px;">
-        <table width="100%" cellspacing="0" cellpadding="0">
-          <tr>
-            <td style="padding-bottom: 20px;">
-              <p style="margin: 0; color: #64748b; font-size: 14px;">Data zgłoszenia:</p>
-              <p style="margin: 5px 0 0; color: #1e293b; font-size: 16px; font-weight: 600;">${now}</p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding-bottom: 20px;">
-              <p style="margin: 0; color: #64748b; font-size: 14px;">Email klienta:</p>
-              <p style="margin: 5px 0 0;"><a href="mailto:${customerEmail}" style="color: #f97316; font-size: 16px; font-weight: 600; text-decoration: none;">${customerEmail}</a></p>
-            </td>
-          </tr>
-          ${orderNumber ? `
-          <tr>
-            <td style="padding-bottom: 20px;">
-              <p style="margin: 0; color: #64748b; font-size: 14px;">Numer zamówienia:</p>
-              <p style="margin: 5px 0 0; color: #1e293b; font-size: 16px; font-weight: 600;">${orderNumber}</p>
-            </td>
-          </tr>
-          ` : ''}
-          <tr>
-            <td style="padding-bottom: 20px;">
-              <p style="margin: 0; color: #64748b; font-size: 14px;">Temat reklamacji:</p>
-              <p style="margin: 5px 0 0; color: #1e293b; font-size: 18px; font-weight: 700;">${subject}</p>
-            </td>
-          </tr>
-        </table>
-
-        <!-- Description Box -->
-        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-top: 10px;">
-          <p style="margin: 0 0 10px; color: #64748b; font-size: 14px; font-weight: 600;">Opis problemu:</p>
-          <p style="margin: 0; color: #334155; font-size: 15px; line-height: 1.6; white-space: pre-wrap;">${description.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
-        </div>
-
-        ${hasImages ? `
-        <!-- Images Notice -->
-        <div style="background-color: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 15px; margin-top: 20px;">
-          <p style="margin: 0; color: #92400e; font-size: 14px;">
-            📎 Do zgłoszenia załączono <strong>${imageCount}</strong> ${imageCount === 1 ? 'zdjęcie' : imageCount < 5 ? 'zdjęcia' : 'zdjęć'}. 
-            Sprawdź załączniki tego emaila.
-          </p>
-        </div>
-        ` : ''}
-
-        <!-- Action Button -->
-        <div style="text-align: center; margin-top: 30px;">
-          <a href="mailto:${customerEmail}?subject=Re: ${encodeURIComponent(subject)}" 
-             style="display: inline-block; background-color: #f97316; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 16px;">
-            Odpowiedz klientowi
-          </a>
-        </div>
-      </td>
-    </tr>
-    
-    <!-- Footer -->
-    <tr>
-      <td style="background-color: #1e293b; padding: 20px; text-align: center;">
-        <p style="margin: 0; color: #94a3b8; font-size: 12px;">
-          WB Trade - Zgłoszenie reklamacyjne
-        </p>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
-  }
-
-  /**
-   * Plain text version for complaint email
-   */
-  private getComplaintEmailText(data: {
-    customerEmail: string;
-    subject: string;
-    description: string;
-    orderNumber?: string;
-  }): string {
-    const { customerEmail, subject, description, orderNumber } = data;
-    const now = new Date().toLocaleString('pl-PL');
-
-    return `
-NOWE ZGŁOSZENIE REKLAMACYJNE
-============================
-
-Data: ${now}
-Email klienta: ${customerEmail}
-${orderNumber ? `Numer zamówienia: ${orderNumber}` : ''}
-
-TEMAT: ${subject}
-
-OPIS PROBLEMU:
-${description}
-
----
-Odpowiedz na ten email, aby skontaktować się z klientem.
-    `.trim();
-  }
-
-  /**
-   * Send general contact form email
-   */
-  async sendContactFormEmail(data: {
-    name: string;
-    email: string;
-    subject: string;
-    message: string;
-  }): Promise<EmailResult> {
+  async sendContactFormEmail(data: { name: string; email: string; subject: string; message: string }): Promise<EmailResult> {
     try {
       const resend = getResend();
       const { name, email, subject, message } = data;
-
-      const htmlContent = `
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-  <meta charset="UTF-8">
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-    <tr>
-      <td style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 30px; text-align: center;">
-        <h1 style="color: white; margin: 0; font-size: 24px;">📬 Nowa wiadomość ze strony</h1>
-      </td>
-    </tr>
-    <tr>
-      <td style="padding: 30px;">
-        <p style="margin: 0 0 10px; color: #64748b;">Od:</p>
-        <p style="margin: 0 0 20px; color: #1e293b; font-size: 16px;"><strong>${name}</strong> (${email})</p>
-        
-        <p style="margin: 0 0 10px; color: #64748b;">Temat:</p>
-        <p style="margin: 0 0 20px; color: #1e293b; font-size: 16px; font-weight: 600;">${subject}</p>
-        
-        <div style="background-color: #f8fafc; border-radius: 8px; padding: 20px;">
-          <p style="margin: 0 0 10px; color: #64748b; font-size: 14px;">Treść wiadomości:</p>
-          <p style="margin: 0; color: #334155; line-height: 1.6; white-space: pre-wrap;">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
-        </div>
-        
-        <div style="text-align: center; margin-top: 30px;">
-          <a href="mailto:${email}?subject=Re: ${encodeURIComponent(subject)}" 
-             style="display: inline-block; background-color: #f97316; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600;">
-            Odpowiedz
-          </a>
-        </div>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+      const adminEmail = process.env.SUPPORT_EMAIL || 'support@wb-partners.pl';
 
       const { data: responseData, error } = await resend.emails.send({
         from: FROM_EMAIL,
-        to: ['support@wb-partners.pl'],
+        to: [adminEmail],
         replyTo: email,
         subject: `[Kontakt] ${subject}`,
-        html: htmlContent,
+        html: emailWrapper({
+          title: '📬 Nowa wiadomość ze strony',
+          content: `
+            <table role="presentation" cellspacing="0" cellpadding="0" style="width: 100%; margin-bottom: 16px;">
+              ${metaRow('Od', `<strong>${escapeHtml(name)}</strong> (<a href="mailto:${escapeHtml(email)}" style="color: #f97316; text-decoration: none;">${escapeHtml(email)}</a>)`)}
+              ${metaRow('Temat', `<strong>${escapeHtml(subject)}</strong>`)}
+            </table>
+            ${divider()}
+            <p style="font-size: 13px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 8px;">Treść wiadomości</p>
+            <div style="background-color: #f8fafc; border-radius: 10px; padding: 18px 20px;">
+              <p style="margin: 0; color: #334155; font-size: 14px; line-height: 1.7; white-space: pre-wrap;">${escapeHtml(message)}</p>
+            </div>
+            ${ctaButton('Odpowiedz', `mailto:${escapeHtml(email)}?subject=Re: ${encodeURIComponent(subject)}`)}
+          `,
+          footerNote: 'Formularz kontaktowy — WB Trade',
+        }),
         text: `Od: ${name} (${email})\nTemat: ${subject}\n\n${message}`,
       });
 
@@ -1535,7 +776,6 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
         console.error('[EmailService] Contact form error:', error);
         return { success: false, error: error.message };
       }
-
       return { success: true, messageId: responseData?.id };
     } catch (err: any) {
       console.error('[EmailService] Contact form exception:', err);
@@ -1543,69 +783,36 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
     }
   }
 
-  /**
-   * Send confirmation email to customer after contact form submission
-   */
-  async sendContactConfirmationEmail(data: {
-    name: string;
-    email: string;
-    subject: string;
-  }): Promise<EmailResult> {
+  // ──────────────────────────────────────
+  // 9. CONTACT CONFIRMATION (to customer)
+  // ──────────────────────────────────────
+
+  async sendContactConfirmationEmail(data: { name: string; email: string; subject: string }): Promise<EmailResult> {
     try {
       const resend = getResend();
       const { name, email, subject } = data;
-
-      const htmlContent = `
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-  <meta charset="UTF-8">
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-    <tr>
-      <td style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 30px; text-align: center;">
-        <h1 style="color: white; margin: 0; font-size: 24px;">✅ Otrzymaliśmy Twoją wiadomość</h1>
-      </td>
-    </tr>
-    <tr>
-      <td style="padding: 30px;">
-        <p style="margin: 0 0 16px; color: #1e293b; font-size: 16px;">Cześć <strong>${name}</strong>,</p>
-        <p style="margin: 0 0 16px; color: #334155; line-height: 1.6;">
-          Dziękujemy za kontakt! Potwierdzamy otrzymanie Twojej wiadomości dotyczącej tematu: <strong>${subject}</strong>.
-        </p>
-        <p style="margin: 0 0 16px; color: #334155; line-height: 1.6;">
-          Nasz zespół odpowie najszybciej jak to możliwe — zwykle w ciągu <strong>24 godzin</strong> w dni robocze
-          (poniedziałek–piątek, 9:00–17:00).
-        </p>
-        <div style="background-color: #f0fdf4; border-left: 4px solid #22c55e; border-radius: 4px; padding: 16px; margin: 24px 0;">
-          <p style="margin: 0; color: #166534; font-size: 14px;">Nie musisz odpowiadać na tego maila. Jeśli masz dodatkowe pytania, po prostu napisz do nas ponownie przez formularz na stronie lub na adres <a href="mailto:support@wb-partners.pl" style="color: #f97316;">support@wb-partners.pl</a>.</p>
-        </div>
-        <p style="margin: 24px 0 0; color: #64748b; font-size: 14px;">Pozdrawiamy,<br><strong>Zespół WB Trade</strong></p>
-      </td>
-    </tr>
-    <tr>
-      <td style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
-        <p style="margin: 0; color: #94a3b8; font-size: 12px;">WB Partners Sp. z o.o. | ul. Słowackiego 24/11, 35-060 Rzeszów</p>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
 
       const { data: responseData, error } = await resend.emails.send({
         from: FROM_EMAIL,
         to: [email],
         subject: `Potwierdzenie otrzymania wiadomości — ${subject}`,
-        html: htmlContent,
-        text: `Cześć ${name},\n\nDziękujemy za kontakt! Potwierdzamy otrzymanie Twojej wiadomości dotyczącej tematu: ${subject}.\n\nNasz zespół odpowie najszybciej jak to możliwe — zwykle w ciągu 24 godzin w dni robocze (poniedziałek–piątek, 9:00–17:00).\n\nPozdrawiamy,\nZespół WB Trade`,
+        html: emailWrapper({
+          title: '✅ Otrzymaliśmy Twoją wiadomość',
+          content: `
+            ${greeting(name)}
+            ${paragraph(`Dziękujemy za kontakt! Potwierdzamy otrzymanie Twojej wiadomości dotyczącej tematu: <strong>${escapeHtml(subject)}</strong>.`)}
+            ${paragraph('Nasz zespół odpowie najszybciej jak to możliwe — zwykle w ciągu <strong>24 godzin</strong> w dni robocze (poniedziałek–piątek, 9:00–17:00).')}
+            ${alertBox('Nie musisz odpowiadać na tego maila. Jeśli masz dodatkowe pytania, napisz do nas przez formularz na stronie lub na adres <a href="mailto:support@wb-partners.pl" style="color: #f97316; text-decoration: none; font-weight: 600;">support@wb-partners.pl</a>.', 'success')}
+          `,
+          footerNote: 'WB Partners Sp. z o.o. | ul. Słowackiego 24/11, 35-060 Rzeszów',
+        }),
+        text: `Cześć ${name},\n\nDziękujemy za kontakt! Potwierdzamy otrzymanie wiadomości: ${subject}.\nOdpowiemy w ciągu 24h w dni robocze.\n\nPozdrawiamy,\nZespół WB Trade`,
       });
 
       if (error) {
         console.error('[EmailService] Contact confirmation error:', error);
         return { success: false, error: error.message };
       }
-
       return { success: true, messageId: responseData?.id };
     } catch (err: any) {
       console.error('[EmailService] Contact confirmation exception:', err);
@@ -1613,31 +820,23 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
     }
   }
 
-  // ─── Support Messaging Notifications ───
+  // ──────────────────────────────────────
+  // 10. SUPPORT — NEW TICKET TO ADMIN
+  // ──────────────────────────────────────
 
   async sendSupportNewTicketToAdmin(ticket: {
-    ticketNumber: string;
-    subject: string;
-    category: string;
-    userName?: string;
-    userEmail?: string;
-    message: string;
+    ticketNumber: string; subject: string; category: string;
+    userName?: string; userEmail?: string; message: string;
   }): Promise<EmailResult> {
     try {
       const adminEmail = process.env.SUPPORT_EMAIL || 'support@wb-partners.pl';
       const resend = getResend();
 
       const categoryLabels: Record<string, string> = {
-        ORDER: 'Zamówienie',
-        DELIVERY: 'Dostawa',
-        COMPLAINT: 'Reklamacja',
-        RETURN: 'Zwrot',
-        PAYMENT: 'Płatność',
-        ACCOUNT: 'Konto',
-        GENERAL: 'Ogólne',
+        ORDER: 'Zamówienie', DELIVERY: 'Dostawa', COMPLAINT: 'Reklamacja',
+        RETURN: 'Zwrot', PAYMENT: 'Płatność', ACCOUNT: 'Konto', GENERAL: 'Ogólne',
       };
 
-      // Reply-To so admin can reply via email → routed through Resend inbound
       const inboundDomain = process.env.INBOUND_EMAIL_DOMAIN || 'wb-trade.pl';
       const replyToAddr = `support+${ticket.ticketNumber}@${inboundDomain}`;
 
@@ -1646,35 +845,29 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
         replyTo: replyToAddr,
         to: adminEmail,
         subject: `[${ticket.ticketNumber}] Nowa wiadomość: ${ticket.subject}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: #f97316; padding: 20px; border-radius: 8px 8px 0 0;">
-              <h2 style="color: white; margin: 0;">📩 Nowa wiadomość od klienta</h2>
+        html: emailWrapper({
+          title: '📩 Nowa wiadomość od klienta',
+          content: `
+            <table role="presentation" cellspacing="0" cellpadding="0" style="width: 100%; margin-bottom: 16px;">
+              ${metaRow('Ticket', `<strong>${ticket.ticketNumber}</strong>`)}
+              ${metaRow('Od', `${escapeHtml(ticket.userName || 'Nieznany')} (${escapeHtml(ticket.userEmail || 'brak emaila')})`)}
+              ${metaRow('Kategoria', badge(categoryLabels[ticket.category] || ticket.category, '#f97316'))}
+              ${metaRow('Temat', `<strong>${escapeHtml(ticket.subject)}</strong>`)}
+            </table>
+            ${divider()}
+            <div style="background-color: #f8fafc; border-radius: 10px; padding: 18px 20px;">
+              <p style="margin: 0; color: #334155; font-size: 14px; line-height: 1.7; white-space: pre-wrap;">${escapeHtml(ticket.message).replace(/\n/g, '<br>')}</p>
             </div>
-            <div style="padding: 20px; background: #1e293b; color: #e2e8f0; border-radius: 0 0 8px 8px;">
-              <p><strong>Ticket:</strong> ${ticket.ticketNumber}</p>
-              <p><strong>Od:</strong> ${ticket.userName || 'Nieznany'} (${ticket.userEmail || 'brak emaila'})</p>
-              <p><strong>Kategoria:</strong> ${categoryLabels[ticket.category] || ticket.category}</p>
-              <p><strong>Temat:</strong> ${escapeHtml(ticket.subject)}</p>
-              <hr style="border-color: #475569;" />
-              <p>${escapeHtml(ticket.message).replace(/\\n/g, '<br>')}</p>
-              <hr style="border-color: #475569;" />
-              <p style="text-align: center;">
-                <a href="${SITE_URL.replace('wb-trade.pl', 'admin.wb-trade.pl')}/messages" 
-                   style="background: #f97316; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                  Odpowiedz w panelu
-                </a>
-              </p>
-            </div>
-          </div>
-        `,
+            ${ctaButton('Odpowiedz w panelu', `${SITE_URL.replace('wb-trade.pl', 'admin.wb-trade.pl')}/messages`)}
+          `,
+          footerNote: 'Powiadomienie support — WB Trade',
+        }),
       });
 
       if (error) {
         console.error('[EmailService] Support ticket notification error:', error);
         return { success: false, error: error.message };
       }
-
       console.log(`✅ [EmailService] Support ticket notification sent for ${ticket.ticketNumber}`);
       return { success: true, messageId: data?.id };
     } catch (err: any) {
@@ -1683,53 +876,49 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
     }
   }
 
+  // ──────────────────────────────────────
+  // 11. SUPPORT — REPLY TO CUSTOMER
+  // ──────────────────────────────────────
+
   async sendSupportReplyToCustomer(data: {
-    to: string;
-    ticketNumber: string;
-    subject: string;
-    customerName: string;
-    replyContent?: string;
+    to: string; ticketNumber: string; subject: string; customerName: string; replyContent?: string;
   }): Promise<EmailResult> {
     try {
       const resend = getResend();
+      const supportEmail = process.env.SUPPORT_EMAIL || 'support@wb-partners.pl';
 
       const replySection = data.replyContent
-        ? `<div style="background: #334155; border-left: 4px solid #f97316; padding: 12px 16px; border-radius: 0 6px 6px 0; margin: 12px 0;">
-             <p style="margin: 0; white-space: pre-wrap;">${escapeHtml(data.replyContent)}</p>
+        ? `<div style="background-color: #f8fafc; border-left: 4px solid #f97316; border-radius: 0 10px 10px 0; padding: 16px 20px; margin: 16px 0;">
+             <p style="margin: 0; color: #334155; font-size: 14px; line-height: 1.7; white-space: pre-wrap;">${escapeHtml(data.replyContent)}</p>
            </div>`
-        : '<p>Aby zobaczyć szczegóły odpowiedzi, zaloguj się do swojego konta.</p>';
+        : paragraph('Aby zobaczyć szczegóły odpowiedzi, zaloguj się do swojego konta.');
 
       const { data: responseData, error } = await resend.emails.send({
         from: FROM_EMAIL,
         to: data.to,
+        replyTo: [supportEmail],
         subject: `[${data.ticketNumber}] Odpowiedź na Twoją wiadomość`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: #f97316; padding: 20px; border-radius: 8px 8px 0 0;">
-              <h2 style="color: white; margin: 0;">💬 Masz nową odpowiedź</h2>
-            </div>
-            <div style="padding: 20px; background: #1e293b; color: #e2e8f0; border-radius: 0 0 8px 8px;">
-              <p>Cześć ${escapeHtml(data.customerName)}!</p>
-              <p>Otrzymaliśmy odpowiedź na Twoją wiadomość <strong>${data.ticketNumber}</strong>.</p>
-              <p><strong>Temat:</strong> ${escapeHtml(data.subject)}</p>
-              <hr style="border-color: #475569;" />
-              ${replySection}
-              <p style="text-align: center; margin-top: 16px;">
-                <a href="${SITE_URL}/account/messages" 
-                   style="background: #f97316; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                  Zobacz wiadomości
-                </a>
-              </p>
-            </div>
-          </div>
-        `,
+        html: emailWrapper({
+          title: '💬 Masz nową odpowiedź',
+          content: `
+            ${greeting(data.customerName)}
+            ${paragraph(`Odpowiedzieliśmy na Twoją wiadomość <strong>${escapeHtml(data.ticketNumber)}</strong>.`)}
+
+            <table role="presentation" cellspacing="0" cellpadding="0" style="width: 100%; margin-bottom: 8px;">
+              ${metaRow('Temat', escapeHtml(data.subject))}
+            </table>
+            ${divider()}
+            ${replySection}
+            ${ctaButton('Zobacz wiadomości', `${SITE_URL}/account/messages`)}
+          `,
+          footerNote: `Odpowiedz na tego maila lub napisz do nas: ${supportEmail}`,
+        }),
       });
 
       if (error) {
         console.error('[EmailService] Support reply notification error:', error);
         return { success: false, error: error.message };
       }
-
       console.log(`✅ [EmailService] Support reply notification sent to ${data.to}`);
       return { success: true, messageId: responseData?.id };
     } catch (err: any) {
@@ -1738,18 +927,17 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
     }
   }
 
+  // ──────────────────────────────────────
+  // 12. SUPPORT — CUSTOMER REPLY TO ADMIN
+  // ──────────────────────────────────────
+
   async sendSupportCustomerReplyToAdmin(ticket: {
-    ticketNumber: string;
-    subject: string;
-    userName?: string;
-    userEmail?: string;
-    message: string;
+    ticketNumber: string; subject: string; userName?: string; userEmail?: string; message: string;
   }): Promise<EmailResult> {
     try {
       const adminEmail = process.env.SUPPORT_EMAIL || 'support@wb-partners.pl';
       const resend = getResend();
 
-      // Reply-To so admin can reply via email → routed through Resend inbound
       const inboundDomain = process.env.INBOUND_EMAIL_DOMAIN || 'wb-trade.pl';
       const replyToAddr = `support+${ticket.ticketNumber}@${inboundDomain}`;
 
@@ -1758,36 +946,29 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
         replyTo: replyToAddr,
         to: adminEmail,
         subject: `[${ticket.ticketNumber}] Nowa odpowiedź klienta: ${ticket.subject}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: #3b82f6; padding: 20px; border-radius: 8px 8px 0 0;">
-              <h2 style="color: white; margin: 0;">🔔 Klient odpowiedział na ticket</h2>
+        html: emailWrapper({
+          title: '🔔 Klient odpowiedział na ticket',
+          headerColor: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+          content: `
+            <table role="presentation" cellspacing="0" cellpadding="0" style="width: 100%; margin-bottom: 16px;">
+              ${metaRow('Ticket', `<strong>${ticket.ticketNumber}</strong>`)}
+              ${metaRow('Od', `${escapeHtml(ticket.userName || 'Nieznany')} (${escapeHtml(ticket.userEmail || 'brak emaila')})`)}
+              ${metaRow('Temat', escapeHtml(ticket.subject))}
+            </table>
+            ${divider()}
+            <div style="background-color: #f8fafc; border-left: 4px solid #3b82f6; border-radius: 0 10px 10px 0; padding: 16px 20px;">
+              <p style="margin: 0; color: #334155; font-size: 14px; line-height: 1.7; white-space: pre-wrap;">${escapeHtml(ticket.message).replace(/\n/g, '<br>')}</p>
             </div>
-            <div style="padding: 20px; background: #1e293b; color: #e2e8f0; border-radius: 0 0 8px 8px;">
-              <p><strong>Ticket:</strong> ${ticket.ticketNumber}</p>
-              <p><strong>Od:</strong> ${ticket.userName || 'Nieznany'} (${ticket.userEmail || 'brak emaila'})</p>
-              <p><strong>Temat:</strong> ${escapeHtml(ticket.subject)}</p>
-              <hr style="border-color: #475569;" />
-              <div style="background: #334155; border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 0 6px 6px 0;">
-                <p style="margin: 0; white-space: pre-wrap;">${escapeHtml(ticket.message).replace(/\n/g, '<br>')}</p>
-              </div>
-              <hr style="border-color: #475569;" />
-              <p style="text-align: center;">
-                <a href="${SITE_URL.replace('wb-trade.pl', 'admin.wb-trade.pl')}/messages" 
-                   style="background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                  Odpowiedz w panelu
-                </a>
-              </p>
-            </div>
-          </div>
-        `,
+            ${ctaButton('Odpowiedz w panelu', `${SITE_URL.replace('wb-trade.pl', 'admin.wb-trade.pl')}/messages`, '#3b82f6')}
+          `,
+          footerNote: 'Powiadomienie support — WB Trade',
+        }),
       });
 
       if (error) {
         console.error('[EmailService] Customer reply notification error:', error);
         return { success: false, error: error.message };
       }
-
       console.log(`✅ [EmailService] Customer reply notification sent for ${ticket.ticketNumber}`);
       return { success: true, messageId: data?.id };
     } catch (err: any) {
@@ -1796,53 +977,30 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
     }
   }
 
-  // ─── Order Status Change Notification to Admin ───
+  // ──────────────────────────────────────
+  // 13. ORDER STATUS CHANGE (to admin)
+  // ──────────────────────────────────────
 
   async sendOrderStatusChangeToAdmin(order: {
-    orderNumber: string;
-    status: string;
-    previousStatus: string;
-    total: number;
-    customerName?: string;
-    customerEmail?: string;
-    itemCount?: number;
-    paymentMethod?: string;
-    note?: string;
+    orderNumber: string; status: string; previousStatus: string; total: number;
+    customerName?: string; customerEmail?: string; itemCount?: number; paymentMethod?: string; note?: string;
   }): Promise<EmailResult> {
     try {
       const adminEmail = process.env.SUPPORT_EMAIL || 'support@wb-partners.pl';
       const resend = getResend();
 
       const statusLabels: Record<string, string> = {
-        OPEN: 'Otwarte',
-        PENDING: 'Oczekujące',
-        CONFIRMED: 'Potwierdzone',
-        PROCESSING: 'W realizacji',
-        SHIPPED: 'Wysłane',
-        DELIVERED: 'Dostarczone',
-        COMPLETED: 'Zakończone',
-        CANCELLED: 'Anulowane',
-        REFUNDED: 'Zwrócone',
+        OPEN: 'Otwarte', PENDING: 'Oczekujące', CONFIRMED: 'Potwierdzone',
+        PROCESSING: 'W realizacji', SHIPPED: 'Wysłane', DELIVERED: 'Dostarczone',
+        COMPLETED: 'Zakończone', CANCELLED: 'Anulowane', REFUNDED: 'Zwrócone',
       };
-
       const statusColors: Record<string, string> = {
-        CONFIRMED: '#22c55e',
-        PROCESSING: '#3b82f6',
-        SHIPPED: '#8b5cf6',
-        DELIVERED: '#22c55e',
-        COMPLETED: '#059669',
-        CANCELLED: '#ef4444',
-        REFUNDED: '#f59e0b',
+        CONFIRMED: '#22c55e', PROCESSING: '#3b82f6', SHIPPED: '#8b5cf6',
+        DELIVERED: '#22c55e', COMPLETED: '#059669', CANCELLED: '#ef4444', REFUNDED: '#f59e0b',
       };
-
       const statusIcons: Record<string, string> = {
-        CONFIRMED: '✅',
-        PROCESSING: '⚙️',
-        SHIPPED: '🚚',
-        DELIVERED: '📦',
-        COMPLETED: '🏁',
-        CANCELLED: '❌',
-        REFUNDED: '💸',
+        CONFIRMED: '✅', PROCESSING: '⚙️', SHIPPED: '🚚', DELIVERED: '📦',
+        COMPLETED: '🏁', CANCELLED: '❌', REFUNDED: '💸',
       };
 
       const statusLabel = statusLabels[order.status] || order.status;
@@ -1850,49 +1008,35 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
       const color = statusColors[order.status] || '#6b7280';
       const icon = statusIcons[order.status] || '📋';
 
-      const formattedTotal = new Intl.NumberFormat('pl-PL', {
-        style: 'currency',
-        currency: 'PLN',
-      }).format(order.total / 100);
-
-      const noteSection = order.note
-        ? `<p style="margin-top: 12px;"><strong>Notatka:</strong> ${escapeHtml(order.note)}</p>`
-        : '';
+      const formattedTotal = new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(order.total / 100);
 
       const { data, error } = await resend.emails.send({
         from: FROM_EMAIL,
         to: adminEmail,
         subject: `${icon} [${order.orderNumber}] Status: ${statusLabel}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: ${color}; padding: 20px; border-radius: 8px 8px 0 0;">
-              <h2 style="color: white; margin: 0;">${icon} Zmiana statusu zamówienia</h2>
-            </div>
-            <div style="padding: 20px; background: #1e293b; color: #e2e8f0; border-radius: 0 0 8px 8px;">
-              <p><strong>Zamówienie:</strong> ${escapeHtml(order.orderNumber)}</p>
-              <p><strong>Status:</strong> <span style="color: ${color}; font-weight: bold;">${escapeHtml(prevStatusLabel)} → ${escapeHtml(statusLabel)}</span></p>
-              <p><strong>Klient:</strong> ${escapeHtml(order.customerName || 'Nieznany')} (${escapeHtml(order.customerEmail || 'brak emaila')})</p>
-              <p><strong>Kwota:</strong> ${formattedTotal}</p>
-              ${order.itemCount ? `<p><strong>Produkty:</strong> ${order.itemCount} szt.</p>` : ''}
-              ${order.paymentMethod ? `<p><strong>Płatność:</strong> ${escapeHtml(order.paymentMethod)}</p>` : ''}
-              ${noteSection}
-              <hr style="border-color: #475569;" />
-              <p style="text-align: center;">
-                <a href="${SITE_URL.replace('wb-trade.pl', 'admin.wb-trade.pl')}/orders" 
-                   style="background: ${color}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                  Zobacz zamówienie
-                </a>
-              </p>
-            </div>
-          </div>
-        `,
+        html: emailWrapper({
+          title: `${icon} Zmiana statusu zamówienia`,
+          headerColor: color,
+          content: `
+            <table role="presentation" cellspacing="0" cellpadding="0" style="width: 100%; margin-bottom: 16px;">
+              ${metaRow('Zamówienie', `<strong>${escapeHtml(order.orderNumber)}</strong>`)}
+              ${metaRow('Status', `${badge(escapeHtml(prevStatusLabel), '#94a3b8')} → ${badge(escapeHtml(statusLabel), color)}`)}
+              ${metaRow('Klient', `${escapeHtml(order.customerName || 'Nieznany')} (${escapeHtml(order.customerEmail || 'brak emaila')})`)}
+              ${metaRow('Kwota', formattedTotal)}
+              ${order.itemCount ? metaRow('Produkty', `${order.itemCount} szt.`) : ''}
+              ${order.paymentMethod ? metaRow('Płatność', escapeHtml(order.paymentMethod)) : ''}
+            </table>
+            ${order.note ? `${divider()}${infoBox(`<p style="margin: 0; color: #334155; font-size: 14px;"><strong>Notatka:</strong> ${escapeHtml(order.note)}</p>`, color)}` : ''}
+            ${ctaButton('Zobacz zamówienie', `${SITE_URL.replace('wb-trade.pl', 'admin.wb-trade.pl')}/orders`, color)}
+          `,
+          footerNote: 'Powiadomienie o statusie — WB Trade',
+        }),
       });
 
       if (error) {
         console.error('[EmailService] Order status notification error:', error);
         return { success: false, error: error.message };
       }
-
       console.log(`✅ [EmailService] Order status notification sent for ${order.orderNumber} → ${order.status}`);
       return { success: true, messageId: data?.id };
     } catch (err: any) {
@@ -1901,75 +1045,70 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
     }
   }
 
-  /**
-   * Send return/complaint confirmation email to customer/guest
-   */
+  // ──────────────────────────────────────
+  // 14. RETURN / COMPLAINT CONFIRMATION
+  // ──────────────────────────────────────
+
   async sendReturnConfirmationEmail(data: {
-    to: string;
-    customerName: string;
-    returnNumber: string;
-    type: 'RETURN' | 'COMPLAINT';
-    orderNumber: string;
-    reason: string;
-    returnAddress: {
-      name: string;
-      street: string;
-      city: string;
-      postalCode: string;
-    };
+    to: string; customerName: string; returnNumber: string;
+    type: 'RETURN' | 'COMPLAINT'; orderNumber: string; reason: string;
+    returnAddress: { name: string; street: string; city: string; postalCode: string };
   }): Promise<EmailResult> {
     try {
       const resend = getResend();
       const typeLabel = data.type === 'RETURN' ? 'zwrotu' : 'reklamacji';
       const typeLabelUpper = data.type === 'RETURN' ? 'Zwrot' : 'Reklamacja';
+      const headerColor = data.type === 'RETURN'
+        ? 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)'
+        : 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)';
+      const accentColor = data.type === 'RETURN' ? '#f97316' : '#dc2626';
 
       const { data: responseData, error } = await resend.emails.send({
         from: FROM_EMAIL,
         to: data.to,
         subject: `[${data.returnNumber}] Potwierdzenie zgłoszenia ${typeLabel}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: ${data.type === 'RETURN' ? '#f97316' : '#dc2626'}; padding: 20px; border-radius: 8px 8px 0 0;">
-              <h2 style="color: white; margin: 0;">📋 Potwierdzenie zgłoszenia ${typeLabel}</h2>
-            </div>
-            <div style="padding: 20px; background: #1e293b; color: #e2e8f0; border-radius: 0 0 8px 8px;">
-              <p>Cześć ${escapeHtml(data.customerName)}!</p>
-              <p>Twoje zgłoszenie ${typeLabel} zostało przyjęte.</p>
-              
-              <div style="background: #dc2626; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
-                <p style="margin: 0 0 8px; color: #fecaca; font-size: 14px;">Twój numer ${typeLabel}:</p>
-                <p style="margin: 0; color: white; font-size: 28px; font-weight: bold; letter-spacing: 2px;">${data.returnNumber}</p>
-              </div>
-              
-              <div style="background: #7f1d1d; border: 2px solid #dc2626; border-radius: 8px; padding: 16px; margin: 16px 0;">
-                <p style="margin: 0; color: #fca5a5; font-weight: bold;">⚠️ WAŻNE: Umieść numer ${data.returnNumber} NA PACZCE (na zewnątrz)!</p>
-                <p style="margin: 4px 0 0; color: #fecaca; font-size: 13px;">Numer musi być widoczny na opakowaniu — nie umieszczaj go wewnątrz paczki.</p>
-                <p style="margin: 8px 0 0; color: #fecaca; font-size: 14px;">Bez tego numeru nie będziemy mogli zidentyfikować Twojego ${typeLabel === 'zwrotu' ? 'zwrotu' : 'zgłoszenia'}.</p>
-              </div>
+        html: emailWrapper({
+          title: `📋 Potwierdzenie zgłoszenia ${typeLabel}`,
+          headerColor,
+          content: `
+            ${greeting(data.customerName)}
+            ${paragraph(`Twoje zgłoszenie ${typeLabel} zostało przyjęte. Poniżej znajdziesz szczegóły i instrukcję wysyłki.`)}
 
-              <p><strong>Zamówienie:</strong> ${escapeHtml(data.orderNumber)}</p>
-              <p><strong>Typ:</strong> ${typeLabelUpper}</p>
-              <p><strong>Powód:</strong> ${escapeHtml(data.reason)}</p>
-
-              <hr style="border-color: #475569;" />
-              
-              <p style="font-weight: bold;">Adres do wysyłki:</p>
-              <p style="margin: 4px 0;">${escapeHtml(data.returnAddress.name)}</p>
-              <p style="margin: 4px 0;">${escapeHtml(data.returnAddress.street)}</p>
-              <p style="margin: 4px 0;">${escapeHtml(data.returnAddress.postalCode)} ${escapeHtml(data.returnAddress.city)}</p>
-              
-              <hr style="border-color: #475569;" />
-              <p style="font-size: 13px; color: #94a3b8;">Wiadomość wysłana automatycznie ze sklepu wb-trade.pl</p>
+            <!-- Return number -->
+            <div style="background-color: ${data.type === 'RETURN' ? '#fff7ed' : '#fef2f2'}; border: 2px solid ${accentColor}; border-radius: 12px; padding: 20px; text-align: center; margin: 20px 0;">
+              <p style="margin: 0 0 4px; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Numer ${typeLabel}</p>
+              <p style="margin: 0; color: ${accentColor}; font-size: 26px; font-weight: 800; letter-spacing: 2px;">${escapeHtml(data.returnNumber)}</p>
             </div>
-          </div>
-        `,
+
+            <!-- Critical warning -->
+            <div style="background-color: #fef2f2; border: 2px solid #dc2626; border-radius: 10px; padding: 16px 20px; margin: 20px 0;">
+              <p style="margin: 0 0 4px; color: #991b1b; font-weight: 800; font-size: 14px;">⚠️ WAŻNE: Umieść numer ${escapeHtml(data.returnNumber)} NA PACZCE (na zewnątrz)!</p>
+              <p style="margin: 0; color: #b91c1c; font-size: 13px; line-height: 1.5;">Numer musi być widoczny na opakowaniu — nie umieszczaj go wewnątrz paczki. Bez tego numeru nie będziemy mogli zidentyfikować Twojego ${typeLabel === 'zwrotu' ? 'zwrotu' : 'zgłoszenia'}.</p>
+            </div>
+
+            <table role="presentation" cellspacing="0" cellpadding="0" style="width: 100%; margin: 16px 0;">
+              ${metaRow('Zamówienie', escapeHtml(data.orderNumber))}
+              ${metaRow('Typ', typeLabelUpper)}
+              ${metaRow('Powód', escapeHtml(data.reason))}
+            </table>
+
+            ${divider()}
+            <p style="font-size: 15px; font-weight: 700; color: #1e293b; margin: 0 0 8px;">📦 Adres do wysyłki</p>
+            <div style="background-color: #f8fafc; border-radius: 10px; padding: 16px 20px;">
+              <p style="margin: 0; color: #1e293b; font-size: 14px; line-height: 1.6;">
+                ${escapeHtml(data.returnAddress.name)}<br>
+                ${escapeHtml(data.returnAddress.street)}<br>
+                ${escapeHtml(data.returnAddress.postalCode)} ${escapeHtml(data.returnAddress.city)}
+              </p>
+            </div>
+          `,
+        }),
       });
 
       if (error) {
         console.error('[EmailService] Return confirmation email error:', error);
         return { success: false, error: error.message };
       }
-
       console.log(`✅ [EmailService] Return confirmation sent to ${data.to}, number: ${data.returnNumber}`);
       return { success: true, messageId: responseData?.id };
     } catch (err: any) {
@@ -1978,74 +1117,54 @@ Odpowiedz na ten email, aby skontaktować się z klientem.
     }
   }
 
-  // ────────────────────────────────────────────────────────
-  // Delivery Delay Notification Email
-  // ────────────────────────────────────────────────────────
+  // ──────────────────────────────────────
+  // 15. DELIVERY DELAY NOTIFICATION
+  // ──────────────────────────────────────
 
   async sendDeliveryDelayEmail(data: {
-    to: string;
-    customerName: string;
-    orderNumber: string;
-    messageContent: string;
+    to: string; customerName: string; orderNumber: string; messageContent: string; replyTo?: string;
   }): Promise<EmailResult> {
     debugLog(`sendDeliveryDelayEmail called for order ${data.orderNumber}`);
     try {
       const resend = getResend();
-      const safeCustomerName = escapeHtml(data.customerName);
       const safeOrderNumber = escapeHtml(data.orderNumber);
-      // Convert newlines to <br> for HTML, escape HTML in content
       const htmlContent = escapeHtml(data.messageContent).replace(/\n/g, '<br>');
+
+      const replyNote = data.replyTo
+        ? `Masz pytanie lub chcesz przekazać nam informację? <strong style="color: #1e293b;">Po prostu odpowiedz na tego maila</strong> — Twoja wiadomość trafi bezpośrednio do naszego zespołu obsługi.`
+        : 'W razie pytań skontaktuj się z nami przez formularz na stronie.';
 
       const { data: responseData, error } = await resend.emails.send({
         from: FROM_EMAIL,
         to: [data.to],
+        ...(data.replyTo ? { replyTo: [data.replyTo] } : {}),
         subject: `Informacja o zamówieniu #${data.orderNumber} — WBTrade`,
-        html: `
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #0f172a; color: #e2e8f0; padding: 0;">
-            <!-- Header -->
-            <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 24px 32px; text-align: center;">
-              <h1 style="margin: 0; font-size: 22px; color: #ffffff; font-weight: 700;">WBTrade</h1>
+        html: emailWrapper({
+          title: 'Informacja o Twoim zamówieniu',
+          content: `
+            ${greeting(data.customerName)}
+
+            <div style="background-color: #fff7ed; border-radius: 10px; padding: 10px 16px; display: inline-block; margin: 0 0 20px;">
+              <p style="margin: 0; color: #9a3412; font-size: 13px; font-weight: 700;">📦 Zamówienie #${safeOrderNumber}</p>
             </div>
 
-            <!-- Content -->
-            <div style="padding: 32px;">
-              <h2 style="color: #f97316; font-size: 20px; margin: 0 0 8px 0;">Informacja o Twoim zamówieniu</h2>
-              <p style="color: #94a3b8; font-size: 14px; margin: 0 0 24px 0;">Zamówienie #${safeOrderNumber}</p>
-
-              <div style="background: #1e293b; border-radius: 12px; padding: 24px; margin-bottom: 24px; border-left: 4px solid #f97316;">
-                <p style="color: #e2e8f0; font-size: 15px; line-height: 1.7; margin: 0;">
-                  ${htmlContent}
-                </p>
-              </div>
-
-              <!-- CTA -->
-              <div style="text-align: center; margin: 32px 0;">
-                <a href="${SITE_URL}/account/orders" style="display: inline-block; background: linear-gradient(135deg, #f97316, #ea580c); color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px;">
-                  Sprawdź status zamówienia
-                </a>
-              </div>
-
-              <p style="color: #94a3b8; font-size: 13px; line-height: 1.6;">
-                W razie pytań odpowiedz na tę wiadomość lub skontaktuj się z nami przez formularz na stronie.
-              </p>
+            <div style="background-color: #f8fafc; border-left: 4px solid #f97316; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 0 0 24px;">
+              <p style="color: #334155; font-size: 15px; line-height: 1.8; margin: 0;">${htmlContent}</p>
             </div>
 
-            <!-- Footer -->
-            <div style="padding: 24px 32px; text-align: center; border-top: 1px solid #1e293b;">
-              <p style="color: #64748b; font-size: 12px; margin: 0;">
-                © ${new Date().getFullYear()} WBTrade — wb-trade.pl
-              </p>
-            </div>
-          </div>
-        `,
-        text: `Informacja o zamówieniu #${data.orderNumber}\n\n${data.messageContent}\n\nSprawdź status: ${SITE_URL}/account/orders\n\n© ${new Date().getFullYear()} WBTrade — wb-trade.pl`,
+            ${ctaButton('Sprawdź status zamówienia', `${SITE_URL}/account/orders`)}
+
+            <p style="color: #94a3b8; font-size: 13px; line-height: 1.6; margin: 24px 0 0; text-align: center;">${replyNote}</p>
+          `,
+          footerNote: data.replyTo ? `Odpowiedz na tego maila lub napisz: ${data.replyTo}` : undefined,
+        }),
+        text: `Informacja o zamówieniu #${data.orderNumber}\n\n${data.messageContent}\n\nSprawdź status: ${SITE_URL}/account/orders\n\n© ${YEAR} WBTrade - wb-trade.pl`,
       });
 
       if (error) {
         console.error('[EmailService] Delivery delay email error:', error);
         return { success: false, error: error.message };
       }
-
       console.log(`✅ [EmailService] Delivery delay email sent to ${data.to}, order: ${data.orderNumber}`);
       return { success: true, messageId: responseData?.id };
     } catch (err: any) {

@@ -34,7 +34,7 @@ router.get('/', async (req: Request, res: Response) => {
       where.status = status;
     }
 
-    const [alerts, total, pendingCount] = await Promise.all([
+    const [alerts, total, pendingCount, notifiedCount] = await Promise.all([
       prisma.deliveryDelayAlert.findMany({
         where,
         include: {
@@ -65,11 +65,13 @@ router.get('/', async (req: Request, res: Response) => {
       }),
       prisma.deliveryDelayAlert.count({ where }),
       prisma.deliveryDelayAlert.count({ where: { status: 'pending' } }),
+      prisma.deliveryDelayAlert.count({ where: { status: 'notified' } }),
     ]);
 
     res.json({
       alerts,
       pendingCount,
+      notifiedCount,
       pagination: {
         page,
         limit,
@@ -126,6 +128,102 @@ router.patch('/settings', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error updating delay settings:', error);
     res.status(500).json({ message: 'Błąd aktualizacji ustawień' });
+  }
+});
+
+// ────────────────────────────────────────────────────────
+// POST /api/admin/delivery-delays/bulk-notify
+// ────────────────────────────────────────────────────────
+router.post('/bulk-notify', async (req: Request, res: Response) => {
+  try {
+    const { alertIds, messageType, customMessage } = req.body;
+
+    if (!Array.isArray(alertIds) || alertIds.length === 0) {
+      res.status(400).json({ message: 'alertIds must be a non-empty array' });
+      return;
+    }
+
+    if (alertIds.length > 50) {
+      res.status(400).json({ message: 'Maximum 50 alerts at once' });
+      return;
+    }
+
+    if (!messageType) {
+      res.status(400).json({ message: 'messageType is required' });
+      return;
+    }
+
+    if (messageType === 'custom' && !customMessage) {
+      res.status(400).json({ message: 'customMessage is required when messageType is "custom"' });
+      return;
+    }
+
+    const adminId = req.user?.userId;
+    const results: { alertId: string; success: boolean; orderNumber?: string; error?: string }[] = [];
+
+    for (const alertId of alertIds) {
+      const result = await deliveryDelayService.sendDelayNotification(alertId, messageType, customMessage, adminId);
+      const alert = await prisma.deliveryDelayAlert.findUnique({
+        where: { id: alertId },
+        select: { order: { select: { orderNumber: true } } },
+      });
+      results.push({
+        alertId,
+        success: result.success,
+        orderNumber: alert?.order?.orderNumber,
+        error: result.error,
+      });
+    }
+
+    const successCount = results.filter((r) => r.success).length;
+    const failCount = results.filter((r) => !r.success).length;
+
+    res.json({
+      success: true,
+      message: `Wysłano ${successCount} powiadomień${failCount > 0 ? `, ${failCount} błędów` : ''}`,
+      successCount,
+      failCount,
+      results,
+    });
+  } catch (error) {
+    console.error('Error bulk notifying:', error);
+    res.status(500).json({ message: 'Błąd masowego wysyłania powiadomień' });
+  }
+});
+
+// ────────────────────────────────────────────────────────
+// POST /api/admin/delivery-delays/bulk-dismiss
+// ────────────────────────────────────────────────────────
+router.post('/bulk-dismiss', async (req: Request, res: Response) => {
+  try {
+    const { alertIds } = req.body;
+
+    if (!Array.isArray(alertIds) || alertIds.length === 0) {
+      res.status(400).json({ message: 'alertIds must be a non-empty array' });
+      return;
+    }
+
+    if (alertIds.length > 50) {
+      res.status(400).json({ message: 'Maximum 50 alerts at once' });
+      return;
+    }
+
+    const adminId = req.user?.userId;
+    let successCount = 0;
+
+    for (const alertId of alertIds) {
+      const result = await deliveryDelayService.dismissAlert(alertId, adminId);
+      if (result.success) successCount++;
+    }
+
+    res.json({
+      success: true,
+      message: `Odrzucono ${successCount} alertów`,
+      successCount,
+    });
+  } catch (error) {
+    console.error('Error bulk dismissing:', error);
+    res.status(500).json({ message: 'Błąd masowego odrzucania alertów' });
   }
 });
 
