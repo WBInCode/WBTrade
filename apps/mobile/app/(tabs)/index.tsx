@@ -12,11 +12,13 @@ import {
   Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { FontAwesome, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { loadNotifications } from '../notifications';
 import { api } from '../../services/api';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { useTheme } from '../../contexts/ThemeContext';
 import { getCategoryIcon } from '../../constants/CategoryIcons';
 import { useScrollContext } from '../../contexts/ScrollContext';
 import ProductCarousel from '../../components/product/ProductCarousel';
@@ -26,12 +28,48 @@ import type { Product, Category } from '../../services/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const PROMO_BANNERS = [
-  { id: 'elektronika', title: 'Elektronika', subtitle: 'Odkryj hity technologiczne', icon: 'laptop' as const, bgColor: '#1e3a5f', accentColor: '#60a5fa', icon2: 'chip' as const },
-  { id: 'dom-i-ogrod', title: 'Dom i ogród', subtitle: 'Wiosenne inspiracje dla domu', icon: 'home-roof' as const, bgColor: '#14532d', accentColor: '#4ade80', icon2: 'flower-tulip-outline' as const },
-  { id: 'sport', title: 'Sport', subtitle: 'Wyposaż się na nowy sezon!', icon: 'basketball' as const, bgColor: '#78350f', accentColor: '#fbbf24', icon2: 'trophy-outline' as const },
-  { id: 'dziecko', title: 'Dla dzieci', subtitle: 'Najlepsze dla Twojego malucha', icon: 'baby-face-outline' as const, bgColor: '#4c1d95', accentColor: '#a78bfa', icon2: 'teddy-bear' as const },
+type MCIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+
+interface CategoryBanner {
+  slug: string;
+  title: string;
+  subtitle: string;
+  icon: MCIconName;
+  icon2: MCIconName;
+  bgColor: string;
+  accentColor: string;
+}
+
+const CATEGORY_BANNER_PRESETS: Array<{ keywords: string[]; subtitle: string; icon: MCIconName; icon2: MCIconName; bgColor: string; accentColor: string }> = [
+  { keywords: ['elektron', 'gsm', 'rtv', 'agd'], subtitle: 'Odkryj hity technologiczne', icon: 'laptop', icon2: 'chip', bgColor: '#1e3a5f', accentColor: '#60a5fa' },
+  { keywords: ['dom', 'ogrod', 'meble', 'dekor'], subtitle: 'Wiosenne inspiracje dla domu', icon: 'home-roof', icon2: 'flower-tulip-outline', bgColor: '#14532d', accentColor: '#4ade80' },
+  { keywords: ['sport', 'turyst', 'fitness'], subtitle: 'Wyposaż się na nowy sezon!', icon: 'basketball', icon2: 'trophy-outline', bgColor: '#78350f', accentColor: '#fbbf24' },
+  { keywords: ['dziec', 'dziecko', 'zabaw'], subtitle: 'Najlepsze dla Twojego malucha', icon: 'baby-face-outline', icon2: 'teddy-bear', bgColor: '#4c1d95', accentColor: '#a78bfa' },
+  { keywords: ['motor', 'samoch', 'auto'], subtitle: 'Wszystko do Twojego auta', icon: 'car-outline', icon2: 'wrench-outline', bgColor: '#1c1917', accentColor: '#f97316' },
+  { keywords: ['narz', 'warsztat'], subtitle: 'Narzędzia dla profesjonalistów', icon: 'toolbox-outline', icon2: 'hammer-screwdriver', bgColor: '#1e1b4b', accentColor: '#818cf8' },
+  { keywords: ['chemia', 'czyst'], subtitle: 'Środki do sprzątania i higieny', icon: 'bottle-tonic-outline', icon2: 'spray-bottle', bgColor: '#0f2b4a', accentColor: '#38bdf8' },
+  { keywords: ['wag', 'pomiar'], subtitle: 'Precyzyjny sprzęt pomiarowy', icon: 'scale-balance', icon2: 'numeric', bgColor: '#1f2937', accentColor: '#6ee7b7' },
+  { keywords: ['outlet'], subtitle: 'Najlepsze okazje cenowe', icon: 'tag-multiple-outline', icon2: 'sale', bgColor: '#4a2400', accentColor: '#fb923c' },
+  { keywords: ['gastro', 'food', 'jedz'], subtitle: 'Wyposażenie gastronomiczne', icon: 'chef-hat', icon2: 'silverware-fork-knife', bgColor: '#1a2e1a', accentColor: '#86efac' },
 ];
+
+const FALLBACK_PRESET = { subtitle: 'Sprawdź ofertę', icon: 'store-outline' as MCIconName, icon2: 'arrow-right' as MCIconName, bgColor: '#1e293b', accentColor: '#94a3b8' };
+
+function buildCategoryBanners(categories: Category[]): CategoryBanner[] {
+  return categories.slice(0, 4).map((cat) => {
+    const s = cat.slug.toLowerCase();
+    const preset = CATEGORY_BANNER_PRESETS.find((p) => p.keywords.some((k) => s.includes(k))) || FALLBACK_PRESET;
+    return {
+      slug: cat.slug,
+      title: cat.name,
+      subtitle: preset.subtitle,
+      icon: preset.icon,
+      icon2: preset.icon2,
+      bgColor: preset.bgColor,
+      accentColor: preset.accentColor,
+    };
+  });
+}
 const BANNER_WIDTH = SCREEN_WIDTH - 32;
 
 interface CarouselMeta {
@@ -56,7 +94,7 @@ interface HomeData {
 type SectionItem =
   | { type: 'header' }
   | { type: 'categories'; categories: Category[] }
-  | { type: 'promo' }
+  | { type: 'promo'; categories: Category[] }
   | { type: 'carousel'; title: string; products: Product[]; key: string; slug: string }
   | { type: 'hero'; product: Product }
   | { type: 'top3'; products: Product[] }
@@ -69,9 +107,24 @@ type SectionItem =
 // Memoized section components — each renders in isolation
 // ═══════════════════════════════════════════════════════
 
-const HeaderSection = React.memo(function HeaderSection() {
+function HeaderSection() {
   const router = useRouter();
   const colors = useThemeColors();
+  const { colorScheme, setThemePreference } = useTheme();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const handleThemeToggle = useCallback(() => {
+    setThemePreference(colorScheme === 'dark' ? 'light' : 'dark');
+  }, [colorScheme, setThemePreference]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadNotifications().then((items) => {
+        setUnreadCount(items.filter((n) => !n.read).length);
+      });
+    }, [])
+  );
+
   return (
     <View style={[styles.header, { backgroundColor: colors.card }]}>
       <View style={styles.headerTop}>
@@ -80,15 +133,40 @@ const HeaderSection = React.memo(function HeaderSection() {
           style={styles.headerMascot}
           contentFit="contain"
         />
+        <TouchableOpacity
+          style={styles.themeToggleButton}
+          onPress={handleThemeToggle}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={colorScheme === 'dark' ? 'sunny-outline' : 'moon-outline'}
+            size={22}
+            color={colors.textSecondary}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.bellButton}
+          onPress={() => router.push('/notifications' as any)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="notifications-outline" size={24} color={colors.textSecondary} />
+          {unreadCount > 0 && (
+            <View style={[styles.bellBadge, { backgroundColor: colors.badge }]}>
+              <Text style={[styles.bellBadgeText, { color: colors.badgeText }]}>
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
       </View>
       <View style={[styles.headerDivider, { backgroundColor: colors.border }]} />
-      <TouchableOpacity style={[styles.searchBar, { backgroundColor: colors.searchBackground }]} onPress={() => router.push('/(tabs)/search')} activeOpacity={0.8}>
+      <TouchableOpacity style={[styles.searchBar, { backgroundColor: colors.searchBackground, borderWidth: 1, borderColor: colors.searchBorder }]} onPress={() => router.push('/(tabs)/search')} activeOpacity={0.8}>
         <FontAwesome name="search" size={15} color={colors.searchPlaceholder} />
         <Text style={[styles.searchPlaceholder, { color: colors.searchPlaceholder }]}>Czego szukasz?</Text>
       </TouchableOpacity>
     </View>
   );
-});
+}
 
 const CategoriesSection = React.memo(function CategoriesSection({ categories }: { categories: Category[] }) {
   const router = useRouter();
@@ -98,7 +176,7 @@ const CategoriesSection = React.memo(function CategoriesSection({ categories }: 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScrollContent}>
         {categories.map((cat, index) => (
           <TouchableOpacity key={cat.id} style={styles.categoryCircleWrap} onPress={() => router.push(`/category/${cat.slug}`)}>
-            <View style={[styles.categoryCircle, { backgroundColor: colors.card, borderColor: colors.tint }]}>
+            <View style={[styles.categoryCircle, { backgroundColor: colors.categoryIconBg || colors.card, borderColor: colors.tint }]}>
               <Image source={getCategoryIcon(cat.slug)} style={styles.categoryIconImage} contentFit="contain" />
             </View>
             <Text style={[styles.categoryCircleLabel, { color: colors.textSecondary }]} numberOfLines={2}>{cat.name}</Text>
@@ -114,9 +192,13 @@ const CategoriesSection = React.memo(function CategoriesSection({ categories }: 
   );
 });
 
-const PromoSection = React.memo(function PromoSection() {
+const PromoSection = React.memo(function PromoSection({ categories }: { categories: Category[] }) {
   const router = useRouter();
   const colors = useThemeColors();
+  const banners = useMemo(() => buildCategoryBanners(categories), [categories]);
+
+  if (banners.length === 0) return null;
+
   return (
     <View style={[styles.promoSection, { backgroundColor: colors.card }]}>
       <ScrollView
@@ -126,11 +208,11 @@ const PromoSection = React.memo(function PromoSection() {
         decelerationRate="fast"
         contentContainerStyle={styles.promoScrollContent}
       >
-        {PROMO_BANNERS.map((banner) => (
+        {banners.map((banner) => (
           <TouchableOpacity
-            key={banner.id}
+            key={banner.slug}
             style={[styles.promoBanner, { backgroundColor: banner.bgColor }]}
-            onPress={() => router.push(`/category/${banner.id}` as any)}
+            onPress={() => router.push(`/category/${banner.slug}` as any)}
             activeOpacity={0.9}
           >
             <View style={styles.promoDecorWrap}>
@@ -198,7 +280,7 @@ const HeroSection = React.memo(function HeroSection({ product }: { product: Prod
           <View style={styles.heroPriceRow}>
             <Text style={[styles.heroPrice, { color: colors.tint }]}>{Number(product.price).toFixed(2).replace('.', ',')} zł</Text>
             {product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price) && (
-              <View style={[styles.heroDiscountBadge, { backgroundColor: colors.destructive }]}>
+              <View style={[styles.heroDiscountBadge, { backgroundColor: colors.success }]}>
                 <Text style={[styles.heroDiscountText, { color: colors.textInverse }]}>
                   -{Math.round((1 - Number(product.price) / Number(product.compareAtPrice)) * 100)}%
                 </Text>
@@ -441,9 +523,11 @@ export default function HomeScreen() {
       }
 
       setData(results);
+      signalDataReady();
     } catch (err: any) {
       console.error('Error loading home data:', err);
       setError(err.message || 'Nie udało się załadować produktów');
+      signalDataReady();
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -501,7 +585,7 @@ export default function HomeScreen() {
     if (data.categories.length > 0) {
       items.push({ type: 'categories', categories: data.categories });
     }
-    items.push({ type: 'promo' });
+    items.push({ type: 'promo', categories: data.categories });
 
     // Render carousels dynamically from admin panel configuration
     const allCarousels = data.carousels;
@@ -550,7 +634,7 @@ export default function HomeScreen() {
       case 'categories':
         return <CategoriesSection categories={item.categories} />;
       case 'promo':
-        return <PromoSection />;
+        return <PromoSection categories={item.categories} />;
       case 'carousel':
         return <CarouselSection title={item.title} products={item.products} slug={item.slug} />;
       case 'hero':
@@ -662,10 +746,43 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingTop: 10, paddingBottom: 10,
   },
   headerTop: {
-    alignItems: 'center', marginBottom: 10,
+    alignItems: 'center', marginBottom: 10, position: 'relative',
   },
   headerLogo: { width: 143, height: 42 },
   headerMascot: { width: 80, height: 80 },
+  bellButton: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  themeToggleButton: {
+    position: 'absolute',
+    right: 44,
+    top: 0,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bellBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 0,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  bellBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+  },
   headerDivider: {
     height: 1, marginBottom: 10,
   },
