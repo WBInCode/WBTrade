@@ -96,11 +96,18 @@ function slugify(text: string): string {
     .replace(/-+$/, '');
 }
 
-function generateSku(productId: number, existingSku?: string): string {
+function generateSku(productId: number, existingSku?: string, skuPrefix?: string): string {
+  let baseSku: string;
   if (existingSku && existingSku.trim()) {
-    return existingSku.trim();
+    baseSku = existingSku.trim();
+  } else {
+    baseSku = `BL-${productId}`;
   }
-  return `BL-${productId}`;
+  // Add warehouse prefix if not already present
+  if (skuPrefix && !baseSku.toUpperCase().startsWith(skuPrefix.toUpperCase())) {
+    return `${skuPrefix}${baseSku}`;
+  }
+  return baseSku;
 }
 
 // BaseLinker CDN account ID (used to proxy blocked wholesaler images)
@@ -1053,6 +1060,19 @@ export class BaselinkerService {
   }
 
   /**
+   * Get SKU prefix for a given inventory name (uppercase convention).
+   * Leker → "LEKER-", BTP → "BTP-", HP/others → "" (no prefix)
+   */
+  private getSkuPrefix(inventoryName: string): string {
+    const prefixMap: Record<string, string> = {
+      'leker': 'LEKER-',
+      'btp': 'BTP-',
+    };
+    const lower = inventoryName.toLowerCase();
+    return prefixMap[lower] ?? '';
+  }
+
+  /**
    * Round price to .99 ending (e.g., 12.34 → 12.99, 50.00 → 50.99)
    * This makes prices more attractive psychologically
    */
@@ -1185,7 +1205,8 @@ export class BaselinkerService {
       const warehouseKey = currentInventory ? this.getWarehouseKey(currentInventory.name) : null;
       // Get inventory prefix for baselinkerProductId (e.g., "leker-", "btp-", "hp-")
       const inventoryPrefix = currentInventory ? this.getInventoryPrefix(currentInventory.name) : '';
-      console.log(`[BaselinkerSync] Inventory: ${currentInventory?.name || inventoryId}, warehouse: ${warehouseKey || 'unknown'}, prefix: "${inventoryPrefix}", price rules: ${warehouseKey && priceRules[warehouseKey] ? priceRules[warehouseKey].length + ' rules' : 'none'}`);
+      const skuPrefix = currentInventory ? this.getSkuPrefix(currentInventory.name) : '';
+      console.log(`[BaselinkerSync] Inventory: ${currentInventory?.name || inventoryId}, warehouse: ${warehouseKey || 'unknown'}, prefix: "${inventoryPrefix}", skuPrefix: "${skuPrefix}", price rules: ${warehouseKey && priceRules[warehouseKey] ? priceRules[warehouseKey].length + ' rules' : 'none'}`);
 
       if (syncLogId) {
         syncProgress.sendProgress(syncLogId, {
@@ -1443,7 +1464,7 @@ export class BaselinkerService {
             for (const blProduct of batch) {
               try {
                 const baselinkerProductId = `${inventoryPrefix}${blProduct.id.toString()}`;
-              const sku = generateSku(blProduct.id, blProduct.sku);
+              const sku = generateSku(blProduct.id, blProduct.sku, skuPrefix);
               
               // Get name and description using helper methods
               let name = this.getProductName(blProduct);
@@ -1628,7 +1649,7 @@ export class BaselinkerService {
               if (blProduct.variants && blProduct.variants.length > 0) {
                 for (const blVariant of blProduct.variants) {
                   const variantId = blVariant.variant_id.toString();
-                  const variantSku = generateSku(blVariant.variant_id, blVariant.sku);
+                  const variantSku = generateSku(blVariant.variant_id, blVariant.sku, skuPrefix);
                   // Apply price multiplier rules + round to .99 ending (use product price if variant has no price)
                   let rawVariantPrice = blVariant.price_brutto ? Number(blVariant.price_brutto) : 0;
                   if (rawVariantPrice > 0 && warehouseKey && priceRules) {
