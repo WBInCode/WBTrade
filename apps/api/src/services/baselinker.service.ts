@@ -1247,47 +1247,7 @@ export class BaselinkerService {
       
       // Skip reason tracking for better diagnostics
       let skippedExisting = 0;
-      let skippedZeroStock = 0;
-      let skippedNoStockData = 0;
       let skippedUnchanged = 0;
-      
-      // Dla trybu new-only, pobieramy też stany magazynowe aby pominąć produkty z zerowym stanem
-      let stockMap: Map<number, number> | null = null;
-      if (mode === 'new-only') {
-        console.log('[BaselinkerSync] Fetching stock data for new-only mode...');
-        if (syncLogId) {
-          syncProgress.sendProgress(syncLogId, {
-            type: 'info',
-            message: 'Pobieranie danych stanów magazynowych dla trybu "tylko nowe"...',
-          });
-        }
-        const stockEntries = await provider.getInventoryProductsStock(inventoryId);
-        stockMap = new Map();
-        for (const entry of stockEntries) {
-          const stockData = entry.stock as Record<string, number>;
-          const stockValues = Object.values(stockData);
-          const totalStock = stockValues.reduce((sum: number, qty: number) => sum + qty, 0);
-          stockMap.set(entry.product_id, totalStock);
-        }
-        console.log(`[BaselinkerSync] Got stock data for ${stockMap.size} products`);
-        
-        if (stockMap.size === 0) {
-          const warnMsg = `Uwaga: Nie pobrano żadnych danych stanów magazynowych z inventoryId: ${inventoryId}. Wszystkie nowe produkty mogą zostać pominięte.`;
-          console.warn(`[BaselinkerSync] ${warnMsg}`);
-          errors.push(warnMsg);
-          if (syncLogId) {
-            syncProgress.sendProgress(syncLogId, {
-              type: 'warning',
-              message: warnMsg,
-            });
-          }
-        } else if (syncLogId) {
-          syncProgress.sendProgress(syncLogId, {
-            type: 'info',
-            message: `Pobrano stany magazynowe dla ${stockMap.size} produktów`,
-          });
-        }
-      }
       
       for (const blProduct of productList) {
         const blIdRaw = blProduct.id.toString();
@@ -1313,30 +1273,12 @@ export class BaselinkerService {
           continue;
         }
         
-        // MODE: new-only - tylko nowe produkty, bez stanów zerowych
+        // MODE: new-only - tylko nowe produkty (importuj wszystkie, nawet ze stanem 0)
         if (mode === 'new-only') {
           // Skip if product already exists
           if (existing) {
             skipped++;
             skippedExisting++;
-            continue;
-          }
-          
-          // Check if stock data exists for this product
-          const hasStockData = stockMap?.has(blProduct.id) ?? false;
-          const productStock = stockMap?.get(blProduct.id) ?? 0;
-          
-          if (!hasStockData) {
-            // Product has no stock entry at all - still import it (might be a data gap)
-            console.log(`[BaselinkerSync] Product ${blProduct.id} has no stock data entry, importing anyway`);
-            productsToFetch.push(blProduct.id);
-            continue;
-          }
-          
-          // Skip if stock is 0
-          if (productStock <= 0) {
-            skipped++;
-            skippedZeroStock++;
             continue;
           }
           
@@ -1380,17 +1322,13 @@ export class BaselinkerService {
 
       console.log(`[BaselinkerSync] ${productsToFetch.length} products to process, ${skipped} skipped (mode: ${mode || 'all'})`);
       if (mode === 'new-only') {
-        console.log(`[BaselinkerSync] Skip reasons: existing=${skippedExisting}, zeroStock=${skippedZeroStock}, noStockData=${skippedNoStockData}`);
+        console.log(`[BaselinkerSync] Skip reasons: existing=${skippedExisting}`);
       }
 
       if (syncLogId) {
         let skipDetails = '';
         if (mode === 'new-only') {
-          const parts: string[] = [];
-          if (skippedExisting > 0) parts.push(`${skippedExisting} już istnieje`);
-          if (skippedZeroStock > 0) parts.push(`${skippedZeroStock} z zerowym stanem`);
-          if (skippedNoStockData > 0) parts.push(`${skippedNoStockData} bez danych stanu`);
-          skipDetails = parts.length > 0 ? ` (${parts.join(', ')})` : '';
+          skipDetails = skippedExisting > 0 ? ` (${skippedExisting} już istnieje)` : '';
         } else if (mode === 'update-only') {
           skipDetails = skippedExisting > 0 ? ` (${skippedExisting} nie istnieje w bazie)` : '';
         } else if (mode === 'fetch-all') {
