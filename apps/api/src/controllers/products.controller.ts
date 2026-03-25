@@ -149,9 +149,7 @@ export async function getProducts(req: Request, res: Response): Promise<void> {
 export async function getProductById(req: Request, res: Response): Promise<void> {
   try {
     const { id } = req.params;
-    // Admin może zobaczyć każdy produkt (np. DRAFT), publiczny użytkownik nie
-    const isAdmin = (req as any).user?.role === 'ADMIN';
-    const product = await productsService.getById(id, { skipVisibilityCheck: isAdmin });
+    const product = await productsService.getById(id);
 
     if (!product) {
       res.status(404).json({ message: 'Produkt nie zostal znaleziony' });
