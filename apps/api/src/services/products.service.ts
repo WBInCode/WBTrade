@@ -390,10 +390,8 @@ export class ProductsService {
       ],
     };
     
-    // Only filter by status if explicitly provided
-    if (status) {
-      where.status = status as Prisma.EnumProductStatusFilter;
-    }
+    // Domyślnie pokaż tylko aktywne produkty - DRAFT i ARCHIVED nie powinny być widoczne
+    where.status = (status as Prisma.EnumProductStatusFilter) || 'ACTIVE';
 
     // If category is specified, get all subcategory IDs and filter by them
     if (category) {
@@ -630,10 +628,8 @@ export class ProductsService {
       // hasBaselinkerCategory jest indeksowany w Meilisearch jako filterable
       meiliFilters.push('hasBaselinkerCategory = true');
       
-      // Only filter by status if explicitly provided
-      if (status) {
-        meiliFilters.push(`status = "${status}"`);
-      }
+      // Domyślnie pokaż tylko aktywne produkty - DRAFT i ARCHIVED nie powinny być widoczne
+      meiliFilters.push(`status = "${status || 'ACTIVE'}"`);
       
       if (category) {
         const categoryIds = await this.getAllCategoryIds(category);
@@ -1757,6 +1753,22 @@ export class ProductsService {
           price: { gt: 10 }, // Skip very cheap items
           categoryId: category.id,
           id: { notIn: [...manualProductIds, ...excludedProductIds] },
+          // Produkty MUSZĄ mieć stan magazynowy > 0
+          variants: {
+            some: {
+              inventory: {
+                some: {
+                  quantity: { gt: 0 }
+                }
+              }
+            }
+          },
+          // Produkty MUSZĄ mieć tag dostawy ORAZ kategorię z Baselinker
+          AND: [
+            { tags: { hasSome: DELIVERY_TAGS } },
+            { category: { baselinkerCategoryId: { not: null } } },
+            PACKAGE_FILTER_WHERE,
+          ],
           // Exclude boring product names
           NOT: {
             OR: boringKeywords.map(keyword => ({
@@ -1963,6 +1975,22 @@ export class ProductsService {
         price: { gt: 0 },
         tags: { hasSome: tags },
         id: { notIn: [...manualProductIds, ...excludedProductIds] },
+        // Produkty MUSZĄ mieć stan magazynowy > 0
+        variants: {
+          some: {
+            inventory: {
+              some: {
+                quantity: { gt: 0 }
+              }
+            }
+          }
+        },
+        // Produkty MUSZĄ mieć tag dostawy ORAZ kategorię z Baselinker
+        AND: [
+          { tags: { hasSome: DELIVERY_TAGS } },
+          { category: { baselinkerCategoryId: { not: null } } },
+          PACKAGE_FILTER_WHERE,
+        ],
       },
       orderBy: { createdAt: 'desc' },
       take: remainingSlots,
@@ -1984,6 +2012,22 @@ export class ProductsService {
           status: 'ACTIVE',
           price: { gt: 0 },
           id: { notIn: [...manualProductIds, ...excludedProductIds, ...automaticProducts.map(p => p.id)] },
+          // Produkty MUSZĄ mieć stan magazynowy > 0
+          variants: {
+            some: {
+              inventory: {
+                some: {
+                  quantity: { gt: 0 }
+                }
+              }
+            }
+          },
+          // Produkty MUSZĄ mieć tag dostawy ORAZ kategorię z Baselinker
+          AND: [
+            { tags: { hasSome: DELIVERY_TAGS } },
+            { category: { baselinkerCategoryId: { not: null } } },
+            PACKAGE_FILTER_WHERE,
+          ],
           ...(fallbackCategories.length > 0 && {
             category: { slug: { in: fallbackCategories } },
           }),
@@ -2081,6 +2125,22 @@ export class ProductsService {
         price: { gt: 0 },
         createdAt: { gte: dateThreshold },
         id: { notIn: [...manualProductIds, ...excludedProductIds] },
+        // Produkty MUSZĄ mieć stan magazynowy > 0
+        variants: {
+          some: {
+            inventory: {
+              some: {
+                quantity: { gt: 0 }
+              }
+            }
+          }
+        },
+        // Produkty MUSZĄ mieć tag dostawy ORAZ kategorię z Baselinker
+        AND: [
+          { tags: { hasSome: DELIVERY_TAGS } },
+          { category: { baselinkerCategoryId: { not: null } } },
+          PACKAGE_FILTER_WHERE,
+        ],
       },
       orderBy: { createdAt: 'desc' },
       take: remainingSlots,
