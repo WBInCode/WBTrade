@@ -628,6 +628,9 @@ export class ProductsService {
       // hasBaselinkerCategory jest indeksowany w Meilisearch jako filterable
       meiliFilters.push('hasBaselinkerCategory = true');
       
+      // Produkty muszą być na stanie (identyczny filtr jak w search.service.ts getSuggestions)
+      meiliFilters.push('inStock = true');
+      
       // Domyślnie pokaż tylko aktywne produkty - DRAFT i ARCHIVED nie powinny być widoczne
       meiliFilters.push(`status = "${status || 'ACTIVE'}"`);
       
@@ -682,9 +685,9 @@ export class ProductsService {
         offset: (page - 1) * limit,
         filter: meiliFilters.join(' AND '),
         sort: meiliSort,
-        // Ensure we get accurate total count
+        matchingStrategy: 'last',
         showMatchesPosition: false,
-        attributesToRetrieve: ['id'], // Only need IDs for fetching from Prisma
+        attributesToRetrieve: ['id'],
       });
 
       markMeilisearchAvailable();
@@ -693,6 +696,11 @@ export class ProductsService {
       const productIds = results.hits.map((hit: MeiliProduct) => hit.id);
       
       if (productIds.length === 0) {
+        // Meilisearch returned 0 hits — if user was searching, try Prisma fallback
+        // (Meilisearch index may be stale or missing fields like hasBaselinkerCategory/tags)
+        if (search) {
+          return this.searchWithPrismaFallback(filters);
+        }
         return {
           products: [],
           total: 0,
@@ -745,9 +753,15 @@ export class ProductsService {
         products.find(p => p.id === id)
       ).filter(Boolean);
 
-      // Use estimatedTotalHits from MeiliSearch
-      // Note: estimatedTotalHits is limited by maxTotalHits setting (default 10000)
-      const total = results.estimatedTotalHits ?? results.hits.length;
+      // Use estimatedTotalHits from MeiliSearch but adjust for Prisma filtering
+      // When searching, Prisma may filter out products that Meilisearch returned
+      // so we use the actual count of products found by Prisma
+      const meiliTotal = results.estimatedTotalHits ?? results.hits.length;
+      const prismaFoundCount = sortedProducts.length;
+      // If Prisma returned fewer products than Meilisearch page, total needs adjustment
+      const total = prismaFoundCount < productIds.length
+        ? prismaFoundCount
+        : meiliTotal;
 
       // Transform products
       let transformedProducts = transformProducts(sortedProducts as any[]);

@@ -117,8 +117,9 @@ export class SearchService {
 
       // Fetch more results to account for post-filtering
       const results = await index.search<MeiliProduct>(query, {
-        limit: limit * 2, // Fetch extra to filter out hidden products
+        limit: limit * 2,
         filter: filters.join(' AND '),
+        matchingStrategy: 'last',
         attributesToRetrieve: [
           'id',
           'name',
@@ -308,8 +309,9 @@ export class SearchService {
       }
       
       const results = await index.search<MeiliProduct>(query, {
-        limit: 20, // Fetch more to account for filtering
+        limit: 20,
         filter: filters.join(' AND '),
+        matchingStrategy: 'last',
         attributesToRetrieve: ['id', 'name', 'slug', 'image', 'price', 'categoryName'],
       });
 
