@@ -132,6 +132,8 @@ const PACKAGE_TAGS = [
   'produkt w paczce: 4', 'produkt w paczce: 5',
 ];
 const HIDDEN_TAGS = ['błąd zdjęcia', 'błąd zdjęcia '];
+const TYLKO_KURIER_TAGS = ['Tylko kurier', 'tylko kurier'];
+const WEIGHT_TAGS = ['do 2 kg', 'do 5 kg', 'do 10 kg', 'do 20 kg', 'do 31,5 kg'];
 const DELIVERY_TAGS = [
   'Paczkomaty i Kurier', 'paczkomaty i kurier',
   'Tylko kurier', 'tylko kurier',
@@ -164,7 +166,17 @@ function filterProductsWithPackageInfo(products: any[]): any[] {
     // If product has Paczkomat tags, it must also have package tags
     const hasPaczkomat = tags.some((t: string) => PACZKOMAT_TAGS.includes(t));
     if (hasPaczkomat) {
-      return tags.some((t: string) => PACKAGE_TAGS.includes(t));
+      if (!tags.some((t: string) => PACKAGE_TAGS.includes(t))) return false;
+    }
+    // If product has "Tylko kurier" tag, it must also have a weight tag
+    const hasTylkoKurier = tags.some((t: string) =>
+      TYLKO_KURIER_TAGS.some(tk => t.toLowerCase() === tk.toLowerCase())
+    );
+    if (hasTylkoKurier) {
+      const hasWeightTag = tags.some((t: string) =>
+        WEIGHT_TAGS.some(wt => t.toLowerCase() === wt.toLowerCase())
+      );
+      if (!hasWeightTag) return false;
     }
     return true;
   });
