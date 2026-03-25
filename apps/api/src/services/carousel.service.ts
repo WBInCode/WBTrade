@@ -215,7 +215,14 @@ class CarouselService {
       const missingPinnedIds = pinnedIds.filter(id => !existingIds.has(id));
       if (missingPinnedIds.length > 0) {
         const raw = await prisma.product.findMany({
-          where: { id: { in: missingPinnedIds }, status: 'ACTIVE', price: { gt: 0 } },
+          where: { 
+            id: { in: missingPinnedIds }, 
+            status: 'ACTIVE', 
+            price: { gt: 0 },
+            tags: { hasSome: DELIVERY_TAGS },
+            category: { baselinkerCategoryId: { not: null } },
+            NOT: { tags: { hasSome: HIDDEN_TAGS } },
+          },
           include: PRODUCT_INCLUDE,
         });
         const additional = filterProductsWithPackageInfo(transformProducts(raw));
@@ -374,7 +381,14 @@ class CarouselService {
     if (!ids.length) return [];
 
     const products = await prisma.product.findMany({
-      where: { id: { in: ids }, status: 'ACTIVE', price: { gt: 0 } },
+      where: { 
+        id: { in: ids }, 
+        status: 'ACTIVE', 
+        price: { gt: 0 },
+        tags: { hasSome: DELIVERY_TAGS },
+        category: { baselinkerCategoryId: { not: null } },
+        NOT: { tags: { hasSome: HIDDEN_TAGS } },
+      },
       include: PRODUCT_INCLUDE,
     });
 
@@ -515,6 +529,10 @@ class CarouselService {
       if (!product || product.status !== 'ACTIVE') continue;
       if (excludeIds.includes(product.id)) continue;
       if (allCategoryIds.length > 0 && !allCategoryIds.includes(product.categoryId || '')) continue;
+      // Skip products without delivery tags or baselinker category
+      const tags = Array.isArray(product.tags) ? product.tags : [];
+      if (!tags.some((t: string) => DELIVERY_TAGS.some(dt => t.toLowerCase() === dt.toLowerCase()))) continue;
+      if (!product.category?.baselinkerCategoryId) continue;
 
       const existing = salesMap.get(product.id);
       if (existing) {
@@ -542,6 +560,9 @@ class CarouselService {
           price: { gt: 0 },
           id: { notIn: usedIds },
           categoryId: { in: fillCategoryIds },
+          tags: { hasSome: DELIVERY_TAGS },
+          category: { baselinkerCategoryId: { not: null } },
+          NOT: { tags: { hasSome: HIDDEN_TAGS } },
         },
         orderBy: { createdAt: 'desc' },
         take: limit - results.length,
@@ -570,6 +591,9 @@ class CarouselService {
       status: 'ACTIVE',
       price: { gt: 0 },
       id: { notIn: excludeIds },
+      tags: { hasSome: DELIVERY_TAGS },
+      category: { baselinkerCategoryId: { not: null } },
+      NOT: { tags: { hasSome: HIDDEN_TAGS } },
       ...(allCategoryIds.length > 0 && {
         categoryId: { in: allCategoryIds },
       }),
@@ -623,6 +647,7 @@ class CarouselService {
         review_count: { gte: 1 },
         average_rating: { not: null },
         tags: { hasSome: DELIVERY_TAGS },
+        category: { baselinkerCategoryId: { not: null } },
         id: { notIn: excludeIds },
         NOT: { tags: { hasSome: HIDDEN_TAGS } },
         ...(allCategoryIds.length > 0 && {
@@ -647,6 +672,9 @@ class CarouselService {
           status: 'ACTIVE',
           price: { gt: 0 },
           id: { notIn: usedIds },
+          tags: { hasSome: DELIVERY_TAGS },
+          category: { baselinkerCategoryId: { not: null } },
+          NOT: { tags: { hasSome: HIDDEN_TAGS } },
           ...(allCategoryIds.length > 0 && {
             categoryId: { in: allCategoryIds },
           }),
@@ -695,7 +723,10 @@ class CarouselService {
         status: 'ACTIVE',
         price: { gt: 0 },
         tags: { hasSome: tags },
+        category: { baselinkerCategoryId: { not: null } },
         id: { notIn: excludeIds },
+        NOT: { tags: { hasSome: HIDDEN_TAGS } },
+        AND: [{ tags: { hasSome: DELIVERY_TAGS } }],
         ...(allCategoryIds.length > 0 && {
           categoryId: { in: allCategoryIds },
         }),
@@ -717,6 +748,9 @@ class CarouselService {
           status: 'ACTIVE',
           price: { gt: 0 },
           id: { notIn: [...excludeIds, ...products.map(p => p.id)] },
+          tags: { hasSome: DELIVERY_TAGS },
+          category: { baselinkerCategoryId: { not: null } },
+          NOT: { tags: { hasSome: HIDDEN_TAGS } },
           ...(fallbackCatIds.length > 0 && {
             categoryId: { in: fallbackCatIds },
           }),
@@ -772,10 +806,15 @@ class CarouselService {
           price: { gt: 10 },
           categoryId: catId,
           id: { notIn: excludeIds },
+          tags: { hasSome: DELIVERY_TAGS },
+          category: { baselinkerCategoryId: { not: null } },
           NOT: {
-            OR: boringKeywords.map(kw => ({
-              name: { contains: kw, mode: 'insensitive' as const },
-            })),
+            OR: [
+              ...boringKeywords.map(kw => ({
+                name: { contains: kw, mode: 'insensitive' as const },
+              })),
+              ...HIDDEN_TAGS.map(ht => ({ tags: { has: ht } })),
+            ],
           },
         },
         orderBy: [
