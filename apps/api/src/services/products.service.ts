@@ -22,12 +22,6 @@ const DELIVERY_TAGS = [
 // Tagi "Paczkomaty i Kurier" - produkty z tymi tagami MUSZĄ mieć też tag "produkt w paczce"
 const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
 
-// Tagi "Tylko kurier" - produkty z tymi tagami MUSZĄ mieć też tag wagi
-const TYLKO_KURIER_TAGS = ['Tylko kurier', 'tylko kurier'];
-
-// Tagi wagi - wymagane przy "Tylko kurier"
-const WEIGHT_TAGS = ['do 2 kg', 'do 5 kg', 'do 10 kg', 'do 20 kg', 'do 31,5 kg'];
-
 // Tagi "produkt w paczce" - różne rozmiary paczek
 const PACKAGE_TAGS = [
   'produkt w paczce: 1',
@@ -62,18 +56,11 @@ const PACKAGE_FILTER_WHERE: Prisma.ProductWhereInput = {
         }
       }
     })),
-    // Warunek paczkomatu: "Paczkomaty i Kurier" wymaga "produkt w paczce"
+    // Warunek paczkomatu
     {
       OR: [
         { NOT: { tags: { hasSome: PACZKOMAT_TAGS } } },
         { tags: { hasSome: PACKAGE_TAGS } },
-      ]
-    },
-    // Warunek kuriera: "Tylko kurier" wymaga tagu wagi (do X kg)
-    {
-      OR: [
-        { NOT: { tags: { hasSome: TYLKO_KURIER_TAGS } } },
-        { tags: { hasSome: WEIGHT_TAGS } },
       ]
     }
   ]
@@ -215,37 +202,26 @@ function filterOldZeroStockProducts(products: any[], days: number = 14): any[] {
  * Products without proper package info should not be displayed
  */
 function filterProductsWithPackageInfo(products: any[]): any[] {
-  const PACZKOMAT_TAGS_LOCAL = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
+  const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
   const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce|produkty?\s*w\s*paczce/i;
-  const TYLKO_KURIER_LOCAL = ['Tylko kurier', 'tylko kurier'];
-  const WEIGHT_TAGS_LOCAL = ['do 2 kg', 'do 5 kg', 'do 10 kg', 'do 20 kg', 'do 31,5 kg'];
-  
+
   return products.filter(product => {
     const tags = product.tags || [];
-    
-    // "Paczkomaty i Kurier" wymaga "produkt w paczce"
-    const hasPaczkomatTag = tags.some((tag: string) => 
-      PACZKOMAT_TAGS_LOCAL.some(pt => tag.toLowerCase() === pt.toLowerCase())
+
+    // Check if product has paczkomat tag
+    const hasPaczkomatTag = tags.some((tag: string) =>
+      PACZKOMAT_TAGS.some(pt => tag.toLowerCase() === pt.toLowerCase())
     );
-    if (hasPaczkomatTag) {
-      const hasPackageLimitTag = tags.some((tag: string) => 
-        PACKAGE_LIMIT_PATTERN.test(tag)
-      );
-      if (!hasPackageLimitTag) return false;
-    }
-    
-    // "Tylko kurier" wymaga tagu wagi (do X kg)
-    const hasTylkoKurierTag = tags.some((tag: string) =>
-      TYLKO_KURIER_LOCAL.some(tk => tag.toLowerCase() === tk.toLowerCase())
+
+    // If no paczkomat tag, product is OK (might have "Tylko kurier" or weight tags)
+    if (!hasPaczkomatTag) return true;
+
+    // Product has paczkomat tag - must also have "produkt w paczce" tag
+    const hasPackageLimitTag = tags.some((tag: string) =>
+      PACKAGE_LIMIT_PATTERN.test(tag)
     );
-    if (hasTylkoKurierTag) {
-      const hasWeightTag = tags.some((tag: string) =>
-        WEIGHT_TAGS_LOCAL.some(wt => tag.toLowerCase() === wt.toLowerCase())
-      );
-      if (!hasWeightTag) return false;
-    }
-    
-    return true;
+
+    return hasPackageLimitTag;
   });
 }
 
@@ -414,8 +390,10 @@ export class ProductsService {
       ],
     };
     
-    // Domyślnie pokaż tylko aktywne produkty - DRAFT i ARCHIVED nie powinny być widoczne
-    where.status = (status as Prisma.EnumProductStatusFilter) || 'ACTIVE';
+    // Only filter by status if explicitly provided
+    if (status) {
+      where.status = status as Prisma.EnumProductStatusFilter;
+    }
 
     // If category is specified, get all subcategory IDs and filter by them
     if (category) {
@@ -655,8 +633,10 @@ export class ProductsService {
       // Produkty muszą być na stanie (identyczny filtr jak w search.service.ts getSuggestions)
       meiliFilters.push('inStock = true');
       
-      // Domyślnie pokaż tylko aktywne produkty - DRAFT i ARCHIVED nie powinny być widoczne
-      meiliFilters.push(`status = "${status || 'ACTIVE'}"`);
+      // Only filter by status if explicitly provided
+      if (status) {
+        meiliFilters.push(`status = "${status}"`);
+      }
       
       if (category) {
         const categoryIds = await this.getAllCategoryIds(category);
@@ -956,7 +936,7 @@ export class ProductsService {
   /**
    * Get a single product by ID
    */
-  async getById(id: string, options?: { skipVisibilityCheck?: boolean }) {
+  async getById(id: string) {
     const product = await prisma.product.findUnique({
       where: { id },
       include: {
@@ -971,28 +951,6 @@ export class ProductsService {
         },
       },
     });
-    
-    if (!product) return null;
-    
-    // Pomijamy sprawdzanie widoczności dla panelu admin
-    if (!options?.skipVisibilityCheck) {
-      // Produkt musi być ACTIVE
-      if (product.status !== 'ACTIVE') return null;
-      
-      // Produkt musi mieć cenę > 0
-      if (!product.price || Number(product.price) <= 0) return null;
-      
-      // Produkt musi mieć tagi dostawy
-      const tags = product.tags || [];
-      const hasDeliveryTag = tags.some((tag: string) =>
-        DELIVERY_TAGS.some(dt => tag.toLowerCase() === dt.toLowerCase())
-      );
-      if (!hasDeliveryTag) return null;
-      
-      // Produkt musi mieć kategorię z baselinkerCategoryId
-      if (!product.category?.baselinkerCategoryId) return null;
-    }
-    
     return transformProduct(product);
   }
 
@@ -1043,49 +1001,32 @@ export class ProductsService {
     });
     
     if (!product) return null;
-    
-    // Produkt musi być ACTIVE
-    if (product.status !== 'ACTIVE') return null;
-    
+
     // Hide products with price 0 or less
     if (!product.price || Number(product.price) <= 0) {
       return null;
     }
-    
-    // Produkt musi mieć tagi dostawy
-    const tags = product.tags || [];
-    const hasDeliveryTag = tags.some((tag: string) =>
-      DELIVERY_TAGS.some(dt => tag.toLowerCase() === dt.toLowerCase())
-    );
-    if (!hasDeliveryTag) return null;
-    
-    // Produkt musi mieć kategorię z baselinkerCategoryId
-    if (!product.category?.baselinkerCategoryId) return null;
-    
+
     // Check if product should be visible
     // Products with "Paczkomaty i Kurier" tag MUST also have "produkt w paczce" tag
-    const PACZKOMAT_TAGS_LOCAL = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
+    const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
     const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce|produkty?\s*w\s*paczce/i;
-    
-    const hasPaczkomatTag = tags.some((tag: string) => 
-      PACZKOMAT_TAGS_LOCAL.some(pt => tag.toLowerCase() === pt.toLowerCase())
+    const tags = product.tags || [];
+
+    const hasPaczkomatTag = tags.some((tag: string) =>
+      PACZKOMAT_TAGS.some(pt => tag.toLowerCase() === pt.toLowerCase())
     );
-    
+
     if (hasPaczkomatTag) {
-      const hasPackageLimitTag = tags.some((tag: string) => 
+      const hasPackageLimitTag = tags.some((tag: string) =>
         PACKAGE_LIMIT_PATTERN.test(tag)
       );
       if (!hasPackageLimitTag) {
+        // Product has paczkomat tag but no package limit - should not be visible
         return null;
       }
     }
-    
-    // Produkt musi mieć ukryte tagi
-    const hasHiddenTag = tags.some((tag: string) =>
-      HIDDEN_TAGS.some(ht => tag.trim() === ht.trim())
-    );
-    if (hasHiddenTag) return null;
-    
+
     return transformProduct(product);
   }
 
@@ -1830,22 +1771,6 @@ export class ProductsService {
           price: { gt: 10 }, // Skip very cheap items
           categoryId: category.id,
           id: { notIn: [...manualProductIds, ...excludedProductIds] },
-          // Produkty MUSZĄ mieć stan magazynowy > 0
-          variants: {
-            some: {
-              inventory: {
-                some: {
-                  quantity: { gt: 0 }
-                }
-              }
-            }
-          },
-          // Produkty MUSZĄ mieć tag dostawy ORAZ kategorię z Baselinker
-          AND: [
-            { tags: { hasSome: DELIVERY_TAGS } },
-            { category: { baselinkerCategoryId: { not: null } } },
-            PACKAGE_FILTER_WHERE,
-          ],
           // Exclude boring product names
           NOT: {
             OR: boringKeywords.map(keyword => ({
@@ -2052,22 +1977,6 @@ export class ProductsService {
         price: { gt: 0 },
         tags: { hasSome: tags },
         id: { notIn: [...manualProductIds, ...excludedProductIds] },
-        // Produkty MUSZĄ mieć stan magazynowy > 0
-        variants: {
-          some: {
-            inventory: {
-              some: {
-                quantity: { gt: 0 }
-              }
-            }
-          }
-        },
-        // Produkty MUSZĄ mieć tag dostawy ORAZ kategorię z Baselinker
-        AND: [
-          { tags: { hasSome: DELIVERY_TAGS } },
-          { category: { baselinkerCategoryId: { not: null } } },
-          PACKAGE_FILTER_WHERE,
-        ],
       },
       orderBy: { createdAt: 'desc' },
       take: remainingSlots,
@@ -2089,22 +1998,6 @@ export class ProductsService {
           status: 'ACTIVE',
           price: { gt: 0 },
           id: { notIn: [...manualProductIds, ...excludedProductIds, ...automaticProducts.map(p => p.id)] },
-          // Produkty MUSZĄ mieć stan magazynowy > 0
-          variants: {
-            some: {
-              inventory: {
-                some: {
-                  quantity: { gt: 0 }
-                }
-              }
-            }
-          },
-          // Produkty MUSZĄ mieć tag dostawy ORAZ kategorię z Baselinker
-          AND: [
-            { tags: { hasSome: DELIVERY_TAGS } },
-            { category: { baselinkerCategoryId: { not: null } } },
-            PACKAGE_FILTER_WHERE,
-          ],
           ...(fallbackCategories.length > 0 && {
             category: { slug: { in: fallbackCategories } },
           }),
@@ -2202,22 +2095,6 @@ export class ProductsService {
         price: { gt: 0 },
         createdAt: { gte: dateThreshold },
         id: { notIn: [...manualProductIds, ...excludedProductIds] },
-        // Produkty MUSZĄ mieć stan magazynowy > 0
-        variants: {
-          some: {
-            inventory: {
-              some: {
-                quantity: { gt: 0 }
-              }
-            }
-          }
-        },
-        // Produkty MUSZĄ mieć tag dostawy ORAZ kategorię z Baselinker
-        AND: [
-          { tags: { hasSome: DELIVERY_TAGS } },
-          { category: { baselinkerCategoryId: { not: null } } },
-          PACKAGE_FILTER_WHERE,
-        ],
       },
       orderBy: { createdAt: 'desc' },
       take: remainingSlots,
