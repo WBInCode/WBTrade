@@ -22,6 +22,12 @@ const DELIVERY_TAGS = [
 // Tagi "Paczkomaty i Kurier" - produkty z tymi tagami MUSZĄ mieć też tag "produkt w paczce"
 const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
 
+// Tagi "Tylko kurier" - produkty z tymi tagami MUSZĄ mieć też tag wagi
+const TYLKO_KURIER_TAGS = ['Tylko kurier', 'tylko kurier'];
+
+// Tagi wagi - wymagane przy "Tylko kurier"
+const WEIGHT_TAGS = ['do 2 kg', 'do 5 kg', 'do 10 kg', 'do 20 kg', 'do 31,5 kg'];
+
 // Tagi "produkt w paczce" - różne rozmiary paczek
 const PACKAGE_TAGS = [
   'produkt w paczce: 1',
@@ -56,11 +62,18 @@ const PACKAGE_FILTER_WHERE: Prisma.ProductWhereInput = {
         }
       }
     })),
-    // Warunek paczkomatu
+    // Warunek paczkomatu: "Paczkomaty i Kurier" wymaga "produkt w paczce"
     {
       OR: [
         { NOT: { tags: { hasSome: PACZKOMAT_TAGS } } },
         { tags: { hasSome: PACKAGE_TAGS } },
+      ]
+    },
+    // Warunek kuriera: "Tylko kurier" wymaga tagu wagi (do X kg)
+    {
+      OR: [
+        { NOT: { tags: { hasSome: TYLKO_KURIER_TAGS } } },
+        { tags: { hasSome: WEIGHT_TAGS } },
       ]
     }
   ]
@@ -202,26 +215,37 @@ function filterOldZeroStockProducts(products: any[], days: number = 14): any[] {
  * Products without proper package info should not be displayed
  */
 function filterProductsWithPackageInfo(products: any[]): any[] {
-  const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
+  const PACZKOMAT_TAGS_LOCAL = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
   const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce|produkty?\s*w\s*paczce/i;
+  const TYLKO_KURIER_LOCAL = ['Tylko kurier', 'tylko kurier'];
+  const WEIGHT_TAGS_LOCAL = ['do 2 kg', 'do 5 kg', 'do 10 kg', 'do 20 kg', 'do 31,5 kg'];
   
   return products.filter(product => {
     const tags = product.tags || [];
     
-    // Check if product has paczkomat tag
+    // "Paczkomaty i Kurier" wymaga "produkt w paczce"
     const hasPaczkomatTag = tags.some((tag: string) => 
-      PACZKOMAT_TAGS.some(pt => tag.toLowerCase() === pt.toLowerCase())
+      PACZKOMAT_TAGS_LOCAL.some(pt => tag.toLowerCase() === pt.toLowerCase())
     );
+    if (hasPaczkomatTag) {
+      const hasPackageLimitTag = tags.some((tag: string) => 
+        PACKAGE_LIMIT_PATTERN.test(tag)
+      );
+      if (!hasPackageLimitTag) return false;
+    }
     
-    // If no paczkomat tag, product is OK (might have "Tylko kurier" or weight tags)
-    if (!hasPaczkomatTag) return true;
-    
-    // Product has paczkomat tag - must also have "produkt w paczce" tag
-    const hasPackageLimitTag = tags.some((tag: string) => 
-      PACKAGE_LIMIT_PATTERN.test(tag)
+    // "Tylko kurier" wymaga tagu wagi (do X kg)
+    const hasTylkoKurierTag = tags.some((tag: string) =>
+      TYLKO_KURIER_LOCAL.some(tk => tag.toLowerCase() === tk.toLowerCase())
     );
+    if (hasTylkoKurierTag) {
+      const hasWeightTag = tags.some((tag: string) =>
+        WEIGHT_TAGS_LOCAL.some(wt => tag.toLowerCase() === wt.toLowerCase())
+      );
+      if (!hasWeightTag) return false;
+    }
     
-    return hasPackageLimitTag;
+    return true;
   });
 }
 
