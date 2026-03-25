@@ -149,6 +149,16 @@ function filterProductsWithPackageInfo(products: any[]): any[] {
     if (typeof product.stock === 'number' && product.stock <= 0) return false;
 
     const tags = Array.isArray(product.tags) ? product.tags : [];
+    
+    // Produkt MUSI mieć tag dostawy — bez tagu dostawy nie wyświetlamy
+    const hasDeliveryTag = tags.some((t: string) =>
+      DELIVERY_TAGS.some(dt => t.toLowerCase() === dt.toLowerCase())
+    );
+    if (!hasDeliveryTag) return false;
+    
+    // Produkt MUSI mieć kategorię z baselinkerCategoryId
+    if (!product.category?.baselinkerCategoryId) return false;
+    
     // If product has hidden tags, remove it
     if (tags.some((t: string) => HIDDEN_TAGS.includes(t))) return false;
     // If product has Paczkomat tags, it must also have package tags
