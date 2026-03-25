@@ -918,7 +918,7 @@ export class ProductsService {
   /**
    * Get a single product by ID
    */
-  async getById(id: string) {
+  async getById(id: string, options?: { skipVisibilityCheck?: boolean }) {
     const product = await prisma.product.findUnique({
       where: { id },
       include: {
@@ -933,6 +933,28 @@ export class ProductsService {
         },
       },
     });
+    
+    if (!product) return null;
+    
+    // Pomijamy sprawdzanie widoczności dla panelu admin
+    if (!options?.skipVisibilityCheck) {
+      // Produkt musi być ACTIVE
+      if (product.status !== 'ACTIVE') return null;
+      
+      // Produkt musi mieć cenę > 0
+      if (!product.price || Number(product.price) <= 0) return null;
+      
+      // Produkt musi mieć tagi dostawy
+      const tags = product.tags || [];
+      const hasDeliveryTag = tags.some((tag: string) =>
+        DELIVERY_TAGS.some(dt => tag.toLowerCase() === dt.toLowerCase())
+      );
+      if (!hasDeliveryTag) return null;
+      
+      // Produkt musi mieć kategorię z baselinkerCategoryId
+      if (!product.category?.baselinkerCategoryId) return null;
+    }
+    
     return transformProduct(product);
   }
 
@@ -984,19 +1006,31 @@ export class ProductsService {
     
     if (!product) return null;
     
+    // Produkt musi być ACTIVE
+    if (product.status !== 'ACTIVE') return null;
+    
     // Hide products with price 0 or less
     if (!product.price || Number(product.price) <= 0) {
       return null;
     }
     
+    // Produkt musi mieć tagi dostawy
+    const tags = product.tags || [];
+    const hasDeliveryTag = tags.some((tag: string) =>
+      DELIVERY_TAGS.some(dt => tag.toLowerCase() === dt.toLowerCase())
+    );
+    if (!hasDeliveryTag) return null;
+    
+    // Produkt musi mieć kategorię z baselinkerCategoryId
+    if (!product.category?.baselinkerCategoryId) return null;
+    
     // Check if product should be visible
     // Products with "Paczkomaty i Kurier" tag MUST also have "produkt w paczce" tag
-    const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
+    const PACZKOMAT_TAGS_LOCAL = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
     const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce|produkty?\s*w\s*paczce/i;
-    const tags = product.tags || [];
     
     const hasPaczkomatTag = tags.some((tag: string) => 
-      PACZKOMAT_TAGS.some(pt => tag.toLowerCase() === pt.toLowerCase())
+      PACZKOMAT_TAGS_LOCAL.some(pt => tag.toLowerCase() === pt.toLowerCase())
     );
     
     if (hasPaczkomatTag) {
@@ -1004,10 +1038,15 @@ export class ProductsService {
         PACKAGE_LIMIT_PATTERN.test(tag)
       );
       if (!hasPackageLimitTag) {
-        // Product has paczkomat tag but no package limit - should not be visible
         return null;
       }
     }
+    
+    // Produkt musi mieć ukryte tagi
+    const hasHiddenTag = tags.some((tag: string) =>
+      HIDDEN_TAGS.some(ht => tag.trim() === ht.trim())
+    );
+    if (hasHiddenTag) return null;
     
     return transformProduct(product);
   }
