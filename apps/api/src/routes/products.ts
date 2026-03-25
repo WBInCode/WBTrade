@@ -63,7 +63,7 @@ router.get('/same-warehouse/:productId', getSameWarehouseProducts);
 router.get('/slug/:slug', getProductBySlug);
 
 // Route to get a specific product by ID
-router.get('/:id', getProductById);
+router.get('/:id', optionalAuth, getProductById);
 
 // Product reviews routes (public read, optional auth for can-review check)
 router.get('/:productId/reviews', reviewsController.getProductReviews);
