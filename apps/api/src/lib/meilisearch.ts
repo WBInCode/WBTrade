@@ -183,22 +183,24 @@ export async function initializeMeilisearch(): Promise<void> {
       'id',
     ]);
 
-    // Configure ranking rules
+    // Configure ranking rules — exactness before typo so exact matches always rank higher
     await meiliClient.index(PRODUCTS_INDEX).updateRankingRules([
       'words',
+      'exactness',
       'typo',
       'proximity',
       'attribute',
       'sort',
-      'exactness',
     ]);
 
-    // Configure typo tolerance for better search results
+    // Configure typo tolerance — tighter thresholds to avoid false positives
+    // e.g. "szafka" (6 chars) must NOT match "szalka" (1 typo)
+    // 1 typo only for 7+ char words, 2 typos only for 9+ char words
     await meiliClient.index(PRODUCTS_INDEX).updateTypoTolerance({
       enabled: true,
       minWordSizeForTypos: {
-        oneTypo: 3,
-        twoTypos: 6,
+        oneTypo: 7,
+        twoTypos: 9,
       },
     });
 
