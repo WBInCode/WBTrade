@@ -31,6 +31,7 @@ export const PAYMENT_LOGOS = {
   googlepay: 'google.com',
   paypo: 'paypo.pl',
   twisto: 'twisto.pl',
+  imoje: 'imoje.pl',
 } as const;
 
 // Social media domains for logo.dev
