@@ -15,6 +15,7 @@ interface OrderSummaryProps {
   };
   onEditStep: (step: number) => void;
   onTermsChange: (accepted: boolean) => void;
+  onDataProcessingChange: (accepted: boolean) => void;
   onNewsletterChange: (accepted: boolean) => void;
   onWantInvoiceChange: (wantInvoice: boolean) => void;
   onPlaceOrder: () => void;
@@ -31,6 +32,7 @@ const shippingMethodNames: Record<ShippingData['method'], string> = {
 
 const paymentMethodNames: Record<PaymentData['method'], string> = {
   payu: 'Płatność online (PayU)',
+  imoje: 'Płatność online (imoje)',
   blik: 'BLIK',
   card: 'Karta płatnicza',
   transfer: 'Przelew online',
@@ -45,6 +47,7 @@ export default function OrderSummary({
   totals,
   onEditStep,
   onTermsChange,
+  onDataProcessingChange,
   onNewsletterChange,
   onWantInvoiceChange,
   onPlaceOrder,
@@ -233,13 +236,20 @@ export default function OrderSummary({
           </button>
         </div>
 
-        {/* Payment method - auto-selected PayU */}
+        {/* Payment method */}
         <div className="flex justify-between items-start p-3 sm:p-4 border dark:border-secondary-600 rounded-lg">
           <div className="flex-1 min-w-0">
             <h4 className="text-sm sm:text-base font-medium text-gray-900 dark:text-white mb-1">💳 Płatność</h4>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Płatność online (PayU)</p>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{paymentMethodNames[payment.method] || 'Płatność online'}</p>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">BLIK, karta płatnicza, szybki przelew, Google Pay, Apple Pay</p>
           </div>
+          <button
+            type="button"
+            onClick={() => onEditStep(3)}
+            className="text-xs sm:text-sm text-orange-500 hover:text-orange-600 font-medium shrink-0 ml-2"
+          >
+            Zmień
+          </button>
         </div>
       </div>
 
@@ -285,7 +295,19 @@ export default function OrderSummary({
             <a href="/privacy" className="text-orange-500 hover:underline" target="_blank">
               politykę prywatności
             </a>
-            . Wyrażam zgodę na przetwarzanie danych osobowych w celu realizacji zamówienia. *
+            . *
+          </span>
+        </label>
+
+        <label className="flex items-start gap-2 sm:gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={checkoutData.acceptDataProcessing}
+            onChange={(e) => onDataProcessingChange(e.target.checked)}
+            className="mt-0.5 sm:mt-1 h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 dark:border-secondary-600 rounded shrink-0 dark:bg-secondary-700"
+          />
+          <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+            Wyrażam zgodę na przetwarzanie moich danych osobowych w celu realizacji zamówienia, w&nbsp;tym przekazanie danych operatorowi płatności ({payment.method === 'imoje' ? 'imoje' : 'PayU'}) w&nbsp;zakresie niezbędnym do obsługi płatności. Podanie danych jest dobrowolne, lecz niezbędne do realizacji zamówienia. *
           </span>
         </label>
 
@@ -315,11 +337,11 @@ export default function OrderSummary({
       <button
         type="button"
         onClick={onPlaceOrder}
-        disabled={isSubmitting || !checkoutData.acceptTerms}
+        disabled={isSubmitting || !checkoutData.acceptTerms || !checkoutData.acceptDataProcessing}
         className={`
           w-full py-3 sm:py-4 text-white font-bold text-base sm:text-lg rounded-lg transition-all
           flex items-center justify-center gap-2
-          ${checkoutData.acceptTerms && !isSubmitting
+          ${checkoutData.acceptTerms && checkoutData.acceptDataProcessing && !isSubmitting
             ? 'bg-orange-500 hover:bg-orange-600 focus:ring-4 focus:ring-orange-200'
             : 'bg-gray-300 dark:bg-secondary-600 cursor-not-allowed'
           }

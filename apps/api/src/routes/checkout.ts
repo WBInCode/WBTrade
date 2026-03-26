@@ -12,6 +12,7 @@ import {
   verifyPayment,
   paymentWebhook,
   payuWebhook,
+  imojeWebhook,
   shippingWebhook,
   getOrderTracking,
   calculateCartShipping,
@@ -126,6 +127,13 @@ router.get('/tracking/:orderId', authGuard, getOrderTracking);
  * PayU sends signature in OpenPayU-Signature header
  */
 router.post('/webhooks/payu', payuWebhook);
+
+/**
+ * POST /api/webhooks/imoje
+ * Handle imoje payment webhooks
+ * imoje sends signature in X-Imoje-Signature header
+ */
+router.post('/webhooks/imoje', imojeWebhook);
 
 /**
  * POST /api/webhooks/payment/:provider

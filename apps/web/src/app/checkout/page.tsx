@@ -74,7 +74,7 @@ export interface PackageShippingSelection {
 }
 
 export interface PaymentData {
-  method: 'payu' | 'card' | 'blik' | 'transfer' | 'google_pay' | 'apple_pay' | 'paypo';
+  method: 'payu' | 'imoje' | 'card' | 'blik' | 'transfer' | 'google_pay' | 'apple_pay' | 'paypo';
   extraFee: number;
 }
 
@@ -83,6 +83,7 @@ export interface CheckoutData {
   shipping: ShippingData;
   payment: PaymentData;
   acceptTerms: boolean;
+  acceptDataProcessing: boolean;
   acceptNewsletter: boolean;
   wantInvoice: boolean;
 }
@@ -165,6 +166,7 @@ function CheckoutPageContent() {
     shipping: initialShipping,
     payment: initialPayment,
     acceptTerms: false,
+    acceptDataProcessing: false,
     acceptNewsletter: false,
     wantInvoice: false,
   });
@@ -345,6 +347,10 @@ function CheckoutPageContent() {
   const handlePlaceOrder = async () => {
     if (!checkoutData.acceptTerms) {
       setError('Musisz zaakceptować regulamin i politykę prywatności');
+      return;
+    }
+    if (!checkoutData.acceptDataProcessing) {
+      setError('Musisz wyrazić zgodę na przetwarzanie danych osobowych');
       return;
     }
 
@@ -679,6 +685,9 @@ function CheckoutPageContent() {
                 onEditStep={handleEditStep}
                 onTermsChange={(acceptTerms) => 
                   setCheckoutData(prev => ({ ...prev, acceptTerms }))
+                }
+                onDataProcessingChange={(acceptDataProcessing) =>
+                  setCheckoutData(prev => ({ ...prev, acceptDataProcessing }))
                 }
                 onNewsletterChange={(acceptNewsletter) =>
                   setCheckoutData(prev => ({ ...prev, acceptNewsletter }))

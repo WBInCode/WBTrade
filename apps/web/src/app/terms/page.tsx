@@ -19,7 +19,7 @@ export default function TermsPage() {
               Regulamin
             </h1>
             <p className="text-secondary-500 dark:text-secondary-400">
-              Ostatnia aktualizacja: 17 marca 2026 r.
+              Ostatnia aktualizacja: 26 marca 2026 r.
             </p>
           </div>
         </div>
@@ -37,7 +37,7 @@ export default function TermsPage() {
                 </h2>
                 <ol className="list-decimal pl-6 text-secondary-600 dark:text-secondary-400 mb-6 space-y-3">
                   <li>Niniejszy Regulamin określa zasady korzystania ze Sklepu prowadzonego za pośrednictwem serwisu internetowego dostępnego pod adresem www.wb-trade.pl oraz aplikacji mobilnej WB Trade (dalej łącznie: „Sklep").</li>
-                  <li>Właścicielem i operatorem Sklepu jest: WB Partners Sp. z o.o. z siedzibą w Rzeszowie, ul. Juliusza Słowackiego 24/11, 35-060 Rzeszów, NIP: 5170455185, REGON: 540735769, KRS: 0001151642 (dalej: „Sprzedawca”).</li>
+                  <li>Właścicielem i operatorem Sklepu jest: WB Partners Spółka z ograniczoną odpowiedzialnością z siedzibą w Rzeszowie (adres: ul. Juliusza Słowackiego 24/11, 35-060 Rzeszów), wpisana do rejestru przedsiębiorców Krajowego Rejestru Sądowego prowadzonego przez Sąd Rejonowy w Rzeszowie, XII Wydział Gospodarczy Krajowego Rejestru Sądowego, pod numerem KRS: 0001151642, NIP: 5170455185, REGON: 540735769, o kapitale zakładowym w wysokości 200 000,00 zł (wpłaconym w całości) – dalej: „Sprzedawca".</li>
                   <li>
                     Kontakt ze Sprzedawcą:
                     <ul className="list-[lower-alpha] pl-6 mt-2 space-y-1">
@@ -135,9 +135,10 @@ export default function TermsPage() {
                   <li>
                     Dostępne metody płatności w Sklepie:
                     <ul className="list-[lower-alpha] pl-6 mt-2 space-y-1">
-                      <li>szybkie płatności online (operator płatności – w szczególności PayU),</li>
+                      <li>szybkie płatności online (operatorzy płatności – w szczególności PayU oraz imoje),</li>
                       <li>płatność kartą (w ramach systemu płatności online),</li>
                       <li>BLIK (w ramach systemu płatności online),</li>
+                      <li>Google Pay, Apple Pay (w ramach systemu płatności online),</li>
                       <li>przelew tradycyjny na rachunek Sprzedawcy (dane do przelewu przekazywane w trakcie zamówienia lub w wiadomości e-mail).</li>
                     </ul>
                   </li>

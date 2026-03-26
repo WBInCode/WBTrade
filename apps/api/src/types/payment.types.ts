@@ -10,7 +10,8 @@ export type PaymentProviderId =
   | 'payu'
   | 'tpay'
   | 'blik_direct'
-  | 'paypo';
+  | 'paypo'
+  | 'imoje';
 
 // Payment methods available
 export type PaymentMethodType = 
