@@ -17,6 +17,7 @@ import {
 import { IPaymentProvider } from '../providers/payment/payment-provider.interface';
 import { Przelewy24Provider } from '../providers/payment/przelewy24.provider';
 import { PayUProvider } from '../providers/payment/payu.provider';
+import { ImojeProvider } from '../providers/payment/imoje.provider';
 import { prisma } from '../db';
 import { baselinkerOrdersService } from './baselinker-orders.service';
 import { popularityService } from './popularity.service';
@@ -54,6 +55,12 @@ const providerConfigs: Record<PaymentProviderId, Partial<PaymentProviderConfig>>
     apiKey: process.env.PAYPO_API_KEY,
     sandbox: process.env.NODE_ENV !== 'production',
   },
+  imoje: {
+    merchantId: process.env.IMOJE_MERCHANT_ID,
+    apiKey: process.env.IMOJE_API_TOKEN,
+    apiSecret: process.env.IMOJE_SERVICE_KEY,
+    sandbox: process.env.IMOJE_SANDBOX === 'true' || process.env.NODE_ENV !== 'production',
+  },
 };
 
 // Default provider to use
@@ -81,6 +88,13 @@ export class PaymentService {
     if (payuConfig.merchantId || process.env.PAYU_POS_ID) {
       this.providers.set('payu', new PayUProvider(payuConfig));
       console.log('PayU provider initialized (sandbox:', payuConfig.sandbox, ')');
+    }
+
+    // Initialize imoje provider
+    const imojeConfig = providerConfigs.imoje;
+    if (process.env.IMOJE_MERCHANT_ID && process.env.IMOJE_API_TOKEN) {
+      this.providers.set('imoje', new ImojeProvider(imojeConfig));
+      console.log('imoje provider initialized (sandbox:', imojeConfig.sandbox, ')');
     }
 
     // TODO: Initialize other providers (Stripe, TPay)
@@ -162,9 +176,11 @@ export class PaymentService {
    * Verify payment status
    */
   async verifyPayment(sessionId: string): Promise<PaymentResult> {
-    // PayU sessionId is PayU's orderId, not our internal orderId
-    // Always use PayU provider for verification since PayU returns their orderId format
-    const provider = this.getProvider('payu');
+    // Try to determine provider from stored session, or try each active provider
+    const storedSession = await this.getStoredSession(sessionId);
+    const providerId = (storedSession?.providerId as PaymentProviderId) || DEFAULT_PROVIDER;
+    
+    const provider = this.getProvider(providerId);
     const result = await provider.verifyPayment(sessionId);
 
     console.log('Payment verification result:', result);

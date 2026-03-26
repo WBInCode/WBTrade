@@ -19,7 +19,7 @@ export default function PrivacyPolicyPage() {
               Polityka prywatności
             </h1>
             <p className="text-secondary-500 dark:text-secondary-400">
-              Ostatnia aktualizacja: 18 grudnia 2025
+              Ostatnia aktualizacja: 26 marca 2026
             </p>
           </div>
         </div>
@@ -41,8 +41,13 @@ export default function PrivacyPolicyPage() {
                 </p>
                 <p className="text-secondary-600 dark:text-secondary-400 mb-6">
                   Administratorem danych osobowych jest WB&nbsp;Partners Sp.&nbsp;z&nbsp;o.o. z&nbsp;siedzibą w&nbsp;Rzeszowie pod ul.&nbsp;Juliusza
-                  Słowackiego 24/11, 35-060 Rzeszów, wpisana do&nbsp;rejestru przedsiębiorców KRS pod numerem
+                  Słowackiego 24/11, 35-060 Rzeszów, wpisana do&nbsp;rejestru przedsiębiorców Krajowego Rejestru Sądowego prowadzonego przez Sąd Rejonowy w&nbsp;Rzeszowie, XII&nbsp;Wydział Gospodarczy Krajowego Rejestru Sądowego pod numerem
                   0001151642, NIP:&nbsp;5170455185, REGON:&nbsp;540735769.
+                </p>
+                <p className="text-secondary-600 dark:text-secondary-400 mb-6">
+                  Podanie danych osobowych jest dobrowolne, lecz niezbędne do&nbsp;korzystania z&nbsp;określonych funkcji Sklepu,
+                  w&nbsp;szczególności do&nbsp;składania zamówień, zakładania konta, kontaktu z&nbsp;Biurem Obsługi Klienta oraz
+                  realizacji płatności za&nbsp;pośrednictwem operatorów płatności (PayU, imoje).
                 </p>
 
                 <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
@@ -147,7 +152,7 @@ export default function PrivacyPolicyPage() {
                 </p>
                 <ul className="list-disc pl-6 text-secondary-600 dark:text-secondary-400 mb-6 space-y-2">
                   <li>Firmom kurierskim i pocztowym (w celu dostawy zamówień)</li>
-                  <li>Operatorom płatności (w celu realizacji płatności)</li>
+                  <li>Operatorom płatności – PayU S.A. oraz imoje (ING Bank Śląski S.A.) – w celu realizacji płatności</li>
                   <li>Dostawcom usług IT i hostingu</li>
                   <li>Biurom rachunkowym i kancelariom prawnym</li>
                   <li>Organom państwowym (na podstawie przepisów prawa)</li>
@@ -180,7 +185,27 @@ export default function PrivacyPolicyPage() {
                 </p>
 
                 <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
-                  11. Kontakt
+                  11. Profilowanie
+                </h2>
+                <p className="text-secondary-600 dark:text-secondary-400 mb-4">
+                  Administrator może wykorzystywać profilowanie w&nbsp;celu:
+                </p>
+                <ul className="list-disc pl-6 text-secondary-600 dark:text-secondary-400 mb-4 space-y-2">
+                  <li>dostosowania treści i&nbsp;ofert do&nbsp;preferencji użytkownika (np.&nbsp;rekomendacje produktów na&nbsp;podstawie historii przeglądanych produktów i&nbsp;wcześniejszych zakupów),</li>
+                  <li>prowadzenia analiz statystycznych dotyczących sposobu korzystania ze&nbsp;Sklepu,</li>
+                  <li>kierowania komunikatów marketingowych dopasowanych do&nbsp;zainteresowań użytkownika (wyłącznie za&nbsp;jego zgodą).</li>
+                </ul>
+                <p className="text-secondary-600 dark:text-secondary-400 mb-4">
+                  Efektem profilowania może być w&nbsp;szczególności: wyświetlanie spersonalizowanych rekomendacji produktów, przyznanie rabatów w&nbsp;ramach programu lojalnościowego, przesyłanie dopasowanych treści newslettera, a&nbsp;także wyświetlanie spersonalizowanych reklam.
+                </p>
+                <p className="text-secondary-600 dark:text-secondary-400 mb-6">
+                  Profilowanie nie skutkuje podejmowaniem decyzji wywołujących wobec użytkownika skutki prawne
+                  lub istotnie wpływających na&nbsp;niego w&nbsp;podobny sposób w&nbsp;rozumieniu art.&nbsp;22 RODO. Użytkownik ma prawo
+                  wnieść sprzeciw wobec profilowania na&nbsp;zasadach opisanych w&nbsp;sekcji 7 niniejszej Polityki.
+                </p>
+
+                <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
+                  12. Kontakt
                 </h2>
                 <p className="text-secondary-600 dark:text-secondary-400 mb-4">
                   W sprawach związanych z ochroną danych osobowych można kontaktować się:
@@ -192,7 +217,7 @@ export default function PrivacyPolicyPage() {
                 </ul>
 
                 <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mt-10 mb-4">
-                  12. Zmiany polityki prywatności
+                  13. Zmiany polityki prywatności
                 </h2>
                 <p className="text-secondary-600 dark:text-secondary-400 mb-6">
                   Administrator zastrzega sobie prawo do wprowadzania zmian w Polityce Prywatności. O wszelkich
