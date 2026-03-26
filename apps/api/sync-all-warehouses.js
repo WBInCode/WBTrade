@@ -296,7 +296,9 @@ async function syncProductsFromInventory(apiToken, inventory, existingMap) {
         
         // Pełna synchronizacja (TRYB: all)
         const name = getProductName(blProduct) || `Product ${productId}`;
-        const sku = blProduct.sku || `BL-${productId}`;
+        const rawSku = blProduct.sku || `BL-${productId}`;
+        // Dodaj prefix magazynu do SKU (np. hp-, leker-, btp-) jeśli jeszcze go nie ma
+        const sku = inventoryPrefix && !rawSku.toLowerCase().startsWith(inventoryPrefix) ? inventoryPrefix + rawSku : rawSku;
         const slug = slugify(name) + '-' + productId;
         const price = getProductPrice(blProduct, whKey);
         const description = getProductDescription(blProduct);
