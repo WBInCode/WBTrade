@@ -22,6 +22,7 @@ import { loyaltyService } from '../services/loyalty.service';
 function mapPaymentMethod(frontendMethod: string): PaymentMethodType {
   const methodMapping: Record<string, PaymentMethodType> = {
     'payu': 'blik', // PayU handles all online payment methods (BLIK, cards, transfers, etc.)
+    'imoje': 'blik', // imoje handles all online payment methods (BLIK, cards, transfers, etc.)
     'blik': 'blik',
     'card': 'card',
     'transfer': 'bank_transfer',
@@ -32,6 +33,14 @@ function mapPaymentMethod(frontendMethod: string): PaymentMethodType {
   };
   
   return methodMapping[frontendMethod] || 'blik';
+}
+
+/**
+ * Determine payment provider ID from frontend payment method string
+ */
+function resolveProviderId(frontendMethod: string): PaymentProviderId {
+  if (frontendMethod === 'imoje') return 'imoje';
+  return 'payu'; // Default to PayU
 }
 
 const ordersService = new OrdersService();
@@ -863,7 +872,8 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
 
       // Map frontend payment method to API payment method type
       const mappedPaymentMethod = mapPaymentMethod(paymentMethod);
-      console.log(`💳 Payment method mapping: ${paymentMethod} → ${mappedPaymentMethod}`);
+      const resolvedProviderId = resolveProviderId(paymentMethod);
+      console.log(`💳 Payment method mapping: ${paymentMethod} → ${mappedPaymentMethod} (provider: ${resolvedProviderId})`);
       
       // Get customer email - prefer form-entered email over account email
       const customerEmail = guestEmail || req.user?.email || '';
@@ -883,23 +893,29 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
         }
       }
       
+      // Determine webhook URL based on provider
+      const webhookUrls: Record<string, string> = {
+        'payu': `${process.env.APP_URL || 'http://localhost:5000'}/api/webhooks/payu`,
+        'imoje': `${process.env.APP_URL || 'http://localhost:5000'}/api/webhooks/imoje`,
+      };
+      
       const paymentRequest: CreatePaymentRequest = {
         orderId: order.id,
         amount: total,
         currency: 'PLN',
         paymentMethod: mappedPaymentMethod,
-        providerId: 'payu' as PaymentProviderId, // Force PayU for testing
+        providerId: resolvedProviderId,
         customer: {
           email: customerEmail,
           firstName: customerFirstName,
           lastName: customerLastName,
         },
         description: `Zamówienie ${order.orderNumber}`,
-        // Always use HTTPS URLs - PayU rejects non-HTTP schemes like wbtrade://
+        // Always use HTTPS URLs - payment gateways reject non-HTTP schemes
         // Mobile WebView intercepts the redirect before it completes
         returnUrl: `${frontendUrl}/order/${order.id}/confirmation`,
         cancelUrl: `${frontendUrl}/checkout?orderId=${order.id}&cancelled=true`,
-        notifyUrl: `${process.env.APP_URL || 'http://localhost:5000'}/api/webhooks/payu`,
+        notifyUrl: webhookUrls[resolvedProviderId] || webhookUrls['payu'],
         metadata: {
           customerIp: req.ip || req.socket.remoteAddress || '127.0.0.1',
         },
@@ -1002,6 +1018,34 @@ export async function payuWebhook(req: Request, res: Response): Promise<void> {
 }
 
 /**
+ * Handle imoje payment webhook
+ * imoje sends signature in X-Imoje-Signature header
+ */
+export async function imojeWebhook(req: Request, res: Response): Promise<void> {
+  try {
+    const signature = req.headers['x-imoje-signature'] as string || '';
+    
+    // Use raw body if available (for correct signature verification)
+    const payload = (req as any).rawBody || JSON.stringify(req.body);
+
+    console.log('imoje webhook received:', {
+      signature: signature ? signature.substring(0, 32) + '...' : 'none',
+      hasRawBody: !!(req as any).rawBody,
+      body: req.body,
+    });
+
+    const result = await paymentService.processWebhook('imoje', payload, signature);
+
+    console.log('imoje webhook processed:', result);
+
+    res.json({ status: 'ok' });
+  } catch (error) {
+    console.error('Error processing imoje webhook:', error);
+    res.status(400).json({ message: 'Webhook processing failed' });
+  }
+}
+
+/**
  * Handle shipping webhook
  */
 export async function shippingWebhook(req: Request, res: Response): Promise<void> {
@@ -1067,29 +1111,39 @@ export async function retryPayment(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    // Create new payment session with PayU
+    // Create new payment session
     const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').split(',')[0].trim();
 
     // Get customer email from order
     const customerEmail = order.guestEmail || userEmail || (req as any).user?.email || '';
     
+    // Determine provider from order's existing payment method or request body
+    const requestedProvider = req.body.paymentProvider || order.paymentMethod || 'payu';
+    const resolvedProvider = resolveProviderId(requestedProvider);
+    
+    // Determine webhook URL based on provider
+    const webhookUrls: Record<string, string> = {
+      'payu': `${process.env.APP_URL || 'http://localhost:5000'}/api/webhooks/payu`,
+      'imoje': `${process.env.APP_URL || 'http://localhost:5000'}/api/webhooks/imoje`,
+    };
+    
     const paymentRequest: CreatePaymentRequest = {
       orderId: order.id,
       amount: Number(order.total),
       currency: 'PLN',
-      paymentMethod: 'blik', // Default to BLIK, PayU allows user to choose
-      providerId: 'payu' as PaymentProviderId,
+      paymentMethod: 'blik', // Default to BLIK, gateway allows user to choose
+      providerId: resolvedProvider,
       customer: {
         email: customerEmail,
         firstName: order.guestFirstName || '',
         lastName: order.guestLastName || '',
       },
       description: `Zamówienie ${order.orderNumber}`,
-      // Always use HTTPS URLs - PayU rejects non-HTTP schemes like wbtrade://
+      // Always use HTTPS URLs - payment gateways reject non-HTTP schemes
       // Mobile WebView intercepts the redirect before it completes
       returnUrl: `${frontendUrl}/order/${order.id}/confirmation`,
       cancelUrl: `${frontendUrl}/order/${order.id}/payment?retry=true`,
-      notifyUrl: `${process.env.APP_URL || 'http://localhost:5000'}/api/webhooks/payu`,
+      notifyUrl: webhookUrls[resolvedProvider] || webhookUrls['payu'],
       metadata: {
         customerIp: req.ip || req.socket.remoteAddress || '127.0.0.1',
       },

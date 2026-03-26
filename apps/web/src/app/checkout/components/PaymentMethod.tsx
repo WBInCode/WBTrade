@@ -11,7 +11,7 @@ interface PaymentMethodProps {
   onBack: () => void;
 }
 
-type PaymentId = 'payu';
+type PaymentId = 'payu' | 'imoje';
 
 interface PaymentOption {
   id: PaymentId;
@@ -24,7 +24,13 @@ interface PaymentOption {
 const paymentOptions: PaymentOption[] = [
   { 
     id: 'payu', 
-    name: 'Płatność online', 
+    name: 'Płatność online (PayU)', 
+    extraFee: 0,
+    description: 'BLIK, karta płatnicza, szybki przelew, Google Pay, Apple Pay'
+  },
+  { 
+    id: 'imoje', 
+    name: 'Płatność online (imoje)', 
     extraFee: 0,
     description: 'BLIK, karta płatnicza, szybki przelew, Google Pay, Apple Pay'
   },
@@ -33,7 +39,7 @@ const paymentOptions: PaymentOption[] = [
 // Ikony dla metod płatności
 const PaymentIcon = ({ id }: { id: PaymentId }) => {
   switch (id) {
-    case 'payu':
+    case 'payu': {
       const logoUrl = getLogoUrl(PAYMENT_LOGOS.payu, { size: 64, format: 'png' });
       return logoUrl ? (
         <Image 
@@ -46,6 +52,21 @@ const PaymentIcon = ({ id }: { id: PaymentId }) => {
       ) : (
         <span className="px-2 py-1 bg-[#A6C307] text-white text-xs font-bold rounded">PayU</span>
       );
+    }
+    case 'imoje': {
+      const imojeLogoUrl = getLogoUrl(PAYMENT_LOGOS.imoje, { size: 64, format: 'png' });
+      return imojeLogoUrl ? (
+        <Image 
+          src={imojeLogoUrl} 
+          alt="imoje"
+          width={64}
+          height={28}
+          className="h-6 sm:h-7 w-auto object-contain rounded"
+        />
+      ) : (
+        <span className="px-2 py-1 bg-[#00A651] text-white text-xs font-bold rounded">imoje</span>
+      );
+    }
     default:
       return null;
   }

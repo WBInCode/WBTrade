@@ -194,6 +194,13 @@ export const VISIBLE_PRODUCT_WHERE: Prisma.ProductWhereInput = {
         { tags: { hasSome: PACKAGE_TAGS } },
       ]
     },
+    // Filtr wagi: jeśli ma "Tylko kurier" to MUSI mieć też tag wagi (do X kg)
+    {
+      OR: [
+        { NOT: { tags: { hasSome: TYLKO_KURIER_TAGS } } },
+        { tags: { hasSome: WEIGHT_TAGS } },
+      ]
+    },
   ],
 };
 

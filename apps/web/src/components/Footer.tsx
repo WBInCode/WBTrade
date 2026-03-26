@@ -179,9 +179,14 @@ export default function Footer({ hideTrustBadges = false }: FooterProps) {
               <span className="text-secondary-300 dark:text-secondary-600">·</span>
               <span>BLIK</span>
               <span className="text-secondary-300 dark:text-secondary-600">·</span>
-              <span>Płacę później</span>
+              <span>Karta płatnicza</span>
               <span className="text-secondary-300 dark:text-secondary-600">·</span>
-              <span>Raty</span>
+              <span>Google Pay</span>
+              <span className="text-secondary-300 dark:text-secondary-600">·</span>
+              <span>Apple Pay</span>
+            </div>
+            <div className="flex items-center gap-4 text-xs text-secondary-400 dark:text-secondary-500 mt-1">
+              <span>Obsługiwane przez: PayU, imoje</span>
             </div>
           </div>
         </div>
