@@ -12,7 +12,7 @@ import {
   Animated,
   Keyboard,
 } from 'react-native';
-import { useLocalSearchParams, Stack } from 'expo-router';
+import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesome } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
@@ -47,9 +47,10 @@ interface Filters {
   maxPrice: string;
   warehouse: string;
   discounted: boolean;
+  subcategory: string;
 }
 
-const EMPTY_FILTERS: Filters = { minPrice: '', maxPrice: '', warehouse: '', discounted: false };
+const EMPTY_FILTERS: Filters = { minPrice: '', maxPrice: '', warehouse: '', discounted: false, subcategory: '' };
 
 function FilterModal({
   visible,
@@ -57,18 +58,47 @@ function FilterModal({
   filters,
   onApply,
   colors,
+  subcategories,
+  categorySlug,
 }: {
   visible: boolean;
   onClose: () => void;
   filters: Filters;
   onApply: (f: Filters) => void;
   colors: ReturnType<typeof useThemeColors>;
+  subcategories: Array<{ id: string; name: string; slug: string; productCount?: number }>;
+  categorySlug: string;
 }) {
   const [local, setLocal] = useState<Filters>(filters);
+  const [warehouseCounts, setWarehouseCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (visible) setLocal(filters);
   }, [visible, filters]);
+
+  // Fetch warehouse product counts when modal opens
+  useEffect(() => {
+    if (!visible || !categorySlug) return;
+    const baseParams: Record<string, any> = {
+      category: filters.subcategory || categorySlug,
+      limit: 1,
+    };
+    if (filters.minPrice) baseParams.minPrice = filters.minPrice.replace(',', '.');
+    if (filters.maxPrice) baseParams.maxPrice = filters.maxPrice.replace(',', '.');
+    if (filters.discounted) baseParams.discounted = 'true';
+
+    Promise.allSettled(
+      WAREHOUSES.map((w) =>
+        api.get<{ total: number }>('/products', { ...baseParams, warehouse: w.id })
+      )
+    ).then((results) => {
+      const counts: Record<string, number> = {};
+      results.forEach((r, i) => {
+        counts[WAREHOUSES[i].id] = r.status === 'fulfilled' ? (r.value as any).total ?? 0 : 0;
+      });
+      setWarehouseCounts(counts);
+    });
+  }, [visible, categorySlug, filters.subcategory, filters.minPrice, filters.maxPrice, filters.discounted]);
 
   const hasFilters =
     local.minPrice !== '' || local.maxPrice !== '' || local.warehouse !== '' || local.discounted;
@@ -129,13 +159,46 @@ function FilterModal({
                     { color: local.warehouse === w.id ? colors.tint : colors.text },
                   ]}
                 >
-                  {w.location}
+                  Magazyn {w.location}{warehouseCounts[w.id] != null ? ` (${warehouseCounts[w.id]})` : ''}
                 </Text>
                 {local.warehouse === w.id && (
                   <FontAwesome name="check" size={12} color={colors.tint} />
                 )}
               </TouchableOpacity>
             ))}
+
+            {/* Subcategory */}
+            {subcategories.length > 0 && (
+              <>
+                <Text style={[fStyles.filterLabel, { color: colors.text, marginTop: 20 }]}>Podkategoria</Text>
+                {subcategories.map((sc) => (
+                  <TouchableOpacity
+                    key={sc.id}
+                    style={[
+                      fStyles.chipBtn,
+                      {
+                        borderColor: local.subcategory === sc.slug ? colors.tint : colors.border,
+                        backgroundColor: local.subcategory === sc.slug ? colors.tintLight : colors.background,
+                      },
+                    ]}
+                    onPress={() => setLocal((p) => ({ ...p, subcategory: p.subcategory === sc.slug ? '' : sc.slug }))}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        fStyles.chipBtnText,
+                        { color: local.subcategory === sc.slug ? colors.tint : colors.text },
+                      ]}
+                    >
+                      {sc.name}{sc.productCount != null && sc.productCount > 0 ? ` (${sc.productCount})` : ''}
+                    </Text>
+                    {local.subcategory === sc.slug && (
+                      <FontAwesome name="check" size={12} color={colors.tint} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </>
+            )}
 
             {/* Discounted */}
             <Text style={[fStyles.filterLabel, { color: colors.text, marginTop: 20 }]}>Promocje</Text>
@@ -250,8 +313,10 @@ export default function CategoryScreen() {
   const colors = useThemeColors();
   const dynamicStyles = useMemo(() => createDynamicStyles(colors), [colors]);
   const navigation = useNavigation();
+  const router = useRouter();
 
   const [category, setCategory] = useState<Category | null>(null);
+  const [breadcrumbs, setBreadcrumbs] = useState<Array<{ name: string; slug: string }>>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -275,14 +340,23 @@ export default function CategoryScreen() {
     if (filters.maxPrice) c++;
     if (filters.warehouse) c++;
     if (filters.discounted) c++;
+    if (filters.subcategory) c++;
     return c;
   }, [filters]);
 
   const fetchCategory = useCallback(async () => {
     if (!slug) return;
     try {
-      const res = await api.get<{ category: Category }>(`/categories/${slug}`);
-      setCategory(res.category);
+      const [catRes, pathRes] = await Promise.allSettled([
+        api.get<{ category: Category }>(`/categories/${slug}`),
+        api.get<{ path: Array<{ name: string; slug: string }> }>(`/categories/${slug}/path`),
+      ]);
+      if (catRes.status === 'fulfilled') setCategory(catRes.value.category);
+      if (pathRes.status === 'fulfilled') {
+        // path includes current category at the end, remove it for breadcrumbs
+        const path = pathRes.value.path || [];
+        setBreadcrumbs(path.length > 1 ? path.slice(0, -1) : []);
+      }
     } catch {
       // Category name will fall back to slug
     }
@@ -307,6 +381,7 @@ export default function CategoryScreen() {
         if (filters.maxPrice) params.maxPrice = filters.maxPrice.replace(',', '.');
         if (filters.warehouse) params.warehouse = filters.warehouse;
         if (filters.discounted) params.discounted = 'true';
+        if (filters.subcategory) params.category = filters.subcategory;
 
         const res = await api.get<any>('/products', params);
 
@@ -402,11 +477,26 @@ export default function CategoryScreen() {
     <>
       <Stack.Screen options={{ title: categoryName }} />
       <View style={dynamicStyles.container}>
+        {/* Breadcrumbs - always show */}
+        <View style={dynamicStyles.breadcrumbBar}>
+          <TouchableOpacity onPress={() => router.push('/categories')} activeOpacity={0.6}>
+            <Text style={dynamicStyles.breadcrumbLink}>Kategorie</Text>
+          </TouchableOpacity>
+          {breadcrumbs.map((bc) => (
+            <React.Fragment key={bc.slug}>
+              <FontAwesome name="chevron-right" size={9} color={colors.textMuted} />
+              <TouchableOpacity onPress={() => router.push(`/category/${bc.slug}` as any)} activeOpacity={0.6}>
+                <Text style={dynamicStyles.breadcrumbLink}>{bc.name}</Text>
+              </TouchableOpacity>
+            </React.Fragment>
+          ))}
+          <FontAwesome name="chevron-right" size={9} color={colors.textMuted} />
+          <Text style={dynamicStyles.breadcrumbCurrent}>{categoryName}</Text>
+        </View>
+
         {/* Sort + Filter bar */}
         <View style={dynamicStyles.toolbar}>
-          <Text style={dynamicStyles.resultCount}>
-            {totalProducts} produkt{totalProducts === 1 ? '' : totalProducts < 5 ? 'y' : 'ów'}
-          </Text>
+          <View />
           <View style={{ flexDirection: 'row', gap: 8 }}>
             {/* Filter button */}
             <TouchableOpacity
@@ -465,7 +555,7 @@ export default function CategoryScreen() {
             {filters.warehouse !== '' && (
               <View style={[dynamicStyles.activeChip, { backgroundColor: colors.tintLight }]}>
                 <Text style={[dynamicStyles.activeChipText, { color: colors.tint }]}>
-                  {WAREHOUSES.find((w) => w.id === filters.warehouse)?.label}
+                  Magazyn {WAREHOUSES.find((w) => w.id === filters.warehouse)?.location}
                 </Text>
                 <TouchableOpacity onPress={() => setFilters((p) => ({ ...p, warehouse: '' }))}>
                   <FontAwesome name="times-circle" size={14} color={colors.tint} />
@@ -476,6 +566,16 @@ export default function CategoryScreen() {
               <View style={[dynamicStyles.activeChip, { backgroundColor: colors.tintLight }]}>
                 <Text style={[dynamicStyles.activeChipText, { color: colors.tint }]}>Przecenione</Text>
                 <TouchableOpacity onPress={() => setFilters((p) => ({ ...p, discounted: false }))}>
+                  <FontAwesome name="times-circle" size={14} color={colors.tint} />
+                </TouchableOpacity>
+              </View>
+            )}
+            {filters.subcategory !== '' && (
+              <View style={[dynamicStyles.activeChip, { backgroundColor: colors.tintLight }]}>
+                <Text style={[dynamicStyles.activeChipText, { color: colors.tint }]}>
+                  {category?.children?.find((c) => c.slug === filters.subcategory)?.name || filters.subcategory}
+                </Text>
+                <TouchableOpacity onPress={() => setFilters((p) => ({ ...p, subcategory: '' }))}>
                   <FontAwesome name="times-circle" size={14} color={colors.tint} />
                 </TouchableOpacity>
               </View>
@@ -530,6 +630,8 @@ export default function CategoryScreen() {
           filters={filters}
           onApply={handleApplyFilters}
           colors={colors}
+          subcategories={(category?.children || []).map((c) => ({ id: c.id, name: c.name, slug: c.slug, productCount: c.productCount }))}
+          categorySlug={slug || ''}
         />
       </View>
     </>
@@ -661,4 +763,29 @@ const createDynamicStyles = (colors: ReturnType<typeof useThemeColors>) =>
       fontSize: 12,
       fontWeight: '600',
     },
+
+    // Breadcrumbs
+    breadcrumbBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: 6,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      backgroundColor: colors.card,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    breadcrumbLink: {
+      fontSize: 12,
+      color: colors.tint,
+      fontWeight: '500',
+    },
+    breadcrumbCurrent: {
+      fontSize: 12,
+      color: colors.textMuted,
+      fontWeight: '500',
+    },
+
+
   });

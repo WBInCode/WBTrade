@@ -838,8 +838,11 @@ export default function ProductDetailScreen() {
       typeof product.lowestPrice30Days === 'string'
         ? parseFloat(product.lowestPrice30Days)
         : product.lowestPrice30Days;
-    return lowest > 0 ? lowest : null;
-  }, [product]);
+    if (!lowest || lowest <= 0) return null;
+    // Omnibus: lowest 30-day price can never exceed the current selling price
+    const currentPrice = getPrice();
+    return currentPrice > 0 ? Math.min(lowest, currentPrice) : lowest;
+  }, [product, getPrice]);
 
   // --- Variant helpers ---
   const getAttributeKeys = useCallback(() => {
