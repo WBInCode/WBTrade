@@ -246,7 +246,7 @@ const CarouselSection = React.memo(function CarouselSection({ title, products, s
     <View style={[styles.productSection, { backgroundColor: colors.card }]}>
       <View style={styles.sectionHeader}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
-        <TouchableOpacity onPress={() => router.push(`/(tabs)/carousel/${slug}` as any)} style={styles.seeAllBtn}>
+        <TouchableOpacity onPress={() => router.push({ pathname: '/products/list', params: { carousel: slug, carouselName: title } } as any)} style={styles.seeAllBtn}>
           <Text style={[styles.seeAllText, { color: colors.tint }]}>Więcej</Text>
           <FontAwesome name="chevron-right" size={11} color={colors.tint} />
         </TouchableOpacity>
@@ -259,6 +259,7 @@ const CarouselSection = React.memo(function CarouselSection({ title, products, s
 const HeroSection = React.memo(function HeroSection({ product }: { product: Product }) {
   const router = useRouter();
   const colors = useThemeColors();
+  const hasDiscount = product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price);
   return (
     <View style={[styles.heroSection, { backgroundColor: colors.card }]}>
       <View style={styles.heroHeader}>
@@ -272,27 +273,29 @@ const HeroSection = React.memo(function HeroSection({ product }: { product: Prod
         onPress={() => router.push(`/product/${product.id}` as any)}
         activeOpacity={0.9}
       >
-        {product.images?.[0]?.url && (
-          <Image source={{ uri: product.images[0].url }} style={[styles.heroImage, { backgroundColor: colors.card }]} contentFit="contain" />
-        )}
+        <View style={[styles.heroImageWrap, { backgroundColor: colors.backgroundTertiary || colors.card }]}>
+          {product.images?.[0]?.url && (
+            <Image source={{ uri: product.images[0].url }} style={styles.heroImage} contentFit="cover" />
+          )}
+          {hasDiscount && (
+            <View style={[styles.heroDiscountBadge, { backgroundColor: colors.success }]}>
+              <Text style={[styles.heroDiscountText, { color: colors.textInverse }]}>
+                -{Math.round((1 - Number(product.price) / Number(product.compareAtPrice!)) * 100)}%
+              </Text>
+            </View>
+          )}
+        </View>
         <View style={styles.heroInfo}>
           <Text style={[styles.heroName, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
           <View style={styles.heroPriceRow}>
-            <Text style={[styles.heroPrice, { color: colors.tint }]}>{Number(product.price).toFixed(2).replace('.', ',')} zł</Text>
-            {product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price) && (
-              <View style={[styles.heroDiscountBadge, { backgroundColor: colors.success }]}>
-                <Text style={[styles.heroDiscountText, { color: colors.textInverse }]}>
-                  -{Math.round((1 - Number(product.price) / Number(product.compareAtPrice)) * 100)}%
-                </Text>
-              </View>
+            <Text style={[styles.heroPrice, { color: hasDiscount ? colors.success : colors.tint }]}>{Number(product.price).toFixed(2).replace('.', ',')} zł</Text>
+            {hasDiscount && (
+              <Text style={[styles.heroOldPrice, { color: colors.textMuted }]}>{Number(product.compareAtPrice).toFixed(2).replace('.', ',')} zł</Text>
             )}
           </View>
-          {product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price) && (
-            <Text style={[styles.heroOldPrice, { color: colors.textMuted }]}>{Number(product.compareAtPrice).toFixed(2).replace('.', ',')} zł</Text>
-          )}
           <View style={[styles.heroCtaBtn, { backgroundColor: colors.tint }]}>
+            <FontAwesome name="shopping-cart" size={14} color={colors.textInverse} />
             <Text style={[styles.heroCtaText, { color: colors.textInverse }]}>Zobacz produkt</Text>
-            <FontAwesome name="arrow-right" size={12} color={colors.textInverse} />
           </View>
         </View>
       </TouchableOpacity>
@@ -340,7 +343,6 @@ const TrustSection = React.memo(function TrustSection() {
         { icon: 'truck' as const, title: 'Szybka wysyłka' },
         { icon: 'shield' as const, title: 'Bezpieczne\npłatności' },
         { icon: 'undo' as const, title: 'Zwrot\n14 dni' },
-        { icon: 'headphones' as const, title: 'Wsparcie\n24/7' },
       ]).map((item) => (
         <View key={item.title} style={styles.trustItem}>
           <View style={[styles.trustIconWrap, { backgroundColor: colors.tintLight }]}>
@@ -876,31 +878,37 @@ const styles = StyleSheet.create({
   },
   heroBadgeText: { fontSize: 12, fontWeight: '800', letterSpacing: 1 },
   heroCard: {
-    flexDirection: 'row',
-    borderRadius: 16, overflow: 'hidden',
-    borderWidth: 1,
+    borderRadius: 12, overflow: 'hidden',
+    borderWidth: 1, elevation: 2,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1, shadowRadius: 3,
   },
-  heroImage: { width: SCREEN_WIDTH * 0.38, height: 180 },
-  heroInfo: { flex: 1, padding: 14, justifyContent: 'center', gap: 4 },
+  heroImageWrap: {
+    width: '100%', aspectRatio: 4 / 3,
+    position: 'relative',
+  },
+  heroImage: { width: '100%', height: '100%' },
+  heroDiscountBadge: {
+    position: 'absolute', top: 10, right: 10,
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8,
+  },
+  heroDiscountText: { fontSize: 13, fontWeight: '700' },
+  heroInfo: { padding: 14, gap: 6 },
   heroName: {
     fontSize: 15, fontWeight: '600',
-    lineHeight: 20, marginBottom: 4,
+    lineHeight: 20,
   },
   heroPriceRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  heroPrice: { fontSize: 22, fontWeight: '800' },
-  heroDiscountBadge: {
-    paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6,
-  },
-  heroDiscountText: { fontSize: 12, fontWeight: '700' },
+  heroPrice: { fontSize: 18, fontWeight: '800' },
   heroOldPrice: {
     fontSize: 13, textDecorationLine: 'line-through',
   },
   heroCtaBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    paddingHorizontal: 16, paddingVertical: 10,
-    borderRadius: 12, alignSelf: 'flex-start', marginTop: 8,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 12,
+    borderRadius: 10, marginTop: 4,
   },
-  heroCtaText: { fontSize: 13, fontWeight: '700' },
+  heroCtaText: { fontSize: 14, fontWeight: '700' },
 
   // Top 3
   topSection: {
