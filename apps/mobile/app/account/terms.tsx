@@ -30,7 +30,7 @@ const SECTIONS: Section[] = [
     title: '§ 1. Postanowienia ogólne',
     content:
       '1. Niniejszy Regulamin określa zasady korzystania ze Sklepu prowadzonego za pośrednictwem serwisu internetowego dostępnego pod adresem www.wb-trade.pl oraz aplikacji mobilnej WB Trade (dalej łącznie: „Sklep").\n\n' +
-      '2. Właścicielem i operatorem Sklepu jest: WB Partners Sp. z o.o. z siedzibą w Rzeszowie, ul. Juliusza Słowackiego 24/11, 35-060 Rzeszów, NIP: 5170455185, REGON: 540735769, KRS: 0001151642 (dalej: „Sprzedawca").\n\n' +
+      '2. Właścicielem i operatorem Sklepu jest: WB Partners Spółka z ograniczoną odpowiedzialnością z siedzibą w Rzeszowie (adres: ul. Juliusza Słowackiego 24/11, 35-060 Rzeszów), wpisana do rejestru przedsiębiorców Krajowego Rejestru Sądowego prowadzonego przez Sąd Rejonowy w Rzeszowie, XII Wydział Gospodarczy Krajowego Rejestru Sądowego, pod numerem KRS: 0001151642, NIP: 5170455185, REGON: 540735769, o kapitale zakładowym w wysokości 200 000,00 zł (wpłaconym w całości) – dalej: „Sprzedawca".\n\n' +
       '3. Kontakt ze Sprzedawcą:\n   a) e-mail: support@wb-partners.pl,\n   b) telefon: +48 570 034 367,\n   c) godziny obsługi: pon.–pt. 9:00–17:00.\n\n' +
       '4. Regulamin jest udostępniony nieodpłatnie w Sklepie w sposób umożliwiający jego pozyskanie, odtwarzanie i utrwalanie.\n\n' +
       '5. Do korzystania ze Sklepu niezbędne są: urządzenie z dostępem do Internetu oraz, odpowiednio, aktualna przeglądarka internetowa lub aplikacja mobilna WB Trade w aktualnej wersji, a także aktywne konto e-mail (w przypadku składania Zamówień).\n\n' +
@@ -79,7 +79,7 @@ const SECTIONS: Section[] = [
       '1. Ceny Produktów podawane są w złotych polskich (PLN) i zawierają podatek VAT.\n\n' +
       '2. Cena widoczna przy Produkcie w chwili składania Zamówienia jest wiążąca dla Stron.\n\n' +
       '3. Koszty dostawy są podawane w trakcie składania Zamówienia.\n\n' +
-      '4. Dostępne metody płatności:\n   a) szybkie płatności online (PayU),\n   b) płatność kartą,\n   c) BLIK,\n   d) przelew tradycyjny.\n\n' +
+      '4. Dostępne metody płatności:\n   a) szybkie płatności online (operatorzy płatności – w szczególności PayU oraz imoje),\n   b) płatność kartą (w ramach systemu płatności online),\n   c) BLIK (w ramach systemu płatności online),\n   d) Google Pay, Apple Pay (w ramach systemu płatności online),\n   e) przelew tradycyjny na rachunek Sprzedawcy.\n\n' +
       '5. W przypadku płatności przelewem tradycyjnym Sprzedawca przystępuje do realizacji po zaksięgowaniu środków.\n\n' +
       '6. Sprzedawca może udostępniać kupony rabatowe i akcje promocyjne na zasadach określonych w § 11.\n\n' +
       '7. Faktury wystawiane są na życzenie Klienta na podstawie danych podanych podczas składania Zamówienia.\n\n' +

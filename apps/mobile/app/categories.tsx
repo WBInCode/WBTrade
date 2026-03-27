@@ -171,7 +171,7 @@ export default function CategoriesScreen() {
             {/* "Wszystkie produkty" link at top */}
             <TouchableOpacity
               style={styles.allProductsBtn}
-              onPress={() => router.push('/(tabs)/search')}
+              onPress={() => router.push({ pathname: '/products/list', params: { carouselName: 'Wszystkie produkty' } } as any)}
               activeOpacity={0.7}
             >
               <View style={[styles.allProductsIcon, { backgroundColor: colors.tintLight }]}>

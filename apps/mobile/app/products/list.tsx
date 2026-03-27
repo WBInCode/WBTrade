@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
@@ -16,6 +16,8 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'price_desc', label: 'Cena malejąco' },
 ];
 
+const PAGE_LIMIT = 48;
+
 export default function ProductListScreen() {
   const router = useRouter();
   const colors = useThemeColors();
@@ -26,37 +28,60 @@ export default function ProductListScreen() {
     warehouseName?: string;
   }>();
 
+  const isAllProducts = !carousel && !warehouse;
   const title = carouselName || warehouseName || 'Produkty';
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [sort, setSort] = useState<SortOption>('popularity');
   const [showSort, setShowSort] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
+  const fetchingRef = useRef(false);
 
-  const fetchProducts = useCallback(async () => {
+  const fetchProducts = useCallback(async (pageNum = 1, append = false) => {
     try {
       if (carousel) {
         const res = await api.get<{ products: Product[] }>(`/carousels/${encodeURIComponent(carousel)}/products`);
         setProducts(res.products || []);
+        setHasNextPage(false);
       } else if (warehouse) {
-        const res = await api.get<{ products: Product[] }>('/products', { warehouse, limit: 100 });
-        setProducts(res.products || []);
+        const res = await api.get<{ products: Product[]; totalPages?: number }>('/products', { warehouse, limit: PAGE_LIMIT, page: pageNum });
+        const fetched = res.products || [];
+        setProducts(prev => append ? [...prev, ...fetched] : fetched);
+        setHasNextPage(pageNum < (res.totalPages || 1));
+      } else {
+        const res = await api.get<{ products: Product[]; totalPages?: number }>('/products', { limit: PAGE_LIMIT, page: pageNum });
+        const fetched = res.products || [];
+        setProducts(prev => append ? [...prev, ...fetched] : fetched);
+        setHasNextPage(pageNum < (res.totalPages || 1));
       }
+      setPage(pageNum);
     } catch {
-      setProducts([]);
+      if (!append) setProducts([]);
     }
   }, [carousel, warehouse]);
 
   useEffect(() => {
     setLoading(true);
-    fetchProducts().finally(() => setLoading(false));
+    fetchProducts(1, false).finally(() => setLoading(false));
   }, [fetchProducts]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchProducts();
+    await fetchProducts(1, false);
     setRefreshing(false);
   }, [fetchProducts]);
+
+  const loadNextPage = useCallback(async () => {
+    if (fetchingRef.current || !hasNextPage) return;
+    fetchingRef.current = true;
+    setIsFetchingNextPage(true);
+    await fetchProducts(page + 1, true);
+    setIsFetchingNextPage(false);
+    fetchingRef.current = false;
+  }, [fetchProducts, page, hasNextPage]);
 
   const sortedProducts = useMemo(() => {
     if (sort === 'popularity') return products;
@@ -105,19 +130,15 @@ export default function ProductListScreen() {
           </View>
         )}
 
-        {/* Count */}
-        {!loading && (
-          <View style={styles.countRow}>
-            <Text style={[styles.countText, { color: colors.textMuted }]}>{sortedProducts.length} produktów</Text>
-          </View>
-        )}
-
         {/* Product grid */}
         <ProductGrid
           products={sortedProducts}
           loading={loading}
           refreshing={refreshing}
           onRefresh={onRefresh}
+          onEndReached={loadNextPage}
+          hasNextPage={hasNextPage}
+          isFetchingNextPage={isFetchingNextPage}
           emptyMessage="Brak produktów w tej kolekcji"
         />
       </SafeAreaView>

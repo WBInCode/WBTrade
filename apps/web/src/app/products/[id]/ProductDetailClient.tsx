@@ -593,7 +593,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
               {/* Lowest Price Info - Omnibus Directive */}
               {hasDiscount && (
                 <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mb-3 sm:mb-4">
-                  Najniższa cena w ostatnich 30 dniach: {Number(product.lowestPrice30Days || product.compareAtPrice || effectivePrice).toFixed(2).replace('.', ',')} zł
+                  Najniższa cena w ostatnich 30 dniach: {Math.min(Number(product.lowestPrice30Days || product.compareAtPrice || effectivePrice), effectivePrice).toFixed(2).replace('.', ',')} zł
                 </p>
               )}
 

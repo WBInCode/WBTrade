@@ -58,7 +58,7 @@ export default function AboutScreen() {
             <FontAwesome name="shopping-cart" size={28} color={colors.tint} />
           </View>
           <Text style={styles.heroTitle}>WBTrade</Text>
-          <Text style={styles.heroTagline}>Twój sklep z elektroniką i nie tylko</Text>
+          <Text style={styles.heroTagline}>Twój sklep na Twoje potrzeby</Text>
         </View>
 
         {/* Stats */}
