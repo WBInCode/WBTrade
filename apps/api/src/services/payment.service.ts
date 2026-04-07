@@ -339,6 +339,7 @@ export class PaymentService {
       include: {
         user: { select: { email: true, firstName: true, lastName: true } },
         shippingAddress: true,
+        billingAddress: true,
         items: {
           include: {
             variant: {
@@ -529,6 +530,23 @@ export class PaymentService {
         // NOTE: Fakturownia receipts are created automatically by Baselinker's
         // built-in Fakturownia integration (confirmed: oid=BL order ID, from_api=true).
         // Do NOT call createFakturowniaReceipt here — it would create duplicates.
+        // Invoices (faktury) are NOT auto-created — want_invoice is always false in Baselinker.
+        // Instead, send a notification to admin so they can create the invoice manually.
+        if (order.wantInvoice) {
+          const invoiceCustomerName = order.billingAddress
+            ? `${order.billingAddress.firstName} ${order.billingAddress.lastName}`
+            : customerName;
+          emailService.sendInvoiceRequestNotification({
+            orderNumber: order.orderNumber,
+            customerName: invoiceCustomerName,
+            customerEmail: customerEmail || order.guestEmail || '',
+            billingNip: order.billingNip,
+            billingCompanyName: order.billingCompanyName,
+            total: Number(order.total),
+          }).catch((err) => {
+            console.error(`[PaymentService] Error sending invoice request notification for order ${order.orderNumber}:`, err);
+          });
+        }
       }
     } else {
       console.error(`Order ${result.orderId} not found for payment update`);

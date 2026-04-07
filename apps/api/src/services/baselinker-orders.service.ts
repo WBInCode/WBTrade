@@ -385,7 +385,10 @@ export class BaselinkerOrdersService {
       blOrder.invoice_city = order.billingAddress.city;
       blOrder.invoice_postcode = order.billingAddress.postalCode;
       blOrder.invoice_country_code = order.billingAddress.country || 'PL';
-      blOrder.want_invoice = order.wantInvoice || false;
+      // IMPORTANT: Always send want_invoice=false to Baselinker so Fakturownia
+      // does NOT auto-create invoices. Invoices are created manually.
+      // The wantInvoice flag is still saved in our DB for reference.
+      blOrder.want_invoice = false;
     }
 
     return blOrder;
