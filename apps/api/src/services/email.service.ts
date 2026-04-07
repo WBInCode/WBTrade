@@ -1172,6 +1172,60 @@ export class EmailService {
       return { success: false, error: err.message };
     }
   }
+
+  // ──────────────────────────────────────
+  // 16. INVOICE REQUEST NOTIFICATION (ADMIN)
+  // ──────────────────────────────────────
+
+  async sendInvoiceRequestNotification(order: {
+    orderNumber: string;
+    customerName: string;
+    customerEmail: string;
+    billingNip?: string | null;
+    billingCompanyName?: string | null;
+    total: number;
+  }): Promise<EmailResult> {
+    try {
+      const adminEmail = process.env.SUPPORT_EMAIL || 'support@wb-partners.pl';
+      const resend = getResend();
+
+      const { data, error } = await resend.emails.send({
+        from: FROM_EMAIL,
+        to: adminEmail,
+        subject: `🧾 Prośba o fakturę — zamówienie #${order.orderNumber}`,
+        html: emailWrapper({
+          title: '🧾 Klient prosi o fakturę VAT',
+          content: `
+            <table role="presentation" cellspacing="0" cellpadding="0" style="width: 100%; margin-bottom: 16px;">
+              ${metaRow('Zamówienie', `<strong>#${escapeHtml(order.orderNumber)}</strong>`)}
+              ${metaRow('Klient', escapeHtml(order.customerName))}
+              ${metaRow('Email', escapeHtml(order.customerEmail))}
+              ${order.billingCompanyName ? metaRow('Firma', escapeHtml(order.billingCompanyName)) : ''}
+              ${order.billingNip ? metaRow('NIP', `<strong>${escapeHtml(order.billingNip)}</strong>`) : ''}
+              ${metaRow('Kwota', `<strong>${order.total.toFixed(2)} PLN</strong>`)}
+            </table>
+            ${divider()}
+            <p style="margin: 12px 0; color: #334155; font-size: 14px;">
+              Klient zaznaczył opcję faktury VAT. Faktura <strong>nie została</strong> automatycznie utworzona w Fakturowni — proszę wystawić ręcznie.
+            </p>
+            ${ctaButton('Otwórz panel zamówień', `${SITE_URL.replace('wb-trade.pl', 'admin.wb-trade.pl')}/orders`)}
+          `,
+          footerNote: 'Powiadomienie o fakturze — WB Trade',
+        }),
+        text: `Prośba o fakturę VAT\n\nZamówienie: #${order.orderNumber}\nKlient: ${order.customerName} (${order.customerEmail})\n${order.billingCompanyName ? `Firma: ${order.billingCompanyName}\n` : ''}${order.billingNip ? `NIP: ${order.billingNip}\n` : ''}Kwota: ${order.total.toFixed(2)} PLN\n\nFaktura NIE została automatycznie utworzona — proszę wystawić ręcznie.`,
+      });
+
+      if (error) {
+        console.error('[EmailService] Invoice request notification error:', error);
+        return { success: false, error: error.message };
+      }
+      console.log(`✅ [EmailService] Invoice request notification sent for order ${order.orderNumber}`);
+      return { success: true, messageId: data?.id };
+    } catch (err: any) {
+      console.error('[EmailService] Invoice request notification exception:', err.message);
+      return { success: false, error: err.message };
+    }
+  }
 }
 
 export const emailService = new EmailService();
