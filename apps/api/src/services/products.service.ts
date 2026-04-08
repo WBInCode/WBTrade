@@ -79,7 +79,7 @@ interface ProductFilters {
   sku?: string; // Direct SKU search
   sort?: string;
   status?: string;
-  warehouse?: string; // Filtr magazynu: leker, hp, btp (może być wiele oddzielone przecinkiem)
+  warehouse?: string; // Filtr magazynu: leker, hp, btp, dofirmy, outlet (może być wiele oddzielone przecinkiem)
   hideOldZeroStock?: boolean; // Ukryj produkty ze stanem 0 starsze niż 14 dni
   sessionSeed?: number; // Seed for consistent random sorting
   discounted?: boolean; // Filtr tylko przecenionych produktów (compareAtPrice > price)
@@ -241,7 +241,7 @@ export class ProductsService {
    * Get all descendant category IDs for a given category slug or ID (including the category itself)
    */
   private async getAllCategoryIds(categorySlugOrId: string): Promise<string[]> {
-    const prefixes = ['btp-', 'hp-', 'leker-', 'ikonka-'];
+    const prefixes = ['btp-', 'hp-', 'leker-', 'ikonka-', 'dofirmy-'];
 
     // Find ALL matching categories at once: exact slug + supplier prefixes + contains
     // This ensures product listing aggregates products from all supplier variants
@@ -434,7 +434,7 @@ export class ProductsService {
       const warehouseConditions: Prisma.ProductWhereInput[] = [];
       
       for (const w of warehouses) {
-        if (['leker', 'hp', 'btp', 'outlet'].includes(w)) {
+        if (['leker', 'hp', 'btp', 'dofirmy', 'outlet'].includes(w)) {
           warehouseConditions.push({
             baselinkerProductId: { startsWith: `${w}-` }
           });
@@ -1438,7 +1438,7 @@ export class ProductsService {
       ...(categoryIds ? { categoryId: { in: categoryIds } } : {}),
     };
 
-    const [lekerCount, hpCount, btpCount, outletCount] = await Promise.all([
+    const [lekerCount, hpCount, btpCount, dofirmyCount, outletCount] = await Promise.all([
       prisma.product.count({
         where: {
           ...whereBase,
@@ -1460,6 +1460,12 @@ export class ProductsService {
       prisma.product.count({
         where: {
           ...whereBase,
+          baselinkerProductId: { startsWith: 'dofirmy-' },
+        },
+      }),
+      prisma.product.count({
+        where: {
+          ...whereBase,
           baselinkerProductId: { startsWith: 'outlet-' },
         },
       }),
@@ -1469,6 +1475,7 @@ export class ProductsService {
       leker: lekerCount,
       hp: hpCount,
       btp: btpCount,
+      dofirmy: dofirmyCount,
       outlet: outletCount,
     };
   }
@@ -2189,10 +2196,10 @@ export class ProductsService {
   async getSameWarehouseProducts(productId: string, options: { limit?: number } = {}) {
     const { limit = 6 } = options;
 
-    // First get the source product to find its warehouse by baselinkerProductId prefix
+    // First get the source product to find its warehouse and category
     const sourceProduct = await prisma.product.findUnique({
       where: { id: productId },
-      select: { id: true, baselinkerProductId: true, sku: true },
+      select: { id: true, baselinkerProductId: true, sku: true, categoryId: true },
     });
 
     if (!sourceProduct) {
@@ -2206,48 +2213,89 @@ export class ProductsService {
       return { products: [], wholesaler: null };
     }
 
-    // Find other products from the same warehouse by prefix
-    // Fetch more than needed to account for inventory filtering
-    const fetchLimit = limit * 3;
     const isOutlet = warehouse.id === 'outlet';
-    const products = await prisma.product.findMany({
-      where: {
-        status: 'ACTIVE',
-        price: { gt: 0 },
-        id: { not: productId }, // Exclude the source product
-        baselinkerProductId: { startsWith: warehouse.prefix }, // Same warehouse prefix
-        // Must have at least one delivery tag to be visible (outlet products exempt)
-        ...(isOutlet ? {} : { OR: DELIVERY_TAGS.map(tag => ({ tags: { has: tag } })) }),
-        // Additional visibility filters
-        ...(isOutlet ? {} : { baselinkerCategoryPath: { not: null } }),
-        ...(isOutlet ? {} : PACKAGE_FILTER_WHERE),
-        // Only products with inventory in stock
-        variants: {
-          some: {
-            inventory: {
-              some: {
-                quantity: { gt: 0 },
-              },
+    const baseWhere = {
+      status: 'ACTIVE' as const,
+      price: { gt: 0 },
+      id: { not: productId },
+      baselinkerProductId: { startsWith: warehouse.prefix },
+      ...(isOutlet ? {} : { OR: DELIVERY_TAGS.map(tag => ({ tags: { has: tag } })) }),
+      ...(isOutlet ? {} : { baselinkerCategoryPath: { not: null } }),
+      ...(isOutlet ? {} : PACKAGE_FILTER_WHERE),
+      variants: {
+        some: {
+          inventory: {
+            some: {
+              quantity: { gt: 0 },
             },
           },
         },
       },
-      orderBy: [
-        { review_count: 'desc' }, // Popular products first
-        { createdAt: 'desc' },
-      ],
-      take: fetchLimit,
-      include: {
-        images: { orderBy: { order: 'asc' } },
-        category: true,
-        variants: {
-          include: { inventory: true },
-        },
+    };
+
+    const includeRelations = {
+      images: { orderBy: { order: 'asc' } as const },
+      category: true,
+      variants: {
+        include: { inventory: true },
       },
-    });
+    };
+
+    // Step 1: Try same warehouse + same category first (most relevant)
+    let sameCategoryProducts: any[] = [];
+    if (sourceProduct.categoryId) {
+      const fetchLimit = limit * 4;
+      sameCategoryProducts = await prisma.product.findMany({
+        where: {
+          ...baseWhere,
+          categoryId: sourceProduct.categoryId,
+        },
+        orderBy: [
+          { review_count: 'desc' },
+          { createdAt: 'desc' },
+        ],
+        take: fetchLimit,
+        include: includeRelations,
+      });
+    }
+
+    // Step 2: If not enough from same category, fill remaining from same warehouse
+    const sameCategoryIds = new Set(sameCategoryProducts.map((p: any) => p.id));
+    let otherWarehouseProducts: any[] = [];
+    if (sameCategoryProducts.length < limit) {
+      const remaining = (limit - sameCategoryProducts.length) * 4;
+      otherWarehouseProducts = await prisma.product.findMany({
+        where: {
+          ...baseWhere,
+          ...(sourceProduct.categoryId ? { categoryId: { not: sourceProduct.categoryId } } : {}),
+        },
+        orderBy: [
+          { review_count: 'desc' },
+          { createdAt: 'desc' },
+        ],
+        take: remaining,
+        include: includeRelations,
+      });
+    }
+
+    // Shuffle helper to randomize results so they vary between views
+    const shuffle = <T>(arr: T[]): T[] => {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    };
+
+    // Combine: shuffled same-category first, then shuffled other warehouse products
+    const combined = [
+      ...shuffle(sameCategoryProducts),
+      ...shuffle(otherWarehouseProducts),
+    ];
 
     return {
-      products: filterProductsWithPackageInfo(transformProducts(products)).slice(0, limit),
+      products: filterProductsWithPackageInfo(transformProducts(combined)).slice(0, limit),
       wholesaler: warehouse.displayName,
     };
   }
@@ -2260,6 +2308,7 @@ export class ProductsService {
       { id: 'leker', prefix: 'leker-', skuPrefix: 'LEKER-', displayName: 'Magazyn Chynów' },
       { id: 'hp', prefix: 'hp-', skuPrefix: 'HP-', displayName: 'Magazyn Zielona Góra' },
       { id: 'btp', prefix: 'btp-', skuPrefix: 'BTP-', displayName: 'Magazyn Chotów' },
+      { id: 'dofirmy', prefix: 'dofirmy-', skuPrefix: 'DOFIRMY-', displayName: 'Magazyn Koszalin' },
       { id: 'outlet', prefix: 'outlet-', skuPrefix: 'OUTLET-', displayName: 'Magazyn Rzeszów' },
     ];
 

@@ -8,6 +8,7 @@ export const WAREHOUSE_LOCATIONS: Record<string, string> = {
   'leker': 'Chynów',
   'hp': 'Zielona Góra',
   'btp': 'Chotów',
+  'dofirmy': 'Koszalin',
   'outlet': 'Rzeszów',
 };
 
@@ -16,6 +17,7 @@ export function getWarehouseLocation(product: Product): string | null {
   if (blId.startsWith('leker-')) return WAREHOUSE_LOCATIONS['leker'];
   if (blId.startsWith('hp-')) return WAREHOUSE_LOCATIONS['hp'];
   if (blId.startsWith('btp-')) return WAREHOUSE_LOCATIONS['btp'];
+  if (blId.startsWith('dofirmy-')) return WAREHOUSE_LOCATIONS['dofirmy'];
   if (blId.startsWith('outlet-')) return WAREHOUSE_LOCATIONS['outlet'];
 
   const tags = (product as any).tags || [];
@@ -25,6 +27,7 @@ export function getWarehouseLocation(product: Product): string | null {
   if (sku.startsWith('LEKER-')) return WAREHOUSE_LOCATIONS['leker'];
   if (sku.startsWith('HP-')) return WAREHOUSE_LOCATIONS['hp'];
   if (sku.startsWith('BTP-')) return WAREHOUSE_LOCATIONS['btp'];
+  if (sku.startsWith('DOFIRMY-')) return WAREHOUSE_LOCATIONS['dofirmy'];
   if (sku.startsWith('OUTLET-')) return WAREHOUSE_LOCATIONS['outlet'];
 
   return null;

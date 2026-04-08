@@ -38,6 +38,7 @@ const WHOLESALER_CONFIG: Record<string, { name: string; color: string }> = {
   'Gastro': { name: 'Magazyn Centralny', color: '#eab308' },
   'Horeca': { name: 'Magazyn Centralny', color: '#f97316' },
   'Forcetop': { name: 'Magazyn Chynów', color: '#14b8a6' },
+  'DoFirmy': { name: 'Magazyn Koszalin', color: '#06b6d4' },
   'Rzeszów': { name: 'Magazyn Rzeszów', color: '#ec4899' },
   'Outlet': { name: 'Magazyn Rzeszów', color: '#ec4899' },
   'default': { name: 'Magazyn Chynów', color: '#6b7280' },
