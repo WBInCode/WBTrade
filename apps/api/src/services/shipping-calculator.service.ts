@@ -21,7 +21,7 @@ const TAG_PATTERNS = {
   // Matches "tylko kurier" tags
   TYLKO_KURIER: /^tylko\s*kurier$/i,
   // Matches wholesaler tags (Rzeszów/Outlet handled separately with higher priority)
-  WHOLESALER: /^(hurtownia[:\-_](.+)|Ikonka|BTP|HP|Gastro|Horeca|Hurtownia\s+Przemysłowa|Leker|Forcetop)$/i,
+  WHOLESALER: /^(hurtownia[:\-_](.+)|Ikonka|BTP|HP|Gastro|Horeca|Hurtownia\s+Przemysłowa|Leker|Forcetop|DoFirmy)$/i,
   // Matches paczkomat limit tags like "produkt w paczce: 3" or "3 produkty w paczce"
   PACZKOMAT_LIMIT: /^(?:produkt\s*w\s*paczce[:\s]*(\d+)|(\d+)\s*produkt(?:y|ów)?\s*w\s*paczce)$/i,
   // Matches tags that indicate courier-only delivery
@@ -67,6 +67,7 @@ const WHOLESALER_TO_WAREHOUSE: Record<string, string> = {
   'Forcetop': 'Magazyn Chynów',
   'Gastro': 'Magazyn Centralny',
   'Horeca': 'Magazyn Centralny',
+  'DoFirmy': 'Magazyn Koszalin',
   'Rzeszów': 'Magazyn Rzeszów',
   'Outlet': 'Magazyn Rzeszów',
 };

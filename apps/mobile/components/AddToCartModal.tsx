@@ -266,8 +266,7 @@ function getWarehouseLabel(w: string): string {
     Leker: 'Magazyn Chynów',
     Rzeszów: 'Magazyn Rzeszów',
     Outlet: 'Magazyn Rzeszów',
-    Zakupowo: 'Magazyn Wyszków',
-    Supertoys: 'Magazyn Toruń',
+    DoFirmy: 'Magazyn Koszalin',
   };
   return map[w] || `Magazyn ${w}`;
 }

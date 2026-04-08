@@ -8,6 +8,7 @@ export const WAREHOUSES = [
   { id: 'leker', location: 'Chynów', prefix: 'leker-', skuPrefix: 'LEKER-' },
   { id: 'hp', location: 'Zielona Góra', prefix: 'hp-', skuPrefix: 'HP-' },
   { id: 'btp', location: 'Chotów', prefix: 'btp-', skuPrefix: 'BTP-' },
+  { id: 'dofirmy', location: 'Koszalin', prefix: 'dofirmy-', skuPrefix: 'DOFIRMY-' },
   { id: 'outlet', location: 'Rzeszów', prefix: 'outlet-', skuPrefix: 'OUTLET-' },
 ] as const;
 

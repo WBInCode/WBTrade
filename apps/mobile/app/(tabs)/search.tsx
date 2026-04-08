@@ -174,9 +174,8 @@ export default function SearchScreen() {
     'ikonka': 'Magazyn Białystok',
     'btp': 'Magazyn Chotów',
     'leker': 'Magazyn Chynów',
+    'dofirmy': 'Magazyn Koszalin',
     'outlet': 'Magazyn Rzeszów',
-    'zakupowo': 'Magazyn Wyszków',
-    'supertoys': 'Magazyn Toruń',
   };
 
   // Handle warehouse param from cart

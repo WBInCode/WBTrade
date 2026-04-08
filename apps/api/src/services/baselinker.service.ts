@@ -437,6 +437,13 @@ export class BaselinkerService {
         itemsProcessed = result.processed;
         errors.push(...result.errors);
       } else if (type === 'products') {
+        // Always sync categories first to ensure product category assignment works
+        syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Synchronizacja kategorii...', phase: 'categories' });
+        const catResult = await this.syncCategories(provider, activeInventoryId);
+        errors.push(...catResult.errors);
+
+        if (syncProgress.isAborted(syncLogId)) throw new Error('ABORTED');
+
         syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Synchronizacja produktów...', phase: 'products' });
         const result = await this.syncProducts(provider, activeInventoryId, mode, syncLogId);
         itemsProcessed = result.processed;
@@ -957,7 +964,7 @@ export class BaselinkerService {
     }
 
     const rules: Record<string, Array<{ priceFrom: number; priceTo: number; multiplier: number; addToPrice: number }>> = {};
-    for (const wh of ['leker', 'btp', 'hp']) {
+    for (const wh of ['leker', 'btp', 'hp', 'dofirmy']) {
       try {
         const setting = await prisma.settings.findUnique({ where: { key: `price_rules_${wh}` } });
         if (setting?.value) {
@@ -1012,6 +1019,7 @@ export class BaselinkerService {
     if (lower === 'leker') return 'leker';
     if (lower === 'btp') return 'btp';
     if (lower === 'hp') return 'hp';
+    if (lower === 'dofirmy') return 'dofirmy';
     return null;
   }
 
@@ -1025,6 +1033,7 @@ export class BaselinkerService {
       'leker': 'leker-',
       'btp': 'btp-',
       'hp': 'hp-',
+      'dofirmy': 'dofirmy-',
       'magazyn zwrotów': 'outlet-',
       'ikonka': '',
       'główny': '',
@@ -1041,6 +1050,7 @@ export class BaselinkerService {
     const prefixMap: Record<string, string> = {
       'leker': 'LEKER-',
       'btp': 'BTP-',
+      'dofirmy': 'DOFIRMY-',
     };
     const lower = inventoryName.toLowerCase();
     return prefixMap[lower] ?? '';
