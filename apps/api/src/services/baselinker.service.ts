@@ -1482,13 +1482,12 @@ export class BaselinkerService {
                     specifications: blProduct.features || {},
                 };
 
-                // Merge BL tags with existing tags to prevent losing delivery/custom tags
-                const existingTags = existingProduct.tags || [];
+                // Replace tags from Baselinker (full update)
+                // For outlet products, always include 'outlet' and 'zwrot' tags
                 const requiredTags = isOutletProduct ? ['outlet', 'zwrot'] : [];
-                const mergedTags = [...new Set([...productTags, ...existingTags, ...requiredTags])];
-                updateData.tags = mergedTags;
-                // Preserve category if already set, otherwise use BL category
-                updateData.categoryId = existingProduct.categoryId || category?.id || null;
+                updateData.tags = [...new Set([...productTags, ...requiredTags])];
+                // Update category from Baselinker, keep existing only if BL has no category
+                updateData.categoryId = category?.id || existingProduct.categoryId || null;
 
                 product = await tx.product.update({
                   where: { baselinkerProductId },
