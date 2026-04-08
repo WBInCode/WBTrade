@@ -572,7 +572,7 @@ export class CartService {
     }
     
     // Then check for other wholesaler tags
-    const WHOLESALER_PATTERN = /^(hurtownia[:\-_](.+)|Ikonka|BTP|HP|Gastro|Horeca|Hurtownia\s+Przemysłowa|Leker|Forcetop)$/i;
+    const WHOLESALER_PATTERN = /^(hurtownia[:\-_](.+)|Ikonka|BTP|HP|Gastro|Horeca|Hurtownia\s+Przemysłowa|Leker|Forcetop|DoFirmy)$/i;
     for (const tag of tags) {
       const match = tag.match(WHOLESALER_PATTERN);
       if (match) {

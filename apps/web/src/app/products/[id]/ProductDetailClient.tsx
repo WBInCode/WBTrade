@@ -541,7 +541,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
               {/* SKU */}
               {product?.sku && (
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 sm:mb-3">
-                  SKU: <span className="font-mono">{product.sku.replace(/^(hp-|leker-|btp-|outlet-|ikonka-)/i, '')}</span>
+                  SKU: <span className="font-mono">{product.sku.replace(/^(hp-|leker-|btp-|dofirmy-|outlet-|ikonka-)/i, '')}</span>
                 </p>
               )}
 
