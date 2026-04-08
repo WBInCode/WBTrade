@@ -55,6 +55,7 @@ export default function PricingPage() {
     leker: [],
     btp: [],
     hp: [],
+    dofirmy: [],
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
