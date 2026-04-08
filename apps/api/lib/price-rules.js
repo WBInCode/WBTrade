@@ -25,7 +25,7 @@ async function loadPriceRules(prisma) {
     return _rulesCache;
   }
 
-  const warehouses = ['leker', 'btp', 'hp'];
+  const warehouses = ['leker', 'btp', 'hp', 'dofirmy'];
   const rules = {};
 
   for (const wh of warehouses) {
@@ -93,6 +93,7 @@ function getWarehouseKey(nameOrPrefix) {
   if (lower === 'leker') return 'leker';
   if (lower === 'btp') return 'btp';
   if (lower === 'hp') return 'hp';
+  if (lower === 'dofirmy') return 'dofirmy';
   return null;
 }
 

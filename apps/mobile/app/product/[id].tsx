@@ -1094,7 +1094,7 @@ export default function ProductDetailScreen() {
 
           {/* SKU */}
           {product.sku && (
-            <Text style={styles.sku}>SKU: {product.sku.replace(/^(hp-|leker-|btp-|outlet-|ikonka-)/i, '')}</Text>
+            <Text style={styles.sku}>SKU: {product.sku.replace(/^(hp-|leker-|btp-|dofirmy-|outlet-|ikonka-)/i, '')}</Text>
           )}
 
           {/* Rating summary */}
@@ -1306,8 +1306,7 @@ export default function ProductDetailScreen() {
             else if (tags.some(t => t.toLowerCase() === 'ikonka')) warehouseCity = 'Białymstoku';
             else if (tags.some(t => t.toLowerCase() === 'leker')) warehouseCity = 'Chynowie';
             else if (tags.some(t => t.toLowerCase() === 'btp')) warehouseCity = 'Chotowie';
-            else if (tags.some(t => t.toLowerCase() === 'zakupowo')) warehouseCity = 'Wyszkowie';
-            else if (tags.some(t => t.toLowerCase() === 'supertoys')) warehouseCity = 'Toruniu';
+            else if (tags.some(t => t.toLowerCase() === 'dofirmy')) warehouseCity = 'Koszalinie';
 
             const productPrice = price;
             const freeThreshold = 300;

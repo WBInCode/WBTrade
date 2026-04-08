@@ -14,19 +14,20 @@ interface PriceRule {
   addToPrice: number;
 }
 
-type Warehouse = 'leker' | 'btp' | 'hp';
+type Warehouse = 'leker' | 'btp' | 'hp' | 'dofirmy';
 
 interface SyncStatus {
   lastSync: string | null;
   xmlUrl: string;
 }
 
-const XML_SYNC_WAREHOUSES: Warehouse[] = ['leker', 'btp', 'hp'];
+const XML_SYNC_WAREHOUSES: Warehouse[] = ['leker', 'btp', 'hp', 'dofirmy'];
 
 const WAREHOUSES: { key: Warehouse; label: string; description: string }[] = [
   { key: 'leker', label: 'Leker', description: 'Magazyn Chynów' },
   { key: 'btp', label: 'BTP', description: 'Magazyn Chotów' },
   { key: 'hp', label: 'HP', description: 'Magazyn Zielona Góra' },
+  { key: 'dofirmy', label: 'DoFirmy', description: 'Magazyn Koszalin' },
 ];
 
 const DEFAULT_RULES: PriceRule[] = [
@@ -54,6 +55,7 @@ export default function PricingPage() {
     leker: [],
     btp: [],
     hp: [],
+    dofirmy: [],
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -62,6 +64,7 @@ export default function PricingPage() {
     leker: false,
     btp: false,
     hp: false,
+    dofirmy: false,
   });
   const [editingCell, setEditingCell] = useState<{ ruleId: string; field: string; value: string } | null>(null);
 
@@ -74,7 +77,7 @@ export default function PricingPage() {
     setLoading(true);
     try {
       const token = getAuthToken();
-      const results: Record<Warehouse, PriceRule[]> = { leker: [], btp: [], hp: [] };
+      const results: Record<Warehouse, PriceRule[]> = { leker: [], btp: [], hp: [], dofirmy: [] };
 
       for (const wh of WAREHOUSES) {
         try {
@@ -267,7 +270,7 @@ export default function PricingPage() {
         if (!response.ok) throw new Error(`Błąd zapisu dla ${wh.label}`);
       }
       setMessage({ type: 'success', text: 'Wszystkie reguły cenowe zapisane pomyślnie!' });
-      setHasChanges({ leker: false, btp: false, hp: false });
+      setHasChanges({ leker: false, btp: false, hp: false, dofirmy: false });
     } catch (error) {
       setMessage({ type: 'error', text: 'Błąd podczas zapisywania reguł cenowych' });
     } finally {
