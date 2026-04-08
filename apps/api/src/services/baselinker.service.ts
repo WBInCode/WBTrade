@@ -11,7 +11,7 @@
 import { prisma } from '../db';
 import { encryptToken, decryptToken, maskToken } from '../lib/encryption';
 import { createBaselinkerProvider, BaselinkerProvider, BaselinkerInventory } from '../providers/baselinker';
-import { meiliClient, PRODUCTS_INDEX } from '../lib/meilisearch';
+import { meiliClient, PRODUCTS_INDEX, isMeilisearchAvailable, markMeilisearchAvailable, markMeilisearchUnavailable } from '../lib/meilisearch';
 import { BaselinkerSyncType, BaselinkerSyncStatus, Prisma, PriceChangeSource } from '@prisma/client';
 import { priceHistoryService } from './price-history.service';
 import { syncProgress } from './sync-progress';
@@ -2524,7 +2524,15 @@ export class BaselinkerService {
    * Reindex Meilisearch after sync
    */
   async reindexMeilisearch(): Promise<void> {
+    if (!isMeilisearchAvailable()) {
+      console.log('[BaselinkerSync] Meilisearch niedostępny, pomijam reindeksację');
+      return;
+    }
+
+    const startTime = Date.now();
     try {
+      console.log('[BaselinkerSync] Rozpoczynam reindeksację Meilisearch...');
+      
       const products = await prisma.product.findMany({
         where: { status: 'ACTIVE' },
         include: {
@@ -2537,6 +2545,8 @@ export class BaselinkerService {
           },
         },
       });
+
+      console.log(`[BaselinkerSync] Pobrano ${products.length} produktów z bazy (${Date.now() - startTime}ms)`);
 
       const documents = products.map((product) => {
         const totalStock = product.variants.reduce((sum, v) => {
@@ -2561,9 +2571,13 @@ export class BaselinkerService {
 
       if (documents.length > 0) {
         await meiliClient.index(PRODUCTS_INDEX).addDocuments(documents);
+        markMeilisearchAvailable();
       }
+      
+      console.log(`[BaselinkerSync] ✓ Zindeksowano ${documents.length} produktów w Meilisearch (${Date.now() - startTime}ms)`);
     } catch (error) {
-      console.error('Failed to reindex Meilisearch:', error);
+      markMeilisearchUnavailable();
+      console.error(`[BaselinkerSync] ⚠️ Nie udało się zindeksować (Meilisearch offline?) (${Date.now() - startTime}ms):`, error);
     }
   }
 
