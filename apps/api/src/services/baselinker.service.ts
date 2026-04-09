@@ -1354,8 +1354,8 @@ export class BaselinkerService {
         });
       }
 
-      // Process in batches of 10 with extended timeout (60 seconds)
-      const batchSize = 10;
+      // Process in batches of 50 for faster throughput
+      const batchSize = 50;
       for (let i = 0; i < products.length; i += batchSize) {
         // Check for abort before each batch
         if (syncLogId && syncProgress.isAborted(syncLogId)) {

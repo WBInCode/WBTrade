@@ -24,7 +24,7 @@ import {
 } from './baselinker-provider.interface';
 
 const BASELINKER_API_URL = 'https://api.baselinker.com/connector.php';
-const DEFAULT_MAX_REQUESTS_PER_MINUTE = 30; // Reduced from 100 to avoid rate limiting
+const DEFAULT_MAX_REQUESTS_PER_MINUTE = 60; // Baselinker allows ~100/min, use 60 for safety
 const DEFAULT_RETRY_ATTEMPTS = 5; // Increased retries
 const DEFAULT_RETRY_DELAY_MS = 2000; // Increased delay
 const PRODUCTS_PER_PAGE = 1000;
@@ -250,15 +250,19 @@ export class BaselinkerProvider implements IBaselinkerProvider {
    * Get all products with automatic pagination
    */
   async getAllInventoryProducts(
-    inventoryId: string
+    inventoryId: string,
+    onPageFetched?: (page: number, totalSoFar: number) => void
   ): Promise<BaselinkerProductListItem[]> {
     const allProducts: BaselinkerProductListItem[] = [];
     let page = 1;
     let hasMore = true;
 
     while (hasMore) {
+      console.log(`[Baselinker] Fetching product list page ${page}...`);
       const result = await this.getInventoryProductsList(inventoryId, page);
       allProducts.push(...result.products);
+      console.log(`[Baselinker] Page ${page}: got ${result.products.length} products (total: ${allProducts.length})`);
+      onPageFetched?.(page, allProducts.length);
       hasMore = result.hasMore;
       page++;
     }
@@ -277,8 +281,8 @@ export class BaselinkerProvider implements IBaselinkerProvider {
       return [];
     }
 
-    // Baselinker limits to 1000 products per request - reduce to 500 for safety
-    const chunks = this.chunkArray(productIds, 500);
+    // Baselinker limits to 1000 products per request
+    const chunks = this.chunkArray(productIds, 1000);
     const allProducts: BaselinkerProductData[] = [];
 
     for (let i = 0; i < chunks.length; i++) {
@@ -302,7 +306,7 @@ export class BaselinkerProvider implements IBaselinkerProvider {
       
       // Add delay between chunks to avoid rate limiting
       if (i < chunks.length - 1) {
-        await this.sleep(2000); // 2 second delay between chunks
+        await this.sleep(500); // 500ms delay between chunks (rate limiter handles throttling)
       }
     }
 
