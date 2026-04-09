@@ -275,7 +275,8 @@ export class BaselinkerProvider implements IBaselinkerProvider {
    */
   async getInventoryProductsData(
     inventoryId: string,
-    productIds: number[]
+    productIds: number[],
+    onChunkFetched?: (chunk: number, totalChunks: number, productsSoFar: number) => void
   ): Promise<BaselinkerProductData[]> {
     if (productIds.length === 0) {
       return [];
@@ -303,6 +304,7 @@ export class BaselinkerProvider implements IBaselinkerProvider {
       }));
 
       allProducts.push(...products);
+      onChunkFetched?.(i + 1, chunks.length, allProducts.length);
       
       // Add delay between chunks to avoid rate limiting
       if (i < chunks.length - 1) {
