@@ -1201,8 +1201,21 @@ export class BaselinkerService {
       
       // Get all product IDs from Baselinker (lightweight call)
       console.log('[BaselinkerSync] Fetching product list...');
-      const productList = await provider.getAllInventoryProducts(inventoryId);
+      const productList = await provider.getAllInventoryProducts(inventoryId, (page, totalSoFar) => {
+        if (syncLogId) {
+          syncProgress.sendProgress(syncLogId, {
+            type: 'info',
+            message: `Pobrano stronę ${page} z Baselinker (${totalSoFar} produktów)...`,
+          });
+        }
+      });
       console.log(`[BaselinkerSync] Found ${productList.length} products in Baselinker`);
+      if (syncLogId) {
+        syncProgress.sendProgress(syncLogId, {
+          type: 'info',
+          message: `Pobrano listę ${productList.length} produktów z Baselinker. Porównywanie z bazą...`,
+        });
+      }
 
       // Pre-fetch existing products with essential data for comparison
       const existingProducts = await prisma.product.findMany({
@@ -1343,7 +1356,14 @@ export class BaselinkerService {
           message: `Pobieranie szczegółów ${productsToFetch.length} produktów z Baselinker...`,
         });
       }
-      const products = await provider.getInventoryProductsData(inventoryId, productsToFetch);
+      const products = await provider.getInventoryProductsData(inventoryId, productsToFetch, (chunk, totalChunks, productsSoFar) => {
+        if (syncLogId) {
+          syncProgress.sendProgress(syncLogId, {
+            type: 'info',
+            message: `Pobieranie szczegółów: paczka ${chunk}/${totalChunks} (${productsSoFar} produktów)...`,
+          });
+        }
+      });
       console.log(`[BaselinkerSync] Got ${products.length} product details`);
       
       if (syncLogId) {
