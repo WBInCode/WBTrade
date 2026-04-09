@@ -16,6 +16,22 @@ import { BaselinkerSyncType, BaselinkerSyncStatus, Prisma, PriceChangeSource } f
 import { priceHistoryService } from './price-history.service';
 import { syncProgress } from './sync-progress';
 
+/**
+ * Deduplicate image URLs — removes exact URL duplicates, keeps unique images.
+ */
+function deduplicateImageUrls(urls: string[]): string[] {
+  const seen = new Set<string>();
+  const unique: string[] = [];
+
+  for (const url of urls) {
+    if (seen.has(url)) continue;
+    seen.add(url);
+    unique.push(url);
+  }
+
+  return unique;
+}
+
 // ============================================
 // Types
 // ============================================
@@ -1376,6 +1392,9 @@ export class BaselinkerService {
 
       // Process in batches of 50 for faster throughput
       const batchSize = 50;
+      // Cache category lookups to avoid repeated DB queries
+      const categoryCache = new Map<string, Awaited<ReturnType<typeof this.findCategoryByBaselinkerIdcatId>>>();
+      
       for (let i = 0; i < products.length; i += batchSize) {
         // Check for abort before each batch
         if (syncLogId && syncProgress.isAborted(syncLogId)) {
@@ -1398,15 +1417,27 @@ export class BaselinkerService {
           });
         }
 
+        // Pre-fetch categories for this batch BEFORE opening transaction
+        for (const blProduct of batch) {
+          if (blProduct.category_id) {
+            const catKey = blProduct.category_id.toString();
+            if (!categoryCache.has(catKey)) {
+              categoryCache.set(catKey, await this.findCategoryByBaselinkerIdcatId(catKey));
+            }
+          }
+        }
+
         // Collect price updates to execute AFTER transaction (avoids nested tx deadlock)
         const pendingPriceUpdates: Array<{ type: 'product' | 'variant'; id: string; newPrice: number }> = [];
 
+        try {
         await prisma.$transaction(
           async (tx) => {
             for (const blProduct of batch) {
               try {
                 const baselinkerProductId = `${inventoryPrefix}${blProduct.id.toString()}`;
               const sku = generateSku(blProduct.id, blProduct.sku, skuPrefix);
+              console.log(`[BaselinkerSync] Processing product ${baselinkerProductId} (${sku})`);
               
               // Get name and description using helper methods
               let name = this.getProductName(blProduct);
@@ -1447,10 +1478,9 @@ export class BaselinkerService {
               
               const slug = await this.ensureUniqueProductSlug(slugify(name) || `product-${baselinkerProductId}`, baselinkerProductId, tx);
 
-              // Find category by Baselinker category_id
-              // Category in Baselinker has ID, and our Category has baselinkerCategoryId field
+              // Find category by Baselinker category_id (from pre-fetched cache)
               const category = blProduct.category_id
-                ? await this.findCategoryByBaselinkerIdcatId(blProduct.category_id.toString())
+                ? categoryCache.get(blProduct.category_id.toString()) ?? null
                 : null;
               
               // Get baselinker category path for product record (from the category if found)
@@ -1571,11 +1601,13 @@ export class BaselinkerService {
                 });
 
                 // Save original image URLs (image-proxy caches them on first access)
+                // Deduplicate: same URL + Baselinker CDN thumbs (all return same image)
                 const imageEntries = Object.entries(blProduct.images).sort(([a], [b]) => parseInt(a) - parseInt(b));
+                const rawUrls = imageEntries.map(([, u]) => (u as string).trim()).filter(Boolean);
+                const uniqueUrls = deduplicateImageUrls(rawUrls);
+
                 let imgOrder = 0;
-                for (const [, rawUrl] of imageEntries) {
-                  const url = (rawUrl as string).trim();
-                  if (!url) continue;
+                for (const url of uniqueUrls) {
                   await tx.productImage.create({
                     data: {
                       productId: product.id,
@@ -1754,6 +1786,18 @@ export class BaselinkerService {
             }
           } catch (priceErr) {
             console.error(`[BaselinkerSync] Price update error for ${pu.type} ${pu.id}:`, priceErr);
+          }
+        }
+        } catch (batchErr) {
+          // Batch transaction failed — log error and continue with next batch
+          const batchErrMsg = batchErr instanceof Error ? batchErr.message : 'Unknown error';
+          console.error(`[BaselinkerSync] Batch ${batchNum}/${totalBatches} failed: ${batchErrMsg}`);
+          errors.push(`Batch ${batchNum} failed: ${batchErrMsg}`);
+          if (syncLogId) {
+            syncProgress.sendProgress(syncLogId, {
+              type: 'error',
+              message: `✗ Partia ${batchNum}/${totalBatches} nie powiodła się: ${batchErrMsg}. Kontynuowanie...`,
+            });
           }
         }
       }
@@ -2497,8 +2541,13 @@ export class BaselinkerService {
         const blProducts = await provider.getInventoryProductsData(inv.inventory_id.toString(), productIds);
 
         let invProcessed = 0;
-        for (const blProduct of blProducts) {
-          try {
+        // Process in batches of 100 products using transactions for speed
+        const BATCH_SIZE = 100;
+        for (let i = 0; i < blProducts.length; i += BATCH_SIZE) {
+          const batch = blProducts.slice(i, i + BATCH_SIZE);
+          const operations: any[] = [];
+
+          for (const blProduct of batch) {
             const blIdStr = blProduct.id.toString();
             const product = invProducts.find((p) => {
               const stored = p.baselinkerProductId as string;
@@ -2507,28 +2556,38 @@ export class BaselinkerService {
             if (!product) continue;
 
             if (blProduct.images && Object.keys(blProduct.images).length > 0) {
-              await prisma.productImage.deleteMany({
-                where: { productId: product.id },
-              });
-
               const imageEntries = Object.entries(blProduct.images).sort(([a], [b]) => parseInt(a) - parseInt(b));
-              let imgOrder = 0;
-              for (const [, rawUrl] of imageEntries) {
-                const url = (rawUrl as string).trim();
-                if (!url) continue;
-                await prisma.productImage.create({
-                  data: {
-                    productId: product.id,
-                    url,
-                    order: imgOrder++,
-                  },
-                });
-              }
-              invProcessed++;
-              processed++;
+              const rawUrls = imageEntries.map(([, u]) => (u as string).trim()).filter(Boolean);
+              const uniqueUrls = deduplicateImageUrls(rawUrls);
+
+              operations.push({
+                productId: product.id,
+                blProductId: blProduct.id,
+                images: uniqueUrls.map((url, idx) => ({ productId: product.id, url, order: idx })),
+              });
             }
-          } catch (error) {
-            errors.push(`Images ${blProduct.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
+
+          if (operations.length > 0) {
+            try {
+              await prisma.$transaction(async (tx) => {
+                // Delete all old images for this batch
+                await tx.productImage.deleteMany({
+                  where: { productId: { in: operations.map(op => op.productId) } },
+                });
+                // Create all new images in one call
+                const allImages = operations.flatMap(op => op.images);
+                await tx.productImage.createMany({ data: allImages });
+              });
+              invProcessed += operations.length;
+              processed += operations.length;
+            } catch (error) {
+              errors.push(`Batch ${i}-${i + BATCH_SIZE}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            }
+          }
+
+          if ((i + BATCH_SIZE) % 500 === 0 || i + BATCH_SIZE >= blProducts.length) {
+            console.log(`[BaselinkerSync] ${inv.name}: processed ${Math.min(i + BATCH_SIZE, blProducts.length)}/${blProducts.length} products`);
           }
         }
         console.log(`[BaselinkerSync] Updated images for ${invProcessed} products from ${inv.name}`);
