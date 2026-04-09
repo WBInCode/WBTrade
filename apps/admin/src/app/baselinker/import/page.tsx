@@ -325,14 +325,17 @@ export default function BaselinkerImportPage() {
   // ============================================
   const connectSSE = useCallback(
     (logId: string) => {
-      if (!token) return;
+      // Get fresh token from localStorage (may have been auto-refreshed)
+      const stored = localStorage.getItem('admin_auth_tokens');
+      const currentToken = stored ? JSON.parse(stored).accessToken : token;
+      if (!currentToken) return;
 
       // Close existing connection
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
       }
 
-      const url = `${API_URL}/admin/baselinker/sync/progress/${logId}?token=${token}`;
+      const url = `${API_URL}/admin/baselinker/sync/progress/${logId}?token=${currentToken}`;
       const es = new EventSource(url);
       eventSourceRef.current = es;
 

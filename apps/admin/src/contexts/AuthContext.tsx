@@ -41,6 +41,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkAuth();
   }, []);
 
+  // Auto-refresh token before expiry
+  useEffect(() => {
+    if (!token) return;
+
+    // Refresh token every 7 hours (token expires in 8h)
+    const refreshInterval = setInterval(async () => {
+      try {
+        const stored = localStorage.getItem('admin_auth_tokens');
+        if (!stored) return;
+        const { refreshToken } = JSON.parse(stored);
+        if (!refreshToken) return;
+
+        const response = await fetch(`${API_URL}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const newAccessToken = data.tokens?.accessToken;
+          const newRefreshToken = data.tokens?.refreshToken || refreshToken;
+          if (newAccessToken) {
+            localStorage.setItem('admin_auth_tokens', JSON.stringify({
+              accessToken: newAccessToken,
+              refreshToken: newRefreshToken,
+            }));
+            setToken(newAccessToken);
+            console.log('Token auto-refreshed successfully');
+          }
+        } else {
+          console.warn('Token refresh failed, session may expire soon');
+        }
+      } catch (error) {
+        console.error('Token auto-refresh error:', error);
+      }
+    }, 7 * 60 * 60 * 1000); // 7 hours
+
+    return () => clearInterval(refreshInterval);
+  }, [token]);
+
   // Przekierowanie niezalogowanych
   useEffect(() => {
     if (!loading) {
