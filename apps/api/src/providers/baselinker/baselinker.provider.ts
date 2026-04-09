@@ -251,13 +251,19 @@ export class BaselinkerProvider implements IBaselinkerProvider {
    */
   async getAllInventoryProducts(
     inventoryId: string,
-    onPageFetched?: (page: number, totalSoFar: number) => void
+    onPageFetched?: (page: number, totalSoFar: number) => void,
+    shouldAbort?: () => boolean
   ): Promise<BaselinkerProductListItem[]> {
     const allProducts: BaselinkerProductListItem[] = [];
     let page = 1;
     let hasMore = true;
 
     while (hasMore) {
+      // Check for abort between pages
+      if (shouldAbort?.()) {
+        console.log(`[Baselinker] Product list fetch aborted at page ${page}`);
+        throw new Error('ABORTED');
+      }
       console.log(`[Baselinker] Fetching product list page ${page}...`);
       const result = await this.getInventoryProductsList(inventoryId, page);
       allProducts.push(...result.products);
