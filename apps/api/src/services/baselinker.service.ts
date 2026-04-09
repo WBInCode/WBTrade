@@ -360,19 +360,30 @@ export class BaselinkerService {
 
     const syncType = typeMap[type] || BaselinkerSyncType.PRODUCTS;
 
-    // Clean up any stuck RUNNING syncs (older than 30 minutes)
-    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
-    await prisma.baselinkerSyncLog.updateMany({
-      where: {
-        status: BaselinkerSyncStatus.RUNNING,
-        startedAt: { lt: thirtyMinutesAgo },
-      },
-      data: {
-        status: BaselinkerSyncStatus.FAILED,
-        errors: ['Sync timed out - marked as failed'],
-        completedAt: new Date(),
-      },
+    // Abort ALL currently running syncs (prevents old processes from hogging the API)
+    const runningSyncs = await prisma.baselinkerSyncLog.findMany({
+      where: { status: BaselinkerSyncStatus.RUNNING },
+      select: { id: true, startedAt: true },
     });
+    for (const rs of runningSyncs) {
+      console.log(`[BaselinkerSync] Aborting previous running sync ${rs.id} (started ${rs.startedAt})`);
+      syncProgress.requestAbort(rs.id);
+    }
+    if (runningSyncs.length > 0) {
+      await prisma.baselinkerSyncLog.updateMany({
+        where: {
+          status: BaselinkerSyncStatus.RUNNING,
+          id: { in: runningSyncs.map(s => s.id) },
+        },
+        data: {
+          status: BaselinkerSyncStatus.FAILED,
+          errors: ['Cancelled — new sync started'],
+          completedAt: new Date(),
+        },
+      });
+      // Wait briefly for old processes to notice the abort
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
 
     // Create sync log
     const syncLog = await prisma.baselinkerSyncLog.create({
@@ -1224,7 +1235,7 @@ export class BaselinkerService {
             message: `Pobrano stronę ${page} z Baselinker (${totalSoFar} produktów)...`,
           });
         }
-      });
+      }, () => syncLogId ? syncProgress.isAborted(syncLogId) : false);
       console.log(`[BaselinkerSync] Found ${productList.length} products in Baselinker`);
       if (syncLogId) {
         syncProgress.sendProgress(syncLogId, {
