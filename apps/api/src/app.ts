@@ -356,7 +356,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(generalRateLimiter);
 
 // Health check endpoint (skip rate limiter)
-const BUILD_VERSION = '2026-04-10-v5';
+const BUILD_VERSION = '2026-04-10-v6';
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', version: BUILD_VERSION, timestamp: new Date().toISOString() });
 });
@@ -366,17 +366,64 @@ app.get('/api/health', (req, res) => {
 });
 
 // Diagnostic endpoint to verify compiled code
-app.get('/api/debug-prefix', (req, res) => {
+app.get('/api/debug-prefix', async (req, res) => {
   try {
-    // Import baselinkerService to test getInventoryPrefix
     const { baselinkerService } = require('./services/baselinker.service');
+    const { PrismaClient } = require('@prisma/client');
+    const prisma = new PrismaClient();
+
+    // 1. Test prefix mapping
     const testNames = ['Forcetop', 'Leker', 'Hurtownia Przemysłowa', 'BTP', 'HP'];
-    const results: Record<string, string> = {};
+    const prefixes: Record<string, string> = {};
     for (const name of testNames) {
-      // Access private method via bracket notation for debugging
-      results[name] = (baselinkerService as any).getInventoryPrefix(name);
+      prefixes[name] = (baselinkerService as any).getInventoryPrefix(name);
     }
-    res.json({ version: BUILD_VERSION, prefixes: results });
+
+    // 2. Count DB products by prefix
+    const dbCounts: Record<string, number> = {};
+    for (const pfx of ['btp-', 'leker-', 'hp-', 'outlet-']) {
+      dbCounts[pfx] = await prisma.product.count({ where: { baselinkerProductId: { startsWith: pfx } } });
+    }
+    const totalWithBlId = await prisma.product.count({ where: { baselinkerProductId: { not: null } } });
+
+    // 3. Test matching: simulate what syncProducts does for Forcetop
+    const existingProducts = await prisma.product.findMany({
+      where: { baselinkerProductId: { not: null } },
+      select: { baselinkerProductId: true },
+    });
+    const existingMap = new Map(existingProducts.map((p: any) => [p.baselinkerProductId, true]));
+
+    // Sample BL product IDs from Forcetop (known IDs)
+    const sampleBlIds = ['212547476', '212547477', '212547478', '212547479', '212547481'];
+    const matchTest: Record<string, any> = {};
+    for (const blId of sampleBlIds) {
+      const withPrefix = `btp-${blId}`;
+      const withoutPrefix = blId;
+      matchTest[blId] = {
+        'btp-id': withPrefix,
+        'found_with_prefix': existingMap.has(withPrefix),
+        'found_without_prefix': existingMap.has(withoutPrefix),
+      };
+    }
+
+    // 4. Check stored config
+    const config = await prisma.baselinkerConfig.findFirst({ select: { inventoryId: true } });
+
+    // 5. Check existingMap size and sample keys
+    const mapKeys = Array.from(existingMap.keys()).slice(0, 10);
+
+    await prisma.$disconnect();
+
+    res.json({
+      version: BUILD_VERSION,
+      prefixes,
+      dbCounts,
+      totalWithBlId,
+      existingMapSize: existingMap.size,
+      sampleMapKeys: mapKeys,
+      matchTest,
+      storedInventoryId: config?.inventoryId || 'NOT SET',
+    });
   } catch (err) {
     res.json({ version: BUILD_VERSION, error: String(err) });
   }
