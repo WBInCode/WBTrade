@@ -1,0 +1,727 @@
+{
+  "description": "Mapowanie kategorii z hurtowni Mamezi (XML feed) na kategorie sklepu WBTrade",
+  "version": "2.0",
+  "created": "2026-04-10",
+  "source": "doFirmyPrivateApp01-pl_PL.xml",
+  "notes": [
+    "UWAGA: subSlug musi odpowiadać dokładnie slugom kategorii z bazy danych!",
+    "Mapowanie działa na zasadzie najdłuższego dopasowania prefiksu ścieżki",
+    "nameOverrides mają priorytet - dopasowanie po fragmencie nazwy produktu (case-insensitive)",
+    "Produkty z istniejącą kategorią NIE są modyfikowane (chyba że --force)"
+  ],
+  "nameOverrides": [
+    {
+      "pattern": "HAPPS",
+      "subSlug": "artykuly-dla-zwierzat",
+      "comment": "HAPPS - krople/płyny na pchły i kleszcze dla psów → Artykuły dla zwierząt"
+    }
+  ],
+
+  "mapping": {
+    "_comment": "Klucz = prefiks ścieżki Mamezi, Wartość = slug kategorii WBTrade z bazy danych",
+
+    "DOM I OGRÓD/Artykuły dla zwierząt": {
+      "subSlug": "artykuly-dla-zwierzat",
+      "comment": "Zwierzęta (psy, koty, higiena, klatki, miski) → Ogród i Gospodarstwo > Artykuły dla zwierząt"
+    },
+
+    "DOM I OGRÓD/Budownictwo i Akcesoria": {
+      "subSlug": "narzedzia-reczne",
+      "comment": "Taśmy montażowe → Narzędzia > Narzędzia ręczne"
+    },
+
+    "DOM I OGRÓD/Meble/Wieszaki": {
+      "subSlug": "wyposazenie-i-akcesoria",
+      "comment": "Wieszaki → Dom > Wyposażenie i akcesoria"
+    },
+
+    "DOM I OGRÓD/Narzędzia ogrodnicze": {
+      "subSlug": "ogrod-i-narzedzia-ogrodowe",
+      "comment": "Nożyce, sekatory → Ogród i Gospodarstwo > Ogród i narzędzia ogrodowe"
+    },
+
+    "DOM I OGRÓD/Narzędzia/Palniki gazowe": {
+      "subSlug": "narzedzia-reczne",
+      "comment": "Palniki gazowe → Narzędzia > Narzędzia ręczne"
+    },
+
+    "DOM I OGRÓD/Odzież/Body": {
+      "subSlug": "gadzety",
+      "comment": "Body (odzież damska) → Dom > Gadżety"
+    },
+    "DOM I OGRÓD/Odzież/Czapki": {
+      "subSlug": "gadzety",
+      "comment": "Czapki → Dom > Gadżety"
+    },
+    "DOM I OGRÓD/Odzież/Legginsy": {
+      "subSlug": "gadzety",
+      "comment": "Legginsy (odzież damska) → Dom > Gadżety"
+    },
+    "DOM I OGRÓD/Odzież/Przebrania, kostiumy, maski": {
+      "subSlug": "przebrania",
+      "comment": "Przebrania, kostiumy → Dla dziecka > Przebrania"
+    },
+    "DOM I OGRÓD/Odzież/Sukienki": {
+      "subSlug": "gadzety",
+      "comment": "Sukienki (odzież damska) → Dom > Gadżety"
+    },
+    "DOM I OGRÓD/Odzież/Swetry": {
+      "subSlug": "gadzety",
+      "comment": "Swetry (odzież damska) → Dom > Gadżety"
+    },
+    "DOM I OGRÓD/Odzież/T-shirty": {
+      "subSlug": "gadzety",
+      "comment": "T-shirty (odzież) → Dom > Gadżety"
+    },
+
+    "DOM I OGRÓD/Ogród/Domki": {
+      "subSlug": "ogrod-i-narzedzia-ogrodowe",
+      "comment": "Domki ogrodowe → Ogród i Gospodarstwo > Ogród i narzędzia ogrodowe"
+    },
+    "DOM I OGRÓD/Ogród/Grillowanie": {
+      "subSlug": "ogrod-i-narzedzia-ogrodowe",
+      "comment": "Grillowanie (grille, dmuchawy, pokrowce) → Ogród i Gospodarstwo > Ogród i narzędzia ogrodowe"
+    },
+    "DOM I OGRÓD/Ogród/Nawozy i preparaty": {
+      "subSlug": "ogrod-i-narzedzia-ogrodowe",
+      "comment": "Nawozy, środki ochrony roślin → Ogród i Gospodarstwo > Ogród i narzędzia ogrodowe"
+    },
+    "DOM I OGRÓD/Ogród/Odstraszacze owadów": {
+      "subSlug": "ogrod-i-narzedzia-ogrodowe",
+      "comment": "Środki na owady BROS/EXPEL/lampy owadobójcze → Ogród i narzędzia ogrodowe (101/106 prod.)"
+    },
+    "DOM I OGRÓD/Ogród/Odstraszacze zwierząt": {
+      "subSlug": "ogrod-i-narzedzia-ogrodowe",
+      "comment": "Odstraszacze zwierząt → Ogród i Gospodarstwo > Ogród i narzędzia ogrodowe"
+    },
+    "DOM I OGRÓD/Ogród/Szamba i oczyszczalnie": {
+      "subSlug": "pojemniki-i-zbiorniki-gospodarcze-bl-2966384",
+      "comment": "Preparaty do szamb → Ogród i Gospodarstwo > Pojemniki i zbiorniki gospodarcze"
+    },
+
+    "DOM I OGRÓD/Wyposażenie/Deski do prasowania": {
+      "subSlug": "wyposazenie-i-akcesoria",
+      "comment": "Deski do prasowania → Dom > Wyposażenie i akcesoria"
+    },
+    "DOM I OGRÓD/Wyposażenie/Ozdoby świąteczne i okolicznościowe": {
+      "subSlug": "wyposazenie-i-akcesoria",
+      "comment": "Ozdoby świąteczne (choinki, znicze) → Dom > Wyposażenie i akcesoria"
+    },
+    "DOM I OGRÓD/Wyposażenie/Przybory kuchenne": {
+      "subSlug": "kuchnia",
+      "comment": "Przybory kuchenne (spryskiwacze) → Dom > Kuchnia"
+    },
+    "DOM I OGRÓD/Wyposażenie/Suszarki na ubrania": {
+      "subSlug": "wyposazenie-i-akcesoria",
+      "comment": "Suszarki na ubrania → Dom > Wyposażenie i akcesoria"
+    },
+    "DOM I OGRÓD/Wyposażenie/Świece": {
+      "subSlug": "wyposazenie-i-akcesoria",
+      "comment": "Świece → Dom > Wyposażenie i akcesoria"
+    },
+
+    "ELEKTRONIKA/Drony": {
+      "subSlug": "akcesoria-gsm",
+      "comment": "Drony → Elektronika i GSM > Akcesoria GSM"
+    },
+    "ELEKTRONIKA/Komputery/Dyski i pamięci przenośne": {
+      "subSlug": "komputery-i-akcesoria",
+      "comment": "Pendrive'y, pamięci przenośne → Elektronika i GSM > Komputery i akcesoria"
+    },
+    "ELEKTRONIKA/Konsole i automaty": {
+      "subSlug": "konsole-i-gry",
+      "comment": "Konsole i automaty → Elektronika i GSM > Konsole i gry"
+    },
+
+    "ELEKTRONIKA/Ogrzewanie/Grzejniki elektryczne": {
+      "subSlug": "energia-i-ogrzewanie",
+      "comment": "Grzejniki elektryczne → Dom > Energia i ogrzewanie"
+    },
+    "ELEKTRONIKA/Ogrzewanie/Grzejniki olejowe": {
+      "subSlug": "energia-i-ogrzewanie",
+      "comment": "Grzejniki olejowe → Dom > Energia i ogrzewanie"
+    },
+    "ELEKTRONIKA/Ogrzewanie/Nagrzewnice": {
+      "subSlug": "energia-i-ogrzewanie",
+      "comment": "Nagrzewnice → Dom > Energia i ogrzewanie"
+    },
+    "ELEKTRONIKA/Ogrzewanie/Termowentylatory": {
+      "subSlug": "energia-i-ogrzewanie",
+      "comment": "Termowentylatory → Dom > Energia i ogrzewanie"
+    },
+
+    "ELEKTRONIKA/RTV i AGD/AGD/Czajniki elektryczne": {
+      "subSlug": "sprzet-agd",
+      "comment": "Czajniki elektryczne → Dom > Sprzęt AGD"
+    },
+    "ELEKTRONIKA/RTV i AGD/AGD/Gofrownice": {
+      "subSlug": "sprzet-agd",
+      "comment": "Gofrownice → Dom > Sprzęt AGD"
+    },
+    "ELEKTRONIKA/RTV i AGD/AGD/Golarki do ubrań": {
+      "subSlug": "sprzet-agd",
+      "comment": "Golarki do ubrań → Dom > Sprzęt AGD"
+    },
+    "ELEKTRONIKA/RTV i AGD/AGD/Grille elektryczne": {
+      "subSlug": "sprzet-agd",
+      "comment": "Grille elektryczne → Dom > Sprzęt AGD"
+    },
+    "ELEKTRONIKA/RTV i AGD/AGD/Lodówki": {
+      "subSlug": "sprzet-agd",
+      "comment": "Lodówki → Dom > Sprzęt AGD"
+    },
+    "ELEKTRONIKA/RTV i AGD/AGD/Miksery ręczne": {
+      "subSlug": "sprzet-agd",
+      "comment": "Miksery ręczne → Dom > Sprzęt AGD"
+    },
+    "ELEKTRONIKA/RTV i AGD/AGD/Nawilżacze": {
+      "subSlug": "sprzet-agd",
+      "comment": "Nawilżacze → Dom > Sprzęt AGD"
+    },
+    "ELEKTRONIKA/RTV i AGD/AGD/Opiekacze": {
+      "subSlug": "sprzet-agd",
+      "comment": "Opiekacze → Dom > Sprzęt AGD"
+    },
+    "ELEKTRONIKA/RTV i AGD/AGD/Prostownice i karbownice": {
+      "subSlug": "grooming",
+      "comment": "Prostownice, karbownice → Zdrowie i Uroda > Grooming"
+    },
+    "ELEKTRONIKA/RTV i AGD/AGD/Spieniacze do mleka": {
+      "subSlug": "sprzet-agd",
+      "comment": "Spieniacze do mleka → Dom > Sprzęt AGD"
+    },
+    "ELEKTRONIKA/RTV i AGD/AGD/Suszarki do włosów": {
+      "subSlug": "sprzet-agd",
+      "comment": "Suszarki do włosów → Dom > Sprzęt AGD"
+    },
+    "ELEKTRONIKA/RTV i AGD/AGD/Urządzenia do popcornu": {
+      "subSlug": "sprzet-agd",
+      "comment": "Urządzenia do popcornu → Dom > Sprzęt AGD"
+    },
+    "ELEKTRONIKA/RTV i AGD/AGD/Wagi kuchenne": {
+      "subSlug": "wagi-kuchenne",
+      "comment": "Wagi kuchenne → Wagi > Wagi kuchenne"
+    },
+    "ELEKTRONIKA/RTV i AGD/AGD/Wagi łazienkowe": {
+      "subSlug": "wagi-kuchenne",
+      "comment": "Wagi łazienkowe → Wagi > Wagi kuchenne (najbliższe dopasowanie)"
+    },
+    "ELEKTRONIKA/RTV i AGD/AGD/Zaparzacze i kawiarki": {
+      "subSlug": "sprzet-agd",
+      "comment": "Zaparzacze i kawiarki → Dom > Sprzęt AGD"
+    },
+    "ELEKTRONIKA/RTV i AGD/AGD/Żelazka": {
+      "subSlug": "sprzet-agd",
+      "comment": "Żelazka → Dom > Sprzęt AGD"
+    },
+    "ELEKTRONIKA/RTV i AGD/Części i akcesoria": {
+      "subSlug": "sprzet-agd",
+      "comment": "Filtry i wkłady do AGD → Dom > Sprzęt AGD"
+    },
+    "ELEKTRONIKA/RTV i AGD/Kuchenki przenośne": {
+      "subSlug": "sprzet-agd",
+      "comment": "Kuchenki przenośne → Dom > Sprzęt AGD"
+    },
+    "ELEKTRONIKA/RTV i AGD/Nabijarki do papierosów": {
+      "subSlug": "gadzety",
+      "comment": "Nabijarki do papierosów → Dom > Gadżety"
+    },
+    "ELEKTRONIKA/RTV i AGD/Słuchawki": {
+      "subSlug": "audio-sluchawki-i-glosniki",
+      "comment": "Słuchawki bezprzewodowe → Elektronika i GSM > Audio (słuchawki i głośniki)"
+    },
+    "ELEKTRONIKA/RTV i AGD/Taśmy izolacyjne": {
+      "subSlug": "narzedzia-reczne",
+      "comment": "Taśmy izolacyjne → Narzędzia > Narzędzia ręczne"
+    },
+
+    "ELEKTRONIKA/Telefony i Akcesoria/Akcesoria GSM/Etui i pokrowce": {
+      "subSlug": "na-telefon",
+      "comment": "Etui i pokrowce → Etui i pokrowce > Na telefon"
+    },
+    "ELEKTRONIKA/Telefony i Akcesoria/Akcesoria GSM/Folie i szkła ochronne": {
+      "subSlug": "do-telefonow",
+      "comment": "Folie i szkła ochronne → Szkła i folie ochronne > Do telefonów"
+    },
+    "ELEKTRONIKA/Telefony i Akcesoria/Akcesoria GSM/Ładowarki": {
+      "subSlug": "zasilacze-i-ladowarki",
+      "comment": "Ładowarki → Ładowanie i zasilanie > Zasilacze i ładowarki"
+    },
+    "ELEKTRONIKA/Telefony i Akcesoria/Karty pamięci": {
+      "subSlug": "komputery-i-akcesoria",
+      "comment": "Karty pamięci → Elektronika i GSM > Komputery i akcesoria"
+    },
+
+    "FIRMA I BIURO/Artykuły BHP/Apteczki": {
+      "subSlug": "akcesoria-1",
+      "comment": "Apteczki → Narzędzia > Akcesoria"
+    },
+    "FIRMA I BIURO/Artykuły BHP/Obuwie robocze": {
+      "subSlug": "gadzety",
+      "comment": "Buty robocze z podnoskiem → Dom > Gadżety"
+    },
+    "FIRMA I BIURO/Artykuły BHP/Ochronniki słuchu": {
+      "subSlug": "akcesoria-1",
+      "comment": "Ochronniki słuchu → Narzędzia > Akcesoria"
+    },
+    "FIRMA I BIURO/Artykuły BHP/Odzież robocza/Kamizelki": {
+      "subSlug": "gadzety",
+      "comment": "Kamizelki odblaskowe → Dom > Gadżety"
+    },
+    "FIRMA I BIURO/Artykuły BHP/Odzież robocza": {
+      "subSlug": "akcesoria-1",
+      "comment": "Odzież robocza (bluzy, spodnie, T-shirty) → Narzędzia > Akcesoria"
+    },
+    "FIRMA I BIURO/Artykuły BHP/Okulary i gogle": {
+      "subSlug": "akcesoria-1",
+      "comment": "Okulary i gogle ochronne → Narzędzia > Akcesoria"
+    },
+    "FIRMA I BIURO/Artykuły BHP/Osłona twarzy": {
+      "subSlug": "akcesoria-1",
+      "comment": "Osłona twarzy → Narzędzia > Akcesoria"
+    },
+    "FIRMA I BIURO/Artykuły BHP/Rękawice Robocze": {
+      "subSlug": "akcesoria-1",
+      "comment": "Rękawice robocze → Narzędzia > Akcesoria"
+    },
+    "FIRMA I BIURO/Artykuły BHP/Rękawiczki jednorazowe": {
+      "subSlug": "higiena-i-utrzymanie-czystosci",
+      "comment": "Rękawiczki nitrylowe jednorazowe → Gastronomia > Higiena i utrzymanie czystości"
+    },
+
+    "FIRMA I BIURO/Biuro/Akcesoria biurowe": {
+      "subSlug": "artykuly-szkolne-i-papiernicze",
+      "comment": "Długopisy, segregatory, zszywacze → Dla dziecka > Artykuły szkolne i papiernicze"
+    },
+    "FIRMA I BIURO/Biuro/Bloki": {
+      "subSlug": "artykuly-szkolne-i-papiernicze",
+      "comment": "Bloki biurowe → Dla dziecka > Artykuły szkolne i papiernicze"
+    },
+    "FIRMA I BIURO/Biuro/Druki": {
+      "subSlug": "artykuly-szkolne-i-papiernicze",
+      "comment": "Druki → Dla dziecka > Artykuły szkolne i papiernicze"
+    },
+    "FIRMA I BIURO/Biuro/Koszulki i obwoluty": {
+      "subSlug": "artykuly-szkolne-i-papiernicze",
+      "comment": "Koszulki i obwoluty → Dla dziecka > Artykuły szkolne i papiernicze"
+    },
+    "FIRMA I BIURO/Biuro/Meble biurowe/Fotele": {
+      "subSlug": "wyposazenie-i-akcesoria",
+      "comment": "Fotele biurowe, podpórki pod plecy → Dom > Wyposażenie i akcesoria"
+    },
+    "FIRMA I BIURO/Biuro/Meble biurowe/Krzesła": {
+      "subSlug": "wyposazenie-lokali",
+      "comment": "Krzesła biurowe → Gastronomia > Wyposażenie lokali"
+    },
+    "FIRMA I BIURO/Biuro/Meble biurowe/Sejfy i kasy pancerne": {
+      "subSlug": "zabezpieczenia",
+      "comment": "Sejfy → Dom > Zabezpieczenia"
+    },
+    "FIRMA I BIURO/Biuro/Meble biurowe/Akcesoria": {
+      "subSlug": "wyposazenie-i-akcesoria",
+      "comment": "Maty ochronne pod krzesła → Dom > Wyposażenie i akcesoria"
+    },
+    "FIRMA I BIURO/Biuro/Papier": {
+      "subSlug": "artykuly-szkolne-i-papiernicze",
+      "comment": "Papier biurowy → Dla dziecka > Artykuły szkolne i papiernicze"
+    },
+    "FIRMA I BIURO/Biuro/Sprzęt biurowy": {
+      "subSlug": "artykuly-szkolne-i-papiernicze",
+      "comment": "Sprzęt biurowy → Dla dziecka > Artykuły szkolne i papiernicze"
+    },
+    "FIRMA I BIURO/Biuro/Teczki": {
+      "subSlug": "artykuly-szkolne-i-papiernicze",
+      "comment": "Teczki → Dla dziecka > Artykuły szkolne i papiernicze"
+    },
+
+    "FIRMA I BIURO/Materiały i akcesoria/Akcesoria do kas i drukarek": {
+      "subSlug": "artykuly-szkolne-i-papiernicze",
+      "comment": "Rolki termiczne, taśmy kasowe → Dla dziecka > Artykuły szkolne i papiernicze"
+    },
+    "FIRMA I BIURO/Materiały i akcesoria/Akcesoria kuchenne": {
+      "subSlug": "kuchnia",
+      "comment": "Akcesoria kuchenne → Dom > Kuchnia"
+    },
+    "FIRMA I BIURO/Materiały i akcesoria/Kleje": {
+      "subSlug": "akcesoria-1",
+      "comment": "Kleje → Narzędzia > Akcesoria"
+    },
+    "FIRMA I BIURO/Materiały i akcesoria/Przyrządy pomiarowe": {
+      "subSlug": "narzedzia-reczne",
+      "comment": "Przyrządy pomiarowe → Narzędzia > Narzędzia ręczne"
+    },
+
+    "FIRMA I BIURO/OUTLET": {
+      "subSlug": "outlet",
+      "comment": "Outlet → Outlet"
+    },
+
+    "FIRMA I BIURO/Pakowanie i wysyłka/Etykiety samoprzylepne": {
+      "subSlug": "artykuly-szkolne-i-papiernicze",
+      "comment": "Etykiety termiczne → Dla dziecka > Artykuły szkolne i papiernicze"
+    },
+    "FIRMA I BIURO/Pakowanie i wysyłka/Folia Stretch": {
+      "subSlug": "artykuly-szkolne-i-papiernicze",
+      "comment": "Folia stretch, rolki po folii → Dla dziecka > Artykuły szkolne i papiernicze"
+    },
+    "FIRMA I BIURO/Pakowanie i wysyłka/Foliopaki": {
+      "subSlug": "artykuly-szkolne-i-papiernicze",
+      "comment": "Foliopaki → Dla dziecka > Artykuły szkolne i papiernicze"
+    },
+    "FIRMA I BIURO/Pakowanie i wysyłka/Kartony": {
+      "subSlug": "artykuly-szkolne-i-papiernicze",
+      "comment": "Kartony klapowe → Dla dziecka > Artykuły szkolne i papiernicze"
+    },
+    "FIRMA I BIURO/Pakowanie i wysyłka/Koperty": {
+      "subSlug": "artykuly-szkolne-i-papiernicze",
+      "comment": "Koperty → Dla dziecka > Artykuły szkolne i papiernicze"
+    },
+    "FIRMA I BIURO/Pakowanie i wysyłka/Taśmy pakowe": {
+      "subSlug": "artykuly-szkolne-i-papiernicze",
+      "comment": "Taśmy pakowe → Dla dziecka > Artykuły szkolne i papiernicze"
+    },
+    "FIRMA I BIURO/Pakowanie i wysyłka/Woreczki i torby foliowe": {
+      "subSlug": "artykuly-szkolne-i-papiernicze",
+      "comment": "Woreczki i torby foliowe → Dla dziecka > Artykuły szkolne i papiernicze"
+    },
+
+    "FIRMA I BIURO/Utrzymanie czystości/Chemia gospodarcza/Mydła": {
+      "subSlug": "higiena-i-utrzymanie-czystosci",
+      "comment": "Mydła → Gastronomia > Higiena i utrzymanie czystości"
+    },
+    "FIRMA I BIURO/Utrzymanie czystości/Chemia gospodarcza/Odświeżacze powietrza": {
+      "subSlug": "higiena-i-utrzymanie-czystosci",
+      "comment": "Odświeżacze powietrza → Gastronomia > Higiena i utrzymanie czystości"
+    },
+    "FIRMA I BIURO/Utrzymanie czystości/Chemia gospodarcza/Środki czyszczące": {
+      "subSlug": "higiena-i-utrzymanie-czystosci",
+      "comment": "Środki czyszczące → Gastronomia > Higiena i utrzymanie czystości"
+    },
+    "FIRMA I BIURO/Utrzymanie czystości/Chemia gospodarcza/Środki do prania": {
+      "subSlug": "higiena-i-utrzymanie-czystosci",
+      "comment": "Środki do prania (kapsułki, proszki, płyny, odplamiacze) → Gastronomia > Higiena i utrzymanie czystości"
+    },
+    "FIRMA I BIURO/Utrzymanie czystości/Chemia gospodarcza/Środki do zmywania": {
+      "subSlug": "higiena-i-utrzymanie-czystosci",
+      "comment": "Środki do zmywarki (tabletki, sole, nabłyszczacze, płyny) → Gastronomia > Higiena i utrzymanie czystości"
+    },
+    "FIRMA I BIURO/Utrzymanie czystości/Chemia profesjonalna": {
+      "subSlug": "chemia-dla-gastronomii",
+      "comment": "Chemia profesjonalna → Chemia profesjonalna > Chemia dla gastronomii"
+    },
+    "FIRMA I BIURO/Utrzymanie czystości/Chusteczki higieniczne": {
+      "subSlug": "higiena-i-utrzymanie-czystosci",
+      "comment": "Chusteczki higieniczne → Gastronomia > Higiena i utrzymanie czystości"
+    },
+    "FIRMA I BIURO/Utrzymanie czystości/Chusteczki nawilżane": {
+      "subSlug": "higiena-i-utrzymanie-czystosci",
+      "comment": "Chusteczki nawilżane → Gastronomia > Higiena i utrzymanie czystości"
+    },
+    "FIRMA I BIURO/Utrzymanie czystości/Gąbki, zmywaki, druciaki": {
+      "subSlug": "higiena-i-utrzymanie-czystosci",
+      "comment": "Gąbki, zmywaki → Gastronomia > Higiena i utrzymanie czystości"
+    },
+    "FIRMA I BIURO/Utrzymanie czystości/Kosze na śmieci": {
+      "subSlug": "higiena-i-utrzymanie-czystosci",
+      "comment": "Kosze na śmieci → Gastronomia > Higiena i utrzymanie czystości"
+    },
+    "FIRMA I BIURO/Utrzymanie czystości/Miotły, zmiotki i szufelki": {
+      "subSlug": "higiena-i-utrzymanie-czystosci",
+      "comment": "Miotły, zmiotki → Gastronomia > Higiena i utrzymanie czystości"
+    },
+    "FIRMA I BIURO/Utrzymanie czystości/Mopy i Wkłady": {
+      "subSlug": "higiena-i-utrzymanie-czystosci",
+      "comment": "Mopy → Gastronomia > Higiena i utrzymanie czystości"
+    },
+    "FIRMA I BIURO/Utrzymanie czystości/Odkurzacze": {
+      "subSlug": "sprzet-agd",
+      "comment": "Odkurzacze → Dom > Sprzęt AGD"
+    },
+    "FIRMA I BIURO/Utrzymanie czystości/Papier toaletowy": {
+      "subSlug": "higiena-i-utrzymanie-czystosci",
+      "comment": "Papier toaletowy → Gastronomia > Higiena i utrzymanie czystości"
+    },
+    "FIRMA I BIURO/Utrzymanie czystości/Ściągaczki": {
+      "subSlug": "higiena-i-utrzymanie-czystosci",
+      "comment": "Ściągaczki → Gastronomia > Higiena i utrzymanie czystości"
+    },
+    "FIRMA I BIURO/Utrzymanie czystości/Ścierki i ręczniki": {
+      "subSlug": "higiena-i-utrzymanie-czystosci",
+      "comment": "Ścierki i ręczniki → Gastronomia > Higiena i utrzymanie czystości"
+    },
+    "FIRMA I BIURO/Utrzymanie czystości/Wiadra": {
+      "subSlug": "higiena-i-utrzymanie-czystosci",
+      "comment": "Wiadra → Gastronomia > Higiena i utrzymanie czystości"
+    },
+    "FIRMA I BIURO/Utrzymanie czystości/Worki na śmieci": {
+      "subSlug": "higiena-i-utrzymanie-czystosci",
+      "comment": "Worki na śmieci → Gastronomia > Higiena i utrzymanie czystości"
+    },
+    "FIRMA I BIURO/Utrzymanie czystości/Wózki serwisowe": {
+      "subSlug": "higiena-i-utrzymanie-czystosci",
+      "comment": "Wózki serwisowe → Gastronomia > Higiena i utrzymanie czystości"
+    },
+
+    "FIRMA I BIURO/Wyposażenie/Klimatory": {
+      "subSlug": "energia-i-ogrzewanie",
+      "comment": "Klimatory → Dom > Energia i ogrzewanie"
+    },
+    "FIRMA I BIURO/Wyposażenie/Klimatyzatory": {
+      "subSlug": "energia-i-ogrzewanie",
+      "comment": "Klimatyzatory → Dom > Energia i ogrzewanie"
+    },
+    "FIRMA I BIURO/Wyposażenie/Pojemniki": {
+      "subSlug": "kuchnia",
+      "comment": "Pojemniki, miski silikonowe → Dom > Kuchnia"
+    },
+    "FIRMA I BIURO/Wyposażenie/Pompy ciepła": {
+      "subSlug": "energia-i-ogrzewanie",
+      "comment": "Pompy ciepła → Dom > Energia i ogrzewanie"
+    },
+    "FIRMA I BIURO/Wyposażenie/Regały": {
+      "subSlug": "wyposazenie-lokali",
+      "comment": "Regały → Gastronomia > Wyposażenie lokali"
+    },
+    "FIRMA I BIURO/Wyposażenie/Wagi": {
+      "subSlug": "wagi-przemyslowe",
+      "comment": "Wagi → Wagi > Wagi przemysłowe"
+    },
+    "FIRMA I BIURO/Wyposażenie/Wentylatory Domowe": {
+      "subSlug": "energia-i-ogrzewanie",
+      "comment": "Wentylatory domowe → Dom > Energia i ogrzewanie"
+    },
+
+    "MOTORYZACJA/Chemia/Kleje": {
+      "subSlug": "chemia-samochodowa",
+      "comment": "Kleje samochodowe → Chemia profesjonalna > Chemia samochodowa"
+    },
+    "MOTORYZACJA/Narzędzia i sprzęt warsztatowy/Diagnostyka i pomiary": {
+      "subSlug": "wyposazenie-warsztatu-bl-2845103",
+      "comment": "Testery diagnostyczne → Motoryzacja > Wyposażenie warsztatu"
+    },
+    "MOTORYZACJA/Narzędzia i sprzęt warsztatowy/Klucze": {
+      "subSlug": "narzedzia-reczne",
+      "comment": "Klucze → Narzędzia > Narzędzia ręczne"
+    },
+    "MOTORYZACJA/Narzędzia i sprzęt warsztatowy/Kompresory i akcesoria": {
+      "subSlug": "maszyny-i-urzadzenia",
+      "comment": "Kompresory i węże pneumatyczne → Narzędzia > Maszyny i urządzenia"
+    },
+    "MOTORYZACJA/Narzędzia i sprzęt warsztatowy/Leżanki": {
+      "subSlug": "wyposazenie-warsztatu-bl-2845103",
+      "comment": "Leżanki warsztatowe → Motoryzacja > Wyposażenie warsztatu"
+    },
+    "MOTORYZACJA/Narzędzia i sprzęt warsztatowy/Obsługa układu hamulcowego": {
+      "subSlug": "wyposazenie-warsztatu-bl-2845103",
+      "comment": "Obsługa hamulców → Motoryzacja > Wyposażenie warsztatu"
+    },
+    "MOTORYZACJA/Narzędzia i sprzęt warsztatowy/Organizacja i przechowywanie narzędzi": {
+      "subSlug": "narzedzia-reczne",
+      "comment": "Opaski magnetyczne → Narzędzia > Narzędzia ręczne"
+    },
+    "MOTORYZACJA/Narzędzia i sprzęt warsztatowy/Oświetlenie/Latarki": {
+      "subSlug": "oswietlenie-domowe",
+      "comment": "Latarki → Dom > Oświetlenie (domowe)"
+    },
+    "MOTORYZACJA/Narzędzia i sprzęt warsztatowy/Tablice narzędziowe": {
+      "subSlug": "narzedzia-reczne",
+      "comment": "Tablice narzędziowe → Narzędzia > Narzędzia ręczne"
+    },
+    "MOTORYZACJA/Narzędzia i sprzęt warsztatowy/Zestawy Naprawcze": {
+      "subSlug": "narzedzia-reczne",
+      "comment": "Zestawy naprawcze → Narzędzia > Narzędzia ręczne"
+    },
+    "MOTORYZACJA/Opony i felgi/Osprzęt i akcesoria": {
+      "subSlug": "akcesoria-i-czesci",
+      "comment": "Łańcuchy śniegowe, nakrętki → Motoryzacja > Akcesoria i części"
+    },
+    "MOTORYZACJA/Wyposażenie/Do przyczep i naczep": {
+      "subSlug": "akcesoria-i-czesci",
+      "comment": "Do przyczep i naczep → Motoryzacja > Akcesoria i części"
+    },
+    "MOTORYZACJA/Wyposażenie/Elektronika samochodowa/Lodówki turystyczne": {
+      "subSlug": "kemping-i-przetrwanie",
+      "comment": "Lodówki turystyczne → Sport i turystyka > Kemping i przetrwanie"
+    },
+    "MOTORYZACJA/Wyposażenie/Lusterka": {
+      "subSlug": "akcesoria-i-czesci",
+      "comment": "Lusterka samochodowe → Motoryzacja > Akcesoria i części"
+    },
+    "MOTORYZACJA/Wyposażenie/Maty i Pokrowce": {
+      "subSlug": "akcesoria-i-czesci",
+      "comment": "Maty i pokrowce samochodowe → Motoryzacja > Akcesoria i części"
+    },
+    "MOTORYZACJA/Wyposażenie/Ochraniacze": {
+      "subSlug": "akcesoria-i-czesci",
+      "comment": "Ochraniacze → Motoryzacja > Akcesoria i części"
+    },
+    "MOTORYZACJA/Wyposażenie/Odkurzacze samochodowe": {
+      "subSlug": "akcesoria-i-czesci",
+      "comment": "Odkurzacze samochodowe → Motoryzacja > Akcesoria i części"
+    },
+    "MOTORYZACJA/Wyposażenie/Organizery i siatki do bagażnika": {
+      "subSlug": "akcesoria-i-czesci",
+      "comment": "Organizery bagażnika → Motoryzacja > Akcesoria i części"
+    },
+    "MOTORYZACJA/Wyposażenie/Osłony na szyby": {
+      "subSlug": "akcesoria-i-czesci",
+      "comment": "Osłony na szyby → Motoryzacja > Akcesoria i części"
+    },
+    "MOTORYZACJA/Wyposażenie/Pasy transportowe": {
+      "subSlug": "akcesoria-i-czesci",
+      "comment": "Pasy transportowe → Motoryzacja > Akcesoria i części"
+    },
+    "MOTORYZACJA/Wyposażenie/Popielniczki": {
+      "subSlug": "akcesoria-i-czesci",
+      "comment": "Popielniczki samochodowe → Motoryzacja > Akcesoria i części"
+    },
+    "MOTORYZACJA/Wyposażenie/Tachografy": {
+      "subSlug": "akcesoria-i-czesci",
+      "comment": "Tachografy → Motoryzacja > Akcesoria i części"
+    },
+    "MOTORYZACJA/Wyposażenie/Uchwyty, wieszaki": {
+      "subSlug": "uchwyty-samochodowe",
+      "comment": "Uchwyty i wieszaki samochodowe → Motoryzacja > Uchwyty samochodowe"
+    },
+
+    "NARZĘDZIA/Imbusy": {
+      "subSlug": "narzedzia-reczne",
+      "comment": "Imbusy → Narzędzia > Narzędzia ręczne"
+    },
+    "NARZĘDZIA/Kompresory i akcesoria": {
+      "subSlug": "maszyny-i-urzadzenia",
+      "comment": "Kompresory, pistolety pneumatyczne → Narzędzia > Maszyny i urządzenia"
+    },
+    "NARZĘDZIA/Młotki, przecinaki i dłuta": {
+      "subSlug": "narzedzia-reczne",
+      "comment": "Młotki, przecinaki, dłuta → Narzędzia > Narzędzia ręczne"
+    },
+    "NARZĘDZIA/Noże": {
+      "subSlug": "narzedzia-reczne",
+      "comment": "Noże → Narzędzia > Narzędzia ręczne"
+    },
+    "NARZĘDZIA/Opalarki": {
+      "subSlug": "elektronarzedzia",
+      "comment": "Opalarki → Narzędzia > Elektronarzędzia"
+    },
+    "NARZĘDZIA/Opaski zaciskowe": {
+      "subSlug": "akcesoria-1",
+      "comment": "Opaski zaciskowe → Narzędzia > Akcesoria"
+    },
+    "NARZĘDZIA/Palniki gazowe": {
+      "subSlug": "narzedzia-reczne",
+      "comment": "Palniki gazowe → Narzędzia > Narzędzia ręczne"
+    },
+    "NARZĘDZIA/Piły i pilarki": {
+      "subSlug": "elektronarzedzia",
+      "comment": "Piły i pilarki → Narzędzia > Elektronarzędzia"
+    },
+    "NARZĘDZIA/Pistolety do kleju": {
+      "subSlug": "narzedzia-reczne",
+      "comment": "Pistolety do kleju → Narzędzia > Narzędzia ręczne"
+    },
+    "NARZĘDZIA/Przyrządy miernicze": {
+      "subSlug": "narzedzia-reczne",
+      "comment": "Miary, taśmy, suwmiarki → Narzędzia > Narzędzia ręczne"
+    },
+    "NARZĘDZIA/Wózki narzędziowe": {
+      "subSlug": "narzedzia-reczne",
+      "comment": "Wózki narzędziowe → Narzędzia > Narzędzia ręczne"
+    },
+    "NARZĘDZIA/Wózki transportowe": {
+      "subSlug": "maszyny-i-urzadzenia",
+      "comment": "Wózki transportowe → Narzędzia > Maszyny i urządzenia"
+    },
+    "NARZĘDZIA/Zestawy narzędzi": {
+      "subSlug": "narzedzia-reczne",
+      "comment": "Zestawy narzędzi → Narzędzia > Narzędzia ręczne"
+    },
+
+    "SPORT I TURYSTYKA/Rowery i akcesoria": {
+      "subSlug": "rowery-i-akcesoria",
+      "comment": "Oświetlenie, przyczepki, trenażery → Sport i turystyka > Rowery i akcesoria"
+    },
+    "SPORT I TURYSTYKA/Siłownia i fitness": {
+      "subSlug": "fitness-i-trening",
+      "comment": "Rowery treningowe → Sport i turystyka > Fitness i trening"
+    },
+    "SPORT I TURYSTYKA/Sporty wodne": {
+      "subSlug": "sprzet-turystyczny",
+      "comment": "SUP → Sport i turystyka > Sprzęt turystyczny"
+    },
+    "SPORT I TURYSTYKA/Turystyka": {
+      "subSlug": "kemping-i-przetrwanie",
+      "comment": "Akcesoria turystyczne, naczynia, prysznice → Sport i turystyka > Kemping i przetrwanie"
+    },
+
+    "ZABAWKI/Gry/Karciane": {
+      "subSlug": "gry-edukacyjne-i-planszowe",
+      "comment": "Gry karciane → Dla dziecka > Gry edukacyjne i planszowe"
+    },
+    "ZABAWKI/Gry/Kości": {
+      "subSlug": "gry-edukacyjne-i-planszowe",
+      "comment": "Gry w kości → Dla dziecka > Gry edukacyjne i planszowe"
+    },
+    "ZABAWKI/Gry/Planszowe": {
+      "subSlug": "gry-edukacyjne-i-planszowe",
+      "comment": "Gry planszowe → Dla dziecka > Gry edukacyjne i planszowe"
+    },
+    "ZABAWKI/Klocki": {
+      "subSlug": "zabawki",
+      "comment": "Klocki (drewniane, LEGO, Playmobil) → Dla dziecka > Zabawki"
+    },
+    "ZABAWKI/Plastyczne": {
+      "subSlug": "artykuly-plastyczne-i-kreatywne",
+      "comment": "Piasek kinetyczny → Dla dziecka > Artykuły plastyczne i kreatywne"
+    },
+    "ZABAWKI/Rowery i pojazdy/Sanki": {
+      "subSlug": "pojazdy-i-jezdziki",
+      "comment": "Sanki → Dla dziecka > Pojazdy i jeździki"
+    },
+    "ZABAWKI/Zabawki ogrodowe": {
+      "subSlug": "zabawki-ogrodowe",
+      "comment": "Zabawki ogrodowe → Dla dziecka > Zabawki ogrodowe"
+    },
+
+    "ZDROWIE/Artykuły higieniczne": {
+      "subSlug": "higiena-i-utrzymanie-czystosci",
+      "comment": "Płatki i waciki higieniczne → Gastronomia > Higiena i utrzymanie czystości"
+    },
+    "ZDROWIE/Erotyka": {
+      "subSlug": "gadzety",
+      "comment": "Erotyka (BDSM, wibratory, gry) → Dom > Gadżety"
+    },
+    "ZDROWIE/Maseczki ochronne wielorazowe": {
+      "subSlug": "oczyszczacze-powietrza-i-dezynfekcja",
+      "comment": "Maseczki ochronne → Zdrowie i Uroda > Oczyszczacze powietrza i dezynfekcja"
+    },
+    "ZDROWIE/Profesjonalne wyposażenie salonów/Meble kosmetyczne": {
+      "subSlug": "meble",
+      "comment": "Meble kosmetyczne → Wyposażenie gabinetów i salonów > Meble"
+    },
+    "ZDROWIE/Specjalistyczny sprzęt medyczny/Przyrządy do usuwania kleszczy i jadu": {
+      "subSlug": "masaz-i-rehabilitacja",
+      "comment": "Przyrządy medyczne → Zdrowie i Uroda > Masaż i rehabilitacja"
+    },
+    "ZDROWIE/Specjalistyczny sprzęt medyczny/Sterylizacja i dezynfekcja": {
+      "subSlug": "oczyszczacze-powietrza-i-dezynfekcja",
+      "comment": "Sterylizacja i dezynfekcja → Zdrowie i Uroda > Oczyszczacze powietrza i dezynfekcja"
+    },
+    "ZDROWIE/Uroda/Perfumy i wody": {
+      "subSlug": "grooming",
+      "comment": "Perfumy, dezodoranty → Zdrowie i Uroda > Grooming"
+    },
+    "ZDROWIE/Uroda/Pielęgnacja": {
+      "subSlug": "grooming",
+      "comment": "Pielęgnacja ciała, golenie, depilacja → Zdrowie i Uroda > Grooming"
+    },
+    "ZDROWIE/Urządzenia medyczne": {
+      "subSlug": "masaz-i-rehabilitacja",
+      "comment": "Pulsoksymetry, termometry → Zdrowie i Uroda > Masaż i rehabilitacja"
+    },
+    "ZDROWIE/Wyposażenie szpitali i gabinetów": {
+      "subSlug": "wyposazenie-gabinetow-i-salonow-1",
+      "comment": "Stoły i łóżka do masażu → Zdrowie i Uroda > Wyposażenie gabinetów i salonów"
+    }
+  }
+}
