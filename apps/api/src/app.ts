@@ -356,13 +356,30 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(generalRateLimiter);
 
 // Health check endpoint (skip rate limiter)
-const BUILD_VERSION = '2026-04-10-v4';
+const BUILD_VERSION = '2026-04-10-v5';
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', version: BUILD_VERSION, timestamp: new Date().toISOString() });
 });
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', version: BUILD_VERSION, timestamp: new Date().toISOString() });
+});
+
+// Diagnostic endpoint to verify compiled code
+app.get('/api/debug-prefix', (req, res) => {
+  try {
+    // Import baselinkerService to test getInventoryPrefix
+    const { baselinkerService } = require('./services/baselinker.service');
+    const testNames = ['Forcetop', 'Leker', 'Hurtownia Przemysłowa', 'BTP', 'HP'];
+    const results: Record<string, string> = {};
+    for (const name of testNames) {
+      // Access private method via bracket notation for debugging
+      results[name] = (baselinkerService as any).getInventoryPrefix(name);
+    }
+    res.json({ version: BUILD_VERSION, prefixes: results });
+  } catch (err) {
+    res.json({ version: BUILD_VERSION, error: String(err) });
+  }
 });
 
 // Detailed health checks
