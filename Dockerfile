@@ -17,10 +17,11 @@ COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
 
 # Kopiowanie aplikacji API
+# Cache bust: 2026-04-10-v2
 COPY apps/api ./apps/api
 COPY packages ./packages
 
-# Instalacja zależności (cache bust: 2026-02-24)
+# Instalacja zależności (cache bust: 2026-04-10)
 RUN pnpm install --frozen-lockfile
 
 # Zmiana katalogu na API do budowania
