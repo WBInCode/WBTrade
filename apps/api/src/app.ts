@@ -461,6 +461,15 @@ app.use((err: Error, req: express.Request, res: express.Response, _next: express
 app.listen(PORT, async () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
   console.log(`📦 Environment: ${process.env.NODE_ENV || 'development'}`);
+
+  // Global error handlers to prevent silent crashes
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('⚠️ Unhandled Promise Rejection:', reason);
+  });
+  process.on('uncaughtException', (error) => {
+    console.error('💥 Uncaught Exception:', error);
+    // Don't exit — keep the server running
+  });
   
   // Initialize Redis connection
   try {
