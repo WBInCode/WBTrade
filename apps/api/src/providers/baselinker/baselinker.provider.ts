@@ -487,7 +487,7 @@ export class BaselinkerProvider implements IBaselinkerProvider {
    * @param field - Field name (e.g., 'admin_comments', 'user_comments', 'extra_field_1')
    * @param value - Field value
    */
-  async setOrderField(orderId: string | number, field: string, value: string): Promise<void> {
+  async setOrderField(orderId: string | number, field: string, value: string | number): Promise<void> {
     console.log(`[Baselinker] Setting order ${orderId} field ${field}`);
 
     await this.request('setOrderFields', {
