@@ -1,5 +1,6 @@
 import { prisma } from '../db';
 import { getProductsIndex, PRODUCTS_INDEX, meiliClient, isMeilisearchAvailable, markMeilisearchUnavailable, markMeilisearchAvailable, initializeMeilisearch } from '../lib/meilisearch';
+import type { MultiSearchParams } from 'meilisearch';
 
 // Tagi dostawy - produkty MUSZĄ mieć przynajmniej jeden z tych tagów żeby być widoczne
 const DELIVERY_TAGS = [
@@ -84,7 +85,45 @@ export interface MeiliProduct {
 
 export class SearchService {
   /**
-   * Search products using Meilisearch with Prisma fallback
+   * Build common MeiliSearch filters for product visibility
+   */
+  private buildBaseFilters(minPrice?: number, maxPrice?: number): string {
+    const filters: string[] = ['status = "ACTIVE"', 'price > 0'];
+    filters.push('inStock = true');
+    const deliveryTagsFilter = DELIVERY_TAGS.map(tag => `"${tag}"`).join(', ');
+    filters.push(`tags IN [${deliveryTagsFilter}]`);
+    filters.push('hasBaselinkerCategory = true');
+    if (minPrice !== undefined) {
+      filters.push(`price >= ${minPrice}`);
+    }
+    if (maxPrice !== undefined) {
+      filters.push(`price <= ${maxPrice}`);
+    }
+    return filters.join(' AND ');
+  }
+
+  /**
+   * Merge MeiliSearch hits from multiple queries with deduplication.
+   * Hits from earlier queries (full phrase) get priority over later ones (per-word).
+   */
+  private mergeHits<T extends { id: string }>(hitArrays: T[][], limit: number): T[] {
+    const seen = new Set<string>();
+    const merged: T[] = [];
+    for (const hits of hitArrays) {
+      for (const hit of hits) {
+        if (seen.has(hit.id)) continue;
+        seen.add(hit.id);
+        merged.push(hit);
+        if (merged.length >= limit) return merged;
+      }
+    }
+    return merged;
+  }
+
+  /**
+   * Search products using Meilisearch with Prisma fallback.
+   * For multi-word queries, performs parallel searches (full phrase + individual words)
+   * and merges results — "Google-like" experience.
    */
   async search(query: string, minPrice?: number, maxPrice?: number, limit = 100) {
     // Skip Meilisearch entirely if it's known to be down
@@ -93,60 +132,55 @@ export class SearchService {
     }
 
     try {
-      const index = getProductsIndex();
+      const filter = this.buildBaseFilters(minPrice, maxPrice);
+      const retrieveAttrs = ['id', 'name', 'slug', 'description', 'price', 'compareAtPrice', 'categoryName', 'image'];
+      const words = query.split(/\s+/).filter(w => w.length > 0);
 
-      // Build filter array - te same filtry co w products.service.ts
-      const filters: string[] = ['status = "ACTIVE"', 'price > 0'];
-      
-      // Produkty muszą być na stanie
-      filters.push('inStock = true');
-      
-      // Produkty MUSZĄ mieć tag dostawy
-      const deliveryTagsFilter = DELIVERY_TAGS.map(tag => `"${tag}"`).join(', ');
-      filters.push(`tags IN [${deliveryTagsFilter}]`);
-      
-      // Produkty MUSZĄ mieć przypisaną kategorię z Baselinker
-      filters.push('hasBaselinkerCategory = true');
-      
-      if (minPrice !== undefined) {
-        filters.push(`price >= ${minPrice}`);
+      let allHits: MeiliProduct[];
+      let processingTimeMs = 0;
+
+      if (words.length >= 2) {
+        // Multi-search: full phrase + each word separately
+        const queries = [
+          // Full phrase first (highest priority)
+          { indexUid: PRODUCTS_INDEX, q: query, limit: limit * 2, filter, matchingStrategy: 'last' as const, attributesToRetrieve: retrieveAttrs },
+          // Then each individual word
+          ...words.map(word => ({
+            indexUid: PRODUCTS_INDEX, q: word, limit: Math.ceil(limit / words.length), filter, matchingStrategy: 'last' as const, attributesToRetrieve: retrieveAttrs,
+          })),
+        ];
+
+        const multiResults = await meiliClient.multiSearch<MultiSearchParams, MeiliProduct>({ queries });
+        markMeilisearchAvailable();
+
+        processingTimeMs = Math.max(...(multiResults as any).results.map((r: any) => r.processingTimeMs));
+        const hitArrays = (multiResults as any).results.map((r: any) => r.hits) as MeiliProduct[][];
+        allHits = this.mergeHits(hitArrays, limit * 2);
+      } else {
+        // Single word — standard search
+        const index = getProductsIndex();
+        const results = await index.search<MeiliProduct>(query, {
+          limit: limit * 2,
+          filter,
+          matchingStrategy: 'last',
+          attributesToRetrieve: retrieveAttrs,
+        });
+        markMeilisearchAvailable();
+        processingTimeMs = results.processingTimeMs;
+        allHits = results.hits;
       }
-      if (maxPrice !== undefined) {
-        filters.push(`price <= ${maxPrice}`);
-      }
-
-      // Fetch more results to account for post-filtering
-      const results = await index.search<MeiliProduct>(query, {
-        limit: limit * 2,
-        filter: filters.join(' AND '),
-        matchingStrategy: 'last',
-        attributesToRetrieve: [
-          'id',
-          'name',
-          'slug',
-          'description',
-          'price',
-          'compareAtPrice',
-          'categoryName',
-          'image',
-        ],
-      });
-
-      // Mark Meilisearch as available on success
-      markMeilisearchAvailable();
 
       // If Meilisearch returned 0 hits, the index might be empty — fall back to Prisma
-      if (results.hits.length === 0) {
+      if (allHits.length === 0) {
         const prismaResults = await this.searchWithPrisma(query, minPrice, maxPrice, limit);
         if (prismaResults.products.length > 0) {
           return prismaResults;
         }
-        // Both returned nothing — genuinely no results
-        return { products: [], total: 0, processingTimeMs: results.processingTimeMs };
+        return { products: [], total: 0, processingTimeMs };
       }
 
       // Get product IDs to fetch tags for filtering
-      const productIds = results.hits.map(hit => hit.id);
+      const productIds = allHits.map(hit => hit.id);
       const productsWithTags = await prisma.product.findMany({
         where: { id: { in: productIds } },
         select: { id: true, tags: true },
@@ -154,7 +188,7 @@ export class SearchService {
       const tagsMap = new Map(productsWithTags.map(p => [p.id, p.tags]));
 
       // Filter products based on visibility rules (including image URL check)
-      const visibleHits = results.hits
+      const visibleHits = allHits
         .filter(hit => shouldProductBeVisible(tagsMap.get(hit.id) || [], hit.image))
         .slice(0, limit);
 
@@ -170,7 +204,7 @@ export class SearchService {
           images: hit.image ? [{ url: hit.image }] : [],
         })),
         total: visibleHits.length,
-        processingTimeMs: results.processingTimeMs,
+        processingTimeMs,
       };
     } catch (error) {
       console.error('Meilisearch search error, falling back to Prisma:', error);
@@ -275,7 +309,8 @@ export class SearchService {
   }
 
   /**
-   * Get search suggestions (autocomplete) using Meilisearch
+   * Get search suggestions (autocomplete) using Meilisearch.
+   * For multi-word queries, uses multiSearch to find results for each word.
    */
   async suggest(query: string, categorySlug?: string) {
     // Skip Meilisearch if it's known to be down
@@ -284,41 +319,54 @@ export class SearchService {
     }
 
     try {
-      const index = getProductsIndex();
+      const filter = this.buildBaseFilters();
+      let filterStr = filter;
 
-      // Build filter - te same filtry co w products.service.ts
-      const filters: string[] = ['status = "ACTIVE"', 'price > 0'];
-      
-      // Produkty muszą być na stanie
-      filters.push('inStock = true');
-      
-      // Produkty MUSZĄ mieć tag dostawy
-      const deliveryTagsFilter = DELIVERY_TAGS.map(tag => `"${tag}"`).join(', ');
-      filters.push(`tags IN [${deliveryTagsFilter}]`);
-      
-      // Produkty MUSZĄ mieć przypisaną kategorię z Baselinker
-      filters.push('hasBaselinkerCategory = true');
-      
       // If category slug provided, resolve to all descendant categoryIds and filter
       if (categorySlug) {
         const allCategoryIds = await this.getAllCategoryIds(categorySlug);
         if (allCategoryIds.length > 0) {
           const categoryFilter = allCategoryIds.map(id => `categoryId = "${id}"`).join(' OR ');
-          filters.push(`(${categoryFilter})`);
+          filterStr = `${filter} AND (${categoryFilter})`;
         }
       }
-      
-      const results = await index.search<MeiliProduct>(query, {
-        limit: 20,
-        filter: filters.join(' AND '),
-        matchingStrategy: 'last',
-        attributesToRetrieve: ['id', 'name', 'slug', 'image', 'price', 'categoryName'],
-      });
 
-      markMeilisearchAvailable();
+      const retrieveAttrs = ['id', 'name', 'slug', 'image', 'price', 'categoryName'];
+      const words = query.split(/\s+/).filter(w => w.length > 0);
+
+      let allHits: MeiliProduct[];
+      let processingTimeMs = 0;
+
+      if (words.length >= 2) {
+        // Multi-search: full phrase + each word separately
+        const queries = [
+          { indexUid: PRODUCTS_INDEX, q: query, limit: 20, filter: filterStr, matchingStrategy: 'last' as const, attributesToRetrieve: retrieveAttrs },
+          ...words.map(word => ({
+            indexUid: PRODUCTS_INDEX, q: word, limit: 10, filter: filterStr, matchingStrategy: 'last' as const, attributesToRetrieve: retrieveAttrs,
+          })),
+        ];
+
+        const multiResults = await meiliClient.multiSearch<MultiSearchParams, MeiliProduct>({ queries });
+        markMeilisearchAvailable();
+
+        processingTimeMs = Math.max(...(multiResults as any).results.map((r: any) => r.processingTimeMs));
+        const hitArrays = (multiResults as any).results.map((r: any) => r.hits) as MeiliProduct[][];
+        allHits = this.mergeHits(hitArrays, 20);
+      } else {
+        const index = getProductsIndex();
+        const results = await index.search<MeiliProduct>(query, {
+          limit: 20,
+          filter: filterStr,
+          matchingStrategy: 'last',
+          attributesToRetrieve: retrieveAttrs,
+        });
+        markMeilisearchAvailable();
+        processingTimeMs = results.processingTimeMs;
+        allHits = results.hits;
+      }
 
       // If Meilisearch returned 0 hits, the index might be empty — fall back to Prisma
-      if (results.hits.length === 0) {
+      if (allHits.length === 0) {
         const prismaResults = await this.suggestWithPrisma(query, categorySlug);
         if (prismaResults.products.length > 0) {
           return prismaResults;
@@ -333,12 +381,12 @@ export class SearchService {
         return {
           products: [],
           categories: categories.map((c) => ({ type: 'category' as const, ...c })),
-          processingTimeMs: results.processingTimeMs,
+          processingTimeMs,
         };
       }
 
       // Get product IDs to fetch tags from database
-      const productIds = results.hits.map(hit => hit.id);
+      const productIds = allHits.map(hit => hit.id);
       
       // Fetch tags for these products
       const productsWithTags = await prisma.product.findMany({
@@ -349,7 +397,7 @@ export class SearchService {
       const tagsMap = new Map(productsWithTags.map(p => [p.id, p.tags]));
       
       // Filter products based on delivery tag rules and image URL
-      const filteredHits = results.hits.filter(hit => {
+      const filteredHits = allHits.filter(hit => {
         const tags = tagsMap.get(hit.id) || [];
         return shouldProductBeVisible(tags, hit.image);
       }).slice(0, 8); // Limit to 8 after filtering
@@ -383,7 +431,7 @@ export class SearchService {
           type: 'category' as const,
           ...c,
         })),
-        processingTimeMs: results.processingTimeMs,
+        processingTimeMs,
       };
     } catch (error) {
       console.error('Meilisearch suggest error, falling back to Prisma:', error);
