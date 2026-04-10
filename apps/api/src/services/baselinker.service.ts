@@ -422,6 +422,25 @@ export class BaselinkerService {
     let allChangedProducts: { sku: string; name: string; changes: string[] }[] = [];
     const errors: string[] = [];
 
+    // Global sync timeout: 6 hours max (safety net for truly stuck syncs)
+    const SYNC_TIMEOUT_MS = 6 * 60 * 60 * 1000;
+    const syncStartTime = Date.now();
+    let syncTimedOut = false;
+    const syncTimeoutTimer = setTimeout(() => {
+      syncTimedOut = true;
+      console.error(`[BaselinkerSync] Global timeout reached (${SYNC_TIMEOUT_MS / 60000} min) for sync ${syncLogId}`);
+      syncProgress.requestAbort(syncLogId);
+    }, SYNC_TIMEOUT_MS);
+
+    // DB keepalive: ping every 60s to prevent Neon idle connection drops
+    const dbKeepalive = setInterval(async () => {
+      try {
+        await prisma.$queryRaw`SELECT 1`;
+      } catch (e) {
+        console.warn('[BaselinkerSync] DB keepalive ping failed:', e);
+      }
+    }, 60000);
+
     try {
       const stored = await this.getDecryptedToken();
       if (!stored) {
@@ -542,31 +561,51 @@ export class BaselinkerService {
       syncProgress.cleanup(syncLogId);
     } catch (error) {
       const isAborted = error instanceof Error && error.message === 'ABORTED';
-      console.error('Sync error:', isAborted ? 'Aborted by user' : error);
+      const isTimeout = syncTimedOut;
+      console.error('Sync error:', isAborted ? (isTimeout ? 'Global timeout' : 'Aborted by user') : error);
 
-      // Update sync log as failed
-      await prisma.baselinkerSyncLog.update({
-        where: { id: syncLogId },
-        data: {
-          status: BaselinkerSyncStatus.FAILED,
-          itemsProcessed,
-          itemsChanged,
-          changedSkus: allChangedSkus.length > 0 ? allChangedSkus : undefined,
-          errors: isAborted 
-            ? ['Przerwane przez administratora', ...errors]
-            : [error instanceof Error ? error.message : 'Unknown error', ...errors],
-          completedAt: new Date(),
-        },
-      });
+      const errorMessage = isTimeout
+        ? `Synchronizacja przekroczyła limit czasu (${SYNC_TIMEOUT_MS / 60000} min)`
+        : isAborted
+          ? 'Przerwane przez administratora'
+          : (error instanceof Error ? error.message : 'Unknown error');
+
+      // Update sync log as failed — with retry in case DB connection dropped
+      for (let retryDb = 0; retryDb < 3; retryDb++) {
+        try {
+          await prisma.baselinkerSyncLog.update({
+            where: { id: syncLogId },
+            data: {
+              status: BaselinkerSyncStatus.FAILED,
+              itemsProcessed,
+              itemsChanged,
+              changedSkus: allChangedSkus.length > 0 ? allChangedSkus : undefined,
+              errors: [errorMessage, ...errors].slice(0, 50),
+              completedAt: new Date(),
+            },
+          });
+          break; // success
+        } catch (dbErr) {
+          console.error(`[BaselinkerSync] Failed to update sync log (attempt ${retryDb + 1}/3):`, dbErr);
+          if (retryDb < 2) {
+            await new Promise(r => setTimeout(r, 2000));
+          }
+        }
+      }
       
       syncProgress.sendProgress(syncLogId, {
         type: isAborted ? 'aborted' : 'error',
         message: isAborted 
-          ? `Synchronizacja przerwana. Przetworzono: ${itemsProcessed} produktów przed przerwaniem.`
-          : `Błąd synchronizacji: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          ? `Synchronizacja przerwana. Przetworzono: ${itemsProcessed} produktów przed przerwaniem.${isTimeout ? ' (timeout)' : ''}`
+          : `Błąd synchronizacji: ${errorMessage}`,
         current: itemsProcessed,
       });
       syncProgress.cleanup(syncLogId);
+    } finally {
+      // Always clean up timers
+      clearTimeout(syncTimeoutTimer);
+      clearInterval(dbKeepalive);
+      console.log(`[BaselinkerSync] Sync ${syncLogId} finished in ${Math.round((Date.now() - syncStartTime) / 1000)}s`);
     }
   }
 
@@ -576,11 +615,11 @@ export class BaselinkerService {
    */
   async runStockSyncDirect(): Promise<{ syncLogId: string; success: boolean; itemsProcessed: number; itemsChanged: number }> {
     // Clean up stuck syncs
-    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
     await prisma.baselinkerSyncLog.updateMany({
       where: {
         status: BaselinkerSyncStatus.RUNNING,
-        startedAt: { lt: thirtyMinutesAgo },
+        startedAt: { lt: fifteenMinutesAgo },
       },
       data: {
         status: BaselinkerSyncStatus.FAILED,
@@ -1415,6 +1454,7 @@ export class BaselinkerService {
         const batch = products.slice(i, i + batchSize);
         const batchNum = Math.floor(i / batchSize) + 1;
         const totalBatches = Math.ceil(products.length / batchSize);
+        const batchStart = Date.now();
         console.log(`[BaselinkerSync] Processing products batch ${batchNum}/${totalBatches}`);
         
         if (syncLogId) {
@@ -1778,7 +1818,11 @@ export class BaselinkerService {
         });
 
         // Execute pending price updates AFTER transaction commit (avoids nested tx deadlock)
-        for (const pu of pendingPriceUpdates) {
+        // Process in parallel chunks of 5 for faster throughput
+        const PRICE_CHUNK_SIZE = 5;
+        for (let pi = 0; pi < pendingPriceUpdates.length; pi += PRICE_CHUNK_SIZE) {
+          const priceChunk = pendingPriceUpdates.slice(pi, pi + PRICE_CHUNK_SIZE);
+          await Promise.allSettled(priceChunk.map(async (pu) => {
           try {
             if (pu.type === 'product') {
               await priceHistoryService.updateProductPrice({
@@ -1798,11 +1842,12 @@ export class BaselinkerService {
           } catch (priceErr) {
             console.error(`[BaselinkerSync] Price update error for ${pu.type} ${pu.id}:`, priceErr);
           }
+          }));
         }
         } catch (batchErr) {
           // Batch transaction failed — log error and continue with next batch
           const batchErrMsg = batchErr instanceof Error ? batchErr.message : 'Unknown error';
-          console.error(`[BaselinkerSync] Batch ${batchNum}/${totalBatches} failed: ${batchErrMsg}`);
+          console.error(`[BaselinkerSync] Batch ${batchNum}/${totalBatches} failed after ${Math.round((Date.now() - batchStart) / 1000)}s: ${batchErrMsg}`);
           errors.push(`Batch ${batchNum} failed: ${batchErrMsg}`);
           if (syncLogId) {
             syncProgress.sendProgress(syncLogId, {
@@ -1811,6 +1856,8 @@ export class BaselinkerService {
             });
           }
         }
+
+        console.log(`[BaselinkerSync] Batch ${batchNum}/${totalBatches} completed in ${Math.round((Date.now() - batchStart) / 1000)}s`);
       }
     } catch (error) {
       if (error instanceof Error && error.message === 'ABORTED') throw error;
@@ -2430,15 +2477,15 @@ export class BaselinkerService {
    * Run price sync directly (awaited) — for use by BullMQ worker
    */
   async runPriceSyncDirect(): Promise<{ syncLogId: string; success: boolean; itemsProcessed: number; itemsChanged: number }> {
-    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
     await prisma.baselinkerSyncLog.updateMany({
       where: {
         status: BaselinkerSyncStatus.RUNNING,
-        startedAt: { lt: thirtyMinutesAgo },
+        startedAt: { lt: fifteenMinutesAgo },
       },
       data: {
         status: BaselinkerSyncStatus.FAILED,
-        errors: ['Sync przekroczył limit 30 minut — oznaczony jako błąd'],
+        errors: ['Sync przekroczył limit 15 minut — oznaczony jako błąd'],
         completedAt: new Date(),
       },
     });
@@ -2620,9 +2667,11 @@ export class BaselinkerService {
     }
 
     const startTime = Date.now();
+    const REINDEX_TIMEOUT_MS = 120000; // 2 minute timeout for reindex
     try {
       console.log('[BaselinkerSync] Rozpoczynam reindeksację Meilisearch...');
       
+      const reindexPromise = (async () => {
       const products = await prisma.product.findMany({
         where: { status: 'ACTIVE' },
         include: {
@@ -2665,6 +2714,13 @@ export class BaselinkerService {
       }
       
       console.log(`[BaselinkerSync] ✓ Zindeksowano ${documents.length} produktów w Meilisearch (${Date.now() - startTime}ms)`);
+      })();
+
+      // Race with timeout
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Meilisearch reindex timeout')), REINDEX_TIMEOUT_MS)
+      );
+      await Promise.race([reindexPromise, timeoutPromise]);
     } catch (error) {
       markMeilisearchUnavailable();
       console.error(`[BaselinkerSync] ⚠️ Nie udało się zindeksować (Meilisearch offline?) (${Date.now() - startTime}ms):`, error);
