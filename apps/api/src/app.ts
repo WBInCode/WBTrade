@@ -356,7 +356,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(generalRateLimiter);
 
 // Health check endpoint (skip rate limiter)
-const BUILD_VERSION = '2026-04-10-v6';
+const BUILD_VERSION = '2026-04-10-v7';
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', version: BUILD_VERSION, timestamp: new Date().toISOString() });
 });
@@ -423,6 +423,40 @@ app.get('/api/debug-prefix', async (req, res) => {
       sampleMapKeys: mapKeys,
       matchTest,
       storedInventoryId: config?.inventoryId || 'NOT SET',
+    });
+  } catch (err) {
+    res.json({ version: BUILD_VERSION, error: String(err) });
+  }
+});
+
+// Check compiled JS file content
+app.get('/api/debug-compiled', (req, res) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const jsFile = path.join(__dirname, 'services', 'baselinker.service.js');
+    const content = fs.readFileSync(jsFile, 'utf8');
+    
+    // Search for key patterns
+    const hasInvId = content.includes('[invId:');
+    const hasForcetop = content.includes("'forcetop'");
+    const hasBtpPrefix = content.includes("'btp-'");
+    const hasDebugSamples = content.includes('debugSamples');
+    const hasPrefixMatch = content.includes('prefixMatchCount');
+    
+    // Find the getInventoryPrefix function
+    const prefixFnMatch = content.match(/getInventoryPrefix[\s\S]{0,500}/);
+    
+    // Find the "Synchronizacja produktów" message
+    const syncMsgMatch = content.match(/Synchronizacja produkt[\s\S]{0,200}/);
+    
+    res.json({
+      version: BUILD_VERSION,
+      fileExists: true,
+      fileSize: content.length,
+      checks: { hasInvId, hasForcetop, hasBtpPrefix, hasDebugSamples, hasPrefixMatch },
+      getInventoryPrefixSnippet: prefixFnMatch ? prefixFnMatch[0].substring(0, 300) : 'NOT FOUND',
+      syncMessageSnippet: syncMsgMatch ? syncMsgMatch[0].substring(0, 200) : 'NOT FOUND',
     });
   } catch (err) {
     res.json({ version: BUILD_VERSION, error: String(err) });
