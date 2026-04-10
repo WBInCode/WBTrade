@@ -459,7 +459,7 @@ export class BaselinkerService {
         
         if (syncProgress.isAborted(syncLogId)) throw new Error('ABORTED');
 
-        syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Synchronizacja produktów...', phase: 'products' });
+        syncProgress.sendProgress(syncLogId, { type: 'phase', message: `Synchronizacja produktów... [invId: ${activeInventoryId}]`, phase: 'products' });
         const prodResult = await this.syncProducts(provider, activeInventoryId, mode, syncLogId);
         itemsProcessed += prodResult.processed;
         allChangedProducts.push(...prodResult.changedProducts);
@@ -490,7 +490,7 @@ export class BaselinkerService {
 
         if (syncProgress.isAborted(syncLogId)) throw new Error('ABORTED');
 
-        syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Synchronizacja produktów...', phase: 'products' });
+        syncProgress.sendProgress(syncLogId, { type: 'phase', message: `Synchronizacja produktów... [invId: ${activeInventoryId}]`, phase: 'products' });
         const result = await this.syncProducts(provider, activeInventoryId, mode, syncLogId);
         itemsProcessed = result.processed;
         allChangedProducts = result.changedProducts;
@@ -1429,7 +1429,7 @@ export class BaselinkerService {
         
         syncProgress.sendProgress(syncLogId, {
           type: 'info',
-          message: `Znaleziono ${productsToFetch.length} produktów do przetworzenia, ${skipped} pominiętych${skipDetails}`,
+          message: `Znaleziono ${productsToFetch.length} produktów do przetworzenia, ${skipped} pominiętych${skipDetails} [pfx="${inventoryPrefix}", inv=${currentInventory?.name || '?'}, dbMatch=${prefixMatchCount}]`,
           current: 0,
           total: productsToFetch.length,
           percent: 0,
