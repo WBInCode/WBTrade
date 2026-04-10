@@ -1083,7 +1083,7 @@ export class BaselinkerService {
   private getWarehouseKey(inventoryName: string): string | null {
     const lower = inventoryName.toLowerCase();
     if (lower === 'leker') return 'leker';
-    if (lower === 'btp') return 'btp';
+    if (lower === 'btp' || lower === 'forcetop') return 'btp';
     if (lower === 'hp') return 'hp';
     if (lower === 'dofirmy') return 'dofirmy';
     return null;
@@ -1098,6 +1098,7 @@ export class BaselinkerService {
     const prefixMap: Record<string, string> = {
       'leker': 'leker-',
       'btp': 'btp-',
+      'forcetop': 'btp-',
       'hp': 'hp-',
       'dofirmy': 'dofirmy-',
       'magazyn zwrotów': 'outlet-',
@@ -1116,6 +1117,7 @@ export class BaselinkerService {
     const prefixMap: Record<string, string> = {
       'leker': 'LEKER-',
       'btp': 'BTP-',
+      'forcetop': 'BTP-',
       'dofirmy': 'DOFIRMY-',
     };
     const lower = inventoryName.toLowerCase();
