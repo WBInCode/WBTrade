@@ -31,8 +31,8 @@ WORKDIR /app/apps/api
 # Generowanie klienta Prisma PRZED kompilacją TypeScript
 RUN npx prisma generate
 
-# Budowanie aplikacji
-RUN pnpm build
+# Budowanie aplikacji - clean dist/ first to ensure fresh compilation
+RUN rm -rf dist && pnpm build
 
 # Stage końcowy - tylko niezbędne pliki
 FROM node:20-alpine AS production
