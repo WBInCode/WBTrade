@@ -1084,7 +1084,7 @@ export class BaselinkerService {
     const lower = inventoryName.toLowerCase();
     if (lower === 'leker') return 'leker';
     if (lower === 'btp' || lower === 'forcetop') return 'btp';
-    if (lower === 'hp') return 'hp';
+    if (lower === 'hp' || lower === 'hurtownia przemysłowa') return 'hp';
     if (lower === 'dofirmy') return 'dofirmy';
     return null;
   }
@@ -1100,6 +1100,7 @@ export class BaselinkerService {
       'btp': 'btp-',
       'forcetop': 'btp-',
       'hp': 'hp-',
+      'hurtownia przemysłowa': 'hp-',
       'dofirmy': 'dofirmy-',
       'magazyn zwrotów': 'outlet-',
       'ikonka': '',

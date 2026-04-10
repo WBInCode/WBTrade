@@ -345,7 +345,7 @@ export default function BaselinkerPage() {
         '/admin/baselinker/sync',
         {
           method: 'POST',
-          body: JSON.stringify({ type, mode }),
+          body: JSON.stringify({ type, mode, inventoryId: selectedInventoryId || undefined }),
         },
         token
       );
