@@ -17,7 +17,8 @@ COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
 
 # Kopiowanie aplikacji API
-# Cache bust: 2026-04-10-v2
+# Force Docker layer invalidation - change this string to bust cache
+RUN echo "CACHE_BUST_2026-04-10-v5" > /tmp/.cachebust
 COPY apps/api ./apps/api
 COPY packages ./packages
 
