@@ -119,6 +119,7 @@ interface Order {
   pendingCancellationAt?: string;
   cancellationReason?: string;
   isBusinessOrder?: boolean;
+  baselinkerOrderId?: string;
 }
 
 const statusColors: Record<string, string> = {
