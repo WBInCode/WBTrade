@@ -503,10 +503,7 @@ export class BaselinkerOrdersService {
         paymentComment
       );
 
-      // 2. Set paid flag to true in Baselinker
-      await provider.setOrderField(order.baselinkerOrderId, 'paid', 1);
-
-      // 3. Update status to "Nowe zamówienia" (paid)
+      // 2. Update status to "Nowe zamówienia" (paid)
       await provider.setOrderStatus(order.baselinkerOrderId, BL_STATUS.NEW_ORDER);
 
       console.log(`[BaselinkerOrders] Order ${order.orderNumber} marked as paid in Baselinker (${order.total} PLN, status: ${BL_STATUS.NEW_ORDER})`);
