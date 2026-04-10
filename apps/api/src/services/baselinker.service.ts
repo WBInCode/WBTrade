@@ -1264,7 +1264,7 @@ export class BaselinkerService {
       if (syncLogId) {
         syncProgress.sendProgress(syncLogId, {
           type: 'info',
-          message: `Pobieranie listy produktów z Baselinker (tryb: ${mode || 'all'})...`,
+          message: `Pobieranie listy produktów z Baselinker (tryb: ${mode || 'all'})... [inv: ${currentInventory?.name || inventoryId}, prefix: "${inventoryPrefix}"]`,
         });
       }
       
@@ -1308,6 +1308,16 @@ export class BaselinkerService {
 
       console.log(`[BaselinkerSync] Found ${existingProducts.length} existing products in database`);
 
+      // Debug: count how many DB products match the current prefix
+      const prefixMatchCount = existingProducts.filter(p => p.baselinkerProductId?.startsWith(inventoryPrefix)).length;
+      console.log(`[BaselinkerSync] DB products matching prefix "${inventoryPrefix}": ${prefixMatchCount}`);
+      if (syncLogId) {
+        syncProgress.sendProgress(syncLogId, {
+          type: 'info',
+          message: `Baza: ${existingProducts.length} produktów, ${prefixMatchCount} z prefixem "${inventoryPrefix}"`,
+        });
+      }
+
       // First pass: identify which products need updating based on mode
       const productsToFetch: number[] = [];
       
@@ -1315,10 +1325,17 @@ export class BaselinkerService {
       let skippedExisting = 0;
       let skippedUnchanged = 0;
       
+      // Debug first 3 products
+      const debugSamples: string[] = [];
+      
       for (const blProduct of productList) {
         const blIdRaw = blProduct.id.toString();
         const blId = `${inventoryPrefix}${blIdRaw}`;
         const existing = existingMap.get(blId);
+        
+        if (debugSamples.length < 3) {
+          debugSamples.push(`BL:${blIdRaw} → "${blId}" → ${existing ? 'FOUND' : 'NOT FOUND'}`);
+        }
         
         // MODE: fetch-all - pobierz wszystkie produkty (inicjalizacja)
         if (mode === 'fetch-all') {
@@ -1387,11 +1404,18 @@ export class BaselinkerService {
       }
 
       console.log(`[BaselinkerSync] ${productsToFetch.length} products to process, ${skipped} skipped (mode: ${mode || 'all'})`);
+      console.log(`[BaselinkerSync] Debug samples:`, debugSamples);
       if (mode === 'new-only') {
         console.log(`[BaselinkerSync] Skip reasons: existing=${skippedExisting}`);
       }
 
       if (syncLogId) {
+        // Show debug info in admin console
+        syncProgress.sendProgress(syncLogId, {
+          type: 'info',
+          message: `Debug: ${debugSamples.join(' | ')}`,
+        });
+        
         let skipDetails = '';
         if (mode === 'new-only') {
           skipDetails = skippedExisting > 0 ? ` (${skippedExisting} już istnieje)` : '';
