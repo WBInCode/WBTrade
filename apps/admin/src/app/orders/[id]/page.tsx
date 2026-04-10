@@ -119,6 +119,7 @@ interface Order {
   pendingCancellationAt?: string;
   cancellationReason?: string;
   isBusinessOrder?: boolean;
+  baselinkerOrderId?: string;
 }
 
 const statusColors: Record<string, string> = {
@@ -937,12 +938,32 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                       setSyncing(true);
                       setSyncMessage(null);
                       const token = getAuthToken();
+                      const headers: Record<string, string> = {
+                        'Content-Type': 'application/json',
+                        ...(token && { Authorization: `Bearer ${token}` }),
+                      };
+
+                      // If order is not synced to Baselinker yet, push it first
+                      if (!order.baselinkerOrderId) {
+                        const pushRes = await fetch(`${API_URL}/admin/baselinker/orders/${order.id}/sync`, {
+                          method: 'POST',
+                          headers,
+                          body: JSON.stringify({ force: true }),
+                        });
+                        const pushData = await pushRes.json();
+                        if (!pushRes.ok || !pushData.success) {
+                          setSyncMessage({ type: 'error', text: pushData.error || pushData.message || 'Błąd wysyłania zamówienia do Baselinker' });
+                          return;
+                        }
+                        setSyncMessage({ type: 'success', text: 'Zamówienie wysłane do Baselinker' });
+                        await loadOrder();
+                        return;
+                      }
+
+                      // Order already in BL — sync delivery tracking
                       const res = await fetch(`${API_URL}/orders/${order.id}/sync-delivery`, {
                         method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          ...(token && { Authorization: `Bearer ${token}` }),
-                        },
+                        headers,
                       });
                       const data = await res.json();
                       if (res.ok && data.success) {
@@ -962,7 +983,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition-colors disabled:opacity-50"
                 >
                   <RefreshCcw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-                  {syncing ? 'Synchronizuję...' : 'Synchronizuj z Baselinker'}
+                  {syncing ? 'Synchronizuję...' : order.baselinkerOrderId ? 'Synchronizuj dostawę' : 'Wyślij do Baselinker'}
                 </button>
               )}
               {syncMessage && (
