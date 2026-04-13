@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Dimensions,
   Image,
-  useColorScheme,
 } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
@@ -32,10 +31,10 @@ function waitForData(maxMs: number): Promise<void> {
 
 interface AnimatedSplashProps {
   onFinish: () => void;
+  colorScheme?: 'light' | 'dark';
 }
 
-export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
-  const colorScheme = useColorScheme();
+export default function AnimatedSplash({ onFinish, colorScheme = 'light' }: AnimatedSplashProps) {
   const isDark = colorScheme === 'dark';
 
   const logoScale = useRef(new Animated.Value(0.3)).current;
