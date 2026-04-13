@@ -356,7 +356,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(generalRateLimiter);
 
 // Health check endpoint (skip rate limiter)
-const BUILD_VERSION = '2026-04-13-v9';
+const BUILD_VERSION = '2026-04-13-v10';
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', version: BUILD_VERSION, timestamp: new Date().toISOString() });
 });
@@ -504,6 +504,534 @@ app.use('/api/health', healthRoutes);
     console.error('[HOTFIX] Failed to patch:', err);
   }
 })();
+
+// =====================================================================
+// SELF-CONTAINED PRODUCT UPDATE ENDPOINT
+// Completely bypasses baselinker.service.ts (which doesn't deploy on Render).
+// Connects directly to Baselinker API, matches products by baselinkerProductId
+// with correct prefix (btp- for Forcetop, hp- for HP, leker- for Leker).
+// =====================================================================
+
+const INVENTORY_PREFIX_MAP: Record<string, string> = {
+  'leker': 'leker-',
+  'btp': 'btp-',
+  'forcetop': 'btp-',
+  'hp': 'hp-',
+  'hurtownia przemysłowa': 'hp-',
+  'dofirmy': 'dofirmy-',
+  'magazyn zwrotów': 'outlet-',
+  'ikonka': '',
+  'główny': '',
+};
+
+const WAREHOUSE_KEY_MAP: Record<string, string> = {
+  'leker': 'leker',
+  'btp': 'btp',
+  'forcetop': 'btp',
+  'hp': 'hp',
+  'hurtownia przemysłowa': 'hp',
+  'dofirmy': 'dofirmy',
+};
+
+const SKU_PREFIX_MAP: Record<string, string> = {
+  'leker': 'LEKER-',
+  'btp': 'BTP-',
+  'forcetop': 'BTP-',
+  'dofirmy': 'DOFIRMY-',
+};
+
+// Helper: call Baselinker API
+async function callBaselinkerAPI(apiToken: string, method: string, params: Record<string, any> = {}): Promise<any> {
+  const formData = new URLSearchParams();
+  formData.append('method', method);
+  formData.append('parameters', JSON.stringify(params));
+
+  const response = await fetch('https://api.baselinker.com/connector.php', {
+    method: 'POST',
+    headers: {
+      'X-BLToken': apiToken,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: formData.toString(),
+    signal: AbortSignal.timeout(60000),
+  });
+
+  const data = await response.json();
+  if (data.status === 'ERROR') {
+    throw new Error(`Baselinker API error: ${data.error_message || data.error_code || 'Unknown'}`);
+  }
+  return data;
+}
+
+// POST /api/admin/direct-update - self-contained product update
+app.post('/api/admin/direct-update', async (req, res) => {
+  try {
+    // 1. Auth check
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Token wymagany' });
+    }
+    const token = authHeader.substring(7);
+    const { secureAuthService } = await import('./services/auth.service.secure');
+    const payload = await secureAuthService.verifyAccessToken(token);
+    if (payload.role !== 'ADMIN') {
+      return res.status(403).json({ message: 'Brak uprawnień' });
+    }
+
+    const { inventoryId } = req.body;
+    if (!inventoryId) {
+      return res.status(400).json({ message: 'inventoryId jest wymagany' });
+    }
+
+    // 2. Get Baselinker token from DB
+    const { prisma } = await import('./db');
+    const { decryptToken } = await import('./lib/encryption');
+    const config = await prisma.baselinkerConfig.findFirst();
+    if (!config) {
+      return res.status(400).json({ message: 'Brak konfiguracji Baselinker' });
+    }
+
+    let apiToken: string;
+    try {
+      apiToken = decryptToken(config.apiTokenEncrypted, config.encryptionIv, config.authTag);
+    } catch {
+      apiToken = process.env.BASELINKER_API_TOKEN || '';
+      if (!apiToken) {
+        return res.status(500).json({ message: 'Nie udalo się odszyfrować tokena Baselinker' });
+      }
+    }
+
+    // 3. Create sync log
+    const { BaselinkerSyncStatus } = await import('@prisma/client');
+    const syncLog = await prisma.baselinkerSyncLog.create({
+      data: { type: 'PRODUCTS', status: BaselinkerSyncStatus.RUNNING },
+    });
+    const syncLogId = syncLog.id;
+
+    // 4. Get syncProgress manager
+    const { syncProgress } = await import('./services/sync-progress');
+
+    // Send initial response with syncLogId
+    res.json({ syncLogId, message: 'Direct update started' });
+
+    // 5. Run sync in background
+    (async () => {
+      try {
+        // Get inventory name from Baselinker
+        syncProgress.sendProgress(syncLogId, {
+          type: 'phase',
+          message: `Rozpoczynanie synchronizacji products (update-only)...`,
+          phase: 'init',
+          mode: 'update-only',
+        });
+
+        const inventoriesData = await callBaselinkerAPI(apiToken, 'getInventories');
+        const allInventories = inventoriesData.inventories || [];
+        const currentInventory = allInventories.find((inv: any) => inv.inventory_id.toString() === inventoryId.toString());
+
+        if (!currentInventory) {
+          syncProgress.sendProgress(syncLogId, { type: 'error', message: `Nie znaleziono magazynu o ID ${inventoryId}` });
+          await prisma.baselinkerSyncLog.update({ where: { id: syncLogId }, data: { status: BaselinkerSyncStatus.FAILED, errors: ['Inventory not found'], completedAt: new Date() } });
+          return;
+        }
+
+        const invName = currentInventory.name.trim();
+        const invNameLower = invName.toLowerCase();
+        const prefix = INVENTORY_PREFIX_MAP[invNameLower] ?? '';
+        const warehouseKey = WAREHOUSE_KEY_MAP[invNameLower] ?? null;
+        const skuPrefix = SKU_PREFIX_MAP[invNameLower] ?? '';
+
+        syncProgress.sendProgress(syncLogId, {
+          type: 'info',
+          message: `Magazyn: ${invName} (ID: ${inventoryId}), prefix: "${prefix}", warehouse: ${warehouseKey || 'unknown'}, skuPrefix: "${skuPrefix}"`,
+        });
+
+        console.log(`[DirectUpdate] Inventory: ${invName}, prefix: "${prefix}", warehouse: ${warehouseKey}`);
+
+        // 6. Get ALL product IDs from Baselinker (paginated)
+        syncProgress.sendProgress(syncLogId, {
+          type: 'phase',
+          message: `Synchronizacja produktów...`,
+          phase: 'products',
+        });
+
+        syncProgress.sendProgress(syncLogId, {
+          type: 'info',
+          message: `Pobieranie listy produktów z Baselinker (tryb: update-only)...`,
+        });
+
+        const allBlProducts: Array<{ id: number; sku: string; ean: string; name: string; quantity: number; price: number }> = [];
+        let page = 1;
+        let hasMore = true;
+
+        while (hasMore) {
+          const listData = await callBaselinkerAPI(apiToken, 'getInventoryProductsList', {
+            inventory_id: parseInt(inventoryId),
+            page,
+          });
+
+          const products = listData.products || {};
+          const productArray = Object.entries(products).map(([id, data]: [string, any]) => ({
+            id: parseInt(id),
+            sku: data.sku || '',
+            ean: data.ean || '',
+            name: data.name || '',
+            quantity: data.quantity || 0,
+            price: data.price || 0,
+          }));
+
+          allBlProducts.push(...productArray);
+          hasMore = productArray.length >= 1000;
+          page++;
+
+          if (syncProgress.isAborted(syncLogId)) {
+            syncProgress.sendProgress(syncLogId, { type: 'aborted', message: 'Synchronizacja przerwana przez użytkownika' });
+            await prisma.baselinkerSyncLog.update({ where: { id: syncLogId }, data: { status: BaselinkerSyncStatus.FAILED, errors: ['Aborted by user'], completedAt: new Date() } });
+            return;
+          }
+        }
+
+        syncProgress.sendProgress(syncLogId, {
+          type: 'info',
+          message: `Pobrano ${allBlProducts.length} produktów z Baselinker.`,
+        });
+
+        // 7. Load existing products from DB - ONLY with matching prefix
+        const existingProducts = await prisma.product.findMany({
+          where: prefix
+            ? { baselinkerProductId: { startsWith: prefix } }
+            : { baselinkerProductId: { not: null } },
+          select: {
+            id: true,
+            baselinkerProductId: true,
+            name: true,
+            sku: true,
+            barcode: true,
+            price: true,
+          },
+        });
+
+        const existingMap = new Map(
+          existingProducts.map((p: any) => [p.baselinkerProductId as string, p])
+        );
+
+        syncProgress.sendProgress(syncLogId, {
+          type: 'info',
+          message: `Baza: ${existingProducts.length} produktów z prefixem "${prefix}"`,
+        });
+
+        console.log(`[DirectUpdate] DB products with prefix "${prefix}": ${existingProducts.length}`);
+
+        // 8. Match BL products to DB products
+        const productsToUpdate: Array<{ blProduct: any; dbProduct: any }> = [];
+        let skipped = 0;
+        const debugSamples: string[] = [];
+
+        for (const blProduct of allBlProducts) {
+          const blIdRaw = blProduct.id.toString();
+          const blId = `${prefix}${blIdRaw}`;
+          const existing = existingMap.get(blId);
+
+          if (debugSamples.length < 5) {
+            debugSamples.push(`BL:${blIdRaw} → "${blId}" → ${existing ? 'FOUND (' + existing.name?.substring(0, 30) + ')' : 'NOT FOUND'}`);
+          }
+
+          if (existing) {
+            productsToUpdate.push({ blProduct, dbProduct: existing });
+          } else {
+            skipped++;
+          }
+        }
+
+        // Log debug samples
+        for (const sample of debugSamples) {
+          syncProgress.sendProgress(syncLogId, { type: 'info', message: `[DEBUG] ${sample}` });
+          console.log(`[DirectUpdate] ${sample}`);
+        }
+
+        syncProgress.sendProgress(syncLogId, {
+          type: 'info',
+          message: `Znaleziono ${productsToUpdate.length} produktów do aktualizacji, ${skipped} pominiętych (nie istnieje w bazie)`,
+          current: 0,
+          total: productsToUpdate.length,
+          percent: 0,
+        });
+
+        console.log(`[DirectUpdate] To update: ${productsToUpdate.length}, skipped: ${skipped}`);
+
+        if (productsToUpdate.length === 0) {
+          syncProgress.sendProgress(syncLogId, {
+            type: 'warning',
+            message: `Brak produktów do aktualizacji. Sprawdź czy prefix "${prefix}" jest poprawny.`,
+          });
+          syncProgress.sendProgress(syncLogId, { type: 'complete', message: 'Synchronizacja zakończona (0 produktów)' });
+          await prisma.baselinkerSyncLog.update({ where: { id: syncLogId }, data: { status: 'SUCCESS' as any, itemsProcessed: 0, completedAt: new Date() } });
+          return;
+        }
+
+        // 9. Fetch full product data from Baselinker in batches and update DB
+        const BATCH_SIZE = 50;
+        let processed = 0;
+        let updated = 0;
+        let errors = 0;
+
+        for (let i = 0; i < productsToUpdate.length; i += BATCH_SIZE) {
+          if (syncProgress.isAborted(syncLogId)) {
+            syncProgress.sendProgress(syncLogId, { type: 'aborted', message: `Przerwano po ${processed} produktach` });
+            await prisma.baselinkerSyncLog.update({ where: { id: syncLogId }, data: { status: BaselinkerSyncStatus.FAILED, errors: ['Aborted'], completedAt: new Date() } });
+            return;
+          }
+
+          const batch = productsToUpdate.slice(i, i + BATCH_SIZE);
+          const blIds = batch.map(b => b.blProduct.id);
+
+          try {
+            // Get detailed product data from Baselinker
+            const detailData = await callBaselinkerAPI(apiToken, 'getInventoryProductsData', {
+              inventory_id: parseInt(inventoryId),
+              products: blIds,
+            });
+
+            const productsData = detailData.products || {};
+
+            for (const item of batch) {
+              try {
+                const blDetail = productsData[item.blProduct.id.toString()];
+                if (!blDetail) {
+                  processed++;
+                  continue;
+                }
+
+                // Extract product data
+                let productName = '';
+                if (blDetail.text_fields) {
+                  productName = blDetail.text_fields.name || '';
+                  if (!productName && blDetail.text_fields['pl']?.name) {
+                    productName = blDetail.text_fields['pl'].name;
+                  }
+                  if (!productName) {
+                    for (const langCode of Object.keys(blDetail.text_fields)) {
+                      const tf = blDetail.text_fields[langCode];
+                      if (typeof tf === 'object' && tf?.name) {
+                        productName = tf.name;
+                        break;
+                      }
+                    }
+                  }
+                }
+                if (!productName) productName = blDetail.name || item.blProduct.name || '';
+
+                // Description
+                let description = '';
+                if (blDetail.text_fields) {
+                  description = blDetail.text_fields.description || blDetail.text_fields.extra_field_1 || '';
+                  if (!description && blDetail.text_fields['pl']) {
+                    description = blDetail.text_fields['pl'].description || blDetail.text_fields['pl'].extra_field_1 || '';
+                  }
+                }
+
+                // Price
+                let price = 0;
+                if (blDetail.prices && typeof blDetail.prices === 'object') {
+                  const priceValues = Object.values(blDetail.prices).map((p: any) => parseFloat(String(p))).filter((p: number) => p > 0);
+                  price = priceValues.length > 0 ? priceValues[0] : 0;
+                }
+                if (price === 0 && blDetail.price_brutto) {
+                  price = parseFloat(blDetail.price_brutto) || 0;
+                }
+
+                // EAN
+                const ean = (blDetail.ean && String(blDetail.ean).trim()) || null;
+
+                // SKU
+                const blSku = blDetail.sku || item.blProduct.sku || '';
+
+                // Build update data - only update what's changed
+                const updateData: Record<string, any> = {};
+                
+                if (productName && productName !== item.dbProduct.name) {
+                  updateData.name = productName;
+                }
+                if (ean && ean !== item.dbProduct.barcode) {
+                  updateData.barcode = ean;
+                }
+                if (description) {
+                  updateData.description = description;
+                }
+                if (price > 0 && Math.abs(price - parseFloat(item.dbProduct.price?.toString() || '0')) > 0.01) {
+                  updateData.price = price;
+                }
+
+                if (Object.keys(updateData).length > 0) {
+                  await prisma.product.update({
+                    where: { id: item.dbProduct.id },
+                    data: updateData,
+                  });
+                  updated++;
+                }
+
+                processed++;
+                const percent = Math.round((processed / productsToUpdate.length) * 100);
+                
+                if (processed % 50 === 0 || processed === productsToUpdate.length) {
+                  syncProgress.sendProgress(syncLogId, {
+                    type: 'progress',
+                    message: `Zaktualizowano ${processed}/${productsToUpdate.length}...`,
+                    current: processed,
+                    total: productsToUpdate.length,
+                    percent,
+                    productName: productName?.substring(0, 60),
+                    sku: blSku,
+                  });
+                }
+              } catch (productErr) {
+                errors++;
+                processed++;
+                console.error(`[DirectUpdate] Error updating product ${item.blProduct.id}:`, productErr);
+              }
+            }
+          } catch (batchErr) {
+            console.error(`[DirectUpdate] Batch error:`, batchErr);
+            syncProgress.sendProgress(syncLogId, {
+              type: 'error',
+              message: `Błąd pobierania partii: ${batchErr instanceof Error ? batchErr.message : 'Unknown'}`,
+            });
+            errors++;
+            processed += batch.length;
+          }
+
+          // Rate limit: small delay between batches
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        // 10. Sync stock
+        syncProgress.sendProgress(syncLogId, {
+          type: 'phase',
+          message: 'Synchronizacja stanów magazynowych...',
+          phase: 'stock',
+        });
+
+        try {
+          // Get default location (MAIN warehouse)
+          let defaultLocation = await prisma.location.findFirst({
+            where: { code: 'MAIN', type: 'WAREHOUSE', isActive: true },
+          });
+          if (!defaultLocation) {
+            defaultLocation = await prisma.location.create({
+              data: { name: 'Magazyn główny', code: 'MAIN', type: 'WAREHOUSE', isActive: true },
+            });
+          }
+
+          syncProgress.sendProgress(syncLogId, {
+            type: 'info',
+            message: `📦 Pobieranie stanów z magazynu: ${invName}...`,
+          });
+
+          const stockData = await callBaselinkerAPI(apiToken, 'getInventoryProductsStock', {
+            inventory_id: parseInt(inventoryId),
+            page: 1,
+          });
+
+          const stockProducts = stockData.products || {};
+          let stockUpdated = 0;
+
+          for (const [blIdRaw, warehouses] of Object.entries(stockProducts)) {
+            const blId = `${prefix}${blIdRaw}`;
+            const dbProduct = existingMap.get(blId);
+            if (!dbProduct) continue;
+
+            // Get total stock across all warehouses
+            let totalStock = 0;
+            if (typeof warehouses === 'object') {
+              for (const qty of Object.values(warehouses as Record<string, number>)) {
+                totalStock += Number(qty) || 0;
+              }
+            }
+
+            // Update inventory for default variant
+            const variant = await prisma.productVariant.findFirst({
+              where: { productId: dbProduct.id },
+              select: { id: true },
+            });
+
+            if (variant) {
+              await prisma.inventory.upsert({
+                where: {
+                  variantId_locationId: {
+                    variantId: variant.id,
+                    locationId: defaultLocation.id,
+                  },
+                },
+                create: {
+                  variantId: variant.id,
+                  locationId: defaultLocation.id,
+                  quantity: totalStock,
+                  reserved: 0,
+                  minimum: 0,
+                },
+                update: { quantity: totalStock },
+              });
+              stockUpdated++;
+            }
+          }
+
+          syncProgress.sendProgress(syncLogId, {
+            type: 'info',
+            message: `📦 Forcetop: pobrano ${Object.keys(stockProducts).length} pozycji, dopasowywanie...`,
+          });
+
+          syncProgress.sendProgress(syncLogId, {
+            type: 'success',
+            message: `Zaktualizowano stany magazynowe dla ${stockUpdated} produktów`,
+          });
+        } catch (stockErr) {
+          syncProgress.sendProgress(syncLogId, {
+            type: 'error',
+            message: `Błąd synchronizacji stanów: ${stockErr instanceof Error ? stockErr.message : 'Unknown'}`,
+          });
+        }
+
+        // 11. Done
+        syncProgress.sendProgress(syncLogId, {
+          type: 'complete',
+          message: `Synchronizacja zakończona! Zaktualizowano ${updated} produktów, ${errors} błędów.`,
+          current: processed,
+          total: productsToUpdate.length,
+          percent: 100,
+        });
+
+        await prisma.baselinkerSyncLog.update({
+          where: { id: syncLogId },
+          data: {
+            status: 'SUCCESS' as any,
+            itemsProcessed: processed,
+            completedAt: new Date(),
+          },
+        });
+
+        console.log(`[DirectUpdate] Done! Updated: ${updated}, errors: ${errors}, skipped: ${skipped}`);
+
+      } catch (err) {
+        console.error('[DirectUpdate] Fatal error:', err);
+        syncProgress.sendProgress(syncLogId, {
+          type: 'error',
+          message: `Błąd synchronizacji: ${err instanceof Error ? err.message : 'Unknown'}`,
+        });
+        await prisma.baselinkerSyncLog.update({
+          where: { id: syncLogId },
+          data: { status: BaselinkerSyncStatus.FAILED, errors: [String(err)], completedAt: new Date() },
+        });
+      }
+    })();
+
+  } catch (err) {
+    console.error('[DirectUpdate] Setup error:', err);
+    res.status(500).json({ message: `Error: ${err instanceof Error ? err.message : 'Unknown'}` });
+  }
+});
+
+// SSE progress endpoint for direct-update (shared with baselinker sync progress)
+// Uses the same syncProgress manager - clients connect via /api/admin/baselinker/sync/progress/:syncLogId
 
 // Root endpoint - API info
 app.get('/', (req, res) => {
@@ -657,7 +1185,7 @@ app.listen(PORT, async () => {
       createBaselinkerSyncWorker();
       await scheduleBaselinkerSync();
       bullmqSyncStarted = true;
-      console.log('✅ Baselinker sync scheduled via BullMQ (orders: 15min, delivery: 15min, stock: 2h, ceny XML: codziennie 06:00)');
+      console.log('✅ Baselinker sync scheduled via BullMQ (orders: 15min, delivery: 15min, stock: 2h, ceny: 2h)');
     } catch (redisErr) {
       console.warn('⚠️  BullMQ/Redis unavailable — falling back to setInterval for delivery sync:', (redisErr as Error).message);
     }
