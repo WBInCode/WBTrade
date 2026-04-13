@@ -329,15 +329,13 @@ export default function UpdateProductsPage() {
     setElapsedTime('0s');
 
     try {
-      const res = await fetch(`${API_URL}/admin/baselinker/sync`, {
+      const res = await fetch(`${API_URL}/admin/direct-update`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          type: 'products',
-          mode: 'update-only',
           inventoryId,
         }),
       });
