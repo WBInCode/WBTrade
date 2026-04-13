@@ -401,6 +401,13 @@ export default function BaselinkerPage() {
         </div>
         <div className="flex items-center gap-3">
           <Link
+            href="/baselinker/dry-run"
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2 text-sm"
+          >
+            <Eye className="w-4 h-4" />
+            Podgląd hurtowni
+          </Link>
+          <Link
             href="/baselinker/import"
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2 text-sm"
           >

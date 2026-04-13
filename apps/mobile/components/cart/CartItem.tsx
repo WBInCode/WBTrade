@@ -4,9 +4,9 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Alert,
   Animated,
 } from 'react-native';
+import { customAlert } from '../ui/CustomAlert';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useThemeColors } from '../../hooks/useThemeColors';
@@ -49,7 +49,7 @@ export default function CartItem({ item, onUpdateQuantity, onRemove }: CartItemP
 
   const handleDecrease = () => {
     if (item.quantity <= 1) {
-      Alert.alert(
+      customAlert(
         'Usuń produkt',
         'Czy na pewno chcesz usunąć ten produkt z koszyka?',
         [
@@ -64,14 +64,14 @@ export default function CartItem({ item, onUpdateQuantity, onRemove }: CartItemP
 
   const handleIncrease = () => {
     if (item.quantity >= availableStock) {
-      Alert.alert('Brak w magazynie', `Maksymalna dostępna ilość: ${availableStock}`);
+      customAlert('Brak w magazynie', `Maksymalna dostępna ilość: ${availableStock}`);
       return;
     }
     onUpdateQuantity(item.id, item.quantity + 1);
   };
 
   const handleRemove = () => {
-    Alert.alert(
+    customAlert(
       'Usuń produkt',
       `Czy na pewno chcesz usunąć "${product.name}" z koszyka?`,
       [

@@ -1239,6 +1239,113 @@ export class BaselinkerService {
   }
 
   /**
+   * Dry run: Fetch products from a specific Baselinker inventory without saving to DB.
+   * Returns preview data for admin panel.
+   * @param inventoryId - Baselinker inventory ID to fetch from
+   * @param limit - Maximum number of products to fetch (default 100)
+   */
+  async dryRunFetchProducts(inventoryId: string, limit: number = 100): Promise<{
+    inventoryName: string;
+    inventoryId: string;
+    warehouseKey: string | null;
+    prefix: string;
+    skuPrefix: string;
+    totalInBaselinker: number;
+    fetchedCount: number;
+    alreadyInDb: number;
+    products: Array<{
+      baselinkerProductId: string;
+      name: string;
+      sku: string;
+      ean: string | null;
+      rawPrice: number;
+      finalPrice: number;
+      quantity: number;
+      categoryId: number | null;
+      tags: string[];
+      imageCount: number;
+      variantCount: number;
+      existsInDb: boolean;
+    }>;
+  }> {
+    const provider = await this.createProvider();
+    const priceRules = await this.loadPriceRules();
+
+    // Get inventory info
+    const allInventories = await provider.getInventories();
+    const currentInventory = allInventories.find(inv => inv.inventory_id.toString() === inventoryId);
+    if (!currentInventory) {
+      throw new Error(`Nie znaleziono magazynu o ID: ${inventoryId}. Dostępne: ${allInventories.map(i => `${i.name} (${i.inventory_id})`).join(', ')}`);
+    }
+
+    const warehouseKey = this.getWarehouseKey(currentInventory.name);
+    const inventoryPrefix = this.getInventoryPrefix(currentInventory.name);
+    const skuPrefix = this.getSkuPrefix(currentInventory.name);
+
+    console.log(`[DryRun] Fetching products from "${currentInventory.name}" (ID: ${inventoryId}), limit: ${limit}`);
+
+    // Fetch product list (lightweight - just IDs and basic info)
+    const productList = await provider.getAllInventoryProducts(inventoryId);
+    const totalInBaselinker = productList.length;
+
+    // Take only the first `limit` products for detailed fetch
+    const productIdsToFetch = productList.slice(0, limit).map(p => p.id);
+
+    // Fetch detailed data
+    const detailedProducts = await provider.getInventoryProductsData(inventoryId, productIdsToFetch);
+
+    // Check which products already exist in DB
+    const blIds = detailedProducts.map(p => `${inventoryPrefix}${p.id}`);
+    const existingProducts = await prisma.product.findMany({
+      where: { baselinkerProductId: { in: blIds } },
+      select: { baselinkerProductId: true },
+    });
+    const existingSet = new Set(existingProducts.map(p => p.baselinkerProductId));
+
+    // Build preview data
+    const products = detailedProducts.map(blProduct => {
+      const baselinkerProductId = `${inventoryPrefix}${blProduct.id}`;
+      const name = this.getProductName(blProduct);
+      const rawPrice = blProduct.price_brutto ? parseFloat(String(blProduct.price_brutto)) : 0;
+      const finalPrice = this.getProductPrice(blProduct, warehouseKey, priceRules);
+      const ean = this.getProductEan(blProduct);
+      const sku = blProduct.sku ? `${skuPrefix}${blProduct.sku}` : `${skuPrefix}BL-${blProduct.id}`;
+      const tags = (blProduct.tags || []).map((t: string) => t.trim()).filter(Boolean);
+
+      return {
+        baselinkerProductId,
+        name: name || `Product ${blProduct.id}`,
+        sku,
+        ean,
+        rawPrice,
+        finalPrice,
+        quantity: blProduct.quantity || 0,
+        categoryId: blProduct.category_id || null,
+        tags,
+        imageCount: blProduct.images ? Object.keys(blProduct.images).length : 0,
+        variantCount: blProduct.variants?.length || 0,
+        existsInDb: existingSet.has(baselinkerProductId),
+      };
+    });
+
+    const alreadyInDb = products.filter(p => p.existsInDb).length;
+
+    console.log(`[DryRun] Fetched ${products.length}/${totalInBaselinker} products from "${currentInventory.name}". Already in DB: ${alreadyInDb}`);
+
+    return {
+      inventoryName: currentInventory.name,
+      inventoryId,
+      warehouseKey,
+      prefix: inventoryPrefix,
+      skuPrefix,
+      totalInBaselinker,
+      fetchedCount: products.length,
+      alreadyInDb,
+      products,
+    };
+  }
+
+  /**
    * Sync products from Baselinker (incremental - only changes)
    * @param mode - 'new-only' (tylko nowe produkty, bez stanów 0), 'update-only' (tylko aktualizacja istniejących), undefined (wszystko)
    * @param syncLogId - optional sync log ID for progress tracking

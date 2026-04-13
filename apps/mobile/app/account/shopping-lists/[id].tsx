@@ -5,7 +5,6 @@ import {
   Text,
   FlatList,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   RefreshControl,
   StyleSheet,
@@ -20,6 +19,7 @@ import { Image } from 'expo-image';
 import { FontAwesome } from '@expo/vector-icons';
 import { useThemeColors } from '../../../hooks/useThemeColors';
 import type { ThemeColors } from '../../../constants/Colors';
+import { customAlert } from '../../../components/ui/CustomAlert';
 import { useToast } from '../../../contexts/ToastContext';
 import { useCart } from '../../../contexts/CartContext';
 import { shoppingListApi } from '../../../services/shopping-lists';
@@ -65,7 +65,7 @@ export default function ShoppingListDetailScreen() {
   };
 
   const handleRemoveItem = (item: ShoppingListItem) => {
-    Alert.alert(
+    customAlert(
       'Usuń produkt',
       `Usunąć "${item.product.name}" z listy?`,
       [
@@ -124,7 +124,7 @@ export default function ShoppingListDetailScreen() {
 
   const handleDeleteList = () => {
     if (!list) return;
-    Alert.alert(
+    customAlert(
       'Usuń listę',
       `Usunąć "${list.name}"? Ta operacja jest nieodwracalna.`,
       [
