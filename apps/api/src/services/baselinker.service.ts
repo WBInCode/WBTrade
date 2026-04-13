@@ -450,6 +450,12 @@ export class BaselinkerService {
       const provider = await this.createProvider();
       const activeInventoryId = overrideInventoryId || stored.inventoryId;
 
+      // EMERGENCY DEBUG
+      syncProgress.sendProgress(syncLogId, {
+        type: 'info',
+        message: `[v7-DEBUG] runSync: type="${type}", activeInventoryId=${activeInventoryId}, override=${overrideInventoryId || 'none'}`,
+      });
+
       if (type === 'full') {
         // Full sync: categories → products → images → stock
         syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Synchronizacja kategorii...', phase: 'categories' });
@@ -1247,6 +1253,14 @@ export class BaselinkerService {
     let processed = 0;
     let skipped = 0;
     const changedProducts: { sku: string; name: string; changes: string[] }[] = [];
+
+    // EMERGENCY DEBUG - this MUST appear in console if this code runs
+    if (syncLogId) {
+      syncProgress.sendProgress(syncLogId, {
+        type: 'info',
+        message: `[v7-DEBUG] syncProducts called: inventoryId=${inventoryId}, mode=${mode || 'all'}`,
+      });
+    }
 
     try {
       console.log(`[BaselinkerSync] Starting products sync with mode: ${mode || 'all'}...`);
