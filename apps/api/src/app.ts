@@ -356,7 +356,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(generalRateLimiter);
 
 // Health check endpoint (skip rate limiter)
-const BUILD_VERSION = '2026-04-13-v8';
+const BUILD_VERSION = '2026-04-13-v9';
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', version: BUILD_VERSION, timestamp: new Date().toISOString() });
 });
@@ -465,6 +465,45 @@ app.get('/api/debug-compiled', (req, res) => {
 
 // Detailed health checks
 app.use('/api/health', healthRoutes);
+
+// =====================================================================
+// HOTFIX: Monkey-patch baselinkerService.getInventoryPrefix to add .trim()
+// This fixes the issue where Baselinker API returns inventory names with
+// trailing spaces, causing prefix lookup to fail (e.g. "Forcetop " → "" instead of "btp-")
+// This runs in app.ts because baselinker.service.ts changes are not being compiled on Render.
+// =====================================================================
+(() => {
+  try {
+    const { baselinkerService } = require('./services/baselinker.service');
+    const originalGetInventoryPrefix = (baselinkerService as any).getInventoryPrefix.bind(baselinkerService);
+    
+    (baselinkerService as any).getInventoryPrefix = function(inventoryName: string): string {
+      // Apply trim before lookup
+      const trimmed = (inventoryName || '').trim();
+      const result = originalGetInventoryPrefix(trimmed);
+      console.log(`[HOTFIX] getInventoryPrefix("${inventoryName}") → trimmed="${trimmed}" → "${result}"`);
+      return result;
+    };
+    
+    // Also patch getWarehouseKey  
+    const originalGetWarehouseKey = (baselinkerService as any).getWarehouseKey.bind(baselinkerService);
+    (baselinkerService as any).getWarehouseKey = function(inventoryName: string): string | null {
+      const trimmed = (inventoryName || '').trim();
+      return originalGetWarehouseKey(trimmed);
+    };
+    
+    // Also patch getSkuPrefix
+    const originalGetSkuPrefix = (baselinkerService as any).getSkuPrefix.bind(baselinkerService);
+    (baselinkerService as any).getSkuPrefix = function(inventoryName: string): string {
+      const trimmed = (inventoryName || '').trim();
+      return originalGetSkuPrefix(trimmed);
+    };
+    
+    console.log('[HOTFIX] Successfully patched getInventoryPrefix/getWarehouseKey/getSkuPrefix with .trim()');
+  } catch (err) {
+    console.error('[HOTFIX] Failed to patch:', err);
+  }
+})();
 
 // Root endpoint - API info
 app.get('/', (req, res) => {
