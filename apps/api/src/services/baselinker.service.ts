@@ -1262,6 +1262,7 @@ export class BaselinkerService {
       finalPrice: number;
       quantity: number;
       categoryId: number | null;
+      categoryName: string | null;
       tags: string[];
       imageCount: number;
       variantCount: number;
@@ -1281,6 +1282,13 @@ export class BaselinkerService {
     const warehouseKey = this.getWarehouseKey(currentInventory.name);
     const inventoryPrefix = this.getInventoryPrefix(currentInventory.name);
     const skuPrefix = this.getSkuPrefix(currentInventory.name);
+
+    // Fetch category names for display
+    const blCategories = await provider.getInventoryCategories(inventoryId);
+    const categoryMap = new Map<number, string>();
+    for (const cat of blCategories) {
+      categoryMap.set(cat.category_id, cat.name);
+    }
 
     console.log(`[DryRun] Fetching products from "${currentInventory.name}" (ID: ${inventoryId}), limit: ${limit}`);
 
@@ -1321,6 +1329,7 @@ export class BaselinkerService {
         finalPrice,
         quantity: blProduct.quantity || 0,
         categoryId: blProduct.category_id || null,
+        categoryName: blProduct.category_id ? (categoryMap.get(blProduct.category_id) || null) : null,
         tags,
         imageCount: blProduct.images ? Object.keys(blProduct.images).length : 0,
         variantCount: blProduct.variants?.length || 0,
