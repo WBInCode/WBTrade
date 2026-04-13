@@ -1087,7 +1087,7 @@ export class BaselinkerService {
    * Get warehouse key from inventory name
    */
   private getWarehouseKey(inventoryName: string): string | null {
-    const lower = inventoryName.toLowerCase();
+    const lower = inventoryName.toLowerCase().trim();
     if (lower === 'leker') return 'leker';
     if (lower === 'btp' || lower === 'forcetop') return 'btp';
     if (lower === 'hp' || lower === 'hurtownia przemysłowa') return 'hp';
@@ -1127,7 +1127,7 @@ export class BaselinkerService {
       'forcetop': 'BTP-',
       'dofirmy': 'DOFIRMY-',
     };
-    const lower = inventoryName.toLowerCase();
+    const lower = inventoryName.toLowerCase().trim();
     return prefixMap[lower] ?? '';
   }
 
