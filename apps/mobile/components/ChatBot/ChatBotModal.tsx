@@ -11,7 +11,6 @@ import {
   Platform,
   Dimensions,
   Linking,
-  Alert,
   Image,
   Keyboard,
   NativeScrollEvent,
@@ -30,6 +29,7 @@ import type { ThemeColors } from '../../constants/Colors';
 import { productsApi } from '../../services/products';
 import type { Product } from '../../services/types';
 import type { Message, MessageAction, ProductResult, ChatBotModalProps } from './types';
+import { customAlert } from '../ui/CustomAlert';
 import { findBestAnswer } from './matching';
 import { FAQ_DATA } from './faqData';
 import {
@@ -173,7 +173,7 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat, onBotMess
       promoSent.current = false;
       return;
     }
-    Alert.alert(
+    customAlert(
       'Zakończyć rozmowę?',
       'Historia czatu zostanie usunięta. Czy na pewno chcesz zakończyć?',
       [
@@ -609,14 +609,14 @@ export default function ChatBotModal({ visible, onMinimize, onEndChat, onBotMess
         if (canOpen) {
           await Linking.openURL(mailto);
         } else {
-          Alert.alert(
+          customAlert(
             'Brak aplikacji e-mail',
             `Napisz do nas ręcznie na:\n${action.payload}`,
             [{ text: 'OK' }],
           );
         }
       } catch {
-        Alert.alert(
+        customAlert(
           'Brak aplikacji e-mail',
           `Napisz do nas ręcznie na:\n${action.payload}`,
           [{ text: 'OK' }],

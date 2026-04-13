@@ -8,8 +8,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  Alert,
 } from 'react-native';
+import { customAlert } from '../../../components/ui/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -204,10 +204,10 @@ export default function OrdersScreen() {
         if (data.paymentUrl) {
           router.push(`/order/${order.id}/payment?url=${encodeURIComponent(data.paymentUrl)}` as any);
         } else {
-          Alert.alert('Błąd', 'Nie udało się utworzyć sesji płatności.');
+          customAlert('Błąd', 'Nie udało się utworzyć sesji płatności.');
         }
       } catch {
-        Alert.alert('Błąd', 'Nie udało się ponowić płatności. Spróbuj ponownie.');
+        customAlert('Błąd', 'Nie udało się ponowić płatności. Spróbuj ponownie.');
       } finally {
         setPayingId(null);
       }

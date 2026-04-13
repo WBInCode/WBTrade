@@ -49,7 +49,7 @@ function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
 // Kolejność ma znaczenie - pierwsza pasująca reguła wygrywa
 const NAME_RULES: { patterns: RegExp; slug: string; label: string }[] = [
   // BHP / Obuwie
-  { patterns: /buty bezpieczne|obuwie robocze|obuwie ochronne|sandał.*roboczy|sandały.*ochronne|trzewiki.*roboczy|kalosze.*roboczy/i, slug: 'gadzety', label: 'Buty robocze' },
+  { patterns: /buty bezpieczne|obuwie robocze|obuwie ochronne|sandał.*roboczy|sandały.*ochronne|trzewiki.*roboczy|kalosze.*roboczy|buty zawodowe/i, slug: 'gadzety', label: 'Buty robocze' },
   { patterns: /obuwie ogrodnicze|klapki ogrodnicze|chodaki/i, slug: 'gadzety', label: 'Obuwie ogrodnicze' },
   
   // BHP / Odzież
@@ -82,7 +82,7 @@ const NAME_RULES: { patterns: RegExp; slug: string; label: string }[] = [
   { patterns: /segregator|długopis|zszywacz|zszywki|spinacz|dziurkacz|nożyczki.*biurow/i, slug: 'artykuly-szkolne-i-papiernicze', label: 'Artykuły biurowe' },
   { patterns: /blok biurowy|notes|koszulk.*a4|teczka|obwolut/i, slug: 'artykuly-szkolne-i-papiernicze', label: 'Papiernicze' },
   { patterns: /papier.*a4|papier.*xero|papier.*kopiark/i, slug: 'artykuly-szkolne-i-papiernicze', label: 'Papier' },
-  { patterns: /druk.*kp|druk.*kw|druk.*faktur|druk.*rachunk/i, slug: 'artykuly-szkolne-i-papiernicze', label: 'Druki' },
+  { patterns: /druk.*kp|druk.*kw|druk.*faktur|druk.*rachunk|cmr.*list.*przewoz/i, slug: 'artykuly-szkolne-i-papiernicze', label: 'Druki' },
   { patterns: /rolka.*termiczn|rolka.*kasow|taśma.*kasow/i, slug: 'artykuly-szkolne-i-papiernicze', label: 'Rolki kasowe' },
   
   // Meble
@@ -146,7 +146,10 @@ const NAME_RULES: { patterns: RegExp; slug: string; label: string }[] = [
   { patterns: /gra planszowa|puzzle|układanka/i, slug: 'gry-edukacyjne-i-planszowe', label: 'Gry planszowe' },
   
   // Energia
-  { patterns: /pellet|brykiet|węgiel|drewno.*opał|rozpałka|podpałka/i, slug: 'energia-i-ogrzewanie', label: 'Opał' },
+  { patterns: /pellet|brykiet|węgiel|drewno.*opał|rozpałka|podpałka|grzejnik.*naścienn|grzejnik.*elektr/i, slug: 'energia-i-ogrzewanie', label: 'Opał/grzejniki' },
+  
+  // Grille / Ogród
+  { patterns: /grill.*ogrodn|grill.*gazow|grill.*elektr|grill.*węgl/i, slug: 'ogrod-i-narzedzia-ogrodowe', label: 'Grille' },
   
   // Outlet
   { patterns: /outlet/i, slug: 'outlet', label: 'Outlet' },
@@ -331,7 +334,8 @@ async function main() {
       console.log(`   [${i + 1}/${assignments.length}] ✅ ${success} | ❌ ${errors} | ${rate}/min | Req: ${requestCount}`);
     }
     
-    await sleep(100);
+    // 700ms delay = ~85 req/min (BL limit: 100 req/min)
+    await sleep(700);
   }
   
   console.log('\n' + '='.repeat(60));

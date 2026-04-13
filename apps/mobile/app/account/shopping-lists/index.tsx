@@ -10,8 +10,8 @@ import {
   RefreshControl,
   TextInput,
   Modal,
-  Alert,
 } from 'react-native';
+import { customAlert } from '../../../components/ui/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -73,14 +73,14 @@ export default function ShoppingListsScreen() {
       setNewListName('');
       loadLists(true);
     } catch (err) {
-      Alert.alert('Błąd', 'Nie udało się utworzyć listy');
+      customAlert('Błąd', 'Nie udało się utworzyć listy');
     } finally {
       setCreating(false);
     }
   };
 
   const handleDelete = (id: string, name: string) => {
-    Alert.alert('Usuń listę', `Czy na pewno chcesz usunąć "${name}"?`, [
+    customAlert('Usuń listę', `Czy na pewno chcesz usunąć "${name}"?`, [
       { text: 'Anuluj', style: 'cancel' },
       {
         text: 'Usuń',
@@ -90,7 +90,7 @@ export default function ShoppingListsScreen() {
             await api.delete(`/shopping-lists/${id}`);
             setLists((prev) => prev.filter((l) => l.id !== id));
           } catch (err) {
-            Alert.alert('Błąd', 'Nie udało się usunąć listy');
+            customAlert('Błąd', 'Nie udało się usunąć listy');
           }
         },
       },

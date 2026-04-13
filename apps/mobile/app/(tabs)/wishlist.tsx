@@ -8,8 +8,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
-  Alert,
 } from 'react-native';
+import { customAlert } from '../../components/ui/CustomAlert';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -335,7 +335,7 @@ export default function WishlistScreen() {
           <WishlistCard
             item={item}
             onRemove={() => {
-              Alert.alert(
+              customAlert(
                 'Usuń z ulubionych',
                 `Czy chcesz usunąć "${item.product.name}" z ulubionych?`,
                 [

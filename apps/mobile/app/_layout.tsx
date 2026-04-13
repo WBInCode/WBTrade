@@ -18,6 +18,7 @@ import { useAuthRedirect } from '../hooks/useProtectedRoute';
 import GiftNotification from '../components/GiftNotification';
 import { couponsApi } from '../services/coupons';
 import AnimatedSplash from '../components/AnimatedSplash';
+import { AlertProvider } from '../components/ui/CustomAlert';
 
 export {
   ErrorBoundary,
@@ -138,11 +139,12 @@ function RootLayoutNav() {
         <CartProvider>
           <ToastProvider>
             <WishlistProvider>
+              <AlertProvider>
               <AuthRedirectHandler />
               <GiftNotificationHandler />
               <StatusBar barStyle={colors.statusBar} />
               {showAnimatedSplash && (
-                <AnimatedSplash onFinish={() => setShowAnimatedSplash(false)} />
+                <AnimatedSplash onFinish={() => setShowAnimatedSplash(false)} colorScheme={colorScheme} />
               )}
               <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
                 <Stack>
@@ -174,6 +176,7 @@ function RootLayoutNav() {
                   />
                 </Stack>
               </ThemeProvider>
+              </AlertProvider>
             </WishlistProvider>
           </ToastProvider>
         </CartProvider>
