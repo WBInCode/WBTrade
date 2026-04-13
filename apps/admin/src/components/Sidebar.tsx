@@ -192,6 +192,7 @@ const navSections: NavSection[] = [
         submenu: [
           { title: 'Baselinker', href: '/baselinker' },
           { title: 'Import produktów', href: '/baselinker/import' },
+          { title: 'Aktualizacja produktów', href: '/baselinker/update-products' },
           { title: 'Synchronizacja stanów', href: '/stock-sync' },
         ],
       },
