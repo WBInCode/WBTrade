@@ -154,7 +154,7 @@ export class PriceHistoryService {
     }, {
       maxWait: 10000,
       timeout: 30000,
-      isolationLevel: Prisma.TransactionIsolationLevel.Serializable // Zapobiega race conditions
+      isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted
     });
   }
   
@@ -232,7 +232,7 @@ export class PriceHistoryService {
     }, {
       maxWait: 10000,
       timeout: 30000,
-      isolationLevel: Prisma.TransactionIsolationLevel.Serializable
+      isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted
     });
   }
   

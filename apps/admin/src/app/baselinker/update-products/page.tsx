@@ -152,7 +152,6 @@ export default function UpdateProductsPage() {
 
   // Inventory state
   const [inventories, setInventories] = useState<InventoryItem[]>([]);
-  const [loadingInventories, setLoadingInventories] = useState(false);
 
   // Sync state
   const [syncState, setSyncState] = useState<SyncState>('idle');
@@ -177,34 +176,17 @@ export default function UpdateProductsPage() {
   useEffect(() => { syncStateRef.current = syncState; }, [syncState]);
 
   // ============================================
-  // Fetch inventories
+  // Our warehouses (only ones that exist in DB)
   // ============================================
+  const OUR_WAREHOUSES: InventoryItem[] = [
+    { inventory_id: 22952, name: 'Leker' },
+    { inventory_id: 22953, name: 'Forcetop' },
+    { inventory_id: 22954, name: 'Hurtownia Przemysłowa' },
+  ];
+
   useEffect(() => {
-    if (!token) return;
-    const fetchInventories = async () => {
-      setLoadingInventories(true);
-      try {
-        const res = await fetch(`${API_URL}/admin/baselinker/inventories`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const productInventories = (data.inventories || []).filter(
-            (inv: InventoryItem) =>
-              !inv.name.toLowerCase().includes('empik') &&
-              inv.name !== 'ikonka' &&
-              inv.name !== 'Główny'
-          );
-          setInventories(productInventories);
-        }
-      } catch (err) {
-        console.error('Failed to fetch inventories:', err);
-      } finally {
-        setLoadingInventories(false);
-      }
-    };
-    fetchInventories();
-  }, [token]);
+    setInventories(OUR_WAREHOUSES);
+  }, []);
 
   // ============================================
   // Timer
@@ -449,12 +431,7 @@ export default function UpdateProductsPage() {
       {/* Warehouse Buttons — shown only when idle */}
       {syncState === 'idle' && (
         <div className="space-y-4">
-          {loadingInventories ? (
-            <div className="flex items-center gap-2 text-gray-400 py-8 justify-center">
-              <Loader2 className="w-5 h-5 animate-spin" />
-              <span>Ładowanie magazynów...</span>
-            </div>
-          ) : inventories.length === 0 ? (
+          {inventories.length === 0 ? (
             <div className="bg-gray-800 border border-red-500/30 rounded-xl p-6 text-center">
               <p className="text-red-400">Nie znaleziono magazynów. Sprawdź konfigurację Baselinker.</p>
             </div>
