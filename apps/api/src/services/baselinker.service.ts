@@ -1859,31 +1859,35 @@ export class BaselinkerService {
         });
 
         // Execute pending price updates AFTER transaction commit (avoids nested tx deadlock)
-        // Process in parallel chunks of 5 for faster throughput
-        const PRICE_CHUNK_SIZE = 5;
-        for (let pi = 0; pi < pendingPriceUpdates.length; pi += PRICE_CHUNK_SIZE) {
-          const priceChunk = pendingPriceUpdates.slice(pi, pi + PRICE_CHUNK_SIZE);
-          await Promise.allSettled(priceChunk.map(async (pu) => {
-          try {
-            if (pu.type === 'product') {
-              await priceHistoryService.updateProductPrice({
-                productId: pu.id,
-                newPrice: pu.newPrice,
-                source: PriceChangeSource.BASELINKER,
-                reason: 'Baselinker sync',
-              });
-            } else {
-              await priceHistoryService.updateVariantPrice({
-                variantId: pu.id,
-                newPrice: pu.newPrice,
-                source: PriceChangeSource.BASELINKER,
-                reason: 'Baselinker sync',
-              });
+        // Process sequentially to avoid Prisma P2034 deadlocks
+        for (const pu of pendingPriceUpdates) {
+          const MAX_RETRIES = 3;
+          for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+              if (pu.type === 'product') {
+                await priceHistoryService.updateProductPrice({
+                  productId: pu.id,
+                  newPrice: pu.newPrice,
+                  source: PriceChangeSource.BASELINKER,
+                  reason: 'Baselinker sync',
+                });
+              } else {
+                await priceHistoryService.updateVariantPrice({
+                  variantId: pu.id,
+                  newPrice: pu.newPrice,
+                  source: PriceChangeSource.BASELINKER,
+                  reason: 'Baselinker sync',
+                });
+              }
+              break; // success
+            } catch (priceErr: any) {
+              if (priceErr?.code === 'P2034' && attempt < MAX_RETRIES) {
+                console.warn(`[BaselinkerSync] Price update retry ${attempt}/${MAX_RETRIES} for ${pu.type} ${pu.id}`);
+                continue;
+              }
+              console.error(`[BaselinkerSync] Price update error for ${pu.type} ${pu.id}:`, priceErr);
             }
-          } catch (priceErr) {
-            console.error(`[BaselinkerSync] Price update error for ${pu.type} ${pu.id}:`, priceErr);
           }
-          }));
         }
         } catch (batchErr) {
           // Batch transaction failed — log error and continue with next batch
