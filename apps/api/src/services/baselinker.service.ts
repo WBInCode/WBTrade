@@ -397,7 +397,7 @@ export class BaselinkerService {
     
     syncProgress.sendProgress(syncLog.id, {
       type: 'phase',
-      message: `Rozpoczynanie synchronizacji ${type}${mode ? ` (${mode})` : ''}...`,
+      message: `Rozpoczynanie synchronizacji ${type}${mode ? ` (${mode})` : ''}... [BUILD:v8 inv=${inventoryId || 'default'}]`,
       phase: 'init',
       mode: mode || 'fetch-all',
     });
