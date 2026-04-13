@@ -36,6 +36,7 @@ interface DryRunProduct {
   finalPrice: number;
   quantity: number;
   categoryId: number | null;
+  categoryName: string | null;
   tags: string[];
   imageCount: number;
   variantCount: number;
@@ -155,7 +156,7 @@ export default function DryRunPage() {
 
   const exportToCsv = () => {
     if (!filteredProducts.length) return;
-    const headers = ['ID Baselinker', 'Nazwa', 'SKU', 'EAN', 'Cena hurtowa', 'Cena końcowa', 'Stan', 'Tagi', 'Zdjęcia', 'Warianty', 'W bazie'];
+    const headers = ['ID Baselinker', 'Nazwa', 'SKU', 'EAN', 'Cena hurtowa', 'Cena końcowa', 'Stan', 'Kategoria', 'Tagi', 'Zdjęcia', 'Warianty', 'W bazie'];
     const rows = filteredProducts.map(p => [
       p.baselinkerProductId,
       `"${p.name.replace(/"/g, '""')}"`,
@@ -385,6 +386,7 @@ export default function DryRunPage() {
                     <th className="px-4 py-3 text-xs font-medium text-gray-400 uppercase">Cena hurtowa</th>
                     <th className="px-4 py-3 text-xs font-medium text-gray-400 uppercase">Cena końcowa</th>
                     <th className="px-4 py-3 text-xs font-medium text-gray-400 uppercase">Stan</th>
+                    <th className="px-4 py-3 text-xs font-medium text-gray-400 uppercase">Kategoria</th>
                     <th className="px-4 py-3 text-xs font-medium text-gray-400 uppercase">
                       <ImageIcon className="w-4 h-4 inline" />
                     </th>
@@ -397,7 +399,7 @@ export default function DryRunPage() {
                 <tbody>
                   {filteredProducts.length === 0 ? (
                     <tr>
-                      <td colSpan={12} className="px-4 py-8 text-center text-gray-500">
+                      <td colSpan={13} className="px-4 py-8 text-center text-gray-500">
                         {filterText || showOnlyNew
                           ? 'Brak produktów pasujących do filtrów'
                           : 'Brak danych'}
@@ -451,6 +453,9 @@ export default function DryRunPage() {
                           <span className={product.quantity > 0 ? 'text-green-400' : 'text-red-400'}>
                             {product.quantity}
                           </span>
+                        </td>
+                        <td className="px-4 py-2.5 text-gray-400 text-sm max-w-[200px] truncate" title={product.categoryName || ''}>
+                          {product.categoryName || '—'}
                         </td>
                         <td className="px-4 py-2.5 text-gray-400 text-sm text-center">
                           {product.imageCount}
