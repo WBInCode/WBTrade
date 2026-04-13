@@ -6,9 +6,9 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
-  Alert,
   RefreshControl,
 } from 'react-native';
+import { customAlert } from '../../components/ui/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -114,7 +114,7 @@ export default function ReviewsScreen() {
   };
 
   const handleDelete = (reviewId: string) => {
-    Alert.alert(
+    customAlert(
       'Usuń opinię',
       'Czy na pewno chcesz usunąć tę opinię? Tej operacji nie można cofnąć.',
       [
@@ -128,7 +128,7 @@ export default function ReviewsScreen() {
               await api.delete(`/reviews/${reviewId}`);
               setReviews((prev) => prev.filter((r) => r.id !== reviewId));
             } catch (err) {
-              Alert.alert('Błąd', 'Nie udało się usunąć opinii');
+              customAlert('Błąd', 'Nie udało się usunąć opinii');
             } finally {
               setDeleting(null);
             }

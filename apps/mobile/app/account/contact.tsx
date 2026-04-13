@@ -7,11 +7,11 @@ import {
   TouchableOpacity,
   TextInput,
   Linking,
-  Alert,
   ActivityIndicator,
   Platform,
   KeyboardAvoidingView,
 } from 'react-native';
+import { customAlert } from '../../components/ui/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -68,13 +68,13 @@ export default function ContactScreen() {
 
   const handleSend = async () => {
     if (!topic || !email.trim() || !message.trim()) {
-      Alert.alert('Uzupełnij pola', 'Wybierz temat, podaj e-mail i wpisz wiadomość.');
+      customAlert('Uzupełnij pola', 'Wybierz temat, podaj e-mail i wpisz wiadomość.');
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
-      Alert.alert('Błąd', 'Podaj prawidłowy adres e-mail.');
+      customAlert('Błąd', 'Podaj prawidłowy adres e-mail.');
       return;
     }
 
@@ -99,10 +99,10 @@ export default function ContactScreen() {
         setMessage('');
         setEmail('');
       } else {
-        Alert.alert('Błąd', data.message || 'Nie udało się wysłać wiadomości. Spróbuj ponownie.');
+        customAlert('Błąd', data.message || 'Nie udało się wysłać wiadomości. Spróbuj ponownie.');
       }
     } catch {
-      Alert.alert('Błąd', 'Błąd połączenia z serwerem. Sprawdź połączenie internetowe.');
+      customAlert('Błąd', 'Błąd połączenia z serwerem. Sprawdź połączenie internetowe.');
     } finally {
       setSending(false);
     }

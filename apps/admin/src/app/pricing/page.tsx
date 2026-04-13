@@ -17,11 +17,9 @@ interface PriceRule {
 type Warehouse = 'leker' | 'btp' | 'hp' | 'dofirmy';
 
 interface SyncStatus {
-  lastSync: string | null;
-  xmlUrl: string;
+  source: string;
+  lastSync: { startedAt: string; completedAt: string | null; status: string; itemsProcessed: number; itemsChanged: number } | null;
 }
-
-const XML_SYNC_WAREHOUSES: Warehouse[] = ['leker', 'btp', 'hp', 'dofirmy'];
 
 const WAREHOUSES: { key: Warehouse; label: string; description: string }[] = [
   { key: 'leker', label: 'Leker', description: 'Magazyn Chynów' },
@@ -68,8 +66,8 @@ export default function PricingPage() {
   });
   const [editingCell, setEditingCell] = useState<{ ruleId: string; field: string; value: string } | null>(null);
 
-  // XML sync state
-  const [syncStatus, setSyncStatus] = useState<Record<string, SyncStatus>>({});
+  // Sync state
+  const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [syncingWarehouse, setSyncingWarehouse] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -120,7 +118,7 @@ export default function PricingPage() {
   const fetchSyncStatus = useCallback(async () => {
     try {
       const token = getAuthToken();
-      const response = await fetch(`${API_URL}/admin/sync/prices-xml/status`, {
+      const response = await fetch(`${API_URL}/admin/sync/prices/status`, {
         headers: { ...(token && { Authorization: `Bearer ${token}` }) },
       });
       if (response.ok) {
@@ -136,32 +134,29 @@ export default function PricingPage() {
     fetchSyncStatus();
   }, [fetchSyncStatus]);
 
-  const triggerSync = async (warehouse: 'leker' | 'btp' | 'all') => {
-    setSyncingWarehouse(warehouse);
+  const triggerSync = async () => {
+    setSyncingWarehouse('all');
     setSyncMessage(null);
     try {
       const token = getAuthToken();
-      const response = await fetch(`${API_URL}/admin/sync/prices-xml`, {
+      const response = await fetch(`${API_URL}/admin/sync/prices`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token && { Authorization: `Bearer ${token}` }),
         },
-        body: JSON.stringify({ warehouse }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Błąd synchronizacji');
-      const label = warehouse === 'all' ? 'Leker + BTP' : warehouse.toUpperCase();
       if (data.status === 'queued') {
-        setSyncMessage({ type: 'success', text: `Synchronizacja ${label} dodana do kolejki (job: ${data.jobId})` });
+        setSyncMessage({ type: 'success', text: `Synchronizacja cen dodana do kolejki (job: ${data.jobId})` });
       } else {
-        const changed = (data.result?.leker?.priceChanged || 0) + (data.result?.btp?.priceChanged || 0);
-        setSyncMessage({ type: 'success', text: `Synchronizacja ${label} zakończona — zmieniono ${changed} cen` });
+        setSyncMessage({ type: 'success', text: `Synchronizacja cen zakończona — ${data.result?.itemsChanged || 0} zmian` });
       }
       // refresh timestamps
       await fetchSyncStatus();
     } catch (err: any) {
-      setSyncMessage({ type: 'error', text: err.message || 'Błąd synchronizacji XML' });
+      setSyncMessage({ type: 'error', text: err.message || 'Błąd synchronizacji cen' });
     } finally {
       setSyncingWarehouse(null);
     }
@@ -478,26 +473,26 @@ export default function PricingPage() {
         </button>
       </div>
 
-      {/* XML price sync section */}
+      {/* Baselinker price sync section */}
       <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-medium text-white">Synchronizacja cen z XML</h3>
+            <h3 className="text-sm font-medium text-white">Synchronizacja cen z Baselinker</h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              Ceny hurtowe pobierane raz dziennie o 6:00 z plików XML dostawców. Możesz też uruchomić ręcznie.
+              Ceny hurtowe pobierane co 2 godziny z API Baselinker. Możesz też uruchomić ręcznie.
             </p>
           </div>
           <button
-            onClick={() => triggerSync('all')}
+            onClick={() => triggerSync()}
             disabled={syncingWarehouse !== null}
             className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg text-sm font-medium transition-colors"
           >
-            {syncingWarehouse === 'all' ? (
+            {syncingWarehouse ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <RefreshCw className="w-4 h-4" />
             )}
-            Synchronizuj wszystko
+            Synchronizuj ceny
           </button>
         </div>
 
@@ -512,43 +507,19 @@ export default function PricingPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {XML_SYNC_WAREHOUSES.map(wh => {
-            const status = syncStatus[wh];
-            const isSyncing = syncingWarehouse === wh || syncingWarehouse === 'all';
-            const lastSyncDate = status?.lastSync ? new Date(status.lastSync) : null;
-            return (
-              <div key={wh} className="bg-slate-900/50 rounded-lg p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-white">{wh.toUpperCase()}</span>
-                  <button
-                    onClick={() => triggerSync(wh as 'leker' | 'btp')}
-                    disabled={syncingWarehouse !== null}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white rounded-md text-xs transition-colors"
-                  >
-                    {isSyncing ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <RefreshCw className="w-3 h-3" />
-                    )}
-                    Synchronizuj
-                  </button>
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                  <Clock className="w-3 h-3" />
-                  {lastSyncDate
-                    ? `Ostatnia sync: ${lastSyncDate.toLocaleDateString('pl-PL')} ${lastSyncDate.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}`
-                    : 'Brak danych o ostatniej synchronizacji'}
-                </div>
-                {status?.xmlUrl && (
-                  <div className="text-xs text-slate-600 truncate" title={status.xmlUrl}>
-                    {status.xmlUrl}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        {syncStatus?.lastSync && (
+          <div className="bg-slate-900/50 rounded-lg p-4 space-y-2">
+            <div className="flex items-center gap-1.5 text-xs text-slate-400">
+              <Clock className="w-3 h-3" />
+              Ostatnia synchronizacja: {new Date(syncStatus.lastSync.startedAt).toLocaleDateString('pl-PL')} {new Date(syncStatus.lastSync.startedAt).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}
+            </div>
+            <div className="flex items-center gap-3 text-xs text-slate-500">
+              <span>Status: <span className={syncStatus.lastSync.status === 'SUCCESS' ? 'text-green-400' : 'text-red-400'}>{syncStatus.lastSync.status}</span></span>
+              <span>Przetworzono: {syncStatus.lastSync.itemsProcessed}</span>
+              <span>Zmieniono: {syncStatus.lastSync.itemsChanged}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Price simulator */}

@@ -5,7 +5,6 @@ import {
   Text,
   FlatList,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   RefreshControl,
   Modal,
@@ -14,6 +13,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { customAlert } from '../../components/ui/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -270,7 +270,7 @@ export default function AddressesScreen() {
       setModalVisible(false);
       fetchAddresses();
     } catch (err: any) {
-      Alert.alert('Błąd', err.message || 'Nie udało się zapisać adresu');
+      customAlert('Błąd', err.message || 'Nie udało się zapisać adresu');
     } finally {
       setSaving(false);
     }
@@ -278,7 +278,7 @@ export default function AddressesScreen() {
 
   // ─── Delete ───
   const handleDelete = (address: Address) => {
-    Alert.alert(
+    customAlert(
       'Usuń adres',
       `Czy na pewno chcesz usunąć adres?\n\n${address.firstName} ${address.lastName}\n${address.street}\n${address.postalCode} ${address.city}`,
       [
@@ -291,7 +291,7 @@ export default function AddressesScreen() {
               await addressesApi.delete(address.id);
               fetchAddresses();
             } catch (err: any) {
-              Alert.alert('Błąd', err.message || 'Nie udało się usunąć adresu');
+              customAlert('Błąd', err.message || 'Nie udało się usunąć adresu');
             }
           },
         },
@@ -305,7 +305,7 @@ export default function AddressesScreen() {
       await addressesApi.setDefault(address.id);
       fetchAddresses();
     } catch (err: any) {
-      Alert.alert('Błąd', err.message || 'Nie udało się ustawić jako domyślny');
+      customAlert('Błąd', err.message || 'Nie udało się ustawić jako domyślny');
     }
   };
 

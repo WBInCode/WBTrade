@@ -93,6 +93,9 @@ router.delete('/config', baselinkerController.deleteConfig);
 // Connection test
 router.post('/test', baselinkerController.testConnection);
 
+// Dry run - preview products from inventory without saving
+router.post('/dry-run', baselinkerController.dryRunFetchProducts);
+
 // Product sync endpoints (Baselinker → Shop)
 router.post('/sync', baselinkerController.triggerSync);
 router.get('/status', baselinkerController.getStatus);

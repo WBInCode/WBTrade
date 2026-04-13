@@ -1,0 +1,683 @@
+{
+  "description": "Mapowanie kategorii z Hurtowni Przemysłowej (HP CSV) na kategorie sklepu WBTrade (z bazy danych)",
+  "version": "2.0",
+  "created": "2026-03-30",
+  "notes": [
+    "UWAGA: subSlug musi odpowiadać dokładnie slugom kategorii z bazy danych!",
+    "Mapowanie działa na zasadzie najdłuższego dopasowania prefiksu ścieżki CSV",
+    "Produkty z istniejącą kategorią NIE są modyfikowane"
+  ],
+
+  "mapping": {
+    "_comment": "Klucz = prefiks ścieżki HP z CSV, Wartość = slug kategorii z bazy danych",
+
+    "Chemia przemysłowa/Alkohole niespożywcze": {
+      "subSlug": "alkohole-techniczne-niespozywcze",
+      "comment": "IPA, denaturat → Chemia profesjonalna > Chemia przemysłowa > Alkohole techniczne"
+    },
+    "Chemia przemysłowa/Chemia dla gastronomii": {
+      "subSlug": "chemia-dla-gastronomii",
+      "comment": "Chemia do zmywarek, odkamieniacze → Chemia profesjonalna > Chemia dla gastronomii"
+    },
+    "Chemia przemysłowa/Chemia warsztatowa": {
+      "subSlug": "chemia-warsztatowa",
+      "comment": "Smary, silikony → Chemia profesjonalna > Chemia warsztatowa"
+    },
+    "Chemia przemysłowa/Gazy i paliwa": {
+      "subSlug": "gazy-i-paliwa",
+      "comment": "Paliwo do bio kominka → Chemia profesjonalna > Chemia przemysłowa > Gazy i paliwa"
+    },
+    "Chemia przemysłowa/Rozpuszczalniki": {
+      "subSlug": "rozpuszczalniki",
+      "comment": "Aceton, ksylen, nitro → Chemia profesjonalna > Chemia przemysłowa > Rozpuszczalniki"
+    },
+    "Chemia przemysłowa/Woda demineralizowana": {
+      "subSlug": "woda-demineralizowana",
+      "comment": "→ Chemia profesjonalna > Chemia przemysłowa > Woda demineralizowana"
+    },
+
+    "Dom i ogród/Budownictwo i akcesoria/Bramy garażowe": {
+      "subSlug": "akcesoria-garazowe",
+      "comment": "Bramy garażowe → Ogród i Gospodarstwo > Akcesoria garażowe"
+    },
+    "Dom i ogród/Budownictwo i akcesoria/Fotowoltaika solary": {
+      "subSlug": "energia-i-ogrzewanie",
+      "comment": "Solary, fotowoltaika → Dom > Energia i ogrzewanie"
+    },
+    "Dom i ogród/Budownictwo i akcesoria/Narzędzia budowlane": {
+      "subSlug": "narzedzia-reczne",
+      "comment": "Narzędzia budowlane → Narzędzia > Narzędzia ręczne"
+    },
+    "Dom i ogród/Budownictwo i akcesoria/Piece i kominki": {
+      "subSlug": "energia-i-ogrzewanie",
+      "comment": "Piece i kominki → Dom > Energia i ogrzewanie"
+    },
+    "Dom i ogród/Budownictwo i akcesoria/Sejfy skrzynki zamykane": {
+      "subSlug": "zabezpieczenia",
+      "comment": "Sejfy → Dom > Zabezpieczenia"
+    },
+
+    "Dom i ogród/Elektronika/Akcesoria GSM/Akcesoria do telefonów": {
+      "subSlug": "akcesoria-gsm",
+      "comment": "Akcesoria do telefonów → Elektronika i GSM > Akcesoria GSM"
+    },
+
+    "Dom i ogród/Elektronika/Akcesoria GSM/Podstawki uchwyty do telefonów": {
+      "subSlug": "akcesoria-gsm",
+      "comment": "Uchwyty do telefonów → Elektronika i GSM > Akcesoria GSM"
+    },
+    "Dom i ogród/Elektronika/Akcesoria komputerowe": {
+      "subSlug": "komputery-i-akcesoria",
+      "comment": "Akcesoria komputerowe → Elektronika i GSM > Komputery i akcesoria"
+    },
+    "Dom i ogród/Elektronika/Głośniki słuchawki": {
+      "subSlug": "audio-sluchawki-i-glosniki",
+      "comment": "Głośniki i słuchawki → Elektronika i GSM > Audio"
+    },
+    "Dom i ogród/Elektronika/Kable przewody": {
+      "subSlug": "kable-i-adaptery",
+      "comment": "Przewody USB, Audio, LAN → Elektronika i GSM > Kable i adaptery"
+    },
+    "Dom i ogród/Elektronika/Kamery monitoring": {
+      "subSlug": "monitoring",
+      "comment": "Kamery i monitoring → Elektronika i GSM > Monitoring"
+    },
+    "Dom i ogród/Elektronika/Przejściówki adaptery": {
+      "subSlug": "kable-i-adaptery",
+      "comment": "Adaptery → Elektronika i GSM > Kable i adaptery"
+    },
+    "Dom i ogród/Elektronika/Smart Home": {
+      "subSlug": "smart-home",
+      "comment": "Smart Home → Dom > Smart home"
+    },
+    "Dom i ogród/Elektronika/Zasilacze ładowarki/Powerbanki baterie": {
+      "subSlug": "powerbanki",
+      "comment": "Powerbanki → Elektronika i GSM > Ładowanie i zasilanie > Powerbanki"
+    },
+    "Dom i ogród/Elektronika/Zasilacze ładowarki/Ładowarki samochodowe": {
+      "subSlug": "ladowarki-samochodowe",
+      "comment": "Ładowarki samochodowe → Motoryzacja > Ładowarki samochodowe"
+    },
+    "Dom i ogród/Elektronika/Zasilacze ładowarki/Ładowarki solarne stacje zasilania": {
+      "subSlug": "zasilacze-i-ladowarki",
+      "comment": "Ładowarki solarne → Elektronika i GSM > Zasilacze i ładowarki"
+    },
+    "Dom i ogród/Elektronika/Zasilacze ładowarki/Ładowarki zasilacze sieciowe": {
+      "subSlug": "zasilacze-i-ladowarki",
+      "comment": "Ładowarki sieciowe → Elektronika i GSM > Zasilacze i ładowarki"
+    },
+    "Dom i ogród/Elektronika/Zasilacze ładowarki": {
+      "subSlug": "zasilacze-i-ladowarki",
+      "comment": "Zasilacze ogólne → Elektronika i GSM > Zasilacze i ładowarki"
+    },
+
+    "Dom i ogród/Kuchnia": {
+      "subSlug": "kuchnia",
+      "comment": "Kuchnia domowa → Dom > Kuchnia"
+    },
+
+    "Dom i ogród/Ogród/Akcesoria i narzędzia ogrodowe": {
+      "subSlug": "ogrod-i-narzedzia-ogrodowe",
+      "comment": "Narzędzia ogrodowe → Ogród i Gospodarstwo > Ogród i narzędzia ogrodowe"
+    },
+    "Dom i ogród/Ogród/Akcesoria pszczelarskie": {
+      "subSlug": "pszczelarstwo",
+      "comment": "Pszczelarstwo → Ogród i Gospodarstwo > Pszczelarstwo"
+    },
+    "Dom i ogród/Ogród/Kompostowniki": {
+      "subSlug": "ogrod-i-narzedzia-ogrodowe",
+      "comment": "Kompostowniki → Ogród i Gospodarstwo > Ogród i narzędzia ogrodowe"
+    },
+    "Dom i ogród/Ogród/Meble ogrodowe": {
+      "subSlug": "meble-ogrodowe",
+      "comment": "Meble ogrodowe → Ogród i Gospodarstwo > Meble ogrodowe"
+    },
+    "Dom i ogród/Ogród/Nawadnianie": {
+      "subSlug": "nawadnianie",
+      "comment": "Nawadnianie → Ogród i Gospodarstwo > Nawadnianie"
+    },
+    "Dom i ogród/Ogród/Oczka wodne": {
+      "subSlug": "baseny-i-akcesoria",
+      "comment": "Oczka wodne → Ogród i Gospodarstwo > Baseny i akcesoria"
+    },
+    "Dom i ogród/Ogród/Oświetlenie ogrzewanie tarasowe": {
+      "subSlug": "oswietlenie-zewnetrzne",
+      "comment": "Oświetlenie tarasowe → Ogród i Gospodarstwo > Oświetlenie zewnętrzne"
+    },
+    "Dom i ogród/Ogród/Parasole i pawilony ogrodowe": {
+      "subSlug": "meble-ogrodowe",
+      "comment": "Parasole/pawilony → Ogród i Gospodarstwo > Meble ogrodowe"
+    },
+    "Dom i ogród/Ogród/Sztuczna trawa": {
+      "subSlug": "ogrod-i-narzedzia-ogrodowe",
+      "comment": "Sztuczna trawa → Ogród i Gospodarstwo > Ogród i narzędzia ogrodowe"
+    },
+    "Dom i ogród/Rolnictwo": {
+      "subSlug": "ogrod-i-narzedzia-ogrodowe",
+      "comment": "Rolnictwo → Ogród i Gospodarstwo > Ogród i narzędzia ogrodowe"
+    },
+
+    "Dom i ogród/Sprzęt AGD/Grzejniki promienniki nagrzewnice": {
+      "subSlug": "energia-i-ogrzewanie",
+      "comment": "Grzejniki → Dom > Energia i ogrzewanie"
+    },
+    "Dom i ogród/Sprzęt AGD/Lampy oświetlenie": {
+      "subSlug": "oswietlenie-domowe",
+      "comment": "Lampy → Dom > Oświetlenie (domowe)"
+    },
+    "Dom i ogród/Sprzęt AGD/Odkurzacze": {
+      "subSlug": "sprzet-agd",
+      "comment": "Odkurzacze → Dom > Sprzęt AGD"
+    },
+    "Dom i ogród/Sprzęt AGD/Wentylatory i klimatyzatory": {
+      "subSlug": "sprzet-agd",
+      "comment": "Wentylatory → Dom > Sprzęt AGD"
+    },
+    "Dom i ogród/Sprzęt AGD/Żelazka stacje parowe": {
+      "subSlug": "sprzet-agd",
+      "comment": "Żelazka → Dom > Sprzęt AGD"
+    },
+
+    "Dom i ogród/Wyposażenie": {
+      "subSlug": "wyposazenie-i-akcesoria",
+      "comment": "Wyposażenie domu → Dom > Wyposażenie i akcesoria"
+    },
+
+    "Dom i ogród/Łazienka/AGD dla urody": {
+      "subSlug": "akcesoria",
+      "comment": "AGD urody → Zdrowie i Uroda > Wyposażenie gabinetów > Akcesoria"
+    },
+    "Dom i ogród/Łazienka/Meble łazienkowe": {
+      "subSlug": "lazienka",
+      "comment": "Meble łazienkowe → Dom > Łazienka"
+    },
+
+    "Dom i ogród/Środki czystości": {
+      "subSlug": "higiena-i-utrzymanie-czystosci",
+      "comment": "Środki czystości → Gastronomia > Higiena i utrzymanie czystości"
+    },
+
+    "Elektronarzędzia/Maszyny budowlane": {
+      "subSlug": "maszyny-i-urzadzenia",
+      "comment": "Maszyny budowlane → Narzędzia > Maszyny i urządzenia"
+    },
+    "Elektronarzędzia/Materiały ścierne i polerskie": {
+      "subSlug": "akcesoria-1",
+      "comment": "Tarcze ścierne → Narzędzia > Akcesoria"
+    },
+    "Elektronarzędzia/Narzędzia dla elektroników": {
+      "subSlug": "elektronarzedzia",
+      "comment": "Stacje lutownicze, separatory, szafy RACK → Narzędzia > Elektronarzędzia"
+    },
+    "Elektronarzędzia/Nożyce wyżynarki": {
+      "subSlug": "elektronarzedzia",
+      "comment": "Nożyce do blachy, styropianu → Narzędzia > Elektronarzędzia"
+    },
+    "Elektronarzędzia/Palniki opalarki lutownice": {
+      "subSlug": "spawalnictwo",
+      "comment": "Palniki, opalarki → Narzędzia > Spawalnictwo"
+    },
+    "Elektronarzędzia/Piły pilarki": {
+      "subSlug": "elektronarzedzia",
+      "comment": "Piły → Narzędzia > Elektronarzędzia"
+    },
+    "Elektronarzędzia/Spawalnictwo": {
+      "subSlug": "spawalnictwo",
+      "comment": "Spawarki, maski, przecinarki → Narzędzia > Spawalnictwo"
+    },
+    "Elektronarzędzia/Szlifierki polerki": {
+      "subSlug": "elektronarzedzia",
+      "comment": "Szlifierki → Narzędzia > Elektronarzędzia"
+    },
+    "Elektronarzędzia/Urządzenia specjalistyczne/Inkubatory do jaj": {
+      "subSlug": "artykuly-dla-zwierzat",
+      "comment": "Inkubatory → Ogród i Gospodarstwo > Artykuły dla zwierząt"
+    },
+    "Elektronarzędzia/Urządzenia specjalistyczne/Mierniki elektroniczne": {
+      "subSlug": "czujniki",
+      "comment": "Mierniki → Narzędzia > Czujniki"
+    },
+    "Elektronarzędzia/Urządzenia specjalistyczne/Odizolowywacze przewodów elektrycznych": {
+      "subSlug": "elektronarzedzia",
+      "comment": "Odizolowywacze → Narzędzia > Elektronarzędzia"
+    },
+    "Elektronarzędzia/Urządzenia specjalistyczne/Piece tyglowe i tygle grafitowe": {
+      "subSlug": "spawalnictwo",
+      "comment": "Piece tyglowe → Narzędzia > Spawalnictwo"
+    },
+    "Elektronarzędzia/Urządzenia specjalistyczne/Przyrządy geodezyjne": {
+      "subSlug": "czujniki",
+      "comment": "Geodezja → Narzędzia > Czujniki"
+    },
+    "Elektronarzędzia/Urządzenia specjalistyczne/Suszarki próżniowe": {
+      "subSlug": "maszyny-i-urzadzenia",
+      "comment": "Suszarki próżniowe → Narzędzia > Maszyny i urządzenia"
+    },
+    "Elektronarzędzia/Urządzenia specjalistyczne/Urządzenia laboratoryjne": {
+      "subSlug": "sprzet-laboratoryjny",
+      "comment": "Lab → Narzędzia > Sprzęt Laboratoryjny"
+    },
+    "Elektronarzędzia/Wiertarki młoty udarowe": {
+      "subSlug": "elektronarzedzia",
+      "comment": "Wiertarki, młoty, wkrętarki → Narzędzia > Elektronarzędzia"
+    },
+
+    "Gastronomia/Bar": {
+      "subSlug": "cukiernictwo",
+      "comment": "Bar: blendery, ekspresy, shaker → Gastronomia > Cukiernictwo"
+    },
+    "Gastronomia/Bemary i podgrzewacze": {
+      "subSlug": "urzadzenia-grzewcze-i-akcesoria",
+      "comment": "Bemary → Gastronomia > Sprzęt gastronomiczny > Urządzenia grzewcze"
+    },
+    "Gastronomia/Catering i transport żywności/Dyspensery do napojów": {
+      "subSlug": "pozostale-urzadzenia-i-akcesoria",
+      "comment": "Dyspensery → Gastronomia > Pozostałe urządzenia"
+    },
+    "Gastronomia/Catering i transport żywności/Lampy tarasowe grzewcze": {
+      "subSlug": "urzadzenia-grzewcze-i-akcesoria",
+      "comment": "Lampy grzewcze → Gastronomia > Urządzenia grzewcze"
+    },
+    "Gastronomia/Catering i transport żywności/Maszyny do popcornu": {
+      "subSlug": "pozostale-urzadzenia-i-akcesoria",
+      "comment": "Popcorn → Gastronomia > Pozostałe urządzenia"
+    },
+    "Gastronomia/Catering i transport żywności/Maszyny do waty cukrowej": {
+      "subSlug": "cukiernictwo",
+      "comment": "Wata cukrowa → Gastronomia > Cukiernictwo"
+    },
+    "Gastronomia/Catering i transport żywności/Meble cateringowe": {
+      "subSlug": "wyposazenie-lokali",
+      "comment": "Meble cateringowe → Gastronomia > Wyposażenie lokali"
+    },
+    "Gastronomia/Catering i transport żywności/Naczynia jednorazowe": {
+      "subSlug": "naczynia-i-przybory-kuchenne",
+      "comment": "Naczynia jednorazowe → Gastronomia > Naczynia i przybory kuchenne"
+    },
+    "Gastronomia/Catering i transport żywności/Opakowania spożywcze do żywności": {
+      "subSlug": "pakowanie-prozniowe",
+      "comment": "Opakowania spożywcze → Gastronomia > Pakowanie próżniowe"
+    },
+    "Gastronomia/Catering i transport żywności/Pojemniki termoizolacyjne TermoBoxy": {
+      "subSlug": "pojemniki-termoizolacyjne",
+      "comment": "TermoBoxy → Gastronomia > Pojemniki termoizolacyjne"
+    },
+    "Gastronomia/Catering i transport żywności/Słomki do napojów": {
+      "subSlug": "naczynia-i-przybory-kuchenne",
+      "comment": "Słomki → Gastronomia > Naczynia i przybory kuchenne"
+    },
+    "Gastronomia/Catering i transport żywności/Termosy do transportu żywności": {
+      "subSlug": "pojemniki-termoizolacyjne",
+      "comment": "Termosy → Gastronomia > Pojemniki termoizolacyjne"
+    },
+    "Gastronomia/Chłodnictwo": {
+      "subSlug": "chlodzenie-i-mrozenie",
+      "comment": "Chłodnictwo → Gastronomia > Chłodzenie i mrożenie"
+    },
+    "Gastronomia/Cukiernia kawiarnia": {
+      "subSlug": "cukiernictwo",
+      "comment": "Cukiernia/kawiarnia → Gastronomia > Cukiernictwo"
+    },
+    "Gastronomia/Higiena i utrzymanie czystości": {
+      "subSlug": "higiena-i-utrzymanie-czystosci",
+      "comment": "Higiena → Gastronomia > Higiena i utrzymanie czystości"
+    },
+    "Gastronomia/Hotelarstwo": {
+      "subSlug": "wyposazenie-lokali",
+      "comment": "Hotelarstwo → Gastronomia > Wyposażenie lokali"
+    },
+    "Gastronomia/Kuchnia/Destylatory i warzelnie piwa": {
+      "subSlug": "destylatory",
+      "comment": "Destylatory → Gastronomia > Sprzęt do wyrobu alkoholu > Destylatory"
+    },
+    "Gastronomia/Kuchnia/Meble technologiczne": {
+      "subSlug": "wyposazenie-lokali",
+      "comment": "Meble technologiczne → Gastronomia > Wyposażenie lokali"
+    },
+    "Gastronomia/Kuchnia/Naczynia i przybory kuchenne": {
+      "subSlug": "naczynia-i-przybory-kuchenne",
+      "comment": "Naczynia i przybory → Gastronomia > Naczynia i przybory kuchenne"
+    },
+    "Gastronomia/Kuchnia/Obróbka ręczna i mechaniczna/Urządzenia do obróbki MIĘSA": {
+      "subSlug": "uboj-i-wedzenie",
+      "comment": "Obróbka mięsa → Gastronomia > Ubój i wędzenie"
+    },
+    "Gastronomia/Kuchnia/Obróbka ręczna i mechaniczna": {
+      "subSlug": "roboty-kuchenne",
+      "comment": "Obróbka mechaniczna → Gastronomia > Roboty kuchenne"
+    },
+    "Gastronomia/Kuchnia/Pakowarki próżniowe": {
+      "subSlug": "pakowanie-prozniowe",
+      "comment": "Pakowarki → Gastronomia > Pakowanie próżniowe"
+    },
+    "Gastronomia/Kuchnia/Pojemniki GN": {
+      "subSlug": "pojemniki-gn",
+      "comment": "Pojemniki GN → Gastronomia > Pojemniki GN"
+    },
+    "Gastronomia/Kuchnia/Suszarki do żywności": {
+      "subSlug": "suszarki-do-zywnosci",
+      "comment": "Suszarki → Gastronomia > Suszarki do żywności"
+    },
+    "Gastronomia/Kuchnia/Urządzenia do wina": {
+      "subSlug": "pozostale-urzadzenia-i-akcesoria",
+      "comment": "Urządzenia do wina → Gastronomia > Pozostałe urządzenia"
+    },
+    "Gastronomia/Kuchnia/Urządzenia grzewcze": {
+      "subSlug": "urzadzenia-grzewcze-i-akcesoria",
+      "comment": "Urządzenia grzewcze → Gastronomia > Urządzenia grzewcze i akcesoria"
+    },
+    "Gastronomia/Kuchnia/Wagi timery termometry kuchenne": {
+      "subSlug": "naczynia-i-przybory-kuchenne",
+      "comment": "Wagi, termometry → Gastronomia > Naczynia i przybory kuchenne"
+    },
+    "Gastronomia/Kuchnia/Wędzarnie": {
+      "subSlug": "uboj-i-wedzenie",
+      "comment": "Wędzarnie → Gastronomia > Ubój i wędzenie"
+    },
+    "Gastronomia/Kuchnia/Zmywarki i polerki do naczyń": {
+      "subSlug": "zmywarki-i-polerki-do-naczyn",
+      "comment": "Zmywarki → Gastronomia > Zmywarki i polerki do naczyń"
+    },
+    "Gastronomia/Kuchnia": {
+      "subSlug": "naczynia-i-przybory-kuchenne",
+      "comment": "Kuchnia gastronomiczna ogólna → Gastronomia > Naczynia i przybory kuchenne"
+    },
+    "Gastronomia/Pizzeria": {
+      "subSlug": "pizzeria",
+      "comment": "Pizzeria → Gastronomia > Pizzeria"
+    },
+    "Gastronomia/Restauracja/Akcesoria bufetowe": {
+      "subSlug": "ekspozycja-dan",
+      "comment": "Akcesoria bufetowe → Gastronomia > Ekspozycja dań"
+    },
+    "Gastronomia/Restauracja/Akcesoria kelnerskie": {
+      "subSlug": "wyposazenie-lokali",
+      "comment": "Akcesoria kelnerskie → Gastronomia > Wyposażenie lokali"
+    },
+    "Gastronomia/Restauracja/Wyposażenie restauracji": {
+      "subSlug": "wyposazenie-lokali",
+      "comment": "Wyposażenie restauracji → Gastronomia > Wyposażenie lokali"
+    },
+    "Gastronomia/Restauracja/Zastawa stołowa": {
+      "subSlug": "naczynia-i-przybory-kuchenne",
+      "comment": "Zastawa stołowa → Gastronomia > Naczynia i przybory kuchenne"
+    },
+    "Gastronomia/Roboty kuchenne": {
+      "subSlug": "roboty-kuchenne",
+      "comment": "Roboty kuchenne → Gastronomia > Roboty kuchenne"
+    },
+    "Gastronomia/Środki chemiczne": {
+      "subSlug": "chemia-dla-gastronomii",
+      "comment": "Środki chem. gastro → Chemia profesjonalna > Chemia dla gastronomii"
+    },
+
+    "HENDI - HoReCa/Cukiernia, Piekarnia, Kawiarnia": {
+      "subSlug": "cukiernictwo",
+      "comment": "HENDI cukiernia → Gastronomia > Cukiernictwo"
+    },
+    "HENDI - HoReCa/Deski, Noże, Przybory": {
+      "subSlug": "naczynia-i-przybory-kuchenne",
+      "comment": "HENDI noże → Gastronomia > Naczynia i przybory kuchenne"
+    },
+    "HENDI - HoReCa/Garnki i Pojemniki GN": {
+      "subSlug": "pojemniki-gn",
+      "comment": "HENDI GN → Gastronomia > Pojemniki GN"
+    },
+    "HENDI - HoReCa/Meble Ze Stali Nierdzewnej": {
+      "subSlug": "wyposazenie-lokali",
+      "comment": "HENDI meble → Gastronomia > Wyposażenie lokali"
+    },
+    "HENDI - HoReCa/Pakowanie Próżniowe": {
+      "subSlug": "pakowanie-prozniowe",
+      "comment": "HENDI pakowanie → Gastronomia > Pakowanie próżniowe"
+    },
+    "HENDI - HoReCa/Pizza, Makaron, Kebab": {
+      "subSlug": "pizzeria",
+      "comment": "HENDI pizza → Gastronomia > Pizzeria"
+    },
+    "HENDI - HoReCa/Szkło, Porcelana, Sztućce, Art. Stołowe": {
+      "subSlug": "naczynia-i-przybory-kuchenne",
+      "comment": "HENDI zastawa → Gastronomia > Naczynia i przybory kuchenne"
+    },
+    "HENDI - HoReCa/Urządzenia Dynamiczne": {
+      "subSlug": "roboty-kuchenne",
+      "comment": "HENDI roboty → Gastronomia > Roboty kuchenne"
+    },
+    "HENDI - HoReCa/Zmywarki i Higiena": {
+      "subSlug": "zmywarki-i-polerki-do-naczyn",
+      "comment": "HENDI zmywarki → Gastronomia > Zmywarki i polerki do naczyń"
+    },
+
+    "Sport i turystyka/Akcesoria do rowerów": {
+      "subSlug": "rowery-i-akcesoria",
+      "comment": "Rowery → Sport i turystyka > Rowery i akcesoria"
+    },
+    "Sport i turystyka/Domowe SPA sauny jacuzzi": {
+      "subSlug": "masaz-i-rehabilitacja",
+      "comment": "SPA/sauny → Zdrowie i Uroda > Masaż i rehabilitacja"
+    },
+    "Sport i turystyka/Fitness gimnastyka": {
+      "subSlug": "fitness-i-trening",
+      "comment": "Fitness → Sport i turystyka > Fitness i trening"
+    },
+    "Sport i turystyka/Lornetki lunety": {
+      "subSlug": "sprzet-turystyczny",
+      "comment": "Lornetki → Sport i turystyka > Sprzęt turystyczny"
+    },
+    "Sport i turystyka/Sporty wodne": {
+      "subSlug": "sprzet-turystyczny",
+      "comment": "Sporty wodne → Sport i turystyka > Sprzęt turystyczny"
+    },
+    "Sport i turystyka/Sprzęt turystyczny": {
+      "subSlug": "sprzet-turystyczny",
+      "comment": "Sprzęt turystyczny → Sport i turystyka > Sprzęt turystyczny"
+    },
+    "Sport i turystyka/Trening siłowy": {
+      "subSlug": "fitness-i-trening",
+      "comment": "Siłownia → Sport i turystyka > Fitness i trening"
+    },
+    "Sport i turystyka/Turystyka i kemping": {
+      "subSlug": "kemping-i-przetrwanie",
+      "comment": "Kemping → Sport i turystyka > Kemping i przetrwanie"
+    },
+    "Sport i turystyka/Wykrywacze metalu": {
+      "subSlug": "wykrywacze-metalu",
+      "comment": "Wykrywacze → Sport i turystyka > Wykrywacze metalu"
+    },
+
+    "Wagi/Wagi elektroniczne/Wagi hakowe wiszące": {
+      "subSlug": "wagi-przemyslowe",
+      "comment": "Wagi hakowe → Wagi > Wagi przemysłowe"
+    },
+    "Wagi/Wagi elektroniczne/Wagi kuchenne": {
+      "subSlug": "wagi-kuchenne",
+      "comment": "Wagi kuchenne → Wagi > Wagi kuchenne"
+    },
+    "Wagi/Wagi elektroniczne/Wagi magazynowe": {
+      "subSlug": "wagi-przemyslowe",
+      "comment": "Wagi magazynowe → Wagi > Wagi przemysłowe"
+    },
+    "Wagi/Wagi elektroniczne/Wagi platformowe wagi do paczek": {
+      "subSlug": "wagi-przemyslowe",
+      "comment": "Wagi platformowe → Wagi > Wagi przemysłowe"
+    },
+    "Wagi/Wagi elektroniczne/Wagi precyzyjne laboratoryjne": {
+      "subSlug": "wagi-przemyslowe",
+      "comment": "Wagi lab → Wagi > Wagi przemysłowe"
+    },
+    "Wagi/Wagi elektroniczne/Wagi sklepowe cenowe": {
+      "subSlug": "wagi-przemyslowe",
+      "comment": "Wagi sklepowe → Wagi > Wagi przemysłowe"
+    },
+    "Wagi/Wzorce masy": {
+      "subSlug": "wagi-przemyslowe",
+      "comment": "Wzorce masy → Wagi > Wagi przemysłowe"
+    },
+
+    "Warsztat pracownia garaż/Chemia": {
+      "subSlug": "chemia-warsztatowa",
+      "comment": "Chemia warsztatowa → Chemia profesjonalna > Chemia warsztatowa"
+    },
+    "Warsztat pracownia garaż/Maszyny do pelletu": {
+      "subSlug": "maszyny-i-urzadzenia",
+      "comment": "Maszyny do pelletu → Narzędzia > Maszyny i urządzenia"
+    },
+    "Warsztat pracownia garaż/Myjki i czyściwa warsztatowe": {
+      "subSlug": "maszyny-i-urzadzenia",
+      "comment": "Myjki → Narzędzia > Maszyny i urządzenia"
+    },
+    "Warsztat pracownia garaż/Pojemniki na śmieci i odpady": {
+      "subSlug": "higiena-i-utrzymanie-czystosci",
+      "comment": "Pojemniki na śmieci → Gastronomia > Higiena i utrzymanie czystości"
+    },
+    "Warsztat pracownia garaż/Pokrowce na samochody i łodzie": {
+      "subSlug": "akcesoria-i-czesci",
+      "comment": "Pokrowce → Motoryzacja > Akcesoria i części"
+    },
+    "Warsztat pracownia garaż/Pozostałe": {
+      "subSlug": "urzadzenia",
+      "comment": "Pozostałe → Narzędzia > Urządzenia"
+    },
+    "Warsztat pracownia garaż/Sprzęt motorowodny i żeglarski": {
+      "subSlug": "sprzet-turystyczny",
+      "comment": "Motorowodne → Sport i turystyka > Sprzęt turystyczny"
+    },
+    "Warsztat pracownia garaż/Sprzęt warsztatowy/Agregaty pompy kompresory": {
+      "subSlug": "maszyny-i-urzadzenia",
+      "comment": "Agregaty → Narzędzia > Maszyny i urządzenia"
+    },
+    "Warsztat pracownia garaż/Sprzęt warsztatowy/Meble warsztatowe": {
+      "subSlug": "akcesoria-garazowe",
+      "comment": "Meble warsztatowe → Ogród i Gospodarstwo > Akcesoria garażowe"
+    },
+    "Warsztat pracownia garaż/Sprzęt warsztatowy/Nagrzewnice budowlane": {
+      "subSlug": "energia-i-ogrzewanie",
+      "comment": "Nagrzewnice → Dom > Energia i ogrzewanie"
+    },
+    "Warsztat pracownia garaż/Sprzęt warsztatowy/Prasy hydrauliczne": {
+      "subSlug": "maszyny-i-urzadzenia",
+      "comment": "Prasy → Narzędzia > Maszyny i urządzenia"
+    },
+    "Warsztat pracownia garaż/Sprzęt warsztatowy/Przechowywanie butli gazowych": {
+      "subSlug": "akcesoria-1",
+      "comment": "Butle → Narzędzia > Akcesoria"
+    },
+    "Warsztat pracownia garaż/Sprzęt warsztatowy/Udrażniacze spirale do rur": {
+      "subSlug": "narzedzia-reczne",
+      "comment": "Udrażniacze → Narzędzia > Narzędzia ręczne"
+    },
+    "Warsztat pracownia garaż/Sprzęt warsztatowy/Wyposażenie warsztatowe": {
+      "subSlug": "urzadzenia",
+      "comment": "Wyposażenie → Narzędzia > Urządzenia"
+    },
+    "Warsztat pracownia garaż/Sprzęt warsztatowy/Zamiatarki odkurzacze": {
+      "subSlug": "sprzet-agd",
+      "comment": "Zamiatarki → Dom > Sprzęt AGD"
+    },
+    "Warsztat pracownia garaż/Transport i przechowywanie/Beczki i akcesoria do beczek": {
+      "subSlug": "urzadzenia",
+      "comment": "Beczki → Narzędzia > Urządzenia"
+    },
+    "Warsztat pracownia garaż/Transport i przechowywanie/Pasy transportowe": {
+      "subSlug": "akcesoria-1",
+      "comment": "Pasy transportowe → Narzędzia > Akcesoria"
+    },
+    "Warsztat pracownia garaż/Transport i przechowywanie/Pudełka kartonowe": {
+      "subSlug": "akcesoria-1",
+      "comment": "Pudełka → Narzędzia > Akcesoria"
+    },
+    "Warsztat pracownia garaż/Transport i przechowywanie/Skrzynie i palety transportowe": {
+      "subSlug": "urzadzenia",
+      "comment": "Skrzynie/palety → Narzędzia > Urządzenia"
+    },
+    "Warsztat pracownia garaż/Warsztat samochodowy/Akcesoria samochodowe": {
+      "subSlug": "akcesoria-i-czesci",
+      "comment": "Akcesoria samochod. → Motoryzacja > Akcesoria i części"
+    },
+    "Warsztat pracownia garaż/Warsztat samochodowy/Blokady rozrządu": {
+      "subSlug": "akcesoria-i-czesci",
+      "comment": "Blokady rozrządu → Motoryzacja > Akcesoria i części"
+    },
+    "Warsztat pracownia garaż/Warsztat samochodowy/Klucze pneumatyczne do kół": {
+      "subSlug": "akcesoria-i-czesci",
+      "comment": "Klucze pneumatyczne → Motoryzacja > Akcesoria i części"
+    },
+    "Warsztat pracownia garaż/Warsztat samochodowy/Mierniki grubości lakieru": {
+      "subSlug": "czujniki",
+      "comment": "Mierniki lakieru → Narzędzia > Czujniki"
+    },
+    "Warsztat pracownia garaż/Warsztat samochodowy/Montażownice i wyważarki": {
+      "subSlug": "maszyny-i-urzadzenia",
+      "comment": "Montażownice → Narzędzia > Maszyny i urządzenia"
+    },
+    "Warsztat pracownia garaż/Warsztat samochodowy/Narzędzia blacharskie": {
+      "subSlug": "narzedzia-reczne",
+      "comment": "Narzędzia blacharskie → Narzędzia > Narzędzia ręczne"
+    },
+    "Warsztat pracownia garaż/Warsztat samochodowy/Narzędzia ręczne": {
+      "subSlug": "narzedzia-reczne",
+      "comment": "Narzędzia ręczne → Narzędzia > Narzędzia ręczne"
+    },
+    "Warsztat pracownia garaż/Warsztat samochodowy/Obsługa olejów i paliw": {
+      "subSlug": "chemia-samochodowa",
+      "comment": "Oleje → Chemia profesjonalna > Chemia samochodowa"
+    },
+    "Warsztat pracownia garaż/Warsztat samochodowy/Podnośniki wózki": {
+      "subSlug": "maszyny-i-urzadzenia",
+      "comment": "Podnośniki → Narzędzia > Maszyny i urządzenia"
+    },
+    "Warsztat pracownia garaż/Warsztat samochodowy/Promienniki lakiernicze": {
+      "subSlug": "urzadzenia",
+      "comment": "Promienniki lakiernicze → Narzędzia > Urządzenia"
+    },
+    "Warsztat pracownia garaż/Warsztat samochodowy/Prostowniki samochodowe": {
+      "subSlug": "akcesoria-i-czesci",
+      "comment": "Prostowniki → Motoryzacja > Akcesoria i części"
+    },
+    "Warsztat pracownia garaż/Wciągarki wyciągarki": {
+      "subSlug": "maszyny-i-urzadzenia",
+      "comment": "Wciągarki → Narzędzia > Maszyny i urządzenia"
+    },
+    "Warsztat pracownia garaż/Wyposażenie sklepu": {
+      "subSlug": "wyposazenie-i-akcesoria",
+      "comment": "Wyposażenie sklepu → Dom > Wyposażenie i akcesoria"
+    },
+
+    "Zdrowie i uroda/Balkoniki chodziki podpórki": {
+      "subSlug": "masaz-i-rehabilitacja",
+      "comment": "Rehabilitacja → Zdrowie i Uroda > Masaż i rehabilitacja"
+    },
+    "Zdrowie i uroda/Gabinet masażu": {
+      "subSlug": "masaz-i-rehabilitacja",
+      "comment": "Masaż → Zdrowie i Uroda > Masaż i rehabilitacja"
+    },
+    "Zdrowie i uroda/Generatory ozonu": {
+      "subSlug": "oczyszczacze-powietrza-i-dezynfekcja",
+      "comment": "Ozonatory → Zdrowie i Uroda > Oczyszczacze powietrza"
+    },
+    "Zdrowie i uroda/Meble do gabinetu": {
+      "subSlug": "meble",
+      "comment": "Meble gabinetowe → Zdrowie i Uroda > Wyposażenie gabinetów > Meble"
+    },
+    "Zdrowie i uroda/Modele anatomiczne": {
+      "subSlug": "modele-anatomiczne",
+      "comment": "Modele → Zdrowie i Uroda > Modele anatomiczne"
+    },
+    "Zdrowie i uroda/Oczyszczacze powietrza": {
+      "subSlug": "oczyszczacze-powietrza-i-dezynfekcja",
+      "comment": "Oczyszczacze → Zdrowie i Uroda > Oczyszczacze powietrza"
+    },
+    "Zdrowie i uroda/Salon fryzjerski": {
+      "subSlug": "akcesoria",
+      "comment": "Fryzjerstwo → Zdrowie i Uroda > Wyposażenie gabinetów > Akcesoria"
+    },
+    "Zdrowie i uroda/Salon kosmetyczny": {
+      "subSlug": "akcesoria",
+      "comment": "Kosmetyczny → Zdrowie i Uroda > Wyposażenie gabinetów > Akcesoria"
+    },
+    "Zdrowie i uroda/Stoły groomerskie": {
+      "subSlug": "grooming",
+      "comment": "Grooming → Zdrowie i Uroda > Grooming"
+    }
+  }
+}

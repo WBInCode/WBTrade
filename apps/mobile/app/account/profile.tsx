@@ -9,8 +9,8 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
+import { customAlert } from '../../components/ui/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -191,7 +191,7 @@ export default function ProfileScreen() {
         });
         setErrors(mapped);
       } else {
-        Alert.alert('Błąd', err.message || 'Nie udało się zapisać profilu');
+        customAlert('Błąd', err.message || 'Nie udało się zapisać profilu');
       }
     } finally {
       setSaving(false);
@@ -385,7 +385,7 @@ export default function ProfileScreen() {
                     ]}
                     onPress={async () => {
                       if (!deletePassword.trim()) return;
-                      Alert.alert(
+                      customAlert(
                         'Usunięcie konta',
                         'Czy na pewno chcesz trwale usunąć swoje konto? Tej operacji nie można cofnąć.',
                         [
@@ -398,14 +398,14 @@ export default function ProfileScreen() {
                               try {
                                 const result = await deleteAccount(deletePassword);
                                 if (result.success) {
-                                  Alert.alert('Konto usunięte', 'Twoje konto zostało trwale usunięte.', [
+                                  customAlert('Konto usunięte', 'Twoje konto zostało trwale usunięte.', [
                                     { text: 'OK', onPress: () => router.replace('/(tabs)') },
                                   ]);
                                 } else {
-                                  Alert.alert('Błąd', result.error || 'Nie udało się usunąć konta. Sprawdź hasło.');
+                                  customAlert('Błąd', result.error || 'Nie udało się usunąć konta. Sprawdź hasło.');
                                 }
                               } catch {
-                                Alert.alert('Błąd', 'Nie udało się usunąć konta. Spróbuj ponownie.');
+                                customAlert('Błąd', 'Nie udało się usunąć konta. Spróbuj ponownie.');
                               } finally {
                                 setDeleteLoading(false);
                               }
