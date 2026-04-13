@@ -912,6 +912,16 @@ app.post('/api/admin/direct-update', async (req, res) => {
         });
 
         try {
+          // Get default location (MAIN warehouse)
+          let defaultLocation = await prisma.location.findFirst({
+            where: { code: 'MAIN', type: 'WAREHOUSE', isActive: true },
+          });
+          if (!defaultLocation) {
+            defaultLocation = await prisma.location.create({
+              data: { name: 'Magazyn główny', code: 'MAIN', type: 'WAREHOUSE', isActive: true },
+            });
+          }
+
           syncProgress.sendProgress(syncLogId, {
             type: 'info',
             message: `📦 Pobieranie stanów z magazynu: ${invName}...`,
@@ -946,11 +956,18 @@ app.post('/api/admin/direct-update', async (req, res) => {
 
             if (variant) {
               await prisma.inventory.upsert({
-                where: { variantId: variant.id },
+                where: {
+                  variantId_locationId: {
+                    variantId: variant.id,
+                    locationId: defaultLocation.id,
+                  },
+                },
                 create: {
                   variantId: variant.id,
+                  locationId: defaultLocation.id,
                   quantity: totalStock,
-                  reservedQuantity: 0,
+                  reserved: 0,
+                  minimum: 0,
                 },
                 update: { quantity: totalStock },
               });
