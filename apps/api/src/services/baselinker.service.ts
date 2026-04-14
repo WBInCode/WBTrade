@@ -858,7 +858,9 @@ export class BaselinkerService {
               foundId = created.id;
             }
             
-            pathToCategoryId.set(partPath, foundId);
+            if (foundId) {
+              pathToCategoryId.set(partPath, foundId);
+            }
           }
           
           parentId = foundId ?? null;
