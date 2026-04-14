@@ -779,73 +779,117 @@ export class BaselinkerService {
       }
 
       // Now process subcategories (those with | separator)
-      const subCategories = categories.filter(c => c.name.includes('|'));
+      // Sort by depth (number of | separators) so shallower categories are processed first
+      const subCategories = categories
+        .filter(c => c.name.includes('|'))
+        .sort((a, b) => {
+          const depthA = a.name.split('|').length;
+          const depthB = b.name.split('|').length;
+          return depthA - depthB;
+        });
       console.log(`[BaselinkerSync] Found ${subCategories.length} subcategories (with | separator)`);
+
+      // Map to store full path -> category id for multi-level lookups
+      // e.g. "Sprzęt gastronomiczny|Naczynia i przybory kuchenne" -> "abc-123"
+      const pathToCategoryId = new Map<string, string>();
+      
+      // Seed with main categories
+      for (const [name, id] of mainCategoryMap.entries()) {
+        pathToCategoryId.set(name.toLowerCase(), id);
+      }
 
       for (const blCategory of subCategories) {
         const categoryId = blCategory.category_id.toString();
-        const fullPath = blCategory.name.trim(); // e.g. "Gastronomia|Naczynia i przybory kuchenne"
+        const fullPath = blCategory.name.trim(); // e.g. "A|B|C"
         
         // Parse the category path
         const parts = fullPath.split('|').map(p => p.trim());
-        const mainCategoryName = parts[0]; // "Gastronomia"
-        const subCategoryName = parts.slice(1).join('|'); // "Naczynia i przybory kuchenne" (or further nested)
+        const leafName = parts[parts.length - 1]; // Last part is the actual category name
         
         const existing = existingMap.get(categoryId);
         
-        // Find parent category by name (case-insensitive)
-        let parentId = mainCategoryMap.get(mainCategoryName) || null;
+        // Walk through parts to find/create the correct parent at each level
+        let parentId: string | null = null;
         
-        // If parent not found in map, try case-insensitive lookup
-        if (!parentId) {
-          // Try case-insensitive lookup in our map
-          for (const [name, id] of mainCategoryMap.entries()) {
-            if (name.toLowerCase() === mainCategoryName.toLowerCase()) {
-              parentId = id;
-              mainCategoryMap.set(mainCategoryName, parentId); // Cache for future lookups
-              break;
+        for (let i = 0; i < parts.length - 1; i++) {
+          const partName = parts[i];
+          const partPath = parts.slice(0, i + 1).join('|').toLowerCase();
+          
+          // Check path cache first
+          let foundId = pathToCategoryId.get(partPath) || null;
+          
+          if (!foundId) {
+            // Try case-insensitive lookup in path cache
+            for (const [cachedPath, cachedId] of pathToCategoryId.entries()) {
+              if (cachedPath === partPath) {
+                foundId = cachedId;
+                break;
+              }
             }
           }
-        }
-        
-        // If still not found, try to find by name in DB (case-insensitive)
-        if (!parentId) {
-          const parentCategory = await prisma.category.findFirst({
-            where: { 
-              name: { equals: mainCategoryName, mode: 'insensitive' },
-              parentId: null, // Must be a main category
-            },
-          });
-          if (parentCategory) {
-            parentId = parentCategory.id;
-            mainCategoryMap.set(mainCategoryName, parentId);
+          
+          if (!foundId) {
+            // Try to find in DB by name + parentId
+            const dbCategory = await prisma.category.findFirst({
+              where: { 
+                name: { equals: partName, mode: 'insensitive' },
+                parentId: parentId,
+              },
+              select: { id: true },
+            });
+            
+            if (dbCategory) {
+              foundId = dbCategory.id;
+            } else {
+              // Create intermediate category (no baselinkerCategoryId since it's synthetic)
+              const intermediateSlug = slugify(partName) || `category-${Date.now()}`;
+              const intermediateFullPath = parts.slice(0, i + 1).join('|');
+              console.log(`[BaselinkerSync] Creating intermediate category: "${intermediateFullPath}"`);
+              
+              const created = await prisma.category.create({
+                data: {
+                  name: partName,
+                  slug: await this.ensureUniqueSlug(intermediateSlug, `intermediate-${intermediateFullPath}`),
+                  parentId: parentId,
+                  baselinkerCategoryPath: intermediateFullPath,
+                  isActive: true,
+                },
+              });
+              foundId = created.id;
+            }
+            
+            pathToCategoryId.set(partPath, foundId);
           }
+          
+          parentId = foundId;
         }
         
         // Check if unchanged
         if (existing && 
-            existing.name === subCategoryName && 
+            existing.name === leafName && 
             existing.parentId === parentId &&
             existing.baselinkerCategoryPath === fullPath) {
+          // Still register in path cache
+          pathToCategoryId.set(fullPath.toLowerCase(), existing.id);
           skipped++;
           continue;
         }
         
         try {
-          // Create slug from subcategory name only (parent is in hierarchy)
-          const slug = slugify(subCategoryName) || `subcategory-${categoryId}`;
+          // Create slug from leaf name only (parent is in hierarchy)
+          const slug = slugify(leafName) || `subcategory-${categoryId}`;
           
           const result = await prisma.category.upsert({
             where: { baselinkerCategoryId: categoryId },
             update: {
-              name: subCategoryName, // Only the subcategory part
+              name: leafName, // Only the leaf part, e.g. "Garnki" not "Naczynia|Garnki"
               slug: await this.ensureUniqueSlug(slug, categoryId),
               parentId: parentId,
               baselinkerCategoryPath: fullPath, // Full path for reference
             },
             create: {
               baselinkerCategoryId: categoryId,
-              name: subCategoryName,
+              name: leafName,
               slug: await this.ensureUniqueSlug(slug, categoryId),
               parentId: parentId,
               baselinkerCategoryPath: fullPath,
@@ -853,11 +897,13 @@ export class BaselinkerService {
             },
           });
           
+          // Cache the full path for deeper levels to find
+          pathToCategoryId.set(fullPath.toLowerCase(), result.id);
           processed++;
           
           // Log if parent not found
           if (!parentId) {
-            console.warn(`[BaselinkerSync] Warning: Parent category "${mainCategoryName}" not found for subcategory "${subCategoryName}" (ID: ${categoryId})`);
+            console.warn(`[BaselinkerSync] Warning: No parent found for category "${fullPath}" (ID: ${categoryId})`);
           }
         } catch (error) {
           errors.push(`Subcategory ${categoryId} (${fullPath}): ${error instanceof Error ? error.message : 'Unknown error'}`);
