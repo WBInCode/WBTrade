@@ -282,16 +282,21 @@ export class CategoriesService {
         children: {
           where: { 
             isActive: true,
-            baselinkerCategoryId: { not: null }, // Only Baselinker subcategories
+            // Include both Baselinker categories and intermediate (synthetic) categories
           },
           orderBy: { name: 'asc' },
           include: {
             children: {
               where: { 
                 isActive: true,
-                baselinkerCategoryId: { not: null },
               },
               orderBy: { name: 'asc' },
+              include: {
+                children: {
+                  where: { isActive: true },
+                  orderBy: { name: 'asc' },
+                }
+              }
             }
           }
         }
@@ -368,6 +373,12 @@ export class CategoriesService {
             children: {
               where: { isActive: true },
               orderBy: { order: 'asc' },
+              include: {
+                children: {
+                  where: { isActive: true },
+                  orderBy: { order: 'asc' },
+                }
+              }
             }
           }
         },
@@ -377,12 +388,15 @@ export class CategoriesService {
 
     if (!category) return null;
 
-    // Collect all slugs from category + children + grandchildren
+    // Collect all slugs from category + children + grandchildren + great-grandchildren
     const allNodes: { id: string; slug: string }[] = [{ id: category.id, slug: category.slug }];
     for (const child of category.children) {
       allNodes.push({ id: child.id, slug: child.slug });
       for (const grandchild of child.children) {
         allNodes.push({ id: grandchild.id, slug: grandchild.slug });
+        for (const greatGrandchild of (grandchild as any).children || []) {
+          allNodes.push({ id: greatGrandchild.id, slug: greatGrandchild.slug });
+        }
       }
     }
 
@@ -433,6 +447,16 @@ export class CategoriesService {
           order: grandchild.order,
           isActive: grandchild.isActive,
           productCount: nodeCountMap.get(grandchild.id) || 0,
+          children: ((grandchild as any).children || []).map((greatGrandchild: any) => ({
+            id: greatGrandchild.id,
+            name: greatGrandchild.name,
+            slug: greatGrandchild.slug,
+            parentId: greatGrandchild.parentId,
+            image: greatGrandchild.image,
+            order: greatGrandchild.order,
+            isActive: greatGrandchild.isActive,
+            productCount: nodeCountMap.get(greatGrandchild.id) || 0,
+          }))
         }))
       }))
     };
