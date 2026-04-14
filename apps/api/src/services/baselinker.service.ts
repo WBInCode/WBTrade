@@ -816,7 +816,7 @@ export class BaselinkerService {
           const partPath = parts.slice(0, i + 1).join('|').toLowerCase();
           
           // Check path cache first
-          let foundId = pathToCategoryId.get(partPath) || null;
+          let foundId: string | undefined = pathToCategoryId.get(partPath);
           
           if (!foundId) {
             // Try case-insensitive lookup in path cache
@@ -861,7 +861,7 @@ export class BaselinkerService {
             pathToCategoryId.set(partPath, foundId);
           }
           
-          parentId = foundId;
+          parentId = foundId ?? null;
         }
         
         // Check if unchanged
