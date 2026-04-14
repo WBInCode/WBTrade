@@ -380,10 +380,25 @@ export class CartService {
       throw new Error('Kupon został wykorzystany maksymalną liczbę razy');
     }
 
-    // Check ownership for personal coupons (WELCOME_DISCOUNT, APP_DOWNLOAD, NEWSLETTER)
-    if ((coupon.couponSource === 'WELCOME_DISCOUNT' || coupon.couponSource === 'APP_DOWNLOAD') && coupon.userId) {
+    // Check ownership for personal coupons (WELCOME_DISCOUNT, APP_DOWNLOAD, DELIVERY_DELAY)
+    if ((coupon.couponSource === 'WELCOME_DISCOUNT' || coupon.couponSource === 'APP_DOWNLOAD' || coupon.couponSource === 'DELIVERY_DELAY') && coupon.userId) {
       if (coupon.userId !== userId) {
         throw new Error('Ten kod rabatowy należy do innego użytkownika');
+      }
+    }
+
+    // Check email restriction (e.g. DELIVERY_DELAY coupons for guests)
+    if (coupon.restrictedToEmail) {
+      let userEmail: string | null = null;
+      if (userId) {
+        const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+        userEmail = user?.email || null;
+      }
+      // For guests applying coupon before checkout, we allow it here
+      // but re-validate at order creation when guest provides their email.
+      // For logged-in users, validate immediately.
+      if (userEmail && userEmail.toLowerCase() !== coupon.restrictedToEmail.toLowerCase()) {
+        throw new Error('Ten kod rabatowy jest przypisany do innego adresu e-mail');
       }
     }
 

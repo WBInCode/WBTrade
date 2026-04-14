@@ -91,6 +91,11 @@ const navSections: NavSection[] = [
         href: '/delivery-delays',
         icon: Clock,
       },
+      {
+        title: 'Szablony e-mail',
+        href: '/email-templates',
+        icon: Mail,
+      },
     ],
   },
   {

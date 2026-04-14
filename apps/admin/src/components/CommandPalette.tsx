@@ -30,6 +30,7 @@ const pages: SearchResult[] = [
   { id: 'p-orders-processing', type: 'page', title: 'Zamówienia w realizacji', subtitle: 'Zamówienia', href: '/orders?status=PROCESSING', icon: ShoppingCart },
   { id: 'p-orders-shipped', type: 'page', title: 'Zamówienia wysłane', subtitle: 'Zamówienia', href: '/orders?status=SHIPPED', icon: ShoppingCart },
   { id: 'p-coupons', type: 'page', title: 'Kupony i rabaty', subtitle: 'Marketing', href: '/coupons', icon: Ticket },
+  { id: 'p-email-templates', type: 'page', title: 'Szablony e-mail', subtitle: 'Sprzedaż', href: '/email-templates', icon: Mail },
   { id: 'p-newsletter', type: 'page', title: 'Newsletter', subtitle: 'Marketing', href: '/newsletter', icon: Mail },
   { id: 'p-users', type: 'page', title: 'Użytkownicy', subtitle: 'Użytkownicy', href: '/users', icon: Users },
   { id: 'p-baselinker', type: 'page', title: 'Baselinker', subtitle: 'Integracje', href: '/baselinker', icon: Box },
