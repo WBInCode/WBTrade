@@ -55,6 +55,7 @@ import adminSyncRoutes from './routes/admin-sync';
 import adminSupportRoutes from './routes/admin-support';
 import adminReturnsRoutes from './routes/admin-returns';
 import adminDeliveryDelaysRoutes from './routes/admin-delivery-delays';
+import adminEmailTemplatesRoutes from './routes/admin-email-templates';
 import userNotificationsRoutes from './routes/user-notifications';
 import emailInboundRoutes from './routes/email-inbound';
 import imageProxyRoutes from './routes/image-proxy';
@@ -1103,6 +1104,7 @@ app.use('/api/admin/support', adminSupportRoutes); // Admin support management
 app.use('/api/admin/sync', adminSyncRoutes); // Admin manual XML price sync
 app.use('/api/admin/returns', adminReturnsRoutes); // Admin returns management
 app.use('/api/admin/delivery-delays', adminDeliveryDelaysRoutes); // Admin delivery delay alerts
+app.use('/api/admin/email-templates', adminEmailTemplatesRoutes); // Admin email templates management
 app.use('/api/notifications', userNotificationsRoutes); // User in-app notifications
 app.use('/api/img', imageProxyRoutes); // Image proxy with disk cache
 

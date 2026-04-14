@@ -3,70 +3,29 @@
  *
  * Detects orders at risk of delivery delay and manages
  * admin alerts + customer notifications (email + in-app).
+ *
+ * Message templates are stored in the EmailTemplate DB table (category: DELIVERY_DELAY).
+ * Templates with includesDiscount=true auto-generate unique coupon codes.
  */
 
 import { prisma } from '../db';
 import { emailService } from './email.service';
+import { discountService } from './discount.service';
 import * as supportService from './support.service';
 
 // ────────────────────────────────────────────────────────
-// Message Presets
+// Legacy preset interface (for backward-compatible API response)
 // ────────────────────────────────────────────────────────
 
 export interface DelayPreset {
   id: string;
   name: string;
   description: string;
-  content: string; // Contains {orderNumber} placeholder
+  content: string;
+  includesDiscount?: boolean;
+  discountPercent?: number | null;
+  discountValidDays?: number | null;
 }
-
-const DELAY_PRESETS: DelayPreset[] = [
-  {
-    id: 'preset_1',
-    name: 'Krótkie przeprosiny',
-    description: 'Zwięzła, profesjonalna wiadomość z przeprosinami',
-    content: `Szanowny Kliencie,
-
-Pragniemy poinformować, że realizacja Twojego zamówienia nr {orderNumber} może potrwać nieco dłużej niż planowano. Dokładamy wszelkich starań, aby przesyłka dotarła do Ciebie jak najszybciej.
-
-Przepraszamy za niedogodności i dziękujemy za cierpliwość.
-
-Z poważaniem,
-Zespół WBTrade`,
-  },
-  {
-    id: 'preset_2',
-    name: 'Rozbudowane przeprosiny z rabatem',
-    description: 'Empatyczna wiadomość z kodem rabatowym na następne zakupy',
-    content: `Szanowny Kliencie,
-
-Z przykrością informujemy, że wysyłka Twojego zamówienia nr {orderNumber} została opóźniona z przyczyn logistycznych. Rozumiemy, jak ważna jest terminowa dostawa i szczerze przepraszamy za tę sytuację.
-
-Jako wyraz naszych przeprosin, przygotowaliśmy dla Ciebie kod rabatowy PRZEPRASZAMY10 na 10% zniżki przy kolejnych zakupach w naszym sklepie.
-
-Twoja przesyłka zostanie nadana w najbliższym możliwym terminie. O każdej zmianie statusu poinformujemy Cię mailowo.
-
-Dziękujemy za wyrozumiałość i zaufanie.
-
-Z poważaniem,
-Zespół WBTrade`,
-  },
-  {
-    id: 'preset_3',
-    name: 'Informacyjny — paczka w przygotowaniu',
-    description: 'Neutralny ton informujący o statusie przesyłki',
-    content: `Szanowny Kliencie,
-
-Chcielibyśmy poinformować Cię o aktualnym statusie Twojego zamówienia nr {orderNumber}. Przesyłka jest obecnie w trakcie przygotowania do wysyłki i zostanie nadana w najbliższych dniach roboczych.
-
-Planowany termin dostawy może ulec niewielkiemu przesunięciu. Po nadaniu paczki otrzymasz wiadomość z numerem śledzenia przesyłki.
-
-W razie pytań zachęcamy do kontaktu z naszym zespołem obsługi klienta.
-
-Pozdrawiamy,
-Zespół WBTrade`,
-  },
-];
 
 // ────────────────────────────────────────────────────────
 // Default settings
@@ -163,14 +122,30 @@ export class DeliveryDelayService {
   }
 
   /**
-   * Return available message presets
+   * Return available message templates from the database.
+   * Maps to the legacy DelayPreset interface for backward compatibility.
    */
-  getPresets(): DelayPreset[] {
-    return DELAY_PRESETS;
+  async getPresets(): Promise<DelayPreset[]> {
+    const templates = await prisma.emailTemplate.findMany({
+      where: { category: 'DELIVERY_DELAY', isActive: true },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    });
+
+    return templates.map((t) => ({
+      id: t.id,
+      name: t.name,
+      description: t.description || '',
+      content: t.content,
+      includesDiscount: t.includesDiscount,
+      discountPercent: t.discountPercent,
+      discountValidDays: t.discountValidDays,
+    }));
   }
 
   /**
    * Send delay notification to customer:
+   * - Resolves template from DB (by templateId) or uses custom message
+   * - If template has includesDiscount, generates a unique coupon code
    * - Always sends email
    * - Creates UserNotification if order belongs to a registered user
    * - Updates DeliveryDelayAlert status
@@ -180,7 +155,7 @@ export class DeliveryDelayService {
     messageType: string,
     customMessage?: string,
     adminId?: string
-  ): Promise<{ success: boolean; error?: string }> {
+  ): Promise<{ success: boolean; error?: string; couponCode?: string }> {
     const alert = await prisma.deliveryDelayAlert.findUnique({
       where: { id: alertId },
       include: {
@@ -202,20 +177,24 @@ export class DeliveryDelayService {
 
     const order = alert.order;
 
-    // Determine message content
+    // Determine message content and coupon generation
     let messageContent: string;
+    let generatedCouponCode: string | undefined;
+    let template: { includesDiscount: boolean; discountPercent: number | null; discountValidDays: number | null } | null = null;
+
     if (messageType === 'custom' && customMessage) {
       messageContent = customMessage;
     } else {
-      const preset = DELAY_PRESETS.find((p) => p.id === messageType);
-      if (!preset) {
-        return { success: false, error: `Invalid preset: ${messageType}` };
+      // messageType is a template ID (cuid) — load from DB
+      const dbTemplate = await prisma.emailTemplate.findUnique({
+        where: { id: messageType },
+      });
+      if (!dbTemplate) {
+        return { success: false, error: `Nie znaleziono szablonu: ${messageType}` };
       }
-      messageContent = preset.content;
+      messageContent = dbTemplate.content;
+      template = dbTemplate;
     }
-
-    // Replace placeholders
-    messageContent = messageContent.replace(/\{orderNumber\}/g, order.orderNumber);
 
     // Determine recipient email
     const recipientEmail = order.user?.email || order.guestEmail;
@@ -226,6 +205,35 @@ export class DeliveryDelayService {
     const customerName = order.user
       ? `${order.user.firstName} ${order.user.lastName}`
       : `${order.guestFirstName || ''} ${order.guestLastName || ''}`.trim() || 'Kliencie';
+
+    // Generate unique coupon if template includes discount
+    if (template?.includesDiscount && template.discountPercent && template.discountValidDays) {
+      try {
+        const couponResult = await discountService.generateDelayApologyCoupon({
+          userId: order.userId,
+          guestEmail: order.guestEmail,
+          discountPercent: template.discountPercent,
+          validDays: template.discountValidDays,
+          orderNumber: order.orderNumber,
+        });
+        generatedCouponCode = couponResult.couponCode;
+        const expiryFormatted = couponResult.expiresAt.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+        // Replace discount placeholders
+        messageContent = messageContent
+          .replace(/\{discountCode\}/g, couponResult.couponCode)
+          .replace(/\{discountPercent\}/g, String(template.discountPercent))
+          .replace(/\{discountExpiry\}/g, expiryFormatted);
+      } catch (couponErr) {
+        console.error('[DeliveryDelayService] Failed to generate coupon:', couponErr);
+        return { success: false, error: `Błąd generowania kuponu: ${couponErr instanceof Error ? couponErr.message : String(couponErr)}` };
+      }
+    }
+
+    // Replace common placeholders
+    messageContent = messageContent
+      .replace(/\{orderNumber\}/g, order.orderNumber)
+      .replace(/\{customerName\}/g, customerName);
 
     // Create support ticket so customer can reply to the delay notification email
     let replyToAddress: string | undefined;
@@ -303,8 +311,8 @@ export class DeliveryDelayService {
       }),
     ]);
 
-    console.log(`[DeliveryDelayService] Notification sent for order ${order.orderNumber} (alert: ${alertId})`);
-    return { success: true };
+    console.log(`[DeliveryDelayService] Notification sent for order ${order.orderNumber} (alert: ${alertId})${generatedCouponCode ? `, coupon: ${generatedCouponCode}` : ''}`);
+    return { success: true, couponCode: generatedCouponCode };
   }
 
   /**

@@ -88,8 +88,14 @@ router.get('/', async (req: Request, res: Response) => {
 // ────────────────────────────────────────────────────────
 // GET /api/admin/delivery-delays/presets
 // ────────────────────────────────────────────────────────
-router.get('/presets', (_req: Request, res: Response) => {
-  res.json({ presets: deliveryDelayService.getPresets() });
+router.get('/presets', async (_req: Request, res: Response) => {
+  try {
+    const presets = await deliveryDelayService.getPresets();
+    res.json({ presets });
+  } catch (error) {
+    console.error('Error fetching presets:', error);
+    res.status(500).json({ message: 'Błąd pobierania szablonów' });
+  }
 });
 
 // ────────────────────────────────────────────────────────
