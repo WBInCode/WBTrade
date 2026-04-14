@@ -26,6 +26,7 @@ interface Coupon {
   couponSource: string;
   requiresAuth: boolean;
   singleUsePerUser: boolean;
+  restrictedToEmail: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -80,6 +81,7 @@ const sourceLabels: Record<string, string> = {
   REFERRAL: 'Polecenie',
   CAMPAIGN: 'Kampania',
   NEWSLETTER: 'Newsletter',
+  DELIVERY_DELAY: 'Opóźnienie dostawy',
 };
 
 export default function CouponsPage() {
@@ -543,6 +545,9 @@ export default function CouponsPage() {
                         {coupon.description && (
                           <p className="text-xs text-slate-500 mt-0.5 truncate max-w-[200px]">{coupon.description}</p>
                         )}
+                        {coupon.restrictedToEmail && (
+                          <p className="text-xs text-orange-400/80 mt-0.5 truncate max-w-[200px]">✉ {coupon.restrictedToEmail}</p>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${typeInfo.color}`}>
@@ -785,6 +790,7 @@ export default function CouponsPage() {
                   <option value="REFERRAL">Polecenie</option>
                   <option value="CAMPAIGN">Kampania</option>
                   <option value="NEWSLETTER">Newsletter</option>
+                  <option value="DELIVERY_DELAY">Opóźnienie dostawy</option>
                 </select>
               </div>
 

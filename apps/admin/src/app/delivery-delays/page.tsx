@@ -54,6 +54,9 @@ interface Preset {
   name: string;
   description: string;
   content: string;
+  includesDiscount?: boolean;
+  discountPercent?: number | null;
+  discountValidDays?: number | null;
 }
 
 type FilterStatus = 'all' | 'pending' | 'notified' | 'dismissed';
@@ -76,7 +79,7 @@ export default function DeliveryDelaysPage() {
   // Notify modal
   const [selectedAlert, setSelectedAlert] = useState<DelayAlert | null>(null);
   const [presets, setPresets] = useState<Preset[]>([]);
-  const [selectedPreset, setSelectedPreset] = useState<string>('preset_1');
+  const [selectedPreset, setSelectedPreset] = useState<string>('');
   const [customMessage, setCustomMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [previewExpanded, setPreviewExpanded] = useState<string | null>(null);
@@ -84,7 +87,7 @@ export default function DeliveryDelaysPage() {
   // Bulk selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkModal, setShowBulkModal] = useState(false);
-  const [bulkPreset, setBulkPreset] = useState<string>('preset_1');
+  const [bulkPreset, setBulkPreset] = useState<string>('');
   const [bulkCustomMessage, setBulkCustomMessage] = useState('');
   const [bulkSending, setBulkSending] = useState(false);
 
@@ -136,6 +139,11 @@ export default function DeliveryDelaysPage() {
       if (res.ok) {
         const data = await res.json();
         setPresets(data.presets);
+        // Default to first template
+        if (data.presets.length > 0) {
+          setSelectedPreset((prev) => prev || data.presets[0].id);
+          setBulkPreset((prev) => prev || data.presets[0].id);
+        }
       }
     } catch (e) {
       console.error('Failed to fetch presets:', e);
@@ -549,7 +557,7 @@ export default function DeliveryDelaysPage() {
                     {alert.status === 'pending' && (
                       <div className="flex items-center gap-1 justify-end">
                         <button
-                          onClick={() => { setSelectedAlert(alert); setSelectedPreset('preset_1'); setCustomMessage(''); }}
+                          onClick={() => { setSelectedAlert(alert); setSelectedPreset(presets[0]?.id || ''); setCustomMessage(''); }}
                           className="p-1.5 rounded-lg hover:bg-orange-500/20 text-orange-400 transition-colors"
                           title="Wyślij powiadomienie"
                         >
@@ -599,11 +607,9 @@ export default function DeliveryDelaysPage() {
                         <div className="space-y-1">
                           <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Typ wiadomości</div>
                           <div className="text-white">
-                            {alert.messageType === 'preset_1' && 'Krótkie przeprosiny'}
-                            {alert.messageType === 'preset_2' && 'Przeprosiny z rabatem'}
-                            {alert.messageType === 'preset_3' && 'Informacyjny'}
-                            {alert.messageType === 'custom' && 'Własna wiadomość'}
-                            {!alert.messageType && '—'}
+                            {alert.messageType === 'custom'
+                              ? 'Własna wiadomość'
+                              : presets.find((p) => p.id === alert.messageType)?.name || alert.messageType || '—'}
                           </div>
                         </div>
                       </div>
@@ -656,7 +662,7 @@ export default function DeliveryDelaysPage() {
           </div>
           <div className="w-px h-6 bg-slate-600" />
           <button
-            onClick={() => { setShowBulkModal(true); setBulkPreset('preset_1'); setBulkCustomMessage(''); }}
+            onClick={() => { setShowBulkModal(true); setBulkPreset(presets[0]?.id || ''); setBulkCustomMessage(''); }}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium transition-colors"
           >
             <Send className="w-4 h-4" />
@@ -740,7 +746,14 @@ export default function DeliveryDelaysPage() {
                         className="mt-0.5 accent-orange-500"
                       />
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-white">{preset.name}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-medium text-white">{preset.name}</div>
+                          {preset.includesDiscount && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/20 text-green-400">
+                              -{preset.discountPercent}% rabat
+                            </span>
+                          )}
+                        </div>
                         <div className="text-xs text-slate-400 mt-0.5">{preset.description}</div>
                       </div>
                     </label>
@@ -887,7 +900,14 @@ export default function DeliveryDelaysPage() {
                       className="mt-0.5 accent-orange-500"
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-white">{preset.name}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-sm font-medium text-white">{preset.name}</div>
+                        {preset.includesDiscount && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/20 text-green-400">
+                            -{preset.discountPercent}% rabat
+                          </span>
+                        )}
+                      </div>
                       <div className="text-xs text-slate-400 mt-0.5">{preset.description}</div>
                       {/* Preview toggle */}
                       <button
