@@ -248,7 +248,7 @@ export class BaselinkerOrdersService {
     order: any,
     _inventoryId: string, // Not used anymore - each product has its own warehouse
     orderStatusId: number
-  ): BaselinkerAddOrderRequest {
+  ): Promise<BaselinkerAddOrderRequest> {
     // Map shipping method to Baselinker format
     const deliveryMethod = this.mapShippingMethod(order.shippingMethod);
 
