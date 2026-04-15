@@ -112,7 +112,7 @@ export default function PricingPage() {
             const data = await response.json();
             const parsed = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
             if (Array.isArray(parsed) && parsed.length > 0) {
-              results[wh.key] = parsed;
+              results[wh.key] = parsed.map((r: any, i: number) => ({ ...r, id: r.id || generateId() }));
             } else {
               results[wh.key] = [...DEFAULT_RULES];
             }
@@ -409,7 +409,7 @@ export default function PricingPage() {
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={editingCell?.ruleId === rule.id && editingCell.field === 'priceFrom' ? editingCell.value : rule.priceFrom}
+                  value={editingCell?.ruleId === rule.id && editingCell?.field === 'priceFrom' ? editingCell.value : rule.priceFrom}
                   onFocus={() => setEditingCell({ ruleId: rule.id, field: 'priceFrom', value: String(rule.priceFrom) })}
                   onChange={e => setEditingCell({ ruleId: rule.id, field: 'priceFrom', value: e.target.value })}
                   onBlur={() => { if (editingCell) { updateRule(activeWarehouse, rule.id, 'priceFrom', editingCell.value); setEditingCell(null); } }}
@@ -420,7 +420,7 @@ export default function PricingPage() {
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={editingCell?.ruleId === rule.id && editingCell.field === 'priceTo' ? editingCell.value : rule.priceTo}
+                  value={editingCell?.ruleId === rule.id && editingCell?.field === 'priceTo' ? editingCell.value : rule.priceTo}
                   onFocus={() => setEditingCell({ ruleId: rule.id, field: 'priceTo', value: String(rule.priceTo) })}
                   onChange={e => setEditingCell({ ruleId: rule.id, field: 'priceTo', value: e.target.value })}
                   onBlur={() => { if (editingCell) { updateRule(activeWarehouse, rule.id, 'priceTo', editingCell.value); setEditingCell(null); } }}
@@ -431,7 +431,7 @@ export default function PricingPage() {
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={editingCell?.ruleId === rule.id && editingCell.field === 'multiplier' ? editingCell.value : rule.multiplier}
+                  value={editingCell?.ruleId === rule.id && editingCell?.field === 'multiplier' ? editingCell.value : rule.multiplier}
                   onFocus={() => setEditingCell({ ruleId: rule.id, field: 'multiplier', value: String(rule.multiplier) })}
                   onChange={e => setEditingCell({ ruleId: rule.id, field: 'multiplier', value: e.target.value })}
                   onBlur={() => { if (editingCell) { updateRule(activeWarehouse, rule.id, 'multiplier', editingCell.value); setEditingCell(null); } }}
@@ -442,7 +442,7 @@ export default function PricingPage() {
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={editingCell?.ruleId === rule.id && editingCell.field === 'addToPrice' ? editingCell.value : rule.addToPrice}
+                  value={editingCell?.ruleId === rule.id && editingCell?.field === 'addToPrice' ? editingCell.value : rule.addToPrice}
                   onFocus={() => setEditingCell({ ruleId: rule.id, field: 'addToPrice', value: String(rule.addToPrice) })}
                   onChange={e => setEditingCell({ ruleId: rule.id, field: 'addToPrice', value: e.target.value })}
                   onBlur={() => { if (editingCell) { updateRule(activeWarehouse, rule.id, 'addToPrice', editingCell.value); setEditingCell(null); } }}
