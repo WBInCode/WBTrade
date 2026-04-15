@@ -214,7 +214,7 @@ export default function PricingPage() {
   const updateRule = (warehouse: Warehouse, ruleId: string, field: keyof PriceRule, value: string) => {
     setRules(prev => ({
       ...prev,
-      [warehouse]: prev[warehouse].map(rule =>
+      [warehouse]: (prev[warehouse] || []).map(rule =>
         rule.id === ruleId
           ? { ...rule, [field]: field === 'id' ? value : parseFloat(value) || 0 }
           : rule
@@ -246,7 +246,7 @@ export default function PricingPage() {
   const removeRule = (warehouse: Warehouse, ruleId: string) => {
     setRules(prev => ({
       ...prev,
-      [warehouse]: prev[warehouse].filter(rule => rule.id !== ruleId),
+      [warehouse]: (prev[warehouse] || []).filter(rule => rule.id !== ruleId),
     }));
     setHasChanges(prev => ({ ...prev, [warehouse]: true }));
   };
@@ -300,6 +300,7 @@ export default function PricingPage() {
   // Calculate example price
   const calculateExamplePrice = (sourcePrice: number, warehouse: Warehouse): string => {
     const warehouseRules = rules[warehouse];
+    if (!warehouseRules) return '-';
     for (const rule of warehouseRules) {
       if (sourcePrice >= rule.priceFrom && sourcePrice <= rule.priceTo) {
         const result = sourcePrice * rule.multiplier + rule.addToPrice;
