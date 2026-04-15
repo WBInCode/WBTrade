@@ -14,19 +14,18 @@ interface PriceRule {
   addToPrice: number;
 }
 
-type Warehouse = 'leker' | 'btp' | 'hp' | 'dofirmy';
+type Warehouse = string;
 
 interface SyncStatus {
   source: string;
   lastSync: { startedAt: string; completedAt: string | null; status: string; itemsProcessed: number; itemsChanged: number } | null;
 }
 
-const WAREHOUSES: { key: Warehouse; label: string; description: string }[] = [
-  { key: 'leker', label: 'Leker', description: 'Magazyn Chynów' },
-  { key: 'btp', label: 'BTP', description: 'Magazyn Chotów' },
-  { key: 'hp', label: 'HP', description: 'Magazyn Zielona Góra' },
-  { key: 'dofirmy', label: 'DoFirmy', description: 'Magazyn Koszalin' },
-];
+interface WarehouseInfo {
+  key: string;
+  label: string;
+  description: string;
+}
 
 const DEFAULT_RULES: PriceRule[] = [
   { id: '1', priceFrom: 0, priceTo: 35, multiplier: 1.0, addToPrice: 0 },
@@ -48,22 +47,13 @@ function generateId(): string {
 }
 
 export default function PricingPage() {
-  const [activeWarehouse, setActiveWarehouse] = useState<Warehouse>('leker');
-  const [rules, setRules] = useState<Record<Warehouse, PriceRule[]>>({
-    leker: [],
-    btp: [],
-    hp: [],
-    dofirmy: [],
-  });
+  const [warehouses, setWarehouses] = useState<WarehouseInfo[]>([]);
+  const [activeWarehouse, setActiveWarehouse] = useState<Warehouse>('');
+  const [rules, setRules] = useState<Record<Warehouse, PriceRule[]>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [hasChanges, setHasChanges] = useState<Record<Warehouse, boolean>>({
-    leker: false,
-    btp: false,
-    hp: false,
-    dofirmy: false,
-  });
+  const [hasChanges, setHasChanges] = useState<Record<Warehouse, boolean>>({});
   const [editingCell, setEditingCell] = useState<{ ruleId: string; field: string; value: string } | null>(null);
 
   // Sync state
@@ -75,9 +65,41 @@ export default function PricingPage() {
     setLoading(true);
     try {
       const token = getAuthToken();
-      const results: Record<Warehouse, PriceRule[]> = { leker: [], btp: [], hp: [], dofirmy: [] };
 
-      for (const wh of WAREHOUSES) {
+      // Fetch warehouses with price rules from API
+      const whRes = await fetch(`${API_URL}/admin/wholesalers`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      let whs: WarehouseInfo[] = [];
+      if (whRes.ok) {
+        const data = await whRes.json();
+        whs = data
+          .filter((w: any) => w.isActive && w.hasPriceRules)
+          .map((w: any) => ({
+            key: w.key,
+            label: w.name,
+            description: w.warehouseDisplayName || w.location || '',
+          }));
+      }
+      if (whs.length === 0) {
+        // Fallback to hardcoded defaults
+        whs = [
+          { key: 'leker', label: 'Leker', description: 'Magazyn Chynów' },
+          { key: 'btp', label: 'BTP', description: 'Magazyn Chotów' },
+          { key: 'hp', label: 'HP', description: 'Magazyn Zielona Góra' },
+          { key: 'dofirmy', label: 'DoFirmy', description: 'Magazyn Koszalin' },
+        ];
+      }
+      setWarehouses(whs);
+      setActiveWarehouse(prev => prev || whs[0]?.key || '');
+
+      const results: Record<Warehouse, PriceRule[]> = {};
+      const changes: Record<Warehouse, boolean> = {};
+
+      for (const wh of whs) {
         try {
           const response = await fetch(`${API_URL}/admin/settings/price_rules_${wh.key}`, {
             headers: {
@@ -100,9 +122,11 @@ export default function PricingPage() {
         } catch {
           results[wh.key] = [...DEFAULT_RULES];
         }
+        changes[wh.key] = false;
       }
 
       setRules(results);
+      setHasChanges(changes);
     } catch (error) {
       console.error('Error fetching price rules:', error);
       setMessage({ type: 'error', text: 'Błąd podczas ładowania reguł cenowych' });
@@ -178,7 +202,7 @@ export default function PricingPage() {
 
       if (!response.ok) throw new Error('Błąd zapisu');
 
-      setMessage({ type: 'success', text: `Reguły cenowe dla ${WAREHOUSES.find(w => w.key === warehouse)?.label} zapisane pomyślnie!` });
+      setMessage({ type: 'success', text: `Reguły cenowe dla ${warehouses.find(w => w.key === warehouse)?.label} zapisane pomyślnie!` });
       setHasChanges(prev => ({ ...prev, [warehouse]: false }));
     } catch (error) {
       setMessage({ type: 'error', text: 'Błąd podczas zapisywania reguł cenowych' });
@@ -229,7 +253,7 @@ export default function PricingPage() {
 
   const copyRules = (fromWarehouse: Warehouse) => {
     const from = rules[fromWarehouse];
-    const targets = WAREHOUSES.filter(w => w.key !== fromWarehouse);
+    const targets = warehouses.filter(w => w.key !== fromWarehouse);
     
     setRules(prev => {
       const updated = { ...prev };
@@ -245,7 +269,7 @@ export default function PricingPage() {
       }
       return updated;
     });
-    setMessage({ type: 'success', text: `Reguły skopiowane z ${WAREHOUSES.find(w => w.key === fromWarehouse)?.label} do pozostałych magazynów` });
+    setMessage({ type: 'success', text: `Reguły skopiowane z ${warehouses.find(w => w.key === fromWarehouse)?.label} do pozostałych magazynów` });
   };
 
   const saveAllRules = async () => {
@@ -253,7 +277,7 @@ export default function PricingPage() {
     setMessage(null);
     try {
       const token = getAuthToken();
-      for (const wh of WAREHOUSES) {
+      for (const wh of warehouses) {
         const response = await fetch(`${API_URL}/admin/settings/price_rules_${wh.key}`, {
           method: 'POST',
           headers: {
@@ -265,7 +289,7 @@ export default function PricingPage() {
         if (!response.ok) throw new Error(`Błąd zapisu dla ${wh.label}`);
       }
       setMessage({ type: 'success', text: 'Wszystkie reguły cenowe zapisane pomyślnie!' });
-      setHasChanges({ leker: false, btp: false, hp: false, dofirmy: false });
+      setHasChanges(Object.fromEntries(warehouses.map(w => [w.key, false])));
     } catch (error) {
       setMessage({ type: 'error', text: 'Błąd podczas zapisywania reguł cenowych' });
     } finally {
@@ -339,7 +363,7 @@ export default function PricingPage() {
 
       {/* Warehouse tabs */}
       <div className="flex gap-1 bg-slate-800/50 p-1 rounded-xl border border-slate-700/50">
-        {WAREHOUSES.map(wh => (
+        {warehouses.map(wh => (
           <button
             key={wh.key}
             onClick={() => setActiveWarehouse(wh.key)}
@@ -469,7 +493,7 @@ export default function PricingPage() {
           className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg text-sm font-medium transition-colors"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Zapisz {WAREHOUSES.find(w => w.key === activeWarehouse)?.label}
+          Zapisz {warehouses.find(w => w.key === activeWarehouse)?.label}
         </button>
       </div>
 
@@ -526,7 +550,7 @@ export default function PricingPage() {
       <PriceSimulator
         warehouse={activeWarehouse}
         calculatePrice={calculateExamplePrice}
-        warehouseLabel={WAREHOUSES.find(w => w.key === activeWarehouse)?.label || ''}
+        warehouseLabel={warehouses.find(w => w.key === activeWarehouse)?.label || ''}
       />
     </div>
   );

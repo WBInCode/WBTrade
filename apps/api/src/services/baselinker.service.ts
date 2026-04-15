@@ -13,6 +13,7 @@ import { encryptToken, decryptToken, maskToken } from '../lib/encryption';
 import { createBaselinkerProvider, BaselinkerProvider, BaselinkerInventory } from '../providers/baselinker';
 import { meiliClient, PRODUCTS_INDEX, isMeilisearchAvailable, markMeilisearchAvailable, markMeilisearchUnavailable } from '../lib/meilisearch';
 import { BaselinkerSyncType, BaselinkerSyncStatus, Prisma, PriceChangeSource } from '@prisma/client';
+import { wholesalerConfigService } from './wholesaler-config.service';
 import { priceHistoryService } from './price-history.service';
 import { syncProgress } from './sync-progress';
 
@@ -1132,51 +1133,24 @@ export class BaselinkerService {
   }
 
   /**
-   * Get warehouse key from inventory name
+   * Get warehouse key from inventory name (delegates to WholesalerConfigService)
    */
-  private getWarehouseKey(inventoryName: string): string | null {
-    const lower = inventoryName.toLowerCase().trim();
-    if (lower === 'leker') return 'leker';
-    if (lower === 'btp' || lower === 'forcetop') return 'btp';
-    if (lower === 'hp' || lower === 'hurtownia przemysłowa') return 'hp';
-    if (lower === 'dofirmy') return 'dofirmy';
-    return null;
+  private async getWarehouseKey(inventoryName: string): Promise<string | null> {
+    return wholesalerConfigService.getWarehouseKey(inventoryName);
   }
 
   /**
-   * Get baselinkerProductId prefix for a given inventory name.
-   * Must match the convention used by sync scripts (sync-all-warehouses.js, sync-btp-full.js, etc.)
-   * Products from HP → "hp-{id}", BTP → "btp-{id}", Leker → "leker-{id}", others → "{id}"
+   * Get baselinkerProductId prefix for a given inventory name (delegates to WholesalerConfigService)
    */
-  private getInventoryPrefix(inventoryName: string): string {
-    const prefixMap: Record<string, string> = {
-      'leker': 'leker-',
-      'btp': 'btp-',
-      'forcetop': 'btp-',
-      'hp': 'hp-',
-      'hurtownia przemysłowa': 'hp-',
-      'dofirmy': 'dofirmy-',
-      'magazyn zwrotów': 'outlet-',
-      'ikonka': '',
-      'główny': '',
-    };
-    const lower = inventoryName.toLowerCase();
-    return prefixMap[lower] ?? '';
+  private async getInventoryPrefix(inventoryName: string): Promise<string> {
+    return wholesalerConfigService.getInventoryPrefix(inventoryName);
   }
 
   /**
-   * Get SKU prefix for a given inventory name (uppercase convention).
-   * Leker → "LEKER-", BTP → "BTP-", HP/others → "" (no prefix)
+   * Get SKU prefix for a given inventory name (delegates to WholesalerConfigService)
    */
-  private getSkuPrefix(inventoryName: string): string {
-    const prefixMap: Record<string, string> = {
-      'leker': 'LEKER-',
-      'btp': 'BTP-',
-      'forcetop': 'BTP-',
-      'dofirmy': 'DOFIRMY-',
-    };
-    const lower = inventoryName.toLowerCase().trim();
-    return prefixMap[lower] ?? '';
+  private async getSkuPrefix(inventoryName: string): Promise<string> {
+    return wholesalerConfigService.getSkuPrefix(inventoryName);
   }
 
   /**
@@ -1327,9 +1301,9 @@ export class BaselinkerService {
       throw new Error(`Nie znaleziono magazynu o ID: ${inventoryId}. Dostępne: ${allInventories.map(i => `${i.name} (${i.inventory_id})`).join(', ')}`);
     }
 
-    const warehouseKey = this.getWarehouseKey(currentInventory.name);
-    const inventoryPrefix = this.getInventoryPrefix(currentInventory.name);
-    const skuPrefix = this.getSkuPrefix(currentInventory.name);
+    const warehouseKey = await this.getWarehouseKey(currentInventory.name);
+    const inventoryPrefix = await this.getInventoryPrefix(currentInventory.name);
+    const skuPrefix = await this.getSkuPrefix(currentInventory.name);
 
     // Fetch category names for display
     const blCategories = await provider.getInventoryCategories(inventoryId);
@@ -1433,10 +1407,10 @@ export class BaselinkerService {
       const priceRules = await this.loadPriceRules();
       const allInventories = await provider.getInventories();
       const currentInventory = allInventories.find(inv => inv.inventory_id.toString() === inventoryId);
-      const warehouseKey = currentInventory ? this.getWarehouseKey(currentInventory.name) : null;
+      const warehouseKey = currentInventory ? await this.getWarehouseKey(currentInventory.name) : null;
       // Get inventory prefix for baselinkerProductId (e.g., "leker-", "btp-", "hp-")
-      const inventoryPrefix = currentInventory ? this.getInventoryPrefix(currentInventory.name) : '';
-      const skuPrefix = currentInventory ? this.getSkuPrefix(currentInventory.name) : '';
+      const inventoryPrefix = currentInventory ? await this.getInventoryPrefix(currentInventory.name) : '';
+      const skuPrefix = currentInventory ? await this.getSkuPrefix(currentInventory.name) : '';
       console.log(`[BaselinkerSync] Inventory: ${currentInventory?.name || inventoryId}, warehouse: ${warehouseKey || 'unknown'}, prefix: "${inventoryPrefix}", skuPrefix: "${skuPrefix}", price rules: ${warehouseKey && priceRules[warehouseKey] ? priceRules[warehouseKey].length + ' rules' : 'none'}`);
 
       if (syncLogId) {
@@ -2190,13 +2164,13 @@ export class BaselinkerService {
       }
 
       for (const inv of inventories) {
-        // Skip non-product inventories (empik) and ikonka/Główny
-        if (inv.name.includes('empik') || inv.name === 'ikonka' || inv.name === 'Główny') {
+        // Skip inventories marked as skipInSync in wholesaler config
+        if (await wholesalerConfigService.shouldSkipInventory(inv.name)) {
           console.log(`[BaselinkerSync] Skipping inventory: ${inv.name}`);
           continue;
         }
 
-        const prefix = this.getInventoryPrefix(inv.name);
+        const prefix = await this.getInventoryPrefix(inv.name);
         console.log(`[BaselinkerSync] Syncing stock from inventory: ${inv.name} (${inv.inventory_id}), prefix: "${prefix}"`);
 
         if (syncLogId) {
@@ -2429,12 +2403,12 @@ export class BaselinkerService {
         : allInventories;
 
       for (const inv of inventories) {
-        if (inv.name.includes('empik') || inv.name === 'ikonka' || inv.name === 'Główny') {
+        if (await wholesalerConfigService.shouldSkipInventory(inv.name)) {
           console.log(`[BaselinkerSync] Skipping price inventory: ${inv.name}`);
           continue;
         }
 
-        const prefix = this.getInventoryPrefix(inv.name);
+        const prefix = await this.getInventoryPrefix(inv.name);
         console.log(`[BaselinkerSync] Syncing prices from inventory: ${inv.name} (${inv.inventory_id}), prefix: "${prefix}"`);
 
         if (syncLogId) {
@@ -2451,7 +2425,7 @@ export class BaselinkerService {
 
           // 2. Build a map: prefixedId -> newPrice (after price multiplier + roundPriceTo99)
           const priceRules = await this.loadPriceRules();
-          const whKey = this.getWarehouseKey(inv.name);
+          const whKey = await this.getWarehouseKey(inv.name);
           console.log(`[BaselinkerSync] Price rules for ${inv.name} (${whKey}): ${whKey && priceRules[whKey] ? priceRules[whKey].length + ' rules' : 'none'}`);
 
           const blPrices = new Map<string, number>();
@@ -2769,9 +2743,13 @@ export class BaselinkerService {
     try {
       // Get all inventories to iterate through
       const allInventories = await provider.getInventories();
-      const inventories = allInventories.filter(inv => 
-        !inv.name.includes('empik') && inv.name !== 'ikonka' && inv.name !== 'Główny'
-      );
+      const inventoriesFiltered: typeof allInventories = [];
+      for (const inv of allInventories) {
+        if (!(await wholesalerConfigService.shouldSkipInventory(inv.name))) {
+          inventoriesFiltered.push(inv);
+        }
+      }
+      const inventories = inventoriesFiltered;
 
       // Get products with their Baselinker IDs
       const products = await prisma.product.findMany({
@@ -2780,7 +2758,7 @@ export class BaselinkerService {
       });
 
       for (const inv of inventories) {
-        const prefix = this.getInventoryPrefix(inv.name);
+        const prefix = await this.getInventoryPrefix(inv.name);
         console.log(`[BaselinkerSync] Syncing images from inventory: ${inv.name} (${inv.inventory_id}), prefix: "${prefix}"`);
 
         // Filter products belonging to this inventory

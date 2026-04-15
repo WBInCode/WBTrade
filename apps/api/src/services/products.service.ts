@@ -4,6 +4,7 @@ import { getProductsIndex, isMeilisearchAvailable, markMeilisearchUnavailable, m
 import { MeiliProduct } from './search.service';
 import { queueProductIndex, queueProductDelete } from '../lib/queue';
 import { priceHistoryService } from './price-history.service';
+import { wholesalerConfigService } from './wholesaler-config.service';
 
 // Tagi dostawy - produkty MUSZĄ mieć przynajmniej jeden z tych tagów żeby być widoczne
 // Produkty z TYLKO tagiem hurtowni (Ikonka, BTP, HP, Leker) nie będą wyświetlane
@@ -125,6 +126,9 @@ function transformProduct(product: any): any {
   
   // Calculate total stock as sum of all variant stocks
   const totalStock = transformedVariants?.reduce((sum: number, v: any) => sum + (v.stock || 0), 0) ?? 0;
+
+  // Resolve warehouse location from wholesaler config cache
+  const warehouseLocation = resolveWarehouseLocation(product.baselinkerProductId, product.sku);
   
   return {
     ...product,
@@ -137,7 +141,24 @@ function transformProduct(product: any): any {
     // Map DB field names to frontend-friendly names
     rating: product.average_rating ? Number(product.average_rating) : null,
     reviewCount: product.review_count || 0,
+    // Dynamic warehouse location from DB
+    warehouseLocation,
   };
+}
+
+// Synchronous warehouse location resolution using cached config
+function resolveWarehouseLocation(baselinkerProductId: string | null, sku: string | null): string | null {
+  const cached = wholesalerConfigService.getCachedConfig();
+  if (!cached || cached.length === 0) return null;
+  
+  const blId = (baselinkerProductId || '').toLowerCase();
+  const skuUp = (sku || '').toUpperCase();
+  
+  for (const w of cached) {
+    if (w.prefix && blId.startsWith(w.prefix.toLowerCase())) return w.location;
+    if (w.skuPrefix && skuUp.startsWith(w.skuPrefix.toUpperCase())) return w.location;
+  }
+  return null;
 }
 
 /**
@@ -428,15 +449,17 @@ export class ProductsService {
       // But we can at least ensure compareAtPrice exists
     }
 
-    // Filter by warehouse (based on baselinkerProductId prefix)
+    // Filter by warehouse (based on baselinkerProductId prefix - dynamic from DB)
     if (warehouse) {
       const warehouses = warehouse.split(',').map(w => w.trim().toLowerCase());
+      const allConfig = await wholesalerConfigService.getAll();
       const warehouseConditions: Prisma.ProductWhereInput[] = [];
       
       for (const w of warehouses) {
-        if (['leker', 'hp', 'btp', 'dofirmy', 'outlet'].includes(w)) {
+        const config = allConfig.find(c => c.key === w);
+        if (config && config.prefix) {
           warehouseConditions.push({
-            baselinkerProductId: { startsWith: `${w}-` }
+            baselinkerProductId: { startsWith: config.prefix }
           });
         }
       }
@@ -1438,46 +1461,26 @@ export class ProductsService {
       ...(categoryIds ? { categoryId: { in: categoryIds } } : {}),
     };
 
-    const [lekerCount, hpCount, btpCount, dofirmyCount, outletCount] = await Promise.all([
-      prisma.product.count({
-        where: {
-          ...whereBase,
-          baselinkerProductId: { startsWith: 'leker-' },
-        },
-      }),
-      prisma.product.count({
-        where: {
-          ...whereBase,
-          baselinkerProductId: { startsWith: 'hp-' },
-        },
-      }),
-      prisma.product.count({
-        where: {
-          ...whereBase,
-          baselinkerProductId: { startsWith: 'btp-' },
-        },
-      }),
-      prisma.product.count({
-        where: {
-          ...whereBase,
-          baselinkerProductId: { startsWith: 'dofirmy-' },
-        },
-      }),
-      prisma.product.count({
-        where: {
-          ...whereBase,
-          baselinkerProductId: { startsWith: 'outlet-' },
-        },
-      }),
-    ]);
+    // Dynamic: fetch active wholesalers with prefix from DB
+    const allConfig = await wholesalerConfigService.getAll();
+    const activeWithPrefix = allConfig.filter(w => w.prefix && w.isActive);
 
-    return {
-      leker: lekerCount,
-      hp: hpCount,
-      btp: btpCount,
-      dofirmy: dofirmyCount,
-      outlet: outletCount,
-    };
+    const counts = await Promise.all(
+      activeWithPrefix.map(wh =>
+        prisma.product.count({
+          where: {
+            ...whereBase,
+            baselinkerProductId: { startsWith: wh.prefix },
+          },
+        }).then(count => ({ key: wh.key, count }))
+      )
+    );
+
+    const result: Record<string, number> = {};
+    for (const { key, count } of counts) {
+      result[key] = count;
+    }
+    return result;
   }
 
   private async getCategoryPath(slug: string): Promise<string[]> {
@@ -2304,20 +2307,18 @@ export class ProductsService {
    * Extract warehouse info from product's baselinkerProductId or SKU prefix
    */
   private extractWarehouseFromProduct(product: { baselinkerProductId: string | null; sku: string | null }): { id: string; prefix: string; displayName: string } | null {
-    const WAREHOUSES = [
-      { id: 'leker', prefix: 'leker-', skuPrefix: 'LEKER-', displayName: 'Magazyn Chynów' },
-      { id: 'hp', prefix: 'hp-', skuPrefix: 'HP-', displayName: 'Magazyn Zielona Góra' },
-      { id: 'btp', prefix: 'btp-', skuPrefix: 'BTP-', displayName: 'Magazyn Chotów' },
-      { id: 'dofirmy', prefix: 'dofirmy-', skuPrefix: 'DOFIRMY-', displayName: 'Magazyn Koszalin' },
-      { id: 'outlet', prefix: 'outlet-', skuPrefix: 'OUTLET-', displayName: 'Magazyn Rzeszów' },
-    ];
-
+    const cached = wholesalerConfigService.getCachedConfig();
+    
     const blId = product.baselinkerProductId?.toLowerCase() || '';
     const sku = product.sku?.toUpperCase() || '';
 
-    for (const wh of WAREHOUSES) {
-      if (blId.startsWith(wh.prefix) || sku.startsWith(wh.skuPrefix)) {
-        return wh;
+    if (cached && cached.length > 0) {
+      for (const wh of cached) {
+        const prefix = (wh.prefix || '').toLowerCase();
+        const skuPrefix = (wh.skuPrefix || '').toUpperCase();
+        if ((prefix && blId.startsWith(prefix)) || (skuPrefix && sku.startsWith(skuPrefix))) {
+          return { id: wh.key, prefix: wh.prefix, displayName: wh.warehouseDisplayName || `Magazyn ${wh.location || wh.name}` };
+        }
       }
     }
     return null;
