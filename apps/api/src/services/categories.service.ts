@@ -345,18 +345,37 @@ export class CategoriesService {
     };
     updateProductCounts(rootCategories);
 
-    // Filter out categories with 0 products (optional - uncomment if needed)
-    // const filterEmptyCategories = (cats: CategoryWithChildren[]): CategoryWithChildren[] => {
-    //   return cats
-    //     .filter(cat => (cat.productCount || 0) > 0)
-    //     .map(cat => ({
-    //       ...cat,
-    //       children: cat.children ? filterEmptyCategories(cat.children) : []
-    //     }));
-    // };
-    // return filterEmptyCategories(rootCategories);
+    // Deduplicate categories with the same name (e.g. from different wholesalers)
+    const deduplicateCategories = (cats: CategoryWithChildren[]): CategoryWithChildren[] => {
+      const byName = new Map<string, CategoryWithChildren>();
+      for (const cat of cats) {
+        const existing = byName.get(cat.name);
+        if (!existing) {
+          byName.set(cat.name, { ...cat, children: cat.children ? [...cat.children] : undefined });
+        } else {
+          if (existing.slug.match(/-\d+$/) && !cat.slug.match(/-\d+$/)) {
+            existing.slug = cat.slug;
+            existing.id = cat.id;
+          }
+          existing.productCount = (existing.productCount || 0) + (cat.productCount || 0);
+          if (cat.children && cat.children.length > 0) {
+            if (!existing.children) {
+              existing.children = [...cat.children];
+            } else {
+              existing.children = existing.children.concat(cat.children);
+            }
+          }
+        }
+      }
+      for (const cat of byName.values()) {
+        if (cat.children && cat.children.length > 0) {
+          cat.children = deduplicateCategories(cat.children);
+        }
+      }
+      return Array.from(byName.values());
+    };
 
-    return rootCategories;
+    return deduplicateCategories(rootCategories);
   }
 
   /**
@@ -580,7 +599,44 @@ export class CategoriesService {
       };
     };
 
-    const result = categories.map(cat => transformCategory(cat, null));
+    const transformed = categories.map(cat => transformCategory(cat, null));
+
+    // Deduplicate categories with the same name (e.g. from different wholesalers)
+    // Merge product counts and children recursively
+    const deduplicateCategories = (cats: CategoryWithChildren[]): CategoryWithChildren[] => {
+      const byName = new Map<string, CategoryWithChildren>();
+      for (const cat of cats) {
+        const existing = byName.get(cat.name);
+        if (!existing) {
+          byName.set(cat.name, { ...cat, children: cat.children ? [...cat.children] : undefined });
+        } else {
+          // Prefer slug without "-1" suffix
+          if (existing.slug.match(/-\d+$/) && !cat.slug.match(/-\d+$/)) {
+            existing.slug = cat.slug;
+            existing.id = cat.id;
+          }
+          // Sum product counts
+          existing.productCount = (existing.productCount || 0) + (cat.productCount || 0);
+          // Merge children
+          if (cat.children && cat.children.length > 0) {
+            if (!existing.children) {
+              existing.children = [...cat.children];
+            } else {
+              existing.children = existing.children.concat(cat.children);
+            }
+          }
+        }
+      }
+      // Recursively deduplicate children
+      for (const cat of byName.values()) {
+        if (cat.children && cat.children.length > 0) {
+          cat.children = deduplicateCategories(cat.children);
+        }
+      }
+      return Array.from(byName.values());
+    };
+
+    const result = deduplicateCategories(transformed);
 
     // Zapisz w cache na 30 minut
     await setCachedCategoryTree(result);
