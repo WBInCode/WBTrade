@@ -195,6 +195,7 @@ const navSections: NavSection[] = [
         href: '/integrations',
         icon: Box,
         submenu: [
+          { title: 'Hurtownie', href: '/wholesalers' },
           { title: 'Baselinker', href: '/baselinker' },
           { title: 'Import produktów', href: '/baselinker/import' },
           { title: 'Aktualizacja produktów', href: '/baselinker/update-products' },

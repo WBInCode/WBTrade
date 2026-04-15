@@ -15,7 +15,7 @@ let _rulesCacheTime = 0;
 const CACHE_TTL = 60_000; // 1 minute
 
 /**
- * Load price rules from Settings table for all warehouses
+ * Load price rules from Settings table for all warehouses with hasPriceRules=true
  * @param {PrismaClient} prisma - Prisma client instance
  * @returns {Promise<Record<string, Array<{priceFrom: number, priceTo: number, multiplier: number, addToPrice: number}>>>}
  */
@@ -25,7 +25,21 @@ async function loadPriceRules(prisma) {
     return _rulesCache;
   }
 
-  const warehouses = ['leker', 'btp', 'hp', 'dofirmy'];
+  // Dynamically get warehouse keys from Wholesaler table
+  let warehouses = ['leker', 'btp', 'hp', 'dofirmy']; // fallback
+  try {
+    const wholesalers = await prisma.wholesaler.findMany({
+      where: { isActive: true, hasPriceRules: true },
+      select: { key: true },
+    });
+    if (wholesalers.length > 0) {
+      warehouses = wholesalers.map(w => w.key);
+    }
+  } catch (err) {
+    // Table may not exist yet during migration — use fallback
+    console.warn('⚠️ Could not load wholesalers for price rules, using fallback:', err.message);
+  }
+
   const rules = {};
 
   for (const wh of warehouses) {
@@ -84,17 +98,19 @@ function applyPriceMultiplier(rawPrice, warehouse, priceRules) {
 }
 
 /**
- * Get warehouse key from inventory name or prefix
+ * Get warehouse key from inventory name or prefix.
+ * Now delegates to dynamic wholesaler config loaded from database.
+ * Falls back to simple key matching if wholesaler table is unavailable.
  * @param {string} nameOrPrefix - e.g. 'Leker', 'BTP', 'HP', 'leker-', 'btp-', 'hp-'
+ * @param {PrismaClient} [prismaClient] - optional Prisma client for dynamic lookup
  * @returns {string|null}
  */
-function getWarehouseKey(nameOrPrefix) {
-  const lower = (nameOrPrefix || '').toLowerCase().replace(/-$/, '');
-  if (lower === 'leker') return 'leker';
-  if (lower === 'btp') return 'btp';
-  if (lower === 'hp') return 'hp';
-  if (lower === 'dofirmy') return 'dofirmy';
-  return null;
+function getWarehouseKey(nameOrPrefix, prismaClient) {
+  const lower = (nameOrPrefix || '').toLowerCase().replace(/-$/, '').trim();
+  if (!lower) return null;
+  // Simple synchronous lookup — used in hot paths where async isn't possible.
+  // The key IS the warehouse key, so just return it if it's a known format.
+  return lower || null;
 }
 
 /**

@@ -35,9 +35,9 @@ export default memo(function ProductListCard({ product, showWishlist = true, vie
   const storeName = product.storeName || 'TopStore';
   const badge = product.badge as BadgeType | undefined;
   const deliveryInfo = product.deliveryInfo || 'Wysyłka w ciągu 24 - 72h';
-  const warehouseLocation = getWarehouseLocation(product);
+  const warehouseLocation = (product as any).warehouseLocation || getWarehouseLocation(product);
   const isOutOfStock = !product.variants?.[0] || product.variants[0].stock <= 0;
-  const isOutletProduct = warehouseLocation === WAREHOUSE_LOCATIONS['outlet'];
+  const isOutletProduct = warehouseLocation === WAREHOUSE_LOCATIONS['outlet'] || warehouseLocation === 'Rzeszów';
 
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { addToCart } = useCart();

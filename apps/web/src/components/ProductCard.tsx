@@ -43,9 +43,9 @@ export default memo(function ProductCard({ product, showDelivery = false, showWi
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { addToCart } = useCart();
   const inWishlist = isInWishlist(product.id);
-  const warehouseLocation = getWarehouseLocation(product);
+  const warehouseLocation = (product as any).warehouseLocation || getWarehouseLocation(product);
   const isOutOfStock = !product.variants?.[0] || product.variants[0].stock <= 0;
-  const isOutletProduct = warehouseLocation === WAREHOUSE_LOCATIONS['outlet'];
+  const isOutletProduct = warehouseLocation === WAREHOUSE_LOCATIONS['outlet'] || warehouseLocation === 'Rzeszów';
 
   const handleWishlistClick = (e: React.MouseEvent) => {
     e.preventDefault();
