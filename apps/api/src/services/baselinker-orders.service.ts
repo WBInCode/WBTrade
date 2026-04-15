@@ -15,6 +15,7 @@
 import { prisma } from '../db';
 import { decryptToken } from '../lib/encryption';
 import { createBaselinkerProvider } from '../providers/baselinker';
+import { wholesalerConfigService } from './wholesaler-config.service';
 import type { BaselinkerAddOrderRequest, BaselinkerOrderProduct } from '../providers/baselinker/baselinker-provider.interface';
 
 // ============================================
@@ -22,18 +23,12 @@ import type { BaselinkerAddOrderRequest, BaselinkerOrderProduct } from '../provi
 // ============================================
 
 /**
- * Maps product prefixes/tags to Baselinker inventory IDs
- * This allows automatic routing of products to correct warehouses
+ * Detect warehouse inventory ID from product data.
+ * Delegates to WholesalerConfigService for dynamic lookup.
  */
-const WAREHOUSE_MAPPING: Record<string, string> = {
-  'btp': '22953',      // BTP warehouse
-  'hp': '22954',       // HP (Hurtownia Przemysłowa)
-  'leker': '22952',    // Leker
-  'ikonka': '22951',   // Ikonka (detected by tag)
-  'dofirmy': '26423',  // DoFirmy (Koszalin)
-  'outlet': '23662',   // Magazyn zwrotów (Outlet/Rzeszów)
-  'default': '11235',  // Główny (default fallback)
-};
+async function detectWarehouseId(baselinkerProductId: string | null, tags: string[] = []): Promise<string> {
+  return wholesalerConfigService.detectWarehouseId(baselinkerProductId, tags);
+}
 
 /**
  * Baselinker order status IDs
@@ -48,33 +43,6 @@ const BL_STATUS = {
  * Default order status ID for new (unpaid) orders in Baselinker
  */
 const DEFAULT_ORDER_STATUS_ID = BL_STATUS.UNPAID;
-
-/**
- * Detect warehouse inventory ID from product data
- */
-function detectWarehouseId(baselinkerProductId: string | null, tags: string[] = []): string {
-  // 1. Check prefix in baselinkerProductId (e.g., "btp-212551167")
-  if (baselinkerProductId) {
-    const prefix = baselinkerProductId.split('-')[0]?.toLowerCase();
-    if (prefix && WAREHOUSE_MAPPING[prefix]) {
-      return WAREHOUSE_MAPPING[prefix];
-    }
-  }
-  
-  // 2. Check tags for warehouse indicators
-  const lowerTags = tags.map(t => t.toLowerCase());
-  
-  if (lowerTags.includes('btp')) return WAREHOUSE_MAPPING['btp'];
-  if (lowerTags.includes('hp') || lowerTags.includes('hurtownia przemysłowa')) return WAREHOUSE_MAPPING['hp'];
-  if (lowerTags.includes('leker')) return WAREHOUSE_MAPPING['leker'];
-  if (lowerTags.includes('ikonka')) return WAREHOUSE_MAPPING['ikonka'];
-  if (lowerTags.includes('forcetop')) return WAREHOUSE_MAPPING['ikonka']; // Forcetop uses ikonka
-  if (lowerTags.includes('dofirmy')) return WAREHOUSE_MAPPING['dofirmy'];
-  if (lowerTags.includes('rzeszów') || lowerTags.includes('outlet')) return WAREHOUSE_MAPPING['outlet'];
-  
-  // 3. If baselinkerProductId is just a number (no prefix), use default
-  return WAREHOUSE_MAPPING['default'];
-}
 
 // ============================================
 // Types
@@ -189,7 +157,7 @@ export class BaselinkerOrdersService {
       });
 
       // 6. Map order to Baselinker format
-      const blOrderData = this.mapOrderToBaselinker(order, config.inventoryId, orderStatusId);
+      const blOrderData = await this.mapOrderToBaselinker(order, config.inventoryId, orderStatusId);
 
       // 7. Send to Baselinker
       console.log(`[BaselinkerOrders] Sending order ${order.orderNumber} to Baselinker...`);
@@ -276,11 +244,11 @@ export class BaselinkerOrdersService {
    * Map local order to Baselinker addOrder format
    * Each product is automatically assigned to the correct warehouse based on its prefix/tags
    */
-  private mapOrderToBaselinker(
+  private async mapOrderToBaselinker(
     order: any,
     _inventoryId: string, // Not used anymore - each product has its own warehouse
     orderStatusId: number
-  ): BaselinkerAddOrderRequest {
+  ): Promise<BaselinkerAddOrderRequest> {
     // Map shipping method to Baselinker format
     const deliveryMethod = this.mapShippingMethod(order.shippingMethod);
 
@@ -288,12 +256,13 @@ export class BaselinkerOrdersService {
     const paymentMethod = this.mapPaymentMethod(order.paymentMethod);
 
     // Build products array - each product gets its own warehouse automatically
-    const products: BaselinkerOrderProduct[] = order.items.map((item: any) => {
+    const products: BaselinkerOrderProduct[] = [];
+    for (const item of order.items) {
       const product = item.variant?.product;
       const variant = item.variant;
 
       // Automatically detect the correct warehouse for this product
-      const warehouseId = detectWarehouseId(
+      const warehouseId = await detectWarehouseId(
         product?.baselinkerProductId || null,
         product?.tags || []
       );
@@ -307,7 +276,7 @@ export class BaselinkerOrdersService {
 
       console.log(`[BaselinkerOrders] Product "${item.productName}" -> Warehouse ${warehouseId}, BL ID: ${rawProductId}`);
 
-      return {
+      products.push({
         // Use 'bl' storage to link to Baselinker inventory and auto-decrease stock
         storage: 'bl' as const,
         storage_id: warehouseId, // Each product uses its detected warehouse
@@ -320,8 +289,8 @@ export class BaselinkerOrdersService {
         tax_rate: 23, // Polish VAT rate
         quantity: item.quantity,
         weight: variant?.weight || product?.weight || 0,
-      };
-    });
+      });
+    }
 
     // Add discount as a product with negative price (standard Baselinker approach)
     const orderDiscount = Number(order.discount || 0);

@@ -24,12 +24,13 @@ import { couponsApi, UserCoupon } from '../../services/coupons';
 import CartItem from '../../components/cart/CartItem';
 import Button from '../../components/ui/Button';
 import { FontAwesome } from '@expo/vector-icons';
+import Config from '../../constants/Config';
 
 // Free shipping threshold per warehouse (in PLN) - same as backend
 const FREE_SHIPPING_THRESHOLD = 300;
 
-// Warehouse display names (by city) - matching web version
-const WHOLESALER_CONFIG: Record<string, { name: string; color: string }> = {
+// Warehouse display names (by city) - fallback config, overridden by API
+const FALLBACK_WHOLESALER_CONFIG: Record<string, { name: string; color: string }> = {
   'HP': { name: 'Magazyn Zielona Góra', color: '#3b82f6' },
   'Hurtownia Przemysłowa': { name: 'Magazyn Zielona Góra', color: '#3b82f6' },
   'Ikonka': { name: 'Magazyn Białystok', color: '#a855f7' },
@@ -44,9 +45,38 @@ const WHOLESALER_CONFIG: Record<string, { name: string; color: string }> = {
   'default': { name: 'Magazyn Chynów', color: '#6b7280' },
 };
 
+let _dynamicWholesalerConfig: Record<string, { name: string; color: string }> | null = null;
+let _configLoadedAt = 0;
+
+async function loadWholesalerConfig(): Promise<Record<string, { name: string; color: string }>> {
+  const now = Date.now();
+  if (_dynamicWholesalerConfig && now - _configLoadedAt < 5 * 60 * 1000) return _dynamicWholesalerConfig;
+  try {
+    const res = await fetch(`${Config.API_URL}/wholesalers/config`);
+    if (res.ok) {
+      const data = await res.json();
+      const config: Record<string, { name: string; color: string }> = { ...FALLBACK_WHOLESALER_CONFIG };
+      for (const w of data) {
+        const displayName = w.warehouseDisplayName || (w.location ? `Magazyn ${w.location}` : w.name);
+        config[w.name] = { name: displayName, color: w.color || '#6b7280' };
+        if (w.aliases) {
+          for (const alias of w.aliases) {
+            config[alias] = { name: displayName, color: w.color || '#6b7280' };
+          }
+        }
+      }
+      _dynamicWholesalerConfig = config;
+      _configLoadedAt = now;
+      return config;
+    }
+  } catch {}
+  return FALLBACK_WHOLESALER_CONFIG;
+}
+
 function getWholesalerConfig(wholesaler: string | null | undefined) {
-  if (!wholesaler) return WHOLESALER_CONFIG['default'];
-  return WHOLESALER_CONFIG[wholesaler] || { name: wholesaler, color: '#6b7280' };
+  const config = _dynamicWholesalerConfig || FALLBACK_WHOLESALER_CONFIG;
+  if (!wholesaler) return config['default'] || FALLBACK_WHOLESALER_CONFIG['default'];
+  return config[wholesaler] || { name: wholesaler, color: '#6b7280' };
 }
 
 export default function CartScreen() {
@@ -68,6 +98,9 @@ export default function CartScreen() {
   const [totalShippingCost, setTotalShippingCost] = useState<number>(0);
   const [loadingShipping, setLoadingShipping] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+
+  // Load dynamic wholesaler config on mount
+  useEffect(() => { loadWholesalerConfig(); }, []);
 
   const items = cart?.items || [];
   const subtotal = cart?.subtotal || 0;

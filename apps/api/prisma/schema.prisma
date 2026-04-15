@@ -1121,3 +1121,26 @@ enum CampaignScope {
   SELECTED
   TAG
 }
+
+model Wholesaler {
+  id                    String   @id @default(cuid())
+  key                   String   @unique
+  name                  String
+  baselinkerInventoryId String?  @unique @map("baselinker_inventory_id")
+  prefix                String   @default("")
+  skuPrefix             String?  @map("sku_prefix")
+  location              String?
+  warehouseDisplayName  String?  @map("warehouse_display_name")
+  aliases               String[] @default([])
+  color                 String   @default("#6b7280")
+  isActive              Boolean  @default(true) @map("is_active")
+  skipInSync            Boolean  @default(false) @map("skip_in_sync")
+  hasPriceRules         Boolean  @default(false) @map("has_price_rules")
+  sortOrder             Int      @default(0) @map("sort_order")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive])
+  @@index([sortOrder])
+  @@map("wholesalers")
+}

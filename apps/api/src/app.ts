@@ -59,6 +59,8 @@ import adminEmailTemplatesRoutes from './routes/admin-email-templates';
 import userNotificationsRoutes from './routes/user-notifications';
 import emailInboundRoutes from './routes/email-inbound';
 import imageProxyRoutes from './routes/image-proxy';
+import adminWholesalersRoutes from './routes/admin-wholesalers';
+import wholesalersRoutes from './routes/wholesalers';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
 import { initializeMeilisearch } from './lib/meilisearch';
 import { startSearchIndexWorker } from './workers/search-index.worker';
@@ -468,78 +470,9 @@ app.get('/api/debug-compiled', (req, res) => {
 app.use('/api/health', healthRoutes);
 
 // =====================================================================
-// HOTFIX: Monkey-patch baselinkerService.getInventoryPrefix to add .trim()
-// This fixes the issue where Baselinker API returns inventory names with
-// trailing spaces, causing prefix lookup to fail (e.g. "Forcetop " → "" instead of "btp-")
-// This runs in app.ts because baselinker.service.ts changes are not being compiled on Render.
-// =====================================================================
-(() => {
-  try {
-    const { baselinkerService } = require('./services/baselinker.service');
-    const originalGetInventoryPrefix = (baselinkerService as any).getInventoryPrefix.bind(baselinkerService);
-    
-    (baselinkerService as any).getInventoryPrefix = function(inventoryName: string): string {
-      // Apply trim before lookup
-      const trimmed = (inventoryName || '').trim();
-      const result = originalGetInventoryPrefix(trimmed);
-      console.log(`[HOTFIX] getInventoryPrefix("${inventoryName}") → trimmed="${trimmed}" → "${result}"`);
-      return result;
-    };
-    
-    // Also patch getWarehouseKey  
-    const originalGetWarehouseKey = (baselinkerService as any).getWarehouseKey.bind(baselinkerService);
-    (baselinkerService as any).getWarehouseKey = function(inventoryName: string): string | null {
-      const trimmed = (inventoryName || '').trim();
-      return originalGetWarehouseKey(trimmed);
-    };
-    
-    // Also patch getSkuPrefix
-    const originalGetSkuPrefix = (baselinkerService as any).getSkuPrefix.bind(baselinkerService);
-    (baselinkerService as any).getSkuPrefix = function(inventoryName: string): string {
-      const trimmed = (inventoryName || '').trim();
-      return originalGetSkuPrefix(trimmed);
-    };
-    
-    console.log('[HOTFIX] Successfully patched getInventoryPrefix/getWarehouseKey/getSkuPrefix with .trim()');
-  } catch (err) {
-    console.error('[HOTFIX] Failed to patch:', err);
-  }
-})();
-
-// =====================================================================
 // SELF-CONTAINED PRODUCT UPDATE ENDPOINT
-// Completely bypasses baselinker.service.ts (which doesn't deploy on Render).
-// Connects directly to Baselinker API, matches products by baselinkerProductId
-// with correct prefix (btp- for Forcetop, hp- for HP, leker- for Leker).
+// Uses WholesalerConfigService for dynamic prefix/warehouse resolution
 // =====================================================================
-
-const INVENTORY_PREFIX_MAP: Record<string, string> = {
-  'leker': 'leker-',
-  'btp': 'btp-',
-  'forcetop': 'btp-',
-  'hp': 'hp-',
-  'hurtownia przemysłowa': 'hp-',
-  'dofirmy': 'dofirmy-',
-  'magazyn zwrotów': 'outlet-',
-  'ikonka': '',
-  'główny': '',
-};
-
-const WAREHOUSE_KEY_MAP: Record<string, string> = {
-  'leker': 'leker',
-  'btp': 'btp',
-  'forcetop': 'btp',
-  'hp': 'hp',
-  'hurtownia przemysłowa': 'hp',
-  'dofirmy': 'dofirmy',
-};
-
-const SKU_PREFIX_MAP: Record<string, string> = {
-  'leker': 'LEKER-',
-  'btp': 'BTP-',
-  'forcetop': 'BTP-',
-  'dofirmy': 'DOFIRMY-',
-};
 
 // Helper: call Baselinker API
 async function callBaselinkerAPI(apiToken: string, method: string, params: Record<string, any> = {}): Promise<any> {
@@ -637,10 +570,10 @@ app.post('/api/admin/direct-update', async (req, res) => {
         }
 
         const invName = currentInventory.name.trim();
-        const invNameLower = invName.toLowerCase();
-        const prefix = INVENTORY_PREFIX_MAP[invNameLower] ?? '';
-        const warehouseKey = WAREHOUSE_KEY_MAP[invNameLower] ?? null;
-        const skuPrefix = SKU_PREFIX_MAP[invNameLower] ?? '';
+        const { wholesalerConfigService } = await import('./services/wholesaler-config.service');
+        const prefix = await wholesalerConfigService.getInventoryPrefix(invName);
+        const warehouseKey = await wholesalerConfigService.getWarehouseKey(invName);
+        const skuPrefix = await wholesalerConfigService.getSkuPrefix(invName);
 
         syncProgress.sendProgress(syncLogId, {
           type: 'info',
@@ -1107,6 +1040,8 @@ app.use('/api/admin/delivery-delays', adminDeliveryDelaysRoutes); // Admin deliv
 app.use('/api/admin/email-templates', adminEmailTemplatesRoutes); // Admin email templates management
 app.use('/api/notifications', userNotificationsRoutes); // User in-app notifications
 app.use('/api/img', imageProxyRoutes); // Image proxy with disk cache
+app.use('/api/admin/wholesalers', adminWholesalersRoutes); // Admin wholesaler management
+app.use('/api/wholesalers', wholesalersRoutes); // Public wholesaler config
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -1130,6 +1065,14 @@ app.listen(PORT, async () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
   console.log(`📦 Environment: ${process.env.NODE_ENV || 'development'}`);
 
+  // Preload wholesaler config cache so transformProduct has data
+  try {
+    const { wholesalerConfigService } = await import('./services/wholesaler-config.service');
+    const configs = await wholesalerConfigService.getAll();
+    console.log(`✅ Wholesaler config loaded: ${configs.length} active wholesalers`);
+  } catch (err) {
+    console.error('⚠️ Failed to preload wholesaler config:', err);
+  }
   // Global error handlers to prevent silent crashes
   process.on('unhandledRejection', (reason, promise) => {
     console.error('⚠️ Unhandled Promise Rejection:', reason);
