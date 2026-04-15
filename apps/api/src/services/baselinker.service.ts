@@ -752,6 +752,28 @@ export class BaselinkerService {
         }
         
         try {
+          // If no exact match, check for legacy prefixed versions (hp-, btp-, leker-, outlet-)
+          // and migrate them to use the plain ID
+          if (!existing) {
+            for (const prefix of ['hp-', 'btp-', 'leker-', 'outlet-']) {
+              const prefixed = await prisma.category.findUnique({
+                where: { baselinkerCategoryId: `${prefix}${categoryId}` }
+              });
+              if (prefixed) {
+                console.log(`[BaselinkerSync] Migrating category "${categoryName}" from ${prefix}${categoryId} to ${categoryId}`);
+                await prisma.category.update({
+                  where: { id: prefixed.id },
+                  data: { baselinkerCategoryId: categoryId }
+                });
+                mainCategoryMap.set(categoryName, prefixed.id);
+                processed++;
+                break;
+              }
+            }
+            // If we found and migrated a prefixed version, skip the upsert
+            if (mainCategoryMap.has(categoryName)) continue;
+          }
+
           const slug = slugify(categoryName) || `category-${categoryId}`;
           
           const result = await prisma.category.upsert({
@@ -879,6 +901,26 @@ export class BaselinkerService {
         }
         
         try {
+          // If no exact match, check for legacy prefixed versions
+          if (!existing) {
+            for (const prefix of ['hp-', 'btp-', 'leker-', 'outlet-']) {
+              const prefixed = await prisma.category.findUnique({
+                where: { baselinkerCategoryId: `${prefix}${categoryId}` }
+              });
+              if (prefixed) {
+                console.log(`[BaselinkerSync] Migrating subcategory "${leafName}" from ${prefix}${categoryId} to ${categoryId}`);
+                await prisma.category.update({
+                  where: { id: prefixed.id },
+                  data: { baselinkerCategoryId: categoryId, parentId: parentId }
+                });
+                pathToCategoryId.set(fullPath.toLowerCase(), prefixed.id);
+                processed++;
+                break;
+              }
+            }
+            if (pathToCategoryId.has(fullPath.toLowerCase())) continue;
+          }
+
           // Create slug from leaf name only (parent is in hierarchy)
           const slug = slugify(leafName) || `subcategory-${categoryId}`;
           
