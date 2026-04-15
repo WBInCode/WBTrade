@@ -13,15 +13,28 @@
  */
 
 import { prisma } from '../db';
+import { wholesalerConfigService } from './wholesaler-config.service';
 
-// Tag patterns for matching
+// Tag patterns for matching (WHOLESALER pattern is built dynamically)
+let _wholesalerRegex: RegExp | null = null;
+let _wholesalerRegexTime = 0;
+const REGEX_CACHE_TTL = 60_000;
+
+async function getWholesalerRegex(): Promise<RegExp> {
+  if (_wholesalerRegex && Date.now() - _wholesalerRegexTime < REGEX_CACHE_TTL) {
+    return _wholesalerRegex;
+  }
+  _wholesalerRegex = await wholesalerConfigService.buildWholesalerRegex();
+  _wholesalerRegexTime = Date.now();
+  return _wholesalerRegex;
+}
+
 const TAG_PATTERNS = {
   // Matches "gabaryt" or price-prefixed tags like "149.00 Gabaryt" or "249 gabaryt"
   GABARYT: /^((\d+(?:\.\d{2})?)\s*)?gabaryt$/i,
   // Matches "tylko kurier" tags
   TYLKO_KURIER: /^tylko\s*kurier$/i,
-  // Matches wholesaler tags (Rzeszów/Outlet handled separately with higher priority)
-  WHOLESALER: /^(hurtownia[:\-_](.+)|Ikonka|BTP|HP|Gastro|Horeca|Hurtownia\s+Przemysłowa|Leker|Forcetop|DoFirmy)$/i,
+  // WHOLESALER pattern is now dynamic — use getWholesalerRegex()
   // Matches paczkomat limit tags like "produkt w paczce: 3" or "3 produkty w paczce"
   PACZKOMAT_LIMIT: /^(?:produkt\s*w\s*paczce[:\s]*(\d+)|(\d+)\s*produkt(?:y|ów)?\s*w\s*paczce)$/i,
   // Matches tags that indicate courier-only delivery
@@ -57,24 +70,23 @@ export const WEIGHT_SHIPPING_PRICES = {
 // Free shipping threshold per warehouse (in PLN)
 export const FREE_SHIPPING_THRESHOLD = 300;
 
-// Wholesaler to warehouse display name mapping
-const WHOLESALER_TO_WAREHOUSE: Record<string, string> = {
-  'HP': 'Magazyn Zielona Góra',
-  'Hurtownia Przemysłowa': 'Magazyn Zielona Góra',
-  'Ikonka': 'Magazyn Białystok',
-  'BTP': 'Magazyn Chotów',
-  'Leker': 'Magazyn Chynów',
-  'Forcetop': 'Magazyn Chynów',
-  'Gastro': 'Magazyn Centralny',
-  'Horeca': 'Magazyn Centralny',
-  'DoFirmy': 'Magazyn Koszalin',
-  'Rzeszów': 'Magazyn Rzeszów',
-  'Outlet': 'Magazyn Rzeszów',
-};
+// Wholesaler to warehouse display name mapping (loaded dynamically)
+let _wholesalerToWarehouse: Record<string, string> | null = null;
+let _wholesalerMapTime = 0;
 
-function getWarehouseName(wholesaler: string | null | undefined): string {
+async function getWholesalerToWarehouse(): Promise<Record<string, string>> {
+  if (_wholesalerToWarehouse && Date.now() - _wholesalerMapTime < REGEX_CACHE_TTL) {
+    return _wholesalerToWarehouse;
+  }
+  _wholesalerToWarehouse = await wholesalerConfigService.getWholesalerToWarehouseMap();
+  _wholesalerMapTime = Date.now();
+  return _wholesalerToWarehouse;
+}
+
+async function getWarehouseName(wholesaler: string | null | undefined): Promise<string> {
   if (!wholesaler) return 'Magazyn Chynów';
-  return WHOLESALER_TO_WAREHOUSE[wholesaler] || 'Magazyn Chynów';
+  const map = await getWholesalerToWarehouse();
+  return map[wholesaler] || 'Magazyn Chynów';
 }
 
 export interface CartItemForShipping {
@@ -183,7 +195,7 @@ function getGabarytPrice(tags: string[]): number | null {
  * Get wholesaler from product tags
  * Priority: Rzeszów/Outlet > other wholesalers (for outlet products shipped from Rzeszów)
  */
-function getWholesaler(tags: string[]): string | null {
+async function getWholesaler(tags: string[]): Promise<string | null> {
   // First check for Rzeszów/Outlet - these have priority over other wholesalers
   for (const tag of tags) {
     if (/^(Rzeszów|Outlet)$/i.test(tag)) {
@@ -191,9 +203,10 @@ function getWholesaler(tags: string[]): string | null {
     }
   }
   
-  // Then check for other wholesaler tags
+  // Then check for other wholesaler tags using dynamic regex
+  const wholesalerRegex = await getWholesalerRegex();
   for (const tag of tags) {
-    const match = tag.match(TAG_PATTERNS.WHOLESALER);
+    const match = tag.match(wholesalerRegex);
     if (match) {
       return match[2] || match[1] || tag;
     }
@@ -512,7 +525,7 @@ export class ShippingCalculatorService {
       
       const tags = product.tags || [];
       const productIsGabaryt = isGabaryt(tags);
-      const wholesaler = getWholesaler(tags) || 'default';
+      const wholesaler = await getWholesaler(tags) || 'default';
       
       if (productIsGabaryt) {
         gabarytItems.push({ product, variantId: item.variantId, quantity: item.quantity });
@@ -534,7 +547,7 @@ export class ShippingCalculatorService {
     const valueByWholesaler = new Map<string, number>();
     
     for (const item of gabarytItems) {
-      const wholesaler = getWholesaler(item.product.tags) || 'default';
+      const wholesaler = await getWholesaler(item.product.tags) || 'default';
       const itemValue = item.product.price * item.quantity;
       const currentValue = valueByWholesaler.get(wholesaler) || 0;
       valueByWholesaler.set(wholesaler, currentValue + itemValue);
@@ -553,7 +566,7 @@ export class ShippingCalculatorService {
     // e.g., "Leker" + "Forcetop" → both "Magazyn Chynów" → combined for free shipping
     const valueByWarehouse = new Map<string, number>();
     for (const [wholesaler, value] of valueByWholesaler) {
-      const warehouseName = getWarehouseName(wholesaler);
+      const warehouseName = await getWarehouseName(wholesaler);
       const currentValue = valueByWarehouse.get(warehouseName) || 0;
       valueByWarehouse.set(warehouseName, currentValue + value);
     }
@@ -564,8 +577,8 @@ export class ShippingCalculatorService {
     for (const gabarytItem of gabarytItems) {
       const gabarytPrice = getGabarytPrice(gabarytItem.product.tags);
       const productIsInPostOnly = isInPostOnly(gabarytItem.product.tags);
-      const wholesaler = getWholesaler(gabarytItem.product.tags) || 'default';
-      const warehouseName = getWarehouseName(wholesaler);
+      const wholesaler = await getWholesaler(gabarytItem.product.tags) || 'default';
+      const warehouseName = await getWarehouseName(wholesaler);
       const warehouseValue = valueByWarehouse.get(warehouseName) || 0;
       // Gabaryty NIGDY nie mają darmowej dostawy - płatna wysyłka zawsze
       const hasFreeShipping = false;
@@ -661,7 +674,7 @@ export class ShippingCalculatorService {
       const isPaczkomatAvailableForPackage = !packageIsCourierOnly;
       
       // Calculate warehouse value and check for free shipping (aggregated by physical warehouse)
-      const warehouseName = getWarehouseName(wholesaler);
+      const warehouseName = await getWarehouseName(wholesaler);
       const warehouseValue = valueByWarehouse.get(warehouseName) || 0;
       const hasFreeShipping = warehouseValue >= FREE_SHIPPING_THRESHOLD;
       
@@ -770,7 +783,7 @@ export class ShippingCalculatorService {
     
     // Add info about free shipping - use warehouse display names instead of wholesaler names
     const freeShippingWholesalers = [...new Set(packages.filter(p => p.hasFreeShipping).map(p => p.wholesaler).filter(Boolean))];
-    const freeShippingWarehouseNames = [...new Set(freeShippingWholesalers.map(w => getWarehouseName(w)))];
+    const freeShippingWarehouseNames = [...new Set(await Promise.all(freeShippingWholesalers.map(w => getWarehouseName(w))))];
     if (freeShippingWarehouseNames.length > 0) {
       warnings.push(`Darmowa dostawa dla zamówień powyżej ${FREE_SHIPPING_THRESHOLD} zł z: ${freeShippingWarehouseNames.join(', ')}`);
     }
