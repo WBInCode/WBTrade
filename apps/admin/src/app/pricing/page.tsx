@@ -318,7 +318,7 @@ export default function PricingPage() {
     );
   }
 
-  const currentRules = rules[activeWarehouse];
+  const currentRules = rules[activeWarehouse] || [];
   const anyChanges = Object.values(hasChanges).some(Boolean);
 
   return (
