@@ -2887,7 +2887,7 @@ export class BaselinkerService {
   }
 
   /**
-   * Reindex Meilisearch after sync
+   * Reindex Meilisearch after sync (batched to avoid memory/timeout issues)
    */
   async reindexMeilisearch(): Promise<void> {
     if (!isMeilisearchAvailable()) {
@@ -2896,53 +2896,69 @@ export class BaselinkerService {
     }
 
     const startTime = Date.now();
-    const REINDEX_TIMEOUT_MS = 120000; // 2 minute timeout for reindex
+    const REINDEX_TIMEOUT_MS = 300000; // 5 minute timeout for reindex
+    const BATCH_SIZE = 1000;
     try {
-      console.log('[BaselinkerSync] Rozpoczynam reindeksację Meilisearch...');
+      console.log('[BaselinkerSync] Rozpoczynam reindeksację Meilisearch (batched)...');
       
       const reindexPromise = (async () => {
-      const products = await prisma.product.findMany({
-        where: { status: 'ACTIVE' },
-        include: {
-          category: true,
-          images: { orderBy: { order: 'asc' }, take: 1 },
-          variants: {
-            include: {
-              inventory: true,
+      const totalCount = await prisma.product.count({ where: { status: 'ACTIVE' } });
+      console.log(`[BaselinkerSync] Łączna liczba produktów ACTIVE: ${totalCount} (${Date.now() - startTime}ms)`);
+
+      let indexed = 0;
+      let skip = 0;
+
+      while (skip < totalCount) {
+        const products = await prisma.product.findMany({
+          where: { status: 'ACTIVE' },
+          include: {
+            category: true,
+            images: { orderBy: { order: 'asc' }, take: 1 },
+            variants: {
+              include: {
+                inventory: true,
+              },
             },
           },
-        },
-      });
+          skip,
+          take: BATCH_SIZE,
+          orderBy: { id: 'asc' },
+        });
 
-      console.log(`[BaselinkerSync] Pobrano ${products.length} produktów z bazy (${Date.now() - startTime}ms)`);
+        if (products.length === 0) break;
 
-      const documents = products.map((product) => {
-        const totalStock = product.variants.reduce((sum, v) => {
-          return sum + v.inventory.reduce((s, inv) => s + inv.quantity - inv.reserved, 0);
-        }, 0);
+        const documents = products.map((product) => {
+          const totalStock = product.variants.reduce((sum, v) => {
+            return sum + v.inventory.reduce((s, inv) => s + inv.quantity - inv.reserved, 0);
+          }, 0);
 
-        return {
-          id: product.id,
-          name: product.name,
-          slug: product.slug,
-          description: product.description,
-          sku: product.sku,
-          barcode: product.barcode,
-          price: parseFloat(product.price.toString()),
-          categoryId: product.categoryId,
-          categoryName: product.category?.name || null,
-          image: product.images[0]?.url || null,
-          inStock: totalStock > 0,
-          stock: totalStock,
-        };
-      });
+          return {
+            id: product.id,
+            name: product.name,
+            slug: product.slug,
+            description: product.description,
+            sku: product.sku,
+            barcode: product.barcode,
+            price: parseFloat(product.price.toString()),
+            categoryId: product.categoryId,
+            categoryName: product.category?.name || null,
+            image: product.images[0]?.url || null,
+            inStock: totalStock > 0,
+            stock: totalStock,
+          };
+        });
 
-      if (documents.length > 0) {
         await meiliClient.index(PRODUCTS_INDEX).addDocuments(documents);
+        indexed += documents.length;
+        skip += BATCH_SIZE;
+        console.log(`[BaselinkerSync] Zindeksowano ${indexed}/${totalCount} (${Date.now() - startTime}ms)`);
+      }
+
+      if (indexed > 0) {
         markMeilisearchAvailable();
       }
       
-      console.log(`[BaselinkerSync] ✓ Zindeksowano ${documents.length} produktów w Meilisearch (${Date.now() - startTime}ms)`);
+      console.log(`[BaselinkerSync] ✓ Reindeksacja zakończona: ${indexed} produktów (${Date.now() - startTime}ms)`);
       })();
 
       // Race with timeout
