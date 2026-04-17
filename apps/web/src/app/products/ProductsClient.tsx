@@ -360,9 +360,13 @@ function ProductsContent() {
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-4 sticky top-24">
               <CategoryFilter />
-              <WarehouseFilter warehouseCounts={filters?.warehouseCounts} />
-              <PriceFilter priceRange={filters?.priceRange} />
-              <BrandFilter brands={filters?.brands || []} />
+              {filters && (
+                <>
+                  <BrandFilter brands={filters.brands || []} />
+                  <WarehouseFilter warehouseCounts={filters.warehouseCounts} />
+                  <PriceFilter priceRange={filters.priceRange} />
+                </>
+              )}
               
               {/* Dynamic specification filters */}
               {filters?.specifications && Object.entries(filters.specifications).map(([specKey, options]) => {
