@@ -75,3 +75,47 @@ export function calculateDiscountPercent(price: number | string, compareAtPrice:
   if (!compareAtPrice || Number(compareAtPrice) <= Number(price)) return 0;
   return Math.round((1 - Number(price) / Number(compareAtPrice)) * 100);
 }
+
+const polishCharsMap: Record<string, string> = {
+  'ą': 'a', 'ć': 'c', 'ę': 'e', 'ł': 'l', 'ń': 'n',
+  'ó': 'o', 'ś': 's', 'ź': 'z', 'ż': 'z',
+  'Ą': 'A', 'Ć': 'C', 'Ę': 'E', 'Ł': 'L', 'Ń': 'N',
+  'Ó': 'O', 'Ś': 'S', 'Ź': 'Z', 'Ż': 'Z',
+};
+
+export function getBrandSlug(brandName: string): string {
+  let result = brandName;
+  for (const [polish, ascii] of Object.entries(polishCharsMap)) {
+    result = result.replace(new RegExp(polish, 'g'), ascii);
+  }
+  return result
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]+/g, '')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '');
+}
+
+export function getProductBrand(product: Product): string | null {
+  // Prefer manufacturer relation from DB
+  if ((product as any).manufacturer?.name) {
+    return (product as any).manufacturer.name;
+  }
+  // Fallback to specifications.brand
+  const specs = product.specifications as Record<string, unknown> | null | undefined;
+  if (specs && typeof specs === 'object' && typeof specs.brand === 'string' && specs.brand.trim()) {
+    return specs.brand.trim();
+  }
+  return null;
+}
+
+export function getProductBrandSlug(product: Product): string | null {
+  // Prefer manufacturer slug from DB (already generated correctly)
+  if ((product as any).manufacturer?.slug) {
+    return (product as any).manufacturer.slug;
+  }
+  const brand = getProductBrand(product);
+  return brand ? getBrandSlug(brand) : null;
+}
