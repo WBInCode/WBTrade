@@ -55,7 +55,7 @@ function BrandFilterContent({ brands = [] }: BrandFilterProps) {
 
   return (
     <div className="mb-6">
-      <h3 className="font-semibold text-secondary-900 dark:text-white mb-3">Marki</h3>
+      <h3 className="font-semibold text-secondary-900 dark:text-white mb-3">Producent</h3>
       
       {/* Search */}
       {brands.length > 5 && (
