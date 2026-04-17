@@ -92,18 +92,24 @@ function ProductsContent() {
     setActiveTab(tabFromUrl);
   }, [tabFromUrl]);
 
-  // Fetch filters when category changes
+  // Fetch filters dynamically when any filter changes
   useEffect(() => {
     async function fetchFilters() {
       try {
-        const response = await productsApi.getFilters(currentCategorySlug || undefined);
+        const response = await productsApi.getFilters({
+          category: currentCategorySlug || undefined,
+          brand: brand || undefined,
+          minPrice: minPrice ? parseFloat(minPrice) : undefined,
+          maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+          warehouse: warehouse || undefined,
+        });
         setFilters(response);
       } catch (error) {
         console.error('Failed to fetch filters:', error);
       }
     }
     fetchFilters();
-  }, [currentCategorySlug]);
+  }, [currentCategorySlug, brand, minPrice, maxPrice, warehouse]);
 
   // Fetch category path for breadcrumb
   useEffect(() => {
@@ -359,7 +365,7 @@ function ProductsContent() {
           {/* Sidebar Filters */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-4 sticky top-24">
-              <CategoryFilter />
+              <CategoryFilter categoryCounts={filters?.categoryCounts} />
               {filters && (
                 <>
                   <BrandFilter brands={filters.brands || []} />
