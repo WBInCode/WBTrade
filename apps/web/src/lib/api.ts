@@ -299,6 +299,20 @@ export interface Product {
   createdAt?: string;
   updatedAt?: string;
   tags?: string[];
+  // Manufacturer / GPSR
+  manufacturer?: {
+    id: string;
+    name: string;
+    slug: string;
+    address?: string;
+    email?: string;
+    phone?: string;
+    website?: string;
+    safetyInfo?: string;
+    euRepName?: string;
+    euRepAddress?: string;
+    euRepEmail?: string;
+  } | null;
   // Extended fields for UI
   badge?: 'super-price' | 'outlet' | 'bestseller' | 'new';
   rating?: string | number;
@@ -449,6 +463,14 @@ export const productsApi = {
       `/products/same-warehouse/${productId}`, 
       options as Record<string, string | number | boolean>
     ),
+
+  // Get all brands
+  getBrands: () =>
+    api.get<{ brands: { name: string; slug: string; count: number }[] }>('/products/brands'),
+
+  // Get brand by slug
+  getBrandBySlug: (slug: string) =>
+    api.get<{ name: string; slug: string; count: number }>(`/products/brands/${slug}`),
 };
 
 // ============================================
