@@ -1362,6 +1362,7 @@ export class ProductsService {
         id: true,
         price: true,
         specifications: true,
+        manufacturer: { select: { name: true } },
         category: {
           select: {
             slug: true,
@@ -1393,12 +1394,14 @@ export class ProductsService {
 
       // Specifications
       const specs = product.specifications as Record<string, any> | null;
-      if (specs) {
-        // Brand
-        if (specs.brand) {
-          brandCounts[specs.brand] = (brandCounts[specs.brand] || 0) + 1;
-        }
+      
+      // Brand - prefer manufacturer relation, fallback to specs.brand
+      const brandName = (product as any).manufacturer?.name || (specs?.brand);
+      if (brandName) {
+        brandCounts[brandName] = (brandCounts[brandName] || 0) + 1;
+      }
 
+      if (specs) {
         // Other specs
         Object.entries(specs).forEach(([key, value]) => {
           if (key !== 'brand' && value !== null && value !== undefined) {
