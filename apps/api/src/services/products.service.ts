@@ -699,11 +699,12 @@ export class ProductsService {
 
       // Filter by brand/manufacturer
       if (brand) {
+        const escapeMeili = (s: string) => s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
         const brandNames = brand.split(',').map(b => b.trim()).filter(Boolean);
         if (brandNames.length === 1) {
-          meiliFilters.push(`brand = "${brandNames[0].replace(/"/g, '\\"')}"`);
+          meiliFilters.push(`brand = "${escapeMeili(brandNames[0])}"`);
         } else if (brandNames.length > 1) {
-          const brandFilter = brandNames.map(b => `brand = "${b.replace(/"/g, '\\"')}"`).join(' OR ');
+          const brandFilter = brandNames.map(b => `brand = "${escapeMeili(b)}"`).join(' OR ');
           meiliFilters.push(`(${brandFilter})`);
         }
       }
