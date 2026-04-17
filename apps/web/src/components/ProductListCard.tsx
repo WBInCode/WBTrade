@@ -2,10 +2,11 @@
 
 import { useState, memo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Product } from '../lib/api';
 import { useWishlist } from '../contexts/WishlistContext';
 import { useCart } from '../contexts/CartContext';
-import { PLACEHOLDER_IMAGE, WAREHOUSE_LOCATIONS, getWarehouseLocation, calculateDiscountPercent } from './productUtils';
+import { PLACEHOLDER_IMAGE, WAREHOUSE_LOCATIONS, getWarehouseLocation, calculateDiscountPercent, getProductBrand, getProductBrandSlug } from './productUtils';
 
 export interface ProductListCardProps {
   product: Product;
@@ -24,6 +25,7 @@ const badgeStyles: Record<BadgeType, string> = {
 };
 
 export default memo(function ProductListCard({ product, showWishlist = true, viewMode = 'grid' }: ProductListCardProps) {
+  const router = useRouter();
   const [imgError, setImgError] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [added, setAdded] = useState(false);
@@ -151,6 +153,18 @@ export default memo(function ProductListCard({ product, showWishlist = true, vie
             <h3 className="text-sm font-medium text-secondary-800 dark:text-secondary-100 line-clamp-2 mb-1 pr-2">
               {product.name}
             </h3>
+
+            {/* Brand / Manufacturer */}
+            {getProductBrand(product) && (
+              <span
+                role="link"
+                tabIndex={0}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/producent/${getProductBrandSlug(product) || ''}`); }}
+                className="text-[10px] sm:text-xs text-primary-600 dark:text-primary-400 hover:underline mb-1 block truncate cursor-pointer"
+              >
+                {getProductBrand(product)}
+              </span>
+            )}
 
             {/* Rating - hidden when 0 reviews */}
             {(product.reviewCount || 0) > 0 && (
@@ -340,6 +354,18 @@ export default memo(function ProductListCard({ product, showWishlist = true, vie
           <h3 className="text-xs sm:text-sm text-secondary-800 dark:text-secondary-100 line-clamp-2 mb-1 min-h-[2rem] sm:min-h-[2.5rem]">
             {product.name}
           </h3>
+
+          {/* Brand / Manufacturer */}
+          {getProductBrand(product) && (
+            <span
+              role="link"
+              tabIndex={0}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/producent/${getProductBrandSlug(product) || ''}`); }}
+              className="text-[10px] sm:text-xs text-primary-600 dark:text-primary-400 hover:underline mb-0.5 block truncate cursor-pointer"
+            >
+              {getProductBrand(product)}
+            </span>
+          )}
 
           {/* Rating - hidden when 0 reviews */}
           {(product.reviewCount || 0) > 0 && (

@@ -78,6 +78,19 @@ export interface ServerProduct {
   status: string;
   images: Array<{ id: string; url: string; alt: string | null; order: number }>;
   category: { id: string; name: string; slug: string } | null;
+  manufacturer?: {
+    id: string;
+    name: string;
+    slug: string;
+    address?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    website?: string | null;
+    safetyInfo?: string | null;
+    euRepName?: string | null;
+    euRepAddress?: string | null;
+    euRepEmail?: string | null;
+  } | null;
   variants: Array<{
     id: string;
     name: string;

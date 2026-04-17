@@ -16,7 +16,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { cleanCategoryName } from '../../../lib/categories';
 import { trackViewItem, toGA4Item } from '../../../lib/analytics';
 import AddToListModal from '../../../components/AddToListModal';
-import { PLACEHOLDER_IMAGE } from '../../../components/productUtils';
+import { PLACEHOLDER_IMAGE, getProductBrand, getProductBrandSlug } from '../../../components/productUtils';
 import { getProxiedImageUrl } from '../../../lib/image-proxy';
 
 interface ProductDetailClientProps {
@@ -451,9 +451,12 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     { label: product.name },
   ];
 
+  const manufacturer = product.manufacturer;
+
   const tabs = [
     { id: 'description', label: 'Opis produktu' },
     ...(specifications.length > 0 ? [{ id: 'parameters', label: 'Parametry' }] : []),
+    ...(manufacturer ? [{ id: 'gpsr', label: 'Producent / GPSR' }] : []),
     { id: 'reviews', label: `Opinie (${reviewStats?.totalReviews || 0})` },
   ];
 
@@ -537,6 +540,16 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
               <h1 className="text-base sm:text-xl font-semibold text-gray-900 dark:text-white mb-1 leading-snug break-words">
                 {product.name}
               </h1>
+
+              {/* Brand / Manufacturer */}
+              {getProductBrand(product) && (
+                <Link
+                  href={`/producent/${getProductBrandSlug(product) || ''}`}
+                  className="text-xs sm:text-sm text-primary-600 dark:text-primary-400 hover:underline mb-1 inline-block"
+                >
+                  {getProductBrand(product)}
+                </Link>
+              )}
 
               {/* SKU */}
               {product?.sku && (
@@ -1092,6 +1105,101 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                 ) : (
                   <p className="text-gray-500 dark:text-gray-400">Brak dostępnych specyfikacji</p>
                 )}
+              </div>
+            )}
+
+            {activeTab === 'gpsr' && manufacturer && (
+              <div className="max-w-3xl">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Informacje o producencie (GPSR)</h2>
+                <div className="bg-gray-50 dark:bg-secondary-700/50 rounded-xl p-5 sm:p-6 border border-gray-100 dark:border-secondary-600">
+                  <div className="space-y-4">
+                    {/* Manufacturer name */}
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Producent</p>
+                      <Link
+                        href={`/producent/${manufacturer.slug}`}
+                        className="text-sm font-semibold text-primary-600 dark:text-primary-400 hover:underline"
+                      >
+                        {manufacturer.name}
+                      </Link>
+                    </div>
+
+                    {/* Address */}
+                    {manufacturer.address && (
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Adres</p>
+                        <p className="text-sm text-gray-900 dark:text-white whitespace-pre-line">{manufacturer.address}</p>
+                      </div>
+                    )}
+
+                    {/* Email */}
+                    {manufacturer.email && (
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">E-mail</p>
+                        <a href={`mailto:${manufacturer.email}`} className="text-sm text-primary-600 dark:text-primary-400 hover:underline">
+                          {manufacturer.email}
+                        </a>
+                      </div>
+                    )}
+
+                    {/* Phone */}
+                    {manufacturer.phone && (
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Telefon</p>
+                        <a href={`tel:${manufacturer.phone}`} className="text-sm text-primary-600 dark:text-primary-400 hover:underline">
+                          {manufacturer.phone}
+                        </a>
+                      </div>
+                    )}
+
+                    {/* Website */}
+                    {manufacturer.website && (
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Strona internetowa</p>
+                        <a href={manufacturer.website} target="_blank" rel="noopener noreferrer" className="text-sm text-primary-600 dark:text-primary-400 hover:underline">
+                          {manufacturer.website}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* EU Representative */}
+                  {(manufacturer.euRepName || manufacturer.euRepAddress || manufacturer.euRepEmail) && (
+                    <div className="mt-6 pt-5 border-t border-gray-200 dark:border-secondary-600">
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Upoważniony przedstawiciel w UE</h3>
+                      <div className="space-y-3">
+                        {manufacturer.euRepName && (
+                          <div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Nazwa</p>
+                            <p className="text-sm text-gray-900 dark:text-white">{manufacturer.euRepName}</p>
+                          </div>
+                        )}
+                        {manufacturer.euRepAddress && (
+                          <div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Adres</p>
+                            <p className="text-sm text-gray-900 dark:text-white whitespace-pre-line">{manufacturer.euRepAddress}</p>
+                          </div>
+                        )}
+                        {manufacturer.euRepEmail && (
+                          <div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">E-mail</p>
+                            <a href={`mailto:${manufacturer.euRepEmail}`} className="text-sm text-primary-600 dark:text-primary-400 hover:underline">
+                              {manufacturer.euRepEmail}
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Safety Info */}
+                  {manufacturer.safetyInfo && (
+                    <div className="mt-6 pt-5 border-t border-gray-200 dark:border-secondary-600">
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Informacje o bezpieczeństwie</h3>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{manufacturer.safetyInfo}</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
