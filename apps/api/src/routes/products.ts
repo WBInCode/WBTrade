@@ -15,7 +15,9 @@ import {
   getTopRated,
   getSameWarehouseProducts,
   getProductsByIds,
-  getToys
+  getToys,
+  getBrands,
+  getBrandBySlug
 } from '../controllers/products.controller';
 import { reviewsController } from '../controllers/reviews.controller';
 import { optionalAuth, authGuard, adminOnly } from '../middleware/auth.middleware';
@@ -58,6 +60,12 @@ router.post('/batch', getProductsByIds);
 
 // Route to get products from the same warehouse (for "Zamów w jednej przesyłce")
 router.get('/same-warehouse/:productId', getSameWarehouseProducts);
+
+// Route to get all brands
+router.get('/brands', getBrands);
+
+// Route to get brand by slug
+router.get('/brands/:slug', getBrandBySlug);
 
 // Route to get a specific product by slug (SEO-friendly)
 router.get('/slug/:slug', getProductBySlug);

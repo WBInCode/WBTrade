@@ -84,6 +84,7 @@ interface ProductFilters {
   hideOldZeroStock?: boolean; // Ukryj produkty ze stanem 0 starsze niż 14 dni
   sessionSeed?: number; // Seed for consistent random sorting
   discounted?: boolean; // Filtr tylko przecenionych produktów (compareAtPrice > price)
+  brand?: string; // Filtr producenta (nazwa brandu z specifications.brand)
 }
 
 interface ProductsListResult {
@@ -338,6 +339,7 @@ export class ProductsService {
       hideOldZeroStock = false,
       sessionSeed,
       discounted = false,
+      brand,
     } = filters;
 
     // If search is provided, use Meilisearch for better results
@@ -469,6 +471,18 @@ export class ProductsService {
       }
     }
 
+    // Filter by brand (from manufacturer relation or specifications JSON field)
+    if (brand) {
+      // Use AND to combine with existing filters - match either manufacturer name or specifications.brand
+      if (!where.AND) where.AND = [];
+      (where.AND as any[]).push({
+        OR: [
+          { manufacturer: { name: brand } },
+          { specifications: { path: ['brand'], equals: brand } },
+        ],
+      });
+    }
+
     // Build orderBy clause
     // Always add secondary sort by id for stable pagination (prevents random order when primary values are equal)
     let orderBy: Prisma.ProductOrderByWithRelationInput | Prisma.ProductOrderByWithRelationInput[] = [{ createdAt: 'desc' }, { id: 'asc' }];
@@ -531,6 +545,7 @@ export class ProductsService {
             orderBy: { order: 'asc' },
           },
           category: true,
+          manufacturer: true,
           variants: {
             include: {
               inventory: true,
@@ -767,6 +782,7 @@ export class ProductsService {
             orderBy: { order: 'asc' },
           },
           category: true,
+          manufacturer: true,
           variants: {
             include: {
               inventory: true,
@@ -927,6 +943,7 @@ export class ProductsService {
         include: {
           images: { orderBy: { order: 'asc' } },
           category: true,
+          manufacturer: true,
           variants: { include: { inventory: true } },
         },
       }),
@@ -967,6 +984,7 @@ export class ProductsService {
           orderBy: { order: 'asc' },
         },
         category: true,
+        manufacturer: true,
         variants: {
           include: {
             inventory: true,
@@ -993,6 +1011,7 @@ export class ProductsService {
           orderBy: { order: 'asc' },
         },
         category: true,
+        manufacturer: true,
         variants: {
           include: {
             inventory: true,
@@ -1015,6 +1034,7 @@ export class ProductsService {
           orderBy: { order: 'asc' },
         },
         category: true,
+        manufacturer: true,
         variants: {
           include: {
             inventory: true,
@@ -2322,6 +2342,99 @@ export class ProductsService {
       }
     }
     return null;
+  }
+
+  /**
+   * Get all brands with product counts
+   */
+  async getBrands(): Promise<{ name: string; slug: string; count: number }[]> {
+    const products = await prisma.product.findMany({
+      where: {
+        status: 'ACTIVE',
+        price: { gt: 0 },
+        variants: { some: { inventory: { some: { quantity: { gt: 0 } } } } },
+        AND: [
+          { tags: { hasSome: DELIVERY_TAGS } },
+          { category: { baselinkerCategoryId: { not: null } } },
+          PACKAGE_FILTER_WHERE,
+        ],
+      },
+      select: { specifications: true, manufacturer: { select: { name: true, slug: true } } },
+    });
+
+    const brandCounts: Record<string, number> = {};
+    const brandSlugs: Record<string, string> = {};
+    products.forEach((product) => {
+      // Prefer manufacturer relation, fallback to specifications.brand
+      const mfr = product.manufacturer;
+      const specs = product.specifications as Record<string, any> | null;
+      const brandName = mfr?.name || specs?.brand;
+      if (brandName) {
+        brandCounts[brandName] = (brandCounts[brandName] || 0) + 1;
+        if (mfr?.slug && !brandSlugs[brandName]) {
+          brandSlugs[brandName] = mfr.slug;
+        }
+      }
+    });
+
+    return Object.entries(brandCounts)
+      .map(([name, count]) => ({ name, slug: brandSlugs[name] || this.slugifyBrand(name), count }))
+      .sort((a, b) => b.count - a.count);
+  }
+
+  /**
+   * Get brand info by slug
+   */
+  async getBrandBySlug(slug: string): Promise<{ name: string; slug: string; count: number } | null> {
+    // First try to find manufacturer directly by slug in DB
+    const manufacturer = await prisma.manufacturer.findUnique({
+      where: { slug },
+      select: { name: true, slug: true },
+    });
+    if (manufacturer) {
+      const count = await prisma.product.count({
+        where: {
+          manufacturerId: { not: null },
+          manufacturer: { slug },
+          status: 'ACTIVE',
+          price: { gt: 0 },
+          variants: { some: { inventory: { some: { quantity: { gt: 0 } } } } },
+          AND: [
+            { tags: { hasSome: DELIVERY_TAGS } },
+            { category: { baselinkerCategoryId: { not: null } } },
+            PACKAGE_FILTER_WHERE,
+          ],
+        },
+      });
+      return { name: manufacturer.name, slug: manufacturer.slug, count };
+    }
+    // Fallback to old approach
+    const brands = await this.getBrands();
+    return brands.find(b => b.slug === slug) || null;
+  }
+
+  /**
+   * Convert brand name to URL-safe slug
+   */
+  private slugifyBrand(text: string): string {
+    const polishChars: Record<string, string> = {
+      'ą': 'a', 'ć': 'c', 'ę': 'e', 'ł': 'l', 'ń': 'n',
+      'ó': 'o', 'ś': 's', 'ź': 'z', 'ż': 'z',
+      'Ą': 'A', 'Ć': 'C', 'Ę': 'E', 'Ł': 'L', 'Ń': 'N',
+      'Ó': 'O', 'Ś': 'S', 'Ź': 'Z', 'Ż': 'Z',
+    };
+    let result = text.toString();
+    for (const [polish, ascii] of Object.entries(polishChars)) {
+      result = result.replace(new RegExp(polish, 'g'), ascii);
+    }
+    return result
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/[^\w-]+/g, '')
+      .replace(/-{2,}/g, '-')
+      .replace(/^-+/, '')
+      .replace(/-+$/, '');
   }
 }
 

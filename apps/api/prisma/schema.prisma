@@ -126,6 +126,8 @@ model Product {
   viewCount              Int              @default(0) @map("view_count")
   lowestPrice30Days      Decimal?         @map("lowest_price_30_days") @db.Decimal(10, 2)
   lowestPrice30DaysAt    DateTime?        @map("lowest_price_30_days_at")
+  manufacturerId         String?          @map("manufacturer_id")
+  manufacturer           Manufacturer?    @relation(fields: [manufacturerId], references: [id])
   priceHistory           PriceHistory[]
   images                 ProductImage[]
   variants               ProductVariant[]
@@ -139,7 +141,28 @@ model Product {
   @@index([sku])
   @@index([status])
   @@index([categoryId])
+  @@index([manufacturerId])
   @@map("products")
+}
+
+model Manufacturer {
+  id                      String    @id @default(cuid())
+  name                    String
+  slug                    String    @unique
+  address                 String?
+  email                   String?
+  phone                   String?
+  website                 String?
+  safetyInfo              String?   @map("safety_info")
+  euRepName               String?   @map("eu_rep_name")
+  euRepAddress            String?   @map("eu_rep_address")
+  euRepEmail              String?   @map("eu_rep_email")
+  baselinkerManufacturerId String?  @map("baselinker_manufacturer_id")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+  products                Product[]
+
+  @@map("manufacturers")
 }
 
 model Review {
