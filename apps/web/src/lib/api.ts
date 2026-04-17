@@ -378,7 +378,8 @@ export interface ProductFiltersResponse {
   };
   brands: { name: string; count: number }[];
   specifications: Record<string, { value: string; count: number }[]>;
-  warehouseCounts?: Record<string, number>; // Liczba produktów per magazyn
+  warehouseCounts?: Record<string, number>;
+  categoryCounts?: Record<string, number>;
   totalProducts: number;
 }
 
@@ -392,8 +393,8 @@ export const productsApi = {
   getBySlug: (slug: string) =>
     api.get<Product>(`/products/slug/${slug}`),
   
-  getFilters: (category?: string) =>
-    api.get<ProductFiltersResponse>('/products/filters', category ? { category } : undefined),
+  getFilters: (params?: { category?: string; brand?: string; minPrice?: number; maxPrice?: number; warehouse?: string }) =>
+    api.get<ProductFiltersResponse>('/products/filters', params as Record<string, string | number | boolean | undefined>),
     
   create: (product: Partial<Product>) =>
     api.post<Product>('/products', product),
