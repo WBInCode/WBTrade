@@ -360,8 +360,14 @@ export async function deleteProduct(req: Request, res: Response): Promise<void> 
  */
 export async function getFilters(req: Request, res: Response): Promise<void> {
   try {
-    const { category } = req.query;
-    const filters = await productsService.getFilters(category as string | undefined);
+    const { category, brand, minPrice, maxPrice, warehouse } = req.query;
+    const filters = await productsService.getFilters({
+      categorySlug: category as string | undefined,
+      brand: brand as string | undefined,
+      minPrice: minPrice ? parseFloat(minPrice as string) : undefined,
+      maxPrice: maxPrice ? parseFloat(maxPrice as string) : undefined,
+      warehouse: warehouse as string | undefined,
+    });
     res.status(200).json(filters);
   } catch (error) {
     console.error('Error fetching filters:', error);

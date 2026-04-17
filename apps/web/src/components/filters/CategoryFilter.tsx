@@ -6,7 +6,11 @@ import { useSearchParams } from 'next/navigation';
 import { categoriesApi, CategoryWithChildren } from '../../lib/api';
 import { cleanCategoryName } from '../../lib/categories';
 
-function CategoryFilterContent() {
+interface CategoryFilterProps {
+  categoryCounts?: Record<string, number>;
+}
+
+function CategoryFilterContent({ categoryCounts }: CategoryFilterProps) {
   const searchParams = useSearchParams();
   const currentCategorySlug = searchParams.get('category') || '';
   
@@ -104,9 +108,12 @@ function CategoryFilterContent() {
             }`}
           >
             {cleanCategoryName(category.name)}
-            {category.productCount !== undefined && category.productCount > 0 && (
-              <span className="text-gray-400 dark:text-gray-500 text-xs ml-1">({category.productCount})</span>
-            )}
+            {(() => {
+              const count = categoryCounts?.[category.slug] ?? category.productCount;
+              return count !== undefined && count > 0 ? (
+                <span className="text-gray-400 dark:text-gray-500 text-xs ml-1">({count.toLocaleString()})</span>
+              ) : null;
+            })()}
           </Link>
           {hasChildren && (
             <button 
@@ -190,10 +197,10 @@ function CategoryFilterContent() {
   );
 }
 
-export default function CategoryFilter() {
+export default function CategoryFilter({ categoryCounts }: CategoryFilterProps) {
   return (
     <Suspense fallback={<div className="mb-6 animate-pulse"><div className="h-6 bg-gray-200 dark:bg-secondary-700 rounded w-1/3 mb-3"></div><div className="space-y-2">{[1,2,3,4,5].map(i => <div key={i} className="h-6 bg-gray-200 dark:bg-secondary-700 rounded w-3/4"></div>)}</div></div>}>
-      <CategoryFilterContent />
+      <CategoryFilterContent categoryCounts={categoryCounts} />
     </Suspense>
   );
 }
