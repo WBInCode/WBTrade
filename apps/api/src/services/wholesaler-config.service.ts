@@ -176,7 +176,7 @@ class WholesalerConfigService {
   async shouldSkipInventory(inventoryName: string): Promise<boolean> {
     const wholesaler = await this.getByBaselinkerName(inventoryName);
     if (wholesaler) {
-      return wholesaler.skipInSync;
+      return wholesaler.skipInSync || !wholesaler.isActive;
     }
     // Unknown inventories are skipped by default for safety
     return true;

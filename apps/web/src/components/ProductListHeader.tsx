@@ -16,6 +16,7 @@ const FALLBACK_WAREHOUSES: WarehouseInfo[] = [
   { id: 'btp', location: 'Chotów' },
   { id: 'dofirmy', location: 'Koszalin' },
   { id: 'outlet', location: 'Rzeszów' },
+  { id: 'hurtownia-kuchenna', location: 'Hurtownia Kuchenna' },
 ];
 
 let _whCache: WarehouseInfo[] | null = null;
