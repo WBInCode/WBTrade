@@ -12,6 +12,7 @@ function getWarehouseIdFromName(name: string | null): string {
     'Magazyn Chynów': 'leker',
     'Magazyn Zielona Góra': 'hp',
     'Magazyn Chotów': 'btp',
+    'Hurtownia Kuchenna': 'hurtownia-kuchenna',
   };
   return nameMap[name] || '';
 }

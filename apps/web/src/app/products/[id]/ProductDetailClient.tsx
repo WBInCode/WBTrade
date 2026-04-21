@@ -844,6 +844,8 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                   warehouseCity = 'Chynowie';
                 } else if (tags.some(t => t.toLowerCase() === 'btp')) {
                   warehouseCity = 'Chotowie';
+                } else if (tags.some(t => t.toLowerCase().includes('hurtownia kuchenna'))) {
+                  warehouseCity = 'Hurtowni Kuchennej';
                 }
                 
                 if (!warehouseCity) return null;

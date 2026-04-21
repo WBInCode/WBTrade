@@ -13,6 +13,7 @@ const FALLBACK_WAREHOUSE_LOCATIONS: Record<string, string> = {
   'btp': 'Chotów',
   'dofirmy': 'Koszalin',
   'outlet': 'Rzeszów',
+  'hurtownia-kuchenna': 'Hurtownia Kuchenna',
 };
 
 // Backward compat export for ProductCard / ProductListCard

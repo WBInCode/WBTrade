@@ -46,6 +46,7 @@ const WHOLESALER_CONFIG: Record<string, { name: string; color: string; icon: str
   'Forcetop': { name: 'Magazyn Chynów', color: 'bg-teal-500', icon: '📍' },
   'Rzeszów': { name: 'Magazyn Rzeszów', color: 'bg-pink-500', icon: '📍' },
   'Outlet': { name: 'Magazyn Rzeszów', color: 'bg-pink-500', icon: '📍' },
+  'Hurtownia Kuchenna': { name: 'Hurtownia Kuchenna', color: 'bg-slate-500', icon: '📍' },
   'default': { name: 'Magazyn Chynów', color: 'bg-gray-500', icon: '📍' },
 };
 
