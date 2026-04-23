@@ -1083,6 +1083,7 @@ app.listen(PORT, async () => {
   });
   
   // Initialize Redis connection
+  let redisAvailable = false;
   try {
     console.log('🔗 Initializing Redis connection...');
     const { getRedisClient } = await import('./lib/redis');
@@ -1090,6 +1091,7 @@ app.listen(PORT, async () => {
     if (redis) {
       await redis.ping();
       console.log('✅ Redis connection verified');
+      redisAvailable = true;
       // Wyczyść cache kategorii przy starcie serwera — nowa wersja kodu wymaga świeżych danych
       const { invalidateCategoryCache } = await import('./lib/cache');
       await invalidateCategoryCache();
@@ -1113,9 +1115,13 @@ app.listen(PORT, async () => {
   // Start background cron jobs (only essential ones)
   console.log('⚙️  Starting cron jobs...');
   try {
-    // 1. Reservation cleanup - every 5 minutes
-    await scheduleReservationCleanup();
-    console.log('✅ Reservation cleanup scheduled (every 5 minutes)');
+    // 1. Reservation cleanup - every 5 minutes (requires Redis/BullMQ)
+    if (redisAvailable) {
+      await scheduleReservationCleanup();
+      console.log('✅ Reservation cleanup scheduled (every 5 minutes)');
+    } else {
+      console.log('⚠️  Reservation cleanup skipped (Redis unavailable)');
+    }
     
     // 2. Baselinker order status sync + delivery tracking
     //    Try BullMQ (requires Redis) → fallback to setInterval if Redis unavailable
@@ -1125,7 +1131,7 @@ app.listen(PORT, async () => {
     if (!workersEnabled) {
       console.log('ℹ️  Workers wyłączone lokalnie (NODE_ENV=development). Ustaw ENABLE_WORKERS=true aby włączyć.');
     }
-    if (workersEnabled) try {
+    if (workersEnabled && redisAvailable) try {
       const { createBaselinkerSyncWorker, scheduleBaselinkerSync } = await import('./workers/baselinker-sync.worker');
       createBaselinkerSyncWorker();
       await scheduleBaselinkerSync();
@@ -1223,11 +1229,15 @@ app.listen(PORT, async () => {
       }
     }, 10 * 60 * 1000);
     
-    // 3. Payment reminder - daily at 10:00 AM
-    const { createPaymentReminderWorker, schedulePaymentReminders } = await import('./workers/payment-reminder.worker');
-    createPaymentReminderWorker();
-    await schedulePaymentReminders();
-    console.log('✅ Payment reminder scheduled (daily at 10:00 AM)');
+    // 3. Payment reminder - daily at 10:00 AM (requires Redis/BullMQ)
+    if (redisAvailable) {
+      const { createPaymentReminderWorker, schedulePaymentReminders } = await import('./workers/payment-reminder.worker');
+      createPaymentReminderWorker();
+      await schedulePaymentReminders();
+      console.log('✅ Payment reminder scheduled (daily at 10:00 AM)');
+    } else {
+      console.log('⚠️  Payment reminder skipped (Redis unavailable)');
+    }
     
     // 4. Newsletter campaign scheduler - every minute (no Redis needed)
     const { startNewsletterScheduler } = await import('./workers/newsletter-campaign.worker');
