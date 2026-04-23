@@ -62,7 +62,7 @@ import imageProxyRoutes from './routes/image-proxy';
 import adminWholesalersRoutes from './routes/admin-wholesalers';
 import wholesalersRoutes from './routes/wholesalers';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
-import { initializeMeilisearch } from './lib/meilisearch';
+import { initializeMeilisearch, meiliClient, PRODUCTS_INDEX, isMeilisearchAvailable } from './lib/meilisearch';
 import { startSearchIndexWorker } from './workers/search-index.worker';
 import { startEmailWorker } from './workers/email.worker';
 import { startInventorySyncWorker } from './workers/inventory-sync.worker';
@@ -1111,6 +1111,29 @@ app.listen(PORT, async () => {
   
   // Initialize Meilisearch
   await initializeMeilisearch();
+  
+  // Auto-reindex if Meilisearch index is empty (e.g. after Render redeploy)
+  if (isMeilisearchAvailable()) {
+    try {
+      const stats = await meiliClient.index(PRODUCTS_INDEX).getStats();
+      if (stats.numberOfDocuments === 0) {
+        console.log('⚠️  Meilisearch index is empty — starting automatic reindex in background...');
+        // Run in background so it doesn't block server startup
+        import('./services/search.service').then(async ({ searchService }) => {
+          try {
+            const result = await searchService.reindexAllProducts();
+            console.log(`✅ Auto-reindex completed: ${result.indexed} products indexed (task: ${result.taskUid})`);
+          } catch (err) {
+            console.error('❌ Auto-reindex failed:', err instanceof Error ? err.message : err);
+          }
+        });
+      } else {
+        console.log(`✅ Meilisearch index has ${stats.numberOfDocuments} documents — skipping reindex`);
+      }
+    } catch (err) {
+      console.warn('⚠️  Could not check Meilisearch index stats:', err instanceof Error ? err.message : err);
+    }
+  }
   
   // Start background cron jobs (only essential ones)
   console.log('⚙️  Starting cron jobs...');
