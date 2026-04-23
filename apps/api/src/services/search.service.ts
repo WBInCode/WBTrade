@@ -524,42 +524,53 @@ export class SearchService {
     // Re-initialize Meilisearch settings in case it was restarted
     await initializeMeilisearch();
 
-    const products = await prisma.product.findMany({
-      where: {
-        price: { gt: 0 },
-      },
-      include: {
-        images: { orderBy: { order: 'asc' }, take: 1 },
-        category: true,
-        variants: { include: { inventory: true } },
-      },
-    });
-
-    const documents: MeiliProduct[] = products.map((product) => ({
-      id: product.id,
-      name: product.name,
-      slug: product.slug,
-      description: product.description || '',
-      sku: product.sku,
-      price: Number(product.price),
-      compareAtPrice: product.compareAtPrice ? Number(product.compareAtPrice) : null,
-      categoryId: product.categoryId || '',
-      categoryName: product.category?.name || '',
-      image: product.images[0]?.url || null,
-      status: product.status,
-      createdAt: product.createdAt.getTime(),
-      hasBaselinkerCategory: !!product.category?.baselinkerCategoryId,
-      tags: product.tags || [],
-      popularityScore: product.popularityScore || 0,
-      inStock: product.variants.some(v => v.inventory.some(i => i.quantity > 0)),
-    }));
-
+    const BATCH_SIZE = 1000;
     const index = getProductsIndex();
-    const task = await index.addDocuments(documents);
+    const totalProducts = await prisma.product.count({ where: { price: { gt: 0 } } });
+    const totalBatches = Math.ceil(totalProducts / BATCH_SIZE);
+    let indexedCount = 0;
+    let lastTaskUid = 0;
+
+    for (let batch = 0; batch < totalBatches; batch++) {
+      const products = await prisma.product.findMany({
+        where: { price: { gt: 0 } },
+        skip: batch * BATCH_SIZE,
+        take: BATCH_SIZE,
+        include: {
+          images: { orderBy: { order: 'asc' }, take: 1 },
+          category: true,
+          variants: { include: { inventory: true } },
+        },
+      });
+
+      const documents: MeiliProduct[] = products.map((product) => ({
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        description: product.description || '',
+        sku: product.sku,
+        price: Number(product.price),
+        compareAtPrice: product.compareAtPrice ? Number(product.compareAtPrice) : null,
+        categoryId: product.categoryId || '',
+        categoryName: product.category?.name || '',
+        image: product.images[0]?.url || null,
+        status: product.status,
+        createdAt: product.createdAt.getTime(),
+        hasBaselinkerCategory: !!product.category?.baselinkerCategoryId,
+        tags: product.tags || [],
+        popularityScore: product.popularityScore || 0,
+        inStock: product.variants.some(v => v.inventory.some(i => i.quantity > 0)),
+      }));
+
+      const task = await index.addDocuments(documents);
+      lastTaskUid = task.taskUid;
+      indexedCount += documents.length;
+      console.log(`  Reindex batch ${batch + 1}/${totalBatches}: ${indexedCount}/${totalProducts} products`);
+    }
 
     return {
-      indexed: documents.length,
-      taskUid: task.taskUid,
+      indexed: indexedCount,
+      taskUid: lastTaskUid,
     };
   }
 
