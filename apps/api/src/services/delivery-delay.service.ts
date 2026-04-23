@@ -84,6 +84,7 @@ export class DeliveryDelayService {
         status: {
           notIn: ['DELIVERED', 'CANCELLED', 'REFUNDED'],
         },
+        paymentStatus: 'PAID',
         deletedAt: null,
       },
       select: {
@@ -338,7 +339,10 @@ export class DeliveryDelayService {
    */
   async getPendingCount(): Promise<number> {
     return prisma.deliveryDelayAlert.count({
-      where: { status: 'pending' },
+      where: {
+        status: 'pending',
+        order: { paymentStatus: 'PAID' },
+      },
     });
   }
 }
