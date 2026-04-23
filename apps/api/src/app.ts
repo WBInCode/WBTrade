@@ -1119,9 +1119,10 @@ app.listen(PORT, async () => {
       if (stats.numberOfDocuments === 0) {
         console.log('⚠️  Meilisearch index is empty — starting automatic reindex in background...');
         // Run in background so it doesn't block server startup
-        import('./services/search.service').then(async ({ searchService }) => {
+        import('./services/search.service').then(async ({ SearchService }) => {
           try {
-            const result = await searchService.reindexAllProducts();
+            const svc = new SearchService();
+            const result = await svc.reindexAllProducts();
             console.log(`✅ Auto-reindex completed: ${result.indexed} products indexed (task: ${result.taskUid})`);
           } catch (err) {
             console.error('❌ Auto-reindex failed:', err instanceof Error ? err.message : err);
