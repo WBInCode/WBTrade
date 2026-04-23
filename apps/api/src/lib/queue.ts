@@ -33,6 +33,8 @@ function getRedisConnection() {
         port: parseInt(url.port) || 6379,
         password: url.password || undefined,
         tls: url.protocol === 'rediss:' ? {} : undefined, // Enable TLS for rediss://
+        maxRetriesPerRequest: null, // Required by BullMQ
+        enableOfflineQueue: false,  // Fail fast when Redis unavailable
       };
     } catch (error) {
       console.error('❌ Failed to parse REDIS_URL:', error);
@@ -44,6 +46,8 @@ function getRedisConnection() {
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379'),
     password: process.env.REDIS_PASSWORD || undefined,
+    maxRetriesPerRequest: null, // Required by BullMQ
+    enableOfflineQueue: false,
   };
 }
 
@@ -89,20 +93,24 @@ export function getQueueEvents(name: string): QueueEvents {
 }
 
 /**
- * Search Index Queue - for Meilisearch operations
+ * Search Index Queue - for Meilisearch operations (lazy)
  */
-export const searchIndexQueue = getQueue(QUEUE_NAMES.SEARCH_INDEX);
+export function getSearchIndexQueue(): Queue {
+  return getQueue(QUEUE_NAMES.SEARCH_INDEX);
+}
 
 /**
- * Email Queue - for sending emails
+ * Email Queue - for sending emails (lazy)
  */
-export const emailQueue = getQueue(QUEUE_NAMES.EMAIL);
+export function getEmailQueue(): Queue {
+  return getQueue(QUEUE_NAMES.EMAIL);
+}
 
 /**
  * Add a job to index a single product
  */
 export async function queueProductIndex(productId: string): Promise<void> {
-  await searchIndexQueue.add('index-product', { productId }, {
+  await getSearchIndexQueue().add('index-product', { productId }, {
     removeOnComplete: 100,
     removeOnFail: 50,
     attempts: 3,
@@ -117,7 +125,7 @@ export async function queueProductIndex(productId: string): Promise<void> {
  * Add a job to reindex all products
  */
 export async function queueFullReindex(): Promise<void> {
-  await searchIndexQueue.add('reindex-all', {}, {
+  await getSearchIndexQueue().add('reindex-all', {}, {
     removeOnComplete: 10,
     removeOnFail: 10,
     attempts: 3,
@@ -132,7 +140,7 @@ export async function queueFullReindex(): Promise<void> {
  * Add a job to delete a product from index
  */
 export async function queueProductDelete(productId: string): Promise<void> {
-  await searchIndexQueue.add('delete-product', { productId }, {
+  await getSearchIndexQueue().add('delete-product', { productId }, {
     removeOnComplete: 100,
     removeOnFail: 50,
     attempts: 3,
@@ -155,7 +163,7 @@ export async function queueEmail(data: {
 }): Promise<void> {
   if (USE_EMAIL_QUEUE) {
     // Use queue when worker is running
-    await emailQueue.add('send-email', data, {
+    await getEmailQueue().add('send-email', data, {
       removeOnComplete: 100,
       removeOnFail: 50,
       attempts: 3,
@@ -176,9 +184,6 @@ export async function queueEmail(data: {
 // ========================================
 // Import/Export Queue
 // ========================================
-
-export const importQueue = getQueue(QUEUE_NAMES.IMPORT);
-export const exportQueue = getQueue(QUEUE_NAMES.EXPORT);
 
 export interface ImportJobData {
   type: 'products' | 'inventory' | 'categories';
@@ -201,7 +206,7 @@ export interface ExportJobData {
  * Queue a CSV/XLSX import job
  */
 export async function queueImport(data: ImportJobData): Promise<string> {
-  const job = await importQueue.add('import', data, {
+  const job = await getQueue(QUEUE_NAMES.IMPORT).add('import', data, {
     attempts: 1, // Don't retry imports
     removeOnComplete: 50,
     removeOnFail: 20,
@@ -213,7 +218,7 @@ export async function queueImport(data: ImportJobData): Promise<string> {
  * Queue an export job
  */
 export async function queueExport(data: ExportJobData): Promise<string> {
-  const job = await exportQueue.add('export', data, {
+  const job = await getQueue(QUEUE_NAMES.EXPORT).add('export', data, {
     attempts: 2,
     removeOnComplete: 50,
     removeOnFail: 20,
@@ -225,8 +230,6 @@ export async function queueExport(data: ExportJobData): Promise<string> {
 // Inventory Sync Queue
 // ========================================
 
-export const inventorySyncQueue = getQueue(QUEUE_NAMES.INVENTORY_SYNC);
-
 export interface InventorySyncJobData {
   type: 'sync-all' | 'sync-location' | 'low-stock-check' | 'reservation-cleanup';
   locationId?: string;
@@ -236,7 +239,7 @@ export interface InventorySyncJobData {
  * Queue inventory synchronization
  */
 export async function queueInventorySync(data: InventorySyncJobData): Promise<void> {
-  await inventorySyncQueue.add('inventory-sync', data, {
+  await getQueue(QUEUE_NAMES.INVENTORY_SYNC).add('inventory-sync', data, {
     attempts: 3,
     removeOnComplete: 100,
     removeOnFail: 50,
@@ -247,7 +250,7 @@ export async function queueInventorySync(data: InventorySyncJobData): Promise<vo
  * Queue low stock check (runs periodically)
  */
 export async function queueLowStockCheck(): Promise<void> {
-  await inventorySyncQueue.add(
+  await getQueue(QUEUE_NAMES.INVENTORY_SYNC).add(
     'low-stock-check',
     { type: 'low-stock-check' },
     {
@@ -261,8 +264,6 @@ export async function queueLowStockCheck(): Promise<void> {
 // Shipping Queue
 // ========================================
 
-export const shippingQueue = getQueue(QUEUE_NAMES.SHIPPING);
-
 export interface ShippingJobData {
   type: 'generate-label' | 'track-shipment' | 'notify-delivery';
   orderId: string;
@@ -274,7 +275,7 @@ export interface ShippingJobData {
  * Queue shipping label generation
  */
 export async function queueShippingLabel(orderId: string, carrier: string): Promise<void> {
-  await shippingQueue.add('generate-label', {
+  await getQueue(QUEUE_NAMES.SHIPPING).add('generate-label', {
     type: 'generate-label',
     orderId,
     carrier,
@@ -288,7 +289,7 @@ export async function queueShippingLabel(orderId: string, carrier: string): Prom
  * Queue shipment tracking update
  */
 export async function queueTrackShipment(orderId: string, trackingNumber: string): Promise<void> {
-  await shippingQueue.add('track-shipment', {
+  await getQueue(QUEUE_NAMES.SHIPPING).add('track-shipment', {
     type: 'track-shipment',
     orderId,
     trackingNumber,
@@ -302,13 +303,11 @@ export async function queueTrackShipment(orderId: string, trackingNumber: string
 // Reservation Cleanup Queue
 // ========================================
 
-export const reservationCleanupQueue = getQueue(QUEUE_NAMES.RESERVATION_CLEANUP);
-
 /**
  * Queue expired reservation cleanup
  */
 export async function queueReservationCleanup(): Promise<void> {
-  await reservationCleanupQueue.add(
+  await getQueue(QUEUE_NAMES.RESERVATION_CLEANUP).add(
     'cleanup-expired',
     { timestamp: Date.now() },
     {
@@ -322,7 +321,7 @@ export async function queueReservationCleanup(): Promise<void> {
  * Schedule recurring reservation cleanup (every 5 minutes)
  */
 export async function scheduleReservationCleanup(): Promise<void> {
-  await reservationCleanupQueue.add(
+  await getQueue(QUEUE_NAMES.RESERVATION_CLEANUP).add(
     'cleanup-expired',
     { timestamp: Date.now() },
     {
