@@ -66,6 +66,7 @@ const BL_STATUS_TO_SHOP_STATUS: Record<number, OrderStatus> = {
   65820: 'PROCESSING',  // "Zamówione" (zamówione u dostawcy)
   67214: 'PROCESSING',  // "Magazyn własny"
   109553: 'PROCESSING', // "Zam. Wys. własna"
+  139152: 'PROCESSING', // "Hurtownia Kuchenna"
   
   // Wysłane
   65344: 'SHIPPED',     // "Wysłane"
@@ -263,11 +264,8 @@ export class OrderStatusSyncService {
       }
     }
 
-    // Fallback: check if tracking number exists = SHIPPED
-    if (blOrder.delivery_point_id) {
-      return 'SHIPPED';
-    }
-
+    // delivery_point_id is the customer's chosen pickup point (e.g. InPost locker ID),
+    // NOT an indication that the package was shipped. Do not use it as a fallback.
     return null;
   }
 
