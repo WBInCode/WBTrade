@@ -1,4 +1,5 @@
 import { prisma } from '../db';
+import { wholesalerConfigService } from './wholesaler-config.service';
 
 // CarouselMode type + values (matching Prisma enum)
 type CarouselModeType = 'MANUAL' | 'SEMI_AUTOMATIC' | 'AUTOMATIC';
@@ -109,6 +110,9 @@ function transformProduct(product: any): any {
     try { tags = JSON.parse(product.tags); } catch { tags = []; }
   }
 
+  // Resolve warehouse location from wholesaler config cache
+  const warehouseLocation = resolveWarehouseLocation(product.baselinkerProductId, product.sku);
+
   return {
     ...product,
     specifications,
@@ -118,7 +122,23 @@ function transformProduct(product: any): any {
     tags,
     rating: product.average_rating ?? null,
     reviewCount: product.review_count || 0,
+    warehouseLocation,
   };
+}
+
+// Synchronous warehouse location resolution using cached config
+function resolveWarehouseLocation(baselinkerProductId: string | null, sku: string | null): string | null {
+  const cached = wholesalerConfigService.getCachedConfig();
+  if (!cached || cached.length === 0) return null;
+
+  const blId = (baselinkerProductId || '').toLowerCase();
+  const skuUp = (sku || '').toUpperCase();
+
+  for (const w of cached) {
+    if (w.prefix && blId.startsWith(w.prefix.toLowerCase())) return w.location;
+    if (w.skuPrefix && skuUp.startsWith(w.skuPrefix.toUpperCase())) return w.location;
+  }
+  return null;
 }
 
 function transformProducts(products: any[]): any[] {
