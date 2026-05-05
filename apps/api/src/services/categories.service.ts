@@ -30,7 +30,7 @@ const PACKAGE_TAGS = [
 // b2b.leker.pl usunięte - produkty Leker ponownie widoczne, tag "błąd zdjęcia" filtruje wadliwe
 const BLOCKED_IMAGE_DOMAINS: string[] = [];
 // Tagi które ukrywają produkty całkowicie
-const HIDDEN_TAGS = ['błąd zdjęcia', 'błąd zdjęcia ', 'zabronione-nie-wrzucać'];
+const HIDDEN_TAGS = ['błąd zdjęcia', 'błąd zdjęcia ', 'nie wrzucać-zabronione'];
 
 // Kategorie ukryte na stronie (nazwa lowercase)
 const HIDDEN_CATEGORY_NAMES = ['do zrobienia'];
