@@ -2679,6 +2679,30 @@ export class BaselinkerService {
 
           console.log(`[BaselinkerSync] Completed ${inv.name}: ${prodChanges.length + varChanges.length} price changes applied`);
 
+          // 6c. For single-variant products where product price changed but variant wasn't separately updated,
+          // sync variant price to match product price (variant inherits product price)
+          const variantUpdatedProductIds = new Set(varChanges.map(c => c.productId));
+          const singleVariantProdChanges = prodChanges.filter(c => !variantUpdatedProductIds.has(c.id));
+          if (singleVariantProdChanges.length > 0) {
+            const productIds = singleVariantProdChanges.map(c => c.id);
+            const prices = singleVariantProdChanges.map(c => c.newPrice);
+            await prisma.$executeRawUnsafe(`
+              UPDATE product_variants SET 
+                price = u.new_price,
+                lowest_price_30_days = LEAST(COALESCE(lowest_price_30_days, u.new_price), u.new_price),
+                lowest_price_30_days_at = COALESCE(lowest_price_30_days_at, NOW()),
+                updated_at = NOW()
+              FROM (SELECT unnest($1::text[]) as product_id, unnest($2::numeric[]) as new_price) u
+              WHERE product_variants.product_id = u.product_id
+                AND NOT EXISTS (
+                  SELECT 1 FROM product_variants pv2 
+                  WHERE pv2.product_id = product_variants.product_id 
+                  AND pv2.id != product_variants.id
+                )
+            `, productIds, prices);
+            console.log(`[BaselinkerSync] Synced ${singleVariantProdChanges.length} single-variant product prices to their variants`);
+          }
+
           if (syncLogId) {
             syncProgress.sendProgress(syncLogId, {
               type: 'success',
