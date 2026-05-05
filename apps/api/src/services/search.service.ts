@@ -19,7 +19,7 @@ const DELIVERY_TAGS = [
 const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
 const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce|produkty?\s*w\s*paczce/i;
 // Tags that hide products completely
-const HIDDEN_TAGS = ['błąd zdjęcia', 'błąd zdjęcia '];
+const HIDDEN_TAGS = ['błąd zdjęcia', 'błąd zdjęcia ', 'zabronione-nie-wrzucać'];
 // Image domains that block hotlinking - products with these images are hidden
 // b2b.leker.pl usunięte - produkty Leker ponownie widoczne, tag "błąd zdjęcia" filtruje wadliwe
 const BLOCKED_IMAGE_DOMAINS: string[] = [];
