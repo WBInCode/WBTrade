@@ -91,6 +91,11 @@ const navSections: NavSection[] = [
         href: '/delivery-delays',
         icon: Clock,
       },
+      {
+        title: 'Szablony e-mail',
+        href: '/email-templates',
+        icon: Mail,
+      },
     ],
   },
   {
@@ -190,8 +195,11 @@ const navSections: NavSection[] = [
         href: '/integrations',
         icon: Box,
         submenu: [
+          { title: 'Hurtownie', href: '/wholesalers' },
           { title: 'Baselinker', href: '/baselinker' },
           { title: 'Import produktów', href: '/baselinker/import' },
+          { title: 'Aktualizacja produktów', href: '/baselinker/update-products' },
+          { title: 'Podgląd hurtowni (dry run)', href: '/baselinker/dry-run' },
           { title: 'Synchronizacja stanów', href: '/stock-sync' },
         ],
       },

@@ -543,12 +543,30 @@ export async function createCheckout(req: Request, res: Response): Promise<void>
       if (coupon && coupon.isActive 
           && (!coupon.expiresAt || coupon.expiresAt > new Date())
           && (!coupon.maximumUses || coupon.usedCount < coupon.maximumUses)) {
-        if (coupon.type === 'PERCENTAGE') {
+        // Validate email restriction (e.g. DELIVERY_DELAY coupons)
+        if (coupon.restrictedToEmail) {
+          let checkoutEmail: string | null = null;
+          if (userId) {
+            const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+            checkoutEmail = user?.email || null;
+          } else {
+            checkoutEmail = guestEmail || null;
+          }
+          if (!checkoutEmail || checkoutEmail.toLowerCase() !== coupon.restrictedToEmail.toLowerCase()) {
+            console.log(`[Checkout] Coupon ${cart.couponCode} restricted to ${coupon.restrictedToEmail}, but checkout email is ${checkoutEmail}. Ignoring.`);
+          } else if (coupon.type === 'PERCENTAGE') {
+            couponDiscount = Math.round(subtotal * Number(coupon.value) / 100 * 100) / 100;
+          } else if (coupon.type === 'FIXED_AMOUNT') {
+            couponDiscount = Math.min(Number(coupon.value), subtotal);
+          }
+        } else if (coupon.type === 'PERCENTAGE') {
           couponDiscount = Math.round(subtotal * Number(coupon.value) / 100 * 100) / 100;
         } else if (coupon.type === 'FIXED_AMOUNT') {
           couponDiscount = Math.min(Number(coupon.value), subtotal);
         }
-        console.log(`[Checkout] Coupon ${cart.couponCode} re-validated: ${coupon.type} ${coupon.value} -> discount ${couponDiscount} on subtotal ${subtotal}`);
+        if (couponDiscount > 0) {
+          console.log(`[Checkout] Coupon ${cart.couponCode} re-validated: ${coupon.type} ${coupon.value} -> discount ${couponDiscount} on subtotal ${subtotal}`);
+        }
       } else {
         console.log(`[Checkout] Coupon ${cart.couponCode} is no longer valid, ignoring discount`);
       }

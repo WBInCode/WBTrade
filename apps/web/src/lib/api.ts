@@ -299,6 +299,20 @@ export interface Product {
   createdAt?: string;
   updatedAt?: string;
   tags?: string[];
+  // Manufacturer / GPSR
+  manufacturer?: {
+    id: string;
+    name: string;
+    slug: string;
+    address?: string;
+    email?: string;
+    phone?: string;
+    website?: string;
+    safetyInfo?: string;
+    euRepName?: string;
+    euRepAddress?: string;
+    euRepEmail?: string;
+  } | null;
   // Extended fields for UI
   badge?: 'super-price' | 'outlet' | 'bestseller' | 'new';
   rating?: string | number;
@@ -364,7 +378,8 @@ export interface ProductFiltersResponse {
   };
   brands: { name: string; count: number }[];
   specifications: Record<string, { value: string; count: number }[]>;
-  warehouseCounts?: Record<string, number>; // Liczba produktów per magazyn
+  warehouseCounts?: Record<string, number>;
+  categoryCounts?: Record<string, number>;
   totalProducts: number;
 }
 
@@ -378,8 +393,8 @@ export const productsApi = {
   getBySlug: (slug: string) =>
     api.get<Product>(`/products/slug/${slug}`),
   
-  getFilters: (category?: string) =>
-    api.get<ProductFiltersResponse>('/products/filters', category ? { category } : undefined),
+  getFilters: (params?: { category?: string; brand?: string; minPrice?: number; maxPrice?: number; warehouse?: string }) =>
+    api.get<ProductFiltersResponse>('/products/filters', params as Record<string, string | number | boolean | undefined>),
     
   create: (product: Partial<Product>) =>
     api.post<Product>('/products', product),
@@ -449,6 +464,14 @@ export const productsApi = {
       `/products/same-warehouse/${productId}`, 
       options as Record<string, string | number | boolean>
     ),
+
+  // Get all brands
+  getBrands: () =>
+    api.get<{ brands: { name: string; slug: string; count: number }[] }>('/products/brands'),
+
+  // Get brand by slug
+  getBrandBySlug: (slug: string) =>
+    api.get<{ name: string; slug: string; count: number }>(`/products/brands/${slug}`),
 };
 
 // ============================================
@@ -871,7 +894,9 @@ function getSessionId(): string {
   
   let sessionId = localStorage.getItem('cart_session_id');
   if (!sessionId) {
-    sessionId = 'sess_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const randomBytes = new Uint8Array(16);
+    crypto.getRandomValues(randomBytes);
+    sessionId = 'sess_' + Array.from(randomBytes, b => b.toString(16).padStart(2, '0')).join('');
     localStorage.setItem('cart_session_id', sessionId);
   }
   return sessionId;

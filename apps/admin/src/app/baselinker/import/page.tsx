@@ -599,9 +599,9 @@ export default function BaselinkerImportPage() {
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-white">Import produktów z Baselinker</h1>
-            <p className="text-gray-400 text-sm mt-0.5">
-              Zarządzaj importem i aktualizacją produktów
+            <h1 className="text-2xl font-bold text-green-400">Import produktów z Baselinker</h1>
+            <p className="text-green-300 text-sm mt-0.5">
+              Zarządzaj importem i aktualizacją produktów (v4-test)
             </p>
           </div>
         </div>

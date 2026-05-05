@@ -14,9 +14,15 @@ const productsService = new ProductsService();
  * Helper to sanitize text - removes potential XSS and trims
  */
 const sanitizeText = (text: string): string => {
-  return text
-    .replace(/<[^>]*>/g, '') // Remove HTML tags
-    .replace(/[<>]/g, '') // Remove remaining angle brackets
+  let sanitized = text;
+  // Iteratively strip HTML tags until none remain (prevents multi-character bypass like <scr<script>ipt>)
+  let previous = '';
+  while (previous !== sanitized) {
+    previous = sanitized;
+    sanitized = sanitized.replace(/<[^>]*>/g, '');
+  }
+  return sanitized
+    .replace(/[<>"'&]/g, '') // Remove remaining dangerous characters
     .trim();
 };
 
@@ -52,6 +58,8 @@ const productQuerySchema = z.object({
   hideOldZeroStock: z.string().optional().transform((val) => val === 'true'),
   // Filtr tylko przecenionych produktów (compareAtPrice > price)
   discounted: z.string().optional().transform((val) => val === 'true'),
+  // Filtr producenta (brand name from specifications)
+  brand: z.string().max(200).optional().transform((val) => val ? sanitizeText(val) : undefined),
   // Session seed for consistent random sorting
   sessionSeed: z.string().optional().transform((val) => {
     if (!val) return undefined;
@@ -358,8 +366,14 @@ export async function deleteProduct(req: Request, res: Response): Promise<void> 
  */
 export async function getFilters(req: Request, res: Response): Promise<void> {
   try {
-    const { category } = req.query;
-    const filters = await productsService.getFilters(category as string | undefined);
+    const { category, brand, minPrice, maxPrice, warehouse } = req.query;
+    const filters = await productsService.getFilters({
+      categorySlug: category as string | undefined,
+      brand: brand as string | undefined,
+      minPrice: minPrice ? parseFloat(minPrice as string) : undefined,
+      maxPrice: maxPrice ? parseFloat(maxPrice as string) : undefined,
+      warehouse: warehouse as string | undefined,
+    });
     res.status(200).json(filters);
   } catch (error) {
     console.error('Error fetching filters:', error);
@@ -522,5 +536,42 @@ export async function getProductsByIds(req: Request, res: Response): Promise<voi
   } catch (error) {
     console.error('Error fetching products by IDs:', error);
     res.status(500).json({ message: 'Error retrieving products' });
+  }
+}
+
+/**
+ * Get all brands list
+ */
+export async function getBrands(req: Request, res: Response): Promise<void> {
+  try {
+    const brands = await productsService.getBrands();
+    res.status(200).json({ brands });
+  } catch (error) {
+    console.error('Error fetching brands:', error);
+    res.status(500).json({ message: 'Error retrieving brands' });
+  }
+}
+
+/**
+ * Get brand by slug
+ */
+export async function getBrandBySlug(req: Request, res: Response): Promise<void> {
+  try {
+    const { slug } = req.params;
+    if (!slug || typeof slug !== 'string' || slug.length > 200) {
+      res.status(400).json({ message: 'Invalid brand slug' });
+      return;
+    }
+
+    const brand = await productsService.getBrandBySlug(slug);
+    if (!brand) {
+      res.status(404).json({ message: 'Brand not found' });
+      return;
+    }
+
+    res.status(200).json(brand);
+  } catch (error) {
+    console.error('Error fetching brand:', error);
+    res.status(500).json({ message: 'Error retrieving brand' });
   }
 }

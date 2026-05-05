@@ -14,21 +14,18 @@ interface PriceRule {
   addToPrice: number;
 }
 
-type Warehouse = 'leker' | 'btp' | 'hp' | 'dofirmy';
+type Warehouse = string;
 
 interface SyncStatus {
-  lastSync: string | null;
-  xmlUrl: string;
+  source: string;
+  lastSync: { startedAt: string; completedAt: string | null; status: string; itemsProcessed: number; itemsChanged: number } | null;
 }
 
-const XML_SYNC_WAREHOUSES: Warehouse[] = ['leker', 'btp', 'hp', 'dofirmy'];
-
-const WAREHOUSES: { key: Warehouse; label: string; description: string }[] = [
-  { key: 'leker', label: 'Leker', description: 'Magazyn Chynów' },
-  { key: 'btp', label: 'BTP', description: 'Magazyn Chotów' },
-  { key: 'hp', label: 'HP', description: 'Magazyn Zielona Góra' },
-  { key: 'dofirmy', label: 'DoFirmy', description: 'Magazyn Koszalin' },
-];
+interface WarehouseInfo {
+  key: string;
+  label: string;
+  description: string;
+}
 
 const DEFAULT_RULES: PriceRule[] = [
   { id: '1', priceFrom: 0, priceTo: 35, multiplier: 1.0, addToPrice: 0 },
@@ -50,26 +47,17 @@ function generateId(): string {
 }
 
 export default function PricingPage() {
-  const [activeWarehouse, setActiveWarehouse] = useState<Warehouse>('leker');
-  const [rules, setRules] = useState<Record<Warehouse, PriceRule[]>>({
-    leker: [],
-    btp: [],
-    hp: [],
-    dofirmy: [],
-  });
+  const [warehouses, setWarehouses] = useState<WarehouseInfo[]>([]);
+  const [activeWarehouse, setActiveWarehouse] = useState<Warehouse>('');
+  const [rules, setRules] = useState<Record<Warehouse, PriceRule[]>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [hasChanges, setHasChanges] = useState<Record<Warehouse, boolean>>({
-    leker: false,
-    btp: false,
-    hp: false,
-    dofirmy: false,
-  });
+  const [hasChanges, setHasChanges] = useState<Record<Warehouse, boolean>>({});
   const [editingCell, setEditingCell] = useState<{ ruleId: string; field: string; value: string } | null>(null);
 
-  // XML sync state
-  const [syncStatus, setSyncStatus] = useState<Record<string, SyncStatus>>({});
+  // Sync state
+  const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [syncingWarehouse, setSyncingWarehouse] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -77,9 +65,41 @@ export default function PricingPage() {
     setLoading(true);
     try {
       const token = getAuthToken();
-      const results: Record<Warehouse, PriceRule[]> = { leker: [], btp: [], hp: [], dofirmy: [] };
 
-      for (const wh of WAREHOUSES) {
+      // Fetch warehouses with price rules from API
+      const whRes = await fetch(`${API_URL}/admin/wholesalers`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      let whs: WarehouseInfo[] = [];
+      if (whRes.ok) {
+        const data = await whRes.json();
+        whs = data
+          .filter((w: any) => w.isActive && w.hasPriceRules)
+          .map((w: any) => ({
+            key: w.key,
+            label: w.name,
+            description: w.warehouseDisplayName || w.location || '',
+          }));
+      }
+      if (whs.length === 0) {
+        // Fallback to hardcoded defaults
+        whs = [
+          { key: 'leker', label: 'Leker', description: 'Magazyn Chynów' },
+          { key: 'btp', label: 'BTP', description: 'Magazyn Chotów' },
+          { key: 'hp', label: 'HP', description: 'Magazyn Zielona Góra' },
+          { key: 'dofirmy', label: 'DoFirmy', description: 'Magazyn Koszalin' },
+        ];
+      }
+      setWarehouses(whs);
+      setActiveWarehouse(prev => prev || whs[0]?.key || '');
+
+      const results: Record<Warehouse, PriceRule[]> = {};
+      const changes: Record<Warehouse, boolean> = {};
+
+      for (const wh of whs) {
         try {
           const response = await fetch(`${API_URL}/admin/settings/price_rules_${wh.key}`, {
             headers: {
@@ -92,7 +112,7 @@ export default function PricingPage() {
             const data = await response.json();
             const parsed = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
             if (Array.isArray(parsed) && parsed.length > 0) {
-              results[wh.key] = parsed;
+              results[wh.key] = parsed.map((r: any, i: number) => ({ ...r, id: r.id || generateId() }));
             } else {
               results[wh.key] = [...DEFAULT_RULES];
             }
@@ -102,9 +122,11 @@ export default function PricingPage() {
         } catch {
           results[wh.key] = [...DEFAULT_RULES];
         }
+        changes[wh.key] = false;
       }
 
       setRules(results);
+      setHasChanges(changes);
     } catch (error) {
       console.error('Error fetching price rules:', error);
       setMessage({ type: 'error', text: 'Błąd podczas ładowania reguł cenowych' });
@@ -120,7 +142,7 @@ export default function PricingPage() {
   const fetchSyncStatus = useCallback(async () => {
     try {
       const token = getAuthToken();
-      const response = await fetch(`${API_URL}/admin/sync/prices-xml/status`, {
+      const response = await fetch(`${API_URL}/admin/sync/prices/status`, {
         headers: { ...(token && { Authorization: `Bearer ${token}` }) },
       });
       if (response.ok) {
@@ -136,32 +158,29 @@ export default function PricingPage() {
     fetchSyncStatus();
   }, [fetchSyncStatus]);
 
-  const triggerSync = async (warehouse: 'leker' | 'btp' | 'all') => {
-    setSyncingWarehouse(warehouse);
+  const triggerSync = async () => {
+    setSyncingWarehouse('all');
     setSyncMessage(null);
     try {
       const token = getAuthToken();
-      const response = await fetch(`${API_URL}/admin/sync/prices-xml`, {
+      const response = await fetch(`${API_URL}/admin/sync/prices`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token && { Authorization: `Bearer ${token}` }),
         },
-        body: JSON.stringify({ warehouse }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Błąd synchronizacji');
-      const label = warehouse === 'all' ? 'Leker + BTP' : warehouse.toUpperCase();
       if (data.status === 'queued') {
-        setSyncMessage({ type: 'success', text: `Synchronizacja ${label} dodana do kolejki (job: ${data.jobId})` });
+        setSyncMessage({ type: 'success', text: `Synchronizacja cen dodana do kolejki (job: ${data.jobId})` });
       } else {
-        const changed = (data.result?.leker?.priceChanged || 0) + (data.result?.btp?.priceChanged || 0);
-        setSyncMessage({ type: 'success', text: `Synchronizacja ${label} zakończona — zmieniono ${changed} cen` });
+        setSyncMessage({ type: 'success', text: `Synchronizacja cen zakończona — ${data.result?.itemsChanged || 0} zmian` });
       }
       // refresh timestamps
       await fetchSyncStatus();
     } catch (err: any) {
-      setSyncMessage({ type: 'error', text: err.message || 'Błąd synchronizacji XML' });
+      setSyncMessage({ type: 'error', text: err.message || 'Błąd synchronizacji cen' });
     } finally {
       setSyncingWarehouse(null);
     }
@@ -183,7 +202,7 @@ export default function PricingPage() {
 
       if (!response.ok) throw new Error('Błąd zapisu');
 
-      setMessage({ type: 'success', text: `Reguły cenowe dla ${WAREHOUSES.find(w => w.key === warehouse)?.label} zapisane pomyślnie!` });
+      setMessage({ type: 'success', text: `Reguły cenowe dla ${warehouses.find(w => w.key === warehouse)?.label} zapisane pomyślnie!` });
       setHasChanges(prev => ({ ...prev, [warehouse]: false }));
     } catch (error) {
       setMessage({ type: 'error', text: 'Błąd podczas zapisywania reguł cenowych' });
@@ -195,7 +214,7 @@ export default function PricingPage() {
   const updateRule = (warehouse: Warehouse, ruleId: string, field: keyof PriceRule, value: string) => {
     setRules(prev => ({
       ...prev,
-      [warehouse]: prev[warehouse].map(rule =>
+      [warehouse]: (prev[warehouse] || []).map(rule =>
         rule.id === ruleId
           ? { ...rule, [field]: field === 'id' ? value : parseFloat(value) || 0 }
           : rule
@@ -227,14 +246,14 @@ export default function PricingPage() {
   const removeRule = (warehouse: Warehouse, ruleId: string) => {
     setRules(prev => ({
       ...prev,
-      [warehouse]: prev[warehouse].filter(rule => rule.id !== ruleId),
+      [warehouse]: (prev[warehouse] || []).filter(rule => rule.id !== ruleId),
     }));
     setHasChanges(prev => ({ ...prev, [warehouse]: true }));
   };
 
   const copyRules = (fromWarehouse: Warehouse) => {
     const from = rules[fromWarehouse];
-    const targets = WAREHOUSES.filter(w => w.key !== fromWarehouse);
+    const targets = warehouses.filter(w => w.key !== fromWarehouse);
     
     setRules(prev => {
       const updated = { ...prev };
@@ -250,7 +269,7 @@ export default function PricingPage() {
       }
       return updated;
     });
-    setMessage({ type: 'success', text: `Reguły skopiowane z ${WAREHOUSES.find(w => w.key === fromWarehouse)?.label} do pozostałych magazynów` });
+    setMessage({ type: 'success', text: `Reguły skopiowane z ${warehouses.find(w => w.key === fromWarehouse)?.label} do pozostałych magazynów` });
   };
 
   const saveAllRules = async () => {
@@ -258,7 +277,7 @@ export default function PricingPage() {
     setMessage(null);
     try {
       const token = getAuthToken();
-      for (const wh of WAREHOUSES) {
+      for (const wh of warehouses) {
         const response = await fetch(`${API_URL}/admin/settings/price_rules_${wh.key}`, {
           method: 'POST',
           headers: {
@@ -270,7 +289,7 @@ export default function PricingPage() {
         if (!response.ok) throw new Error(`Błąd zapisu dla ${wh.label}`);
       }
       setMessage({ type: 'success', text: 'Wszystkie reguły cenowe zapisane pomyślnie!' });
-      setHasChanges({ leker: false, btp: false, hp: false, dofirmy: false });
+      setHasChanges(Object.fromEntries(warehouses.map(w => [w.key, false])));
     } catch (error) {
       setMessage({ type: 'error', text: 'Błąd podczas zapisywania reguł cenowych' });
     } finally {
@@ -281,6 +300,7 @@ export default function PricingPage() {
   // Calculate example price
   const calculateExamplePrice = (sourcePrice: number, warehouse: Warehouse): string => {
     const warehouseRules = rules[warehouse];
+    if (!warehouseRules) return '-';
     for (const rule of warehouseRules) {
       if (sourcePrice >= rule.priceFrom && sourcePrice <= rule.priceTo) {
         const result = sourcePrice * rule.multiplier + rule.addToPrice;
@@ -299,7 +319,7 @@ export default function PricingPage() {
     );
   }
 
-  const currentRules = rules[activeWarehouse];
+  const currentRules = rules[activeWarehouse] || [];
   const anyChanges = Object.values(hasChanges).some(Boolean);
 
   return (
@@ -344,7 +364,7 @@ export default function PricingPage() {
 
       {/* Warehouse tabs */}
       <div className="flex gap-1 bg-slate-800/50 p-1 rounded-xl border border-slate-700/50">
-        {WAREHOUSES.map(wh => (
+        {warehouses.map(wh => (
           <button
             key={wh.key}
             onClick={() => setActiveWarehouse(wh.key)}
@@ -389,7 +409,7 @@ export default function PricingPage() {
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={editingCell?.ruleId === rule.id && editingCell.field === 'priceFrom' ? editingCell.value : rule.priceFrom}
+                  value={editingCell?.ruleId === rule.id && editingCell?.field === 'priceFrom' ? editingCell.value : rule.priceFrom}
                   onFocus={() => setEditingCell({ ruleId: rule.id, field: 'priceFrom', value: String(rule.priceFrom) })}
                   onChange={e => setEditingCell({ ruleId: rule.id, field: 'priceFrom', value: e.target.value })}
                   onBlur={() => { if (editingCell) { updateRule(activeWarehouse, rule.id, 'priceFrom', editingCell.value); setEditingCell(null); } }}
@@ -400,7 +420,7 @@ export default function PricingPage() {
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={editingCell?.ruleId === rule.id && editingCell.field === 'priceTo' ? editingCell.value : rule.priceTo}
+                  value={editingCell?.ruleId === rule.id && editingCell?.field === 'priceTo' ? editingCell.value : rule.priceTo}
                   onFocus={() => setEditingCell({ ruleId: rule.id, field: 'priceTo', value: String(rule.priceTo) })}
                   onChange={e => setEditingCell({ ruleId: rule.id, field: 'priceTo', value: e.target.value })}
                   onBlur={() => { if (editingCell) { updateRule(activeWarehouse, rule.id, 'priceTo', editingCell.value); setEditingCell(null); } }}
@@ -411,7 +431,7 @@ export default function PricingPage() {
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={editingCell?.ruleId === rule.id && editingCell.field === 'multiplier' ? editingCell.value : rule.multiplier}
+                  value={editingCell?.ruleId === rule.id && editingCell?.field === 'multiplier' ? editingCell.value : rule.multiplier}
                   onFocus={() => setEditingCell({ ruleId: rule.id, field: 'multiplier', value: String(rule.multiplier) })}
                   onChange={e => setEditingCell({ ruleId: rule.id, field: 'multiplier', value: e.target.value })}
                   onBlur={() => { if (editingCell) { updateRule(activeWarehouse, rule.id, 'multiplier', editingCell.value); setEditingCell(null); } }}
@@ -422,7 +442,7 @@ export default function PricingPage() {
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={editingCell?.ruleId === rule.id && editingCell.field === 'addToPrice' ? editingCell.value : rule.addToPrice}
+                  value={editingCell?.ruleId === rule.id && editingCell?.field === 'addToPrice' ? editingCell.value : rule.addToPrice}
                   onFocus={() => setEditingCell({ ruleId: rule.id, field: 'addToPrice', value: String(rule.addToPrice) })}
                   onChange={e => setEditingCell({ ruleId: rule.id, field: 'addToPrice', value: e.target.value })}
                   onBlur={() => { if (editingCell) { updateRule(activeWarehouse, rule.id, 'addToPrice', editingCell.value); setEditingCell(null); } }}
@@ -474,30 +494,30 @@ export default function PricingPage() {
           className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg text-sm font-medium transition-colors"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Zapisz {WAREHOUSES.find(w => w.key === activeWarehouse)?.label}
+          Zapisz {warehouses.find(w => w.key === activeWarehouse)?.label}
         </button>
       </div>
 
-      {/* XML price sync section */}
+      {/* Baselinker price sync section */}
       <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-medium text-white">Synchronizacja cen z XML</h3>
+            <h3 className="text-sm font-medium text-white">Synchronizacja cen z Baselinker</h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              Ceny hurtowe pobierane raz dziennie o 6:00 z plików XML dostawców. Możesz też uruchomić ręcznie.
+              Ceny hurtowe pobierane co 2 godziny z API Baselinker. Możesz też uruchomić ręcznie.
             </p>
           </div>
           <button
-            onClick={() => triggerSync('all')}
+            onClick={() => triggerSync()}
             disabled={syncingWarehouse !== null}
             className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg text-sm font-medium transition-colors"
           >
-            {syncingWarehouse === 'all' ? (
+            {syncingWarehouse ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <RefreshCw className="w-4 h-4" />
             )}
-            Synchronizuj wszystko
+            Synchronizuj ceny
           </button>
         </div>
 
@@ -512,50 +532,26 @@ export default function PricingPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {XML_SYNC_WAREHOUSES.map(wh => {
-            const status = syncStatus[wh];
-            const isSyncing = syncingWarehouse === wh || syncingWarehouse === 'all';
-            const lastSyncDate = status?.lastSync ? new Date(status.lastSync) : null;
-            return (
-              <div key={wh} className="bg-slate-900/50 rounded-lg p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-white">{wh.toUpperCase()}</span>
-                  <button
-                    onClick={() => triggerSync(wh as 'leker' | 'btp')}
-                    disabled={syncingWarehouse !== null}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white rounded-md text-xs transition-colors"
-                  >
-                    {isSyncing ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <RefreshCw className="w-3 h-3" />
-                    )}
-                    Synchronizuj
-                  </button>
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                  <Clock className="w-3 h-3" />
-                  {lastSyncDate
-                    ? `Ostatnia sync: ${lastSyncDate.toLocaleDateString('pl-PL')} ${lastSyncDate.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}`
-                    : 'Brak danych o ostatniej synchronizacji'}
-                </div>
-                {status?.xmlUrl && (
-                  <div className="text-xs text-slate-600 truncate" title={status.xmlUrl}>
-                    {status.xmlUrl}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        {syncStatus?.lastSync && (
+          <div className="bg-slate-900/50 rounded-lg p-4 space-y-2">
+            <div className="flex items-center gap-1.5 text-xs text-slate-400">
+              <Clock className="w-3 h-3" />
+              Ostatnia synchronizacja: {new Date(syncStatus.lastSync.startedAt).toLocaleDateString('pl-PL')} {new Date(syncStatus.lastSync.startedAt).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}
+            </div>
+            <div className="flex items-center gap-3 text-xs text-slate-500">
+              <span>Status: <span className={syncStatus.lastSync.status === 'SUCCESS' ? 'text-green-400' : 'text-red-400'}>{syncStatus.lastSync.status}</span></span>
+              <span>Przetworzono: {syncStatus.lastSync.itemsProcessed}</span>
+              <span>Zmieniono: {syncStatus.lastSync.itemsChanged}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Price simulator */}
       <PriceSimulator
         warehouse={activeWarehouse}
         calculatePrice={calculateExamplePrice}
-        warehouseLabel={WAREHOUSES.find(w => w.key === activeWarehouse)?.label || ''}
+        warehouseLabel={warehouses.find(w => w.key === activeWarehouse)?.label || ''}
       />
     </div>
   );

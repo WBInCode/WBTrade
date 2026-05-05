@@ -2,11 +2,12 @@
 
 import { useState, memo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Product } from '../lib/api';
 import { useWishlist } from '../contexts/WishlistContext';
 import { useCart } from '../contexts/CartContext';
-import { PLACEHOLDER_IMAGE, WAREHOUSE_LOCATIONS, getWarehouseLocation, calculateDiscountPercent } from './productUtils';
+import { PLACEHOLDER_IMAGE, WAREHOUSE_LOCATIONS, getWarehouseLocation, calculateDiscountPercent, getProductBrand, getProductBrandSlug } from './productUtils';
 import { getProxiedImageUrl } from '../lib/image-proxy';
 
 // Cart icon
@@ -32,6 +33,7 @@ export interface ProductCardProps {
 }
 
 export default memo(function ProductCard({ product, showDelivery = false, showWishlist = true, showAddToCart = true }: ProductCardProps) {
+  const router = useRouter();
   const [imgError, setImgError] = useState(false);
   const firstImage = product.images?.[0];
   const productImage = firstImage?.id ? getProxiedImageUrl(firstImage.id) : firstImage?.url;
@@ -43,9 +45,10 @@ export default memo(function ProductCard({ product, showDelivery = false, showWi
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { addToCart } = useCart();
   const inWishlist = isInWishlist(product.id);
-  const warehouseLocation = getWarehouseLocation(product);
+  const warehouseLocation = (product as any).warehouseLocation || getWarehouseLocation(product);
   const isOutOfStock = !product.variants?.[0] || product.variants[0].stock <= 0;
-  const isOutletProduct = warehouseLocation === WAREHOUSE_LOCATIONS['outlet'];
+  const isOutletProduct = warehouseLocation === WAREHOUSE_LOCATIONS['outlet'] || warehouseLocation === 'Rzeszów';
+  const brand = getProductBrand(product);
 
   const handleWishlistClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -147,6 +150,18 @@ export default memo(function ProductCard({ product, showDelivery = false, showWi
           <h3 className="text-xs sm:text-sm leading-snug font-medium text-gray-800 dark:text-secondary-100 line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem] group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
             {product.name}
           </h3>
+
+          {/* Brand / Manufacturer */}
+          {brand && (
+            <span
+              role="link"
+              tabIndex={0}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/producent/${getProductBrandSlug(product) || ''}`); }}
+              className="text-[10px] sm:text-xs text-primary-600 dark:text-primary-400 hover:underline mt-0.5 block truncate cursor-pointer"
+            >
+              {brand}
+            </span>
+          )}
 
           {/* Rating - hidden when 0 reviews */}
           {(product.reviewCount || 0) > 0 && (

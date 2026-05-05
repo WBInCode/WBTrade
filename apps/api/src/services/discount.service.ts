@@ -128,10 +128,16 @@ export class DiscountService {
     }
 
     // For personal discounts, check if it belongs to this user
-    if ((coupon.couponSource === 'WELCOME_DISCOUNT' || coupon.couponSource === 'APP_DOWNLOAD') && coupon.userId) {
+    if ((coupon.couponSource === 'WELCOME_DISCOUNT' || coupon.couponSource === 'APP_DOWNLOAD' || coupon.couponSource === 'DELIVERY_DELAY') && coupon.userId) {
       if (coupon.userId !== userId) {
         return { valid: false, error: 'Ten kod rabatowy należy do innego użytkownika' };
       }
+    }
+
+    // For email-restricted coupons (e.g. DELIVERY_DELAY for guests), verify email
+    if (coupon.restrictedToEmail) {
+      // Email check happens at checkout (applyCoupon in cart.service) where we have the user's email
+      // Here we just flag it as valid if other checks pass
     }
 
     // Check if coupon requires authentication (registered users only)
@@ -448,6 +454,75 @@ export class DiscountService {
     return {
       couponCode: coupon.code,
       discountPercent: SURPRISE_DISCOUNT_PERCENT,
+      expiresAt,
+    };
+  }
+
+  /**
+   * Generate unique apology discount for delivery delay notification.
+   * Format: {percent}-XXXXXXXX (e.g. 10-K3BN7WHP)
+   * Single-use, tied to specific user or guest email.
+   */
+  async generateDelayApologyCoupon(data: {
+    userId: string | null;
+    guestEmail: string | null;
+    discountPercent: number;
+    validDays: number;
+    orderNumber: string;
+  }): Promise<WelcomeDiscountResult> {
+    const { userId, guestEmail, discountPercent, validDays, orderNumber } = data;
+    const recipientLabel = userId ? `user ${userId}` : `guest ${guestEmail}`;
+
+    // Generate unique code: {percent}-XXXXXXXX
+    let code: string;
+    let attempts = 0;
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    do {
+      const randomPart = Array.from(
+        crypto.randomBytes(8),
+        (byte) => chars[byte % chars.length]
+      ).join('');
+      code = `${discountPercent}-${randomPart}`;
+      const existing = await prisma.coupon.findUnique({ where: { code } });
+      if (!existing) break;
+      attempts++;
+    } while (attempts < 10);
+
+    if (attempts >= 10) {
+      throw new Error('Nie udało się wygenerować unikalnego kodu');
+    }
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + validDays);
+
+    // Determine the email to restrict coupon to
+    const recipientEmail = userId
+      ? (await prisma.user.findUnique({ where: { id: userId }, select: { email: true } }))?.email || guestEmail
+      : guestEmail;
+
+    const coupon = await prisma.coupon.create({
+      data: {
+        code: code!,
+        description: `Przeprosiny za opóźnienie dostawy zamówienia #${orderNumber} — -${discountPercent}% dla ${recipientEmail || recipientLabel}`,
+        type: 'PERCENTAGE',
+        value: discountPercent,
+        maximumUses: 1,
+        usedCount: 0,
+        expiresAt,
+        isActive: true,
+        couponSource: 'DELIVERY_DELAY',
+        singleUsePerUser: true,
+        requiresAuth: false,
+        restrictedToEmail: recipientEmail || null,
+        ...(userId ? { userId } : {}),
+      },
+    });
+
+    console.log(`✅ [DiscountService] Generated delay apology code ${code} (-${discountPercent}%) for ${recipientLabel}, order #${orderNumber}, expires ${expiresAt.toISOString()}`);
+
+    return {
+      couponCode: coupon.code,
+      discountPercent,
       expiresAt,
     };
   }

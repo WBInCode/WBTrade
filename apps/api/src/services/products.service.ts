@@ -4,6 +4,7 @@ import { getProductsIndex, isMeilisearchAvailable, markMeilisearchUnavailable, m
 import { MeiliProduct } from './search.service';
 import { queueProductIndex, queueProductDelete } from '../lib/queue';
 import { priceHistoryService } from './price-history.service';
+import { wholesalerConfigService } from './wholesaler-config.service';
 
 // Tagi dostawy - produkty MUSZĄ mieć przynajmniej jeden z tych tagów żeby być widoczne
 // Produkty z TYLKO tagiem hurtowni (Ikonka, BTP, HP, Leker) nie będą wyświetlane
@@ -83,6 +84,7 @@ interface ProductFilters {
   hideOldZeroStock?: boolean; // Ukryj produkty ze stanem 0 starsze niż 14 dni
   sessionSeed?: number; // Seed for consistent random sorting
   discounted?: boolean; // Filtr tylko przecenionych produktów (compareAtPrice > price)
+  brand?: string; // Filtr producenta (nazwa brandu z specifications.brand)
 }
 
 interface ProductsListResult {
@@ -125,6 +127,9 @@ function transformProduct(product: any): any {
   
   // Calculate total stock as sum of all variant stocks
   const totalStock = transformedVariants?.reduce((sum: number, v: any) => sum + (v.stock || 0), 0) ?? 0;
+
+  // Resolve warehouse location from wholesaler config cache
+  const warehouseLocation = resolveWarehouseLocation(product.baselinkerProductId, product.sku);
   
   return {
     ...product,
@@ -137,7 +142,24 @@ function transformProduct(product: any): any {
     // Map DB field names to frontend-friendly names
     rating: product.average_rating ? Number(product.average_rating) : null,
     reviewCount: product.review_count || 0,
+    // Dynamic warehouse location from DB
+    warehouseLocation,
   };
+}
+
+// Synchronous warehouse location resolution using cached config
+function resolveWarehouseLocation(baselinkerProductId: string | null, sku: string | null): string | null {
+  const cached = wholesalerConfigService.getCachedConfig();
+  if (!cached || cached.length === 0) return null;
+  
+  const blId = (baselinkerProductId || '').toLowerCase();
+  const skuUp = (sku || '').toUpperCase();
+  
+  for (const w of cached) {
+    if (w.prefix && blId.startsWith(w.prefix.toLowerCase())) return w.location;
+    if (w.skuPrefix && skuUp.startsWith(w.skuPrefix.toUpperCase())) return w.location;
+  }
+  return null;
 }
 
 /**
@@ -317,6 +339,7 @@ export class ProductsService {
       hideOldZeroStock = false,
       sessionSeed,
       discounted = false,
+      brand,
     } = filters;
 
     // If search is provided, use Meilisearch for better results
@@ -428,21 +451,41 @@ export class ProductsService {
       // But we can at least ensure compareAtPrice exists
     }
 
-    // Filter by warehouse (based on baselinkerProductId prefix)
+    // Filter by warehouse (based on baselinkerProductId prefix - dynamic from DB)
     if (warehouse) {
       const warehouses = warehouse.split(',').map(w => w.trim().toLowerCase());
+      const allConfig = await wholesalerConfigService.getAll();
       const warehouseConditions: Prisma.ProductWhereInput[] = [];
       
       for (const w of warehouses) {
-        if (['leker', 'hp', 'btp', 'dofirmy', 'outlet'].includes(w)) {
+        const config = allConfig.find(c => c.key === w);
+        if (config && config.prefix) {
           warehouseConditions.push({
-            baselinkerProductId: { startsWith: `${w}-` }
+            baselinkerProductId: { startsWith: config.prefix }
           });
         }
       }
       
       if (warehouseConditions.length > 0) {
         where.OR = warehouseConditions;
+      }
+    }
+
+    // Filter by brand (from manufacturer relation or specifications JSON field)
+    if (brand) {
+      const brandNames = brand.split(',').map(b => b.trim()).filter(Boolean);
+      if (brandNames.length > 0) {
+        if (!where.AND) where.AND = [];
+        const brandConditions = brandNames.map(b => ({
+          OR: [
+            { manufacturer: { name: b } },
+            { specifications: { path: ['brand'], equals: b } },
+          ],
+        }));
+        // OR between brands - show products from ANY of the selected brands
+        (where.AND as any[]).push(
+          brandConditions.length === 1 ? brandConditions[0] : { OR: brandConditions.map(c => c.OR).flat() }
+        );
       }
     }
 
@@ -508,6 +551,7 @@ export class ProductsService {
             orderBy: { order: 'asc' },
           },
           category: true,
+          manufacturer: true,
           variants: {
             include: {
               inventory: true,
@@ -605,6 +649,7 @@ export class ProductsService {
       status,
       hideOldZeroStock = false,
       sessionSeed,
+      brand,
     } = filters;
 
     // Skip Meilisearch if it's known to be down
@@ -650,6 +695,18 @@ export class ProductsService {
       }
       if (maxPrice !== undefined) {
         meiliFilters.push(`price <= ${maxPrice}`);
+      }
+
+      // Filter by brand/manufacturer
+      if (brand) {
+        const escapeMeili = (s: string) => s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        const brandNames = brand.split(',').map(b => b.trim()).filter(Boolean);
+        if (brandNames.length === 1) {
+          meiliFilters.push(`brand = "${escapeMeili(brandNames[0])}"`);
+        } else if (brandNames.length > 1) {
+          const brandFilter = brandNames.map(b => `brand = "${escapeMeili(b)}"`).join(' OR ');
+          meiliFilters.push(`(${brandFilter})`);
+        }
       }
 
       // Build sort
@@ -744,6 +801,7 @@ export class ProductsService {
             orderBy: { order: 'asc' },
           },
           category: true,
+          manufacturer: true,
           variants: {
             include: {
               inventory: true,
@@ -904,6 +962,7 @@ export class ProductsService {
         include: {
           images: { orderBy: { order: 'asc' } },
           category: true,
+          manufacturer: true,
           variants: { include: { inventory: true } },
         },
       }),
@@ -944,6 +1003,7 @@ export class ProductsService {
           orderBy: { order: 'asc' },
         },
         category: true,
+        manufacturer: true,
         variants: {
           include: {
             inventory: true,
@@ -970,6 +1030,7 @@ export class ProductsService {
           orderBy: { order: 'asc' },
         },
         category: true,
+        manufacturer: true,
         variants: {
           include: {
             inventory: true,
@@ -992,6 +1053,7 @@ export class ProductsService {
           orderBy: { order: 'asc' },
         },
         category: true,
+        manufacturer: true,
         variants: {
           include: {
             inventory: true,
@@ -1276,12 +1338,35 @@ export class ProductsService {
   }
 
   /**
-   * Get available filters for products based on category
+   * Get available filters for products - faceted (counts update based on active filters)
    */
-  async getFilters(categorySlug?: string) {
-    // Build where clause
-    const where: Prisma.ProductWhereInput = {
+  async getFilters(params: {
+    categorySlug?: string;
+    brand?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    warehouse?: string;
+  } = {}) {
+    const { categorySlug, brand, minPrice, maxPrice, warehouse } = params;
+
+    // Base visibility criteria (same as getAll)
+    const baseWhere: Prisma.ProductWhereInput = {
       status: 'ACTIVE',
+      price: { gt: 0 },
+      variants: {
+        some: {
+          inventory: {
+            some: {
+              quantity: { gt: 0 }
+            }
+          }
+        }
+      },
+      AND: [
+        { tags: { hasSome: DELIVERY_TAGS } },
+        { category: { baselinkerCategoryId: { not: null } } },
+        PACKAGE_FILTER_WHERE,
+      ],
     };
 
     // If category specified, get all subcategory IDs as well
@@ -1300,66 +1385,148 @@ export class ProductsService {
 
       if (category) {
         categoryIds = [category.id];
-        // Add children
         category.children.forEach((child) => {
           categoryIds.push(child.id);
-          // Add grandchildren
           child.children.forEach((grandchild) => {
             categoryIds.push(grandchild.id);
           });
         });
-        where.categoryId = { in: categoryIds };
+        baseWhere.categoryId = { in: categoryIds };
       }
     }
 
-    // Get all products matching criteria
-    const products = await prisma.product.findMany({
-      where,
-      select: {
-        id: true,
-        price: true,
-        specifications: true,
-        category: {
-          select: {
-            slug: true,
-            parent: {
-              select: {
-                slug: true,
-                parent: {
-                  select: { slug: true },
+    // Parse brand list
+    const brandNames = brand ? brand.split(',').map(b => b.trim()).filter(Boolean) : [];
+
+    // Build brand filter condition
+    const buildBrandCondition = (brands: string[]): Prisma.ProductWhereInput | undefined => {
+      if (brands.length === 0) return undefined;
+      const conditions = brands.map(b => ({
+        OR: [
+          { manufacturer: { name: b } },
+          { specifications: { path: ['brand'], equals: b } },
+        ] as Prisma.ProductWhereInput[],
+      }));
+      return conditions.length === 1 
+        ? { OR: conditions[0].OR }
+        : { OR: conditions.flatMap(c => c.OR) };
+    };
+
+    // Build warehouse filter condition
+    const buildWarehouseCondition = async (wh: string): Promise<Prisma.ProductWhereInput | undefined> => {
+      const warehouses = wh.split(',').map(w => w.trim().toLowerCase());
+      const allConfig = await wholesalerConfigService.getAll();
+      const conditions: Prisma.ProductWhereInput[] = [];
+      for (const w of warehouses) {
+        const config = allConfig.find(c => c.key === w);
+        if (config && config.prefix) {
+          conditions.push({ baselinkerProductId: { startsWith: config.prefix } });
+        }
+      }
+      return conditions.length > 0 ? { OR: conditions } : undefined;
+    };
+
+    const warehouseCondition = warehouse ? await buildWarehouseCondition(warehouse) : undefined;
+
+    // ---- Faceted queries ----
+    // Brand counts: apply all filters EXCEPT brand
+    const brandWhere: Prisma.ProductWhereInput = { ...baseWhere };
+    if (minPrice || maxPrice) {
+      brandWhere.price = { gt: 0, ...(minPrice ? { gte: minPrice } : {}), ...(maxPrice ? { lte: maxPrice } : {}) };
+    }
+    if (warehouseCondition) {
+      brandWhere.AND = [...(brandWhere.AND as any[] || []), warehouseCondition];
+    }
+
+    // Full filter (all filters applied) for price range, specs, warehouse counts
+    const fullWhere: Prisma.ProductWhereInput = { ...baseWhere };
+    if (minPrice || maxPrice) {
+      fullWhere.price = { gt: 0, ...(minPrice ? { gte: minPrice } : {}), ...(maxPrice ? { lte: maxPrice } : {}) };
+    }
+    const brandCondition = buildBrandCondition(brandNames);
+    if (brandCondition) {
+      fullWhere.AND = [...(fullWhere.AND as any[] || []), brandCondition];
+    }
+    if (warehouseCondition) {
+      fullWhere.AND = [...(fullWhere.AND as any[] || []), warehouseCondition];
+    }
+
+    // Price range: apply all filters EXCEPT price
+    const priceWhere: Prisma.ProductWhereInput = { ...baseWhere };
+    if (brandCondition) {
+      priceWhere.AND = [...(priceWhere.AND as any[] || []), brandCondition];
+    }
+    if (warehouseCondition) {
+      priceWhere.AND = [...(priceWhere.AND as any[] || []), warehouseCondition];
+    }
+
+    // Fetch products for brand counts (without brand filter) and for price range (without price filter) in parallel
+    const [brandProducts, priceProducts, fullProducts] = await Promise.all([
+      prisma.product.findMany({
+        where: brandWhere,
+        select: {
+          id: true,
+          manufacturer: { select: { name: true } },
+          specifications: true,
+        },
+      }),
+      prisma.product.findMany({
+        where: priceWhere,
+        select: {
+          id: true,
+          price: true,
+        },
+      }),
+      prisma.product.findMany({
+        where: fullWhere,
+        select: {
+          id: true,
+          price: true,
+          specifications: true,
+          manufacturer: { select: { name: true } },
+          category: {
+            select: {
+              slug: true,
+              parent: {
+                select: {
+                  slug: true,
+                  parent: {
+                    select: { slug: true },
+                  },
                 },
               },
             },
           },
         },
-      },
+      }),
+    ]);
+
+    // Brand counts (from brandProducts - without brand filter applied)
+    const brandCounts: Record<string, number> = {};
+    brandProducts.forEach((product) => {
+      const specs = product.specifications as Record<string, any> | null;
+      const brandName = (product as any).manufacturer?.name || (specs?.brand);
+      if (brandName) {
+        brandCounts[brandName] = (brandCounts[brandName] || 0) + 1;
+      }
     });
 
-    // Extract brands from specifications
-    const brandCounts: Record<string, number> = {};
-    const specificationKeys: Set<string> = new Set();
-    const specificationValues: Record<string, Record<string, number>> = {};
-    let minPrice = Infinity;
-    let maxPrice = 0;
-
-    products.forEach((product) => {
-      // Price range
+    // Price range (from priceProducts - without price filter applied)
+    let priceMin = Infinity;
+    let priceMax = 0;
+    priceProducts.forEach((product) => {
       const price = Number(product.price);
-      if (price < minPrice) minPrice = price;
-      if (price > maxPrice) maxPrice = price;
+      if (price < priceMin) priceMin = price;
+      if (price > priceMax) priceMax = price;
+    });
 
-      // Specifications
+    // Specifications (from fullProducts - all filters applied)
+    const specificationValues: Record<string, Record<string, number>> = {};
+    fullProducts.forEach((product) => {
       const specs = product.specifications as Record<string, any> | null;
       if (specs) {
-        // Brand
-        if (specs.brand) {
-          brandCounts[specs.brand] = (brandCounts[specs.brand] || 0) + 1;
-        }
-
-        // Other specs
         Object.entries(specs).forEach(([key, value]) => {
           if (key !== 'brand' && value !== null && value !== undefined) {
-            specificationKeys.add(key);
             if (!specificationValues[key]) {
               specificationValues[key] = {};
             }
@@ -1379,14 +1546,13 @@ export class ProductsService {
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count);
 
-    // Format specifications - only include relevant ones
+    // Format specifications
     const specifications: Record<string, { value: string; count: number }[]> = {};
     relevantSpecs.forEach((specKey) => {
       if (specificationValues[specKey]) {
         specifications[specKey] = Object.entries(specificationValues[specKey])
           .map(([value, count]) => ({ value, count }))
           .sort((a, b) => {
-            // Sort numerically if possible
             const numA = parseFloat(a.value);
             const numB = parseFloat(b.value);
             if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
@@ -1395,18 +1561,32 @@ export class ProductsService {
       }
     });
 
-    // Count products per warehouse
-    const warehouseCounts = await this.getWarehouseCounts(categoryIds.length > 0 ? categoryIds : undefined);
+    // Count products per warehouse (with brand + price filters, but not warehouse filter)
+    const warehouseCountWhere: Prisma.ProductWhereInput = { ...baseWhere };
+    if (minPrice || maxPrice) {
+      warehouseCountWhere.price = { gt: 0, ...(minPrice ? { gte: minPrice } : {}), ...(maxPrice ? { lte: maxPrice } : {}) };
+    }
+    if (brandCondition) {
+      warehouseCountWhere.AND = [...(warehouseCountWhere.AND as any[] || []), brandCondition];
+    }
+    const warehouseCounts = await this.getWarehouseCounts(
+      categoryIds.length > 0 ? categoryIds : undefined,
+      warehouseCountWhere,
+    );
+
+    // Count products per main category (with all filters except category)
+    const categoryCounts = await this.getCategoryCounts(fullWhere);
 
     return {
       priceRange: {
-        min: minPrice === Infinity ? 0 : Math.floor(minPrice),
-        max: maxPrice === 0 ? 10000 : Math.ceil(maxPrice),
+        min: priceMin === Infinity ? 0 : Math.floor(priceMin),
+        max: priceMax === 0 ? 10000 : Math.ceil(priceMax),
       },
       brands,
       specifications,
       warehouseCounts,
-      totalProducts: products.length,
+      categoryCounts,
+      totalProducts: fullProducts.length,
     };
   }
 
@@ -1414,12 +1594,10 @@ export class ProductsService {
    * Count products per warehouse based on baselinkerProductId prefix
    * Uses same visibility criteria as main product listing
    */
-  private async getWarehouseCounts(categoryIds?: string[]): Promise<Record<string, number>> {
-    // Same visibility criteria as getAll()
-    const whereBase: Prisma.ProductWhereInput = {
+  private async getWarehouseCounts(categoryIds?: string[], customWhere?: Prisma.ProductWhereInput): Promise<Record<string, number>> {
+    const whereBase: Prisma.ProductWhereInput = customWhere || {
       status: 'ACTIVE',
       price: { gt: 0 },
-      // Produkty MUSZĄ mieć stan magazynowy > 0
       variants: {
         some: {
           inventory: {
@@ -1429,7 +1607,6 @@ export class ProductsService {
           }
         }
       },
-      // Produkty MUSZĄ mieć tag dostawy ORAZ kategorię z Baselinker
       AND: [
         { tags: { hasSome: DELIVERY_TAGS } },
         { category: { baselinkerCategoryId: { not: null } } },
@@ -1438,46 +1615,73 @@ export class ProductsService {
       ...(categoryIds ? { categoryId: { in: categoryIds } } : {}),
     };
 
-    const [lekerCount, hpCount, btpCount, dofirmyCount, outletCount] = await Promise.all([
-      prisma.product.count({
-        where: {
-          ...whereBase,
-          baselinkerProductId: { startsWith: 'leker-' },
-        },
-      }),
-      prisma.product.count({
-        where: {
-          ...whereBase,
-          baselinkerProductId: { startsWith: 'hp-' },
-        },
-      }),
-      prisma.product.count({
-        where: {
-          ...whereBase,
-          baselinkerProductId: { startsWith: 'btp-' },
-        },
-      }),
-      prisma.product.count({
-        where: {
-          ...whereBase,
-          baselinkerProductId: { startsWith: 'dofirmy-' },
-        },
-      }),
-      prisma.product.count({
-        where: {
-          ...whereBase,
-          baselinkerProductId: { startsWith: 'outlet-' },
-        },
-      }),
-    ]);
+    // Dynamic: fetch active wholesalers with prefix from DB
+    const allConfig = await wholesalerConfigService.getAll();
+    const activeWithPrefix = allConfig.filter(w => w.prefix && w.isActive);
 
-    return {
-      leker: lekerCount,
-      hp: hpCount,
-      btp: btpCount,
-      dofirmy: dofirmyCount,
-      outlet: outletCount,
-    };
+    const counts = await Promise.all(
+      activeWithPrefix.map(wh =>
+        prisma.product.count({
+          where: {
+            ...whereBase,
+            baselinkerProductId: { startsWith: wh.prefix },
+          },
+        }).then(count => ({ key: wh.key, count }))
+      )
+    );
+
+    const result: Record<string, number> = {};
+    for (const { key, count } of counts) {
+      result[key] = count;
+    }
+    return result;
+  }
+
+  /**
+   * Count products per main category (and subcategories) with given filters applied.
+   * Returns { [categorySlug]: count } for all main categories.
+   */
+  private async getCategoryCounts(baseFilter: Prisma.ProductWhereInput): Promise<Record<string, number>> {
+    // Get main categories (those with order > 0, no parent)
+    const mainCategories = await prisma.category.findMany({
+      where: { parentId: null, order: { gt: 0 } },
+      include: {
+        children: {
+          include: {
+            children: true,
+          },
+        },
+      },
+    });
+
+    // For each main category, count products matching base filter + in that category tree
+    // Remove any existing categoryId filter from baseFilter
+    const { categoryId: _removed, ...filterWithoutCategory } = baseFilter;
+
+    const counts = await Promise.all(
+      mainCategories.map(async (cat) => {
+        const categoryIds = [cat.id];
+        cat.children.forEach((child) => {
+          categoryIds.push(child.id);
+          child.children.forEach((grandchild) => {
+            categoryIds.push(grandchild.id);
+          });
+        });
+        const count = await prisma.product.count({
+          where: {
+            ...filterWithoutCategory,
+            categoryId: { in: categoryIds },
+          },
+        });
+        return { slug: cat.slug, count };
+      })
+    );
+
+    const result: Record<string, number> = {};
+    for (const { slug, count } of counts) {
+      result[slug] = count;
+    }
+    return result;
   }
 
   private async getCategoryPath(slug: string): Promise<string[]> {
@@ -2304,23 +2508,114 @@ export class ProductsService {
    * Extract warehouse info from product's baselinkerProductId or SKU prefix
    */
   private extractWarehouseFromProduct(product: { baselinkerProductId: string | null; sku: string | null }): { id: string; prefix: string; displayName: string } | null {
-    const WAREHOUSES = [
-      { id: 'leker', prefix: 'leker-', skuPrefix: 'LEKER-', displayName: 'Magazyn Chynów' },
-      { id: 'hp', prefix: 'hp-', skuPrefix: 'HP-', displayName: 'Magazyn Zielona Góra' },
-      { id: 'btp', prefix: 'btp-', skuPrefix: 'BTP-', displayName: 'Magazyn Chotów' },
-      { id: 'dofirmy', prefix: 'dofirmy-', skuPrefix: 'DOFIRMY-', displayName: 'Magazyn Koszalin' },
-      { id: 'outlet', prefix: 'outlet-', skuPrefix: 'OUTLET-', displayName: 'Magazyn Rzeszów' },
-    ];
-
+    const cached = wholesalerConfigService.getCachedConfig();
+    
     const blId = product.baselinkerProductId?.toLowerCase() || '';
     const sku = product.sku?.toUpperCase() || '';
 
-    for (const wh of WAREHOUSES) {
-      if (blId.startsWith(wh.prefix) || sku.startsWith(wh.skuPrefix)) {
-        return wh;
+    if (cached && cached.length > 0) {
+      for (const wh of cached) {
+        const prefix = (wh.prefix || '').toLowerCase();
+        const skuPrefix = (wh.skuPrefix || '').toUpperCase();
+        if ((prefix && blId.startsWith(prefix)) || (skuPrefix && sku.startsWith(skuPrefix))) {
+          return { id: wh.key, prefix: wh.prefix, displayName: wh.warehouseDisplayName || `Magazyn ${wh.location || wh.name}` };
+        }
       }
     }
     return null;
+  }
+
+  /**
+   * Get all brands with product counts
+   */
+  async getBrands(): Promise<{ name: string; slug: string; count: number }[]> {
+    const products = await prisma.product.findMany({
+      where: {
+        status: 'ACTIVE',
+        price: { gt: 0 },
+        variants: { some: { inventory: { some: { quantity: { gt: 0 } } } } },
+        AND: [
+          { tags: { hasSome: DELIVERY_TAGS } },
+          { category: { baselinkerCategoryId: { not: null } } },
+          PACKAGE_FILTER_WHERE,
+        ],
+      },
+      select: { specifications: true, manufacturer: { select: { name: true, slug: true } } },
+    });
+
+    const brandCounts: Record<string, number> = {};
+    const brandSlugs: Record<string, string> = {};
+    products.forEach((product) => {
+      // Prefer manufacturer relation, fallback to specifications.brand
+      const mfr = product.manufacturer;
+      const specs = product.specifications as Record<string, any> | null;
+      const brandName = mfr?.name || specs?.brand;
+      if (brandName) {
+        brandCounts[brandName] = (brandCounts[brandName] || 0) + 1;
+        if (mfr?.slug && !brandSlugs[brandName]) {
+          brandSlugs[brandName] = mfr.slug;
+        }
+      }
+    });
+
+    return Object.entries(brandCounts)
+      .map(([name, count]) => ({ name, slug: brandSlugs[name] || this.slugifyBrand(name), count }))
+      .sort((a, b) => b.count - a.count);
+  }
+
+  /**
+   * Get brand info by slug
+   */
+  async getBrandBySlug(slug: string): Promise<{ name: string; slug: string; count: number } | null> {
+    // First try to find manufacturer directly by slug in DB
+    const manufacturer = await prisma.manufacturer.findUnique({
+      where: { slug },
+      select: { name: true, slug: true },
+    });
+    if (manufacturer) {
+      const count = await prisma.product.count({
+        where: {
+          manufacturerId: { not: null },
+          manufacturer: { slug },
+          status: 'ACTIVE',
+          price: { gt: 0 },
+          variants: { some: { inventory: { some: { quantity: { gt: 0 } } } } },
+          AND: [
+            { tags: { hasSome: DELIVERY_TAGS } },
+            { category: { baselinkerCategoryId: { not: null } } },
+            PACKAGE_FILTER_WHERE,
+          ],
+        },
+      });
+      return { name: manufacturer.name, slug: manufacturer.slug, count };
+    }
+    // Fallback to old approach
+    const brands = await this.getBrands();
+    return brands.find(b => b.slug === slug) || null;
+  }
+
+  /**
+   * Convert brand name to URL-safe slug
+   */
+  private slugifyBrand(text: string): string {
+    const polishChars: Record<string, string> = {
+      'ą': 'a', 'ć': 'c', 'ę': 'e', 'ł': 'l', 'ń': 'n',
+      'ó': 'o', 'ś': 's', 'ź': 'z', 'ż': 'z',
+      'Ą': 'A', 'Ć': 'C', 'Ę': 'E', 'Ł': 'L', 'Ń': 'N',
+      'Ó': 'O', 'Ś': 'S', 'Ź': 'Z', 'Ż': 'Z',
+    };
+    let result = text.toString();
+    for (const [polish, ascii] of Object.entries(polishChars)) {
+      result = result.replace(new RegExp(polish, 'g'), ascii);
+    }
+    return result
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/[^\w-]+/g, '')
+      .replace(/-{2,}/g, '-')
+      .replace(/^-+/, '')
+      .replace(/-+$/, '');
   }
 }
 

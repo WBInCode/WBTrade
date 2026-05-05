@@ -29,7 +29,9 @@ router.get('/', async (req: Request, res: Response) => {
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
     const skip = (page - 1) * limit;
 
-    const where: Record<string, string> = {};
+    const where: Record<string, any> = {
+      order: { paymentStatus: 'PAID' },
+    };
     if (status !== 'all') {
       where.status = status;
     }
@@ -64,8 +66,8 @@ router.get('/', async (req: Request, res: Response) => {
         take: limit,
       }),
       prisma.deliveryDelayAlert.count({ where }),
-      prisma.deliveryDelayAlert.count({ where: { status: 'pending' } }),
-      prisma.deliveryDelayAlert.count({ where: { status: 'notified' } }),
+      prisma.deliveryDelayAlert.count({ where: { status: 'pending', order: { paymentStatus: 'PAID' } } }),
+      prisma.deliveryDelayAlert.count({ where: { status: 'notified', order: { paymentStatus: 'PAID' } } }),
     ]);
 
     res.json({
@@ -88,8 +90,14 @@ router.get('/', async (req: Request, res: Response) => {
 // ────────────────────────────────────────────────────────
 // GET /api/admin/delivery-delays/presets
 // ────────────────────────────────────────────────────────
-router.get('/presets', (_req: Request, res: Response) => {
-  res.json({ presets: deliveryDelayService.getPresets() });
+router.get('/presets', async (_req: Request, res: Response) => {
+  try {
+    const presets = await deliveryDelayService.getPresets();
+    res.json({ presets });
+  } catch (error) {
+    console.error('Error fetching presets:', error);
+    res.status(500).json({ message: 'Błąd pobierania szablonów' });
+  }
 });
 
 // ────────────────────────────────────────────────────────

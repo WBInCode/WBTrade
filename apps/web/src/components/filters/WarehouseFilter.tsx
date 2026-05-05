@@ -1,18 +1,46 @@
 'use client';
 
-import { useCallback, Suspense } from 'react';
+import { useCallback, useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
-// Konfiguracja magazynów z nazwami miejscowości (zgodnie z koszykiem)
-export const WAREHOUSES = [
-  { id: 'leker', location: 'Chynów', prefix: 'leker-', skuPrefix: 'LEKER-' },
-  { id: 'hp', location: 'Zielona Góra', prefix: 'hp-', skuPrefix: 'HP-' },
-  { id: 'btp', location: 'Chotów', prefix: 'btp-', skuPrefix: 'BTP-' },
-  { id: 'dofirmy', location: 'Koszalin', prefix: 'dofirmy-', skuPrefix: 'DOFIRMY-' },
-  { id: 'outlet', location: 'Rzeszów', prefix: 'outlet-', skuPrefix: 'OUTLET-' },
-] as const;
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
 
-export type WarehouseId = typeof WAREHOUSES[number]['id'];
+// Dynamic warehouse config loaded from API
+interface WarehouseInfo {
+  id: string;
+  location: string;
+}
+
+// Fallback used until API responds
+const FALLBACK_WAREHOUSES: WarehouseInfo[] = [
+  { id: 'leker', location: 'Chynów' },
+  { id: 'hp', location: 'Zielona Góra' },
+  { id: 'btp', location: 'Chotów' },
+  { id: 'dofirmy', location: 'Koszalin' },
+  { id: 'outlet', location: 'Rzeszów' },
+  { id: 'hurtownia-kuchenna', location: 'Hurtownia Kuchenna' },
+];
+
+let _warehouseCache: WarehouseInfo[] | null = null;
+let _cacheTime = 0;
+
+async function fetchWarehouses(): Promise<WarehouseInfo[]> {
+  if (_warehouseCache && Date.now() - _cacheTime < 30 * 1000) return _warehouseCache;
+  try {
+    const res = await fetch(`${API_URL}/wholesalers/config`, { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      _warehouseCache = data
+        .filter((w: any) => w.prefix && w.location)
+        .map((w: any) => ({ id: w.key, location: w.location }));
+      _cacheTime = Date.now();
+      return _warehouseCache!;
+    }
+  } catch {}
+  return FALLBACK_WAREHOUSES;
+}
+
+export type WarehouseId = string;
 
 interface WarehouseFilterProps {
   warehouseCounts?: Record<string, number>;
@@ -22,6 +50,11 @@ function WarehouseFilterContent({ warehouseCounts }: WarehouseFilterProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [warehouses, setWarehouses] = useState<WarehouseInfo[]>(FALLBACK_WAREHOUSES);
+  
+  useEffect(() => {
+    fetchWarehouses().then(setWarehouses);
+  }, []);
   
   // Get selected warehouses from URL
   const selectedWarehouses = searchParams.get('warehouse')?.split(',').filter(Boolean) || [];
@@ -60,7 +93,7 @@ function WarehouseFilterContent({ warehouseCounts }: WarehouseFilterProps) {
       </h3>
 
       <div className="space-y-2">
-        {WAREHOUSES.map(warehouse => {
+        {warehouses.map(warehouse => {
           const isChecked = selectedWarehouses.includes(warehouse.id);
           const count = warehouseCounts?.[warehouse.id];
           

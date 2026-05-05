@@ -7,9 +7,9 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   RefreshControl,
-  Alert,
   Linking,
 } from 'react-native';
+import { customAlert } from '../../../components/ui/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -291,14 +291,14 @@ export default function OrderDetailScreen() {
 
   const openTracking = useCallback((link: string) => {
     Linking.openURL(link).catch(() => {
-      Alert.alert('Błąd', 'Nie udało się otworzyć linku śledzenia.');
+      customAlert('Błąd', 'Nie udało się otworzyć linku śledzenia.');
     });
   }, []);
 
   // ── Request refund ──
 
   const handleRefund = useCallback(() => {
-    Alert.alert(
+    customAlert(
       'Złóż wniosek o zwrot',
       'Czy na pewno chcesz złożyć wniosek o zwrot tego zamówienia?',
       [
@@ -313,7 +313,7 @@ export default function OrderDetailScreen() {
               const res = await ordersApi.requestRefund(id);
               const data = res as any;
               if (data.success) {
-                Alert.alert(
+                customAlert(
                   'Wniosek złożony',
                   `Numer zwrotu: ${data.refundNumber ?? '—'}\n\nAdres do odesłania:\n${
                     data.returnAddress
@@ -324,10 +324,10 @@ export default function OrderDetailScreen() {
                 setRefundEligible(false);
                 await fetchOrder();
               } else {
-                Alert.alert('Błąd', data.message ?? 'Nie udało się złożyć wniosku.');
+                customAlert('Błąd', data.message ?? 'Nie udało się złożyć wniosku.');
               }
             } catch {
-              Alert.alert('Błąd', 'Nie udało się złożyć wniosku o zwrot.');
+              customAlert('Błąd', 'Nie udało się złożyć wniosku o zwrot.');
             } finally {
               setRefundLoading(false);
             }
@@ -348,10 +348,10 @@ export default function OrderDetailScreen() {
       if (data.paymentUrl) {
         router.push(`/order/${id}/payment?url=${encodeURIComponent(data.paymentUrl)}` as any);
       } else {
-        Alert.alert('Błąd', 'Nie udało się utworzyć sesji płatności.');
+        customAlert('Błąd', 'Nie udało się utworzyć sesji płatności.');
       }
     } catch {
-      Alert.alert('Błąd', 'Nie udało się ponowić płatności. Spróbuj ponownie.');
+      customAlert('Błąd', 'Nie udało się ponowić płatności. Spróbuj ponownie.');
     } finally {
       setPayLoading(false);
     }
@@ -360,7 +360,7 @@ export default function OrderDetailScreen() {
   // ── Cancel order ──
 
   const handleCancelOrder = useCallback(() => {
-    Alert.alert(
+    customAlert(
       'Anuluj zamówienie',
       'Czy na pewno chcesz anulować to zamówienie? Tej operacji nie można cofnąć.',
       [
@@ -373,10 +373,10 @@ export default function OrderDetailScreen() {
             setCancelLoading(true);
             try {
               await ordersApi.cancel(id);
-              Alert.alert('Zamówienie anulowane', 'Twoje zamówienie zostało anulowane.');
+              customAlert('Zamówienie anulowane', 'Twoje zamówienie zostało anulowane.');
               await fetchOrder();
             } catch {
-              Alert.alert('Błąd', 'Nie udało się anulować zamówienia.');
+              customAlert('Błąd', 'Nie udało się anulować zamówienia.');
             } finally {
               setCancelLoading(false);
             }

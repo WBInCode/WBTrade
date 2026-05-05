@@ -1,0 +1,158 @@
+{
+  "description": "Mapowanie kategorii z BTP CSV na kategorie sklepu WBTrade (z bazy danych)",
+  "version": "1.0",
+  "created": "2026-03-31",
+  "notes": [
+    "Klucz = 'PrimaryProductGroupName > ProductGroupName' z CSV BTP",
+    "Wartość = slug kategorii z bazy danych (z baselinkerCategoryId)",
+    "Mapowanie oparte na analizie istniejących ~10578 produktów z kategoriami na BL"
+  ],
+
+  "mapping": {
+    "_comment": "Klucz = PrimaryGroupName > GroupName z CSV, Wartość = slug kategorii sklepu",
+
+    "Elektronika > Telefony i akcesoria": {
+      "subSlug": "na-telefon",
+      "comment": "Głównie etui, szkła, ładowarki, kable → Na telefon (najliczniejsza grupa, 4305 istniejących)"
+    },
+    "Elektronika > Komputery": {
+      "subSlug": "do-tabletow-i-laptopow",
+      "comment": "Pokrowce na laptopy/tablety → Do tabletów i laptopów (295 istniejących)"
+    },
+    "Elektronika > Smartwatche i akcesoria": {
+      "subSlug": "akcesoria-gsm",
+      "comment": "Paski, etui do smartwatchy → Akcesoria GSM (186 istniejących)"
+    },
+    "Elektronika > Akcesoria Airpods": {
+      "subSlug": "do-sluchawek-i-glosnikow",
+      "comment": "Etui AirPods → Do słuchawek i głośników (116 istniejących)"
+    },
+    "Elektronika > Konsole": {
+      "subSlug": "do-konsoli",
+      "comment": "Akcesoria do konsol → Do konsoli (12 istniejących z Telefony)"
+    },
+    "Elektronika > RTV AGD": {
+      "subSlug": "sprzet-agd",
+      "comment": "RTV AGD → Sprzęt AGD (2 istniejące)"
+    },
+
+    "Dom i ogród > Wyposażenie": {
+      "subSlug": "kuchnia",
+      "comment": "Kubki, butelki, akcesoria kuchenne → Kuchnia (180 istniejących)"
+    },
+    "Dom i ogród > Ogród": {
+      "subSlug": "ogrod-i-narzedzia-ogrodowe",
+      "comment": "Ogród → Ogród i narzędzia ogrodowe (8 istniejących)"
+    },
+    "Dom i ogród > Narzędzia": {
+      "subSlug": "narzedzia-reczne",
+      "comment": "Narzędzia domowe → Narzędzia ręczne (2 istniejące)"
+    },
+    "Dom i ogród > Oświetlenie": {
+      "subSlug": "oswietlenie-domowe",
+      "comment": "Oświetlenie → Oświetlenie domowe (4 istniejące)"
+    },
+    "Dom i ogród > Fotowoltaika": {
+      "subSlug": "energia-i-ogrzewanie",
+      "comment": "Fotowoltaika → Energia i ogrzewanie"
+    },
+
+    "Dziecko > Pluszaki maskotki": {
+      "subSlug": "pluszaki",
+      "comment": "Pluszaki i maskotki → Pluszaki (166 istniejących)"
+    },
+    "Dziecko > Artykuły szkolne": {
+      "subSlug": "artykuly-szkolne-i-papiernicze",
+      "comment": "Artykuły szkolne → Artykuły szkolne i papiernicze (32 istniejące)"
+    },
+    "Dziecko > Pisanie rysowanie malowanie": {
+      "subSlug": "artykuly-plastyczne-i-kreatywne",
+      "comment": "Pisanie rysowanie malowanie → Artykuły plastyczne i kreatywne"
+    },
+    "Dziecko > Butelki kubki": {
+      "subSlug": "przybory-i-akcesoria",
+      "comment": "Butelki kubki dziecięce → Przybory i akcesoria (95 istniejących)"
+    },
+    "Dziecko > Posiłki": {
+      "subSlug": "przybory-i-akcesoria",
+      "comment": "Akcesoria do posiłków → Przybory i akcesoria (28 istniejących)"
+    },
+    "Dziecko > Pokój wyposażenie": {
+      "subSlug": "wyposazenie-i-akcesoria",
+      "comment": "Pokój dziecięcy → Wyposażenie i akcesoria (37 istniejących)"
+    },
+    "Dziecko > Pozostałe": {
+      "subSlug": "gadzety-1",
+      "comment": "Pozostałe dziecięce → Gadżety dla dziecka (15 istniejących)"
+    },
+    "Dziecko > Zabawki": {
+      "subSlug": "zabawki",
+      "comment": "Zabawki → Zabawki (6 istniejących)"
+    },
+    "Dziecko > Plaża woda": {
+      "subSlug": "zabawki-ogrodowe",
+      "comment": "Plaża i woda → Zabawki ogrodowe (3 istniejące)"
+    },
+    "Dziecko > Gry puzzle": {
+      "subSlug": "gry-edukacyjne-i-planszowe",
+      "comment": "Gry puzzle → Gry edukacyjne i planszowe (1 istniejący)"
+    },
+    "Dziecko > Kolekcjonerskie": {
+      "subSlug": "zabawki",
+      "comment": "Kolekcjonerskie → Zabawki"
+    },
+
+    "Sport i turystyka > Butelki bidony": {
+      "subSlug": "sprzet-turystyczny",
+      "comment": "Butelki bidony → Sprzęt turystyczny (4 istniejące)"
+    },
+    "Sport i turystyka > Sport": {
+      "subSlug": "rowery-i-akcesoria",
+      "comment": "Sport → Rowery i akcesoria (37 istniejących) + Fitness (15)"
+    },
+    "Sport i turystyka > Turystyka": {
+      "subSlug": "sprzet-turystyczny",
+      "comment": "Turystyka → Sprzęt turystyczny"
+    },
+
+    "Motoryzacja > Akcesoria samochodowe": {
+      "subSlug": "akcesoria-i-czesci",
+      "comment": "Akcesoria samochodowe → Akcesoria i części (1 istniejący)"
+    },
+    "Motoryzacja > Elektromobilność": {
+      "subSlug": "akcesoria-garazowe",
+      "comment": "Elektromobilność → Akcesoria garażowe (1 istniejący)"
+    },
+
+    "Firma > Biuro": {
+      "subSlug": "artykuly-szkolne-i-papiernicze",
+      "comment": "Biuro → Artykuły szkolne i papiernicze (1 istniejący)"
+    },
+
+    "Zwierzęta > ": {
+      "subSlug": "zwierzeta",
+      "comment": "Zwierzęta → Zwierzęta (19 istniejących)"
+    },
+
+    "Zdrowie higiena > Perfumy": {
+      "subSlug": "lazienka",
+      "comment": "Perfumy → Łazienka"
+    },
+    "Zdrowie higiena > Termometry bezdotykowe": {
+      "subSlug": "czujniki",
+      "comment": "Termometry → Czujniki (1 istniejący)"
+    },
+    "Zdrowie higiena > Szczoteczki elektryczne": {
+      "subSlug": "sprzet-agd",
+      "comment": "Szczoteczki elektryczne → Sprzęt AGD"
+    },
+    "Zdrowie higiena > Wagi elektroniczne": {
+      "subSlug": "wagi-przemyslowe",
+      "comment": "Wagi → Wagi przemysłowe (1 istniejący)"
+    },
+    "Zdrowie higiena > Pozostałe": {
+      "subSlug": "oczyszczacze-powietrza-i-dezynfekcja",
+      "comment": "Pozostałe zdrowie → Oczyszczacze powietrza (1 istniejący)"
+    }
+  }
+}

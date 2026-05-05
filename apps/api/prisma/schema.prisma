@@ -126,6 +126,8 @@ model Product {
   viewCount              Int              @default(0) @map("view_count")
   lowestPrice30Days      Decimal?         @map("lowest_price_30_days") @db.Decimal(10, 2)
   lowestPrice30DaysAt    DateTime?        @map("lowest_price_30_days_at")
+  manufacturerId         String?          @map("manufacturer_id")
+  manufacturer           Manufacturer?    @relation(fields: [manufacturerId], references: [id])
   priceHistory           PriceHistory[]
   images                 ProductImage[]
   variants               ProductVariant[]
@@ -139,7 +141,28 @@ model Product {
   @@index([sku])
   @@index([status])
   @@index([categoryId])
+  @@index([manufacturerId])
   @@map("products")
+}
+
+model Manufacturer {
+  id                      String    @id @default(cuid())
+  name                    String
+  slug                    String    @unique
+  address                 String?
+  email                   String?
+  phone                   String?
+  website                 String?
+  safetyInfo              String?   @map("safety_info")
+  euRepName               String?   @map("eu_rep_name")
+  euRepAddress            String?   @map("eu_rep_address")
+  euRepEmail              String?   @map("eu_rep_email")
+  baselinkerManufacturerId String?  @map("baselinker_manufacturer_id")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+  products                Product[]
+
+  @@map("manufacturers")
 }
 
 model Review {
@@ -414,24 +437,25 @@ model OrderStatusHistory {
 }
 
 model Coupon {
-  id               String        @id @default(cuid())
-  code             String        @unique
-  description      String?
-  type             CouponType    @default(PERCENTAGE)
-  value            Decimal       @db.Decimal(10, 2)
-  minimumAmount    Decimal?      @map("minimum_amount") @db.Decimal(10, 2)
-  maximumUses      Int?          @map("maximum_uses")
-  usedCount        Int           @default(0) @map("used_count")
-  startsAt         DateTime?     @map("starts_at")
-  expiresAt        DateTime?     @map("expires_at")
-  isActive         Boolean       @default(true) @map("is_active")
-  createdAt        DateTime      @default(now()) @map("created_at")
-  updatedAt        DateTime      @updatedAt @map("updated_at")
-  couponSource     CouponSource  @default(MANUAL)
-  userId           String?       @map("user_id")
-  requiresAuth     Boolean       @default(false) @map("requires_auth")
-  singleUsePerUser Boolean       @default(false) @map("single_use_per_user")
-  usages           CouponUsage[]
+  id                String        @id @default(cuid())
+  code              String        @unique
+  description       String?
+  type              CouponType    @default(PERCENTAGE)
+  value             Decimal       @db.Decimal(10, 2)
+  minimumAmount     Decimal?      @map("minimum_amount") @db.Decimal(10, 2)
+  maximumUses       Int?          @map("maximum_uses")
+  usedCount         Int           @default(0) @map("used_count")
+  startsAt          DateTime?     @map("starts_at")
+  expiresAt         DateTime?     @map("expires_at")
+  isActive          Boolean       @default(true) @map("is_active")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  couponSource      CouponSource  @default(MANUAL)
+  userId            String?       @map("user_id")
+  restrictedToEmail String?       @map("restricted_to_email")
+  requiresAuth      Boolean       @default(false) @map("requires_auth")
+  singleUsePerUser  Boolean       @default(false) @map("single_use_per_user")
+  usages            CouponUsage[]
 
   @@index([code])
   @@index([userId])
@@ -689,6 +713,27 @@ model DeliveryDelayAlert {
   @@map("delivery_delay_alerts")
 }
 
+model EmailTemplate {
+  id                String   @id @default(cuid())
+  slug              String   @unique
+  name              String
+  description       String?
+  subject           String
+  content           String   @db.Text
+  category          String   @default("DELIVERY_DELAY")
+  includesDiscount  Boolean  @default(false) @map("includes_discount")
+  discountPercent   Int?     @map("discount_percent")
+  discountValidDays Int?     @map("discount_valid_days")
+  isActive          Boolean  @default(true) @map("is_active")
+  sortOrder         Int      @default(0) @map("sort_order")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@index([isActive])
+  @@map("email_templates")
+}
+
 model Carousel {
   id           String       @id @default(cuid())
   name         String                              // Display name e.g. "Bestsellery"
@@ -735,6 +780,7 @@ enum CouponSource {
   LOYALTY_LEVEL_UP
   LOYALTY_BIRTHDAY
   LOYALTY_QUARTERLY
+  DELIVERY_DELAY
 }
 
 enum UserRole {
@@ -1097,4 +1143,27 @@ enum CampaignScope {
   WAREHOUSE
   SELECTED
   TAG
+}
+
+model Wholesaler {
+  id                    String   @id @default(cuid())
+  key                   String   @unique
+  name                  String
+  baselinkerInventoryId String?  @unique @map("baselinker_inventory_id")
+  prefix                String   @default("")
+  skuPrefix             String?  @map("sku_prefix")
+  location              String?
+  warehouseDisplayName  String?  @map("warehouse_display_name")
+  aliases               String[] @default([])
+  color                 String   @default("#6b7280")
+  isActive              Boolean  @default(true) @map("is_active")
+  skipInSync            Boolean  @default(false) @map("skip_in_sync")
+  hasPriceRules         Boolean  @default(false) @map("has_price_rules")
+  sortOrder             Int      @default(0) @map("sort_order")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive])
+  @@index([sortOrder])
+  @@map("wholesalers")
 }

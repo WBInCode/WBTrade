@@ -13,6 +13,7 @@ import { encryptToken, decryptToken, maskToken } from '../lib/encryption';
 import { createBaselinkerProvider, BaselinkerProvider, BaselinkerInventory } from '../providers/baselinker';
 import { meiliClient, PRODUCTS_INDEX, isMeilisearchAvailable, markMeilisearchAvailable, markMeilisearchUnavailable } from '../lib/meilisearch';
 import { BaselinkerSyncType, BaselinkerSyncStatus, Prisma, PriceChangeSource } from '@prisma/client';
+import { wholesalerConfigService } from './wholesaler-config.service';
 import { priceHistoryService } from './price-history.service';
 import { syncProgress } from './sync-progress';
 
@@ -397,7 +398,7 @@ export class BaselinkerService {
     
     syncProgress.sendProgress(syncLog.id, {
       type: 'phase',
-      message: `Rozpoczynanie synchronizacji ${type}${mode ? ` (${mode})` : ''}...`,
+      message: `Rozpoczynanie synchronizacji ${type}${mode ? ` (${mode})` : ''}... [BUILD:v8 inv=${inventoryId || 'default'}]`,
       phase: 'init',
       mode: mode || 'fetch-all',
     });
@@ -449,6 +450,12 @@ export class BaselinkerService {
 
       const provider = await this.createProvider();
       const activeInventoryId = overrideInventoryId || stored.inventoryId;
+
+      // EMERGENCY DEBUG
+      syncProgress.sendProgress(syncLogId, {
+        type: 'info',
+        message: `[v7-DEBUG] runSync: type="${type}", activeInventoryId=${activeInventoryId}, override=${overrideInventoryId || 'none'}`,
+      });
 
       if (type === 'full') {
         // Full sync: categories → products → images → stock
@@ -745,6 +752,28 @@ export class BaselinkerService {
         }
         
         try {
+          // If no exact match, check for legacy prefixed versions (hp-, btp-, leker-, outlet-)
+          // and migrate them to use the plain ID
+          if (!existing) {
+            for (const prefix of ['hp-', 'btp-', 'leker-', 'outlet-']) {
+              const prefixed = await prisma.category.findUnique({
+                where: { baselinkerCategoryId: `${prefix}${categoryId}` }
+              });
+              if (prefixed) {
+                console.log(`[BaselinkerSync] Migrating category "${categoryName}" from ${prefix}${categoryId} to ${categoryId}`);
+                await prisma.category.update({
+                  where: { id: prefixed.id },
+                  data: { baselinkerCategoryId: categoryId }
+                });
+                mainCategoryMap.set(categoryName, prefixed.id);
+                processed++;
+                break;
+              }
+            }
+            // If we found and migrated a prefixed version, skip the upsert
+            if (mainCategoryMap.has(categoryName)) continue;
+          }
+
           const slug = slugify(categoryName) || `category-${categoryId}`;
           
           const result = await prisma.category.upsert({
@@ -773,73 +802,139 @@ export class BaselinkerService {
       }
 
       // Now process subcategories (those with | separator)
-      const subCategories = categories.filter(c => c.name.includes('|'));
+      // Sort by depth (number of | separators) so shallower categories are processed first
+      const subCategories = categories
+        .filter(c => c.name.includes('|'))
+        .sort((a, b) => {
+          const depthA = a.name.split('|').length;
+          const depthB = b.name.split('|').length;
+          return depthA - depthB;
+        });
       console.log(`[BaselinkerSync] Found ${subCategories.length} subcategories (with | separator)`);
+
+      // Map to store full path -> category id for multi-level lookups
+      // e.g. "Sprzęt gastronomiczny|Naczynia i przybory kuchenne" -> "abc-123"
+      const pathToCategoryId = new Map<string, string>();
+      
+      // Seed with main categories
+      for (const [name, id] of mainCategoryMap.entries()) {
+        pathToCategoryId.set(name.toLowerCase(), id);
+      }
 
       for (const blCategory of subCategories) {
         const categoryId = blCategory.category_id.toString();
-        const fullPath = blCategory.name.trim(); // e.g. "Gastronomia|Naczynia i przybory kuchenne"
+        const fullPath = blCategory.name.trim(); // e.g. "A|B|C"
         
         // Parse the category path
         const parts = fullPath.split('|').map(p => p.trim());
-        const mainCategoryName = parts[0]; // "Gastronomia"
-        const subCategoryName = parts.slice(1).join('|'); // "Naczynia i przybory kuchenne" (or further nested)
+        const leafName = parts[parts.length - 1]; // Last part is the actual category name
         
         const existing = existingMap.get(categoryId);
         
-        // Find parent category by name (case-insensitive)
-        let parentId = mainCategoryMap.get(mainCategoryName) || null;
+        // Walk through parts to find/create the correct parent at each level
+        let parentId: string | null = null;
         
-        // If parent not found in map, try case-insensitive lookup
-        if (!parentId) {
-          // Try case-insensitive lookup in our map
-          for (const [name, id] of mainCategoryMap.entries()) {
-            if (name.toLowerCase() === mainCategoryName.toLowerCase()) {
-              parentId = id;
-              mainCategoryMap.set(mainCategoryName, parentId); // Cache for future lookups
-              break;
+        for (let i = 0; i < parts.length - 1; i++) {
+          const partName = parts[i];
+          const partPath = parts.slice(0, i + 1).join('|').toLowerCase();
+          
+          // Check path cache first
+          let foundId: string | undefined = pathToCategoryId.get(partPath);
+          
+          if (!foundId) {
+            // Try case-insensitive lookup in path cache
+            for (const [cachedPath, cachedId] of pathToCategoryId.entries()) {
+              if (cachedPath === partPath) {
+                foundId = cachedId;
+                break;
+              }
             }
           }
-        }
-        
-        // If still not found, try to find by name in DB (case-insensitive)
-        if (!parentId) {
-          const parentCategory = await prisma.category.findFirst({
-            where: { 
-              name: { equals: mainCategoryName, mode: 'insensitive' },
-              parentId: null, // Must be a main category
-            },
-          });
-          if (parentCategory) {
-            parentId = parentCategory.id;
-            mainCategoryMap.set(mainCategoryName, parentId);
+          
+          if (!foundId) {
+            // Try to find in DB by name + parentId
+            const dbCategory = await prisma.category.findFirst({
+              where: { 
+                name: { equals: partName, mode: 'insensitive' },
+                parentId: parentId,
+              },
+              select: { id: true },
+            });
+            
+            if (dbCategory) {
+              foundId = dbCategory.id;
+            } else {
+              // Create intermediate category (no baselinkerCategoryId since it's synthetic)
+              const intermediateSlug = slugify(partName) || `category-${Date.now()}`;
+              const intermediateFullPath = parts.slice(0, i + 1).join('|');
+              console.log(`[BaselinkerSync] Creating intermediate category: "${intermediateFullPath}"`);
+              
+              const created = await prisma.category.create({
+                data: {
+                  name: partName,
+                  slug: await this.ensureUniqueSlug(intermediateSlug, `intermediate-${intermediateFullPath}`),
+                  parentId: parentId,
+                  baselinkerCategoryPath: intermediateFullPath,
+                  isActive: true,
+                },
+              });
+              foundId = created.id;
+            }
+            
+            if (foundId) {
+              pathToCategoryId.set(partPath, foundId);
+            }
           }
+          
+          parentId = foundId ?? null;
         }
         
         // Check if unchanged
         if (existing && 
-            existing.name === subCategoryName && 
+            existing.name === leafName && 
             existing.parentId === parentId &&
             existing.baselinkerCategoryPath === fullPath) {
+          // Still register in path cache
+          pathToCategoryId.set(fullPath.toLowerCase(), existing.id);
           skipped++;
           continue;
         }
         
         try {
-          // Create slug from subcategory name only (parent is in hierarchy)
-          const slug = slugify(subCategoryName) || `subcategory-${categoryId}`;
+          // If no exact match, check for legacy prefixed versions
+          if (!existing) {
+            for (const prefix of ['hp-', 'btp-', 'leker-', 'outlet-']) {
+              const prefixed = await prisma.category.findUnique({
+                where: { baselinkerCategoryId: `${prefix}${categoryId}` }
+              });
+              if (prefixed) {
+                console.log(`[BaselinkerSync] Migrating subcategory "${leafName}" from ${prefix}${categoryId} to ${categoryId}`);
+                await prisma.category.update({
+                  where: { id: prefixed.id },
+                  data: { baselinkerCategoryId: categoryId, parentId: parentId }
+                });
+                pathToCategoryId.set(fullPath.toLowerCase(), prefixed.id);
+                processed++;
+                break;
+              }
+            }
+            if (pathToCategoryId.has(fullPath.toLowerCase())) continue;
+          }
+
+          // Create slug from leaf name only (parent is in hierarchy)
+          const slug = slugify(leafName) || `subcategory-${categoryId}`;
           
           const result = await prisma.category.upsert({
             where: { baselinkerCategoryId: categoryId },
             update: {
-              name: subCategoryName, // Only the subcategory part
+              name: leafName, // Only the leaf part, e.g. "Garnki" not "Naczynia|Garnki"
               slug: await this.ensureUniqueSlug(slug, categoryId),
               parentId: parentId,
               baselinkerCategoryPath: fullPath, // Full path for reference
             },
             create: {
               baselinkerCategoryId: categoryId,
-              name: subCategoryName,
+              name: leafName,
               slug: await this.ensureUniqueSlug(slug, categoryId),
               parentId: parentId,
               baselinkerCategoryPath: fullPath,
@@ -847,11 +942,13 @@ export class BaselinkerService {
             },
           });
           
+          // Cache the full path for deeper levels to find
+          pathToCategoryId.set(fullPath.toLowerCase(), result.id);
           processed++;
           
           // Log if parent not found
           if (!parentId) {
-            console.warn(`[BaselinkerSync] Warning: Parent category "${mainCategoryName}" not found for subcategory "${subCategoryName}" (ID: ${categoryId})`);
+            console.warn(`[BaselinkerSync] Warning: No parent found for category "${fullPath}" (ID: ${categoryId})`);
           }
         } catch (error) {
           errors.push(`Subcategory ${categoryId} (${fullPath}): ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -1078,51 +1175,24 @@ export class BaselinkerService {
   }
 
   /**
-   * Get warehouse key from inventory name
+   * Get warehouse key from inventory name (delegates to WholesalerConfigService)
    */
-  private getWarehouseKey(inventoryName: string): string | null {
-    const lower = inventoryName.toLowerCase();
-    if (lower === 'leker') return 'leker';
-    if (lower === 'btp' || lower === 'forcetop') return 'btp';
-    if (lower === 'hp' || lower === 'hurtownia przemysłowa') return 'hp';
-    if (lower === 'dofirmy') return 'dofirmy';
-    return null;
+  private async getWarehouseKey(inventoryName: string): Promise<string | null> {
+    return wholesalerConfigService.getWarehouseKey(inventoryName);
   }
 
   /**
-   * Get baselinkerProductId prefix for a given inventory name.
-   * Must match the convention used by sync scripts (sync-all-warehouses.js, sync-btp-full.js, etc.)
-   * Products from HP → "hp-{id}", BTP → "btp-{id}", Leker → "leker-{id}", others → "{id}"
+   * Get baselinkerProductId prefix for a given inventory name (delegates to WholesalerConfigService)
    */
-  private getInventoryPrefix(inventoryName: string): string {
-    const prefixMap: Record<string, string> = {
-      'leker': 'leker-',
-      'btp': 'btp-',
-      'forcetop': 'btp-',
-      'hp': 'hp-',
-      'hurtownia przemysłowa': 'hp-',
-      'dofirmy': 'dofirmy-',
-      'magazyn zwrotów': 'outlet-',
-      'ikonka': '',
-      'główny': '',
-    };
-    const lower = inventoryName.toLowerCase();
-    return prefixMap[lower] ?? '';
+  private async getInventoryPrefix(inventoryName: string): Promise<string> {
+    return wholesalerConfigService.getInventoryPrefix(inventoryName);
   }
 
   /**
-   * Get SKU prefix for a given inventory name (uppercase convention).
-   * Leker → "LEKER-", BTP → "BTP-", HP/others → "" (no prefix)
+   * Get SKU prefix for a given inventory name (delegates to WholesalerConfigService)
    */
-  private getSkuPrefix(inventoryName: string): string {
-    const prefixMap: Record<string, string> = {
-      'leker': 'LEKER-',
-      'btp': 'BTP-',
-      'forcetop': 'BTP-',
-      'dofirmy': 'DOFIRMY-',
-    };
-    const lower = inventoryName.toLowerCase();
-    return prefixMap[lower] ?? '';
+  private async getSkuPrefix(inventoryName: string): Promise<string> {
+    return wholesalerConfigService.getSkuPrefix(inventoryName);
   }
 
   /**
@@ -1233,6 +1303,122 @@ export class BaselinkerService {
   }
 
   /**
+   * Dry run: Fetch products from a specific Baselinker inventory without saving to DB.
+   * Returns preview data for admin panel.
+   * @param inventoryId - Baselinker inventory ID to fetch from
+   * @param limit - Maximum number of products to fetch (default 100)
+   */
+  async dryRunFetchProducts(inventoryId: string, limit: number = 100): Promise<{
+    inventoryName: string;
+    inventoryId: string;
+    warehouseKey: string | null;
+    prefix: string;
+    skuPrefix: string;
+    totalInBaselinker: number;
+    fetchedCount: number;
+    alreadyInDb: number;
+    products: Array<{
+      baselinkerProductId: string;
+      name: string;
+      sku: string;
+      ean: string | null;
+      rawPrice: number;
+      finalPrice: number;
+      quantity: number;
+      categoryId: number | null;
+      categoryName: string | null;
+      tags: string[];
+      imageCount: number;
+      variantCount: number;
+      existsInDb: boolean;
+    }>;
+  }> {
+    const provider = await this.createProvider();
+    const priceRules = await this.loadPriceRules();
+
+    // Get inventory info
+    const allInventories = await provider.getInventories();
+    const currentInventory = allInventories.find(inv => inv.inventory_id.toString() === inventoryId);
+    if (!currentInventory) {
+      throw new Error(`Nie znaleziono magazynu o ID: ${inventoryId}. Dostępne: ${allInventories.map(i => `${i.name} (${i.inventory_id})`).join(', ')}`);
+    }
+
+    const warehouseKey = await this.getWarehouseKey(currentInventory.name);
+    const inventoryPrefix = await this.getInventoryPrefix(currentInventory.name);
+    const skuPrefix = await this.getSkuPrefix(currentInventory.name);
+
+    // Fetch category names for display
+    const blCategories = await provider.getInventoryCategories(inventoryId);
+    const categoryMap = new Map<number, string>();
+    for (const cat of blCategories) {
+      categoryMap.set(cat.category_id, cat.name);
+    }
+
+    console.log(`[DryRun] Fetching products from "${currentInventory.name}" (ID: ${inventoryId}), limit: ${limit}`);
+
+    // Fetch product list (lightweight - just IDs and basic info)
+    const productList = await provider.getAllInventoryProducts(inventoryId);
+    const totalInBaselinker = productList.length;
+
+    // Take only the first `limit` products for detailed fetch
+    const productIdsToFetch = productList.slice(0, limit).map(p => p.id);
+
+    // Fetch detailed data
+    const detailedProducts = await provider.getInventoryProductsData(inventoryId, productIdsToFetch);
+
+    // Check which products already exist in DB
+    const blIds = detailedProducts.map(p => `${inventoryPrefix}${p.id}`);
+    const existingProducts = await prisma.product.findMany({
+      where: { baselinkerProductId: { in: blIds } },
+      select: { baselinkerProductId: true },
+    });
+    const existingSet = new Set(existingProducts.map(p => p.baselinkerProductId));
+
+    // Build preview data
+    const products = detailedProducts.map(blProduct => {
+      const baselinkerProductId = `${inventoryPrefix}${blProduct.id}`;
+      const name = this.getProductName(blProduct);
+      const rawPrice = blProduct.price_brutto ? parseFloat(String(blProduct.price_brutto)) : 0;
+      const finalPrice = this.getProductPrice(blProduct, warehouseKey, priceRules);
+      const ean = this.getProductEan(blProduct);
+      const sku = blProduct.sku ? `${skuPrefix}${blProduct.sku}` : `${skuPrefix}BL-${blProduct.id}`;
+      const tags = (blProduct.tags || []).map((t: string) => t.trim()).filter(Boolean);
+
+      return {
+        baselinkerProductId,
+        name: name || `Product ${blProduct.id}`,
+        sku,
+        ean,
+        rawPrice,
+        finalPrice,
+        quantity: blProduct.quantity || 0,
+        categoryId: blProduct.category_id || null,
+        categoryName: blProduct.category_id ? (categoryMap.get(blProduct.category_id) || null) : null,
+        tags,
+        imageCount: blProduct.images ? Object.keys(blProduct.images).length : 0,
+        variantCount: blProduct.variants?.length || 0,
+        existsInDb: existingSet.has(baselinkerProductId),
+      };
+    });
+
+    const alreadyInDb = products.filter(p => p.existsInDb).length;
+
+    console.log(`[DryRun] Fetched ${products.length}/${totalInBaselinker} products from "${currentInventory.name}". Already in DB: ${alreadyInDb}`);
+
+    return {
+      inventoryName: currentInventory.name,
+      inventoryId,
+      warehouseKey,
+      prefix: inventoryPrefix,
+      skuPrefix,
+      totalInBaselinker,
+      fetchedCount: products.length,
+      alreadyInDb,
+      products,
+    };
+  }
+
+  /**
    * Sync products from Baselinker (incremental - only changes)
    * @param mode - 'new-only' (tylko nowe produkty, bez stanów 0), 'update-only' (tylko aktualizacja istniejących), undefined (wszystko)
    * @param syncLogId - optional sync log ID for progress tracking
@@ -1248,6 +1434,14 @@ export class BaselinkerService {
     let skipped = 0;
     const changedProducts: { sku: string; name: string; changes: string[] }[] = [];
 
+    // EMERGENCY DEBUG - this MUST appear in console if this code runs
+    if (syncLogId) {
+      syncProgress.sendProgress(syncLogId, {
+        type: 'info',
+        message: `[v7-DEBUG] syncProducts called: inventoryId=${inventoryId}, mode=${mode || 'all'}`,
+      });
+    }
+
     try {
       console.log(`[BaselinkerSync] Starting products sync with mode: ${mode || 'all'}...`);
       
@@ -1255,10 +1449,10 @@ export class BaselinkerService {
       const priceRules = await this.loadPriceRules();
       const allInventories = await provider.getInventories();
       const currentInventory = allInventories.find(inv => inv.inventory_id.toString() === inventoryId);
-      const warehouseKey = currentInventory ? this.getWarehouseKey(currentInventory.name) : null;
+      const warehouseKey = currentInventory ? await this.getWarehouseKey(currentInventory.name) : null;
       // Get inventory prefix for baselinkerProductId (e.g., "leker-", "btp-", "hp-")
-      const inventoryPrefix = currentInventory ? this.getInventoryPrefix(currentInventory.name) : '';
-      const skuPrefix = currentInventory ? this.getSkuPrefix(currentInventory.name) : '';
+      const inventoryPrefix = currentInventory ? await this.getInventoryPrefix(currentInventory.name) : '';
+      const skuPrefix = currentInventory ? await this.getSkuPrefix(currentInventory.name) : '';
       console.log(`[BaselinkerSync] Inventory: ${currentInventory?.name || inventoryId}, warehouse: ${warehouseKey || 'unknown'}, prefix: "${inventoryPrefix}", skuPrefix: "${skuPrefix}", price rules: ${warehouseKey && priceRules[warehouseKey] ? priceRules[warehouseKey].length + ' rules' : 'none'}`);
 
       if (syncLogId) {
@@ -1845,31 +2039,35 @@ export class BaselinkerService {
         });
 
         // Execute pending price updates AFTER transaction commit (avoids nested tx deadlock)
-        // Process in parallel chunks of 5 for faster throughput
-        const PRICE_CHUNK_SIZE = 5;
-        for (let pi = 0; pi < pendingPriceUpdates.length; pi += PRICE_CHUNK_SIZE) {
-          const priceChunk = pendingPriceUpdates.slice(pi, pi + PRICE_CHUNK_SIZE);
-          await Promise.allSettled(priceChunk.map(async (pu) => {
-          try {
-            if (pu.type === 'product') {
-              await priceHistoryService.updateProductPrice({
-                productId: pu.id,
-                newPrice: pu.newPrice,
-                source: PriceChangeSource.BASELINKER,
-                reason: 'Baselinker sync',
-              });
-            } else {
-              await priceHistoryService.updateVariantPrice({
-                variantId: pu.id,
-                newPrice: pu.newPrice,
-                source: PriceChangeSource.BASELINKER,
-                reason: 'Baselinker sync',
-              });
+        // Process sequentially to avoid Prisma P2034 deadlocks
+        for (const pu of pendingPriceUpdates) {
+          const MAX_RETRIES = 3;
+          for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+              if (pu.type === 'product') {
+                await priceHistoryService.updateProductPrice({
+                  productId: pu.id,
+                  newPrice: pu.newPrice,
+                  source: PriceChangeSource.BASELINKER,
+                  reason: 'Baselinker sync',
+                });
+              } else {
+                await priceHistoryService.updateVariantPrice({
+                  variantId: pu.id,
+                  newPrice: pu.newPrice,
+                  source: PriceChangeSource.BASELINKER,
+                  reason: 'Baselinker sync',
+                });
+              }
+              break; // success
+            } catch (priceErr: any) {
+              if (priceErr?.code === 'P2034' && attempt < MAX_RETRIES) {
+                console.warn(`[BaselinkerSync] Price update retry ${attempt}/${MAX_RETRIES} for ${pu.type} ${pu.id}`);
+                continue;
+              }
+              console.error(`[BaselinkerSync] Price update error for ${pu.type} ${pu.id}:`, priceErr);
             }
-          } catch (priceErr) {
-            console.error(`[BaselinkerSync] Price update error for ${pu.type} ${pu.id}:`, priceErr);
           }
-          }));
         }
         } catch (batchErr) {
           // Batch transaction failed — log error and continue with next batch
@@ -2008,13 +2206,13 @@ export class BaselinkerService {
       }
 
       for (const inv of inventories) {
-        // Skip non-product inventories (empik) and ikonka/Główny
-        if (inv.name.includes('empik') || inv.name === 'ikonka' || inv.name === 'Główny') {
+        // Skip inventories marked as skipInSync in wholesaler config
+        if (await wholesalerConfigService.shouldSkipInventory(inv.name)) {
           console.log(`[BaselinkerSync] Skipping inventory: ${inv.name}`);
           continue;
         }
 
-        const prefix = this.getInventoryPrefix(inv.name);
+        const prefix = await this.getInventoryPrefix(inv.name);
         console.log(`[BaselinkerSync] Syncing stock from inventory: ${inv.name} (${inv.inventory_id}), prefix: "${prefix}"`);
 
         if (syncLogId) {
@@ -2247,12 +2445,12 @@ export class BaselinkerService {
         : allInventories;
 
       for (const inv of inventories) {
-        if (inv.name.includes('empik') || inv.name === 'ikonka' || inv.name === 'Główny') {
+        if (await wholesalerConfigService.shouldSkipInventory(inv.name)) {
           console.log(`[BaselinkerSync] Skipping price inventory: ${inv.name}`);
           continue;
         }
 
-        const prefix = this.getInventoryPrefix(inv.name);
+        const prefix = await this.getInventoryPrefix(inv.name);
         console.log(`[BaselinkerSync] Syncing prices from inventory: ${inv.name} (${inv.inventory_id}), prefix: "${prefix}"`);
 
         if (syncLogId) {
@@ -2269,7 +2467,7 @@ export class BaselinkerService {
 
           // 2. Build a map: prefixedId -> newPrice (after price multiplier + roundPriceTo99)
           const priceRules = await this.loadPriceRules();
-          const whKey = this.getWarehouseKey(inv.name);
+          const whKey = await this.getWarehouseKey(inv.name);
           console.log(`[BaselinkerSync] Price rules for ${inv.name} (${whKey}): ${whKey && priceRules[whKey] ? priceRules[whKey].length + ' rules' : 'none'}`);
 
           const blPrices = new Map<string, number>();
@@ -2587,9 +2785,13 @@ export class BaselinkerService {
     try {
       // Get all inventories to iterate through
       const allInventories = await provider.getInventories();
-      const inventories = allInventories.filter(inv => 
-        !inv.name.includes('empik') && inv.name !== 'ikonka' && inv.name !== 'Główny'
-      );
+      const inventoriesFiltered: typeof allInventories = [];
+      for (const inv of allInventories) {
+        if (!(await wholesalerConfigService.shouldSkipInventory(inv.name))) {
+          inventoriesFiltered.push(inv);
+        }
+      }
+      const inventories = inventoriesFiltered;
 
       // Get products with their Baselinker IDs
       const products = await prisma.product.findMany({
@@ -2598,7 +2800,7 @@ export class BaselinkerService {
       });
 
       for (const inv of inventories) {
-        const prefix = this.getInventoryPrefix(inv.name);
+        const prefix = await this.getInventoryPrefix(inv.name);
         console.log(`[BaselinkerSync] Syncing images from inventory: ${inv.name} (${inv.inventory_id}), prefix: "${prefix}"`);
 
         // Filter products belonging to this inventory
@@ -2685,7 +2887,7 @@ export class BaselinkerService {
   }
 
   /**
-   * Reindex Meilisearch after sync
+   * Reindex Meilisearch after sync (batched to avoid memory/timeout issues)
    */
   async reindexMeilisearch(): Promise<void> {
     if (!isMeilisearchAvailable()) {
@@ -2694,53 +2896,69 @@ export class BaselinkerService {
     }
 
     const startTime = Date.now();
-    const REINDEX_TIMEOUT_MS = 120000; // 2 minute timeout for reindex
+    const REINDEX_TIMEOUT_MS = 300000; // 5 minute timeout for reindex
+    const BATCH_SIZE = 1000;
     try {
-      console.log('[BaselinkerSync] Rozpoczynam reindeksację Meilisearch...');
+      console.log('[BaselinkerSync] Rozpoczynam reindeksację Meilisearch (batched)...');
       
       const reindexPromise = (async () => {
-      const products = await prisma.product.findMany({
-        where: { status: 'ACTIVE' },
-        include: {
-          category: true,
-          images: { orderBy: { order: 'asc' }, take: 1 },
-          variants: {
-            include: {
-              inventory: true,
+      const totalCount = await prisma.product.count({ where: { status: 'ACTIVE' } });
+      console.log(`[BaselinkerSync] Łączna liczba produktów ACTIVE: ${totalCount} (${Date.now() - startTime}ms)`);
+
+      let indexed = 0;
+      let skip = 0;
+
+      while (skip < totalCount) {
+        const products = await prisma.product.findMany({
+          where: { status: 'ACTIVE' },
+          include: {
+            category: true,
+            images: { orderBy: { order: 'asc' }, take: 1 },
+            variants: {
+              include: {
+                inventory: true,
+              },
             },
           },
-        },
-      });
+          skip,
+          take: BATCH_SIZE,
+          orderBy: { id: 'asc' },
+        });
 
-      console.log(`[BaselinkerSync] Pobrano ${products.length} produktów z bazy (${Date.now() - startTime}ms)`);
+        if (products.length === 0) break;
 
-      const documents = products.map((product) => {
-        const totalStock = product.variants.reduce((sum, v) => {
-          return sum + v.inventory.reduce((s, inv) => s + inv.quantity - inv.reserved, 0);
-        }, 0);
+        const documents = products.map((product) => {
+          const totalStock = product.variants.reduce((sum, v) => {
+            return sum + v.inventory.reduce((s, inv) => s + inv.quantity - inv.reserved, 0);
+          }, 0);
 
-        return {
-          id: product.id,
-          name: product.name,
-          slug: product.slug,
-          description: product.description,
-          sku: product.sku,
-          barcode: product.barcode,
-          price: parseFloat(product.price.toString()),
-          categoryId: product.categoryId,
-          categoryName: product.category?.name || null,
-          image: product.images[0]?.url || null,
-          inStock: totalStock > 0,
-          stock: totalStock,
-        };
-      });
+          return {
+            id: product.id,
+            name: product.name,
+            slug: product.slug,
+            description: product.description,
+            sku: product.sku,
+            barcode: product.barcode,
+            price: parseFloat(product.price.toString()),
+            categoryId: product.categoryId,
+            categoryName: product.category?.name || null,
+            image: product.images[0]?.url || null,
+            inStock: totalStock > 0,
+            stock: totalStock,
+          };
+        });
 
-      if (documents.length > 0) {
         await meiliClient.index(PRODUCTS_INDEX).addDocuments(documents);
+        indexed += documents.length;
+        skip += BATCH_SIZE;
+        console.log(`[BaselinkerSync] Zindeksowano ${indexed}/${totalCount} (${Date.now() - startTime}ms)`);
+      }
+
+      if (indexed > 0) {
         markMeilisearchAvailable();
       }
       
-      console.log(`[BaselinkerSync] ✓ Zindeksowano ${documents.length} produktów w Meilisearch (${Date.now() - startTime}ms)`);
+      console.log(`[BaselinkerSync] ✓ Reindeksacja zakończona: ${indexed} produktów (${Date.now() - startTime}ms)`);
       })();
 
       // Race with timeout

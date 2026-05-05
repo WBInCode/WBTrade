@@ -1,14 +1,42 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
-// Warehouse configuration
-const WAREHOUSES = [
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
+
+interface WarehouseInfo {
+  id: string;
+  location: string;
+}
+
+const FALLBACK_WAREHOUSES: WarehouseInfo[] = [
   { id: 'leker', location: 'Chynów' },
   { id: 'hp', location: 'Zielona Góra' },
   { id: 'btp', location: 'Chotów' },
+  { id: 'dofirmy', location: 'Koszalin' },
   { id: 'outlet', location: 'Rzeszów' },
-] as const;
+  { id: 'hurtownia-kuchenna', location: 'Hurtownia Kuchenna' },
+];
+
+let _whCache: WarehouseInfo[] | null = null;
+let _whCacheTime = 0;
+
+async function fetchWarehouses(): Promise<WarehouseInfo[]> {
+  if (_whCache && Date.now() - _whCacheTime < 30 * 1000) return _whCache;
+  try {
+    const res = await fetch(`${API_URL}/wholesalers/config`, { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      _whCache = data
+        .filter((w: any) => w.prefix && w.location)
+        .map((w: any) => ({ id: w.key, location: w.location }));
+      _whCacheTime = Date.now();
+      return _whCache!;
+    }
+  } catch {}
+  return FALLBACK_WAREHOUSES;
+}
 
 interface SortOption {
   value: string;
@@ -47,6 +75,11 @@ export default function ProductListHeader({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [warehouses, setWarehouses] = useState<WarehouseInfo[]>(FALLBACK_WAREHOUSES);
+
+  useEffect(() => {
+    fetchWarehouses().then(setWarehouses);
+  }, []);
   
   // Get selected warehouse from URL
   const selectedWarehouse = searchParams.get('warehouse') || '';
@@ -118,7 +151,7 @@ export default function ProductListHeader({
             className="px-2 sm:px-3 py-2 text-xs sm:text-sm border border-gray-300 dark:border-secondary-600 rounded-lg bg-white dark:bg-secondary-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent min-w-0 max-w-[140px] sm:max-w-none"
           >
             <option value="">Wszystkie magazyny</option>
-            {WAREHOUSES.map(warehouse => {
+            {warehouses.map(warehouse => {
               const count = warehouseCounts?.[warehouse.id];
               return (
                 <option key={warehouse.id} value={warehouse.id}>

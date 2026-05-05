@@ -234,6 +234,37 @@ export const baselinkerController = {
   },
 
   /**
+   * POST /api/admin/baselinker/dry-run
+   * Dry run - fetch products from inventory without saving to DB
+   */
+  async dryRunFetchProducts(req: Request, res: Response) {
+    try {
+      const { inventoryId, limit } = req.body;
+
+      if (!inventoryId || !/^\d+$/.test(inventoryId)) {
+        return res.status(400).json({
+          message: 'inventoryId jest wymagany i musi być liczbą',
+        });
+      }
+
+      const parsedLimit = Math.min(Math.max(parseInt(limit) || 100, 1), 1000);
+
+      const result = await baselinkerService.dryRunFetchProducts(inventoryId, parsedLimit);
+
+      res.json({
+        success: true,
+        ...result,
+      });
+    } catch (error) {
+      console.error('Error in dry run:', error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : 'Dry run failed',
+      });
+    }
+  },
+
+  /**
    * DELETE /api/admin/baselinker/sync/:id
    * Cancel/delete a sync log (mark as failed or remove)
    */

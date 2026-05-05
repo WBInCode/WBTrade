@@ -1,0 +1,557 @@
+{
+  "Lego": {
+    "gpsr_name": "LEGO A/S",
+    "gpsr_email": "kundeservice@lego.com",
+    "gpsr_phone": "+45 79 50 60 70"
+  },
+  "RAW-POL": {
+    "gpsr_name": "RAW-POL S.A.",
+    "gpsr_email": "idok@rawpol.com",
+    "gpsr_phone": "+48 46 814 95 00"
+  },
+  "Reis": {
+    "gpsr_name": "RAW-POL S.A.",
+    "gpsr_email": "idok@rawpol.com",
+    "gpsr_phone": "+48 46 814 95 00"
+  },
+  "Hamelin": {
+    "gpsr_name": "Hamelin S.A.S.",
+    "gpsr_email": "contact@hamelin.com",
+    "gpsr_phone": "+33 2 31 66 30 00"
+  },
+  "Oxford": {
+    "gpsr_name": "Hamelin S.A.S.",
+    "gpsr_email": "contact@hamelin.com",
+    "gpsr_phone": "+33 2 31 66 30 00"
+  },
+  "Bantex": {
+    "gpsr_name": "Hamelin S.A.S.",
+    "gpsr_email": "contact@hamelin.com",
+    "gpsr_phone": "+33 2 31 66 30 00"
+  },
+  "vileda": {
+    "gpsr_name": "Freudenberg Home and Cleaning Solutions GmbH",
+    "gpsr_email": "info@vileda.com",
+    "gpsr_phone": "+49 6201 80-6868"
+  },
+  "VILEDA PROFESSIONAL": {
+    "gpsr_name": "Freudenberg Home and Cleaning Solutions GmbH",
+    "gpsr_email": "info@vileda.com",
+    "gpsr_phone": "+49 6201 80-6868"
+  },
+  "WARMTEC": {
+    "gpsr_name": "WARMTEC Sp. z o.o.",
+    "gpsr_email": "biuro@warmtec.pl",
+    "gpsr_phone": "+48 22 113 95 49"
+  },
+  "ravanson": {
+    "gpsr_name": "Ravanson Sp. z o.o.",
+    "gpsr_email": "biuro@ravanson.pl",
+    "gpsr_phone": "+48 660 730 961"
+  },
+  "LONTEX": {
+    "gpsr_name": "LONTEX Group Sp. z o.o.",
+    "gpsr_email": "lontex@lontex.pl",
+    "gpsr_phone": "+48 32 215 27 97"
+  },
+  "DREWMET": {
+    "gpsr_name": "DREWMET Sp. z o.o.",
+    "gpsr_email": "biuro@drewmet.com.pl",
+    "gpsr_phone": ""
+  },
+  "TOPEX": {
+    "gpsr_name": "GTX Poland Sp. z o.o. Sp. K.",
+    "gpsr_email": "office@gtx-group.com",
+    "gpsr_phone": "+48 22 573 03 00"
+  },
+  "graphite": {
+    "gpsr_name": "GTX Poland Sp. z o.o. Sp. K.",
+    "gpsr_email": "office@gtx-group.com",
+    "gpsr_phone": "+48 22 573 03 00"
+  },
+  "neo": {
+    "gpsr_name": "GTX Poland Sp. z o.o. Sp. K.",
+    "gpsr_email": "office@gtx-group.com",
+    "gpsr_phone": "+48 22 573 03 00"
+  },
+  "neo tools": {
+    "gpsr_name": "GTX Poland Sp. z o.o. Sp. K.",
+    "gpsr_email": "office@gtx-group.com",
+    "gpsr_phone": "+48 22 573 03 00"
+  },
+  "Wader": {
+    "gpsr_name": "Wader-Woźniak Sp. z o.o.",
+    "gpsr_email": "wader@wader.info.pl",
+    "gpsr_phone": "+48 61 810 98 80"
+  },
+  "Adler": {
+    "gpsr_name": "Adler Sp. z o.o. s.k.",
+    "gpsr_email": "biuro@adler.com.pl",
+    "gpsr_phone": "+48 22 862 11 22"
+  },
+  "camry": {
+    "gpsr_name": "Adler Sp. z o.o. s.k.",
+    "gpsr_email": "biuro@adler.com.pl",
+    "gpsr_phone": "+48 22 862 11 22"
+  },
+  "RECKITT": {
+    "gpsr_name": "Reckitt Benckiser (Poland) S.A.",
+    "gpsr_email": "kontakt@rb.com",
+    "gpsr_phone": "+48 22 276 83 00"
+  },
+  "FINISH": {
+    "gpsr_name": "Reckitt Benckiser (Poland) S.A.",
+    "gpsr_email": "kontakt@rb.com",
+    "gpsr_phone": "+48 22 276 83 00"
+  },
+  "Woolite": {
+    "gpsr_name": "Reckitt Benckiser (Poland) S.A.",
+    "gpsr_email": "kontakt@rb.com",
+    "gpsr_phone": "+48 22 276 83 00"
+  },
+  "LAMIX": {
+    "gpsr_name": "Lamix Sp. z o.o.",
+    "gpsr_email": "biuro@lamix.com.pl",
+    "gpsr_phone": "+48 32 227 47 90"
+  },
+  "BRYZA": {
+    "gpsr_name": "PCC Consumer Products Kosmet Sp. z o.o.",
+    "gpsr_email": "biuro@pcc-cp.com",
+    "gpsr_phone": "+48 71 794 26 27"
+  },
+  "Goodram": {
+    "gpsr_name": "Wilk Elektronik S.A.",
+    "gpsr_email": "info@goodram.com",
+    "gpsr_phone": "+48 32 473 32 42"
+  },
+  "TENZI": {
+    "gpsr_name": "Tenzi Sp. z o.o.",
+    "gpsr_email": "sklep@tenzi.pl",
+    "gpsr_phone": "+48 91 311 89 52"
+  },
+  "UNILEVER": {
+    "gpsr_name": "Unilever Polska Sp. z o.o.",
+    "gpsr_email": "kontakt@unilever.com",
+    "gpsr_phone": "+48 695 188 005"
+  },
+  "COCCOLINO": {
+    "gpsr_name": "Unilever Polska Sp. z o.o.",
+    "gpsr_email": "kontakt@unilever.com",
+    "gpsr_phone": "+48 695 188 005"
+  },
+  "Domestos": {
+    "gpsr_name": "Unilever Polska Sp. z o.o.",
+    "gpsr_email": "kontakt@unilever.com",
+    "gpsr_phone": "+48 695 188 005"
+  },
+  "CIF": {
+    "gpsr_name": "Unilever Polska Sp. z o.o.",
+    "gpsr_email": "kontakt@unilever.com",
+    "gpsr_phone": "+48 695 188 005"
+  },
+  "MERCATOR MEDICAL": {
+    "gpsr_name": "Mercator Medical S.A.",
+    "gpsr_email": "info@mercatormedical.eu",
+    "gpsr_phone": "+48 12 620 93 00"
+  },
+  "Mercator": {
+    "gpsr_name": "Mercator Medical S.A.",
+    "gpsr_email": "info@mercatormedical.eu",
+    "gpsr_phone": "+48 12 620 93 00"
+  },
+  "STELLA": {
+    "gpsr_name": "Stella Pack S.A.",
+    "gpsr_email": "biuro@stellapack.com",
+    "gpsr_phone": "+48 34 353 18 00"
+  },
+  "AOSOM": {
+    "gpsr_name": "Aosom Co., Ltd.",
+    "gpsr_email": "service@aosom.com",
+    "gpsr_phone": ""
+  },
+  "3mk": {
+    "gpsr_name": "3mk Protection Sp. z o.o.",
+    "gpsr_email": "sklep@3mk.pl",
+    "gpsr_phone": "+48 728 365 365"
+  },
+  "playmobil": {
+    "gpsr_name": "geobra Brandstätter Stiftung & Co. KG",
+    "gpsr_email": "service@playmobil.de",
+    "gpsr_phone": "+49 911 9666 1382"
+  },
+  "Kingston": {
+    "gpsr_name": "Kingston Technology Europe Co LLP",
+    "gpsr_email": "info@kingston.eu",
+    "gpsr_phone": "+44 1932 738 888"
+  },
+  "FOXY": {
+    "gpsr_name": "ICT Industrie Cartarie Tronchetti S.p.A.",
+    "gpsr_email": "info@foxyeurope.com",
+    "gpsr_phone": "+39 0583 21 91"
+  },
+  "BROS": {
+    "gpsr_name": "BROS Sp. z o.o.",
+    "gpsr_email": "biuro@bros.pl",
+    "gpsr_phone": "+48 61 826 25 12"
+  },
+  "BOPON": {
+    "gpsr_name": "BROS Sp. z o.o.",
+    "gpsr_email": "biuro@bros.pl",
+    "gpsr_phone": "+48 61 826 25 12"
+  },
+  "HAPPS": {
+    "gpsr_name": "BROS Sp. z o.o.",
+    "gpsr_email": "biuro@bros.pl",
+    "gpsr_phone": "+48 61 826 25 12"
+  },
+  "Jan Niezbędny": {
+    "gpsr_name": "Sarantis Polska S.A.",
+    "gpsr_email": "kontakt@sarantis.pl",
+    "gpsr_phone": "+48 22 535 02 00"
+  },
+  "LUKSJA": {
+    "gpsr_name": "Sarantis Polska S.A.",
+    "gpsr_email": "kontakt@sarantis.pl",
+    "gpsr_phone": "+48 22 535 02 00"
+  },
+  "STR8": {
+    "gpsr_name": "Sarantis Polska S.A.",
+    "gpsr_email": "kontakt@sarantis.pl",
+    "gpsr_phone": "+48 22 535 02 00"
+  },
+  "FAIRY": {
+    "gpsr_name": "Procter & Gamble DS Polska Sp. z o.o.",
+    "gpsr_email": "kontakt.polska@pg.com",
+    "gpsr_phone": "+48 800 111 654"
+  },
+  "vizir": {
+    "gpsr_name": "Procter & Gamble DS Polska Sp. z o.o.",
+    "gpsr_email": "kontakt.polska@pg.com",
+    "gpsr_phone": "+48 800 111 654"
+  },
+  "PAMPERS": {
+    "gpsr_name": "Procter & Gamble DS Polska Sp. z o.o.",
+    "gpsr_email": "kontakt.polska@pg.com",
+    "gpsr_phone": "+48 800 111 654"
+  },
+  "LENOR": {
+    "gpsr_name": "Procter & Gamble DS Polska Sp. z o.o.",
+    "gpsr_email": "kontakt.polska@pg.com",
+    "gpsr_phone": "+48 800 111 654"
+  },
+  "Dreft Professional": {
+    "gpsr_name": "Procter & Gamble DS Polska Sp. z o.o.",
+    "gpsr_email": "kontakt.polska@pg.com",
+    "gpsr_phone": "+48 800 111 654"
+  },
+  "Swiffer": {
+    "gpsr_name": "Procter & Gamble DS Polska Sp. z o.o.",
+    "gpsr_email": "kontakt.polska@pg.com",
+    "gpsr_phone": "+48 800 111 654"
+  },
+  "Gillette": {
+    "gpsr_name": "Procter & Gamble DS Polska Sp. z o.o.",
+    "gpsr_email": "kontakt.polska@pg.com",
+    "gpsr_phone": "+48 800 111 654"
+  },
+  "Bispol": {
+    "gpsr_name": "Bispol Sp. z o.o.",
+    "gpsr_email": "bispol@bispol.pl",
+    "gpsr_phone": "+48 17 225 30 13"
+  },
+  "Aura": {
+    "gpsr_name": "Bispol Sp. z o.o.",
+    "gpsr_email": "bispol@bispol.pl",
+    "gpsr_phone": "+48 17 225 30 13"
+  },
+  "VALPE": {
+    "gpsr_name": "Bispol Sp. z o.o.",
+    "gpsr_email": "bispol@bispol.pl",
+    "gpsr_phone": "+48 17 225 30 13"
+  },
+  "BISON": {
+    "gpsr_name": "Bison International B.V.",
+    "gpsr_email": "info@bfrands.com",
+    "gpsr_phone": "+31 30 249 15 00"
+  },
+  "PEDIGREE": {
+    "gpsr_name": "Mars Polska Sp. z o.o.",
+    "gpsr_email": "kontakt@mars.com",
+    "gpsr_phone": "+48 22 783 10 00"
+  },
+  "WHISKAS": {
+    "gpsr_name": "Mars Polska Sp. z o.o.",
+    "gpsr_email": "kontakt@mars.com",
+    "gpsr_phone": "+48 22 783 10 00"
+  },
+  "Duck": {
+    "gpsr_name": "SC Johnson Sp. z o.o.",
+    "gpsr_email": "info@scjohnson.com",
+    "gpsr_phone": "+48 22 544 85 00"
+  },
+  "RAFI": {
+    "gpsr_name": "Dolina Noteci S.A.",
+    "gpsr_email": "biuro@dolina-noteci.pl",
+    "gpsr_phone": "+48 67 284 00 00"
+  },
+  "Mattel": {
+    "gpsr_name": "Mattel, Inc.",
+    "gpsr_email": "consumer.services@mattel.com",
+    "gpsr_phone": "+1 800 524 8697"
+  },
+  "IUVI Games": {
+    "gpsr_name": "Wydawnictwo IUVI Sp. z o.o. Sp. J.",
+    "gpsr_email": "games@iuvi.pl",
+    "gpsr_phone": ""
+  },
+  "Brubeck": {
+    "gpsr_name": "BRUBECK Global Trading Sp. z o.o.",
+    "gpsr_email": "sklep@brubeck.pl",
+    "gpsr_phone": "+48 43 824 44 03"
+  },
+  "Ludwik": {
+    "gpsr_name": "Grupa INCO S.A.",
+    "gpsr_email": "biuro@inco.com.pl",
+    "gpsr_phone": "+48 22 632 44 56"
+  },
+  "remington": {
+    "gpsr_name": "Spectrum Brands Holdings, Inc.",
+    "gpsr_email": "info@spectrumbrands.com",
+    "gpsr_phone": "+1 608 275 3340"
+  },
+  "Philips": {
+    "gpsr_name": "Koninklijke Philips N.V.",
+    "gpsr_email": "philips@philips.com",
+    "gpsr_phone": "+31 20 59 77 777"
+  },
+  "Frosch": {
+    "gpsr_name": "Werner & Mertz GmbH",
+    "gpsr_email": "info@werner-mertz.com",
+    "gpsr_phone": "+49 6131 964-0"
+  },
+  "Vermop": {
+    "gpsr_name": "Vermop Salmon GmbH",
+    "gpsr_email": "info@vermop.com",
+    "gpsr_phone": "+49 9741 89-0"
+  },
+  "BOXMET TRADE": {
+    "gpsr_name": "Boxmet Ltd. Sp. z o.o.",
+    "gpsr_email": "boxmet@boxmet.com.pl",
+    "gpsr_phone": "+48 74 836 92 38"
+  },
+  "ASPIVENIN": {
+    "gpsr_name": "Aspilabo SAS",
+    "gpsr_email": "contact@aspilabo.fr",
+    "gpsr_phone": "+33 4 92 38 99 00"
+  },
+  "Alpina": {
+    "gpsr_name": "DAW SE",
+    "gpsr_email": "info@daw.de",
+    "gpsr_phone": "+49 6154 71-0"
+  },
+  "NOVITA": {
+    "gpsr_name": "Novita S.A.",
+    "gpsr_email": "biuro@novita.com.pl",
+    "gpsr_phone": "+48 68 347 22 00"
+  },
+  "Kret": {
+    "gpsr_name": "Zakłady Chemiczne Kret Sp. z o.o.",
+    "gpsr_email": "biuro@kret.com.pl",
+    "gpsr_phone": "+48 58 686 40 08"
+  },
+  "EkoDarPol": {
+    "gpsr_name": "P.P.H. EkoDarpol",
+    "gpsr_email": "biuro@ekodarpol.pl",
+    "gpsr_phone": "+48 95 747 13 49"
+  },
+  "emerson": {
+    "gpsr_name": "Emerson Sp. z o.o.",
+    "gpsr_email": "biuro@emerson.pl",
+    "gpsr_phone": ""
+  },
+  "PAKO": {
+    "gpsr_name": "PAKO",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "PAPIRUS": {
+    "gpsr_name": "PAPIRUS",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "INNI": {
+    "gpsr_name": "INNI",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "MAXY": {
+    "gpsr_name": "MAXY",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "Fox": {
+    "gpsr_name": "Fox",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "VERK GROUP": {
+    "gpsr_name": "VERK GROUP Sp. z o.o.",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "GREMBOX": {
+    "gpsr_name": "GREMBOX",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "LEPRO": {
+    "gpsr_name": "Lepro",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "ZMIERZYĆ": {
+    "gpsr_name": "ZMIERZYĆ",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "KON-PLAST": {
+    "gpsr_name": "KON-PLAST",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "EWP": {
+    "gpsr_name": "EWP",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "FIRMA DENIX": {
+    "gpsr_name": "FIRMA DENIX",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "SMART": {
+    "gpsr_name": "SMART",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "TOTAL MARKET": {
+    "gpsr_name": "Total Market Sp. z o.o.",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "MANNSCHAFT": {
+    "gpsr_name": "MANNSCHAFT",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "Import": {
+    "gpsr_name": "Import",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "ODZIEŻ": {
+    "gpsr_name": "ODZIEŻ",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "LAMANUEL": {
+    "gpsr_name": "La Manuel",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "La Manuel": {
+    "gpsr_name": "La Manuel",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "ZW": {
+    "gpsr_name": "ZW",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "PRIVATE LABEL TISSUE": {
+    "gpsr_name": "PRIVATE LABEL TISSUE",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "MATISTO": {
+    "gpsr_name": "MATISTO",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "JURAV": {
+    "gpsr_name": "JURAV",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "Słonik Jumbo": {
+    "gpsr_name": "Słonik Jumbo",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "TEKSON": {
+    "gpsr_name": "TEKSON",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "Grammi": {
+    "gpsr_name": "Grammi",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "Sempre": {
+    "gpsr_name": "Sempre",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "Beauty Women": {
+    "gpsr_name": "Beauty Women",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "Expel": {
+    "gpsr_name": "Expel",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "VORTEX": {
+    "gpsr_name": "VORTEX",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "smile": {
+    "gpsr_name": "Smile",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "COMFORTE": {
+    "gpsr_name": "COMFORTE",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "PRO SERVICE": {
+    "gpsr_name": "PRO SERVICE",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "AMiO": {
+    "gpsr_name": "AMiO",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "newland": {
+    "gpsr_name": "Newland",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "PK-MOT": {
+    "gpsr_name": "PK-MOT",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  },
+  "bez marki": {
+    "gpsr_name": "bez marki",
+    "gpsr_email": "",
+    "gpsr_phone": ""
+  }
+}

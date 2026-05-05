@@ -17,7 +17,8 @@ COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
 
 # Kopiowanie aplikacji API
-# Cache bust: 2026-04-10-v2
+# Force Docker layer invalidation - change this string to bust cache
+RUN echo "CACHE_BUST_2026-04-10-v5" > /tmp/.cachebust
 COPY apps/api ./apps/api
 COPY packages ./packages
 
@@ -30,8 +31,8 @@ WORKDIR /app/apps/api
 # Generowanie klienta Prisma PRZED kompilacją TypeScript
 RUN npx prisma generate
 
-# Budowanie aplikacji
-RUN pnpm build
+# Budowanie aplikacji - clean dist/ first to ensure fresh compilation
+RUN rm -rf dist && pnpm build
 
 # Stage końcowy - tylko niezbędne pliki
 FROM node:20-alpine AS production
@@ -48,11 +49,6 @@ COPY --from=base /app/apps/api/dist ./apps/api/dist
 COPY --from=base /app/apps/api/package.json ./apps/api/package.json
 COPY --from=base /app/apps/api/prisma ./apps/api/prisma
 COPY --from=base /app/packages ./packages
-
-# Kopiowanie skryptów JS synchronizacji cen (wywoływane przez workera BullMQ)
-COPY --from=base /app/apps/api/sync-leker-xml-prices.js ./apps/api/sync-leker-xml-prices.js
-COPY --from=base /app/apps/api/sync-btp-xml-prices.js ./apps/api/sync-btp-xml-prices.js
-COPY --from=base /app/apps/api/sync-hp-xml-prices.js ./apps/api/sync-hp-xml-prices.js
 COPY --from=base /app/apps/api/lib ./apps/api/lib
 
 # Zmiana katalogu na API

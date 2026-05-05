@@ -7,9 +7,9 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   Keyboard,
 } from 'react-native';
+import { customAlert } from '../../../components/ui/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -55,7 +55,7 @@ export default function NewTicketScreen() {
 
   const handleSubmit = useCallback(async () => {
     if (!subject.trim() || !message.trim()) {
-      Alert.alert('Uzupełnij dane', 'Podaj temat i treść wiadomości.');
+      customAlert('Uzupełnij dane', 'Podaj temat i treść wiadomości.');
       return;
     }
     Keyboard.dismiss();
@@ -66,7 +66,7 @@ export default function NewTicketScreen() {
       const res = await api.post<{ id: string }>('/support/tickets', body);
       router.replace(`/account/messages/${res.id}` as any);
     } catch (err: any) {
-      Alert.alert('Błąd', err.message || 'Nie udało się utworzyć zgłoszenia.');
+      customAlert('Błąd', err.message || 'Nie udało się utworzyć zgłoszenia.');
     } finally {
       setSending(false);
     }

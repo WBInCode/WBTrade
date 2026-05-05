@@ -55,11 +55,14 @@ import adminSyncRoutes from './routes/admin-sync';
 import adminSupportRoutes from './routes/admin-support';
 import adminReturnsRoutes from './routes/admin-returns';
 import adminDeliveryDelaysRoutes from './routes/admin-delivery-delays';
+import adminEmailTemplatesRoutes from './routes/admin-email-templates';
 import userNotificationsRoutes from './routes/user-notifications';
 import emailInboundRoutes from './routes/email-inbound';
 import imageProxyRoutes from './routes/image-proxy';
+import adminWholesalersRoutes from './routes/admin-wholesalers';
+import wholesalersRoutes from './routes/wholesalers';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
-import { initializeMeilisearch } from './lib/meilisearch';
+import { initializeMeilisearch, meiliClient, PRODUCTS_INDEX, isMeilisearchAvailable } from './lib/meilisearch';
 import { startSearchIndexWorker } from './workers/search-index.worker';
 import { startEmailWorker } from './workers/email.worker';
 import { startInventorySyncWorker } from './workers/inventory-sync.worker';
@@ -356,7 +359,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(generalRateLimiter);
 
 // Health check endpoint (skip rate limiter)
-const BUILD_VERSION = '2026-04-10-v4';
+const BUILD_VERSION = '2026-04-13-v10';
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', version: BUILD_VERSION, timestamp: new Date().toISOString() });
 });
@@ -365,8 +368,604 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', version: BUILD_VERSION, timestamp: new Date().toISOString() });
 });
 
+// Diagnostic endpoint to verify compiled code
+app.get('/api/debug-prefix', async (req, res) => {
+  try {
+    const { baselinkerService } = require('./services/baselinker.service');
+    const { PrismaClient } = require('@prisma/client');
+    const prisma = new PrismaClient();
+
+    // 1. Test prefix mapping
+    const testNames = ['Forcetop', 'Leker', 'Hurtownia Przemysłowa', 'BTP', 'HP'];
+    const prefixes: Record<string, string> = {};
+    for (const name of testNames) {
+      prefixes[name] = (baselinkerService as any).getInventoryPrefix(name);
+    }
+
+    // 2. Count DB products by prefix
+    const dbCounts: Record<string, number> = {};
+    for (const pfx of ['btp-', 'leker-', 'hp-', 'outlet-']) {
+      dbCounts[pfx] = await prisma.product.count({ where: { baselinkerProductId: { startsWith: pfx } } });
+    }
+    const totalWithBlId = await prisma.product.count({ where: { baselinkerProductId: { not: null } } });
+
+    // 3. Test matching: simulate what syncProducts does for Forcetop
+    const existingProducts = await prisma.product.findMany({
+      where: { baselinkerProductId: { not: null } },
+      select: { baselinkerProductId: true },
+    });
+    const existingMap = new Map(existingProducts.map((p: any) => [p.baselinkerProductId, true]));
+
+    // Sample BL product IDs from Forcetop (known IDs)
+    const sampleBlIds = ['212547476', '212547477', '212547478', '212547479', '212547481'];
+    const matchTest: Record<string, any> = {};
+    for (const blId of sampleBlIds) {
+      const withPrefix = `btp-${blId}`;
+      const withoutPrefix = blId;
+      matchTest[blId] = {
+        'btp-id': withPrefix,
+        'found_with_prefix': existingMap.has(withPrefix),
+        'found_without_prefix': existingMap.has(withoutPrefix),
+      };
+    }
+
+    // 4. Check stored config
+    const config = await prisma.baselinkerConfig.findFirst({ select: { inventoryId: true } });
+
+    // 5. Check existingMap size and sample keys
+    const mapKeys = Array.from(existingMap.keys()).slice(0, 10);
+
+    await prisma.$disconnect();
+
+    res.json({
+      version: BUILD_VERSION,
+      prefixes,
+      dbCounts,
+      totalWithBlId,
+      existingMapSize: existingMap.size,
+      sampleMapKeys: mapKeys,
+      matchTest,
+      storedInventoryId: config?.inventoryId || 'NOT SET',
+    });
+  } catch (err) {
+    res.json({ version: BUILD_VERSION, error: String(err) });
+  }
+});
+
+// Check compiled JS file content
+app.get('/api/debug-compiled', (req, res) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const jsFile = path.join(__dirname, 'services', 'baselinker.service.js');
+    const content = fs.readFileSync(jsFile, 'utf8');
+    
+    // Search for key patterns
+    const hasInvId = content.includes('[invId:');
+    const hasForcetop = content.includes("'forcetop'");
+    const hasBtpPrefix = content.includes("'btp-'");
+    const hasDebugSamples = content.includes('debugSamples');
+    const hasPrefixMatch = content.includes('prefixMatchCount');
+    
+    // Find the getInventoryPrefix function
+    const prefixFnMatch = content.match(/getInventoryPrefix[\s\S]{0,500}/);
+    
+    // Find the "Synchronizacja produktów" message
+    const syncMsgMatch = content.match(/Synchronizacja produkt[\s\S]{0,200}/);
+    
+    res.json({
+      version: BUILD_VERSION,
+      fileExists: true,
+      fileSize: content.length,
+      checks: { hasInvId, hasForcetop, hasBtpPrefix, hasDebugSamples, hasPrefixMatch },
+      getInventoryPrefixSnippet: prefixFnMatch ? prefixFnMatch[0].substring(0, 300) : 'NOT FOUND',
+      syncMessageSnippet: syncMsgMatch ? syncMsgMatch[0].substring(0, 200) : 'NOT FOUND',
+    });
+  } catch (err) {
+    res.json({ version: BUILD_VERSION, error: String(err) });
+  }
+});
+
 // Detailed health checks
 app.use('/api/health', healthRoutes);
+
+// =====================================================================
+// SELF-CONTAINED PRODUCT UPDATE ENDPOINT
+// Uses WholesalerConfigService for dynamic prefix/warehouse resolution
+// =====================================================================
+
+// Helper: call Baselinker API
+async function callBaselinkerAPI(apiToken: string, method: string, params: Record<string, any> = {}): Promise<any> {
+  const formData = new URLSearchParams();
+  formData.append('method', method);
+  formData.append('parameters', JSON.stringify(params));
+
+  const response = await fetch('https://api.baselinker.com/connector.php', {
+    method: 'POST',
+    headers: {
+      'X-BLToken': apiToken,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: formData.toString(),
+    signal: AbortSignal.timeout(60000),
+  });
+
+  const data = await response.json();
+  if (data.status === 'ERROR') {
+    throw new Error(`Baselinker API error: ${data.error_message || data.error_code || 'Unknown'}`);
+  }
+  return data;
+}
+
+// POST /api/admin/direct-update - self-contained product update
+app.post('/api/admin/direct-update', async (req, res) => {
+  try {
+    // 1. Auth check
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Token wymagany' });
+    }
+    const token = authHeader.substring(7);
+    const { secureAuthService } = await import('./services/auth.service.secure');
+    const payload = await secureAuthService.verifyAccessToken(token);
+    if (payload.role !== 'ADMIN') {
+      return res.status(403).json({ message: 'Brak uprawnień' });
+    }
+
+    const { inventoryId } = req.body;
+    if (!inventoryId) {
+      return res.status(400).json({ message: 'inventoryId jest wymagany' });
+    }
+
+    // 2. Get Baselinker token from DB
+    const { prisma } = await import('./db');
+    const { decryptToken } = await import('./lib/encryption');
+    const config = await prisma.baselinkerConfig.findFirst();
+    if (!config) {
+      return res.status(400).json({ message: 'Brak konfiguracji Baselinker' });
+    }
+
+    let apiToken: string;
+    try {
+      apiToken = decryptToken(config.apiTokenEncrypted, config.encryptionIv, config.authTag);
+    } catch {
+      apiToken = process.env.BASELINKER_API_TOKEN || '';
+      if (!apiToken) {
+        return res.status(500).json({ message: 'Nie udalo się odszyfrować tokena Baselinker' });
+      }
+    }
+
+    // 3. Create sync log
+    const { BaselinkerSyncStatus } = await import('@prisma/client');
+    const syncLog = await prisma.baselinkerSyncLog.create({
+      data: { type: 'PRODUCTS', status: BaselinkerSyncStatus.RUNNING },
+    });
+    const syncLogId = syncLog.id;
+
+    // 4. Get syncProgress manager
+    const { syncProgress } = await import('./services/sync-progress');
+
+    // Send initial response with syncLogId
+    res.json({ syncLogId, message: 'Direct update started' });
+
+    // 5. Run sync in background
+    (async () => {
+      try {
+        // Get inventory name from Baselinker
+        syncProgress.sendProgress(syncLogId, {
+          type: 'phase',
+          message: `Rozpoczynanie synchronizacji products (update-only)...`,
+          phase: 'init',
+          mode: 'update-only',
+        });
+
+        const inventoriesData = await callBaselinkerAPI(apiToken, 'getInventories');
+        const allInventories = inventoriesData.inventories || [];
+        const currentInventory = allInventories.find((inv: any) => inv.inventory_id.toString() === inventoryId.toString());
+
+        if (!currentInventory) {
+          syncProgress.sendProgress(syncLogId, { type: 'error', message: `Nie znaleziono magazynu o ID ${inventoryId}` });
+          await prisma.baselinkerSyncLog.update({ where: { id: syncLogId }, data: { status: BaselinkerSyncStatus.FAILED, errors: ['Inventory not found'], completedAt: new Date() } });
+          return;
+        }
+
+        const invName = currentInventory.name.trim();
+        const { wholesalerConfigService } = await import('./services/wholesaler-config.service');
+        const prefix = await wholesalerConfigService.getInventoryPrefix(invName);
+        const warehouseKey = await wholesalerConfigService.getWarehouseKey(invName);
+        const skuPrefix = await wholesalerConfigService.getSkuPrefix(invName);
+
+        syncProgress.sendProgress(syncLogId, {
+          type: 'info',
+          message: `Magazyn: ${invName} (ID: ${inventoryId}), prefix: "${prefix}", warehouse: ${warehouseKey || 'unknown'}, skuPrefix: "${skuPrefix}"`,
+        });
+
+        console.log(`[DirectUpdate] Inventory: ${invName}, prefix: "${prefix}", warehouse: ${warehouseKey}`);
+
+        // 6. Get ALL product IDs from Baselinker (paginated)
+        syncProgress.sendProgress(syncLogId, {
+          type: 'phase',
+          message: `Synchronizacja produktów...`,
+          phase: 'products',
+        });
+
+        syncProgress.sendProgress(syncLogId, {
+          type: 'info',
+          message: `Pobieranie listy produktów z Baselinker (tryb: update-only)...`,
+        });
+
+        const allBlProducts: Array<{ id: number; sku: string; ean: string; name: string; quantity: number; price: number }> = [];
+        let page = 1;
+        let hasMore = true;
+
+        while (hasMore) {
+          const listData = await callBaselinkerAPI(apiToken, 'getInventoryProductsList', {
+            inventory_id: parseInt(inventoryId),
+            page,
+          });
+
+          const products = listData.products || {};
+          const productArray = Object.entries(products).map(([id, data]: [string, any]) => ({
+            id: parseInt(id),
+            sku: data.sku || '',
+            ean: data.ean || '',
+            name: data.name || '',
+            quantity: data.quantity || 0,
+            price: data.price || 0,
+          }));
+
+          allBlProducts.push(...productArray);
+          hasMore = productArray.length >= 1000;
+          page++;
+
+          if (syncProgress.isAborted(syncLogId)) {
+            syncProgress.sendProgress(syncLogId, { type: 'aborted', message: 'Synchronizacja przerwana przez użytkownika' });
+            await prisma.baselinkerSyncLog.update({ where: { id: syncLogId }, data: { status: BaselinkerSyncStatus.FAILED, errors: ['Aborted by user'], completedAt: new Date() } });
+            return;
+          }
+        }
+
+        syncProgress.sendProgress(syncLogId, {
+          type: 'info',
+          message: `Pobrano ${allBlProducts.length} produktów z Baselinker.`,
+        });
+
+        // 7. Load existing products from DB - ONLY with matching prefix
+        const existingProducts = await prisma.product.findMany({
+          where: prefix
+            ? { baselinkerProductId: { startsWith: prefix } }
+            : { baselinkerProductId: { not: null } },
+          select: {
+            id: true,
+            baselinkerProductId: true,
+            name: true,
+            sku: true,
+            barcode: true,
+            price: true,
+          },
+        });
+
+        const existingMap = new Map(
+          existingProducts.map((p: any) => [p.baselinkerProductId as string, p])
+        );
+
+        syncProgress.sendProgress(syncLogId, {
+          type: 'info',
+          message: `Baza: ${existingProducts.length} produktów z prefixem "${prefix}"`,
+        });
+
+        console.log(`[DirectUpdate] DB products with prefix "${prefix}": ${existingProducts.length}`);
+
+        // 8. Match BL products to DB products
+        const productsToUpdate: Array<{ blProduct: any; dbProduct: any }> = [];
+        let skipped = 0;
+        const debugSamples: string[] = [];
+
+        for (const blProduct of allBlProducts) {
+          const blIdRaw = blProduct.id.toString();
+          const blId = `${prefix}${blIdRaw}`;
+          const existing = existingMap.get(blId);
+
+          if (debugSamples.length < 5) {
+            debugSamples.push(`BL:${blIdRaw} → "${blId}" → ${existing ? 'FOUND (' + existing.name?.substring(0, 30) + ')' : 'NOT FOUND'}`);
+          }
+
+          if (existing) {
+            productsToUpdate.push({ blProduct, dbProduct: existing });
+          } else {
+            skipped++;
+          }
+        }
+
+        // Log debug samples
+        for (const sample of debugSamples) {
+          syncProgress.sendProgress(syncLogId, { type: 'info', message: `[DEBUG] ${sample}` });
+          console.log(`[DirectUpdate] ${sample}`);
+        }
+
+        syncProgress.sendProgress(syncLogId, {
+          type: 'info',
+          message: `Znaleziono ${productsToUpdate.length} produktów do aktualizacji, ${skipped} pominiętych (nie istnieje w bazie)`,
+          current: 0,
+          total: productsToUpdate.length,
+          percent: 0,
+        });
+
+        console.log(`[DirectUpdate] To update: ${productsToUpdate.length}, skipped: ${skipped}`);
+
+        if (productsToUpdate.length === 0) {
+          syncProgress.sendProgress(syncLogId, {
+            type: 'warning',
+            message: `Brak produktów do aktualizacji. Sprawdź czy prefix "${prefix}" jest poprawny.`,
+          });
+          syncProgress.sendProgress(syncLogId, { type: 'complete', message: 'Synchronizacja zakończona (0 produktów)' });
+          await prisma.baselinkerSyncLog.update({ where: { id: syncLogId }, data: { status: 'SUCCESS' as any, itemsProcessed: 0, completedAt: new Date() } });
+          return;
+        }
+
+        // 9. Fetch full product data from Baselinker in batches and update DB
+        const BATCH_SIZE = 50;
+        let processed = 0;
+        let updated = 0;
+        let errors = 0;
+
+        for (let i = 0; i < productsToUpdate.length; i += BATCH_SIZE) {
+          if (syncProgress.isAborted(syncLogId)) {
+            syncProgress.sendProgress(syncLogId, { type: 'aborted', message: `Przerwano po ${processed} produktach` });
+            await prisma.baselinkerSyncLog.update({ where: { id: syncLogId }, data: { status: BaselinkerSyncStatus.FAILED, errors: ['Aborted'], completedAt: new Date() } });
+            return;
+          }
+
+          const batch = productsToUpdate.slice(i, i + BATCH_SIZE);
+          const blIds = batch.map(b => b.blProduct.id);
+
+          try {
+            // Get detailed product data from Baselinker
+            const detailData = await callBaselinkerAPI(apiToken, 'getInventoryProductsData', {
+              inventory_id: parseInt(inventoryId),
+              products: blIds,
+            });
+
+            const productsData = detailData.products || {};
+
+            for (const item of batch) {
+              try {
+                const blDetail = productsData[item.blProduct.id.toString()];
+                if (!blDetail) {
+                  processed++;
+                  continue;
+                }
+
+                // Extract product data
+                let productName = '';
+                if (blDetail.text_fields) {
+                  productName = blDetail.text_fields.name || '';
+                  if (!productName && blDetail.text_fields['pl']?.name) {
+                    productName = blDetail.text_fields['pl'].name;
+                  }
+                  if (!productName) {
+                    for (const langCode of Object.keys(blDetail.text_fields)) {
+                      const tf = blDetail.text_fields[langCode];
+                      if (typeof tf === 'object' && tf?.name) {
+                        productName = tf.name;
+                        break;
+                      }
+                    }
+                  }
+                }
+                if (!productName) productName = blDetail.name || item.blProduct.name || '';
+
+                // Description
+                let description = '';
+                if (blDetail.text_fields) {
+                  description = blDetail.text_fields.description || blDetail.text_fields.extra_field_1 || '';
+                  if (!description && blDetail.text_fields['pl']) {
+                    description = blDetail.text_fields['pl'].description || blDetail.text_fields['pl'].extra_field_1 || '';
+                  }
+                }
+
+                // Price
+                let price = 0;
+                if (blDetail.prices && typeof blDetail.prices === 'object') {
+                  const priceValues = Object.values(blDetail.prices).map((p: any) => parseFloat(String(p))).filter((p: number) => p > 0);
+                  price = priceValues.length > 0 ? priceValues[0] : 0;
+                }
+                if (price === 0 && blDetail.price_brutto) {
+                  price = parseFloat(blDetail.price_brutto) || 0;
+                }
+
+                // EAN
+                const ean = (blDetail.ean && String(blDetail.ean).trim()) || null;
+
+                // SKU
+                const blSku = blDetail.sku || item.blProduct.sku || '';
+
+                // Build update data - only update what's changed
+                const updateData: Record<string, any> = {};
+                
+                if (productName && productName !== item.dbProduct.name) {
+                  updateData.name = productName;
+                }
+                if (ean && ean !== item.dbProduct.barcode) {
+                  updateData.barcode = ean;
+                }
+                if (description) {
+                  updateData.description = description;
+                }
+                if (price > 0 && Math.abs(price - parseFloat(item.dbProduct.price?.toString() || '0')) > 0.01) {
+                  updateData.price = price;
+                }
+
+                if (Object.keys(updateData).length > 0) {
+                  await prisma.product.update({
+                    where: { id: item.dbProduct.id },
+                    data: updateData,
+                  });
+                  updated++;
+                }
+
+                processed++;
+                const percent = Math.round((processed / productsToUpdate.length) * 100);
+                
+                if (processed % 50 === 0 || processed === productsToUpdate.length) {
+                  syncProgress.sendProgress(syncLogId, {
+                    type: 'progress',
+                    message: `Zaktualizowano ${processed}/${productsToUpdate.length}...`,
+                    current: processed,
+                    total: productsToUpdate.length,
+                    percent,
+                    productName: productName?.substring(0, 60),
+                    sku: blSku,
+                  });
+                }
+              } catch (productErr) {
+                errors++;
+                processed++;
+                console.error(`[DirectUpdate] Error updating product ${item.blProduct.id}:`, productErr);
+              }
+            }
+          } catch (batchErr) {
+            console.error(`[DirectUpdate] Batch error:`, batchErr);
+            syncProgress.sendProgress(syncLogId, {
+              type: 'error',
+              message: `Błąd pobierania partii: ${batchErr instanceof Error ? batchErr.message : 'Unknown'}`,
+            });
+            errors++;
+            processed += batch.length;
+          }
+
+          // Rate limit: small delay between batches
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        // 10. Sync stock
+        syncProgress.sendProgress(syncLogId, {
+          type: 'phase',
+          message: 'Synchronizacja stanów magazynowych...',
+          phase: 'stock',
+        });
+
+        try {
+          // Get default location (MAIN warehouse)
+          let defaultLocation = await prisma.location.findFirst({
+            where: { code: 'MAIN', type: 'WAREHOUSE', isActive: true },
+          });
+          if (!defaultLocation) {
+            defaultLocation = await prisma.location.create({
+              data: { name: 'Magazyn główny', code: 'MAIN', type: 'WAREHOUSE', isActive: true },
+            });
+          }
+
+          syncProgress.sendProgress(syncLogId, {
+            type: 'info',
+            message: `📦 Pobieranie stanów z magazynu: ${invName}...`,
+          });
+
+          const stockData = await callBaselinkerAPI(apiToken, 'getInventoryProductsStock', {
+            inventory_id: parseInt(inventoryId),
+            page: 1,
+          });
+
+          const stockProducts = stockData.products || {};
+          let stockUpdated = 0;
+
+          for (const [blIdRaw, warehouses] of Object.entries(stockProducts)) {
+            const blId = `${prefix}${blIdRaw}`;
+            const dbProduct = existingMap.get(blId);
+            if (!dbProduct) continue;
+
+            // Get total stock across all warehouses
+            let totalStock = 0;
+            if (typeof warehouses === 'object') {
+              for (const qty of Object.values(warehouses as Record<string, number>)) {
+                totalStock += Number(qty) || 0;
+              }
+            }
+
+            // Update inventory for default variant
+            const variant = await prisma.productVariant.findFirst({
+              where: { productId: dbProduct.id },
+              select: { id: true },
+            });
+
+            if (variant) {
+              await prisma.inventory.upsert({
+                where: {
+                  variantId_locationId: {
+                    variantId: variant.id,
+                    locationId: defaultLocation.id,
+                  },
+                },
+                create: {
+                  variantId: variant.id,
+                  locationId: defaultLocation.id,
+                  quantity: totalStock,
+                  reserved: 0,
+                  minimum: 0,
+                },
+                update: { quantity: totalStock },
+              });
+              stockUpdated++;
+            }
+          }
+
+          syncProgress.sendProgress(syncLogId, {
+            type: 'info',
+            message: `📦 Forcetop: pobrano ${Object.keys(stockProducts).length} pozycji, dopasowywanie...`,
+          });
+
+          syncProgress.sendProgress(syncLogId, {
+            type: 'success',
+            message: `Zaktualizowano stany magazynowe dla ${stockUpdated} produktów`,
+          });
+        } catch (stockErr) {
+          syncProgress.sendProgress(syncLogId, {
+            type: 'error',
+            message: `Błąd synchronizacji stanów: ${stockErr instanceof Error ? stockErr.message : 'Unknown'}`,
+          });
+        }
+
+        // 11. Done
+        syncProgress.sendProgress(syncLogId, {
+          type: 'complete',
+          message: `Synchronizacja zakończona! Zaktualizowano ${updated} produktów, ${errors} błędów.`,
+          current: processed,
+          total: productsToUpdate.length,
+          percent: 100,
+        });
+
+        await prisma.baselinkerSyncLog.update({
+          where: { id: syncLogId },
+          data: {
+            status: 'SUCCESS' as any,
+            itemsProcessed: processed,
+            completedAt: new Date(),
+          },
+        });
+
+        console.log(`[DirectUpdate] Done! Updated: ${updated}, errors: ${errors}, skipped: ${skipped}`);
+
+      } catch (err) {
+        console.error('[DirectUpdate] Fatal error:', err);
+        syncProgress.sendProgress(syncLogId, {
+          type: 'error',
+          message: `Błąd synchronizacji: ${err instanceof Error ? err.message : 'Unknown'}`,
+        });
+        await prisma.baselinkerSyncLog.update({
+          where: { id: syncLogId },
+          data: { status: BaselinkerSyncStatus.FAILED, errors: [String(err)], completedAt: new Date() },
+        });
+      }
+    })();
+
+  } catch (err) {
+    console.error('[DirectUpdate] Setup error:', err);
+    res.status(500).json({ message: `Error: ${err instanceof Error ? err.message : 'Unknown'}` });
+  }
+});
+
+// SSE progress endpoint for direct-update (shared with baselinker sync progress)
+// Uses the same syncProgress manager - clients connect via /api/admin/baselinker/sync/progress/:syncLogId
 
 // Root endpoint - API info
 app.get('/', (req, res) => {
@@ -438,8 +1037,11 @@ app.use('/api/admin/support', adminSupportRoutes); // Admin support management
 app.use('/api/admin/sync', adminSyncRoutes); // Admin manual XML price sync
 app.use('/api/admin/returns', adminReturnsRoutes); // Admin returns management
 app.use('/api/admin/delivery-delays', adminDeliveryDelaysRoutes); // Admin delivery delay alerts
+app.use('/api/admin/email-templates', adminEmailTemplatesRoutes); // Admin email templates management
 app.use('/api/notifications', userNotificationsRoutes); // User in-app notifications
 app.use('/api/img', imageProxyRoutes); // Image proxy with disk cache
+app.use('/api/admin/wholesalers', adminWholesalersRoutes); // Admin wholesaler management
+app.use('/api/wholesalers', wholesalersRoutes); // Public wholesaler config
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -463,6 +1065,14 @@ app.listen(PORT, async () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
   console.log(`📦 Environment: ${process.env.NODE_ENV || 'development'}`);
 
+  // Preload wholesaler config cache so transformProduct has data
+  try {
+    const { wholesalerConfigService } = await import('./services/wholesaler-config.service');
+    const configs = await wholesalerConfigService.getAll();
+    console.log(`✅ Wholesaler config loaded: ${configs.length} active wholesalers`);
+  } catch (err) {
+    console.error('⚠️ Failed to preload wholesaler config:', err);
+  }
   // Global error handlers to prevent silent crashes
   process.on('unhandledRejection', (reason, promise) => {
     console.error('⚠️ Unhandled Promise Rejection:', reason);
@@ -473,6 +1083,7 @@ app.listen(PORT, async () => {
   });
   
   // Initialize Redis connection
+  let redisAvailable = false;
   try {
     console.log('🔗 Initializing Redis connection...');
     const { getRedisClient } = await import('./lib/redis');
@@ -480,6 +1091,7 @@ app.listen(PORT, async () => {
     if (redis) {
       await redis.ping();
       console.log('✅ Redis connection verified');
+      redisAvailable = true;
       // Wyczyść cache kategorii przy starcie serwera — nowa wersja kodu wymaga świeżych danych
       const { invalidateCategoryCache } = await import('./lib/cache');
       await invalidateCategoryCache();
@@ -500,12 +1112,40 @@ app.listen(PORT, async () => {
   // Initialize Meilisearch
   await initializeMeilisearch();
   
+  // Auto-reindex if Meilisearch index is empty (e.g. after Render redeploy)
+  if (isMeilisearchAvailable()) {
+    try {
+      const stats = await meiliClient.index(PRODUCTS_INDEX).getStats();
+      if (stats.numberOfDocuments === 0) {
+        console.log('⚠️  Meilisearch index is empty — starting automatic reindex in background...');
+        // Run in background so it doesn't block server startup
+        import('./services/search.service').then(async ({ SearchService }) => {
+          try {
+            const svc = new SearchService();
+            const result = await svc.reindexAllProducts();
+            console.log(`✅ Auto-reindex completed: ${result.indexed} products indexed (task: ${result.taskUid})`);
+          } catch (err) {
+            console.error('❌ Auto-reindex failed:', err instanceof Error ? err.message : err);
+          }
+        });
+      } else {
+        console.log(`✅ Meilisearch index has ${stats.numberOfDocuments} documents — skipping reindex`);
+      }
+    } catch (err) {
+      console.warn('⚠️  Could not check Meilisearch index stats:', err instanceof Error ? err.message : err);
+    }
+  }
+  
   // Start background cron jobs (only essential ones)
   console.log('⚙️  Starting cron jobs...');
   try {
-    // 1. Reservation cleanup - every 5 minutes
-    await scheduleReservationCleanup();
-    console.log('✅ Reservation cleanup scheduled (every 5 minutes)');
+    // 1. Reservation cleanup - every 5 minutes (requires Redis/BullMQ)
+    if (redisAvailable) {
+      await scheduleReservationCleanup();
+      console.log('✅ Reservation cleanup scheduled (every 5 minutes)');
+    } else {
+      console.log('⚠️  Reservation cleanup skipped (Redis unavailable)');
+    }
     
     // 2. Baselinker order status sync + delivery tracking
     //    Try BullMQ (requires Redis) → fallback to setInterval if Redis unavailable
@@ -515,12 +1155,12 @@ app.listen(PORT, async () => {
     if (!workersEnabled) {
       console.log('ℹ️  Workers wyłączone lokalnie (NODE_ENV=development). Ustaw ENABLE_WORKERS=true aby włączyć.');
     }
-    if (workersEnabled) try {
+    if (workersEnabled && redisAvailable) try {
       const { createBaselinkerSyncWorker, scheduleBaselinkerSync } = await import('./workers/baselinker-sync.worker');
       createBaselinkerSyncWorker();
       await scheduleBaselinkerSync();
       bullmqSyncStarted = true;
-      console.log('✅ Baselinker sync scheduled via BullMQ (orders: 15min, delivery: 15min, stock: 2h, ceny XML: codziennie 06:00)');
+      console.log('✅ Baselinker sync scheduled via BullMQ (orders: 15min, delivery: 15min, stock: 2h, ceny: 2h)');
     } catch (redisErr) {
       console.warn('⚠️  BullMQ/Redis unavailable — falling back to setInterval for delivery sync:', (redisErr as Error).message);
     }
@@ -613,11 +1253,15 @@ app.listen(PORT, async () => {
       }
     }, 10 * 60 * 1000);
     
-    // 3. Payment reminder - daily at 10:00 AM
-    const { createPaymentReminderWorker, schedulePaymentReminders } = await import('./workers/payment-reminder.worker');
-    createPaymentReminderWorker();
-    await schedulePaymentReminders();
-    console.log('✅ Payment reminder scheduled (daily at 10:00 AM)');
+    // 3. Payment reminder - daily at 10:00 AM (requires Redis/BullMQ)
+    if (redisAvailable) {
+      const { createPaymentReminderWorker, schedulePaymentReminders } = await import('./workers/payment-reminder.worker');
+      createPaymentReminderWorker();
+      await schedulePaymentReminders();
+      console.log('✅ Payment reminder scheduled (daily at 10:00 AM)');
+    } else {
+      console.log('⚠️  Payment reminder skipped (Redis unavailable)');
+    }
     
     // 4. Newsletter campaign scheduler - every minute (no Redis needed)
     const { startNewsletterScheduler } = await import('./workers/newsletter-campaign.worker');
