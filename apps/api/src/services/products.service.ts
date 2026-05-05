@@ -1085,7 +1085,6 @@ export class ProductsService {
     // Products with "Paczkomaty i Kurier" tag MUST also have "produkt w paczce" tag
     const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
     const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce|produkty?\s*w\s*paczce/i;
-    const tags = product.tags || [];
 
     const hasPaczkomatTag = tags.some((tag: string) =>
       PACZKOMAT_TAGS.some(pt => tag.toLowerCase() === pt.toLowerCase())
