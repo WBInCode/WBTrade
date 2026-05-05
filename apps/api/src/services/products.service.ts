@@ -1065,6 +1065,17 @@ export class ProductsService {
     
     if (!product) return null;
 
+    // Hide products with forbidden tags
+    const tags = product.tags || [];
+    if (HIDDEN_TAGS.some(ht => tags.some((t: string) => t.toLowerCase() === ht.toLowerCase()))) {
+      return null;
+    }
+
+    // Hide products in hidden categories (e.g. "do zrobienia")
+    if (product.category && ['do zrobienia'].includes(product.category.name.toLowerCase())) {
+      return null;
+    }
+
     // Hide products with price 0 or less
     if (!product.price || Number(product.price) <= 0) {
       return null;
@@ -1074,7 +1085,6 @@ export class ProductsService {
     // Products with "Paczkomaty i Kurier" tag MUST also have "produkt w paczce" tag
     const PACZKOMAT_TAGS = ['Paczkomaty i Kurier', 'paczkomaty i kurier'];
     const PACKAGE_LIMIT_PATTERN = /produkt\s*w\s*paczce|produkty?\s*w\s*paczce/i;
-    const tags = product.tags || [];
 
     const hasPaczkomatTag = tags.some((tag: string) =>
       PACZKOMAT_TAGS.some(pt => tag.toLowerCase() === pt.toLowerCase())
