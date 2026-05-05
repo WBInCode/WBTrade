@@ -402,10 +402,11 @@ export class ProductsService {
       AND: [
         // Tag dostawy - nie pokazuj produktów z tylko tagiem hurtowni
         { tags: { hasSome: DELIVERY_TAGS } },
-        // Kategoria z Baselinker - musi być przypisana
+        // Kategoria z Baselinker - musi być przypisana i aktywna
         { 
           category: { 
-            baselinkerCategoryId: { not: null } 
+            baselinkerCategoryId: { not: null },
+            isActive: true,
           } 
         },
         // Jeśli ma "Paczkomaty i Kurier", musi mieć też "produkt w paczce"

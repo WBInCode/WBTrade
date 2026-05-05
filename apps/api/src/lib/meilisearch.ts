@@ -169,6 +169,7 @@ export async function initializeMeilisearch(): Promise<void> {
       'hasDiscount',
       'tags',
       'hasBaselinkerCategory',
+      'categoryIsActive',
     ]);
 
     // Configure sortable attributes
