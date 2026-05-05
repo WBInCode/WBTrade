@@ -78,6 +78,7 @@ export interface MeiliProduct {
   status: string;
   createdAt: number;
   hasBaselinkerCategory: boolean; // true if category has baselinkerCategoryId
+  categoryIsActive: boolean; // true if category.isActive
   tags: string[];
   popularityScore: number;
   inStock: boolean;
@@ -93,6 +94,7 @@ export class SearchService {
     const deliveryTagsFilter = DELIVERY_TAGS.map(tag => `"${tag}"`).join(', ');
     filters.push(`tags IN [${deliveryTagsFilter}]`);
     filters.push('hasBaselinkerCategory = true');
+    filters.push('categoryIsActive = true');
     if (minPrice !== undefined) {
       filters.push(`price >= ${minPrice}`);
     }
@@ -224,8 +226,8 @@ export class SearchService {
         price: { gt: 0 },
         // Musi mieć tag dostawy
         tags: { hasSome: DELIVERY_TAGS },
-        // Musi mieć kategorię z Baselinker
-        category: { baselinkerCategoryId: { not: null } },
+        // Musi mieć kategorię z Baselinker i aktywną
+        category: { baselinkerCategoryId: { not: null }, isActive: true },
         // Musi być na stanie
         variants: { some: { inventory: { some: { quantity: { gt: 0 } } } } },
         // Nie pokazuj produktów z tagami błędów + warunek paczkomatu
@@ -456,8 +458,8 @@ export class SearchService {
         })),
         // Musi mieć tag dostawy
         tags: { hasSome: DELIVERY_TAGS },
-        // Musi mieć kategorię z Baselinker
-        category: { baselinkerCategoryId: { not: null } },
+        // Musi mieć kategorię z Baselinker i aktywną
+        category: { baselinkerCategoryId: { not: null }, isActive: true },
         // Musi być na stanie
         variants: { some: { inventory: { some: { quantity: { gt: 0 } } } } },
         // Nie pokazuj produktów z tagami błędów
@@ -557,6 +559,7 @@ export class SearchService {
         status: product.status,
         createdAt: product.createdAt.getTime(),
         hasBaselinkerCategory: !!product.category?.baselinkerCategoryId,
+        categoryIsActive: product.category?.isActive !== false,
         tags: product.tags || [],
         popularityScore: product.popularityScore || 0,
         inStock: product.variants.some(v => v.inventory.some(i => i.quantity > 0)),
@@ -603,6 +606,7 @@ export class SearchService {
       status: product.status,
       createdAt: product.createdAt.getTime(),
       hasBaselinkerCategory: !!product.category?.baselinkerCategoryId,
+      categoryIsActive: product.category?.isActive !== false,
       tags: product.tags || [],
       popularityScore: product.popularityScore || 0,
       inStock: product.variants.some(v => v.inventory.some(i => i.quantity > 0)),
