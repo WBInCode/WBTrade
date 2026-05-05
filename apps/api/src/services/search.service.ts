@@ -181,17 +181,20 @@ export class SearchService {
         return { products: [], total: 0, processingTimeMs };
       }
 
-      // Get product IDs to fetch tags for filtering
+      // Get product IDs to fetch tags and category status for filtering
       const productIds = allHits.map(hit => hit.id);
       const productsWithTags = await prisma.product.findMany({
         where: { id: { in: productIds } },
-        select: { id: true, tags: true },
+        select: { id: true, tags: true, category: { select: { isActive: true } } },
       });
       const tagsMap = new Map(productsWithTags.map(p => [p.id, p.tags]));
+      const inactiveCategoryIds = new Set(
+        productsWithTags.filter(p => p.category?.isActive === false).map(p => p.id)
+      );
 
-      // Filter products based on visibility rules (including image URL check)
+      // Filter products based on visibility rules (including image URL check and category status)
       const visibleHits = allHits
-        .filter(hit => shouldProductBeVisible(tagsMap.get(hit.id) || [], hit.image))
+        .filter(hit => !inactiveCategoryIds.has(hit.id) && shouldProductBeVisible(tagsMap.get(hit.id) || [], hit.image))
         .slice(0, limit);
 
       return {
@@ -387,19 +390,23 @@ export class SearchService {
         };
       }
 
-      // Get product IDs to fetch tags from database
+      // Get product IDs to fetch tags and category status from database
       const productIds = allHits.map(hit => hit.id);
       
-      // Fetch tags for these products
+      // Fetch tags and category for these products
       const productsWithTags = await prisma.product.findMany({
         where: { id: { in: productIds } },
-        select: { id: true, tags: true },
+        select: { id: true, tags: true, category: { select: { isActive: true } } },
       });
       
       const tagsMap = new Map(productsWithTags.map(p => [p.id, p.tags]));
+      const inactiveCategoryIds = new Set(
+        productsWithTags.filter(p => p.category?.isActive === false).map(p => p.id)
+      );
       
-      // Filter products based on delivery tag rules and image URL
+      // Filter products based on delivery tag rules, image URL, and category status
       const filteredHits = allHits.filter(hit => {
+        if (inactiveCategoryIds.has(hit.id)) return false;
         const tags = tagsMap.get(hit.id) || [];
         return shouldProductBeVisible(tags, hit.image);
       }).slice(0, 8); // Limit to 8 after filtering
