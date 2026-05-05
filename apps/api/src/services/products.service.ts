@@ -33,7 +33,7 @@ const PACKAGE_TAGS = [
 ];
 
 // Tagi ukrywające produkty - produkty z tymi tagami NIE będą wyświetlane
-const HIDDEN_TAGS = ['błąd zdjęcia', 'błąd zdjęcia '];
+const HIDDEN_TAGS = ['błąd zdjęcia', 'błąd zdjęcia ', 'zabronione-nie-wrzucać'];
 
 // Domeny zdjęć które blokują hotlinking - produkty z takimi zdjęciami nie będą wyświetlane
 // b2b.leker.pl usunięte - produkty Leker ponownie widoczne, tag "błąd zdjęcia" filtruje wadliwe

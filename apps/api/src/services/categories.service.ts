@@ -30,7 +30,10 @@ const PACKAGE_TAGS = [
 // b2b.leker.pl usunięte - produkty Leker ponownie widoczne, tag "błąd zdjęcia" filtruje wadliwe
 const BLOCKED_IMAGE_DOMAINS: string[] = [];
 // Tagi które ukrywają produkty całkowicie
-const HIDDEN_TAGS = ['błąd zdjęcia', 'błąd zdjęcia '];
+const HIDDEN_TAGS = ['błąd zdjęcia', 'błąd zdjęcia ', 'zabronione-nie-wrzucać'];
+
+// Kategorie ukryte na stronie (nazwa lowercase)
+const HIDDEN_CATEGORY_NAMES = ['do zrobienia'];
 
 // Bazowy filtr dla widocznych produktów - MUSI BYĆ IDENTYCZNY jak w products.service.ts
 const VISIBLE_PRODUCT_WHERE = {
@@ -276,24 +279,26 @@ export class CategoriesService {
         isActive: true,
         parentId: null,
         baselinkerCategoryId: { not: null }, // Only Baselinker categories
+        name: { notIn: HIDDEN_CATEGORY_NAMES, mode: 'insensitive' },
       },
       orderBy: { name: 'asc' },
       include: {
         children: {
           where: { 
             isActive: true,
-            // Include both Baselinker categories and intermediate (synthetic) categories
+            name: { notIn: HIDDEN_CATEGORY_NAMES, mode: 'insensitive' },
           },
           orderBy: { name: 'asc' },
           include: {
             children: {
               where: { 
                 isActive: true,
+                name: { notIn: HIDDEN_CATEGORY_NAMES, mode: 'insensitive' },
               },
               orderBy: { name: 'asc' },
               include: {
                 children: {
-                  where: { isActive: true },
+                  where: { isActive: true, name: { notIn: HIDDEN_CATEGORY_NAMES, mode: 'insensitive' } },
                   orderBy: { name: 'asc' },
                 }
               }
