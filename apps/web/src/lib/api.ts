@@ -894,7 +894,9 @@ function getSessionId(): string {
   
   let sessionId = localStorage.getItem('cart_session_id');
   if (!sessionId) {
-    sessionId = 'sess_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const randomBytes = new Uint8Array(16);
+    crypto.getRandomValues(randomBytes);
+    sessionId = 'sess_' + Array.from(randomBytes, b => b.toString(16).padStart(2, '0')).join('');
     localStorage.setItem('cart_session_id', sessionId);
   }
   return sessionId;

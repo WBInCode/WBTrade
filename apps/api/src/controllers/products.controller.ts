@@ -14,9 +14,15 @@ const productsService = new ProductsService();
  * Helper to sanitize text - removes potential XSS and trims
  */
 const sanitizeText = (text: string): string => {
-  return text
-    .replace(/<[^>]*>/g, '') // Remove HTML tags
-    .replace(/[<>]/g, '') // Remove remaining angle brackets
+  let sanitized = text;
+  // Iteratively strip HTML tags until none remain (prevents multi-character bypass like <scr<script>ipt>)
+  let previous = '';
+  while (previous !== sanitized) {
+    previous = sanitized;
+    sanitized = sanitized.replace(/<[^>]*>/g, '');
+  }
+  return sanitized
+    .replace(/[<>"'&]/g, '') // Remove remaining dangerous characters
     .trim();
 };
 
