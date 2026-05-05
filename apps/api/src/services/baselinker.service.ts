@@ -2718,6 +2718,30 @@ export class BaselinkerService {
       errors.push(`Failed to fetch inventories: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
+    // Final step: fix any single-variant products where variant.price != product.price
+    // This catches cases where product.price was updated in a prior sync but variant wasn't
+    try {
+      const fixResult = await prisma.$executeRawUnsafe(`
+        UPDATE product_variants pv SET
+          price = p.price,
+          lowest_price_30_days = LEAST(COALESCE(pv.lowest_price_30_days, p.price), p.price),
+          lowest_price_30_days_at = COALESCE(pv.lowest_price_30_days_at, NOW()),
+          updated_at = NOW()
+        FROM products p
+        WHERE pv.product_id = p.id
+          AND pv.price != p.price
+          AND NOT EXISTS (
+            SELECT 1 FROM product_variants pv2
+            WHERE pv2.product_id = p.id AND pv2.id != pv.id
+          )
+      `);
+      if (fixResult > 0) {
+        console.log(`[BaselinkerSync] Fixed ${fixResult} single-variant products with mismatched variant prices`);
+      }
+    } catch (err) {
+      console.error(`[BaselinkerSync] Error fixing single-variant prices:`, err);
+    }
+
     console.log(`[BaselinkerSync] Price sync complete: ${processed} processed, ${changed} changed, ${errors.length} errors`);
     return { processed, errors, changed, changedPrices };
   }
