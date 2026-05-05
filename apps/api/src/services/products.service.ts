@@ -1065,6 +1065,17 @@ export class ProductsService {
     
     if (!product) return null;
 
+    // Hide products with forbidden tags
+    const tags = product.tags || [];
+    if (HIDDEN_TAGS.some(ht => tags.some((t: string) => t.toLowerCase() === ht.toLowerCase()))) {
+      return null;
+    }
+
+    // Hide products in hidden categories (e.g. "do zrobienia")
+    if (product.category && ['do zrobienia'].includes(product.category.name.toLowerCase())) {
+      return null;
+    }
+
     // Hide products with price 0 or less
     if (!product.price || Number(product.price) <= 0) {
       return null;
