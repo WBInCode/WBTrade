@@ -151,6 +151,12 @@ router.put('/:id', async (req: Request, res: Response) => {
         return res.status(409).json({ message: `Hurtownia z Baselinker ID "${baselinkerInventoryId}" już istnieje` });
       }
     }
+    if (prefix && prefix !== existing.prefix) {
+      const conflict = await prisma.wholesaler.findFirst({ where: { prefix, id: { not: id } } });
+      if (conflict) {
+        return res.status(409).json({ message: `Hurtownia z prefiksem "${prefix}" już istnieje` });
+      }
+    }
 
     const wholesaler = await prisma.wholesaler.update({
       where: { id },

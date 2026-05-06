@@ -1128,7 +1128,8 @@ export class BaselinkerService {
     }
 
     const rules: Record<string, Array<{ priceFrom: number; priceTo: number; multiplier: number; addToPrice: number }>> = {};
-    for (const wh of ['leker', 'btp', 'hp', 'dofirmy']) {
+    const warehouseKeys = await wholesalerConfigService.getWarehouseKeysWithPriceRules();
+    for (const wh of warehouseKeys) {
       try {
         const setting = await prisma.settings.findUnique({ where: { key: `price_rules_${wh}` } });
         if (setting?.value) {
