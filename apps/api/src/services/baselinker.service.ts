@@ -11,11 +11,12 @@
 import { prisma } from '../db';
 import { encryptToken, decryptToken, maskToken } from '../lib/encryption';
 import { createBaselinkerProvider, BaselinkerProvider, BaselinkerInventory } from '../providers/baselinker';
-import { meiliClient, PRODUCTS_INDEX, isMeilisearchAvailable, markMeilisearchAvailable, markMeilisearchUnavailable } from '../lib/meilisearch';
+import { isMeilisearchAvailable, markMeilisearchUnavailable } from '../lib/meilisearch';
 import { BaselinkerSyncType, BaselinkerSyncStatus, Prisma, PriceChangeSource } from '@prisma/client';
 import { wholesalerConfigService } from './wholesaler-config.service';
 import { priceHistoryService } from './price-history.service';
 import { syncProgress } from './sync-progress';
+import { SearchService } from './search.service';
 
 /**
  * Deduplicate image URLs — removes exact URL duplicates, keeps unique images.
@@ -2935,7 +2936,7 @@ export class BaselinkerService {
   }
 
   /**
-   * Reindex Meilisearch after sync (batched to avoid memory/timeout issues)
+   * Reindex Meilisearch after sync — delegates to SearchService for complete indexing
    */
   async reindexMeilisearch(): Promise<void> {
     if (!isMeilisearchAvailable()) {
@@ -2943,80 +2944,14 @@ export class BaselinkerService {
       return;
     }
 
-    const startTime = Date.now();
-    const REINDEX_TIMEOUT_MS = 300000; // 5 minute timeout for reindex
-    const BATCH_SIZE = 1000;
     try {
-      console.log('[BaselinkerSync] Rozpoczynam reindeksację Meilisearch (batched)...');
-      
-      const reindexPromise = (async () => {
-      const totalCount = await prisma.product.count({ where: { status: 'ACTIVE' } });
-      console.log(`[BaselinkerSync] Łączna liczba produktów ACTIVE: ${totalCount} (${Date.now() - startTime}ms)`);
-
-      let indexed = 0;
-      let skip = 0;
-
-      while (skip < totalCount) {
-        const products = await prisma.product.findMany({
-          where: { status: 'ACTIVE' },
-          include: {
-            category: true,
-            images: { orderBy: { order: 'asc' }, take: 1 },
-            variants: {
-              include: {
-                inventory: true,
-              },
-            },
-          },
-          skip,
-          take: BATCH_SIZE,
-          orderBy: { id: 'asc' },
-        });
-
-        if (products.length === 0) break;
-
-        const documents = products.map((product) => {
-          const totalStock = product.variants.reduce((sum, v) => {
-            return sum + v.inventory.reduce((s, inv) => s + inv.quantity - inv.reserved, 0);
-          }, 0);
-
-          return {
-            id: product.id,
-            name: product.name,
-            slug: product.slug,
-            description: product.description,
-            sku: product.sku,
-            barcode: product.barcode,
-            price: parseFloat(product.price.toString()),
-            categoryId: product.categoryId,
-            categoryName: product.category?.name || null,
-            image: product.images[0]?.url || null,
-            inStock: totalStock > 0,
-            stock: totalStock,
-          };
-        });
-
-        await meiliClient.index(PRODUCTS_INDEX).addDocuments(documents);
-        indexed += documents.length;
-        skip += BATCH_SIZE;
-        console.log(`[BaselinkerSync] Zindeksowano ${indexed}/${totalCount} (${Date.now() - startTime}ms)`);
-      }
-
-      if (indexed > 0) {
-        markMeilisearchAvailable();
-      }
-      
-      console.log(`[BaselinkerSync] ✓ Reindeksacja zakończona: ${indexed} produktów (${Date.now() - startTime}ms)`);
-      })();
-
-      // Race with timeout
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Meilisearch reindex timeout')), REINDEX_TIMEOUT_MS)
-      );
-      await Promise.race([reindexPromise, timeoutPromise]);
+      console.log('[BaselinkerSync] Rozpoczynam reindeksację Meilisearch (via SearchService)...');
+      const searchService = new SearchService();
+      const result = await searchService.reindexAllProducts();
+      console.log(`[BaselinkerSync] ✓ Reindeksacja zakończona: ${result.indexed} produktów (taskUid: ${result.taskUid})`);
     } catch (error) {
       markMeilisearchUnavailable();
-      console.error(`[BaselinkerSync] ⚠️ Nie udało się zindeksować (Meilisearch offline?) (${Date.now() - startTime}ms):`, error);
+      console.error('[BaselinkerSync] ⚠️ Nie udało się zindeksować (Meilisearch offline?):', error);
     }
   }
 
