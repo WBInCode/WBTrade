@@ -1097,6 +1097,19 @@ export default function ProductDetailScreen() {
             <Text style={styles.sku}>SKU: {product.sku.replace(/^(hp-|leker-|btp-|dofirmy-|outlet-|ikonka-)/i, '')}</Text>
           )}
 
+          {/* Manufacturer / GPSR link */}
+          {(product as any).manufacturer && (
+            <TouchableOpacity
+              style={styles.manufacturerRow}
+              onPress={() => router.push(`/manufacturer/${(product as any).manufacturer.slug}`)}
+              activeOpacity={0.7}
+            >
+              <FontAwesome name="industry" size={13} color={colors.tint} />
+              <Text style={styles.manufacturerName}>{(product as any).manufacturer.name}</Text>
+              <FontAwesome name="chevron-right" size={11} color={colors.textMuted} />
+            </TouchableOpacity>
+          )}
+
           {/* Rating summary */}
           {reviewStats && reviewStats.totalReviews > 0 && (
             <View style={styles.ratingSummaryRow}>
@@ -1757,6 +1770,19 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
     marginBottom: 8,
+  },
+  manufacturerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+    paddingVertical: 6,
+  },
+  manufacturerName: {
+    fontSize: 14,
+    color: colors.tint,
+    fontWeight: '600',
+    flex: 1,
   },
 
   // Rating summary

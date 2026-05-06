@@ -182,6 +182,7 @@ export default function AccountScreen() {
           <View style={[styles.menuSection, { backgroundColor: colors.card }]}>
             <MenuItem colors={colors} icon="headphones" title="Skontaktuj się z nami" onPress={() => router.push('/account/contact')} />
             <MenuItem colors={colors} icon="question-circle" title="Centrum pomocy" onPress={() => router.push('/account/help')} />
+            <MenuItem colors={colors} icon="truck" title="Dostawa" onPress={() => router.push('/account/shipping')} />
             <MenuItem colors={colors} icon="info-circle" title="O nas" onPress={() => router.push('/account/about')} />
             <MenuItem colors={colors} icon="file-text-o" title="Regulamin" onPress={() => router.push('/account/terms')} />
             <MenuItem colors={colors} icon="shield" title="Polityka prywatności" onPress={() => router.push('/account/privacy')} />
@@ -272,7 +273,7 @@ export default function AccountScreen() {
           <MenuItem colors={colors} icon="list-ul" title="Listy zakupowe" onPress={() => router.push('/account/shopping-lists')} />
           <MenuItem colors={colors} icon="map-marker" title="Dane do zamówień" onPress={() => router.push('/account/addresses')} />
           <MenuItem colors={colors} icon="envelope" title="Wiadomości" badge={dashboardStats.unreadMessages} onPress={() => router.push('/account/messages' as any)} />
-          <MenuItem colors={colors} icon="refresh" title="Reklamacje i zwroty" onPress={() => router.push('/account/orders')} />
+          <MenuItem colors={colors} icon="refresh" title="Reklamacje i zwroty" onPress={() => router.push('/account/returns')} />
         </View>
 
         {/* Ustawienia */}
@@ -288,6 +289,7 @@ export default function AccountScreen() {
         <View style={[styles.menuSection, { backgroundColor: colors.card }]}>
           <MenuItem colors={colors} icon="headphones" title="Skontaktuj się z nami" onPress={() => router.push('/account/contact')} />
           <MenuItem colors={colors} icon="question-circle" title="Centrum pomocy" onPress={() => router.push('/account/help')} />
+          <MenuItem colors={colors} icon="truck" title="Dostawa" onPress={() => router.push('/account/shipping')} />
           <MenuItem colors={colors} icon="info-circle" title="O nas" onPress={() => router.push('/account/about')} />
           <MenuItem colors={colors} icon="file-text-o" title="Regulamin" onPress={() => router.push('/account/terms')} />
           <MenuItem colors={colors} icon="shield" title="Polityka prywatności" onPress={() => router.push('/account/privacy')} />

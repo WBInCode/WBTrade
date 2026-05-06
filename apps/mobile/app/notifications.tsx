@@ -5,6 +5,7 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
+  RefreshControl,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +13,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColors } from '../hooks/useThemeColors';
 import type { ThemeColors } from '../constants/Colors';
+import { useAuth } from '../contexts/AuthContext';
+import { api } from '../services/api';
 
 const NOTIFICATIONS_KEY = '@wbtrade_notifications';
 
@@ -76,20 +79,66 @@ export default function NotificationsScreen() {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchNotifications = useCallback(async () => {
+    // Load local notifications
+    const localItems = await loadNotifications();
+
+    // If logged in, also fetch from backend
+    if (user) {
+      try {
+        const data = await api.get<{ notifications: any[]; total: number }>('/notifications?limit=50');
+        const serverItems: AppNotification[] = (data.notifications || []).map((n: any) => ({
+          id: n.id,
+          title: n.title,
+          body: n.message || n.body || '',
+          createdAt: n.createdAt,
+          read: n.isRead ?? n.read ?? false,
+          data: {
+            ...(n.metadata || {}),
+            ...(n.link ? { route: n.link } : {}),
+          },
+        }));
+
+        // Merge: server notifications + local-only ones (those not from server)
+        const serverIds = new Set(serverItems.map(i => i.id));
+        const localOnly = localItems.filter(i => !serverIds.has(i.id));
+        const merged = [...serverItems, ...localOnly]
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, 50);
+        setNotifications(merged);
+      } catch {
+        // Fallback to local only
+        setNotifications(localItems);
+      }
+    } else {
+      setNotifications(localItems);
+    }
+  }, [user]);
 
   const load = useCallback(async () => {
-    const items = await loadNotifications();
-    setNotifications(items);
+    await fetchNotifications();
     setLoading(false);
-  }, []);
+  }, [fetchNotifications]);
 
   useEffect(() => {
     load();
-    // Mark all as read when screen opens
+    // Mark all as read
     markAllAsRead();
-  }, [load]);
+    if (user) {
+      api.patch('/notifications/read-all').catch(() => {});
+    }
+  }, [load, user]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchNotifications();
+    setRefreshing(false);
+  }, [fetchNotifications]);
 
   const handleClearAll = useCallback(async () => {
     await clearAllNotifications();
@@ -163,6 +212,9 @@ export default function NotificationsScreen() {
             renderItem={renderItem}
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.tint} />
+            }
           />
         )}
       </SafeAreaView>

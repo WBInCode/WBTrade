@@ -61,6 +61,7 @@ import emailInboundRoutes from './routes/email-inbound';
 import imageProxyRoutes from './routes/image-proxy';
 import adminWholesalersRoutes from './routes/admin-wholesalers';
 import wholesalersRoutes from './routes/wholesalers';
+import manufacturersRoutes from './routes/manufacturers';
 import { generalRateLimiter } from './middleware/rate-limit.middleware';
 import { initializeMeilisearch, meiliClient, PRODUCTS_INDEX, isMeilisearchAvailable } from './lib/meilisearch';
 import { startSearchIndexWorker } from './workers/search-index.worker';
@@ -1004,6 +1005,7 @@ app.use('/api/shopping-lists', shoppingListRoutes);
 app.use('/api/checkout', checkoutRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reviews', reviewsRoutes);
+app.use('/api/manufacturers', manufacturersRoutes);
 // Direct webhook endpoints for payment providers
 app.post('/api/webhooks/payu', payuWebhook);
 app.use('/api/webhooks/email-inbound', emailInboundRoutes); // Resend inbound email webhook
