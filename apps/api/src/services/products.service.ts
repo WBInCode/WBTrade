@@ -46,6 +46,8 @@ const PACKAGE_FILTER_WHERE: Prisma.ProductWhereInput = {
   AND: [
     // Nie pokazuj produktów z tagami błędów
     { NOT: { tags: { hasSome: HIDDEN_TAGS } } },
+    // Nie pokazuj produktów z nieaktywnych kategorii (np. "do zrobienia")
+    { OR: [{ category: { isActive: true } }, { categoryId: null }] },
     // Nie pokazuj produktów ze zdjęciami z blokowanych domen
     ...BLOCKED_IMAGE_DOMAINS.map(domain => ({
       NOT: {
