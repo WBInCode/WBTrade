@@ -17,6 +17,7 @@ import { FontAwesome, MaterialCommunityIcons, Ionicons } from '@expo/vector-icon
 import { Image } from 'expo-image';
 import { loadNotifications } from '../notifications';
 import { api } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getCategoryIcon } from '../../constants/CategoryIcons';
@@ -117,12 +118,25 @@ function HeaderSection() {
     setThemePreference(colorScheme === 'dark' ? 'light' : 'dark');
   }, [colorScheme, setThemePreference]);
 
+  const { user } = useAuth();
+
   useFocusEffect(
     useCallback(() => {
-      loadNotifications().then((items) => {
-        setUnreadCount(items.filter((n) => !n.read).length);
-      });
-    }, [])
+      // Try server first if logged in
+      if (user) {
+        api.get<{ count: number }>('/notifications/unread-count')
+          .then((data) => setUnreadCount(data.count))
+          .catch(() => {
+            loadNotifications().then((items) => {
+              setUnreadCount(items.filter((n) => !n.read).length);
+            });
+          });
+      } else {
+        loadNotifications().then((items) => {
+          setUnreadCount(items.filter((n) => !n.read).length);
+        });
+      }
+    }, [user])
   );
 
   return (
