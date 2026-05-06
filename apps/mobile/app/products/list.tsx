@@ -21,15 +21,17 @@ const PAGE_LIMIT = 48;
 export default function ProductListScreen() {
   const router = useRouter();
   const colors = useThemeColors();
-  const { carousel, carouselName, warehouse, warehouseName } = useLocalSearchParams<{
+  const { carousel, carouselName, warehouse, warehouseName, brand, title: titleParam } = useLocalSearchParams<{
     carousel?: string;
     carouselName?: string;
     warehouse?: string;
     warehouseName?: string;
+    brand?: string;
+    title?: string;
   }>();
 
-  const isAllProducts = !carousel && !warehouse;
-  const title = carouselName || warehouseName || 'Produkty';
+  const isAllProducts = !carousel && !warehouse && !brand;
+  const title = titleParam || carouselName || warehouseName || 'Produkty';
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -51,6 +53,11 @@ export default function ProductListScreen() {
         const fetched = res.products || [];
         setProducts(prev => append ? [...prev, ...fetched] : fetched);
         setHasNextPage(pageNum < (res.totalPages || 1));
+      } else if (brand) {
+        const res = await api.get<{ products: Product[]; totalPages?: number }>('/products', { brand, limit: PAGE_LIMIT, page: pageNum });
+        const fetched = res.products || [];
+        setProducts(prev => append ? [...prev, ...fetched] : fetched);
+        setHasNextPage(pageNum < (res.totalPages || 1));
       } else {
         const res = await api.get<{ products: Product[]; totalPages?: number }>('/products', { limit: PAGE_LIMIT, page: pageNum });
         const fetched = res.products || [];
@@ -61,7 +68,7 @@ export default function ProductListScreen() {
     } catch {
       if (!append) setProducts([]);
     }
-  }, [carousel, warehouse]);
+  }, [carousel, warehouse, brand]);
 
   useEffect(() => {
     setLoading(true);
