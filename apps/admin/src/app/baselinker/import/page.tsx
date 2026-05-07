@@ -790,8 +790,8 @@ export default function BaselinkerImportPage() {
                   )}
                 </div>
 
-                {/* Tag filter - shown for new-only and fetch-all */}
-                {(selectedAction === 'new-only' || selectedAction === 'fetch-all') && (
+                {/* Tag filter - shown for new-only */}
+                {selectedAction === 'new-only' && (
                   <div className="w-full sm:w-auto">
                     <label className="block text-xs text-gray-500 mb-1.5">Filtruj po tagu (opcjonalnie)</label>
                     <input
@@ -799,11 +799,7 @@ export default function BaselinkerImportPage() {
                       value={filterTag}
                       onChange={(e) => setFilterTag(e.target.value)}
                       placeholder="np. WbTrade"
-                      className={`w-full sm:w-56 bg-gray-900 border border-gray-600 rounded-lg px-3 py-2.5 text-white text-sm outline-none transition-colors placeholder-gray-600 ${
-                        selectedAction === 'new-only'
-                          ? 'focus:border-green-500 focus:ring-1 focus:ring-green-500/30'
-                          : 'focus:border-orange-500 focus:ring-1 focus:ring-orange-500/30'
-                      }`}
+                      className="w-full sm:w-56 bg-gray-900 border border-gray-600 rounded-lg px-3 py-2.5 text-white text-sm outline-none transition-colors placeholder-gray-600 focus:border-green-500 focus:ring-1 focus:ring-green-500/30"
                     />
                     <p className="text-xs text-gray-600 mt-1">Pobierze tylko produkty z tym tagiem</p>
                   </div>
