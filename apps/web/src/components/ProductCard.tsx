@@ -46,7 +46,7 @@ export default memo(function ProductCard({ product, showDelivery = false, showWi
   const { addToCart } = useCart();
   const inWishlist = isInWishlist(product.id);
   const warehouseLocation = (product as any).warehouseLocation || getWarehouseLocation(product);
-  const isOutOfStock = !product.variants?.[0] || product.variants[0].stock <= 0;
+  const isOutOfStock = (product as any).stock <= 0 && (!product.variants?.[0] || product.variants[0].stock <= 0);
   const isOutletProduct = warehouseLocation === WAREHOUSE_LOCATIONS['outlet'] || warehouseLocation === 'Rzeszów';
   const brand = getProductBrand(product);
 
