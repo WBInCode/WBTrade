@@ -249,6 +249,7 @@ export default function BaselinkerImportPage() {
   // Action selection state (two-step flow)
   const [selectedAction, setSelectedAction] = useState<SyncMode | null>(null);
   const [actionInventoryId, setActionInventoryId] = useState<string>('all');
+  const [filterTag, setFilterTag] = useState<string>('');
 
   // UI state
   const [showAbortDialog, setShowAbortDialog] = useState(false);
@@ -468,6 +469,9 @@ export default function BaselinkerImportPage() {
       const body: Record<string, string> = { type: 'products', mode };
       if (inventoryId) {
         body.inventoryId = inventoryId;
+      }
+      if (filterTag.trim()) {
+        body.filterTag = filterTag.trim();
       }
 
       const res = await fetch(`${API_URL}/admin/baselinker/sync`, {
@@ -751,7 +755,7 @@ export default function BaselinkerImportPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 flex-wrap">
                 {/* Warehouse selector */}
                 <div className="flex-1 w-full sm:w-auto">
                   <label className="block text-xs text-gray-500 mb-1.5">Wybierz hurtownię / magazyn</label>
@@ -785,6 +789,21 @@ export default function BaselinkerImportPage() {
                     </select>
                   )}
                 </div>
+
+                {/* Tag filter - shown for new-only */}
+                {selectedAction === 'new-only' && (
+                  <div className="w-full sm:w-auto">
+                    <label className="block text-xs text-gray-500 mb-1.5">Filtruj po tagu (opcjonalnie)</label>
+                    <input
+                      type="text"
+                      value={filterTag}
+                      onChange={(e) => setFilterTag(e.target.value)}
+                      placeholder="np. WbTrade"
+                      className="w-full sm:w-56 bg-gray-900 border border-gray-600 rounded-lg px-3 py-2.5 text-white text-sm outline-none transition-colors placeholder-gray-600 focus:border-green-500 focus:ring-1 focus:ring-green-500/30"
+                    />
+                    <p className="text-xs text-gray-600 mt-1">Pobierze tylko produkty z tym tagiem</p>
+                  </div>
+                )}
 
                 {/* Action buttons */}
                 <div className="flex items-center gap-3">
