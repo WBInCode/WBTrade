@@ -151,10 +151,11 @@ export const baselinkerController = {
    */
   async triggerSync(req: Request, res: Response) {
     try {
-      const { type, mode, inventoryId } = req.body; 
+      const { type, mode, inventoryId, filterTag } = req.body; 
       // type: 'full', 'products', 'categories', 'stock', 'images'
       // mode: 'new-only' (tylko nowe produkty, bez stanów 0), 'update-only' (tylko aktualizacja istniejących), 'full-resync' (pełna resynchronizacja)
       // inventoryId: optional - override configured inventory (sync specific warehouse)
+      // filterTag: optional - only import products that have this tag
 
       const validTypes = ['full', 'products', 'categories', 'stock', 'images'];
       const validModes = ['new-only', 'update-only', 'fetch-all', 'full-resync', undefined];
@@ -179,10 +180,10 @@ export const baselinkerController = {
         });
       }
 
-      const result = await baselinkerService.triggerSync(syncType, mode, inventoryId);
+      const result = await baselinkerService.triggerSync(syncType, mode, inventoryId, filterTag);
 
       res.json({
-        message: `Sync ${syncType} started${mode ? ` (${mode})` : ''}${inventoryId ? ` (inventory: ${inventoryId})` : ''}`,
+        message: `Sync ${syncType} started${mode ? ` (${mode})` : ''}${inventoryId ? ` (inventory: ${inventoryId})` : ''}${filterTag ? ` (tag: ${filterTag})` : ''}`,
         syncLogId: result.syncLogId,
       });
     } catch (error) {

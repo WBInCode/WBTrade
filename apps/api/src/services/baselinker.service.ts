@@ -349,7 +349,7 @@ export class BaselinkerService {
    * @param mode - 'new-only' (tylko nowe produkty, bez stanów 0), 'update-only' (tylko aktualizacja istniejących), 'full-resync' (pełna resynchronizacja)
    * @param inventoryId - optional inventory ID override (sync specific warehouse)
    */
-  async triggerSync(type: string, mode?: string, inventoryId?: string): Promise<SyncTriggerResult> {
+  async triggerSync(type: string, mode?: string, inventoryId?: string, filterTag?: string): Promise<SyncTriggerResult> {
     // Map string type to enum
     const typeMap: Record<string, BaselinkerSyncType> = {
       full: BaselinkerSyncType.PRODUCTS,
@@ -395,17 +395,17 @@ export class BaselinkerService {
       },
     });
 
-    console.log(`[BaselinkerSync] Starting ${type} sync (logId: ${syncLog.id})${mode ? ` with mode: ${mode}` : ''}${inventoryId ? ` inventoryId: ${inventoryId}` : ''}`);
+    console.log(`[BaselinkerSync] Starting ${type} sync (logId: ${syncLog.id})${mode ? ` with mode: ${mode}` : ''}${inventoryId ? ` inventoryId: ${inventoryId}` : ''}${filterTag ? ` filterTag: ${filterTag}` : ''}`);
     
     syncProgress.sendProgress(syncLog.id, {
       type: 'phase',
-      message: `Rozpoczynanie synchronizacji ${type}${mode ? ` (${mode})` : ''}... [BUILD:v8 inv=${inventoryId || 'default'}]`,
+      message: `Rozpoczynanie synchronizacji ${type}${mode ? ` (${mode})` : ''}${filterTag ? ` [tag: ${filterTag}]` : ''}... [BUILD:v8 inv=${inventoryId || 'default'}]`,
       phase: 'init',
       mode: mode || 'fetch-all',
     });
 
     // Run sync in background (don't await)
-    this.runSync(syncLog.id, type, mode, inventoryId).catch((error) => {
+    this.runSync(syncLog.id, type, mode, inventoryId, filterTag).catch((error) => {
       console.error('Sync failed:', error);
     });
 
@@ -417,7 +417,7 @@ export class BaselinkerService {
    * @param mode - 'new-only' (tylko nowe produkty, bez stanów 0), 'update-only' (tylko aktualizacja istniejących), 'full-resync' (pełna resynchronizacja)
    * @param overrideInventoryId - optional inventory ID override (sync specific warehouse)
    */
-  private async runSync(syncLogId: string, type: string, mode?: string, overrideInventoryId?: string): Promise<void> {
+  private async runSync(syncLogId: string, type: string, mode?: string, overrideInventoryId?: string, filterTag?: string): Promise<void> {
     let itemsProcessed = 0;
     let itemsChanged = 0;
     let allChangedSkus: { sku: string; oldQty: number; newQty: number; inventory: string }[] = [];
@@ -468,11 +468,11 @@ export class BaselinkerService {
         if (syncProgress.isAborted(syncLogId)) throw new Error('ABORTED');
 
         syncProgress.sendProgress(syncLogId, { type: 'phase', message: `Synchronizacja produktów... [invId: ${activeInventoryId}]`, phase: 'products' });
-        const prodResult = await this.syncProducts(provider, activeInventoryId, mode, syncLogId);
+        const prodResult = await this.syncProducts(provider, activeInventoryId, mode, syncLogId, filterTag);
         itemsProcessed += prodResult.processed;
         allChangedProducts.push(...prodResult.changedProducts);
         errors.push(...prodResult.errors);
-        
+
         if (syncProgress.isAborted(syncLogId)) throw new Error('ABORTED');
 
         syncProgress.sendProgress(syncLogId, { type: 'phase', message: 'Synchronizacja stanów magazynowych...', phase: 'stock' });
@@ -499,7 +499,7 @@ export class BaselinkerService {
         if (syncProgress.isAborted(syncLogId)) throw new Error('ABORTED');
 
         syncProgress.sendProgress(syncLogId, { type: 'phase', message: `Synchronizacja produktów... [invId: ${activeInventoryId}]`, phase: 'products' });
-        const result = await this.syncProducts(provider, activeInventoryId, mode, syncLogId);
+        const result = await this.syncProducts(provider, activeInventoryId, mode, syncLogId, filterTag);
         itemsProcessed = result.processed;
         allChangedProducts = result.changedProducts;
         errors.push(...result.errors);
@@ -1429,7 +1429,8 @@ export class BaselinkerService {
     provider: BaselinkerProvider,
     inventoryId: string,
     mode?: string,
-    syncLogId?: string
+    syncLogId?: string,
+    filterTag?: string
   ): Promise<{ processed: number; errors: string[]; skipped: number; changedProducts: { sku: string; name: string; changes: string[] }[] }> {
     const errors: string[] = [];
     let processed = 0;
@@ -1655,11 +1656,25 @@ export class BaselinkerService {
       });
       console.log(`[BaselinkerSync] Got ${products.length} product details`);
       
+      // Filter by tag if specified
+      let filteredProducts = products;
+      if (filterTag) {
+        filteredProducts = products.filter(p => p.tags?.some(t => t.toLowerCase() === filterTag.toLowerCase()));
+        const tagFiltered = products.length - filteredProducts.length;
+        console.log(`[BaselinkerSync] Tag filter "${filterTag}": ${filteredProducts.length} match, ${tagFiltered} skipped`);
+        if (syncLogId) {
+          syncProgress.sendProgress(syncLogId, {
+            type: 'info',
+            message: `Filtr tagu "${filterTag}": ${filteredProducts.length} produktów pasuje, ${tagFiltered} pominiętych`,
+          });
+        }
+      }
+
       if (syncLogId) {
         syncProgress.sendProgress(syncLogId, {
           type: 'info',
-          message: `Pobrano ${products.length} produktów. Rozpoczynanie przetwarzania...`,
-          total: products.length,
+          message: `Pobrano ${filteredProducts.length} produktów. Rozpoczynanie przetwarzania...`,
+          total: filteredProducts.length,
         });
       }
 
@@ -1668,15 +1683,15 @@ export class BaselinkerService {
       // Cache category lookups to avoid repeated DB queries
       const categoryCache = new Map<string, Awaited<ReturnType<typeof this.findCategoryByBaselinkerIdcatId>>>();
       
-      for (let i = 0; i < products.length; i += batchSize) {
+      for (let i = 0; i < filteredProducts.length; i += batchSize) {
         // Check for abort before each batch
         if (syncLogId && syncProgress.isAborted(syncLogId)) {
           throw new Error('ABORTED');
         }
         
-        const batch = products.slice(i, i + batchSize);
+        const batch = filteredProducts.slice(i, i + batchSize);
         const batchNum = Math.floor(i / batchSize) + 1;
-        const totalBatches = Math.ceil(products.length / batchSize);
+        const totalBatches = Math.ceil(filteredProducts.length / batchSize);
         const batchStart = Date.now();
         console.log(`[BaselinkerSync] Processing products batch ${batchNum}/${totalBatches}`);
         
@@ -1685,9 +1700,9 @@ export class BaselinkerService {
             type: 'progress',
             message: `Przetwarzanie partii ${batchNum}/${totalBatches}...`,
             phase: 'products',
-            current: Math.min(i + batchSize, products.length),
-            total: products.length,
-            percent: Math.round(((i + batchSize) / products.length) * 100),
+            current: Math.min(i + batchSize, filteredProducts.length),
+            total: filteredProducts.length,
+            percent: Math.round(((i + batchSize) / filteredProducts.length) * 100),
           });
         }
 
@@ -1905,6 +1920,9 @@ export class BaselinkerService {
                   const variantPrice = rawVariantPrice > 0 ? this.roundPriceTo99(rawVariantPrice) : productPrice;
                   const variantEan = blVariant.ean ? String(blVariant.ean).trim() : null;
 
+                  // Build variant attributes from name (for variant selection on frontend)
+                  const variantAttributes = blVariant.name ? { "Wariant": blVariant.name } : {};
+
                   // Check if variant exists
                   const existingVariant = await tx.productVariant.findUnique({
                     where: { baselinkerVariantId: variantId },
@@ -1919,6 +1937,7 @@ export class BaselinkerService {
                         name: blVariant.name,
                         sku: await this.ensureUniqueVariantSku(variantSku, variantId, tx),
                         barcode: variantEan,
+                        attributes: variantAttributes,
                       },
                     });
                     
@@ -1939,6 +1958,7 @@ export class BaselinkerService {
                         price: variantPrice,
                         lowestPrice30Days: variantPrice,
                         lowestPrice30DaysAt: new Date(),
+                        attributes: variantAttributes,
                       },
                     });
                   }
@@ -2020,7 +2040,7 @@ export class BaselinkerService {
                   productName: name,
                   sku,
                   current: processed,
-                  total: products.length,
+                  total: filteredProducts.length,
                 });
               }
             } catch (error) {
