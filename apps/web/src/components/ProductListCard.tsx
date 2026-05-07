@@ -38,7 +38,7 @@ export default memo(function ProductListCard({ product, showWishlist = true, vie
   const badge = product.badge as BadgeType | undefined;
   const deliveryInfo = product.deliveryInfo || 'Wysyłka w ciągu 24 - 72h';
   const warehouseLocation = (product as any).warehouseLocation || getWarehouseLocation(product);
-  const isOutOfStock = !product.variants?.[0] || product.variants[0].stock <= 0;
+  const isOutOfStock = (product as any).stock <= 0 && (!product.variants?.[0] || product.variants[0].stock <= 0);
   const isOutletProduct = warehouseLocation === WAREHOUSE_LOCATIONS['outlet'] || warehouseLocation === 'Rzeszów';
 
   const { isInWishlist, toggleWishlist } = useWishlist();
@@ -85,7 +85,7 @@ export default memo(function ProductListCard({ product, showWishlist = true, vie
     }
   };
 
-  const canAddToCart = product.variants && product.variants.length > 0 && product.variants[0].stock > 0;
+  const canAddToCart = product.variants && product.variants.length > 0 && ((product as any).stock > 0 || product.variants[0].stock > 0);
 
   // List view - Allegro style
   if (viewMode === 'list') {
