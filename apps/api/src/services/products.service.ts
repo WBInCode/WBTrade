@@ -1,6 +1,7 @@
 import { prisma } from '../db';
 import { Prisma, PriceChangeSource } from '@prisma/client';
-import { getProductsIndex, isMeilisearchAvailable, markMeilisearchUnavailable, markMeilisearchAvailable } from '../lib/meilisearch';
+import { getProductsIndex, isMeilisearchAvailable, markMeilisearchUnavailable, markMeilisearchAvailable, meiliClient, PRODUCTS_INDEX } from '../lib/meilisearch';
+import type { MultiSearchParams } from 'meilisearch';
 import { MeiliProduct } from './search.service';
 import { queueProductIndex, queueProductDelete } from '../lib/queue';
 import { priceHistoryService } from './price-history.service';
@@ -744,20 +745,56 @@ export class ProductsService {
           meiliSort = ['createdAt:desc', 'id:asc'];
       }
 
-      const results = await index.search<MeiliProduct>(search || '', {
-        limit,
-        offset: (page - 1) * limit,
-        filter: meiliFilters.join(' AND '),
-        sort: meiliSort,
-        matchingStrategy: 'last',
-        showMatchesPosition: false,
-        attributesToRetrieve: ['id'],
-      });
+      const filterStr = meiliFilters.join(' AND ');
+      const words = (search || '').split(/\s+/).filter(w => w.length > 0);
 
-      markMeilisearchAvailable();
+      let productIds: string[];
+      let estimatedTotal: number;
 
-      // Get full product data from Prisma for the found IDs
-      const productIds = results.hits.map((hit: MeiliProduct) => hit.id);
+      if (words.length >= 2) {
+        // Multi-search: full phrase + each word separately (same as autocomplete)
+        const queries = [
+          // Full phrase first (highest priority)
+          { indexUid: PRODUCTS_INDEX, q: search || '', limit: limit * 2, offset: (page - 1) * limit, filter: filterStr, sort: meiliSort, matchingStrategy: 'last' as const, attributesToRetrieve: ['id'] },
+          // Then each individual word
+          ...words.map(word => ({
+            indexUid: PRODUCTS_INDEX, q: word, limit: Math.ceil(limit / words.length), filter: filterStr, sort: meiliSort, matchingStrategy: 'last' as const, attributesToRetrieve: ['id'],
+          })),
+        ];
+
+        const multiResults = await meiliClient.multiSearch<MultiSearchParams, MeiliProduct>({ queries });
+        markMeilisearchAvailable();
+
+        // Merge hits with deduplication (full phrase hits first)
+        const seen = new Set<string>();
+        const mergedIds: string[] = [];
+        for (const result of (multiResults as any).results) {
+          for (const hit of result.hits) {
+            if (!seen.has(hit.id)) {
+              seen.add(hit.id);
+              mergedIds.push(hit.id);
+            }
+          }
+        }
+
+        estimatedTotal = mergedIds.length;
+        productIds = mergedIds.slice((page - 1) * limit, page * limit);
+      } else {
+        // Single word — standard search
+        const results = await index.search<MeiliProduct>(search || '', {
+          limit,
+          offset: (page - 1) * limit,
+          filter: filterStr,
+          sort: meiliSort,
+          matchingStrategy: 'last',
+          showMatchesPosition: false,
+          attributesToRetrieve: ['id'],
+        });
+
+        markMeilisearchAvailable();
+        productIds = results.hits.map((hit: MeiliProduct) => hit.id);
+        estimatedTotal = results.estimatedTotalHits ?? results.hits.length;
+      }
       
       if (productIds.length === 0) {
         // Meilisearch returned 0 hits — if user was searching, try Prisma fallback
@@ -821,7 +858,7 @@ export class ProductsService {
       // Use estimatedTotalHits from MeiliSearch but adjust for Prisma filtering
       // When searching, Prisma may filter out products that Meilisearch returned
       // so we use the actual count of products found by Prisma
-      const meiliTotal = results.estimatedTotalHits ?? results.hits.length;
+      const meiliTotal = estimatedTotal;
       const prismaFoundCount = sortedProducts.length;
       // If Prisma returned fewer products than Meilisearch page, total needs adjustment
       const total = prismaFoundCount < productIds.length
