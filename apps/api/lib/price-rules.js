@@ -3,8 +3,9 @@
  * 
  * Loads price multiplier rules from the Settings table and applies them.
  * Rules are stored per warehouse: price_rules_leker, price_rules_btp, price_rules_hp
+ * Dividers stored per warehouse: price_divider_leker, price_divider_btp, etc.
  * 
- * Flow: Cena hurtowa → mnożnik × cena + dodaj → zaokrąglenie do .99 → baza
+ * Flow: Cena BL → ÷ dzielnik → cena bazowa → × mnożnik + dodaj → zaokrąglenie do .99
  */
 
 const { PrismaClient } = require('@prisma/client');
@@ -67,9 +68,26 @@ async function loadPriceRules(prisma) {
     }
   }
 
-  _rulesCache = rules;
+  // Load dividers per warehouse (price_divider_{key})
+  const dividers = {};
+  for (const wh of warehouses) {
+    try {
+      const setting = await prisma.settings.findUnique({
+        where: { key: `price_divider_${wh}` },
+      });
+      if (setting && setting.value) {
+        const val = parseFloat(setting.value);
+        if (val && val > 0) dividers[wh] = val;
+      }
+    } catch (err) {
+      // ignore
+    }
+  }
+
+  const result = { rules, dividers };
+  _rulesCache = result;
   _rulesCacheTime = Date.now();
-  return rules;
+  return result;
 }
 
 /**
@@ -82,19 +100,29 @@ async function loadPriceRules(prisma) {
  * @param {Record<string, Array>} priceRules - loaded price rules
  * @returns {number} - price after applying multiplier and addition
  */
-function applyPriceMultiplier(rawPrice, warehouse, priceRules) {
+function applyPriceMultiplier(rawPrice, warehouse, priceRulesData) {
   if (!rawPrice || rawPrice <= 0) return rawPrice;
-  if (!priceRules || !priceRules[warehouse]) return rawPrice;
+  if (!priceRulesData) return rawPrice;
 
-  const rules = priceRules[warehouse];
-  for (const rule of rules) {
-    if (rawPrice >= rule.priceFrom && rawPrice <= rule.priceTo) {
-      return rawPrice * rule.multiplier + rule.addToPrice;
+  // Support both old format (direct rules map) and new format ({rules, dividers})
+  const rules = priceRulesData.rules ? priceRulesData.rules[warehouse] : priceRulesData[warehouse];
+  const dividers = priceRulesData.dividers || {};
+
+  // Step 1: Apply divider (convert BL price back to base price)
+  const divider = dividers[warehouse] || 1;
+  let price = rawPrice / divider;
+
+  // Step 2: Apply multiplier rules
+  if (rules) {
+    for (const rule of rules) {
+      if (price >= rule.priceFrom && price <= rule.priceTo) {
+        return price * rule.multiplier + rule.addToPrice;
+      }
     }
   }
 
-  // No matching rule — return raw price unchanged
-  return rawPrice;
+  // No matching rule — return divided price unchanged
+  return price;
 }
 
 /**

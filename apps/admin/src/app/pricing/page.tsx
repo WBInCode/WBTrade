@@ -50,6 +50,7 @@ export default function PricingPage() {
   const [warehouses, setWarehouses] = useState<WarehouseInfo[]>([]);
   const [activeWarehouse, setActiveWarehouse] = useState<Warehouse>('');
   const [rules, setRules] = useState<Record<Warehouse, PriceRule[]>>({});
+  const [dividers, setDividers] = useState<Record<Warehouse, number>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -98,6 +99,7 @@ export default function PricingPage() {
 
       const results: Record<Warehouse, PriceRule[]> = {};
       const changes: Record<Warehouse, boolean> = {};
+      const loadedDividers: Record<Warehouse, number> = {};
 
       for (const wh of whs) {
         try {
@@ -122,10 +124,30 @@ export default function PricingPage() {
         } catch {
           results[wh.key] = [...DEFAULT_RULES];
         }
+        // Load divider
+        try {
+          const divRes = await fetch(`${API_URL}/admin/settings/price_divider_${wh.key}`, {
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { Authorization: `Bearer ${token}` }),
+            },
+          });
+          if (divRes.ok) {
+            const divData = await divRes.json();
+            const val = parseFloat(divData.value);
+            if (val && val > 0) loadedDividers[wh.key] = val;
+            else loadedDividers[wh.key] = 1;
+          } else {
+            loadedDividers[wh.key] = 1;
+          }
+        } catch {
+          loadedDividers[wh.key] = 1;
+        }
         changes[wh.key] = false;
       }
 
       setRules(results);
+      setDividers(loadedDividers);
       setHasChanges(changes);
     } catch (error) {
       console.error('Error fetching price rules:', error);
@@ -201,6 +223,16 @@ export default function PricingPage() {
       });
 
       if (!response.ok) throw new Error('Błąd zapisu');
+
+      // Save divider
+      await fetch(`${API_URL}/admin/settings/price_divider_${warehouse}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ value: String(dividers[warehouse] || 1) }),
+      });
 
       setMessage({ type: 'success', text: `Reguły cenowe dla ${warehouses.find(w => w.key === warehouse)?.label} zapisane pomyślnie!` });
       setHasChanges(prev => ({ ...prev, [warehouse]: false }));
@@ -287,6 +319,16 @@ export default function PricingPage() {
           body: JSON.stringify({ value: rules[wh.key] }),
         });
         if (!response.ok) throw new Error(`Błąd zapisu dla ${wh.label}`);
+
+        // Save divider
+        await fetch(`${API_URL}/admin/settings/price_divider_${wh.key}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+          body: JSON.stringify({ value: String(dividers[wh.key] || 1) }),
+        });
       }
       setMessage({ type: 'success', text: 'Wszystkie reguły cenowe zapisane pomyślnie!' });
       setHasChanges(Object.fromEntries(warehouses.map(w => [w.key, false])));
@@ -301,9 +343,11 @@ export default function PricingPage() {
   const calculateExamplePrice = (sourcePrice: number, warehouse: Warehouse): string => {
     const warehouseRules = rules[warehouse];
     if (!warehouseRules) return '-';
+    const divider = dividers[warehouse] || 1;
+    const dividedPrice = sourcePrice / divider;
     for (const rule of warehouseRules) {
-      if (sourcePrice >= rule.priceFrom && sourcePrice <= rule.priceTo) {
-        const result = sourcePrice * rule.multiplier + rule.addToPrice;
+      if (dividedPrice >= rule.priceFrom && dividedPrice <= rule.priceTo) {
+        const result = dividedPrice * rule.multiplier + rule.addToPrice;
         return result.toFixed(2);
       }
     }
@@ -385,6 +429,28 @@ export default function PricingPage() {
             </div>
           </button>
         ))}
+      </div>
+
+      {/* Divider input */}
+      <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4">
+        <div className="flex items-center gap-4">
+          <label className="text-sm font-medium text-white whitespace-nowrap">Dzielnik BL</label>
+          <input
+            type="number"
+            step="0.01"
+            min="0.01"
+            value={dividers[activeWarehouse] || 1}
+            onChange={e => {
+              const val = parseFloat(e.target.value) || 1;
+              setDividers(prev => ({ ...prev, [activeWarehouse]: val }));
+              setHasChanges(prev => ({ ...prev, [activeWarehouse]: true }));
+            }}
+            className="w-32 px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+          />
+          <span className="text-xs text-slate-400">
+            Cena z Baselinkera zostanie podzielona przez tę wartość przed zastosowaniem mnożników. Domyślnie: 1 (brak dzielenia).
+          </span>
+        </div>
       </div>
 
       {/* Rules table */}
@@ -479,12 +545,12 @@ export default function PricingPage() {
         <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4 max-w-xl">
           <h3 className="text-sm font-medium text-white mb-2">Jak działa mnożnik ceny?</h3>
           <p className="text-xs text-slate-400 leading-relaxed">
-            Końcowa cena = <span className="text-orange-400 font-mono">Cena hurtowa × Mnożnik + Dodaj do ceny</span>
+            Końcowa cena = <span className="text-orange-400 font-mono">(Cena BL ÷ Dzielnik) × Mnożnik + Dodaj do ceny</span>
           </p>
           <p className="text-xs text-slate-400 mt-2">
-            Np &apos;1&apos; aby zwiększyć cenę o złotówkę w stosunku do ceny hurtowni
+            Dzielnik kompensuje mnożnik ustawiony w Baselinkerze (np. 1.3 jeśli BL ma narzut 30%)
             <br />
-            Np &apos;1.20&apos; dla narzutu w wysokości 20%
+            Np mnożnik &apos;1.20&apos; dla narzutu w wysokości 20%
           </p>
         </div>
 
@@ -574,7 +640,7 @@ function PriceSimulator({
       <h3 className="text-sm font-medium text-white mb-4">Symulator ceny — {warehouseLabel}</h3>
 
       <div className="flex items-center gap-4 mb-4">
-        <label className="text-sm text-slate-400">Testowa cena hurtowa:</label>
+        <label className="text-sm text-slate-400">Testowa cena z BL:</label>
         <input
           type="number"
           step="0.01"
@@ -591,7 +657,7 @@ function PriceSimulator({
       <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2">
         {examplePrices.map(price => (
           <div key={price} className="bg-slate-900/50 rounded-lg p-3 text-center">
-            <div className="text-xs text-slate-500 mb-1">Hurt: {price} zł</div>
+            <div className="text-xs text-slate-500 mb-1">BL: {price} zł</div>
             <div className="text-sm font-medium text-white">{calculatePrice(price, warehouse)} zł</div>
           </div>
         ))}
