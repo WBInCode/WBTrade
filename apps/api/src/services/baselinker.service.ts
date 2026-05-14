@@ -724,8 +724,24 @@ export class BaselinkerService {
         'hurtownia sportowa', 'import z pmsport', 'w przygotowaniu',
         'kategoria tymczasowa', 'do zrobienia',
       ]);
+
+      // Also block categories that match warehouse/inventory names (dynamic)
+      try {
+        const wholesalers = await wholesalerConfigService.getAll();
+        for (const w of wholesalers) {
+          BLOCKED_CATEGORY_NAMES.add(w.name.trim().toLowerCase());
+          for (const alias of w.aliases) {
+            BLOCKED_CATEGORY_NAMES.add(alias.trim().toLowerCase());
+          }
+        }
+      } catch (e) {
+        console.warn('[BaselinkerSync] Could not load wholesaler names for category blocking:', e);
+      }
+
       const categories = allCategories.filter(c => {
         if (c.name.includes('/')) return false;
+        const normalizedName = c.name.trim().toLowerCase().replace(/^[-–—]\s*/, '');
+        if (BLOCKED_CATEGORY_NAMES.has(normalizedName)) return false;
         if (BLOCKED_CATEGORY_NAMES.has(c.name.trim().toLowerCase())) return false;
         return true;
       });
@@ -1140,7 +1156,7 @@ export class BaselinkerService {
   /**
    * Price rules cache - loaded from Settings table
    */
-  private priceRulesCache: Record<string, Array<{ priceFrom: number; priceTo: number; multiplier: number; addToPrice: number }>> | null = null;
+  private priceRulesCache: { rules: Record<string, Array<{ priceFrom: number; priceTo: number; multiplier: number; addToPrice: number }>>; dividers: Record<string, number> } | null = null;
   private priceRulesCacheTime = 0;
   private static PRICE_RULES_CACHE_TTL = 60_000; // 1 minute
 
@@ -1148,12 +1164,13 @@ export class BaselinkerService {
    * Load price multiplier rules from the Settings table.
    * Cached for 1 minute to avoid hitting DB on every product.
    */
-  private async loadPriceRules(): Promise<Record<string, Array<{ priceFrom: number; priceTo: number; multiplier: number; addToPrice: number }>>> {
+  private async loadPriceRules(): Promise<{ rules: Record<string, Array<{ priceFrom: number; priceTo: number; multiplier: number; addToPrice: number }>>; dividers: Record<string, number> }> {
     if (this.priceRulesCache && Date.now() - this.priceRulesCacheTime < BaselinkerService.PRICE_RULES_CACHE_TTL) {
       return this.priceRulesCache;
     }
 
     const rules: Record<string, Array<{ priceFrom: number; priceTo: number; multiplier: number; addToPrice: number }>> = {};
+    const dividers: Record<string, number> = {};
     const warehouseKeys = await wholesalerConfigService.getWarehouseKeysWithPriceRules();
     for (const wh of warehouseKeys) {
       try {
@@ -1174,11 +1191,22 @@ export class BaselinkerService {
       } catch (err) {
         console.warn(`[BaselinkerSync] Could not load price rules for ${wh}:`, err);
       }
+      // Load divider
+      try {
+        const divSetting = await prisma.settings.findUnique({ where: { key: `price_divider_${wh}` } });
+        if (divSetting?.value) {
+          const val = parseFloat(divSetting.value);
+          if (val && val > 0) dividers[wh] = val;
+        }
+      } catch (err) {
+        // ignore
+      }
     }
 
-    this.priceRulesCache = rules;
+    const result = { rules, dividers };
+    this.priceRulesCache = result;
     this.priceRulesCacheTime = Date.now();
-    return rules;
+    return result;
   }
 
   /**
@@ -1191,15 +1219,24 @@ export class BaselinkerService {
   private applyPriceMultiplier(
     rawPrice: number,
     warehouse: string,
-    priceRules: Record<string, Array<{ priceFrom: number; priceTo: number; multiplier: number; addToPrice: number }>>
+    priceRulesData: { rules: Record<string, Array<{ priceFrom: number; priceTo: number; multiplier: number; addToPrice: number }>>; dividers: Record<string, number> }
   ): number {
-    if (!rawPrice || rawPrice <= 0 || !priceRules[warehouse]) return rawPrice;
-    for (const rule of priceRules[warehouse]) {
-      if (rawPrice >= rule.priceFrom && rawPrice <= rule.priceTo) {
-        return rawPrice * rule.multiplier + rule.addToPrice;
+    if (!rawPrice || rawPrice <= 0) return rawPrice;
+
+    // Step 1: Apply divider (convert BL price back to base price)
+    const divider = priceRulesData.dividers[warehouse] || 1;
+    let price = rawPrice / divider;
+
+    // Step 2: Apply multiplier rules
+    const rules = priceRulesData.rules[warehouse];
+    if (rules) {
+      for (const rule of rules) {
+        if (price >= rule.priceFrom && price <= rule.priceTo) {
+          return price * rule.multiplier + rule.addToPrice;
+        }
       }
     }
-    return rawPrice;
+    return price;
   }
 
   /**
@@ -1255,7 +1292,7 @@ export class BaselinkerService {
    * All prices are passed through price multiplier rules (if available) and rounded to .99 ending
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private getProductPrice(blProduct: any, warehouseKey?: string | null, priceRules?: Record<string, Array<{ priceFrom: number; priceTo: number; multiplier: number; addToPrice: number }>>): number {
+  private getProductPrice(blProduct: any, warehouseKey?: string | null, priceRules?: { rules: Record<string, Array<{ priceFrom: number; priceTo: number; multiplier: number; addToPrice: number }>>; dividers: Record<string, number> }): number {
     let rawPrice = 0;
 
     // First try direct price_brutto
