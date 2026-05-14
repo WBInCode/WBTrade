@@ -1292,7 +1292,7 @@ export class BaselinkerService {
    * All prices are passed through price multiplier rules (if available) and rounded to .99 ending
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private getProductPrice(blProduct: any, warehouseKey?: string | null, priceRules?: Record<string, Array<{ priceFrom: number; priceTo: number; multiplier: number; addToPrice: number }>>): number {
+  private getProductPrice(blProduct: any, warehouseKey?: string | null, priceRules?: { rules: Record<string, Array<{ priceFrom: number; priceTo: number; multiplier: number; addToPrice: number }>>; dividers: Record<string, number> }): number {
     let rawPrice = 0;
 
     // First try direct price_brutto
