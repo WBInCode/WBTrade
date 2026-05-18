@@ -12,6 +12,13 @@ interface RegisterData {
   firstName: string;
   lastName: string;
   phone?: string;
+  // B2B fields
+  accountType?: 'personal' | 'business';
+  companyName?: string;
+  nip?: string;
+  companyStreet?: string;
+  companyCity?: string;
+  companyPostalCode?: string;
 }
 
 interface LoginData {
@@ -45,6 +52,9 @@ interface UserResponse {
   companyStreet?: string | null;
   companyCity?: string | null;
   companyPostalCode?: string | null;
+  // B2B fields
+  b2bStatus?: string | null;
+  b2bPriceMultiplier?: any;
 }
 
 // Constants
@@ -74,6 +84,9 @@ export class AuthService {
     // Hash password
     const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
 
+    // Determine if this is a B2B registration
+    const isBusinessAccount = data.accountType === 'business';
+
     // Create user
     const user = await prisma.user.create({
       data: {
@@ -83,6 +96,15 @@ export class AuthService {
         lastName: data.lastName,
         phone: data.phone,
         role: 'CUSTOMER',
+        // B2B fields
+        ...(isBusinessAccount && {
+          companyName: data.companyName,
+          nip: data.nip,
+          companyStreet: data.companyStreet,
+          companyCity: data.companyCity,
+          companyPostalCode: data.companyPostalCode,
+          b2bStatus: 'PENDING',
+        }),
       },
     });
 
@@ -94,9 +116,12 @@ export class AuthService {
     });
 
     // Generate welcome discount code and send email (async, don't block registration)
-    this.sendWelcomeDiscount(user.id, user.email, user.firstName).catch((err) => {
-      console.error('[AuthService] Failed to send welcome discount:', err.message);
-    });
+    // Skip for B2B accounts - they don't get welcome discount
+    if (!isBusinessAccount) {
+      this.sendWelcomeDiscount(user.id, user.email, user.firstName).catch((err) => {
+        console.error('[AuthService] Failed to send welcome discount:', err.message);
+      });
+    }
 
     return {
       user: this.sanitizeUser(user),
@@ -486,6 +511,8 @@ export class AuthService {
     companyStreet?: string | null;
     companyCity?: string | null;
     companyPostalCode?: string | null;
+    b2bStatus?: string | null;
+    b2bPriceMultiplier?: any;
   }): UserResponse {
     const { password, ...sanitized } = user;
     return sanitized as UserResponse;

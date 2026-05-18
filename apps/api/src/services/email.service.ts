@@ -1226,6 +1226,71 @@ export class EmailService {
       return { success: false, error: err.message };
     }
   }
+
+  // ──────────────────────────────────────
+  // B2B COOPERATION EMAILS
+  // ──────────────────────────────────────
+
+  async sendB2bApprovalEmail(to: string, firstName: string, companyName: string): Promise<EmailResult> {
+    try {
+      const resend = getResend();
+      const { data, error } = await resend.emails.send({
+        from: FROM_EMAIL,
+        to: [to],
+        subject: '✅ Twój wniosek o współpracę B2B został zatwierdzony!',
+        html: emailWrapper({
+          title: '✅ Współpraca B2B zatwierdzona',
+          content: `
+            ${greeting(firstName)}
+            ${paragraph(`Z przyjemnością informujemy, że Twój wniosek o współpracę B2B dla firmy <strong>${escapeHtml(companyName)}</strong> został zatwierdzony!`)}
+            ${paragraph('Od teraz masz dostęp do:')}
+            <ul style="color: #374151; font-size: 14px; line-height: 1.8;">
+              <li>Cen hurtowych na wszystkie produkty</li>
+              <li>Dedykowanego feedu produktowego (XML/CSV)</li>
+              <li>Metody dostawy "Wysyłka własny"</li>
+              <li>Płatności przelewem na konto</li>
+              <li>Sekcji faktur w panelu konta</li>
+              <li>Centrum pomocy B2B</li>
+            </ul>
+            ${paragraph('Zaloguj się na swoje konto, aby zobaczyć nowe ceny i funkcje.')}
+          `,
+        }),
+      });
+
+      if (error) return { success: false, error: error.message };
+      console.log(`✅ [EmailService] B2B approval email sent to ${to}`);
+      return { success: true, messageId: data?.id };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  }
+
+  async sendB2bRejectionEmail(to: string, firstName: string, reason?: string): Promise<EmailResult> {
+    try {
+      const resend = getResend();
+      const { data, error } = await resend.emails.send({
+        from: FROM_EMAIL,
+        to: [to],
+        subject: 'Informacja dotycząca wniosku o współpracę B2B',
+        html: emailWrapper({
+          title: 'Wniosek o współpracę B2B',
+          content: `
+            ${greeting(firstName)}
+            ${paragraph('Dziękujemy za zainteresowanie współpracą B2B z WB Trade.')}
+            ${paragraph('Niestety, po weryfikacji Twój wniosek nie został zatwierdzony.')}
+            ${reason ? paragraph(`<strong>Powód:</strong> ${escapeHtml(reason)}`) : ''}
+            ${paragraph('Jeśli uważasz, że to pomyłka lub chcesz uzyskać więcej informacji, skontaktuj się z nami.')}
+          `,
+        }),
+      });
+
+      if (error) return { success: false, error: error.message };
+      console.log(`✅ [EmailService] B2B rejection email sent to ${to}`);
+      return { success: true, messageId: data?.id };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  }
 }
 
 export const emailService = new EmailService();

@@ -40,6 +40,7 @@
     "redis": "^5.10.0",
     "resend": "^6.7.0",
     "uuid": "^9.0.1",
+    "xlsx": "^0.18.5",
     "zod": "^3.25.76"
   },
   "devDependencies": {

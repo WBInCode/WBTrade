@@ -100,6 +100,14 @@ export const phoneSchema = z
 // ============================================
 
 /**
+ * NIP validation (Polish tax ID - 10 digits)
+ */
+export const nipSchema = z
+  .string()
+  .transform((val) => val.replace(/[\s-]/g, ''))
+  .refine((val) => /^\d{10}$/.test(val), 'NIP musi składać się z 10 cyfr');
+
+/**
  * Registration validation schema
  */
 export const registerSchema = z.object({
@@ -112,6 +120,21 @@ export const registerSchema = z.object({
     .boolean()
     .optional()
     .refine((val) => val === undefined || val === true, 'You must accept the terms and conditions'),
+  // B2B fields (optional - only when accountType === 'business')
+  accountType: z.enum(['personal', 'business']).optional().default('personal'),
+  companyName: z.string().min(2, 'Nazwa firmy jest wymagana').max(200).optional(),
+  nip: nipSchema.optional(),
+  companyStreet: z.string().min(2, 'Adres firmy jest wymagany').max(200).optional(),
+  companyCity: z.string().min(2, 'Miasto jest wymagane').max(100).optional(),
+  companyPostalCode: z.string().regex(/^\d{2}-\d{3}$/, 'Nieprawidłowy kod pocztowy (format: XX-XXX)').optional(),
+}).refine((data) => {
+  if (data.accountType === 'business') {
+    return !!data.companyName && !!data.nip && !!data.companyStreet && !!data.companyCity && !!data.companyPostalCode && !!data.phone;
+  }
+  return true;
+}, {
+  message: 'Dane firmy są wymagane dla konta firmowego (NIP, nazwa firmy, adres, telefon)',
+  path: ['companyName'],
 });
 
 /**
