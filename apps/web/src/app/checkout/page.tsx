@@ -40,7 +40,7 @@ export interface AddressData {
 }
 
 export interface ShippingData {
-  method: 'inpost_paczkomat' | 'inpost_kurier' | 'dpd_kurier' | 'wysylka_gabaryt' | 'odbior_osobisty_outlet';
+  method: 'inpost_paczkomat' | 'inpost_kurier' | 'dpd_kurier' | 'wysylka_gabaryt' | 'odbior_osobisty_outlet' | 'b2b_wysylka_wlasna';
   paczkomatCode?: string;
   paczkomatAddress?: string;
   price: number;

@@ -28,6 +28,7 @@ const shippingMethodNames: Record<ShippingData['method'], string> = {
   dpd_kurier: 'Kurier DPD',
   wysylka_gabaryt: 'Wysyłka gabaryt',
   odbior_osobisty_outlet: 'Odbiór osobisty (Outlet)',
+  b2b_wysylka_wlasna: 'Wysyłka własna B2B',
 };
 
 const paymentMethodNames: Record<PaymentData['method'], string> = {
