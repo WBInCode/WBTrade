@@ -51,7 +51,7 @@ export interface ShippingData {
 export interface PackageShippingSelection {
   packageId: string;
   wholesaler?: string;
-  method: 'inpost_paczkomat' | 'inpost_kurier' | 'dpd_kurier' | 'wysylka_gabaryt' | 'odbior_osobisty_outlet';
+  method: 'inpost_paczkomat' | 'inpost_kurier' | 'dpd_kurier' | 'wysylka_gabaryt' | 'odbior_osobisty_outlet' | 'b2b_wysylka_wlasna';
   price: number;
   paczkomatCode?: string;
   paczkomatAddress?: string;

@@ -61,6 +61,13 @@ router.post('/:orderId', authGuard, upload.single('label'), async (req: Request,
       return;
     }
 
+    // Validate uploaded file path is within labels directory
+    const uploadedFilePath = path.resolve(req.file.path);
+    if (!uploadedFilePath.startsWith(path.resolve(labelsDir))) {
+      res.status(400).json({ error: 'Nieprawidłowa ścieżka pliku' });
+      return;
+    }
+
     // Verify order belongs to user and uses B2B shipping
     const order = await prisma.order.findFirst({
       where: { id: orderId, userId },
@@ -69,13 +76,13 @@ router.post('/:orderId', authGuard, upload.single('label'), async (req: Request,
 
     if (!order) {
       // Clean up uploaded file
-      fs.unlinkSync(req.file.path);
+      fs.unlinkSync(uploadedFilePath);
       res.status(404).json({ error: 'Zamówienie nie znalezione' });
       return;
     }
 
     if (order.shippingMethod !== 'b2b_wysylka_wlasna') {
-      fs.unlinkSync(req.file.path);
+      fs.unlinkSync(uploadedFilePath);
       res.status(400).json({ error: 'To zamówienie nie korzysta z wysyłki własnej B2B' });
       return;
     }
