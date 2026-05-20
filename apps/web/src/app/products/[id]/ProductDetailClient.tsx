@@ -23,7 +23,8 @@ interface ProductDetailClientProps {
   product: Product;
 }
 
-export default function ProductDetailClient({ product }: ProductDetailClientProps) {
+export default function ProductDetailClient({ product: ssrProduct }: ProductDetailClientProps) {
+  const [product, setProduct] = useState<Product>(ssrProduct);
   const [selectedImage, setSelectedImage] = useState(0);
   const [failedImages, setFailedImages] = useState<Set<number>>(new Set());
   const [activeTab, setActiveTab] = useState('description');
@@ -34,8 +35,23 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const router = useRouter();
+
+  // Re-fetch product with auth token for authenticated users (SSR has no auth, needed for B2B pricing)
+  const b2bFetched = useRef(false);
+  useEffect(() => {
+    if (isAuthenticated && ssrProduct?.id && !b2bFetched.current) {
+      b2bFetched.current = true;
+      productsApi.getById(ssrProduct.id).then((p) => {
+        if (p && p.price !== undefined) {
+          setProduct(p);
+        }
+      }).catch((err) => {
+        console.error('[B2B] Failed to re-fetch product:', err);
+      });
+    }
+  }, [isAuthenticated, ssrProduct?.id]);
 
   // Analytics dedup ref
   const viewItemTracked = useRef(false);
@@ -554,7 +570,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
               {/* SKU */}
               {product?.sku && (
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 sm:mb-3">
-                  SKU: <span className="font-mono">{product.sku.replace(/^(hp-|leker-|btp-|dofirmy-|outlet-|ikonka-)/i, '')}</span>
+                  SKU: <span className="font-mono">{product.sku.replace(/^(hp-|leker-|btp-|dofirmy-|outlet-|ikonka-|hs-|hk-)/i, '')}</span>
                 </p>
               )}
 
@@ -946,6 +962,21 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                     ),
                     price: 19.99,
                     freeEligible: true,
+                  });
+                }
+
+                // B2B shipping option for approved partners — shown at top alongside standard methods
+                if (user && (user as any).b2bStatus === 'APPROVED') {
+                  const b2bPrice = price >= 50 ? 1.99 : 4.99;
+                  methods.unshift({
+                    name: 'Wysyłka własna (B2B)',
+                    icon: (
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                      </svg>
+                    ),
+                    price: b2bPrice,
+                    freeEligible: false,
                   });
                 }
 

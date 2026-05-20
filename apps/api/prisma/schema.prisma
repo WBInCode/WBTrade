@@ -37,6 +37,12 @@ model User {
   companyStreet              String?            @map("company_street")
   nip                        String?
   dateOfBirth                DateTime?          @map("date_of_birth")
+  // B2B fields
+  b2bStatus                  B2bStatus          @default(NONE) @map("b2b_status")
+  b2bPriceMultiplier         Decimal?           @db.Decimal(4, 2) @map("b2b_price_multiplier")
+  b2bApprovedAt              DateTime?          @map("b2b_approved_at")
+  b2bApprovedBy              String?            @map("b2b_approved_by")
+  b2bNotes                   String?            @map("b2b_notes")
   addresses                  Address[]
   loyalty                    UserLoyalty?
   cart                       Cart?
@@ -381,6 +387,10 @@ model Order {
   billingNip               String?              @map("billing_nip")
   billingCompanyName       String?              @map("billing_company_name")
   isBusinessOrder          Boolean              @default(false) @map("is_business_order")
+  invoiceNumber            String?              @map("invoice_number")
+  invoiceUrl               String?              @map("invoice_url")
+  orderLabel               String?              @map("order_label")
+  b2bShippingLabel         String?              @map("b2b_shipping_label")
   pendingCancellation      Boolean              @default(false) @map("pending_cancellation")
   pendingCancellationAt    DateTime?            @map("pending_cancellation_at")
   cancellationReason       String?              @map("cancellation_reason")
@@ -787,6 +797,15 @@ enum UserRole {
   CUSTOMER
   ADMIN
   WAREHOUSE
+  B2B_PARTNER
+}
+
+enum B2bStatus {
+  NONE
+  PENDING
+  APPROVED
+  REJECTED
+  REVOKED
 }
 
 enum AddressType {

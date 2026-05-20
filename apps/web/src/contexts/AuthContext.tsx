@@ -16,6 +16,9 @@ interface User {
   companyStreet?: string;
   companyCity?: string;
   companyPostalCode?: string;
+  // B2B fields
+  b2bStatus?: string;
+  b2bPriceMultiplier?: number;
 }
 
 interface AuthTokens {
@@ -44,6 +47,14 @@ interface RegisterData {
   firstName: string;
   lastName: string;
   newsletter?: boolean;
+  // B2B fields
+  accountType?: 'personal' | 'business';
+  companyName?: string;
+  nip?: string;
+  companyStreet?: string;
+  companyCity?: string;
+  companyPostalCode?: string;
+  phone?: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

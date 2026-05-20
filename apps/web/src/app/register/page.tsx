@@ -20,6 +20,14 @@ export default function RegisterPage() {
     acceptTerms: false,
     acceptPrivacy: false,
     acceptNewsletter: false,
+    // B2B fields
+    accountType: 'personal' as 'personal' | 'business',
+    companyName: '',
+    nip: '',
+    companyStreet: '',
+    companyCity: '',
+    companyPostalCode: '',
+    phone: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -91,6 +99,16 @@ export default function RegisterPage() {
     if (!/[0-9]/.test(formData.password)) return 'Hasło musi zawierać cyfrę';
     if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password)) return 'Hasło musi zawierać znak specjalny';
     if (formData.password !== formData.confirmPassword) return 'Hasła nie są identyczne';
+    // B2B validation
+    if (formData.accountType === 'business') {
+      if (!formData.companyName.trim()) return 'Nazwa firmy jest wymagana';
+      if (!formData.nip.trim()) return 'NIP jest wymagany';
+      if (!/^\d{10}$/.test(formData.nip.replace(/[\s-]/g, ''))) return 'NIP musi składać się z 10 cyfr';
+      if (!formData.companyStreet.trim()) return 'Adres firmy jest wymagany';
+      if (!formData.companyCity.trim()) return 'Miasto jest wymagane';
+      if (!/^\d{2}-\d{3}$/.test(formData.companyPostalCode)) return 'Nieprawidłowy kod pocztowy (format: XX-XXX)';
+      if (!formData.phone.trim()) return 'Telefon jest wymagany dla konta firmowego';
+    }
     if (!formData.acceptTerms) return 'Musisz zaakceptować regulamin';
     if (!formData.acceptPrivacy) return 'Musisz zaakceptować politykę prywatności';
     return null;
@@ -114,11 +132,25 @@ export default function RegisterPage() {
       firstName: formData.firstName,
       lastName: formData.lastName,
       newsletter: formData.acceptNewsletter,
+      // B2B fields
+      ...(formData.accountType === 'business' && {
+        accountType: 'business',
+        companyName: formData.companyName,
+        nip: formData.nip.replace(/[\s-]/g, ''),
+        companyStreet: formData.companyStreet,
+        companyCity: formData.companyCity,
+        companyPostalCode: formData.companyPostalCode,
+        phone: formData.phone,
+      }),
     });
 
     if (result.success) {
       trackSignup('email');
-      router.push('/account?registered=true');
+      if (formData.accountType === 'business') {
+        router.push('/account?registered=true&b2b=pending');
+      } else {
+        router.push('/account?registered=true');
+      }
     } else {
       setError(result.error || 'Rejestracja nie powiodła się');
     }
@@ -362,6 +394,137 @@ export default function RegisterPage() {
                 />
               </div>
             </div>
+
+            {/* Account Type Switcher */}
+            <div className="pt-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Typ konta
+              </label>
+              <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 dark:bg-secondary-800 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, accountType: 'personal' }))}
+                  className={`py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
+                    formData.accountType === 'personal'
+                      ? 'bg-white dark:bg-secondary-700 text-gray-900 dark:text-white shadow-sm'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                  }`}
+                >
+                  🏠 Konto prywatne
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, accountType: 'business' }))}
+                  className={`py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
+                    formData.accountType === 'business'
+                      ? 'bg-white dark:bg-secondary-700 text-gray-900 dark:text-white shadow-sm'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                  }`}
+                >
+                  🏢 Konto firmowe B2B
+                </button>
+              </div>
+            </div>
+
+            {/* B2B Company Fields */}
+            {formData.accountType === 'business' && (
+              <div className="space-y-3 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                <p className="text-xs text-blue-700 dark:text-blue-300 font-medium mb-3">
+                  📋 Dane firmy — wymagane do weryfikacji współpracy B2B
+                </p>
+                <div>
+                  <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Nazwa firmy
+                  </label>
+                  <input
+                    id="companyName"
+                    name="companyName"
+                    type="text"
+                    value={formData.companyName}
+                    onChange={handleChange}
+                    className="block w-full px-3 py-2.5 border border-gray-200 dark:border-secondary-600 rounded-lg text-gray-900 dark:text-white dark:bg-secondary-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm"
+                    placeholder="Nazwa Twojej firmy"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="nip" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    NIP
+                  </label>
+                  <input
+                    id="nip"
+                    name="nip"
+                    type="text"
+                    value={formData.nip}
+                    onChange={handleChange}
+                    className="block w-full px-3 py-2.5 border border-gray-200 dark:border-secondary-600 rounded-lg text-gray-900 dark:text-white dark:bg-secondary-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm"
+                    placeholder="1234567890"
+                    maxLength={13}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="companyStreet" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Adres firmy
+                  </label>
+                  <input
+                    id="companyStreet"
+                    name="companyStreet"
+                    type="text"
+                    value={formData.companyStreet}
+                    onChange={handleChange}
+                    className="block w-full px-3 py-2.5 border border-gray-200 dark:border-secondary-600 rounded-lg text-gray-900 dark:text-white dark:bg-secondary-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm"
+                    placeholder="ul. Przykładowa 1"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="companyCity" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Miasto
+                    </label>
+                    <input
+                      id="companyCity"
+                      name="companyCity"
+                      type="text"
+                      value={formData.companyCity}
+                      onChange={handleChange}
+                      className="block w-full px-3 py-2.5 border border-gray-200 dark:border-secondary-600 rounded-lg text-gray-900 dark:text-white dark:bg-secondary-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm"
+                      placeholder="Warszawa"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="companyPostalCode" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Kod pocztowy
+                    </label>
+                    <input
+                      id="companyPostalCode"
+                      name="companyPostalCode"
+                      type="text"
+                      value={formData.companyPostalCode}
+                      onChange={handleChange}
+                      className="block w-full px-3 py-2.5 border border-gray-200 dark:border-secondary-600 rounded-lg text-gray-900 dark:text-white dark:bg-secondary-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm"
+                      placeholder="00-000"
+                      maxLength={6}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Telefon kontaktowy
+                  </label>
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="block w-full px-3 py-2.5 border border-gray-200 dark:border-secondary-600 rounded-lg text-gray-900 dark:text-white dark:bg-secondary-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm"
+                    placeholder="+48 123 456 789"
+                  />
+                </div>
+                <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                  ℹ️ Po rejestracji Twoje konto firmowe będzie wymagało weryfikacji przez nasz zespół. Do momentu akceptacji konto działa jako zwykłe konto klienta.
+                </p>
+              </div>
+            )}
 
             {/* Password */}
             <div>
