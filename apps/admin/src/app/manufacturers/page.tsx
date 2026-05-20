@@ -84,7 +84,7 @@ export default function ManufacturersPage() {
   }
 
   async function handleDelete(id: string, name: string) {
-    const ok = await confirm(`Usuń producenta "${name}"`, 'Czy na pewno chcesz usunąć tego producenta? Produkty zostaną odłączone.');
+    const ok = await confirm({ title: `Usuń producenta "${name}"`, message: 'Czy na pewno chcesz usunąć tego producenta? Produkty zostaną odłączone.' });
     if (!ok) return;
 
     try {

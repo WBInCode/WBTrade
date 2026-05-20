@@ -5,7 +5,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import Link from 'next/link';
 
 export default function B2bFeedsPage() {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const [copying, setCopying] = useState<string | null>(null);
 
   const isB2b = user && (user as any).b2bStatus === 'APPROVED';
@@ -24,11 +24,20 @@ export default function B2bFeedsPage() {
     }
   };
 
+  const getToken = () => {
+    try {
+      const stored = localStorage.getItem('auth_tokens');
+      if (stored) return JSON.parse(stored).accessToken;
+    } catch {}
+    return null;
+  };
+
   const handleDownload = async (url: string, filename: string) => {
-    if (!token) return;
+    const accessToken = getToken();
+    if (!accessToken) return;
     try {
       const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (!res.ok) throw new Error('Download failed');
       const blob = await res.blob();
