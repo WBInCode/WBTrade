@@ -85,7 +85,7 @@ export class SecureAuthController {
         }
       }
 
-      console.error('Registration error', error instanceof Error ? error.message : error);
+      console.error('Registration error');
       res.status(500).json({
         message: 'Rejestracja nie powiodła się',
         code: 'REGISTRATION_ERROR',

@@ -82,7 +82,8 @@ router.post('/:orderId', authGuard, upload.single('label'), async (req: Request,
 
     // Remove old label file if exists
     if (order.b2bShippingLabel) {
-      const oldPath = path.join(labelsDir, order.b2bShippingLabel);
+      const sanitizedOld = path.basename(order.b2bShippingLabel);
+      const oldPath = path.join(labelsDir, sanitizedOld);
       if (fs.existsSync(oldPath)) {
         fs.unlinkSync(oldPath);
       }
@@ -131,13 +132,14 @@ router.get('/:orderId', authGuard, async (req: Request, res: Response) => {
       return;
     }
 
-    const filePath = path.join(labelsDir, order.b2bShippingLabel);
+    const sanitizedLabel = path.basename(order.b2bShippingLabel);
+    const filePath = path.join(labelsDir, sanitizedLabel);
     if (!fs.existsSync(filePath)) {
       res.status(404).json({ error: 'Plik etykiety nie istnieje' });
       return;
     }
 
-    const ext = path.extname(order.b2bShippingLabel).toLowerCase();
+    const ext = path.extname(sanitizedLabel).toLowerCase();
     const contentType = ext === '.pdf' ? 'application/pdf' : `image/${ext.replace('.', '')}`;
     const downloadName = `etykieta-${order.orderNumber}${ext}`;
 
@@ -173,7 +175,8 @@ router.delete('/:orderId', authGuard, async (req: Request, res: Response) => {
       return;
     }
 
-    const filePath = path.join(labelsDir, order.b2bShippingLabel);
+    const sanitizedLabel = path.basename(order.b2bShippingLabel);
+    const filePath = path.join(labelsDir, sanitizedLabel);
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
